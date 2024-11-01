@@ -1,6 +1,6 @@
 # pylint: disable=fixme, line-too-long, import-error, no-name-in-module
 #
-# Copyright (c) 2020 Synopsys, Inc.
+# Copyright (c) 2024 Black Duck Software Inc.
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements. See the NOTICE file
@@ -34,8 +34,7 @@ Usage: pip-inspector.py --projectname=<project_name> --requirements=<requirement
 from getopt import getopt, GetoptError
 from os import path
 import sys
-from re import split
-from pkg_resources import working_set, Requirement
+from re import split, match, IGNORECASE
 
 import pip
 pip_major_version = int(pip.__version__.split(".")[0])
@@ -128,43 +127,66 @@ def populate_dependency_tree(project_root_node, requirements_path):
 
 def recursively_resolve_dependencies(package_name, history):
     """Forms a DependencyNode by recursively resolving its dependencies. Tracks history for cyclic dependencies."""
-    package = get_package_by_name(package_name)
+    dependency_node, child_names = get_package_by_name(package_name)
 
-    if package is None:
+    if dependency_node is None:
         return None
 
-    dependency_node = DependencyNode(package.project_name, package.version)
-
-    if package_name.lower() not in history:
-        history.append(package_name.lower())
-        for package_dependency in package.requires():
-            child_node = recursively_resolve_dependencies(package_dependency.key, history)
+    if dependency_node.name not in history:
+        history.append(dependency_node.name)
+        for child_name in child_names:
+            child_node = recursively_resolve_dependencies(child_name, history)
             if child_node is not None:
                 dependency_node.children = dependency_node.children + [child_node]
 
     return dependency_node
 
+try: # attempt to import and rely on importlib.metadata which has been available since Python 3.8
+    import importlib.metadata
 
-def get_package_by_name(package_name):
-    """Looks up a package from the pip cache"""
-    if package_name is None:
-        return None
+    def get_package_by_name(package_name):
+        if package_name is None:
+            return None, None
 
-    package_dict = working_set.by_key
-    try:
-        # TODO: By using pkg_resources.Requirement.parse to get the correct key, we may not need to attempt the other
-        #     methods. Robust tests are needed to confirm.
-        return package_dict[Requirement.parse(package_name).key]
-    except:
-        pass
+        try:
+            metadata = importlib.metadata.metadata(package_name.strip())
+        except importlib.metadata.PackageNotFoundError:
+            return None, None
 
-    name_variants = (package_name, package_name.lower(), package_name.replace('-', '_'), package_name.replace('_', '-'))
-    for name_variant in name_variants:
-        if name_variant in package_dict:
-            return package_dict[name_variant]
+        dependency_node = DependencyNode(metadata["Name"], metadata["Version"])
 
-    return None
+        requirement_names = []
+        requirements = importlib.metadata.requires(dependency_node.name)
+        if requirements is not None:
+            for requirement in requirements:
+                requirement_name_match_result = match("([A-Z0-9][A-Z0-9._-]*[A-Z0-9]|[A-Z0-9])", requirement, IGNORECASE)
+                if requirement_name_match_result is not None:
+                    requirement_names.append(requirement_name_match_result[0])
+        return dependency_node, set(requirement_names)
+except ImportError: # fall back to using deprecated pkg_resources when the newer library is not available
+    from pkg_resources import working_set, Requirement
 
+    def get_package_by_name(package_name):
+        """Looks up a package from the pip cache"""
+        if package_name is None:
+            return None, None
+
+        package = None
+
+        package_dict = working_set.by_key
+        try:
+            # TODO: By using pkg_resources.Requirement.parse to get the correct key, we may not need to attempt the other
+            #     methods. Robust tests are needed to confirm.
+            package = package_dict[Requirement.parse(package_name).key]
+        except:
+            name_variants = (package_name, package_name.lower(), package_name.replace('-', '_'), package_name.replace('_', '-'))
+            for name_variant in name_variants:
+                if name_variant in package_dict:
+                    return package_dict[name_variant]
+
+        if package is None:
+            return None, None
+        return DependencyNode(package.project_name, package.version), [requirement.key for requirement in package.requires()]
 
 class DependencyNode(object):
     """Represents a python dependency in a tree graph with a name, version, and array of children DependencyNodes"""
