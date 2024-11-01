@@ -26,6 +26,7 @@ public class DetectExecutableOptions {
     private final Path swiftUserPath;
     private final Path sbtUserPath;
     private final Path lernaUserPath;
+    private final Path opamUserPath;
 
     public DetectExecutableOptions(
         Path bashUserPath,
@@ -50,7 +51,8 @@ public class DetectExecutableOptions {
         Path goUserPath,
         Path swiftUserPath,
         Path sbtUserPath,
-        Path lernaUserPath
+        Path lernaUserPath,
+        Path opamUserPath
     ) {
         this.bashUserPath = bashUserPath;
         this.bazelUserPath = bazelUserPath;
@@ -75,6 +77,7 @@ public class DetectExecutableOptions {
         this.swiftUserPath = swiftUserPath;
         this.sbtUserPath = sbtUserPath;
         this.lernaUserPath = lernaUserPath;
+        this.opamUserPath = opamUserPath;
     }
 
     public Path getBashUserPath() {
@@ -167,5 +170,9 @@ public class DetectExecutableOptions {
 
     public Path getSbtUserPath() {
         return sbtUserPath;
+    }
+
+    public Path getOpamUserPath() {
+        return opamUserPath;
     }
 }

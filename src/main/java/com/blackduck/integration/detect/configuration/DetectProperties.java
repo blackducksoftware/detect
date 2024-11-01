@@ -1217,6 +1217,13 @@ public class DetectProperties {
             .setExample("/home/<username>/blackduck/scan-outputs")
             .build();
 
+    public static final NullablePathProperty DETECT_OPAM_PATH =
+            NullablePathProperty.newBuilder("detect.opam.path")
+                    .setInfo("Opam Executable", DetectPropertyFromVersion.VERSION_10_0_0)
+                    .setHelp("The path to the opam executable.")
+                    .setGroups(DetectGroup.OPAM, DetectGroup.GLOBAL)
+                    .build();
+
     public static final NullablePathProperty DETECT_TOOLS_OUTPUT_PATH =
         NullablePathProperty.newBuilder("detect.tools.output.path")
             .setInfo("Detect Tools Output Path", DetectPropertyFromVersion.VERSION_5_6_0)

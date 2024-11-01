@@ -35,6 +35,8 @@ import com.blackduck.integration.detectable.detectables.npm.packagejson.NpmPacka
 import com.blackduck.integration.detectable.detectables.nuget.NugetProjectDetectable;
 import com.blackduck.integration.detectable.detectables.nuget.NugetProjectInspectorDetectable;
 import com.blackduck.integration.detectable.detectables.nuget.NugetSolutionDetectable;
+import com.blackduck.integration.detectable.detectables.opam.buildexe.OpamBuildDetectable;
+import com.blackduck.integration.detectable.detectables.opam.lockfile.OpamLockFileDetectable;
 import com.blackduck.integration.detectable.detectables.packagist.ComposerLockDetectable;
 import com.blackduck.integration.detectable.detectables.pear.PearCliDetectable;
 import com.blackduck.integration.detectable.detectables.pip.inspector.PipInspectorDetectable;
@@ -280,6 +282,13 @@ public class DetectorRuleFactory {
             detector.entryPoint(ClangDetectable.class)
                 .search().defaults();
         });
+
+        rules.addDetector(DetectorType.OPAM, detector -> {
+            detector.entryPoint(OpamBuildDetectable.class)
+                    .search().defaults();
+            detector.entryPoint(OpamLockFileDetectable.class)
+                    .search().defaults();
+        }).allEntryPointsFallbackToNext();
 
         return rules.build();
     }

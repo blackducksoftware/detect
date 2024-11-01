@@ -64,6 +64,7 @@ public enum DetectGroup implements Group {
     SBT("sbt", DETECTORS),
     SWIFT("swift", DETECTORS),
     YARN("yarn", DETECTORS),
+    OPAM("opam", DETECTORS),
 
     //Additional groups (should not be used as a primary group
     BLACKDUCK("blackduck"),

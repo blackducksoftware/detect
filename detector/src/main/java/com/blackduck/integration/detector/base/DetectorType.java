@@ -39,8 +39,8 @@ public enum DetectorType { // TODO: 8.0.0 Rename DetectorTypes
     SWIFT, // SWIFT_PM
     YARN,
     CLANG,
-    XCODE; // Remove this
-
+    XCODE, // Remove this
+    OPAM;
     protected static final List<String> POSSIBLE_NAMES = Arrays.stream(DetectorType.values()).map(DetectorType::name).collect(Collectors.toList());
 
     public static List<String> getPossibleNames() {

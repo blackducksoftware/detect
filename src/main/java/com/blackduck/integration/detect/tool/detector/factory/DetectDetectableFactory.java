@@ -44,6 +44,8 @@ import com.blackduck.integration.detectable.detectables.npm.packagejson.NpmPacka
 import com.blackduck.integration.detectable.detectables.nuget.NugetProjectDetectable;
 import com.blackduck.integration.detectable.detectables.nuget.NugetProjectInspectorDetectable;
 import com.blackduck.integration.detectable.detectables.nuget.NugetSolutionDetectable;
+import com.blackduck.integration.detectable.detectables.opam.buildexe.OpamBuildDetectable;
+import com.blackduck.integration.detectable.detectables.opam.lockfile.OpamLockFileDetectable;
 import com.blackduck.integration.detectable.detectables.packagist.ComposerLockDetectable;
 import com.blackduck.integration.detectable.detectables.pear.PearCliDetectable;
 import com.blackduck.integration.detectable.detectables.pip.inspector.PipInspectorDetectable;
@@ -345,5 +347,13 @@ public class DetectDetectableFactory {
     
     public SetupToolsBuildlessDetectable createSetupToolsBuildlessDetectable(DetectableEnvironment environment) {
         return detectableFactory.createSetupToolsBuildlessDetectable(environment, detectExecutableResolver);
+    }
+
+    public OpamBuildDetectable createOpamBuildDetectable(DetectableEnvironment environment) {
+        return detectableFactory.createOpamBuildDetectable(environment, detectExecutableResolver);
+    }
+
+    public OpamLockFileDetectable createOpamLockFileDetectable(DetectableEnvironment environment) {
+        return detectableFactory.createOpamLockFileDetectable(environment, detectExecutableResolver);
     }
 }

@@ -32,12 +32,13 @@ import com.blackduck.integration.detectable.detectable.executable.resolver.Pytho
 import com.blackduck.integration.detectable.detectable.executable.resolver.Rebar3Resolver;
 import com.blackduck.integration.detectable.detectable.executable.resolver.SbtResolver;
 import com.blackduck.integration.detectable.detectable.executable.resolver.SwiftResolver;
+import com.blackduck.integration.detectable.detectable.executable.resolver.OpamResolver;
 import com.blackduck.integration.detectable.detectables.conan.cli.ConanResolver;
 
 public class DetectExecutableResolver implements
     JavaResolver, GradleResolver, BashResolver, ConanResolver, CondaResolver, CpanmResolver, CpanResolver, DartResolver, PearResolver, Rebar3Resolver, PythonResolver, PipResolver,
     PipenvResolver, MavenResolver, NpmResolver, BazelResolver,
-    DockerResolver, GitResolver, SwiftResolver, GoResolver, LernaResolver, SbtResolver, FlutterResolver {
+    DockerResolver, GitResolver, SwiftResolver, GoResolver, LernaResolver, SbtResolver, FlutterResolver, OpamResolver {
 
     private final DirectoryExecutableFinder directoryExecutableFinder;
     private final SystemPathExecutableFinder systemPathExecutableFinder;
@@ -228,6 +229,11 @@ public class DetectExecutableResolver implements
     @Nullable
     public ExecutableTarget resolveFlutter() throws DetectableException {
         return ExecutableTarget.forFile(resolveCachedSystemExecutable("flutter", detectExecutableOptions.getFlutterUserPath()));
+    }
+    @Override
+    @Nullable
+    public ExecutableTarget resolveOpam() throws DetectableException {
+        return ExecutableTarget.forFile(resolveCachedSystemExecutable("opam", detectExecutableOptions.getOpamUserPath()));
     }
 }
 
