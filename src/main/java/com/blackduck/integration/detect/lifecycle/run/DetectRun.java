@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.stream.Collectors;
 
 import com.blackduck.integration.configuration.property.types.enumallnone.list.AllEnumList;
+import com.blackduck.integration.detect.configuration.DetectConfigurationFactory;
 import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
 import com.blackduck.integration.detect.lifecycle.autonomous.AutonomousManager;
@@ -90,7 +91,7 @@ public class DetectRun {
             BdioResult bdio;
             Boolean forceBdio = bootSingletons.getDetectConfigurationFactory().forceBdio();
             logger.debug("Integrated Matching Correlation ID: {}", bootSingletons.getDetectRunId().getCorrelationId());
-            String correlationId = operationRunner.getDetectConfigurationFactory().isCorrelatedScanningEnabled()? bootSingletons.getDetectRunId().getCorrelationId():null;
+            String correlationId = getCorrelationId(operationRunner.getDetectConfigurationFactory(), bootSingletons);
             if (!universalToolsResult.getDetectCodeLocations().isEmpty()
                     || (productRunData.shouldUseBlackDuckProduct() && !productRunData.getBlackDuckRunData().isOnline() && forceBdio && !universalToolsResult.didAnyFail() && exitCodeManager.getWinningExitCode().isSuccess())) {
                 bdio = stepRunner.generateBdio(correlationId, universalToolsResult, nameVersion);
@@ -164,6 +165,10 @@ public class DetectRun {
     public void phoneHomeApplicableDetectorTypes(PhoneHomeManager phoneHomeManager, Set<DetectorType> applicableDetectorTypes) {
         Map<DetectorType, Long> detectorTimes = applicableDetectorTypes.stream().collect(Collectors.toMap(detectorType -> detectorType, detectorType -> 0L));
         phoneHomeManager.savePhoneHomeDetectorTimes(detectorTimes);
+    }
+
+    private String getCorrelationId(DetectConfigurationFactory configurationFactory, BootSingletons bootSingletons) {
+        return configurationFactory.isCorrelatedScanningEnabled()? bootSingletons.getDetectRunId().getCorrelationId():null;
     }
 
     private Set<String> getDecidedTools(BootSingletons bootSingletons, Map<DetectTool, Set<String>> scanTypeEvidenceMap) {
