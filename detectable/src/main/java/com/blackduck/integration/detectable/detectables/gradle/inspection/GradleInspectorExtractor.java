@@ -67,7 +67,7 @@ public class GradleInspectorExtractor {
             reportFiles.toArray(files);
             List<File> reportFilesSorted = Arrays.asList(sortFilesByDepth(files));
 
-            if (rootOnly && reportFilesSorted.size()>0) {
+            if (rootOnly && !reportFilesSorted.isEmpty()) {
                 logger.debug("Gradle Inspector root-only option selected. Only processing root project dependencies.");
                 Optional<GradleReport> rootReport = gradleReportParser.parseReport(reportFilesSorted.get(0));
                 if (rootReport.isPresent()) {

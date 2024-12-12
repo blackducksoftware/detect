@@ -12,6 +12,8 @@ compileClasspath - Compile classpath for source set 'main'.
 |    +--- project :subProjectC
 |    |    \--- org.antlr:antlr4-runtime:4.2 -> 4.7.2
 |    \--- com.paypal.digraph:digraph-parser:1.0
++--- project :subProjectA:subSubProjectAA
+|    \--- org.slf4j:slf4j-api:1.7.30
 +--- project :subProjectB
 \--- org.apache.commons:commons-text:1.10.0
 

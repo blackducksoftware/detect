@@ -81,12 +81,13 @@ public class GradleInspectorRootOnlyTest extends DetectableFunctionalTest {
 
     @Override
     public void assertExtraction(@NotNull Extraction extraction) {
-        Assertions.assertEquals(4, extraction.getCodeLocations().size());
+        Assertions.assertEquals(5, extraction.getCodeLocations().size());
 
         CodeLocation root = ExtractionUtil.assertAndGetCodeLocationNamed("simple", extraction);
         CodeLocation subProjectA = ExtractionUtil.assertAndGetCodeLocationNamed("subProjectA", extraction);
         CodeLocation subProjectB = ExtractionUtil.assertAndGetCodeLocationNamed("subProjectB", extraction);
         CodeLocation subProjectC = ExtractionUtil.assertAndGetCodeLocationNamed("subProjectC", extraction);
+        CodeLocation subSubProjectAA = ExtractionUtil.assertAndGetCodeLocationNamed("subSubProjectAA", extraction);
 
         ExternalIdFactory externalIdFactory = new ExternalIdFactory();
         // Root dependencies
@@ -102,11 +103,14 @@ public class GradleInspectorRootOnlyTest extends DetectableFunctionalTest {
         // Overlapping dependencies
         ExternalId guava = externalIdFactory.createMavenExternalId("com.google.guava", "guava", "32.1.2-jre");
         ExternalId digraph_parser = externalIdFactory.createMavenExternalId("com.paypal.digraph", "digraph-parser", "1.0");
+        // subSubProjectAA dependency
+        ExternalId slf4j = externalIdFactory.createMavenExternalId("org.slf4j", "slf4j-api", "1.7.30");
 
 
         NameVersionGraphAssert rootGraphAssert = new NameVersionGraphAssert(Forge.MAVEN, root.getDependencyGraph());
         NameVersionGraphAssert subProjectAGraphAssert = new NameVersionGraphAssert(Forge.MAVEN, subProjectA.getDependencyGraph());
         NameVersionGraphAssert subProjectCGraphAssert = new NameVersionGraphAssert(Forge.MAVEN, subProjectC.getDependencyGraph());
+        NameVersionGraphAssert subSubProjectAAGraphAssert = new NameVersionGraphAssert(Forge.MAVEN, subSubProjectAA.getDependencyGraph());
 
 
         // Root has 3 direct and 2 transitive
@@ -142,5 +146,9 @@ public class GradleInspectorRootOnlyTest extends DetectableFunctionalTest {
         // Empty subProjectB has no dependencies
         Set<Dependency> subProjectBDirectDependencies = subProjectB.getDependencyGraph().getDirectDependencies();
         Assertions.assertEquals(0, subProjectBDirectDependencies.size());
+
+        // Nested subproject subProjectA:subSubProjectAA has 1 dependency
+        subSubProjectAAGraphAssert.hasRootDependency(slf4j);
+
     }
 }
