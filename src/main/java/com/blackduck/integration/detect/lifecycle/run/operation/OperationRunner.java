@@ -6,11 +6,14 @@ import static com.blackduck.integration.detect.workflow.componentlocationanalysi
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -23,18 +26,13 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.entity.ContentType;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.blackducksoftware.bdio2.Bdio;
-import com.google.common.collect.ImmutableList;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import com.blackduck.integration.sca.upload.rest.status.BinaryUploadStatus;
 import com.blackduck.integration.bdio.graph.ProjectDependencyGraph;
 import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.blackduck.api.generated.discovery.ApiDiscovery;
@@ -75,6 +73,7 @@ import com.blackduck.integration.detect.lifecycle.autonomous.AutonomousManager;
 import com.blackduck.integration.detect.lifecycle.run.DetectFontLoaderFactory;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.data.DockerTargetData;
+import com.blackduck.integration.detect.lifecycle.run.data.ScanCreationResponse;
 import com.blackduck.integration.detect.lifecycle.run.operation.blackduck.BdioUploadResult;
 import com.blackduck.integration.detect.lifecycle.run.singleton.BootSingletons;
 import com.blackduck.integration.detect.lifecycle.run.singleton.EventSingletons;
@@ -121,6 +120,7 @@ import com.blackduck.integration.detect.tool.signaturescanner.operation.CreateSi
 import com.blackduck.integration.detect.tool.signaturescanner.operation.PublishSignatureScanReports;
 import com.blackduck.integration.detect.tool.signaturescanner.operation.SignatureScanOperation;
 import com.blackduck.integration.detect.tool.signaturescanner.operation.SignatureScanOuputResult;
+import com.blackduck.integration.detect.util.bdio.protobuf.DetectProtobufBdioHeaderUtil;
 import com.blackduck.integration.detect.util.finder.DetectExcludedDirectoryFilter;
 import com.blackduck.integration.detect.workflow.ArtifactResolver;
 import com.blackduck.integration.detect.workflow.bdio.AggregateCodeLocation;
@@ -204,10 +204,16 @@ import com.blackduck.integration.log.Slf4jIntLogger;
 import com.blackduck.integration.rest.HttpUrl;
 import com.blackduck.integration.rest.body.FileBodyContent;
 import com.blackduck.integration.rest.response.Response;
+import com.blackduck.integration.sca.upload.rest.status.BinaryUploadStatus;
 import com.blackduck.integration.util.IntEnvironmentVariables;
 import com.blackduck.integration.util.IntegrationEscapeUtil;
 import com.blackduck.integration.util.NameVersion;
 import com.blackduck.integration.util.OperatingSystemType;
+import com.blackducksoftware.bdio2.Bdio;
+import com.google.common.collect.ImmutableList;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 
 public class OperationRunner {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -240,6 +246,7 @@ public class OperationRunner {
     private static final String DEVELOPER_SCAN_CONTENT_TYPE = "application/vnd.blackducksoftware.scan-evidence-1+protobuf";
     private static final String INTELLIGENT_SCAN_ENDPOINT = ApiDiscovery.INTELLIGENT_PERSISTENCE_SCANS_PATH.getPath();
     private static final String INTELLIGENT_SCAN_CONTENT_TYPE = "application/vnd.blackducksoftware.intelligent-persistence-scan-3+protobuf";
+    private static final String INTELLIGENT_SCAN_SCASS_CONTENT_TYPE = "application/vnd.blackducksoftware.intelligent-persistence-scan-4+protobuf-jsonld";
     public static final ImmutableList<Integer> RETRYABLE_AFTER_WAIT_HTTP_EXCEPTIONS = ImmutableList.of(408, 429, 502, 503, 504);
     public static final ImmutableList<Integer> RETRYABLE_WITH_BACKOFF_HTTP_EXCEPTIONS = ImmutableList.of(425, 500);
     private List<File> binaryUserTargets = new ArrayList<>();
@@ -443,13 +450,13 @@ public class OperationRunner {
         }
     }
 
-    public JsonObject createContainerScanImageMetadata(UUID scanId, NameVersion projectNameVersion) {
+    public JsonObject createScanMetadata(UUID scanId, NameVersion projectNameVersion, String type) {
         String scanPersistence = detectConfigurationFactory.createScanMode() == BlackduckScanMode.INTELLIGENT ? "STATEFUL" : "STATELESS";
         String projectGroupName = detectConfigurationFactory.createProjectGroupOptions().getProjectGroup();
 
         JsonObject imageMetadataObject = new JsonObject();
         imageMetadataObject.addProperty("scanId", scanId.toString());
-        imageMetadataObject.addProperty("scanType", "CONTAINER");
+        imageMetadataObject.addProperty("scanType", type);
         imageMetadataObject.addProperty("scanPersistence", scanPersistence);
         imageMetadataObject.addProperty("projectName", projectNameVersion.getName());
         imageMetadataObject.addProperty("projectVersionName", projectNameVersion.getVersion());
@@ -457,7 +464,7 @@ public class OperationRunner {
 
         return imageMetadataObject;
     }
-
+    
     // Generic method to POST a file to /api/storage/containers endpoint of storage service
     public Response uploadFileToStorageService(BlackDuckRunData blackDuckRunData, String storageServiceEndpoint, File payloadFile, String postContentType, String operationName)
         throws OperationException {
@@ -539,6 +546,76 @@ public class OperationRunner {
 
             return UUID.fromString(path.substring(path.lastIndexOf('/') + 1));
         });
+    }
+    
+    // TODO consider refactoring so that we have just the uploadBdioHeaderToInitiateScan call.
+    // We can add content type to that method and have it return the response
+    // Callers then can determine how to deal with response. We should determine how many callers are impacted.
+    // Not sure if older BlackDuck's return scanId in the body so need to check that.
+    public ScanCreationResponse uploadBdioHeaderToInitiateScassScan(BlackDuckRunData blackDuckRunData, File bdioHeaderFile, String operationName, Gson gson, String computedMd5) throws OperationException {
+        return auditLog.namedInternal(operationName, () -> {
+            BlackDuckServicesFactory blackDuckServicesFactory = blackDuckRunData.getBlackDuckServicesFactory();
+            BlackDuckApiClient blackDuckApiClient = blackDuckServicesFactory.getBlackDuckApiClient();
+
+            String scanServicePostEndpoint = getScanServicePostEndpoint();
+            HttpUrl postUrl = blackDuckRunData.getBlackDuckServerConfig().getBlackDuckUrl().appendRelativeUrl(scanServicePostEndpoint);
+
+            String scanServicePostContentType = INTELLIGENT_SCAN_SCASS_CONTENT_TYPE;
+            BlackDuckResponseRequest buildBlackDuckResponseRequest = new BlackDuckRequestBuilder()
+                .addHeader("X-BASE64-MD5", computedMd5)
+                .postFile(bdioHeaderFile, ContentType.create(scanServicePostContentType))
+                .buildBlackDuckResponseRequest(postUrl);
+
+            Response response = blackDuckApiClient.execute(buildBlackDuckResponseRequest);
+            String contentString = response.getContentString();
+            ScanCreationResponse scanCreationResponse = gson.fromJson(contentString, ScanCreationResponse.class);
+            
+            return scanCreationResponse;
+        });
+    }
+    
+    public ScanCreationResponse initiateScan(NameVersion projectNameVersion, File binaryFile, BlackDuckRunData blackDuckRunData, String type, Gson gson) throws OperationException, IntegrationException {
+        String projectGroupName = calculateProjectGroupOptions().getProjectGroup();
+        
+        CodeLocationNameManager codeLocationNameManager = getCodeLocationNameManager();
+        String codeLocationName =  codeLocationNameManager.createBinaryScanCodeLocationName(binaryFile, projectNameVersion.getName(), projectNameVersion.getVersion());
+        
+        DetectProtobufBdioHeaderUtil detectProtobufBdioHeaderUtil = new DetectProtobufBdioHeaderUtil(
+            UUID.randomUUID().toString(),
+            type,
+            projectNameVersion,
+            projectGroupName,
+            codeLocationName,
+            binaryFile.length());
+        
+        File bdioHeaderFile;
+        String computedMd5;
+        try {
+            bdioHeaderFile = detectProtobufBdioHeaderUtil.createProtobufBdioHeader(
+                    getDirectoryManager().getBinaryOutputDirectory());
+            
+            // TODO this is not a cheap operation as we have to essentially read the entire file and compute the MD5.
+            // IF this file is a zip, and we created that zip, we can in theory compute the MD5 at the same time.
+            computedMd5 = computeMD5Base64(binaryFile);
+        } catch (IOException e) {
+            throw new IntegrationException("Unable to perform file computations. Ensure the binary file and output directory are accessible.");
+        }
+        
+        String operationName = "Upload Binary Scan BDIO Header to Initiate Scan";
+        
+        ScanCreationResponse scanCreationResponse 
+            = uploadBdioHeaderToInitiateScassScan(blackDuckRunData, bdioHeaderFile, operationName, gson, computedMd5);
+
+        String scanId = scanCreationResponse.getScanId();
+        
+        if (scanId == null) {
+            logger.warn("Scan ID was not found in the response from the server.");
+            throw new IntegrationException("Scan ID was not found in the response from the server.");
+        }
+        String scanIdString = scanId.toString();
+        logger.debug("Scan initiated with scan service. Scan ID received: {}", scanIdString);
+        
+        return scanCreationResponse;
     }
 
     public void uploadBdioEntries(BlackDuckRunData blackDuckRunData, UUID bdScanId) throws IntegrationException, IOException {
@@ -1517,5 +1594,18 @@ public class OperationRunner {
     
     public DetectConfigurationFactory getDetectConfigurationFactory() {
         return this.detectConfigurationFactory;
+    }
+    
+    public String computeMD5Base64(File file) throws IOException {
+        try (FileInputStream fis = new FileInputStream(file)) {
+            MessageDigest md = DigestUtils.getMd5Digest();
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = fis.read(buffer)) != -1) {
+                md.update(buffer, 0, bytesRead);
+            }
+            byte[] md5Bytes = md.digest();
+            return Base64.getEncoder().encodeToString(md5Bytes);
+        }
     }
 }

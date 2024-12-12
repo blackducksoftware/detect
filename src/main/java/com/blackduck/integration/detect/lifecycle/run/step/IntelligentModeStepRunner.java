@@ -12,13 +12,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
 import com.blackduck.integration.blackduck.api.generated.view.ProjectVersionView;
 import com.blackduck.integration.blackduck.codelocation.CodeLocationCreationData;
 import com.blackduck.integration.blackduck.codelocation.binaryscanner.BinaryScanBatchOutput;
-import com.blackduck.integration.blackduck.codelocation.upload.UploadOutput;
-import com.blackduck.integration.blackduck.codelocation.binaryscanner.BinaryScanBatchOutput;
 import com.blackduck.integration.blackduck.codelocation.upload.UploadBatchOutput;
+import com.blackduck.integration.blackduck.codelocation.upload.UploadOutput;
 import com.blackduck.integration.blackduck.service.BlackDuckServicesFactory;
 import com.blackduck.integration.blackduck.service.model.ProjectVersionWrapper;
 import com.blackduck.integration.blackduck.version.BlackDuckVersion;
@@ -37,8 +35,8 @@ import com.blackduck.integration.detect.workflow.bdio.BdioResult;
 import com.blackduck.integration.detect.workflow.blackduck.codelocation.CodeLocationAccumulator;
 import com.blackduck.integration.detect.workflow.blackduck.codelocation.CodeLocationResults;
 import com.blackduck.integration.detect.workflow.blackduck.codelocation.CodeLocationWaitData;
-import com.blackduck.integration.detect.workflow.blackduck.integratedmatching.model.ScanCountsPayload;
 import com.blackduck.integration.detect.workflow.blackduck.integratedmatching.ScanCountsPayloadCreator;
+import com.blackduck.integration.detect.workflow.blackduck.integratedmatching.model.ScanCountsPayload;
 import com.blackduck.integration.detect.workflow.report.util.ReportConstants;
 import com.blackduck.integration.detect.workflow.result.BlackDuckBomDetectResult;
 import com.blackduck.integration.detect.workflow.result.DetectResult;
@@ -48,6 +46,7 @@ import com.blackduck.integration.detect.workflow.status.OperationType;
 import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.rest.HttpUrl;
 import com.blackduck.integration.util.NameVersion;
+import com.google.gson.Gson;
 
 public class IntelligentModeStepRunner {
     private final OperationRunner operationRunner;
@@ -229,14 +228,17 @@ public class IntelligentModeStepRunner {
         AtomicBoolean mustWaitAtBomSummaryLevel
     )
         throws IntegrationException, OperationException {
-
-        if (isMultipartUploadPossible(blackDuckRunData)) {
-            Optional<String> scanId =
-                binaryScanStepRunner.runBinaryScan(dockerTargetData, projectNameVersion, blackDuckRunData, binaryTargets);
-
-            if (scanId.isPresent()) {
-                scanIdsToWaitFor.add(scanId.get());
-            }
+        Optional<String> scanId = Optional.empty();
+        
+        if (binaryScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion())) {
+            scanId = binaryScanStepRunner.runBinaryScan(dockerTargetData, projectNameVersion, blackDuckRunData, binaryTargets);
+        } else if (isMultipartUploadPossible(blackDuckRunData)) {
+            scanId = binaryScanStepRunner.runLegacyMultipartBinaryScan(dockerTargetData, projectNameVersion,
+                    blackDuckRunData, binaryTargets);
+        } 
+        
+        if (scanId.isPresent()) {
+            scanIdsToWaitFor.add(scanId.get());
         } else {
             Optional<CodeLocationCreationData<BinaryScanBatchOutput>> codeLocationData =
                 binaryScanStepRunner.runLegacyBinaryScan(dockerTargetData, projectNameVersion, blackDuckRunData, binaryTargets);
@@ -246,8 +248,6 @@ public class IntelligentModeStepRunner {
                 mustWaitAtBomSummaryLevel.set(true);
             }
         }
-
-
     }
 
     private void pollForBomScanCompletion(BlackDuckRunData blackDuckRunData, ProjectVersionWrapper projectVersion,

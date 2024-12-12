@@ -12,13 +12,12 @@ import com.blackduck.integration.blackduck.version.BlackDuckVersion;
 import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
+import com.blackduck.integration.detect.lifecycle.run.step.utility.MultipartUploaderHelper;
 import com.blackduck.integration.detect.util.bdio.protobuf.DetectProtobufBdioHeaderUtil;
 import com.blackduck.integration.detect.workflow.codelocation.CodeLocationNameManager;
 import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.exception.IntegrationTimeoutException;
-import com.blackduck.integration.log.Slf4jIntLogger;
 import com.blackduck.integration.rest.response.Response;
-import com.blackduck.integration.sca.upload.client.UploaderConfig;
 import com.blackduck.integration.sca.upload.client.uploaders.ContainerUploader;
 import com.blackduck.integration.sca.upload.client.uploaders.UploaderFactory;
 import com.blackduck.integration.sca.upload.rest.status.DefaultUploadStatus;
@@ -177,21 +176,11 @@ public class ContainerScanStepRunner {
         DefaultUploadStatus status = containerUploader.upload(containerImage.toPath());
             
         if (status == null || status.isError()) {
-            handleUploadError(status);
+            MultipartUploaderHelper.handleUploadError(status);
         }
             
         logger.debug("Multipart container scan image uploaded to storage service.");
         return status;
-    }
-
-    private void handleUploadError(DefaultUploadStatus status) throws IntegrationException {
-        if (status == null) {
-            throw new IntegrationException("Unexpected empty response attempting to upload container image.");
-        } else if (status.getException().isPresent()) {
-            throw status.getException().get();      
-        } else {
-            throw new IntegrationException(String.format("Unable to upload multipart container image. Status code: {}. {}", status.getStatusCode(), status.getStatusMessage()));
-        }  
     }
 
     private void uploadImageMetadataToStorageService() throws IntegrationException, IOException, OperationException {
@@ -199,7 +188,7 @@ public class ContainerScanStepRunner {
         String operationName = "Upload Container Scan Image Metadata JSON";
         logger.debug("Uploading container image metadata to storage endpoint: {}", storageServiceEndpoint);
 
-        JsonObject imageMetadataObject = operationRunner.createContainerScanImageMetadata(scanId, projectNameVersion);
+        JsonObject imageMetadataObject = operationRunner.createScanMetadata(scanId, projectNameVersion, "CONTAINER");
 
         try (Response response = operationRunner.uploadJsonToStorageService(
             blackDuckRunData,
@@ -219,15 +208,7 @@ public class ContainerScanStepRunner {
     }
     
     private void initContainerUploadFactory(BlackDuckRunData blackDuckRunData) throws IntegrationException {
-        UploaderConfig.Builder uploaderConfigBuilder =  UploaderConfig.createConfigFromEnvironment(blackDuckRunData.getBlackDuckServerConfig().getProxyInfo())
-            .setBlackDuckTimeoutInSeconds(blackDuckRunData.getBlackDuckServerConfig().getTimeout())
-            .setMultipartUploadTimeoutInMinutes(blackDuckRunData.getBlackDuckServerConfig().getTimeout() /  60)
-            .setAlwaysTrustServerCertificate(blackDuckRunData.getBlackDuckServerConfig().isAlwaysTrustServerCertificate())
-            .setBlackDuckUrl(blackDuckRunData.getBlackDuckServerConfig().getBlackDuckUrl())
-            .setApiToken(blackDuckRunData.getBlackDuckServerConfig().getApiToken().get());
-        
-        UploaderConfig uploaderConfig = uploaderConfigBuilder.build();
-        uploadFactory = new UploaderFactory(uploaderConfig, new Slf4jIntLogger(logger), new Gson());
+        uploadFactory = MultipartUploaderHelper.getUploaderFactory(blackDuckRunData);
     }
     
     private boolean canDoMultiPartUpload() {
