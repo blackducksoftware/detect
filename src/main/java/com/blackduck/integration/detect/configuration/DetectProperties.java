@@ -1725,7 +1725,7 @@ public class DetectProperties {
             .setGroups(DetectGroup.PATHS, DetectGroup.GLOBAL)
             .build();
 
-    public static final BooleanProperty DETECT_YARN_MONOREPO_MODE =
+    public static final BooleanProperty DETECT_YARN_IGNORE_ALL_WORKSPACES_MODE =
         BooleanProperty.newBuilder("detect.yarn.ignore.all.workspaces", false)
             .setInfo("Ignore All Workspaces", DetectPropertyFromVersion.VERSION_9_4_0)
             .setHelp("All workspaces are ignored by the Yarn detector for increased performance and precision to scan a massive codebase.")

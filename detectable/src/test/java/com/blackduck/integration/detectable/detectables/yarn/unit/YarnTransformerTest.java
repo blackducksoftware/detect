@@ -29,7 +29,6 @@ import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.annotations.UnitTest;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
-import com.blackduck.integration.detectable.detectables.npm.packagejson.model.PackageJson;
 import com.blackduck.integration.detectable.detectables.npm.packagejson.model.YarnPackageJson;
 import com.blackduck.integration.detectable.detectables.yarn.YarnDependencyType;
 import com.blackduck.integration.detectable.detectables.yarn.YarnTransformer;
@@ -56,12 +55,16 @@ class YarnTransformerTest {
         EnumListFilter<YarnDependencyType> yarnDependencyTypeFilter = EnumListFilter.fromExcluded(excludedTypes);
         return new YarnTransformer(externalIdFactory, yarnDependencyTypeFilter);
     }
+    
+    enum YARN_VERSION {
+        YARN1, YARN2, YARN4
+    };
 
     // Not yet covered by these tests: yarn 1 workspaces' dev dependencies specified in workspace package.json
 
     @Test
     void testExcludeDevDependencies() throws MissingExternalIdException {
-        YarnLockResult yarnLockResult = buildTestYarnLockResult(noWorkspaces, noWorkspaces, false);
+        YarnLockResult yarnLockResult = buildTestYarnLockResult(noWorkspaces, noWorkspaces, YARN_VERSION.YARN2);
 
         List<CodeLocation> codeLocations = createTransformer(YarnDependencyType.NON_PRODUCTION).generateCodeLocations(
             yarnLockResult,
@@ -86,7 +89,7 @@ class YarnTransformerTest {
 
     @Test
     void testIncludeDevDependencies() throws MissingExternalIdException {
-        YarnLockResult yarnLockResult = buildTestYarnLockResult(noWorkspaces, noWorkspaces, false);
+        YarnLockResult yarnLockResult = buildTestYarnLockResult(noWorkspaces, noWorkspaces, YARN_VERSION.YARN2);
 
         List<CodeLocation> codeLocations = createTransformer().generateCodeLocations(yarnLockResult, new ArrayList<>(0), ExcludedIncludedWildcardFilter.EMPTY);
 
@@ -146,22 +149,26 @@ class YarnTransformerTest {
 
     @Test
     void testAllWorkspacesYarnV1() throws MissingExternalIdException {
-        doAllWorkspacesTest(true);
+        doAllWorkspacesTest(YARN_VERSION.YARN1);
     }
 
     @Test
     void testAllWorkspacesYarnV2() throws MissingExternalIdException {
-        doAllWorkspacesTest(false);
+        doAllWorkspacesTest(YARN_VERSION.YARN2);
+    }
+    
+    @Test
+    void testAllWorkspacesYarnV4() throws MissingExternalIdException {
+        doAllWorkspacesTest(YARN_VERSION.YARN4);
     }
 
-    private void doAllWorkspacesTest(boolean yarn1Project) throws MissingExternalIdException {
+    private void doAllWorkspacesTest(YARN_VERSION version) throws MissingExternalIdException {
         // Unless filtered out, even workspaces that are not dependencies should be included
         List<NameVersion> workspacesThatAreDependencies = new LinkedList<>();
         workspacesThatAreDependencies.add(new NameVersion("workspace-isdep", "1.0.0"));
         List<NameVersion> workspacesThatAreNotDependencies = new LinkedList<>();
         workspacesThatAreNotDependencies.add(new NameVersion("workspace-notdep", "1.0.0"));
-        YarnLockResult yarnLockResult = buildTestYarnLockResult(workspacesThatAreDependencies, workspacesThatAreNotDependencies, yarn1Project);
-
+        YarnLockResult yarnLockResult = buildTestYarnLockResult(workspacesThatAreDependencies, workspacesThatAreNotDependencies, version);
         List<CodeLocation> codeLocations = createTransformer().generateCodeLocations(yarnLockResult, new ArrayList<>(), ExcludedIncludedWildcardFilter.EMPTY);
 
         assertEquals(3, codeLocations.size());
@@ -169,12 +176,19 @@ class YarnTransformerTest {
         CodeLocation rootProjectCodeLocation = codeLocationIterator.next();
         assertFalse(rootProjectCodeLocation.getExternalId().isPresent());
         DependencyGraph rootProjectDependencyGraph = rootProjectCodeLocation.getDependencyGraph();
-        assertEquals(2, rootProjectDependencyGraph.getRootDependencies().size());
+        if (version.equals(YARN_VERSION.YARN4)) {
+            assertEquals(3, rootProjectDependencyGraph.getRootDependencies().size());
+        } else {
+            assertEquals(2, rootProjectDependencyGraph.getRootDependencies().size());
+        }
         List<String> dependencyNames = rootProjectDependencyGraph.getRootDependencies().stream()
             .map(Dependency::getName)
             .collect(Collectors.toList());
         assertTrue(dependencyNames.contains("foo"));
         assertTrue(dependencyNames.contains("bar"));
+        if (version.equals(YARN_VERSION.YARN4)) {
+            assertTrue(dependencyNames.contains("@source/fubar@npm"));
+        }
 
         for (int i = 1; i < 3; i++) {
             CodeLocation workspaceCodeLocation = codeLocationIterator.next();
@@ -193,7 +207,7 @@ class YarnTransformerTest {
     }
 
     @NotNull
-    private YarnLockResult buildTestYarnLockResult(List<NameVersion> workspacesThatAreDependencies, List<NameVersion> workspacesThatAreNotDependencies, boolean yarn1project) {
+    private YarnLockResult buildTestYarnLockResult(List<NameVersion> workspacesThatAreDependencies, List<NameVersion> workspacesThatAreNotDependencies, YARN_VERSION version) {
         YarnPackageJson rawPackageJson = new YarnPackageJson();
         rawPackageJson.dependencies = new HashMap<>();
         rawPackageJson.dependencies.put("foo", "fooFuzzyVersion-1.0");
@@ -201,20 +215,27 @@ class YarnTransformerTest {
             rawPackageJson.dependencies.put(workspace.getName(), workspace.getVersion());
         }
         rawPackageJson.devDependencies.put("bar", "barFuzzyVersion-1.0");
+        if (version.equals(YARN_VERSION.YARN4)) {
+            rawPackageJson.devDependencies.put("@source/fubar@npm", "npm:fubarFuzzyVersion-4.0");
+        }
         NullSafePackageJson packageJson = new NullSafePackageJson(rawPackageJson);
 
         // yarn.lock: foo and bar both depend on yarn
         List<YarnLockEntryId> yarnLockEntryIdsFoo = Collections.singletonList(new YarnLockEntryId("foo", "fooFuzzyVersion-1.0"));
         List<YarnLockEntryId> yarnLockEntryIdsBar = Collections.singletonList(new YarnLockEntryId("bar", "barFuzzyVersion-1.0"));
+        List<YarnLockEntryId> yarnLockEntryIdsFubar = Collections.singletonList(new YarnLockEntryId("@source/fubar@npm", "npm:fubarFuzzyVersion-4.0"));
         List<YarnLockEntryId> yarnLockEntryIdsYarn = Collections.singletonList(new YarnLockEntryId("yarn", "^1.22.4"));
         List<YarnLockDependency> dependencyRefToYarn = Collections.singletonList(new YarnLockDependency("yarn", "^1.22.4", false));
         List<YarnLockEntry> yarnLockEntries = new LinkedList<>();
 
-        if (!yarn1project) {
+        if (!version.equals(YARN_VERSION.YARN1)) {
             List<YarnLockEntryId> projectEntryIds = Collections.singletonList(new YarnLockEntryId("project", "1.0.0"));
             List<YarnLockDependency> projectDependencies = new LinkedList<>();
             projectDependencies.add(new YarnLockDependency("foo", "fooFuzzyVersion-1.0", false));
             projectDependencies.add(new YarnLockDependency("bar", "barFuzzyVersion-1.0", false));
+            if (version.equals(YARN_VERSION.YARN4)) {
+                projectDependencies.add(new YarnLockDependency("@source/fubar", "npm:fubarFuzzyVersion-4.0", false));
+            }
             for (NameVersion workspaceThatIsDependency : workspacesThatAreDependencies) {
                 projectDependencies.add(new YarnLockDependency(workspaceThatIsDependency.getName(), workspaceThatIsDependency.getVersion(), false));
             }
@@ -227,7 +248,7 @@ class YarnTransformerTest {
             String workspaceDepName = workspace.getName() + WORKSPACE_DEP_SUFFIX;
             String workspaceDevDepName = workspace.getName() + "-dev" + WORKSPACE_DEP_SUFFIX;
             addWorkspacePackageJson(workspacesByName, workspace, workspaceDepName, workspaceDevDepName);
-            if (!yarn1project) {
+            if (!version.equals(YARN_VERSION.YARN1)) {
                 addWorkspaceToYarnLockEntries(yarnLockEntries, workspace, workspaceDepName);
             }
             addDependencyOfWorkspaceToYarnLockEntries(yarnLockEntries, workspace, workspaceDepName);
@@ -235,12 +256,17 @@ class YarnTransformerTest {
         }
         yarnLockEntries.add(new YarnLockEntry(false, yarnLockEntryIdsFoo, "1.0", dependencyRefToYarn));
         yarnLockEntries.add(new YarnLockEntry(false, yarnLockEntryIdsBar, "1.0", dependencyRefToYarn));
+        if (version.equals(YARN_VERSION.YARN4)) {
+            yarnLockEntries.add(new YarnLockEntry(false, yarnLockEntryIdsFubar, "4.0", dependencyRefToYarn));
+        }
+        
         yarnLockEntries.add(new YarnLockEntry(false, yarnLockEntryIdsYarn, "1.22.5", new LinkedList<>()));
         String yarnLockVersion = null;
-        if (!yarn1project) {
+        boolean yarn1Project = version.equals(YARN_VERSION.YARN1);
+        if (!yarn1Project) {
             yarnLockVersion = "4";
         }
-        YarnLock yarnLock = new YarnLock(yarnLockVersion, yarn1project, yarnLockEntries);
+        YarnLock yarnLock = new YarnLock(yarnLockVersion, yarn1Project, yarnLockEntries);
         YarnWorkspaces workspaceData = new YarnWorkspaces(workspacesByName);
         return new YarnLockResult(packageJson, workspaceData, yarnLock);
     }

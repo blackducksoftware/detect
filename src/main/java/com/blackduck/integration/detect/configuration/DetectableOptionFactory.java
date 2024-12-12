@@ -286,12 +286,12 @@ public class DetectableOptionFactory {
 
     public YarnLockOptions createYarnLockOptions() {
         Set<YarnDependencyType> excludedDependencyTypes = detectConfiguration.getValue(DetectProperties.DETECT_YARN_DEPENDENCY_TYPES_EXCLUDED).representedValueSet();
-        Boolean monorepoMode = detectConfiguration.getValue(DetectProperties.DETECT_YARN_MONOREPO_MODE);
+        Boolean yarnIgnoreAllWorkspacesMode = detectConfiguration.getValue(DetectProperties.DETECT_YARN_IGNORE_ALL_WORKSPACES_MODE);
         EnumListFilter<YarnDependencyType> yarnDependencyTypeFilter = EnumListFilter.fromExcluded(excludedDependencyTypes);
 
         List<String> excludedWorkspaces = detectConfiguration.getValue(DetectProperties.DETECT_YARN_EXCLUDED_WORKSPACES);
         List<String> includedWorkspaces = detectConfiguration.getValue(DetectProperties.DETECT_YARN_INCLUDED_WORKSPACES);
-        return new YarnLockOptions(yarnDependencyTypeFilter, excludedWorkspaces, includedWorkspaces, monorepoMode);
+        return new YarnLockOptions(yarnDependencyTypeFilter, excludedWorkspaces, includedWorkspaces, yarnIgnoreAllWorkspacesMode);
     }
 
     public NugetInspectorOptions createNugetInspectorOptions() {

@@ -22,12 +22,14 @@
 * npm version 1 package-lock.json and npm-shrinkwrap.json file parsing has been restored.
 * The `detect.project.codelocation.unmap` property has been deprecated.
 * Changed [detect_product_long]'s JAR signing authority from Synopsys, Inc. to Black Duck Software, Inc.
+* Yarn 4 support does not require use of --detect.yarn.ignore.all.workspaces flag. Thus, properties like detect.yarn.dependency.types.excluded=NON_PRODUCTION are available for Yarn 4 projects.
 
 ### Resolved issues
 
 * (IDETECT-4517) - [detect_product_short] now correctly indicates a timeout failure occurred when multipart binary or container scans timeout during an upload.
 * (IDETECT-4540) - Multipart binary and container scans now correctly retry when authentication errors are received during transmission.
 * (IDETECT-4469) - Eliminating null (`\u0000`) and replacement (`\uFFFD`) characters during the processing of Python requirements.txt files to ensure successful extraction of dependency information.
+* (IDETECT-4447) - ID strings of detected Yarn project dependencies are now correctly formed. The warning message cited to report this bug has been improved to mean that the entries in the yarn.lock file that have not so far been resolved through package.json files, could not be resolved with any standard NPM packages either.
 
 ### Dependency updates
 
