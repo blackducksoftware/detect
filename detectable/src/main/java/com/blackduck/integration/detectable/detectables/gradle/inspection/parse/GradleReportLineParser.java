@@ -51,11 +51,13 @@ public class GradleReportLineParser {
     private String projectName;
     private String rootProjectName;
     private String projectParent;
+    private String projectPath;
     private int level;
     private String depthNumber;
     public static final String PROJECT_NAME_PREFIX = "projectName:";
     public static final String ROOT_PROJECT_NAME_PREFIX = "rootProjectName:";
     public static final String PROJECT_PARENT_PREFIX = "projectParent:";
+    public static final String PROJECT_PATH_PREFIX = "projectPath:";
     public static final String FILE_NAME_PREFIX = "fileName:";
 
     public GradleTreeNode parseLine(String line, Map<String, String> metadata) {
@@ -141,6 +143,7 @@ public class GradleReportLineParser {
         rootProjectName = metadata.getOrDefault(ROOT_PROJECT_NAME_PREFIX, "")+"_0"; // get root project name
         projectParent = metadata.getOrDefault(PROJECT_PARENT_PREFIX, "null"); // get project parent name
         String fileName = metadata.getOrDefault(FILE_NAME_PREFIX, "");
+        projectPath = metadata.getOrDefault(PROJECT_PATH_PREFIX, ""); // get project path Eg: :sub:foo
 
 
         // To avoid a bug caused by an edge case where child and parent modules have the same name causing the loop for checking rich version to stuck
@@ -217,10 +220,14 @@ public class GradleReportLineParser {
         // this loop checks all the parent modules for the current submodule upto rootProject for the use of the rich version for the current dependency
         // if the rich version is used return true and update the richVersionProject
         // this loop will stop at the root project and traverse all the parents upto root project, the change was done to support all projects which use a project structure where two child submodules with same name
-        if (gradleRichVersions.containsKey(currentProject) && gradleRichVersions.get(currentProject).containsKey(dependencyGroupName)) {
-            richVersionProject = currentProject;
-            richVersionUsed = true;
+        // In order to tight security for the same name child submodules and the parent who declares rich version, we make sure if the parent project we are checking comes in project path of current project
+        //Eg: if sub declares rich version and foo is child of both sub and subtwo, we change version if :sub:foo is the path we are parsing and do not change if we are parsing :subtwo:foo
+        if (gradleRichVersions.containsKey(currentProject) && gradleRichVersions.get(currentProject).containsKey(dependencyGroupName) && (currentProject.equals(rootProjectName) || projectPath.contains(currentProject.split("_")[0]))) {
+                richVersionProject = currentProject;
+                richVersionUsed = true;
         }
+
+
         if(!currentProject.equals(rootProjectName)) {
             for (String project : relationsMap.get(currentProject)) {
                 checkParentRichVersion(dependencyGroupName, project);
