@@ -195,16 +195,15 @@ public class GradleReportLineParser {
         if(gradleRichVersions.containsKey(rootProjectName) && gradleRichVersions.get(rootProjectName).containsKey(dependencyGroupName)) {
             richVersionProject = rootProjectName;
             return true;
-        } else {
-            String[] pathParts = projectPath.split(":");
-            for(int depth = 1; depth < pathParts.length; depth++) { // Since path is like :sub:foo we start at the first index which will be the parent at first level
-                if(gradleRichVersions.containsKey(pathParts[depth]+"_"+depth) && gradleRichVersions.get(pathParts[depth]+"_"+depth).containsKey(dependencyGroupName)) {
-                    richVersionProject = pathParts[depth]+"_"+depth;
-                    return true;
-                }
-            }
         }
 
+        String[] pathParts = projectPath.split(":");
+        for(int depth = 1; depth < pathParts.length; depth++) { // Since path is like :sub:foo we start at the first index which will be the parent at first level
+            if(gradleRichVersions.containsKey(pathParts[depth]+"_"+depth) && gradleRichVersions.get(pathParts[depth]+"_"+depth).containsKey(dependencyGroupName)) {
+                richVersionProject = pathParts[depth]+"_"+depth;
+                return true;
+            }
+        }
         return false;
     }
 
