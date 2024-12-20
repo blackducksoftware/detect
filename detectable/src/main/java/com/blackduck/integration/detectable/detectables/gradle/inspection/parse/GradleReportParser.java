@@ -26,7 +26,6 @@ public class GradleReportParser {
     public static final String PROJECT_DIRECTORY_PREFIX = "projectDirectory:";
     public static final String PROJECT_GROUP_PREFIX = "projectGroup:";
     public static final String PROJECT_NAME_PREFIX = "projectName:";
-    public static final String PROJECT_PARENT_PREFIX = "projectParent:";
     public static final String PROJECT_VERSION_PREFIX = "projectVersion:";
     public static final String PROJECT_PATH_PREFIX = "projectPath:";
     public static final String ROOT_PROJECT_NAME_PREFIX = "rootProjectName:";
@@ -93,9 +92,6 @@ public class GradleReportParser {
         } else if (line.startsWith(ROOT_PROJECT_NAME_PREFIX)) {
             String rootProjectName = line.substring(ROOT_PROJECT_NAME_PREFIX.length()).trim();
             metadata.put(ROOT_PROJECT_NAME_PREFIX, rootProjectName);
-        } else if (line.startsWith(PROJECT_PARENT_PREFIX)) {
-            String projectParent = line.substring(PROJECT_PARENT_PREFIX.length()).trim(); // get current project's parent name
-            metadata.put(PROJECT_PARENT_PREFIX, projectParent);
         } else if (line.startsWith(PROJECT_PATH_PREFIX)) {
             String projectParent = line.substring(PROJECT_PATH_PREFIX.length()).trim(); // get current project's path Eg: :subtwo:foo
             metadata.put(PROJECT_PATH_PREFIX, projectParent);
