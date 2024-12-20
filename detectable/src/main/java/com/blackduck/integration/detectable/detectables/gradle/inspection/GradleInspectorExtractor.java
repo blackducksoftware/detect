@@ -63,6 +63,8 @@ public class GradleInspectorExtractor {
             List<File> reportFiles = fileFinder.findFiles(outputDirectory,"*_dependencyGraph.txt");
             List<CodeLocation> codeLocations = new ArrayList<>();
 
+            //Get all the extraction files and sort all the files by depth number in ascending order starting from root to the deepest submodule,
+            // this will help in getting all the rich versions for parents, and then we move on to parse child submodules to see usage of those files
             File[] files = new File[reportFiles.size()];
             reportFiles.toArray(files);
             List<File> reportFilesSorted = Arrays.asList(sortFilesByDepth(files));
@@ -109,6 +111,7 @@ public class GradleInspectorExtractor {
         }
     }
 
+    // Sort all the files containing dependency extractions in ascending-order
     private File[] sortFilesByDepth(File[] files) {
         Arrays.sort(files, new Comparator<File>() {
             @Override
@@ -121,7 +124,7 @@ public class GradleInspectorExtractor {
             private int extractDepthNumber(String name) {
                 int i;
                 try {
-                    int s = name.indexOf("depth") + 5;
+                    int s = name.lastIndexOf("depth") + 5; // File name is like project__projectname__depth3_dependencyGraph.txt, we extract the number after depth
                     int e = name.indexOf("_dependencyGraph");
                     String number = name.substring(s, e);
                     i = Integer.parseInt(number);

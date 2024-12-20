@@ -1,10 +1,11 @@
 package com.blackduck.integration.detectable.detectables.gradle.inspection.parse;
 
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Arrays;
-import java.util.ArrayList;
+
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -36,19 +37,19 @@ public class GradleReportLineParser {
     // The nested map has dependencies with their versions and each
     // module will have its own nested map.
     private final Map<String, Map<String, String>> transitiveRichVersions = new HashMap<>();
-
-    // This map is handling all the child-parent relationships which are found in the entire project
-    // with each child as a key and their respective parent as the value.
-    private final Map<String, String> relationsMap = new HashMap<>();
+    // tracks the project where rich version was declared
     private String richVersionProject = null;
+    // tracks if rich version was declared while parsing the previous line
     private boolean richVersionDeclared = false;
     private String projectName;
     private String rootProjectName;
-    private String projectParent;
+    private String projectPath;
     private int level;
+    private String depthNumber;
     public static final String PROJECT_NAME_PREFIX = "projectName:";
     public static final String ROOT_PROJECT_NAME_PREFIX = "rootProjectName:";
-    public static final String PROJECT_PARENT_PREFIX = "projectParent:";
+    public static final String PROJECT_PATH_PREFIX = "projectPath:";
+    public static final String FILE_NAME_PREFIX = "fileName:";
 
     public GradleTreeNode parseLine(String line, Map<String, String> metadata) {
         level = parseTreeLevel(line);
@@ -129,15 +130,27 @@ public class GradleReportLineParser {
             }
         }
 
-        projectName = metadata.getOrDefault(PROJECT_NAME_PREFIX, "orphanProject");
-        rootProjectName = metadata.getOrDefault(ROOT_PROJECT_NAME_PREFIX, "");
-        projectParent = metadata.getOrDefault(PROJECT_PARENT_PREFIX, "null");
+        projectName = metadata.getOrDefault(PROJECT_NAME_PREFIX, "orphanProject"); // get project name from metadata
+        rootProjectName = metadata.getOrDefault(ROOT_PROJECT_NAME_PREFIX, "")+"_0"; // get root project name
+        String fileName = metadata.getOrDefault(FILE_NAME_PREFIX, "");
+        projectPath = metadata.getOrDefault(PROJECT_PATH_PREFIX, ""); // get project path Eg: :sub:foo
 
-        addRelation();
+
+        // To avoid a bug caused by an edge case where child and parent modules have the same name causing the loop for checking rich version to stuck
+        // in an infinite state, we are going to suffix the name of the project with the depth number
+        int s = fileName.lastIndexOf("depth") + 5; // File name is like project__projectname__depth3_dependencyGraph.txt, we extract the number after depth
+        int e = fileName.indexOf("_dependencyGraph");
+        depthNumber = fileName.substring(s, e);
+        projectName = projectName+"_"+depthNumber;
+
+        // Example of dependency using rich version:
+        // --- com.graphql-java:graphql-java:{strictly [21.2, 21.3]; prefer 21.3; reject [20.6, 19.5, 18.2]} -> 21.3 direct depenendency, will be stored in rich versions, richVersionProject value will be current project
+        //        +--- com.graphql-java:java-dataloader:3.2.1 transitive needs to be stored
+        //          |    \--- org.slf4j:slf4j-api:1.7.30 -> 2.0.4 transitive needs to be stored
 
         if(gavPieces.size() == 3) {
             String dependencyGroupName = gavPieces.get(0) + ":" + gavPieces.get(1);
-            if(level == 0 && checkRichVersionUse(cleanedOutput)) {
+            if(level == 0 && checkRichVersionUse(cleanedOutput)) { // we only track rich versions if they are declared in direct dependencies
                 storeDirectRichVersion(dependencyGroupName, gavPieces);
             } else {
                 storeOrUpdateRichVersion(dependencyGroupName, gavPieces);
@@ -147,6 +160,7 @@ public class GradleReportLineParser {
         return gavPieces;
     }
 
+    // store the dependency where rich version was declared and update the global tracking values
     private void storeDirectRichVersion(String dependencyGroupName, List<String> gavPieces) {
         gradleRichVersions.computeIfAbsent(projectName, value -> new HashMap<>()).putIfAbsent(dependencyGroupName, gavPieces.get(2));
         richVersionProject = projectName;
@@ -154,39 +168,43 @@ public class GradleReportLineParser {
     }
 
     private void storeOrUpdateRichVersion(String dependencyGroupName, List<String> gavPieces) {
+        // this condition is checking for rich version use for current direct dependency in one of the parent submodule of the current module and updates the current version
         if (checkParentRichVersion(dependencyGroupName)) {
             gavPieces.set(2, gradleRichVersions.get(richVersionProject).get(dependencyGroupName));
         } else if(checkIfTransitiveRichVersion() && transitiveRichVersions.containsKey(richVersionProject) && transitiveRichVersions.get(richVersionProject).containsKey(dependencyGroupName)) {
+            // this is checking if we are parsing a transitive dependency and that transitive
+            // dependency has already been memoized for the use of rich version
             gavPieces.set(2, transitiveRichVersions.get(richVersionProject).get(dependencyGroupName));
         } else if (checkIfTransitiveRichVersion() && richVersionDeclared) {
+            // if while parsing the last direct dependency, we found the use of rich version, we store the version resolved for this transitive dependency
             transitiveRichVersions.computeIfAbsent(richVersionProject, value -> new HashMap<>()).putIfAbsent(dependencyGroupName, gavPieces.get(2));
         } else {
+            // no use of rich versions found
             richVersionDeclared = false;
             richVersionProject = null;
         }
     }
 
-    private void addRelation() {
-        if (!projectParent.equals("null") && !projectParent.contains("root project")) {
-            String parentString = projectParent.substring(projectParent.lastIndexOf(":") + 1, projectParent.lastIndexOf("'"));
-            relationsMap.putIfAbsent(projectName, parentString);
-        } else if (!projectParent.equals("null") && !projectName.equals(rootProjectName)) {
-            relationsMap.putIfAbsent(projectName, rootProjectName);
-        } else {
-            relationsMap.putIfAbsent(rootProjectName, null);
-        }
-    }
-
     private boolean checkParentRichVersion(String dependencyGroupName) {
-        String currentProject = projectName;
-        while (currentProject != null) {
-            if (gradleRichVersions.containsKey(currentProject) && gradleRichVersions.get(currentProject).containsKey(dependencyGroupName)) {
-                richVersionProject = currentProject;
+        // this method checks all the parent modules for the current submodule upto rootProject for the use of the rich version for the current dependency
+        // if the rich version is used return true and update the richVersionProject
+        // We will check if rich version was declared in root project, if yes immediately apply it, otherwise parse the whole project path for the current submodule
+        // path will start from level 1 Eg: :sub:foo, we will check dependency in :sub_1 first foo_2 next where the name is similar to project name we put in the gradle Rich versions map.
+        //Eg: if sub declares rich version and foo is child of both sub and subtwo, we change version if :sub:foo is the path we are parsing and do not change if we are parsing :subtwo:foo
+
+        if(gradleRichVersions.containsKey(rootProjectName) && gradleRichVersions.get(rootProjectName).containsKey(dependencyGroupName)) {
+            richVersionProject = rootProjectName;
+            return true;
+        }
+
+        String[] pathParts = projectPath.split(":");
+        for(int depth = 1; depth < pathParts.length; depth++) { // Since path is like :sub:foo we start at the first index which will be the parent at first level
+            if(gradleRichVersions.containsKey(pathParts[depth]+"_"+depth) && gradleRichVersions.get(pathParts[depth]+"_"+depth).containsKey(dependencyGroupName)) {
+                richVersionProject = pathParts[depth]+"_"+depth;
                 return true;
             }
-            currentProject = relationsMap.getOrDefault(currentProject, null);
         }
-       return false;
+        return false;
     }
 
     private boolean checkRichVersionUse(String dependencyLine) {
