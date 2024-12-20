@@ -36,7 +36,7 @@ public class ScaasOrBdbaContainerScanStepRunner extends AbstractContainerScanSte
 
         if (uploadUrl != null && !uploadUrl.isEmpty()) {
             ScassScanStepRunner scassScanStepRunner = new ScassScanStepRunner(blackDuckRunData);
-            scassScanStepRunner.runScassScan(Optional.of(containerImage), scanCreationResponse);
+            scassScanStepRunner.runScassScan(Optional.of(containerImage), scanCreationResponse, operationRunner.getDirectoryManager().getContainerOutputDirectory());
         } else {
             BdbaScanStepRunner bdbaScanStepRunner = new BdbaScanStepRunner(operationRunner);
             bdbaScanStepRunner.runBdbaScan(projectNameVersion, blackDuckRunData, Optional.of(containerImage), scanId, scanType);
