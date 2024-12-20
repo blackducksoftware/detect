@@ -15,9 +15,9 @@ public class Version implements Comparable<Version> {
             this.patch = patch;
         }
         public Version(String[] parts) {
-            this(   parts.length > 0 && !parts[0].isBlank()? Integer.parseInt(parts[0]) : 0,
-                    parts.length > 1 && !parts[1].isBlank()? Integer.parseInt(parts[1]) : 0, 
-                    parts.length > 2 && !parts[2].isBlank()? Integer.parseInt(parts[2]) : 0);
+            this(parts.length > 0 && parts[0] != null && !parts[0].trim().isEmpty()? Integer.parseInt(parts[0]) : 0, 
+                 parts.length > 1 && parts[1] != null && !parts[1].trim().isEmpty()? Integer.parseInt(parts[1]) : 0, 
+                 parts.length > 2 && parts[2] != null && !parts[2].trim().isEmpty()? Integer.parseInt(parts[2]) : 0);
         }
         
         @Override
