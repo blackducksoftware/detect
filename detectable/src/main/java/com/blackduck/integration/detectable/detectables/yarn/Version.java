@@ -19,7 +19,7 @@ public class Version implements Comparable<Version> {
         }
 
         private int getPartOfVersion(String[] parts, int index) {
-             return parts.length > index && parts[index] != null && !parts[index].trim().isEmpty()? Integer.parseInt(parts[index]) : 0
+             return parts.length > index && parts[index] != null && !parts[index].trim().isEmpty()? Integer.parseInt(parts[index]) : 0;
         }
         
         @Override
