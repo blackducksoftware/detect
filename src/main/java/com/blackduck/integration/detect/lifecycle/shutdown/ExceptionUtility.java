@@ -60,7 +60,7 @@ public class ExceptionUtility {
         } else if (e instanceof BlackDuckTimeoutExceededException || e instanceof IntegrationTimeoutException) {
             return ExitCodeType.FAILURE_TIMEOUT;
         } else if (e instanceof BlackDuckApiException) {
-            return ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR;
+            return ExitCodeType.FAILURE_BLACKDUCK_DUPLICATE_PROJECT_ERROR;
         } else if (e instanceof IntegrationRestException) {
             return ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR;
         } else if (e instanceof IntegrationException) {
