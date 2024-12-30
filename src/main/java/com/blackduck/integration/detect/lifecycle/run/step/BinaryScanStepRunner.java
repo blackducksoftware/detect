@@ -18,6 +18,7 @@ import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.data.DockerTargetData;
 import com.blackduck.integration.detect.lifecycle.run.data.ScanCreationResponse;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
+import com.blackduck.integration.detect.lifecycle.run.operation.blackduck.ScassScanInitiationResult;
 import com.blackduck.integration.detect.tool.binaryscanner.BinaryScanOptions;
 import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.sca.upload.rest.model.response.BinaryFinishResponseContent;
@@ -47,9 +48,14 @@ public class BinaryScanStepRunner {
         Optional<File> binaryScanFile = determineBinaryScanFileTarget(dockerTargetData, binaryTargets);
         if (binaryScanFile.isPresent()) {            
             // call BlackDuck to create a scanID and determine where to upload the file
-            ScanCreationResponse scanCreationResponse = operationRunner.initiateScan(projectNameVersion, binaryScanFile.get(), blackDuckRunData,
-                    "BINARY", gson);
-            
+            ScassScanInitiationResult initResult = operationRunner.initiateScan(
+                projectNameVersion, binaryScanFile.get(),
+                operationRunner.getDirectoryManager().getBinaryOutputDirectory(),
+                blackDuckRunData, "BINARY", gson
+            );
+
+            ScanCreationResponse scanCreationResponse = initResult.getScanCreationResponse();
+
             String scanId = scanCreationResponse.getScanId();
             String uploadUrl = scanCreationResponse.getUploadUrl();
             
@@ -57,7 +63,7 @@ public class BinaryScanStepRunner {
                 // This is a SCASS capable server server and SCASS is enabled.
                 ScassScanStepRunner scassScanStepRunner = new ScassScanStepRunner(blackDuckRunData);
                 
-                scassScanStepRunner.runScassScan(binaryScanFile, scanCreationResponse, operationRunner.getDirectoryManager().getBinaryOutputDirectory());       
+                scassScanStepRunner.runScassScan(Optional.of(initResult.getZipFile()), scanCreationResponse);       
             } else {
                 // This is a SCASS capable server server but SCASS is not enabled.
                 BdbaScanStepRunner bdbaScanStepRunner = new BdbaScanStepRunner(operationRunner);

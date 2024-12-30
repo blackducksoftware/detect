@@ -28,7 +28,7 @@ import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
 import com.blackduck.integration.detect.lifecycle.run.operation.blackduck.BdioUploadResult;
 import com.blackduck.integration.detect.lifecycle.run.step.container.AbstractContainerScanStepRunner;
 import com.blackduck.integration.detect.lifecycle.run.step.container.PreScassContainerScanStepRunner;
-import com.blackduck.integration.detect.lifecycle.run.step.container.ScaasOrBdbaContainerScanStepRunner;
+import com.blackduck.integration.detect.lifecycle.run.step.container.ScassOrBdbaContainerScanStepRunner;
 import com.blackduck.integration.detect.lifecycle.run.step.utility.StepHelper;
 import com.blackduck.integration.detect.tool.iac.IacScanCodeLocationData;
 import com.blackduck.integration.detect.tool.impactanalysis.service.ImpactAnalysisBatchOutput;
@@ -148,8 +148,8 @@ public class IntelligentModeStepRunner {
             DetectTool.CONTAINER_SCAN,
             "Container Scanner",
             () -> {
-                AbstractContainerScanStepRunner containerScanStepRunner = ScaasOrBdbaContainerScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion()) ?
-                    new ScaasOrBdbaContainerScanStepRunner(operationRunner, projectNameVersion, blackDuckRunData, gson) :
+                AbstractContainerScanStepRunner containerScanStepRunner = ScassOrBdbaContainerScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion()) ?
+                    new ScassOrBdbaContainerScanStepRunner(operationRunner, projectNameVersion, blackDuckRunData, gson) :
                     new PreScassContainerScanStepRunner(operationRunner, projectNameVersion, blackDuckRunData, gson);
                 invokeContainerScanningWorkflow(containerScanStepRunner, scanIdsToWaitFor, codeLocationAccumulator);
             }
