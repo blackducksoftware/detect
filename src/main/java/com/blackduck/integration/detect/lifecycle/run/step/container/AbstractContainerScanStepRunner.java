@@ -78,7 +78,6 @@ public abstract class AbstractContainerScanStepRunner {
             operationRunner.publishContainerFailure(e);
             return Optional.empty();
         }
-        //return Optional.ofNullable(scanId);
     }
 
     protected abstract UUID performBlackduckInteractions() throws IOException, IntegrationException, OperationException;

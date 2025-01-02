@@ -33,7 +33,6 @@ public class PreScassContainerScanStepRunner extends AbstractContainerScanStepRu
         super(operationRunner, projectNameVersion, blackDuckRunData, gson);
         projectGroupName = operationRunner.calculateProjectGroupOptions().getProjectGroup();
         containerImageSizeInBytes = containerImage != null && containerImage.exists() ? containerImage.length() : 0;
-
     }
 
     @Override
