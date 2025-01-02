@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
@@ -73,6 +74,14 @@ public class DetectZipUtil { //TODO: Add method for extracting without the wrapp
                     }
                 }
             }
+        }
+    }
+
+    public static boolean isZipFile(File file) throws IOException {
+        try (ZipFile zipFile = new ZipFile(file)) {
+            return true;
+        } catch (ZipException e) {
+            return false;
         }
     }
 }

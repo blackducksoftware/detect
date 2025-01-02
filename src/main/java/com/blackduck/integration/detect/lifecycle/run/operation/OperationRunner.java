@@ -1607,7 +1607,7 @@ public class OperationRunner {
         MessageDigest md = DigestUtils.getMd5Digest();
         Encoder encoder = Base64.getEncoder();
 
-        try (ZipFile zipFile = new ZipFile(file)) {
+        if (DetectZipUtil.isZipFile(file)) {
             try (FileInputStream fis = new FileInputStream(file)) {
                 byte[] buffer = new byte[8192];
                 int bytesRead;
@@ -1618,7 +1618,7 @@ public class OperationRunner {
                 initResult.setZipFile(file);
                 initResult.setZipMd5(encoder.encodeToString(md5Bytes));
             }
-        } catch (ZipException e) {
+        } else {
             Map<String, Path> entries = new HashMap<>();
             entries.put(file.getName(), file.toPath());
 
@@ -1626,12 +1626,11 @@ public class OperationRunner {
 
             initResult.setZipFile(zipFile);
 
-            FileOutputStream fos = new FileOutputStream(zipFile);
-
-            DigestOutputStream dos = new DigestOutputStream(fos, md);
-            DetectZipUtil.zip(dos, entries);
-
-            initResult.setZipMd5(encoder.encodeToString(md.digest()));
+            try (FileOutputStream fos = new FileOutputStream(zipFile);
+                    DigestOutputStream dos = new DigestOutputStream(fos, md)) {
+                DetectZipUtil.zip(dos, entries);
+                initResult.setZipMd5(encoder.encodeToString(md.digest()));
+            }
         }
     }
 }
