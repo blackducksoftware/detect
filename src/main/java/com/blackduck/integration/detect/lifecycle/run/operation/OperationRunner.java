@@ -7,24 +7,30 @@ import static com.blackduck.integration.detect.workflow.componentlocationanalysi
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Base64.Encoder;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipException;
+import java.util.zip.ZipFile;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -75,6 +81,7 @@ import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.data.DockerTargetData;
 import com.blackduck.integration.detect.lifecycle.run.data.ScanCreationResponse;
 import com.blackduck.integration.detect.lifecycle.run.operation.blackduck.BdioUploadResult;
+import com.blackduck.integration.detect.lifecycle.run.operation.blackduck.ScassScanInitiationResult;
 import com.blackduck.integration.detect.lifecycle.run.singleton.BootSingletons;
 import com.blackduck.integration.detect.lifecycle.run.singleton.EventSingletons;
 import com.blackduck.integration.detect.lifecycle.run.singleton.UtilitySingletons;
@@ -120,6 +127,7 @@ import com.blackduck.integration.detect.tool.signaturescanner.operation.CreateSi
 import com.blackduck.integration.detect.tool.signaturescanner.operation.PublishSignatureScanReports;
 import com.blackduck.integration.detect.tool.signaturescanner.operation.SignatureScanOperation;
 import com.blackduck.integration.detect.tool.signaturescanner.operation.SignatureScanOuputResult;
+import com.blackduck.integration.detect.util.DetectZipUtil;
 import com.blackduck.integration.detect.util.bdio.protobuf.DetectProtobufBdioHeaderUtil;
 import com.blackduck.integration.detect.util.finder.DetectExcludedDirectoryFilter;
 import com.blackduck.integration.detect.workflow.ArtifactResolver;
@@ -574,7 +582,7 @@ public class OperationRunner {
         });
     }
     
-    public ScanCreationResponse initiateScan(NameVersion projectNameVersion, File binaryFile, BlackDuckRunData blackDuckRunData, String type, Gson gson) throws OperationException, IntegrationException {
+    public ScassScanInitiationResult initiateScan(NameVersion projectNameVersion, File binaryFile, File outputDirectory, BlackDuckRunData blackDuckRunData, String type, Gson gson) throws OperationException, IntegrationException {
         String projectGroupName = calculateProjectGroupOptions().getProjectGroup();
         
         CodeLocationNameManager codeLocationNameManager = getCodeLocationNameManager();
@@ -589,14 +597,11 @@ public class OperationRunner {
             binaryFile.length());
         
         File bdioHeaderFile;
-        String computedMd5;
+
+        ScassScanInitiationResult initResult = new ScassScanInitiationResult();
         try {
-            bdioHeaderFile = detectProtobufBdioHeaderUtil.createProtobufBdioHeader(
-                    getDirectoryManager().getBinaryOutputDirectory());
-            
-            // TODO this is not a cheap operation as we have to essentially read the entire file and compute the MD5.
-            // IF this file is a zip, and we created that zip, we can in theory compute the MD5 at the same time.
-            computedMd5 = computeMD5Base64(binaryFile);
+            bdioHeaderFile = detectProtobufBdioHeaderUtil.createProtobufBdioHeader(outputDirectory);
+            zipFileIfNecessaryAndComputeMD5Base64(binaryFile, initResult, outputDirectory);
         } catch (IOException e) {
             throw new IntegrationException("Unable to perform file computations. Ensure the binary file and output directory are accessible.");
         }
@@ -604,7 +609,9 @@ public class OperationRunner {
         String operationName = "Upload Binary Scan BDIO Header to Initiate Scan";
         
         ScanCreationResponse scanCreationResponse 
-            = uploadBdioHeaderToInitiateScassScan(blackDuckRunData, bdioHeaderFile, operationName, gson, computedMd5);
+            = uploadBdioHeaderToInitiateScassScan(blackDuckRunData, bdioHeaderFile, operationName, gson, initResult.getZipMd5());
+
+        initResult.setScanCreationResponse(scanCreationResponse);
 
         String scanId = scanCreationResponse.getScanId();
         
@@ -615,7 +622,7 @@ public class OperationRunner {
         String scanIdString = scanId.toString();
         logger.debug("Scan initiated with scan service. Scan ID received: {}", scanIdString);
         
-        return scanCreationResponse;
+        return initResult;
     }
 
     public void uploadBdioEntries(BlackDuckRunData blackDuckRunData, UUID bdScanId) throws IntegrationException, IOException {
@@ -1596,16 +1603,34 @@ public class OperationRunner {
         return this.detectConfigurationFactory;
     }
     
-    public String computeMD5Base64(File file) throws IOException {
-        try (FileInputStream fis = new FileInputStream(file)) {
-            MessageDigest md = DigestUtils.getMd5Digest();
-            byte[] buffer = new byte[8192];
-            int bytesRead;
-            while ((bytesRead = fis.read(buffer)) != -1) {
-                md.update(buffer, 0, bytesRead);
+    private void zipFileIfNecessaryAndComputeMD5Base64(File file, ScassScanInitiationResult initResult, File outputDirectory) throws IOException {
+        MessageDigest md = DigestUtils.getMd5Digest();
+        Encoder encoder = Base64.getEncoder();
+
+        if (DetectZipUtil.isZipFile(file)) {
+            try (FileInputStream fis = new FileInputStream(file)) {
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                while ((bytesRead = fis.read(buffer)) != -1) {
+                    md.update(buffer, 0, bytesRead);
+                }
+                byte[] md5Bytes = md.digest();
+                initResult.setZipFile(file);
+                initResult.setZipMd5(encoder.encodeToString(md5Bytes));
             }
-            byte[] md5Bytes = md.digest();
-            return Base64.getEncoder().encodeToString(md5Bytes);
+        } else {
+            Map<String, Path> entries = new HashMap<>();
+            entries.put(file.getName(), file.toPath());
+
+            File zipFile = new File(outputDirectory, "scass-upload.zip");
+
+            initResult.setZipFile(zipFile);
+
+            try (FileOutputStream fos = new FileOutputStream(zipFile);
+                    DigestOutputStream dos = new DigestOutputStream(fos, md)) {
+                DetectZipUtil.zip(dos, entries);
+                initResult.setZipMd5(encoder.encodeToString(md.digest()));
+            }
         }
     }
 }
