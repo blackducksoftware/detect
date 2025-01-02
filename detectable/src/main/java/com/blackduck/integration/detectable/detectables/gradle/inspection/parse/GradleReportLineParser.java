@@ -138,10 +138,12 @@ public class GradleReportLineParser {
 
         // To avoid a bug caused by an edge case where child and parent modules have the same name causing the loop for checking rich version to stuck
         // in an infinite state, we are going to suffix the name of the project with the depth number
-        int s = fileName.lastIndexOf("depth") + 5; // File name is like project__projectname__depth3_dependencyGraph.txt, we extract the number after depth
-        int e = fileName.indexOf("_dependencyGraph");
-        depthNumber = fileName.substring(s, e);
-        projectName = projectName+"_"+depthNumber;
+        if(fileName != null && !fileName.isEmpty()) {
+            int s = fileName.lastIndexOf("depth") + 5; // File name is like project__projectname__depth3_dependencyGraph.txt, we extract the number after depth
+            int e = fileName.indexOf("_dependencyGraph");
+            depthNumber = fileName.substring(s, e);
+            projectName = projectName + "_" + depthNumber;
+        }
 
         // Example of dependency using rich version:
         // --- com.graphql-java:graphql-java:{strictly [21.2, 21.3]; prefer 21.3; reject [20.6, 19.5, 18.2]} -> 21.3 direct depenendency, will be stored in rich versions, richVersionProject value will be current project
