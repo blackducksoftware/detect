@@ -1,0 +1,7 @@
+DETECT META DATA START
+rootProjectDirectory:/path/to/multimodule/project/simple
+rootProjectPath::
+rootProjectGroup:com.blackduck.integration
+rootProjectName:simple
+rootProjectVersion:1.1.1
+DETECT META DATA END

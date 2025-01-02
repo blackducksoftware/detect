@@ -38,7 +38,8 @@ public class GradleInspectorScriptCreatorTest {
             Collections.emptyList(),
             excludedConfigurationNames,
             includedConfigurationNames,
-            gradleInspectorRepositoryUrl
+            gradleInspectorRepositoryUrl,
+            false
         );
 
         Configuration configuration = createFreemarkerConfiguration();

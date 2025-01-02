@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '10.1.0-SIGQA2-SNAPSHOT'
+version = '10.2.0-SIGQA5'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
@@ -258,7 +258,7 @@ task signJar() {
     finalizedBy 'verifyJar'
     doLast {
         exec {
-            commandLine 'jarsigner', '-tsa', 'http://rfc3161timestamp.globalsign.com/advanced', '-storetype', 'pkcs12', '-storepass', "${jarSigningKeystorePassword}", '-keystore', "${jarSigningKeystorePath}", "${createArtifactName()}", "${jarSigningCertificateAlias}"
+            commandLine 'signing-client', '--username', "${System.getenv('SIGNING_USER')}", '--password', "env:SIGNING_TOKEN", '--server', "${System.getenv('SIGNING_SERVER')}", '--port', '8000', '--signer', 'jarsigner', '--output', "${createArtifactName()}", "${createArtifactName()}"
         }
     }
 }

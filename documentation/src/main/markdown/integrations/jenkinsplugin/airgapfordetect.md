@@ -1,5 +1,5 @@
 # Jenkins Air Gap mode
-The [company_name] for Jenkins plugin enables you to configure an Air Gap option to run [detect_product_short]. 
+The [detect_product_long] for Jenkins plugin enables you to configure an Air Gap option to run [detect_product_short]. 
 
 Before you can see the [detect_product_short] Air Gap option on the Global Tool Configuration page, you must install the [detect_product_short] plugin.
 

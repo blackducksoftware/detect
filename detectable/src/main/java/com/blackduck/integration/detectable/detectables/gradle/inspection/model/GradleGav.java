@@ -29,4 +29,9 @@ public class GradleGav implements GradleGavId {
     public LazyId toDependencyId() {
         return LazyId.fromString(String.format("%s:%s:%s", getGroup(), getName(), getVersion()));
     }
+
+    @Override
+    public String toString() {
+        return getGroup() + ":" + getName() + ":" + getVersion();
+    }
 }

@@ -1,5 +1,5 @@
 # Configuring the Jenkins Plugin
-Use the following process to configure the [company_name] [detect_product_short] for Jenkins plugin.  Note that the supported credential formats are user name and password or API token.  SAML is not supported.
+Use the following process to configure the [detect_product_long] for Jenkins plugin.  Note that the supported credential formats are user name and password or API token.  SAML is not supported.
 
 1. After installing, navigate to **Manage Jenkins** > **Configure System**.
 1. Navigate to the **[detect_product_short]** section, and complete the following.

@@ -11,7 +11,15 @@ As a [detect_product_short] and Azure DevOps user, [detect_product_short] Extens
 
 Using the [detect_product_short] Extension for Azure DevOps together with [bd_product_short] enables you to use Azure DevOps to automatically create [bd_product_short] projects from your Azure DevOps projects.
 
-**Note:** The Azure plugin currently supports [detect_product_short] 9.X.
+<note type="Note">The Azure plugin currently supports [detect_product_short] 9.x or greater.</note>
+
+
+   <figure>
+    <img src="../azureplugin/images/bd-extension.png"
+         alt="Plugin">
+    <figcaption>Plugin</figcaption>
+</figure>
+
 
 ## Invoking [detect_product_short]
 It is recommended to invoke [detect_product_short] from the CI (build) pipeline. Scanning during CI enables [detect_product_short] to break your application build, which is effective for enforcing policies like preventing the use of disallowed or vulnerable components.
@@ -19,7 +27,7 @@ It is recommended to invoke [detect_product_short] from the CI (build) pipeline.
    <figure>
     <img src="../azureplugin/images/introscreen.png"
          alt="Intro">
-    <figcaption>Intro screen</figcaption>
+    <figcaption>ADO Tasks screen</figcaption>
 </figure>
 
 ## Basic workflow

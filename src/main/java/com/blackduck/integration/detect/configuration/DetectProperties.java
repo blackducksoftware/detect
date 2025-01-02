@@ -438,6 +438,13 @@ public class DetectProperties {
             .setHelp("When set to true, user will be able to scan and discover copyright names in Black Duck. Corresponding Signature Scanner CLI Argument: --copyright-search.")
             .setGroups(DetectGroup.SIGNATURE_SCANNER)
             .build();
+    
+    public static final BooleanProperty DETECT_BLACKDUCK_SIGNATURE_SCANNER_CSV_ARCHIVE =
+            BooleanProperty.newBuilder("detect.blackduck.signature.scanner.csv.archive", false)
+            .setInfo("Signature Scanner CSV Archive Output", DetectPropertyFromVersion.VERSION_10_2_0)
+            .setHelp("When set to true Signature Scanner output will be in CSV format. Corresponding Signature Scanner CLI Argument: --outputFormat csv for offline mode, --upload-csv for online mode.")
+            .setGroups(DetectGroup.SIGNATURE_SCANNER)
+            .build();
 
     public static final BooleanProperty DETECT_BLACKDUCK_SIGNATURE_SCANNER_DRY_RUN =
         BooleanProperty.newBuilder("detect.blackduck.signature.scanner.dry.run", false)
@@ -916,6 +923,17 @@ public class DetectProperties {
             .setGroups(DetectGroup.GRADLE, DetectGroup.GLOBAL)
             .build();
 
+    public static final BooleanProperty DETECT_GRADLE_ROOT_ONLY =
+            BooleanProperty.newBuilder("detect.gradle.root.only", false)
+                    .setInfo("Gradle Root Only Enabled", DetectPropertyFromVersion.VERSION_10_1_0)
+                    .setHelp(
+                            "If set to true, Gradle Native Inspector will only evaluate root project dependencies.",
+                            "This property overrides other inclusion/exclusion rules and therefore should not be combined with detect.gradle.excluded.projects, detect.gradle.excluded.project.paths, detect.gradle.included.projects, or detect.gradle.included.project.paths."
+                    )
+                    .setGroups(DetectGroup.GRADLE, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
+
     public static final NullablePathProperty DETECT_HEX_REBAR3_PATH =
         NullablePathProperty.newBuilder("detect.hex.rebar3.path")
             .setInfo("Rebar3 Executable", DetectPropertyFromVersion.VERSION_3_0_0)
@@ -1217,6 +1235,13 @@ public class DetectProperties {
             .setExample("/home/<username>/blackduck/scan-outputs")
             .build();
 
+    public static final NullablePathProperty DETECT_OPAM_PATH =
+            NullablePathProperty.newBuilder("detect.opam.path")
+                    .setInfo("Opam Executable", DetectPropertyFromVersion.VERSION_10_1_0)
+                    .setHelp("The path to the opam executable.")
+                    .setGroups(DetectGroup.OPAM, DetectGroup.GLOBAL)
+                    .build();
+
     public static final NullablePathProperty DETECT_TOOLS_OUTPUT_PATH =
         NullablePathProperty.newBuilder("detect.tools.output.path")
             .setInfo("Detect Tools Output Path", DetectPropertyFromVersion.VERSION_5_6_0)
@@ -1401,14 +1426,6 @@ public class DetectProperties {
             .setInfo("Scan Name Suffix", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp("A suffix to the name of the scans created by Detect.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING, DetectGroup.GLOBAL)
-            .setCategory(DetectCategory.Advanced)
-            .build();
-
-    public static final BooleanProperty DETECT_PROJECT_CODELOCATION_UNMAP =
-        BooleanProperty.newBuilder("detect.project.codelocation.unmap", false)
-            .setInfo("Unmap All Other Scans for Project", DetectPropertyFromVersion.VERSION_4_0_0)
-            .setHelp("If set to true, unmaps all other scans mapped to the project version produced by the current run of Detect.")
-            .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
             .setCategory(DetectCategory.Advanced)
             .build();
 
@@ -1715,7 +1732,7 @@ public class DetectProperties {
             .setGroups(DetectGroup.PATHS, DetectGroup.GLOBAL)
             .build();
 
-    public static final BooleanProperty DETECT_YARN_MONOREPO_MODE =
+    public static final BooleanProperty DETECT_YARN_IGNORE_ALL_WORKSPACES_MODE =
         BooleanProperty.newBuilder("detect.yarn.ignore.all.workspaces", false)
             .setInfo("Ignore All Workspaces", DetectPropertyFromVersion.VERSION_9_4_0)
             .setHelp("All workspaces are ignored by the Yarn detector for increased performance and precision to scan a massive codebase.")
@@ -1854,6 +1871,18 @@ public class DetectProperties {
     //#endregion Active Properties
 
     //#region Deprecated Properties
+
+    public static final BooleanProperty DETECT_PROJECT_CODELOCATION_UNMAP =
+        BooleanProperty.newBuilder("detect.project.codelocation.unmap", false)
+            .setInfo("Unmap All Other Scans for Project", DetectPropertyFromVersion.VERSION_4_0_0)
+            .setHelp("If set to true, unmaps all other scans mapped to the project version produced by the current run of Detect.")
+            .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
+            .setCategory(DetectCategory.Advanced)
+            .setDeprecated(
+                "This property has been deprecated.",
+                DetectMajorVersion.ELEVEN
+            )
+            .build();
 
     // Can't take in the DetectProperty<?> due to an illegal forward reference :(
     private static String createTypeFilterHelpText(String exclusionTypePlural) {

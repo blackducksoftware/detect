@@ -214,6 +214,26 @@ public class YarnLockParserTest {
 
         assertEntry(yarnLock, "cssstyle", ">= 0.2.37 < 0.3.0", "0.2.37", new YarnLockDependency("cssom", "0.3.x", false));
     }
+    
+    @Test
+    void testYarn4EscapedForwardSlashScenario1() {
+        List<String> yarnLockText = new ArrayList<>();
+        yarnLockText.add("\"@amplitude/node@npm:~1.10.2\":");
+        yarnLockText.add("  version: 1.10.2");
+        yarnLockText.add("  \"@amplitude/identify\": ^1.10.2");
+        yarnLockText.add("  \"@amplitude/types\": ^1.10.2");
+        yarnLockText.add("  \"@amplitude/utils\": ^1.10.2");
+        yarnLockText.add("  resolution: \"@amplitude/node@npm:1.10.2::__archiveUrl=https%3A%2F%2Fpackages.atlassian.com%2Fapi%2Fnpm%2Fnpm-remote%2F%40amplitude%2Fnode%2F-%2Fnode-1.10.2.tgz\"");
+        yarnLockText.add("  dependencies:");
+        yarnLockText.add("    tslib: ^2.0.0");
+        yarnLockText.add("  checksum: 9b837b2a75b9c178a92dbc6181a40f3741d32fc393f89d0f18ac1ab1de6c826fd00f0a1a47526c645b930c02f5ce4e8bbec33d1ed8dc4de2d39eca9958923394");
+        yarnLockText.add("  languageName: node");
+        yarnLockText.add("  linkType: hard");
+        YarnLockParser yarnLockParser = createYarnLockParser();
+        YarnLock yarnLock = yarnLockParser.parseYarnLock(yarnLockText);
+
+        assertEntry(yarnLock, "@amplitude/node", "~1.10.2", "1.10.2", new YarnLockDependency("tslib", "^2.0.0", false));
+    }
 
     @Test
     void testSkipIrrelevantStuff() {

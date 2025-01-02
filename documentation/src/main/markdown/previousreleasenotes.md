@@ -1,6 +1,31 @@
 <!-- Check the support matrix to determine supported, non-current major version releases -->
 # Release notes for previous supported versions
 
+## Version 10.1.0
+
+### New features
+
+* npm lockfile and shrinkwrap detectors now ignore packages flagged as extraneous in the package-lock.json and npm-shrinkwrap.json files.
+* Support added for Opam Package Manager via [Opam Detector](packagemgrs/opam.md).
+* New Gradle Native Inspector option to only process the root dependencies of a Gradle project. See [detect.gradle.root.only](properties/detectors/gradle.md#gradle-root-only-enabled-advanced) for more details.
+
+### Changed features
+
+* npm version 1 package-lock.json and npm-shrinkwrap.json file parsing has been restored.
+* The `detect.project.codelocation.unmap` property has been deprecated.
+* Changed [detect_product_long]'s JAR signing authority from Synopsys, Inc. to Black Duck Software, Inc.
+
+### Resolved issues
+
+* (IDETECT-4517) - [detect_product_short] now correctly indicates a timeout failure occurred when multipart binary or container scans timeout during an upload.
+* (IDETECT-4540) - Multipart binary and container scans now correctly retry when authentication errors are received during transmission.
+* (IDETECT-4469) - Eliminating null (`\u0000`) and replacement (`\uFFFD`) characters during the processing of Python requirements.txt files to ensure successful extraction of dependency information.
+
+### Dependency updates
+
+* Upgraded and released [docker_inspector_name] version 11.1.0.
+* Upgraded to [project_inspector_name] v2024.12.1.
+
 ## Version 10.0.0
 
 [company_name] [solution_name] has been renamed [detect_product_long] with page links, documentation, and other URLs updated accordingly. Update any [detect_product_short] documentation, or other bookmarks you may have. See the [Domain Change FAQ](https://community.blackduck.com/s/article/Black-Duck-Domain-Change-FAQ).
@@ -38,6 +63,19 @@
 * Updated jackson-core library to version 2.15.0 to resolve a security vulnerability.
 * Upgraded and released Nuget Inspector version 2.0.0.
 * Upgraded and released [detect_product_short] Docker Inspector version 11.0.1
+
+## Version 9.10.1
+
+<note type="notice">`sig-repo.synopsys.com` and `detect.synopsys.com` are being deprecated. Please make use of `repo.blackduck.com` and `detect.blackduck.com` respectively.</note>
+* After February 2025, [detect_product_short] script download details will only be available via detect.blackduck.com.
+* See the [Domain Change FAQ for the deprecation of sig-repo](https://community.blackduck.com/s/question/0D5Uh00000Jq18XKAR/black-duck-sca-and-the-impact-of-decommissioning-of-sigrepo).
+<note type="important">It is essential to update to 9.10.1 before sig-repo is decommissioned.</note>
+
+<note type="note">It is recommended that customers continue to maintain `sig-repo.synopsys.com`, and `repo.blackduck.com` on their allow list until February 2025 when `sig-repo.synopsys.com` will be fully replaced by `repo.blackduck.com`.</note>
+
+### Changed features
+
+* Adds logic to pull necessary artifacts from the repo.blackduck.com repository. If this is not accessible, artifacts will be downloaded from the sig-repo.synopsys.com repository. 
 
 ## Version 9.10.0
 
@@ -259,6 +297,19 @@
 * Released and Upgraded Project Inspector to version 2021.9.10.
 * Released and Upgraded Nuget Inspector to version 1.1.0.
 * Fixed EsotericSoftware YAMLBeans library version to resolve critical severity [CVE-2023-24621](https://nvd.nist.gov/vuln/detail/CVE-2023-24621)
+
+## Version 8.11.2
+
+<note type="notice">`sig-repo.synopsys.com` and `detect.synopsys.com` are being deprecated. Please make use of `repo.blackduck.com` and `detect.blackduck.com` respectively.</note>
+* After February 2025, [detect_product_short] script download details will only be available via detect.blackduck.com.
+* See the [Domain Change FAQ for the deprecation of sig-repo](https://community.blackduck.com/s/question/0D5Uh00000Jq18XKAR/black-duck-sca-and-the-impact-of-decommissioning-of-sigrepo).
+<note type="important">It is essential to update to 8.11.2 before sig-repo is decommissioned.</note>
+
+<note type="note">It is recommended that customers continue to maintain `sig-repo.synopsys.com`, and `repo.blackduck.com` on their allow list until February 2025 when `sig-repo.synopsys.com` will be fully replaced by `repo.blackduck.com`.</note>
+
+### Changed features
+
+* Adds logic to pull necessary artifacts from the repo.blackduck.com repository. If this is not accessible, artifacts will be downloaded from the sig-repo.synopsys.com repository. 
 
 ## Version 8.11.1
 

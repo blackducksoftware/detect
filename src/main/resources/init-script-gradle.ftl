@@ -39,6 +39,7 @@ Set<String> projectNameExcludeFilter = convertStringToSet('${excludedProjectName
 Set<String> projectNameIncludeFilter = convertStringToSet('${includedProjectNames}')
 Set<String> projectPathExcludeFilter = convertStringToSet('${excludedProjectPaths}')
 Set<String> projectPathIncludeFilter = convertStringToSet('${includedProjectPaths}')
+Boolean rootOnly = Boolean.parseBoolean("${rootOnlyOption}")
 gradle.allprojects {
     // add a new task to each project to start the process of getting the dependencies
     task gatherDependencies(type: DefaultTask) {
@@ -59,7 +60,7 @@ gradle.allprojects {
             doFirst {
                 generateRootProjectMetaData(project, outputDirectoryPath)
 
-                if(shouldInclude(projectNameExcludeFilter, projectNameIncludeFilter, project.name) && shouldInclude(projectPathExcludeFilter, projectPathIncludeFilter, project.path)) {
+                if((rootOnly && isRoot(project)) || (!rootOnly && shouldInclude(projectNameExcludeFilter, projectNameIncludeFilter, project.name) && shouldInclude(projectPathExcludeFilter, projectPathIncludeFilter, project.path)) ) {
                     def dependencyTask = project.tasks.getByName('dependencies')
                     File projectOutputFile = findProjectOutputFile(project, outputDirectoryPath)
                     File projectFile = createProjectOutputFile(projectOutputFile)
@@ -86,7 +87,7 @@ gradle.allprojects {
             }
 
             doLast {
-                if(shouldInclude(projectNameExcludeFilter, projectNameIncludeFilter, project.name) && shouldInclude(projectPathExcludeFilter, projectPathIncludeFilter, project.path)) {
+                if((rootOnly && isRoot(project)) || (!rootOnly && shouldInclude(projectNameExcludeFilter, projectNameIncludeFilter, project.name) && shouldInclude(projectPathExcludeFilter, projectPathIncludeFilter, project.path))) {
                     File projectFile = findProjectOutputFile(project, outputDirectoryPath)
                     appendProjectMetadata(project, projectFile)
                 }
@@ -101,6 +102,11 @@ gradle.allprojects {
 // ## START methods invoked by tasks above
 <#-- Do not parse with Freemarker because Groovy variable replacement in template strings is the same as Freemarker template syntax. -->
 <#noparse>
+def isRoot(Project project) {
+    Project rootProject = project.gradle.rootProject;
+    return project.name.equals(rootProject.name)
+}
+
 def generateRootProjectMetaData(Project project, String outputDirectoryPath) {
     File outputDirectory = createTaskOutputDirectory(outputDirectoryPath)
     outputDirectory.mkdirs()

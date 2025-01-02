@@ -100,7 +100,8 @@ public class GradleInspectorDetectable extends Detectable {
             gradleCommand,
             gradleInspectorOptions.getproxyInfo(),
             gradleInspector,
-            extractionEnvironment.getOutputDirectory()
+            extractionEnvironment.getOutputDirectory(),
+            gradleInspectorOptions.getGradleInspectorScriptOptions().isRootOnly()
         );
     }
 }

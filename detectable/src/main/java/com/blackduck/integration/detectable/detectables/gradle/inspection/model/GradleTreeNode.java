@@ -39,8 +39,8 @@ public class GradleTreeNode extends Stringable {
     private final GradleGav gav;
     private final String projectName;
 
-    public static GradleTreeNode newProject(int level) {
-        return new GradleTreeNode(NodeType.PROJECT, level, null, "");
+    public static GradleTreeNode newProject(int level, String subProjectName) {
+        return new GradleTreeNode(NodeType.PROJECT, level, null, subProjectName);
     }
 
     public static GradleTreeNode newGav(int level, String group, String name, String version) {

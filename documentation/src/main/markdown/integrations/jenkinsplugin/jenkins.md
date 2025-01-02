@@ -1,6 +1,6 @@
 # Jenkins Plugin
 
-The [company_name] [detect_product_short] for Jenkins plugin enables you to install and run [detect_product_short] in your Jenkins instance. 
+The [detect_product_long] for Jenkins plugin enables you to install and run [detect_product_short] in your Jenkins instance. 
 
 [detect_product_short] scans code bases in your projects and folders to perform compositional analysis and functions as a [bd_product_short] intelligent scan client. [detect_product_short] sends scan results to [bd_product_short], which generates risk analysis when identifying open source components, licenses, and security vulnerabilities.
 

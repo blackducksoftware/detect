@@ -16,7 +16,7 @@ To verify the [detect_product_short] .jar:
 
 jarsigner -verify -strict {your [detect_product_short] .jar file}
 
-The output should be `jar verified.` (with no warnings).
+The output should be `jar verified.`.
 
 ## Checksum verification
 

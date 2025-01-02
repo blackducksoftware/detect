@@ -51,6 +51,7 @@ public class GradleInspectorScriptCreator {
         gradleScriptData.put("excludedConfigurationNames", toCommaSeparatedString(scriptOptions.getExcludedConfigurationNames()));
         gradleScriptData.put("includedConfigurationNames", toCommaSeparatedString(scriptOptions.getIncludedConfigurationNames()));
         gradleScriptData.put("customRepositoryUrl", scriptOptions.getGradleInspectorRepositoryUrl());
+        gradleScriptData.put("rootOnlyOption", Boolean.toString(scriptOptions.isRootOnly()));
 
         try {
             populateGradleScriptWithData(targetFile, gradleScriptData);

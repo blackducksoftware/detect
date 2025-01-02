@@ -13,8 +13,6 @@ import com.blackduck.integration.configuration.util.ConfigTestUtils;
 import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.data.ProductRunData;
-import com.blackduck.integration.detect.lifecycle.shutdown.CleanupDecision;
-import com.blackduck.integration.detect.lifecycle.shutdown.ShutdownDecider;
 
 public class ShutdownDeciderTest {
     @Test
@@ -38,6 +36,14 @@ public class ShutdownDeciderTest {
         CleanupDecision decision = new ShutdownDecider().decideCleanup(ConfigTestUtils.emptyConfig(), productRunData, null);
         assertTrue(decision.shouldPreserveBdio());
         assertTrue(decision.shouldPreserveScan());
+    }
+    
+    @Test
+    public void shouldPreserveCsvIfSpecifiedAndOffline() {
+        ProductRunData productRunData = new ProductRunData(BlackDuckRunData.offline(), null);
+        PropertyConfiguration configuration = ConfigTestUtils.configOf(Pair.of(DetectProperties.DETECT_BLACKDUCK_SIGNATURE_SCANNER_CSV_ARCHIVE.getKey(), "true"));
+        CleanupDecision decision = new ShutdownDecider().decideCleanup(configuration, productRunData, null);
+        assertTrue(decision.shouldPreserveCsv());
     }
 
     @Test

@@ -11,15 +11,15 @@
 * yarn.lock
 * package.json
 
-The Yarn detector reads both files (see *Yarn workspace support* below for information on
-other files the Yarn detector might read)
-to derive project and dependency information.
-The yarn.lock file must be up-to-date before [detect_product_short] runs.
-The package.json file specifies the direct dependencies for the project. [detect_product_short] adds these
-dependencies to the top level of the dependency graph that it builds.
+The Yarn detector reads both `yard.lock`, and `package.json` files, (see *Yarn workspace support* below for information on other files the Yarn detector might read) to derive project and dependency information.   
+* The yarn.lock file must be up-to-date before [detect_product_short] runs.   
+* The package.json file specifies the direct dependencies for the project. [detect_product_short] adds these
+dependencies to the top level of the dependency graph that it builds.   
 The yarn.lock file contains necessary details about those
 direct dependencies and their transient dependencies, enabling [detect_product_short]
 to build the complete graph of direct and transient dependencies.
+
+<note type="note">If any definition has a dependency as a non-dev direct or transitive reference, it and any transitives cease to be dev-only dependencies. If a component is a transitive to a non-dev dependency, it ceases to be a dev-only dependency, irrespective of any explicit references as a dev dependency.</note>
 
 ## Yarn workspace support
 

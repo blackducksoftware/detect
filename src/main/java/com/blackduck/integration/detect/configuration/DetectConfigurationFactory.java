@@ -398,7 +398,7 @@ public class DetectConfigurationFactory {
         Boolean isStateless = BlackduckScanMode.STATELESS.equals(detectConfiguration.getValue(DetectProperties.DETECT_BLACKDUCK_SCAN_MODE));
         Boolean correlatedScanningEnabled = detectConfiguration.getValue(DetectProperties.DETECT_CORRELATED_SCANNING_ENABLED);
         RapidCompareMode compareMode = detectConfiguration.getValue(DetectProperties.DETECT_BLACKDUCK_RAPID_COMPARE_MODE);
-        
+        Boolean csvArchive = detectConfiguration.getValue(DetectProperties.DETECT_BLACKDUCK_SIGNATURE_SCANNER_CSV_ARCHIVE);
 
         return new BlackDuckSignatureScannerOptions(
             signatureScannerPaths,
@@ -419,7 +419,8 @@ public class DetectConfigurationFactory {
             isStateless,
             findReducedPersistence(),
             correlatedScanningEnabled,
-            compareMode
+            compareMode,
+            csvArchive
         );
     }
     
@@ -493,7 +494,8 @@ public class DetectConfigurationFactory {
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_GO_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_SWIFT_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_SBT_PATH),
-            detectConfiguration.getPathOrNull(DetectProperties.DETECT_LERNA_PATH)
+            detectConfiguration.getPathOrNull(DetectProperties.DETECT_LERNA_PATH),
+            detectConfiguration.getPathOrNull(DetectProperties.DETECT_OPAM_PATH)
         );
     }
 

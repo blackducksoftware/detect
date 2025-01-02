@@ -22,8 +22,7 @@ Execute Container Scan by adding the following to a run of [bd_product_short]:
  * URL provided for a remote container image must use the HTTP(S) protocol.
  
 ### Limitations
- * Container scanning is limited to images of 5GB or less for hosted services.
- * Container scanning is limited to images of 6GB or less for local, on-prem services.
+ * Container scanning is limited to images of 100GB or less for hosted or local, on-prem services.
  
 ## Invocation
  * To invoke a container scan, which executes in "Intelligent" mode by default, the following must be provided at a minimum:   

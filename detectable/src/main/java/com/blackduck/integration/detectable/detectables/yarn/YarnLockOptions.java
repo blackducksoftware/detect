@@ -8,17 +8,17 @@ public class YarnLockOptions {
     private final EnumListFilter<YarnDependencyType> yarnDependencyTypeFilter;
     private final List<String> excludedWorkspaceNamePatterns;
     private final List<String> includedWorkspaceNamePatterns;
-    private final Boolean monorepoMode;
+    private final Boolean yarnIgnoreAllWorkspacesMode;
 
     public YarnLockOptions(
             EnumListFilter<YarnDependencyType> yarnDependencyTypeFilter, 
             List<String> excludedWorkspaceNamePatterns, 
             List<String> includedWorkspaceNamePatterns,
-            Boolean monorepoMode) {
+            Boolean yarnIgnoreAllWorkspacesMode) {
         this.yarnDependencyTypeFilter = yarnDependencyTypeFilter;
         this.excludedWorkspaceNamePatterns = excludedWorkspaceNamePatterns;
         this.includedWorkspaceNamePatterns = includedWorkspaceNamePatterns;
-        this.monorepoMode = monorepoMode;
+        this.yarnIgnoreAllWorkspacesMode = yarnIgnoreAllWorkspacesMode;
     }
 
     public EnumListFilter<YarnDependencyType> getYarnDependencyTypeFilter() {
@@ -33,7 +33,7 @@ public class YarnLockOptions {
         return includedWorkspaceNamePatterns;
     }
     
-    public Boolean getMonorepoMode() {
-        return monorepoMode;
+    public Boolean getYarnIgnoreAllWorkspacesMode() {
+        return yarnIgnoreAllWorkspacesMode;
     }
 }
