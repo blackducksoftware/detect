@@ -106,7 +106,7 @@ public class OperationRunnerContainerScanTest {
 
         Assertions.assertFalse(expectedImageMetadataObject.isJsonNull());
         Assertions.assertTrue(expectedImageMetadataObject.isJsonObject());
-        Assertions.assertEquals(expectedImageMetadataObject, operationRunner.createContainerScanImageMetadata(ContainerScanTestUtils.TEST_SCAN_ID, projectNameVersion));
+        Assertions.assertEquals(expectedImageMetadataObject, operationRunner.createScanMetadata(ContainerScanTestUtils.TEST_SCAN_ID, projectNameVersion, "CONTAINER"));
     }
 
     @Test void testCreateContainerScanMetadataForStateless() {
@@ -124,7 +124,7 @@ public class OperationRunnerContainerScanTest {
 
         Assertions.assertFalse(expectedImageMetadataObject.isJsonNull());
         Assertions.assertTrue(expectedImageMetadataObject.isJsonObject());
-        Assertions.assertEquals(expectedImageMetadataObject, operationRunner.createContainerScanImageMetadata(ContainerScanTestUtils.TEST_SCAN_ID, projectNameVersion));
+        Assertions.assertEquals(expectedImageMetadataObject, operationRunner.createScanMetadata(ContainerScanTestUtils.TEST_SCAN_ID, projectNameVersion, "CONTAINER"));
     }
 
 }
