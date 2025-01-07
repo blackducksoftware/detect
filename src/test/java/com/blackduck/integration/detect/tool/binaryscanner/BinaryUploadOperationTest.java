@@ -27,7 +27,6 @@ import com.blackduck.integration.detect.configuration.DetectUserFriendlyExceptio
 import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.run.data.DockerTargetData;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
-import com.blackduck.integration.detect.lifecycle.run.step.binary.AbstractBinaryScanStepRunner;
 import com.blackduck.integration.detect.lifecycle.run.step.binary.PreScassBinaryScanStepRunner;
 import com.blackduck.integration.detect.util.finder.DetectDirectoryFileFilter;
 import com.blackduck.integration.detect.workflow.file.DirectoryManager;
@@ -41,7 +40,7 @@ public class BinaryUploadOperationTest {
 
         Mockito.when(operationRunner.calculateBinaryScanOptions()).thenReturn(binaryScanOptions);
 
-        AbstractBinaryScanStepRunner binaryScanStepRunner = new PreScassBinaryScanStepRunner(operationRunner);
+        PreScassBinaryScanStepRunner binaryScanStepRunner = new PreScassBinaryScanStepRunner(operationRunner);
         Optional<File> result = binaryScanStepRunner.determineBinaryScanFileTarget(DockerTargetData.NO_DOCKER_TARGET, Collections.EMPTY_SET);
 
         Mockito.verify(operationRunner).publishBinaryFailure(Mockito.anyString());
