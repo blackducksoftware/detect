@@ -26,10 +26,10 @@ public abstract class AbstractBinaryScanStepRunner {
     protected Gson gson;
     protected Optional<CodeLocationCreationData<BinaryScanBatchOutput>> codeLocations;
 
-    public AbstractBinaryScanStepRunner(OperationRunner operationRunner) {
+    protected AbstractBinaryScanStepRunner(OperationRunner operationRunner) {
         this.operationRunner = operationRunner;
         this.gson = new Gson();
-        codeLocations = null;
+        codeLocations = Optional.empty();
     }
     
     protected abstract UUID performBlackduckInteractions(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData, Optional<File> binaryScanFile) throws OperationException, IntegrationException;
@@ -92,9 +92,6 @@ public abstract class AbstractBinaryScanStepRunner {
     }
     
     public Optional<CodeLocationCreationData<BinaryScanBatchOutput>> getCodeLocations() {
-        if (codeLocations == null) {
-            return Optional.empty();
-        }
         return codeLocations;
     }
 }
