@@ -1,7 +1,7 @@
 package com.blackduck.integration.detect.workflow;
 
 public class ArtifactoryConstants {
-    public static final String ARTIFACTORY_URL = "https://repo.blackduck.com/";
+    public static final String ARTIFACTORY_URL = "https://dev.repo.blackduck.com/";
     public static final String VERSION_PLACEHOLDER = "<VERSION>";
 
     public static final String GRADLE_INSPECTOR_MAVEN_REPO = ARTIFACTORY_URL + "bds-integration-public-cache/";
