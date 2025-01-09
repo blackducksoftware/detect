@@ -196,6 +196,12 @@ dependencies {
         implementation('ch.qos.logback:logback-core:1.2.13') {
             because 'previous version has a vulnerability'
         }
+        implementation('org.apache.james:apache-mime4j-core:0.8.10') {
+            because 'previous version has a vulnerability'
+        }
+        implementation('org.bouncycastle:bcutil-jdk18on:1.78.0') {
+            because 'previous version has a vulnerability'
+        }
     }
 
     // spring-boot-starter-test *can* provide these, but we choose to be more explicit about the dependencies we ACTUALLY use
