@@ -1,7 +1,7 @@
 package com.synopsys.integration.detect.workflow;
 
 public class ArtifactoryConstants {
-    public static final String ARTIFACTORY_URL = "https://repo.blackduck.com/";
+    public static final String ARTIFACTORY_URL = "https://dev.repo.blackduck.com/";
     public static final String ARTIFACTORY_FALLBACK_URL = "https://sig-repo.synopsys.com/";
     public static final String VERSION_PLACEHOLDER = "<VERSION>";
 
