@@ -30,7 +30,7 @@ public class ScassOrBdbaBinaryScanStepRunner extends AbstractBinaryScanStepRunne
     }
 
     @Override
-    protected UUID performBlackduckInteractions(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData,
+    public UUID performBlackduckInteractions(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData,
             Optional<File> binaryScanFile) throws OperationException, IntegrationException {
         // call BlackDuck to create a scanID and determine where to upload the file
         ScassScanInitiationResult initResult = operationRunner.initiateScan(
@@ -46,7 +46,7 @@ public class ScassOrBdbaBinaryScanStepRunner extends AbstractBinaryScanStepRunne
         
         if (StringUtils.isNotEmpty(uploadUrl)) {
             // This is a SCASS capable server server and SCASS is enabled.
-            ScassScanStepRunner scassScanStepRunner = new ScassScanStepRunner(blackDuckRunData);
+            ScassScanStepRunner scassScanStepRunner = createScassScanStepRunner(blackDuckRunData);
             
             scassScanStepRunner.runScassScan(Optional.of(initResult.getZipFile()), scanCreationResponse);       
         } else {
@@ -57,5 +57,9 @@ public class ScassOrBdbaBinaryScanStepRunner extends AbstractBinaryScanStepRunne
         }
         
         return UUID.fromString(scanId);
+    }
+    
+    public ScassScanStepRunner createScassScanStepRunner(BlackDuckRunData blackDuckRunData) {
+        return new ScassScanStepRunner(blackDuckRunData);
     }
 }
