@@ -23,6 +23,8 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.blackduck.integration.blackduck.exception.BlackDuckApiException;
+import com.blackduck.integration.detect.lifecycle.BlackDuckDuplicateProjectException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.entity.ContentType;
 import org.jetbrains.annotations.Nullable;
@@ -1225,6 +1227,11 @@ public class OperationRunner {
         exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_TIMEOUT, "CONTAINER_SCAN");
     }
 
+//    public void publishDuplicateProjectScanException(Exception e) {
+////        statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.CONTAINER_SCAN, StatusType.FAILURE));
+//        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_DUPLICATE_PROJECT_ERROR, "DUPLICATE_PROJECT");
+//    }
+
     public void publishContainerFailure(Exception e) {
         logger.error("Container scan failure: {}", e.getMessage());
         statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.CONTAINER_SCAN, StatusType.FAILURE));
@@ -1279,17 +1286,27 @@ public class OperationRunner {
         ProjectVersionLicenseFindResult projectVersionLicensesFindResult,
         BlackDuckRunData blackDuckRunData
     ) throws OperationException {
-        return auditLog.namedInternal(
-            "Sync Project",
-            () -> new SyncProjectOperation(blackDuckRunData.getBlackDuckServicesFactory().createProjectService())
-                .sync(
-                    projectNameVersion,
-                    projectGroupFindResult,
-                    cloneFindResult,
-                    projectVersionLicensesFindResult,
-                    detectConfigurationFactory.createDetectProjectServiceOptions()
-                )
-        );
+        try {
+            return auditLog.namedInternal(
+                "Sync Project",
+                () -> new SyncProjectOperation(blackDuckRunData.getBlackDuckServicesFactory().createProjectService())
+                    .sync(
+                        projectNameVersion,
+                        projectGroupFindResult,
+                        cloneFindResult,
+                        projectVersionLicensesFindResult,
+                        detectConfigurationFactory.createDetectProjectServiceOptions()
+                    )
+            );
+        } catch(OperationException e) {
+            BlackDuckApiException apiException = (BlackDuckApiException) e.getException();
+            if (apiException.getBlackDuckErrorCode().contains("central.constraint_violation.project_name_duplicate_not_allowed")) {
+                logger.error("Duplicate project scan failure: {}", apiException.getMessage());
+                throw new BlackDuckDuplicateProjectException(e);
+            } else {
+                throw e;
+            }
+        }
     }
 
     public ParentProjectMapOptions calculateParentProjectMapOptions() {

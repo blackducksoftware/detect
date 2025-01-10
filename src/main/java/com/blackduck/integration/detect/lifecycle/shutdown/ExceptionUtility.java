@@ -1,5 +1,6 @@
 package com.blackduck.integration.detect.lifecycle.shutdown;
 
+import com.blackduck.integration.detect.lifecycle.BlackDuckDuplicateProjectException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +53,9 @@ public class ExceptionUtility {
     }
 
     public ExitCodeType getExitCodeFromException(Exception e) {
-        if (e instanceof OperationException) {
+        if (e instanceof BlackDuckDuplicateProjectException) {
+            return ExitCodeType.FAILURE_BLACKDUCK_DUPLICATE_PROJECT_ERROR;
+        } else if (e instanceof OperationException) {
             return getExitCodeFromException(((OperationException) e).getException());
         } else if (e instanceof DetectUserFriendlyException) {
             DetectUserFriendlyException friendlyException = (DetectUserFriendlyException) e;
@@ -60,10 +63,6 @@ public class ExceptionUtility {
         } else if (e instanceof BlackDuckTimeoutExceededException || e instanceof IntegrationTimeoutException) {
             return ExitCodeType.FAILURE_TIMEOUT;
         } else if (e instanceof BlackDuckApiException) {
-            logger.info("Exception Error Code: {}", ((BlackDuckApiException) e).getBlackDuckErrorCode());
-            if (((BlackDuckApiException) e).getBlackDuckErrorCode().contains("central.constraint_violation.project_name_duplicate_not_allowed")) {
-                return  ExitCodeType.FAILURE_BLACKDUCK_DUPLICATE_PROJECT_ERROR;
-            }
             return ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR;
         } else if (e instanceof IntegrationRestException) {
             return ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR;

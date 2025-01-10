@@ -158,18 +158,6 @@ public class DetectRun {
             logger.debug("An exception was thrown during the detect run.", e);
             logger.error(ReportConstants.RUN_SEPARATOR);
             exitCodeManager.requestExitCode(e);
-            /*if (e instanceof OperationException && e.getCause() instanceof BlackDuckApiException) {
-                BlackDuckApiException apiException = (BlackDuckApiException) e.getCause();
-                logger.info("API Exception Error Code: {}", apiException.getBlackDuckErrorCode());
-                if (apiException.getBlackDuckErrorCode().contains("central.constraint_violation.project_name_duplicate_not_allowed")) {
-                    exitCodeManager.requestExitCode(ExitCodeType.FAILURE_BLACKDUCK_DUPLICATE_PROJECT_ERROR);
-                } else {
-                    exitCodeManager.requestExitCode(e);
-                }
-            } else {
-                exitCodeManager.requestExitCode(e);
-            }*/
-
             checkForInterruptedException(e);
         } finally {
             operationSystem.ifPresent(OperationSystem::publishOperations);
