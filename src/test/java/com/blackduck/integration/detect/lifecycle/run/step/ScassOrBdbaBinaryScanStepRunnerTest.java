@@ -43,7 +43,7 @@ public class ScassOrBdbaBinaryScanStepRunnerTest {
 
     @Mock
     private ScassScanStepRunner scassScanStepRunner;
-    
+
     @Mock
     private BdbaScanStepRunner bdbaScanStepRunner;
 
@@ -56,56 +56,45 @@ public class ScassOrBdbaBinaryScanStepRunnerTest {
     private ScassOrBdbaBinaryScanStepRunner scassOrBdbaBinaryScanStepRunner;
 
     @BeforeEach
-    public void setUp() {
+    public void setUp() throws OperationException, IntegrationException {
         MockitoAnnotations.openMocks(this);
+        scassOrBdbaBinaryScanStepRunner = spy(new ScassOrBdbaBinaryScanStepRunner(operationRunner));
+        when(operationRunner.getDirectoryManager()).thenReturn(directoryManager);
+        when(directoryManager.getBinaryOutputDirectory()).thenReturn(binaryOutputDirectory);
+        when(operationRunner.initiateScan(any(), any(), any(), any(), any(), any())).thenReturn(initResult);
+        when(initResult.getScanCreationResponse()).thenReturn(scanCreationResponse);
+        when(initResult.getZipFile()).thenReturn(mock(File.class));
+        when(scanCreationResponse.getScanId()).thenReturn(UUID.randomUUID().toString());
     }
 
     @Test
     public void testPerformBlackduckInteractionsScass() throws Exception {
         NameVersion projectNameVersion = new NameVersion("projectName", "version");
         File binaryScanFile = mock(File.class);
-        String scanId = UUID.randomUUID().toString();
         String uploadUrl = "http://upload.url";
-        File zipFile = mock(File.class);
 
-        when(operationRunner.getDirectoryManager()).thenReturn(directoryManager);
-        when(directoryManager.getBinaryOutputDirectory()).thenReturn(binaryOutputDirectory);
-        when(operationRunner.initiateScan(any(), any(), any(), any(), any(), any())).thenReturn(initResult);
-        when(initResult.getScanCreationResponse()).thenReturn(scanCreationResponse);
-        when(scanCreationResponse.getScanId()).thenReturn(scanId);
         when(scanCreationResponse.getUploadUrl()).thenReturn(uploadUrl);
-        when(initResult.getZipFile()).thenReturn(zipFile);
         doNothing().when(scassScanStepRunner).runScassScan(any(), any());
-        
-        scassOrBdbaBinaryScanStepRunner = spy(new ScassOrBdbaBinaryScanStepRunner(operationRunner));
+
         doReturn(scassScanStepRunner).when(scassOrBdbaBinaryScanStepRunner).createScassScanStepRunner(nullable(BlackDuckRunData.class));
 
         scassOrBdbaBinaryScanStepRunner.performBlackduckInteractions(projectNameVersion, blackDuckRunData, Optional.of(binaryScanFile));
 
         verify(scassScanStepRunner).runScassScan(Optional.of(initResult.getZipFile()), scanCreationResponse);
     }
-    
+
     @Test
     public void testPerformBlackduckInteractionsBdba() throws OperationException, IntegrationException {
         NameVersion projectNameVersion = new NameVersion("projectName", "version");
         File binaryScanFile = mock(File.class);
-        String scanId = UUID.randomUUID().toString();
-        File zipFile = mock(File.class);
 
-        when(operationRunner.getDirectoryManager()).thenReturn(directoryManager);
-        when(directoryManager.getBinaryOutputDirectory()).thenReturn(binaryOutputDirectory);
-        when(operationRunner.initiateScan(any(), any(), any(), any(), any(), any())).thenReturn(initResult);
-        when(initResult.getScanCreationResponse()).thenReturn(scanCreationResponse);
-        when(scanCreationResponse.getScanId()).thenReturn(scanId);
         when(scanCreationResponse.getUploadUrl()).thenReturn("");
-        when(initResult.getZipFile()).thenReturn(zipFile);
         doNothing().when(bdbaScanStepRunner).runBdbaScan(any(), any(), any(), any(), any());
-        
-        scassOrBdbaBinaryScanStepRunner = spy(new ScassOrBdbaBinaryScanStepRunner(operationRunner));
+
         doReturn(bdbaScanStepRunner).when(scassOrBdbaBinaryScanStepRunner).createBdbaScanStepRunner(nullable(OperationRunner.class));
 
         scassOrBdbaBinaryScanStepRunner.performBlackduckInteractions(projectNameVersion, blackDuckRunData, Optional.of(binaryScanFile));
 
-        verify(bdbaScanStepRunner).runBdbaScan(projectNameVersion, blackDuckRunData, Optional.of(binaryScanFile), scanId, "BINARY");
+        verify(bdbaScanStepRunner).runBdbaScan(projectNameVersion, blackDuckRunData, Optional.of(binaryScanFile), scanCreationResponse.getScanId(), "BINARY");
     }
 }
