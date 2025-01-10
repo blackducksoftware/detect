@@ -47,11 +47,10 @@ public class ScassOrBdbaBinaryScanStepRunner extends AbstractBinaryScanStepRunne
         if (StringUtils.isNotEmpty(uploadUrl)) {
             // This is a SCASS capable server server and SCASS is enabled.
             ScassScanStepRunner scassScanStepRunner = createScassScanStepRunner(blackDuckRunData);
-            
             scassScanStepRunner.runScassScan(Optional.of(initResult.getZipFile()), scanCreationResponse);       
         } else {
             // This is a SCASS capable server server but SCASS is not enabled.
-            BdbaScanStepRunner bdbaScanStepRunner = new BdbaScanStepRunner(operationRunner);
+            BdbaScanStepRunner bdbaScanStepRunner = createBdbaScanStepRunner(operationRunner);
             
             bdbaScanStepRunner.runBdbaScan(projectNameVersion, blackDuckRunData, binaryScanFile, scanId, "BINARY");
         }
@@ -61,5 +60,9 @@ public class ScassOrBdbaBinaryScanStepRunner extends AbstractBinaryScanStepRunne
     
     public ScassScanStepRunner createScassScanStepRunner(BlackDuckRunData blackDuckRunData) {
         return new ScassScanStepRunner(blackDuckRunData);
+    }
+    
+    public BdbaScanStepRunner createBdbaScanStepRunner(OperationRunner operationRunner) {
+        return new BdbaScanStepRunner(operationRunner);
     }
 }
