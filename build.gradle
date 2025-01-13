@@ -49,8 +49,7 @@ def createBatteryPath() {
 def final locatorGroup = "com.blackduck.integration"
 def final locatorModule = "component-locator"
 final def externalRepoHost = "https://repo.blackduck.com"
-final def internalRepoHost = "https://artifactory.internal.synopsys.com"
-//System.getenv('SNPS_INTERNAL_ARTIFACTORY')
+final def internalRepoHost = System.getenv('SNPS_INTERNAL_ARTIFACTORY')
 
 repositories {
     println "Checking if environment property SNPS_INTERNAL_ARTIFACTORY is configured: ${internalRepoHost}"
@@ -106,7 +105,6 @@ subprojects {
 allprojects {
     repositories {
         maven { url "${internalRepoHost}/artifactory/jcenter" }
-        maven { url "${internalRepoHost}/artifactory/bds-integrations-snapshot" }
     }
 
     dependencies {
@@ -154,7 +152,7 @@ dependencies {
 
     implementation 'com.blackducksoftware.bdio:bdio-protobuf:3.2.10'
     implementation "com.blackduck.integration:blackduck-common:${blackDuckCommonVersion}"
-    implementation 'com.blackduck.integration:blackduck-upload-common:4.1.1-SNAPSHOT'
+    implementation 'com.blackduck.integration:blackduck-upload-common:4.1.1'
     implementation 'com.synopsys:method-analyzer-core:0.2.9'
     implementation "${locatorGroup}:${locatorModule}:2.0.0"
 

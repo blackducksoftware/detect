@@ -9,6 +9,7 @@ import com.blackduck.integration.blackduck.version.BlackDuckVersion;
 import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
+import com.blackduck.integration.detect.lifecycle.run.step.CommonScanStepRunner;
 import com.blackduck.integration.detect.lifecycle.run.step.utility.MultipartUploaderHelper;
 import com.blackduck.integration.detect.util.bdio.protobuf.DetectProtobufBdioHeaderUtil;
 import com.blackduck.integration.exception.IntegrationException;
@@ -112,7 +113,7 @@ public class PreScassContainerScanStepRunner extends AbstractContainerScanStepRu
         String operationName = "Upload Container Scan Image Metadata JSON";
         logger.debug("Uploading container image metadata to storage endpoint: {}", storageServiceEndpoint);
 
-        JsonObject imageMetadataObject = operationRunner.createScanMetadata(scanId, projectNameVersion, "CONTAINER");
+        JsonObject imageMetadataObject = operationRunner.createScanMetadata(scanId, projectNameVersion, CommonScanStepRunner.CONTAINER);
 
         try (Response response = operationRunner.uploadJsonToStorageService(
             blackDuckRunData,

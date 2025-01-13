@@ -12,6 +12,7 @@ import com.blackduck.integration.blackduck.version.BlackDuckVersion;
 import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
+import com.blackduck.integration.detect.lifecycle.run.step.CommonScanStepRunner;
 import com.blackduck.integration.detect.workflow.codelocation.CodeLocationNameManager;
 import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.exception.IntegrationTimeoutException;
@@ -21,7 +22,7 @@ import com.google.gson.Gson;
 public abstract class AbstractContainerScanStepRunner {
 
     protected final OperationRunner operationRunner;
-    protected final String scanType = "CONTAINER";
+    protected final String scanType = CommonScanStepRunner.CONTAINER;
     protected final Logger logger = LoggerFactory.getLogger(this.getClass());
     protected final NameVersion projectNameVersion;
     protected final BlackDuckRunData blackDuckRunData;

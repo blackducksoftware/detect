@@ -82,7 +82,7 @@ public class CommonScanStepRunnerTest {
         doReturn(scassScanStepRunner).when(commonScanStepRunner).createScassScanStepRunner(nullable(BlackDuckRunData.class));
 
         commonScanStepRunner.performCommonScan(projectNameVersion,
-                blackDuckRunData, Optional.of(binaryScanFile), operationRunner, gson, "BINARY");
+                blackDuckRunData, Optional.of(binaryScanFile), operationRunner, gson, CommonScanStepRunner.BINARY);
 
         verify(scassScanStepRunner).runScassScan(Optional.of(initResult.getZipFile()), scanCreationResponse);
     }
@@ -100,9 +100,9 @@ public class CommonScanStepRunnerTest {
         doReturn(bdbaScanStepRunner).when(commonScanStepRunner).createBdbaScanStepRunner(nullable(OperationRunner.class));
 
         commonScanStepRunner.performCommonScan(projectNameVersion,
-                blackDuckRunData, Optional.of(binaryScanFile), operationRunner, gson, "BINARY");
+                blackDuckRunData, Optional.of(binaryScanFile), operationRunner, gson, CommonScanStepRunner.BINARY);
 
-        verify(bdbaScanStepRunner).runBdbaScan(projectNameVersion, blackDuckRunData, Optional.of(binaryScanFile), scanCreationResponse.getScanId(), "BINARY");
+        verify(bdbaScanStepRunner).runBdbaScan(projectNameVersion, blackDuckRunData, Optional.of(binaryScanFile), scanCreationResponse.getScanId(), CommonScanStepRunner.BINARY);
     }
     
     @Test
@@ -119,7 +119,7 @@ public class CommonScanStepRunnerTest {
         doReturn(scassScanStepRunner).when(commonScanStepRunner).createScassScanStepRunner(nullable(BlackDuckRunData.class));
 
         commonScanStepRunner.performCommonScan(projectNameVersion,
-                blackDuckRunData, Optional.of(binaryScanFile), operationRunner, gson, "CONTAINER");
+                blackDuckRunData, Optional.of(binaryScanFile), operationRunner, gson, CommonScanStepRunner.CONTAINER);
 
         verify(scassScanStepRunner).runScassScan(Optional.of(initResult.getZipFile()), scanCreationResponse);
     }
@@ -137,8 +137,8 @@ public class CommonScanStepRunnerTest {
         doReturn(bdbaScanStepRunner).when(commonScanStepRunner).createBdbaScanStepRunner(nullable(OperationRunner.class));
 
         commonScanStepRunner.performCommonScan(projectNameVersion,
-                blackDuckRunData, Optional.of(binaryScanFile), operationRunner, gson, "CONTAINER");
+                blackDuckRunData, Optional.of(binaryScanFile), operationRunner, gson, CommonScanStepRunner.CONTAINER);
 
-        verify(bdbaScanStepRunner).runBdbaScan(projectNameVersion, blackDuckRunData, Optional.of(binaryScanFile), scanCreationResponse.getScanId(), "CONTAINER");
+        verify(bdbaScanStepRunner).runBdbaScan(projectNameVersion, blackDuckRunData, Optional.of(binaryScanFile), scanCreationResponse.getScanId(), CommonScanStepRunner.CONTAINER);
     }
 }

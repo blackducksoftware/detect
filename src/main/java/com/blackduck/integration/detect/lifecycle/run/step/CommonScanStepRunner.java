@@ -24,6 +24,10 @@ import com.google.gson.Gson;
  */
 public class CommonScanStepRunner {
     private static final BlackDuckVersion MIN_SCASS_SCAN_VERSION = new BlackDuckVersion(2025, 1, 0);
+    
+    // Supported scan types
+    public static final String BINARY = "BINARY";
+    public static final String CONTAINER = "CONTAINER";
 
     public static boolean areScassScansPossible(Optional<BlackDuckVersion> blackDuckVersion) {
         return blackDuckVersion.isPresent() && blackDuckVersion.get().isAtLeast(MIN_SCASS_SCAN_VERSION);
@@ -62,9 +66,9 @@ public class CommonScanStepRunner {
     
     private File getOutputDirectory(OperationRunner operationRunner, String scanType) throws IntegrationException {
         switch (scanType) {
-            case "BINARY":
+            case BINARY:
                 return operationRunner.getDirectoryManager().getBinaryOutputDirectory();
-            case "CONTAINER":
+            case CONTAINER:
                 return operationRunner.getDirectoryManager().getContainerOutputDirectory();
             default:
                 throw new IntegrationException("Unexpected scan type:" + scanType);

@@ -22,6 +22,12 @@ public class ScassOrBdbaContainerScanStepRunner extends AbstractContainerScanSte
 
     @Override
     protected UUID performBlackduckInteractions() throws IntegrationException, OperationException {        
-        return commonScanStepRunner.performCommonScan(projectNameVersion, blackDuckRunData, Optional.of(containerImage), operationRunner, gson, scanType);
+        return commonScanStepRunner.performCommonScan(
+                projectNameVersion, 
+                blackDuckRunData, 
+                Optional.of(containerImage), 
+                operationRunner, 
+                gson, 
+                scanType);
     }
 }
