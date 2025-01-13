@@ -16,6 +16,7 @@ import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Base64.Encoder;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -23,14 +24,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.Base64.Encoder;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.zip.ZipException;
-import java.util.zip.ZipFile;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -555,11 +553,7 @@ public class OperationRunner {
             return UUID.fromString(path.substring(path.lastIndexOf('/') + 1));
         });
     }
-    
-    // TODO consider refactoring so that we have just the uploadBdioHeaderToInitiateScan call.
-    // We can add content type to that method and have it return the response
-    // Callers then can determine how to deal with response. We should determine how many callers are impacted.
-    // Not sure if older BlackDuck's return scanId in the body so need to check that.
+
     public ScanCreationResponse uploadBdioHeaderToInitiateScassScan(BlackDuckRunData blackDuckRunData, File bdioHeaderFile, String operationName, Gson gson, String computedMd5) throws OperationException {
         return auditLog.namedInternal(operationName, () -> {
             BlackDuckServicesFactory blackDuckServicesFactory = blackDuckRunData.getBlackDuckServicesFactory();
@@ -584,8 +578,7 @@ public class OperationRunner {
     
     public ScassScanInitiationResult initiateScan(NameVersion projectNameVersion, File binaryFile, File outputDirectory, BlackDuckRunData blackDuckRunData, String type, Gson gson) throws OperationException, IntegrationException {
         String projectGroupName = calculateProjectGroupOptions().getProjectGroup();
-        
-        CodeLocationNameManager codeLocationNameManager = getCodeLocationNameManager();
+
         String codeLocationName =  codeLocationNameManager.createBinaryScanCodeLocationName(binaryFile, projectNameVersion.getName(), projectNameVersion.getVersion());
         
         DetectProtobufBdioHeaderUtil detectProtobufBdioHeaderUtil = new DetectProtobufBdioHeaderUtil(
