@@ -1227,11 +1227,6 @@ public class OperationRunner {
         exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_TIMEOUT, "CONTAINER_SCAN");
     }
 
-//    public void publishDuplicateProjectScanException(Exception e) {
-////        statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.CONTAINER_SCAN, StatusType.FAILURE));
-//        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_DUPLICATE_PROJECT_ERROR, "DUPLICATE_PROJECT");
-//    }
-
     public void publishContainerFailure(Exception e) {
         logger.error("Container scan failure: {}", e.getMessage());
         statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.CONTAINER_SCAN, StatusType.FAILURE));
