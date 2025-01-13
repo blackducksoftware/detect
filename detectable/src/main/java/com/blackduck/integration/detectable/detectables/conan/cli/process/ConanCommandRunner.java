@@ -44,7 +44,7 @@ public class ConanCommandRunner {
         List<String> conanGraphInfoArguments = new ArrayList<>();
         conanGraphInfoArguments.add("graph");
         conanGraphInfoArguments.add("info");
-        conanGraphInfoArguments.add("-vquiet");
+        conanGraphInfoArguments.add("-verror");
 
         conanGraphInfoArguments.add("-f");
         conanGraphInfoArguments.add("json");
