@@ -4,65 +4,25 @@ import java.io.File;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.apache.commons.lang3.StringUtils;
-
-import com.blackduck.integration.blackduck.version.BlackDuckVersion;
 import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
-import com.blackduck.integration.detect.lifecycle.run.data.ScanCreationResponse;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
-import com.blackduck.integration.detect.lifecycle.run.operation.blackduck.ScassScanInitiationResult;
-import com.blackduck.integration.detect.lifecycle.run.step.BdbaScanStepRunner;
-import com.blackduck.integration.detect.lifecycle.run.step.ScassScanStepRunner;
+import com.blackduck.integration.detect.lifecycle.run.step.CommonScanStepRunner;
 import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.util.NameVersion;
 
 public class ScassOrBdbaBinaryScanStepRunner extends AbstractBinaryScanStepRunner {
     
-    private static final BlackDuckVersion MIN_SCASS_SCAN_VERSION = new BlackDuckVersion(2025, 1, 0);
+    CommonScanStepRunner commonScanStepRunner;
 
     public ScassOrBdbaBinaryScanStepRunner(OperationRunner operationRunner) {
         super(operationRunner);
-    }
-
-    public static boolean areScassScansPossible(Optional<BlackDuckVersion> blackDuckVersion) {
-        return blackDuckVersion.isPresent() && blackDuckVersion.get().isAtLeast(MIN_SCASS_SCAN_VERSION);
+        commonScanStepRunner = new CommonScanStepRunner();
     }
 
     @Override
     public UUID performBlackduckInteractions(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData,
             Optional<File> binaryScanFile) throws OperationException, IntegrationException {
-        // call BlackDuck to create a scanID and determine where to upload the file
-        ScassScanInitiationResult initResult = operationRunner.initiateScan(
-            projectNameVersion, binaryScanFile.get(),
-            operationRunner.getDirectoryManager().getBinaryOutputDirectory(),
-            blackDuckRunData, "BINARY", gson
-        );
-
-        ScanCreationResponse scanCreationResponse = initResult.getScanCreationResponse();
-
-        String scanId = scanCreationResponse.getScanId();
-        String uploadUrl = scanCreationResponse.getUploadUrl();
-        
-        if (StringUtils.isNotEmpty(uploadUrl)) {
-            // This is a SCASS capable server server and SCASS is enabled.
-            ScassScanStepRunner scassScanStepRunner = createScassScanStepRunner(blackDuckRunData);
-            scassScanStepRunner.runScassScan(Optional.of(initResult.getZipFile()), scanCreationResponse);       
-        } else {
-            // This is a SCASS capable server server but SCASS is not enabled.
-            BdbaScanStepRunner bdbaScanStepRunner = createBdbaScanStepRunner(operationRunner);
-            
-            bdbaScanStepRunner.runBdbaScan(projectNameVersion, blackDuckRunData, binaryScanFile, scanId, "BINARY");
-        }
-        
-        return UUID.fromString(scanId);
-    }
-    
-    public ScassScanStepRunner createScassScanStepRunner(BlackDuckRunData blackDuckRunData) {
-        return new ScassScanStepRunner(blackDuckRunData);
-    }
-    
-    public BdbaScanStepRunner createBdbaScanStepRunner(OperationRunner operationRunner) {
-        return new BdbaScanStepRunner(operationRunner);
+        return commonScanStepRunner.performCommonScan(projectNameVersion, blackDuckRunData, binaryScanFile, operationRunner, gson, "BINARY");
     }
 }

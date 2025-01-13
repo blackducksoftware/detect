@@ -141,7 +141,7 @@ public class IntelligentModeStepRunner {
         });
 
         stepHelper.runToolIfIncluded(DetectTool.BINARY_SCAN, "Binary Scanner", () -> {           
-            AbstractBinaryScanStepRunner binaryScanStepRunner = ScassOrBdbaBinaryScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion()) ?
+            AbstractBinaryScanStepRunner binaryScanStepRunner = CommonScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion()) ?
                     new ScassOrBdbaBinaryScanStepRunner(operationRunner) :
                     new PreScassBinaryScanStepRunner(operationRunner);
             invokeBinaryScanningWorkflow(DetectTool.BINARY_SCAN, binaryScanStepRunner, dockerTargetData, projectNameVersion, blackDuckRunData, binaryTargets, scanIdsToWaitFor, codeLocationAccumulator, mustWaitAtBomSummaryLevel);
@@ -151,7 +151,7 @@ public class IntelligentModeStepRunner {
             DetectTool.CONTAINER_SCAN,
             "Container Scanner",
             () -> {
-                AbstractContainerScanStepRunner containerScanStepRunner = ScassOrBdbaContainerScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion()) ?
+                AbstractContainerScanStepRunner containerScanStepRunner = CommonScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion()) ?
                     new ScassOrBdbaContainerScanStepRunner(operationRunner, projectNameVersion, blackDuckRunData, gson) :
                     new PreScassContainerScanStepRunner(operationRunner, projectNameVersion, blackDuckRunData, gson);
                 invokeContainerScanningWorkflow(containerScanStepRunner, scanIdsToWaitFor, codeLocationAccumulator);
