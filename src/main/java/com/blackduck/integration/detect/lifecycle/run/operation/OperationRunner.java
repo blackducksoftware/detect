@@ -1281,27 +1281,17 @@ public class OperationRunner {
         ProjectVersionLicenseFindResult projectVersionLicensesFindResult,
         BlackDuckRunData blackDuckRunData
     ) throws OperationException {
-        try {
-            return auditLog.namedInternal(
-                "Sync Project",
-                () -> new SyncProjectOperation(blackDuckRunData.getBlackDuckServicesFactory().createProjectService())
-                    .sync(
-                        projectNameVersion,
-                        projectGroupFindResult,
-                        cloneFindResult,
-                        projectVersionLicensesFindResult,
-                        detectConfigurationFactory.createDetectProjectServiceOptions()
-                    )
-            );
-        } catch(OperationException e) {
-            BlackDuckApiException apiException = (BlackDuckApiException) e.getException();
-            if (apiException.getBlackDuckErrorCode().contains("central.constraint_violation.project_name_duplicate_not_allowed")) {
-                logger.error("Duplicate project scan failure: {}", apiException.getMessage());
-                throw new BlackDuckDuplicateProjectException(e);
-            } else {
-                throw e;
-            }
-        }
+        return auditLog.namedInternal(
+            "Sync Project",
+            () -> new SyncProjectOperation(blackDuckRunData.getBlackDuckServicesFactory().createProjectService())
+                .sync(
+                    projectNameVersion,
+                    projectGroupFindResult,
+                    cloneFindResult,
+                    projectVersionLicensesFindResult,
+                    detectConfigurationFactory.createDetectProjectServiceOptions()
+                )
+        );
     }
 
     public ParentProjectMapOptions calculateParentProjectMapOptions() {
