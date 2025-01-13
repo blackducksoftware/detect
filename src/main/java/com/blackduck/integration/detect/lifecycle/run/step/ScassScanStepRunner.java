@@ -36,10 +36,15 @@ public class ScassScanStepRunner {
     }
     
     public void runScassScan(Optional<File> scanFileOptional, ScanCreationResponse scanCreationResponse) throws IntegrationException {
-        File scanFile = scanFileOptional.orElseThrow(() -> new IntegrationException("File to scan is not provided."));
+        if (scanFileOptional == null || !scanFileOptional.isPresent()) {
+            throw new IntegrationException("File to scan is not provided.");
+        }
+
         if (scanCreationResponse == null) {
             throw new IntegrationException("Scan creation response is not provided.");
         }
+        
+        File scanFile = scanFileOptional.get();
 
         ScassUploader scaasScanUploader = createScaasScanUploader();
 
