@@ -10,12 +10,10 @@ import java.util.Map;
 import java.util.HashSet;
 import java.util.stream.Collectors;
 
-import com.blackduck.integration.blackduck.exception.BlackDuckApiException;
 import com.blackduck.integration.configuration.property.types.enumallnone.list.AllEnumList;
 import com.blackduck.integration.detect.configuration.DetectConfigurationFactory;
 import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
-import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.autonomous.AutonomousManager;
 import com.blackduck.integration.detect.workflow.phonehome.PhoneHomeManager;
 import com.blackduck.integration.detector.base.DetectorType;

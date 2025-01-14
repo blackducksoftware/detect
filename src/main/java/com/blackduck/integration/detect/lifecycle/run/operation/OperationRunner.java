@@ -23,8 +23,6 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.blackduck.integration.blackduck.exception.BlackDuckApiException;
-import com.blackduck.integration.detect.lifecycle.BlackDuckDuplicateProjectException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.entity.ContentType;
 import org.jetbrains.annotations.Nullable;

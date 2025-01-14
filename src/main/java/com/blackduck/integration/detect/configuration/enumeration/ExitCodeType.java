@@ -27,7 +27,7 @@ public enum ExitCodeType {
     FAILURE_ACCURACY_NOT_MET(15, "Detect was unable to meet the required accuracy."),
 
     FAILURE_IMAGE_NOT_AVAILABLE(20, "Image scan attempted but no return data available."),
-    FAILURE_BLACKDUCK_DUPLICATE_PROJECT_ERROR(21, "Detect was unable to create new project. Project name already exists."),
+    FAILURE_BLACKDUCK_DUPLICATE_PROJECT_ERROR(21, "Project name already exists, unable to create project."),
 
     FAILURE_COMPONENT_LOCATION_ANALYSIS(25, "Component Location Analysis failed."),
 
