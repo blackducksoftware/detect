@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.blackduck.integration.blackduck.version.BlackDuckVersion;
+import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
@@ -49,7 +50,7 @@ public abstract class AbstractContainerScanStepRunner {
         try {
             logger.debug("Determining if configuration is valid to run a container scan.");
             if (!isContainerScanEligible()) {
-                logger.info("No container.scan.file.path property was provided. Skipping container scan.");
+                logger.info("No {} property was provided. Skipping container scan.", DetectProperties.DETECT_CONTAINER_SCAN_FILE.getKey());
                 return Optional.empty();
             }
 
@@ -64,8 +65,6 @@ public abstract class AbstractContainerScanStepRunner {
             if (!isContainerImageResolved()) {
                 throw new IOException("Container image file path not resolved or file could not be downloaded. Container scan could not be run.");
             }
-
-            codeLocationName = createContainerScanCodeLocationName();
 
             UUID scanId = performBlackduckInteractions();
 
@@ -104,6 +103,10 @@ public abstract class AbstractContainerScanStepRunner {
     }
 
     private String createContainerScanCodeLocationName() {
+        if (!isContainerImageResolved()) {
+            return null;
+        }
+
         CodeLocationNameManager codeLocationNameManager = operationRunner.getCodeLocationNameManager();
         return codeLocationNameManager.createContainerScanCodeLocationName(containerImage, projectNameVersion.getName(), projectNameVersion.getVersion());
     }
