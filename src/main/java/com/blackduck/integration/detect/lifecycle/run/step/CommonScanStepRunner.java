@@ -12,6 +12,7 @@ import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.data.ScanCreationResponse;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
 import com.blackduck.integration.detect.lifecycle.run.operation.blackduck.ScassScanInitiationResult;
+import com.blackduck.integration.detect.workflow.codelocation.CodeLocationNameManager;
 import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.util.NameVersion;
 import com.google.gson.Gson;
@@ -35,6 +36,9 @@ public class CommonScanStepRunner {
     
     public UUID performCommonScan(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData,
             Optional<File> scanFile, OperationRunner operationRunner, Gson gson, String scanType) throws OperationException, IntegrationException {
+
+        String codeLocationName = createCodeLocationName(scanFile, projectNameVersion, scanType, operationRunner.getCodeLocationNameManager());
+        
         // call BlackDuck to create a scanID and determine where to upload the file
         ScassScanInitiationResult initResult = operationRunner.initiateScan(
             projectNameVersion, 
@@ -42,7 +46,8 @@ public class CommonScanStepRunner {
             getOutputDirectory(operationRunner, scanType),
             blackDuckRunData, 
             scanType, 
-            gson
+            gson,
+            codeLocationName
         );
 
         ScanCreationResponse scanCreationResponse = initResult.getScanCreationResponse();
@@ -72,6 +77,17 @@ public class CommonScanStepRunner {
                 return operationRunner.getDirectoryManager().getContainerOutputDirectory();
             default:
                 throw new IntegrationException("Unexpected scan type:" + scanType);
+        }
+    }
+    
+    private String createCodeLocationName(Optional<File> scanFile, NameVersion projectNameVersion, String scanType, CodeLocationNameManager codeLocationNameManager) throws IntegrationException {
+        switch (scanType) {
+        case BINARY:
+            return codeLocationNameManager.createBinaryScanCodeLocationName(scanFile.get(), projectNameVersion.getName(), projectNameVersion.getVersion());
+        case CONTAINER:
+            return codeLocationNameManager.createContainerScanCodeLocationName(scanFile.get(), projectNameVersion.getName(), projectNameVersion.getVersion());
+        default:
+            throw new IntegrationException("Unexpected scan type:" + scanType);
         }
     }
 

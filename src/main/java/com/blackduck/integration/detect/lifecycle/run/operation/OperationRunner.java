@@ -576,30 +576,28 @@ public class OperationRunner {
         });
     }
     
-    public ScassScanInitiationResult initiateScan(NameVersion projectNameVersion, File binaryFile, File outputDirectory, BlackDuckRunData blackDuckRunData, String type, Gson gson) throws OperationException, IntegrationException {
+    public ScassScanInitiationResult initiateScan(NameVersion projectNameVersion, File scanFile, File outputDirectory, BlackDuckRunData blackDuckRunData, String type, Gson gson, String codeLocationName) throws OperationException, IntegrationException {
         String projectGroupName = calculateProjectGroupOptions().getProjectGroup();
 
-        String codeLocationName =  codeLocationNameManager.createBinaryScanCodeLocationName(binaryFile, projectNameVersion.getName(), projectNameVersion.getVersion());
-        
         DetectProtobufBdioHeaderUtil detectProtobufBdioHeaderUtil = new DetectProtobufBdioHeaderUtil(
             UUID.randomUUID().toString(),
             type,
             projectNameVersion,
             projectGroupName,
             codeLocationName,
-            binaryFile.length());
+            scanFile.length());
         
         File bdioHeaderFile;
 
         ScassScanInitiationResult initResult = new ScassScanInitiationResult();
         try {
             bdioHeaderFile = detectProtobufBdioHeaderUtil.createProtobufBdioHeader(outputDirectory);
-            zipFileIfNecessaryAndComputeMD5Base64(binaryFile, initResult, outputDirectory);
+            zipFileIfNecessaryAndComputeMD5Base64(scanFile, initResult, outputDirectory);
         } catch (IOException e) {
-            throw new IntegrationException("Unable to perform file computations. Ensure the binary file and output directory are accessible.");
+            throw new IntegrationException("Unable to perform file computations. Ensure the file and output directory are accessible.");
         }
         
-        String operationName = "Upload Binary Scan BDIO Header to Initiate Scan";
+        String operationName = "Upload BDIO Header to Initiate Scan";
         
         ScanCreationResponse scanCreationResponse 
             = uploadBdioHeaderToInitiateScassScan(blackDuckRunData, bdioHeaderFile, operationName, gson, initResult.getZipMd5());

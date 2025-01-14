@@ -23,6 +23,7 @@ import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.data.ScanCreationResponse;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
 import com.blackduck.integration.detect.lifecycle.run.operation.blackduck.ScassScanInitiationResult;
+import com.blackduck.integration.detect.workflow.codelocation.CodeLocationNameManager;
 import com.blackduck.integration.detect.workflow.file.DirectoryManager;
 import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.util.NameVersion;
@@ -62,10 +63,15 @@ public class CommonScanStepRunnerTest {
         when(operationRunner.getDirectoryManager()).thenReturn(directoryManager);
         when(directoryManager.getBinaryOutputDirectory()).thenReturn(mockOutputDirectory);
         when(directoryManager.getContainerOutputDirectory()).thenReturn(mockOutputDirectory);
-        when(operationRunner.initiateScan(any(), any(), any(), any(), any(), any())).thenReturn(initResult);
+        when(operationRunner.initiateScan(any(), any(), any(), any(), any(), any(), any())).thenReturn(initResult);
         when(initResult.getScanCreationResponse()).thenReturn(scanCreationResponse);
         when(initResult.getZipFile()).thenReturn(mock(File.class));
         when(scanCreationResponse.getScanId()).thenReturn(UUID.randomUUID().toString());
+        
+        CodeLocationNameManager codeLocationNameManager = mock(CodeLocationNameManager.class);
+        when(operationRunner.getCodeLocationNameManager()).thenReturn(codeLocationNameManager);
+        when(codeLocationNameManager.createBinaryScanCodeLocationName(any(), any(), any())).thenReturn("binary");
+        when(codeLocationNameManager.createContainerScanCodeLocationName(any(), any(), any())).thenReturn("container");
     }
 
     @Test
