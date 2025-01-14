@@ -1646,7 +1646,7 @@ public class DetectProperties {
             .setInfo("IaC Scan Target Paths", DetectPropertyFromVersion.VERSION_7_14_0)
             .setHelp(
                 "A comma-separated list of paths to perform IaC scans on.",
-                "If this property is set, an IaC scan will be performed on each of the paths provided. If this property is not set, but IaC Scanning is enabled via detect.tools (explicitly, not using ALL value), the IaC scan target path is the source path (see property detect.source.path)."
+                "If this property is set, an IaC scan will be performed on each of the paths provided. If this property is not set, but IaC Scanning is enabled via detect.tools (explicitly, not detect.tools=ALL), the IaC scan target path is the source path (see property detect.source.path)."
             )
             .setGroups(DetectGroup.IAC_SCAN, DetectGroup.GLOBAL)
             .setExample("/user/source/target1,/user/source/target2")
