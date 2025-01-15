@@ -1311,6 +1311,10 @@ public class OperationRunner {
         statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.THREAT_INTEL, StatusType.FAILURE));
         exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR, "THREAT_INTEL");
     }
+    
+    public void publishBinarySuccess() {
+        statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.BINARY_SCAN, StatusType.SUCCESS));
+    }
 
     public void publishContainerSuccess() {
         statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.CONTAINER_SCAN, StatusType.SUCCESS));
