@@ -56,7 +56,7 @@ public class PreScassScanStepRunnerTest {
         String expectedProjectGroupName = "expectedProjectGroupName";
         when(mockProjectGroupOptions.getProjectGroup()).thenReturn(expectedProjectGroupName);
         when(mockOperationRunner.getDirectoryManager()).thenReturn(mockDirectoryManager);
-        when(mockDirectoryManager.getBinaryOutputDirectory()).thenReturn(mockBinaryOutputDirectory);
+        when(mockDirectoryManager.getContainerOutputDirectory()).thenReturn(mockBinaryOutputDirectory);
         when(mockBinaryOutputDirectory.exists()).thenReturn(true);
         when(mockBlackDuckRunData.getBlackDuckServerVersion()).thenReturn(Optional.of(mockBlackDuckVersion));
         

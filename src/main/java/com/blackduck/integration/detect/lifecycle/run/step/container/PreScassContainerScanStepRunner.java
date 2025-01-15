@@ -59,7 +59,7 @@ public class PreScassContainerScanStepRunner extends AbstractContainerScanStepRu
             projectGroupName,
             getCodeLocationName(),
             containerImageSizeInBytes);
-        File bdioHeaderFile = detectProtobufBdioHeaderUtil.createProtobufBdioHeader(binaryRunDirectory);
+        File bdioHeaderFile = detectProtobufBdioHeaderUtil.createProtobufBdioHeader(containerRunDirectory);
         String operationName = "Upload Container Scan BDIO Header to Initiate Scan";
         UUID scanId = operationRunner.uploadBdioHeaderToInitiateScan(blackDuckRunData, bdioHeaderFile, operationName);
         if (scanId == null) {

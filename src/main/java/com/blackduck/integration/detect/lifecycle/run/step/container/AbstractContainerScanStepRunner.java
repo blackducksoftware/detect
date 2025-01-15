@@ -27,7 +27,7 @@ public abstract class AbstractContainerScanStepRunner {
     protected final Logger logger = LoggerFactory.getLogger(this.getClass());
     protected final NameVersion projectNameVersion;
     protected final BlackDuckRunData blackDuckRunData;
-    protected final File binaryRunDirectory;
+    protected final File containerRunDirectory;
     protected final File containerImage;
     protected final Gson gson;
     private String codeLocationName;
@@ -38,11 +38,11 @@ public abstract class AbstractContainerScanStepRunner {
         this.operationRunner = operationRunner;
         this.projectNameVersion = projectNameVersion;
         this.blackDuckRunData = blackDuckRunData;
-        binaryRunDirectory = operationRunner.getDirectoryManager().getBinaryOutputDirectory();
-        if (binaryRunDirectory == null || !binaryRunDirectory.exists()) {
-            throw new IntegrationException("Binary run directory does not exist.");
+        containerRunDirectory = operationRunner.getDirectoryManager().getContainerOutputDirectory();
+        if (containerRunDirectory == null || !containerRunDirectory.exists()) {
+            throw new IntegrationException("Container run directory does not exist.");
         }
-        containerImage = operationRunner.getContainerScanImage(gson, binaryRunDirectory);
+        containerImage = operationRunner.getContainerScanImage(gson, containerRunDirectory);
         this.gson = gson;
     }
 
