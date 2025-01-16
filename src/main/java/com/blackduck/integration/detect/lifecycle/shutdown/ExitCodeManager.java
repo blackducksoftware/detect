@@ -33,6 +33,12 @@ public class ExitCodeManager {
         for (ExitCodeRequest exitCodeRequest : exitCodeRequests) {
             winningExitCodeType = ExitCodeType.getWinningExitCodeType(winningExitCodeType, exitCodeRequest.getExitCodeType());
         }
+
+        if (!winningExitCodeType.isSuccess() &&
+            exitCodeRequests.stream().anyMatch(request -> request.getExitCodeType() == ExitCodeType.FAILURE_OUT_OF_MEMORY)) {
+            return ExitCodeType.FAILURE_OUT_OF_MEMORY;
+        }
+
         return winningExitCodeType;
     }
 }

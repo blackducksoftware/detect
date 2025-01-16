@@ -1,7 +1,6 @@
 package com.blackduck.integration.detect.configuration.enumeration;
 
 public enum ExitCodeType {
-    FAILURE_OUT_OF_MEMORY(-1, "Detect encountered an Out of Memory error. Please review memory settings and system resources."),
     SUCCESS(0, "Detect exited successfully."),
     FAILURE_BLACKDUCK_CONNECTIVITY(1, "Detect was unable to connect to Black Duck. Check your configuration and connection."),
     FAILURE_TIMEOUT(2, "Detect was unable to wait for actions to be completed on Black Duck. Check your Black Duck server or increase your timeout."),
@@ -26,6 +25,7 @@ public enum ExitCodeType {
     ),
 
     FAILURE_ACCURACY_NOT_MET(15, "Detect was unable to meet the required accuracy."),
+    FAILURE_OUT_OF_MEMORY(16, "Detect encountered an Out of Memory error. Please review memory settings and system resources."),
 
     FAILURE_IMAGE_NOT_AVAILABLE(20, "Image scan attempted but no return data available."),
 
