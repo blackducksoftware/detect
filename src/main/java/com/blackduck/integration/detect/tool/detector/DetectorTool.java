@@ -108,6 +108,13 @@ public class DetectorTool {
         List<DetectorDirectoryReport> reports = new DetectorReporter().generateReport(evaluation);
         DetectorToolResult toolResult = publishAllResults(reports, directory, projectDetector, requiredDetectors, requiredAccuracyTypes);
 
+        boolean outOfMemoryIssueFound = detectorIssuePublisher.hasOutOfMemoryIssue(reports);
+
+        if (outOfMemoryIssueFound) {
+            logger.error("Detected an issue: EXECUTABLE_TERMINATED_LIKELY_OUT_OF_MEMORY.");
+            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_OUT_OF_MEMORY, "Executable terminated likely due to out of memory.");
+        }
+
         //Completed.
         logger.debug("Finished running detectors.");
         detectorEventPublisher.publishDetectorsComplete(toolResult);

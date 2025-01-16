@@ -25,6 +25,7 @@ public enum ExitCodeType {
     ),
 
     FAILURE_ACCURACY_NOT_MET(15, "Detect was unable to meet the required accuracy."),
+    FAILURE_OUT_OF_MEMORY(16, "Detect encountered an Out of Memory error. Please review memory settings and system resources."),
 
     FAILURE_IMAGE_NOT_AVAILABLE(20, "Image scan attempted but no return data available."),
 
