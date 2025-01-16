@@ -3,6 +3,7 @@ package com.blackduck.integration.detect.lifecycle.run.step.utility;
 import java.io.IOException;
 import java.util.function.Consumer;
 
+import com.blackduck.integration.detect.lifecycle.BlackDuckDuplicateProjectException;
 import com.blackduck.integration.detect.workflow.componentlocationanalysis.ComponentLocatorException;
 import org.apache.commons.lang3.StringUtils;
 
@@ -63,6 +64,9 @@ public class OperationWrapper {
                 operation.error(e);
             }
             errorConsumer.accept(e);
+            if (e.getBlackDuckErrorCode().contains("central.constraint_violation.project_name_duplicate_not_allowed")) {
+                throw new BlackDuckDuplicateProjectException(e);
+            }
             throw new OperationException(e);
         } catch (Exception e) {
             // in some cases, the problem is buried in a nested exception 
