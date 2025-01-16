@@ -7,8 +7,13 @@ import com.blackduck.integration.detect.tool.detector.report.DetectorDirectoryRe
 import com.blackduck.integration.detect.workflow.status.DetectIssue;
 import com.blackduck.integration.detect.workflow.status.DetectIssueType;
 import com.blackduck.integration.detect.workflow.status.StatusEventPublisher;
+import com.blackduck.integration.detector.base.DetectorStatusCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DetectorIssuePublisher {
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
     public void publishIssues(StatusEventPublisher statusEventPublisher, List<DetectorDirectoryReport> reports) {
         //TODO (detectors): just verify we don't want to publish 'attempted' when successfully extracted, right now publishing all attempted in not-extracted.
         String spacer = "\t";
@@ -23,6 +28,17 @@ public class DetectorIssuePublisher {
             });
 
         }
+    }
+    public boolean hasOutOfMemoryIssue(List<DetectorDirectoryReport> reports) {
+        logger.info("Checking for Out of Memory (OOM) Error.");
+
+        return reports.stream()
+            .flatMap(report -> report.getNotExtractedDetectors().stream())
+            .flatMap(notExtracted -> notExtracted.getAttemptedDetectables().stream())
+            .anyMatch(attemptedDetectableReport -> {
+                logger.debug("Attempted Detectable Status Code: {}", attemptedDetectableReport.getStatusCode());
+                return attemptedDetectableReport.getStatusCode() == DetectorStatusCode.EXECUTABLE_TERMINATED_LIKELY_OUT_OF_MEMORY;
+            });
     }
 
 }

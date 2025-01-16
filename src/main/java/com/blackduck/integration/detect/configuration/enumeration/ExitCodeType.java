@@ -1,6 +1,7 @@
 package com.blackduck.integration.detect.configuration.enumeration;
 
 public enum ExitCodeType {
+    FAILURE_OUT_OF_MEMORY(-1, "Detect encountered an Out of Memory error. Please review memory settings and system resources."),
     SUCCESS(0, "Detect exited successfully."),
     FAILURE_BLACKDUCK_CONNECTIVITY(1, "Detect was unable to connect to Black Duck. Check your configuration and connection."),
     FAILURE_TIMEOUT(2, "Detect was unable to wait for actions to be completed on Black Duck. Check your Black Duck server or increase your timeout."),
