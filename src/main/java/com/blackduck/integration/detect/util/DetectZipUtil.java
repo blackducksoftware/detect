@@ -11,10 +11,12 @@ import java.nio.file.Path;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.compress.utils.IOUtils;
+import org.apache.tika.Tika;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,5 +76,9 @@ public class DetectZipUtil { //TODO: Add method for extracting without the wrapp
                 }
             }
         }
+    }
+
+    public static boolean isZipFile(File file) throws IOException {
+        return new Tika().detect(file).equals("application/zip");
     }
 }

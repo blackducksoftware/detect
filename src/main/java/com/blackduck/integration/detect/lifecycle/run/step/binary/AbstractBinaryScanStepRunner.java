@@ -1,16 +1,14 @@
-package com.blackduck.integration.detect.lifecycle.run.step;
+package com.blackduck.integration.detect.lifecycle.run.step.binary;
 
 import java.io.File;
-import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.blackduck.integration.sca.upload.rest.model.response.BinaryFinishResponseContent;
-import com.blackduck.integration.sca.upload.rest.status.BinaryUploadStatus;
 import com.blackduck.integration.blackduck.codelocation.CodeLocationCreationData;
 import com.blackduck.integration.blackduck.codelocation.binaryscanner.BinaryScanBatchOutput;
 import com.blackduck.integration.detect.lifecycle.OperationException;
@@ -20,41 +18,33 @@ import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
 import com.blackduck.integration.detect.tool.binaryscanner.BinaryScanOptions;
 import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.util.NameVersion;
+import com.google.gson.Gson;
 
-public class BinaryScanStepRunner {
-    private final OperationRunner operationRunner;
-    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+public abstract class AbstractBinaryScanStepRunner {
+    protected final OperationRunner operationRunner;
+    protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+    protected Gson gson;
+    protected Optional<CodeLocationCreationData<BinaryScanBatchOutput>> codeLocations;
 
-    public BinaryScanStepRunner(OperationRunner operationRunner) {
+    protected AbstractBinaryScanStepRunner(OperationRunner operationRunner) {
         this.operationRunner = operationRunner;
-    }
-
-    public Optional<String> runBinaryScan(
-        DockerTargetData dockerTargetData,
-        NameVersion projectNameVersion,
-        BlackDuckRunData blackDuckRunData,
-        Set<String> binaryTargets
-    )
-        throws OperationException, IntegrationException {
-        Optional<File> binaryScanFile = determineBinaryScanFileTarget(dockerTargetData, binaryTargets);
-        if (binaryScanFile.isPresent()) {
-            BinaryUploadStatus status = operationRunner.uploadBinaryScanFile(binaryScanFile.get(), projectNameVersion, blackDuckRunData);
-            return extractBinaryScanId(status);
-        } else {
-            return Optional.empty();
-        }
+        this.gson = new Gson();
+        codeLocations = Optional.empty();
     }
     
-    public Optional<CodeLocationCreationData<BinaryScanBatchOutput>> runLegacyBinaryScan(
+    protected abstract UUID performBlackduckInteractions(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData, Optional<File> binaryScanFile) throws OperationException, IntegrationException;
+    
+    public Optional<UUID> invokeBinaryScanningWorkflow(
         DockerTargetData dockerTargetData,
         NameVersion projectNameVersion,
         BlackDuckRunData blackDuckRunData,
-        Set<String> binaryTargets
-    )
-        throws OperationException {
+        Set<String> binaryTargets        
+    ) throws OperationException, IntegrationException {
         Optional<File> binaryScanFile = determineBinaryScanFileTarget(dockerTargetData, binaryTargets);
-        if (binaryScanFile.isPresent()) {
-            return Optional.of(operationRunner.uploadLegacyBinaryScanFile(binaryScanFile.get(), projectNameVersion, blackDuckRunData));
+        if (binaryScanFile.isPresent()) { 
+            UUID scanId = performBlackduckInteractions(projectNameVersion, blackDuckRunData, binaryScanFile);
+            
+            return scanId != null ? Optional.of(scanId) : Optional.empty();
         } else {
             return Optional.empty();
         }
@@ -101,18 +91,7 @@ public class BinaryScanStepRunner {
         }
     }
     
-    public Optional<String> extractBinaryScanId(BinaryUploadStatus status) {
-        try {
-            BinaryFinishResponseContent response = status.getResponseContent().get();
-
-            String location = response.getLocation();
-            URI uri = new URI(location);
-            String path = uri.getPath();
-            String scanId = path.substring(path.lastIndexOf('/') + 1);
-            return Optional.of(scanId);
-        } catch (Exception e) {
-            logger.warn("Unexpected response uploading binary, will be unable to wait for scan completion.");
-            return Optional.empty();
-        }
+    public Optional<CodeLocationCreationData<BinaryScanBatchOutput>> getCodeLocations() {
+        return codeLocations;
     }
 }
