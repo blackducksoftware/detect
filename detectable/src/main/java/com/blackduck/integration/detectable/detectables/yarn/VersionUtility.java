@@ -159,7 +159,7 @@ public class VersionUtility {
                 && (mid = dependencyIdString.indexOf(ESCAPED_BACKSLASH + "npm:", start)) > -1
                 && (end = dependencyIdString.indexOf("\"]}", mid)) > -1) {
             name = dependencyIdString.substring(start + (LazyIdSource.NAME_VERSION + ESCAPED_BACKSLASH).length(), mid);
-            String version = dependencyIdString.substring((mid + ESCAPED_BACKSLASH + "npm:").length(), end);
+            String version = dependencyIdString.substring(mid + (ESCAPED_BACKSLASH + "npm:").length(), end);
             if ((start = version.indexOf("@")) > -1) {
                 version = version.substring(start + 1);
             }
