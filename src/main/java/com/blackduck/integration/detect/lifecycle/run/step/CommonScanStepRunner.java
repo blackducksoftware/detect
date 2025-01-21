@@ -51,27 +51,31 @@ public class CommonScanStepRunner {
         );
 
         ScanCreationResponse scanCreationResponse = initResult.getScanCreationResponse();
-
-        String scanId = scanCreationResponse.getScanId();
-        String uploadUrl = scanCreationResponse.getUploadUrl();
         
         String operationName = String.format("%s Upload", 
                 scanType.substring(0, 1).toUpperCase() + scanType.substring(1).toLowerCase());
         
         return operationRunner.getAuditLog().namedPublic(operationName, () -> {
-            if (StringUtils.isNotEmpty(uploadUrl)) {
-                // This is a SCASS capable server server and SCASS is enabled.
-                ScassScanStepRunner scassScanStepRunner = createScassScanStepRunner(blackDuckRunData);
-                scassScanStepRunner.runScassScan(Optional.of(initResult.getZipFile()), scanCreationResponse);
-            } else {
-                // This is a SCASS capable server server but SCASS is not enabled.
-                BdbaScanStepRunner bdbaScanStepRunner = createBdbaScanStepRunner(operationRunner);
-
-                bdbaScanStepRunner.runBdbaScan(projectNameVersion, blackDuckRunData, scanFile, scanId, scanType);
-            }
-
-            return UUID.fromString(scanId);
+            return performCommonUpload(projectNameVersion, blackDuckRunData, scanFile, operationRunner, scanType,
+                    initResult, scanCreationResponse);
         });
+    }
+
+    public UUID performCommonUpload(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData,
+            Optional<File> scanFile, OperationRunner operationRunner, String scanType,
+            ScassScanInitiationResult initResult, ScanCreationResponse scanCreationResponse) throws IntegrationException, OperationException {
+        if (StringUtils.isNotEmpty(scanCreationResponse.getUploadUrl())) {
+            // This is a SCASS capable server server and SCASS is enabled.
+            ScassScanStepRunner scassScanStepRunner = createScassScanStepRunner(blackDuckRunData);
+            scassScanStepRunner.runScassScan(Optional.of(initResult.getZipFile()), scanCreationResponse);
+        } else {
+            // This is a SCASS capable server server but SCASS is not enabled.
+            BdbaScanStepRunner bdbaScanStepRunner = createBdbaScanStepRunner(operationRunner);
+
+            bdbaScanStepRunner.runBdbaScan(projectNameVersion, blackDuckRunData, scanFile, scanCreationResponse.getScanId(), scanType);
+        }
+
+        return UUID.fromString(scanCreationResponse.getScanId());
     }
     
     private File getOutputDirectory(OperationRunner operationRunner, String scanType) throws IntegrationException {
