@@ -49,21 +49,21 @@ public class CommonScanStepRunner {
             gson,
             codeLocationName
         );
-
-        ScanCreationResponse scanCreationResponse = initResult.getScanCreationResponse();
         
         String operationName = String.format("%s Upload", 
                 scanType.substring(0, 1).toUpperCase() + scanType.substring(1).toLowerCase());
         
         return operationRunner.getAuditLog().namedPublic(operationName, () -> {
             return performCommonUpload(projectNameVersion, blackDuckRunData, scanFile, operationRunner, scanType,
-                    initResult, scanCreationResponse);
+                    initResult);
         });
     }
 
     public UUID performCommonUpload(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData,
             Optional<File> scanFile, OperationRunner operationRunner, String scanType,
-            ScassScanInitiationResult initResult, ScanCreationResponse scanCreationResponse) throws IntegrationException, OperationException {
+            ScassScanInitiationResult initResult) throws IntegrationException, OperationException {
+        ScanCreationResponse scanCreationResponse = initResult.getScanCreationResponse();
+        
         if (StringUtils.isNotEmpty(scanCreationResponse.getUploadUrl())) {
             // This is a SCASS capable server server and SCASS is enabled.
             ScassScanStepRunner scassScanStepRunner = createScassScanStepRunner(blackDuckRunData);
