@@ -1,5 +1,5 @@
 # Configuring the Jenkins Plugin
-Use the following process to configure the [detect_product_long] for Jenkins plugin.  Note that the supported credential formats are user name and password or API token.  SAML is not supported.
+Use the following process to configure the [detect_product_long] for Jenkins plugin.  Note that the supported credential format is API token.  SAML is not supported.
 
 1. After installing, navigate to **Manage Jenkins** > **Configure System**.
 1. Navigate to the **[detect_product_short]** section, and complete the following.
@@ -18,7 +18,7 @@ Use the following process to configure the [detect_product_long] for Jenkins plu
 </figure>
 
 1. **[bd_product_short] URL**: URL to your [bd_product_short] server instance.
-1. **[bd_product_short] credentials**: To add credentials, click **Add** > **Jenkins**, and then select the type of credentials that you want to add and populate the relevant fields.
+1. **[bd_product_short] credentials**: To add credentials, click **Add** > **Jenkins**, and then select API Token as the credential that you want to add and populate the relevant fields.
    When you add credentials, you can select those credentials that you want from the drop-down menu to authenticate to the [bd_product_short] server. 
    1. For user API tokens, select **Secret text** from the menu in the **Kind** field, then provide your [bd_product_short] access token in the **Secret** field.
    <figure>
@@ -26,7 +26,6 @@ Use the following process to configure the [detect_product_long] for Jenkins plu
          alt="Inputting the access token secret">
     <figcaption>Input access token secret.</figcaption>
 </figure>
-   1. The other option for credentials is **Username with password**.
 
 1. The **Advanced...** option displays for [bd_product_short]. Advanced settings enable you to specify values for:
    1. **[bd_product_short] connection timeout** (in seconds).  The default value is 120.
