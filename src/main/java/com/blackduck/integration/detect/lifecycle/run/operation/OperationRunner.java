@@ -297,6 +297,10 @@ public class OperationRunner {
     public CodeLocationNameManager getCodeLocationNameManager() {
         return codeLocationNameManager;
     }
+    
+    public OperationAuditLog getAuditLog() {
+        return auditLog;
+    }
 
     public final Optional<DetectableTool> checkForDocker() throws OperationException {//TODO: refactor bazel+docker out of detectable
         return auditLog.namedInternal("Check For Docker", () -> {

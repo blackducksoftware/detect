@@ -18,7 +18,7 @@ import com.blackduck.integration.util.NameVersion;
 import com.google.gson.Gson;
 
 /**
- * This class is intended to host commmon code for running SCASS and the newer BDBA based scans
+ * This class is intended to host common code for running SCASS and the newer BDBA based scans
  * if SCASS it not enabled. Right now this code powers binary and container scans but further
  * refactoring might be possible once package manager and signature scans are supported natively
  * by Detect.
@@ -55,18 +55,23 @@ public class CommonScanStepRunner {
         String scanId = scanCreationResponse.getScanId();
         String uploadUrl = scanCreationResponse.getUploadUrl();
         
-        if (StringUtils.isNotEmpty(uploadUrl)) {
-            // This is a SCASS capable server server and SCASS is enabled.
-            ScassScanStepRunner scassScanStepRunner = createScassScanStepRunner(blackDuckRunData);
-            scassScanStepRunner.runScassScan(Optional.of(initResult.getZipFile()), scanCreationResponse);       
-        } else {
-            // This is a SCASS capable server server but SCASS is not enabled.
-            BdbaScanStepRunner bdbaScanStepRunner = createBdbaScanStepRunner(operationRunner);
-            
-            bdbaScanStepRunner.runBdbaScan(projectNameVersion, blackDuckRunData, scanFile, scanId, scanType);
-        }
+        String operationName = String.format("%s Upload", 
+                scanType.substring(0, 1).toUpperCase() + scanType.substring(1).toLowerCase());
         
-        return UUID.fromString(scanId);
+        return operationRunner.getAuditLog().namedPublic(operationName, () -> {
+            if (StringUtils.isNotEmpty(uploadUrl)) {
+                // This is a SCASS capable server server and SCASS is enabled.
+                ScassScanStepRunner scassScanStepRunner = createScassScanStepRunner(blackDuckRunData);
+                scassScanStepRunner.runScassScan(Optional.of(initResult.getZipFile()), scanCreationResponse);
+            } else {
+                // This is a SCASS capable server server but SCASS is not enabled.
+                BdbaScanStepRunner bdbaScanStepRunner = createBdbaScanStepRunner(operationRunner);
+
+                bdbaScanStepRunner.runBdbaScan(projectNameVersion, blackDuckRunData, scanFile, scanId, scanType);
+            }
+
+            return UUID.fromString(scanId);
+        });
     }
     
     private File getOutputDirectory(OperationRunner operationRunner, String scanType) throws IntegrationException {
