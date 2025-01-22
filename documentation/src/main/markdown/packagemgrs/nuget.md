@@ -17,7 +17,7 @@ The detectors run a platform dependent self-contained executable that is current
 
 <note type="note">
 
-*  To retrieve project build information, NuGet Project Inspector relies on a Microsoft API. This API relies on the installation of .NET 6.0 on the build machine. If .NET 6.0 is not present the inspector falls back to the less accurate and effective XML Resolver. 
+*  To retrieve project build information, NuGet Project Inspector relies on a Microsoft API which, in turn, relies on the installation of .NET 6.0 on the build machine. If .NET 6.0 is not present the inspector falls back to the less accurate and effective XML Resolver. 
 * NuGet Project Inspector relies on Project Inspector thus does not accept NuGet specific configuration properties.   
 * The NuGet Detectors do not work with mono.
 </note>

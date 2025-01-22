@@ -29,7 +29,8 @@ In general, the detectors require:
 * All dependencies must be resolvable. This generally means that each dependency has been installed using the package manager's cache, virtual environment, and others.
 * The package manager / build tool must be installed and in the path.
 
-Refer to the applicable [package manager sections](../packagemgrs/overview.md) for information on specific detectors. This is particularly important for the [Docker Inspector](../packagemgrs/docker/intro.md) and the [NuGet Inspector](../packagemgrs/nuget.md).
+Refer to the applicable [package manager sections](../packagemgrs/overview.md) for information on specific detectors. 
+<note type="important">Review requirements for [Docker Inspector](../packagemgrs/docker/intro.md) and [NuGet Inspector](../packagemgrs/nuget.md).</note>
 
 ## Risk report requirements
 
