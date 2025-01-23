@@ -2,7 +2,6 @@ package com.blackduck.integration.detect.tool.signaturescanner.operation;
 
 import java.io.File;
 import java.util.List;
-import java.util.Optional;
 
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -11,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.ScanBatch;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.ScanBatchBuilder;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.ScanTarget;
+import com.blackduck.integration.blackduck.configuration.BlackDuckServerConfig;
 import com.blackduck.integration.blackduck.version.BlackDuckVersion;
 import com.blackduck.integration.detect.configuration.DetectUserFriendlyException;
 import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
@@ -87,7 +87,7 @@ public class CreateScanBatchOperation {
         
         scanJobBuilder.bomCompareMode(signatureScannerOptions.getBomCompareMode().toString());
         
-        attemptToSetCsvArchive(scanJobBuilder, blackDuckRunData.getBlackDuckServerVersion());
+        attemptToSetCsvArchive(scanJobBuilder, blackDuckRunData);
 
         String projectName = projectNameVersion.getName();
         String projectVersionName = projectNameVersion.getVersion();
@@ -122,7 +122,8 @@ public class CreateScanBatchOperation {
             scanJobBuilder.addTarget(ScanTarget.createBasicTarget(scanPath.getTargetCanonicalPath(), scanPath.getExclusions(), codeLocationName));
         }
 
-        scanJobBuilder.fromBlackDuckServerConfig(blackDuckRunData.getBlackDuckServerConfig());//when offline, we must still call this with 'null' as a workaround for library issues, so offline scanner must be created with this set to null.
+        BlackDuckServerConfig blackDuckServerConfig = blackDuckRunData != null ? blackDuckRunData.getBlackDuckServerConfig() : null;
+        scanJobBuilder.fromBlackDuckServerConfig(blackDuckServerConfig);//when offline, we must still call this with 'null' as a workaround for library issues, so offline scanner must be created with this set to null.
         try {
             return scanJobBuilder.build();
         } catch (IllegalArgumentException e) {
@@ -134,13 +135,14 @@ public class CreateScanBatchOperation {
      * If we are online and if a user has specified they want csvArchives, warn if the 
      * BlackDuck server we are connected to can't handle it.
      */
-    private void attemptToSetCsvArchive(ScanBatchBuilder scanJobBuilder,
-            Optional<BlackDuckVersion> blackDuckServerVersion) {
-        if (signatureScannerOptions.getCsvArchive() && blackDuckServerVersion.isPresent()) {
-            if (!blackDuckServerVersion.get().isAtLeast(MIN_CSV_ARCHIVE_VERSION)) {
+    private void attemptToSetCsvArchive(ScanBatchBuilder scanJobBuilder, BlackDuckRunData blackDuckRunData) {
+        if (signatureScannerOptions.getCsvArchive()) {
+            if (blackDuckRunData != null 
+                    && blackDuckRunData.getBlackDuckServerVersion().isPresent()
+                    && !blackDuckRunData.getBlackDuckServerVersion().get().isAtLeast(MIN_CSV_ARCHIVE_VERSION)) {
                 logger.error("CSV archive was requested but associated Black Duck server is not compatible.");
             }
-            scanJobBuilder.csvArchive(signatureScannerOptions.getCsvArchive());   
+            scanJobBuilder.csvArchive(signatureScannerOptions.getCsvArchive());        
         }
     }
 
