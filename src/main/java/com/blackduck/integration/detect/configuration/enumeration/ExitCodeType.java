@@ -25,7 +25,7 @@ public enum ExitCodeType {
     ),
 
     FAILURE_ACCURACY_NOT_MET(15, "Detect was unable to meet the required accuracy."),
-    FAILURE_OUT_OF_MEMORY(16, "Detect encountered an Out of Memory error. Please review memory settings and system resources."),
+    FAILURE_OUT_OF_MEMORY(16, "Detect encountered an Out of Memory error. Please review memory settings and system resources.", 0.5),
 
     FAILURE_IMAGE_NOT_AVAILABLE(20, "Image scan attempted but no return data available."),
 
@@ -36,14 +36,22 @@ public enum ExitCodeType {
 
     private final int exitCode;
     private final String description;
+    private final double priority;
 
     ExitCodeType(int exitCode, String description) {
+        this(exitCode, description, (double) exitCode);
+    }
+
+    ExitCodeType(int exitCode, String description, double priority) {
         this.exitCode = exitCode;
         this.description = description;
+        this.priority = priority;
     }
 
     /**
-     * A failure always beats a success and a failure with a lower exit code beats a failure with a higher exit code.
+     * A failure always beats a success. Among failures:
+     * - The one with a lower priority wins.
+     * - If priorities are equal, the one with a lower exit code wins.
      */
     public static ExitCodeType getWinningExitCodeType(ExitCodeType first, ExitCodeType second) {
         if (first.isSuccess()) {
@@ -51,10 +59,12 @@ public enum ExitCodeType {
         } else if (second.isSuccess()) {
             return first;
         } else {
-            if (first.getExitCode() < second.getExitCode()) {
+            if (first.priority < second.priority) {
                 return first;
-            } else {
+            } else if (second.priority < first.priority) {
                 return second;
+            } else {
+                return (first.getExitCode() < second.getExitCode()) ? first : second;
             }
         }
     }

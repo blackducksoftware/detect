@@ -6,6 +6,8 @@ import java.util.List;
 import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
 import com.blackduck.integration.detect.workflow.event.Event;
 import com.blackduck.integration.detect.workflow.event.EventSystem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ExitCodeManager {
     private final List<ExitCodeRequest> exitCodeRequests = new ArrayList<>();
@@ -33,12 +35,6 @@ public class ExitCodeManager {
         for (ExitCodeRequest exitCodeRequest : exitCodeRequests) {
             winningExitCodeType = ExitCodeType.getWinningExitCodeType(winningExitCodeType, exitCodeRequest.getExitCodeType());
         }
-
-        if (!winningExitCodeType.isSuccess() &&
-            exitCodeRequests.stream().anyMatch(request -> request.getExitCodeType() == ExitCodeType.FAILURE_OUT_OF_MEMORY)) {
-            return ExitCodeType.FAILURE_OUT_OF_MEMORY;
-        }
-
         return winningExitCodeType;
     }
 }

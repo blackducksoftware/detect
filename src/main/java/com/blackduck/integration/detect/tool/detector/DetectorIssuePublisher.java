@@ -30,13 +30,10 @@ public class DetectorIssuePublisher {
         }
     }
     public boolean hasOutOfMemoryIssue(List<DetectorDirectoryReport> reports) {
-        logger.info("Checking for Out of Memory (OOM) Error.");
-
         return reports.stream()
             .flatMap(report -> report.getNotExtractedDetectors().stream())
             .flatMap(notExtracted -> notExtracted.getAttemptedDetectables().stream())
             .anyMatch(attemptedDetectableReport -> {
-                logger.debug("Attempted Detectable Status Code: {}", attemptedDetectableReport.getStatusCode());
                 return attemptedDetectableReport.getStatusCode() == DetectorStatusCode.EXECUTABLE_TERMINATED_LIKELY_OUT_OF_MEMORY;
             });
     }

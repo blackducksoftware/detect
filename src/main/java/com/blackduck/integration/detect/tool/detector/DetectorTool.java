@@ -111,7 +111,7 @@ public class DetectorTool {
         boolean outOfMemoryIssueFound = detectorIssuePublisher.hasOutOfMemoryIssue(reports);
 
         if (outOfMemoryIssueFound) {
-            logger.error("Detected an issue: EXECUTABLE_TERMINATED_LIKELY_OUT_OF_MEMORY.");
+            logger.error("Detected an issue: EXECUTABLE_TERMINATED_LIKELY_OUT_OF_MEMORY");
             exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_OUT_OF_MEMORY, "Executable terminated likely due to out of memory.");
         }
 
