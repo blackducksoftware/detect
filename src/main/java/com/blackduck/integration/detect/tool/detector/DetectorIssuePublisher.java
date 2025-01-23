@@ -12,8 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DetectorIssuePublisher {
-    private final Logger logger = LoggerFactory.getLogger(this.getClass());
-
     public void publishIssues(StatusEventPublisher statusEventPublisher, List<DetectorDirectoryReport> reports) {
         //TODO (detectors): just verify we don't want to publish 'attempted' when successfully extracted, right now publishing all attempted in not-extracted.
         String spacer = "\t";
@@ -29,6 +27,7 @@ public class DetectorIssuePublisher {
 
         }
     }
+
     public boolean hasOutOfMemoryIssue(List<DetectorDirectoryReport> reports) {
         return reports.stream()
             .flatMap(report -> report.getNotExtractedDetectors().stream())
@@ -37,5 +36,4 @@ public class DetectorIssuePublisher {
                 return attemptedDetectableReport.getStatusCode() == DetectorStatusCode.EXECUTABLE_TERMINATED_LIKELY_OUT_OF_MEMORY;
             });
     }
-
 }

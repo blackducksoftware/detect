@@ -6,8 +6,6 @@ import java.util.List;
 import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
 import com.blackduck.integration.detect.workflow.event.Event;
 import com.blackduck.integration.detect.workflow.event.EventSystem;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ExitCodeManager {
     private final List<ExitCodeRequest> exitCodeRequests = new ArrayList<>();
