@@ -2,26 +2,28 @@ package com.blackduck.integration.detect.tool.signaturescanner.operation;
 
 import java.io.File;
 import java.util.List;
+import java.util.Optional;
 
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.ScanBatch;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.ScanBatchBuilder;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.ScanTarget;
-import com.blackduck.integration.blackduck.configuration.BlackDuckServerConfig;
+import com.blackduck.integration.blackduck.version.BlackDuckVersion;
 import com.blackduck.integration.detect.configuration.DetectUserFriendlyException;
 import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
+import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.data.DockerTargetData;
 import com.blackduck.integration.detect.tool.signaturescanner.BlackDuckSignatureScannerOptions;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScanPath;
 import com.blackduck.integration.detect.workflow.codelocation.CodeLocationNameManager;
 import com.blackduck.integration.detect.workflow.file.DirectoryManager;
 import com.blackduck.integration.util.NameVersion;
-import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class CreateScanBatchOperation {
+    private static final BlackDuckVersion MIN_CSV_ARCHIVE_VERSION = new BlackDuckVersion(2025, 1, 0);
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final BlackDuckSignatureScannerOptions signatureScannerOptions;
     private final DirectoryManager directoryManager;
@@ -37,11 +39,11 @@ public class CreateScanBatchOperation {
         String detectRunUuid,
         NameVersion projectNameVersion,
         List<SignatureScanPath> signatureScanPaths,
-        BlackDuckServerConfig blackDuckServerConfig,
+        BlackDuckRunData blackDuckRunData,
         @Nullable DockerTargetData dockerTargetData
     )
         throws DetectUserFriendlyException {
-        return createScanBatch(detectRunUuid, projectNameVersion, signatureScanPaths, blackDuckServerConfig, dockerTargetData);
+        return createScanBatch(detectRunUuid, projectNameVersion, signatureScanPaths, blackDuckRunData, dockerTargetData);
     }
 
     public ScanBatch createScanBatchWithoutBlackDuck(
@@ -59,7 +61,7 @@ public class CreateScanBatchOperation {
         String detectRunUuid,
         NameVersion projectNameVersion,
         List<SignatureScanPath> signatureScanPaths,
-        @Nullable BlackDuckServerConfig blackDuckServerConfig,
+        @Nullable BlackDuckRunData blackDuckRunData,
         @Nullable DockerTargetData dockerTargetData
     )
         throws DetectUserFriendlyException {
@@ -85,7 +87,7 @@ public class CreateScanBatchOperation {
         
         scanJobBuilder.bomCompareMode(signatureScannerOptions.getBomCompareMode().toString());
         
-        scanJobBuilder.csvArchive(signatureScannerOptions.getCsvArchive());
+        attemptToSetCsvArchive(scanJobBuilder, blackDuckRunData.getBlackDuckServerVersion());
 
         String projectName = projectNameVersion.getName();
         String projectVersionName = projectNameVersion.getVersion();
@@ -120,7 +122,7 @@ public class CreateScanBatchOperation {
             scanJobBuilder.addTarget(ScanTarget.createBasicTarget(scanPath.getTargetCanonicalPath(), scanPath.getExclusions(), codeLocationName));
         }
 
-        scanJobBuilder.fromBlackDuckServerConfig(blackDuckServerConfig);//when offline, we must still call this with 'null' as a workaround for library issues, so offline scanner must be created with this set to null.
+        scanJobBuilder.fromBlackDuckServerConfig(blackDuckRunData.getBlackDuckServerConfig());//when offline, we must still call this with 'null' as a workaround for library issues, so offline scanner must be created with this set to null.
         try {
             return scanJobBuilder.build();
         } catch (IllegalArgumentException e) {
@@ -128,6 +130,20 @@ public class CreateScanBatchOperation {
         }
     }
     
+    /**
+     * If we are online and if a user has specified they want csvArchives, warn if the 
+     * BlackDuck server we are connected to can't handle it.
+     */
+    private void attemptToSetCsvArchive(ScanBatchBuilder scanJobBuilder,
+            Optional<BlackDuckVersion> blackDuckServerVersion) {
+        if (signatureScannerOptions.getCsvArchive() && blackDuckServerVersion.isPresent()) {
+            if (!blackDuckServerVersion.get().isAtLeast(MIN_CSV_ARCHIVE_VERSION)) {
+                logger.error("CSV archive was requested but associated Black Duck server is not compatible.");
+            }
+            scanJobBuilder.csvArchive(signatureScannerOptions.getCsvArchive());   
+        }
+    }
+
     private boolean conditionalCorrelationFilter(boolean toCheck, String toWarn) {
         if (toCheck) {
             if (signatureScannerOptions.isCorrelatedScanningEnabled()) {
