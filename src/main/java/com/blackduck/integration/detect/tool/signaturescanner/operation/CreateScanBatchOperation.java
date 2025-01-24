@@ -140,7 +140,7 @@ public class CreateScanBatchOperation {
             if (blackDuckRunData != null 
                     && blackDuckRunData.getBlackDuckServerVersion().isPresent()
                     && !blackDuckRunData.getBlackDuckServerVersion().get().isAtLeast(MIN_CSV_ARCHIVE_VERSION)) {
-                logger.error("CSV archive was requested but associated Black Duck server is not compatible.");
+                logger.error("The associated Black Duck server version is not compatible with the CSV archive feature.");
             }
             scanJobBuilder.csvArchive(signatureScannerOptions.getCsvArchive());        
         }
