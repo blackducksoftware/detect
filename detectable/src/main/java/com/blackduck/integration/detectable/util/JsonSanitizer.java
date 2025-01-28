@@ -8,8 +8,8 @@ import com.google.gson.JsonSyntaxException;
 
 public class JsonSanitizer {
     private static final Gson GSON = new GsonBuilder()
-        .setPrettyPrinting()
         .disableHtmlEscaping()
+        .serializeNulls()
         .create();
 
     public static String sanitize(String json) throws JsonSyntaxException {
