@@ -951,7 +951,7 @@ public class OperationRunner {
         throws OperationException {
         return auditLog.namedPublic("Create Online Signature Scan Batch", "OnlineSigScan",
             () -> new CreateScanBatchOperation(detectConfigurationFactory.createBlackDuckSignatureScannerOptions(), directoryManager, codeLocationNameManager)
-                .createScanBatchWithBlackDuck(detectRunUuid, projectNameVersion, scanPaths, blackDuckRunData.getBlackDuckServerConfig(), dockerTargetData)
+                .createScanBatchWithBlackDuck(detectRunUuid, projectNameVersion, scanPaths, blackDuckRunData, dockerTargetData)
         );
     }
 

@@ -12,6 +12,7 @@ import com.blackduck.integration.detector.base.DetectorType;
 import com.blackduck.integration.exception.IntegrationException;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.opentest4j.AssertionFailedError;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -114,9 +115,15 @@ public class GradleNativeInspectorTests {
             blackduckAssertions.checkComponentVersionNotExists("Apache Log4j", "2.22.1");
             blackduckAssertions.checkComponentVersionExists("graphql-java", "18.2");
             blackduckAssertions.checkComponentVersionNotExists("SLF4J API Module", "2.0.4");
-            blackduckAssertions.checkComponentVersionExists("googleguava", "v29.0");
             blackduckAssertions.checkComponentVersionNotExists("Apache Log4J API", "2.22.1");
 
+            String guavaVersion = "v29.0";
+            try {
+                blackduckAssertions.checkComponentVersionExists("googleguava", guavaVersion);
+            } catch (AssertionFailedError e) {
+                // the component name has flip-flopped a couple of times in HUB, so we're accepting either one for now
+                blackduckAssertions.checkComponentVersionExists("google-guava", guavaVersion);
+            }
         }
     }
 }
