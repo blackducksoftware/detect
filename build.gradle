@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '10.2.1-SIGQA3-idetect-4560-patch-for-airgap-script'
+version = '10.2.1-SIGQA4-idetect-4560-patch-for-airgap-script'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
