@@ -1,6 +1,6 @@
 repositories {
     maven {
-        url 'https://sig-repo.synopsys.com/bds-integration-public-cache/'
+        url 'https://repo.blackduck.com/bds-integration-public-cache/'
     }
 }
 
@@ -15,5 +15,8 @@ dependencies {
 task installDependencies(type: Copy) {
     from configurations.airGap
     include '*.jar'
+    exclude '*jackson-core*.jar'
+    exclude '*jackson-databind*.jar'
+    exclude '*jackson-annotations*.jar'
     into "${gradleOutput}"
 }
