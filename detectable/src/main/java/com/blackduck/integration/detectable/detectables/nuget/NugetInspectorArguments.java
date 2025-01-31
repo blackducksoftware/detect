@@ -42,6 +42,9 @@ public class NugetInspectorArguments {
             options.add("--excluded_dependency_types=" + toCommaSeparatedStringSet(nugetInspectorOptions.getNugetExcludedDependencyTypes()));
         }
 
+        nugetInspectorOptions.getNugetArtifactsPath()
+                .ifPresent(arg -> options.add("--artifacts_path=" + arg.toString()));
+
         if (logger.isTraceEnabled()) {
             options.add("-v");
         }

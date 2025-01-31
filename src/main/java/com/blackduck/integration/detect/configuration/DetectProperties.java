@@ -1224,6 +1224,16 @@ public class DetectProperties {
             .setGroups(DetectGroup.NUGET, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
 
+    public static final NullablePathProperty DETECT_NUGET_ARTIFACTS_PATH =
+            NullablePathProperty.newBuilder("detect.nuget.artifacts.path")
+                    .setInfo("Nuget Artifacts Path", DetectPropertyFromVersion.VERSION_10_3_0)
+                    .setHelp(
+                            "The path to the build artifacts of the nuget project if not stored on regular path.",
+                            "If set, Detect will use the given directory to find artifacts files that it uses to get dependencies, instead of using the default location."
+                    )
+                    .setGroups(DetectGroup.NUGET, DetectGroup.GLOBAL)
+                    .build();
+
     public static final NullablePathProperty DETECT_OUTPUT_PATH =
         NullablePathProperty.newBuilder("detect.output.path")
             .setInfo("Detect Output Path", DetectPropertyFromVersion.VERSION_3_0_0)
