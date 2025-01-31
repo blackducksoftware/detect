@@ -1,6 +1,6 @@
 repositories {
     maven {
-        url 'https://sig-repo.synopsys.com/bds-integration-public-cache/'
+        url 'https://repo.blackduck.com/bds-integration-public-cache/'
     }
 }
 
@@ -9,7 +9,7 @@ configurations {
 }
 
 dependencies {
-    airGap 'com.synopsys.integration:integration-common:27.0.1'
+    airGap 'com.blackduck.integration:integration-common:27.0.1'
 }
 
 task installDependencies(type: Copy) {
