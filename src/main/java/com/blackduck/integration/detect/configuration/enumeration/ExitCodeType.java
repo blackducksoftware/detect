@@ -59,13 +59,7 @@ public enum ExitCodeType {
         } else if (second.isSuccess()) {
             return first;
         } else {
-            if (first.getPriority() < second.getPriority()) {
-                return first;
-            } else if (second.getPriority() < first.getPriority()) {
-                return second;
-            } else {
-                return (first.getExitCode() < second.getExitCode()) ? first : second;
-            }
+            return (first.getPriority() < second.getPriority()) ? first : second;
         }
     }
 

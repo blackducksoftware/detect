@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import com.blackduck.integration.detector.base.DetectorStatusCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,7 +120,7 @@ public class DetectorTool {
 
     private void checkAndHandleOutOfMemoryIssue(List<DetectorDirectoryReport> reports) {
         if (detectorIssuePublisher.hasOutOfMemoryIssue(reports)) {
-            logger.error("Detected an issue: EXECUTABLE_TERMINATED_LIKELY_OUT_OF_MEMORY");
+            logger.error("Detected an issue. " + DetectorStatusCode.EXECUTABLE_TERMINATED_LIKELY_OUT_OF_MEMORY.getDescription());
             exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_OUT_OF_MEMORY, "Executable terminated likely due to out of memory.");
         }
     }
