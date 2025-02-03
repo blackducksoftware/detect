@@ -13,7 +13,7 @@
 
 ### Resolved issues
 
-* (IDETECT-4560) - Fix to the FTL script used to build the [detect_product_short] Air Gap zips to prevent outdated JARs from being included.
+* (IDETECT-4560) - Update the FreeMarker Template Language (FTL) script used to build the [detect_product_short] Air Gap zips to prevent inclusion of outdated JARs.
 
 ## Version 10.2.0
 
