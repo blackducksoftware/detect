@@ -9,6 +9,12 @@
 
 <note type="note">It is recommended that customers continue to maintain sig-repo.synopsys.com, and repo.blackduck.com on their allow list until February 2025 when sig-repo.synopsys.com will be fully replaced by repo.blackduck.com.</note>
 
+## Version 10.2.1
+
+### Resolved issues
+
+* (IDETECT-4560) - Update the FreeMarker Template Language (FTL) script used to build the [detect_product_short] Air Gap zips to prevent inclusion of outdated JARs.
+
 ## Version 10.2.0
 
 ### New features
