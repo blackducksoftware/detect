@@ -68,7 +68,7 @@ public class CommonScanStepRunnerTest {
         when(directoryManager.getContainerOutputDirectory()).thenReturn(mockOutputDirectory);
         when(operationRunner.initiateScan(any(), any(), any(), any(), any(), any(), any())).thenReturn(initResult);
         when(initResult.getScanCreationResponse()).thenReturn(scanCreationResponse);
-        when(initResult.getZipFile()).thenReturn(mock(File.class));
+        when(initResult.getFileToUpload()).thenReturn(mock(File.class));
         when(scanCreationResponse.getScanId()).thenReturn(UUID.randomUUID().toString());
         
         CodeLocationNameManager codeLocationNameManager = mock(CodeLocationNameManager.class);
@@ -93,7 +93,7 @@ public class CommonScanStepRunnerTest {
         commonScanStepRunner.performCommonUpload(projectNameVersion,
                 blackDuckRunData, Optional.of(binaryScanFile), operationRunner, CommonScanStepRunner.BINARY, initResult);
 
-        verify(scassScanStepRunner).runScassScan(Optional.of(initResult.getZipFile()), scanCreationResponse);
+        verify(scassScanStepRunner).runScassScan(Optional.of(initResult.getFileToUpload()), scanCreationResponse);
     }
 
     @Test
@@ -130,7 +130,7 @@ public class CommonScanStepRunnerTest {
         commonScanStepRunner.performCommonUpload(projectNameVersion,
                 blackDuckRunData, Optional.of(containerScanFile), operationRunner, CommonScanStepRunner.CONTAINER, initResult);
         
-        verify(scassScanStepRunner).runScassScan(Optional.of(initResult.getZipFile()), scanCreationResponse);
+        verify(scassScanStepRunner).runScassScan(Optional.of(initResult.getFileToUpload()), scanCreationResponse);
     }
     
     @Test

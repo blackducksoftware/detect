@@ -67,7 +67,7 @@ public class CommonScanStepRunner {
         if (StringUtils.isNotEmpty(scanCreationResponse.getUploadUrl())) {
             // This is a SCASS capable server server and SCASS is enabled.
             ScassScanStepRunner scassScanStepRunner = createScassScanStepRunner(blackDuckRunData);
-            scassScanStepRunner.runScassScan(Optional.of(initResult.getZipFile()), scanCreationResponse);
+            scassScanStepRunner.runScassScan(Optional.of(initResult.getFileToUpload()), scanCreationResponse);
         } else {
             // This is a SCASS capable server server but SCASS is not enabled.
             BdbaScanStepRunner bdbaScanStepRunner = createBdbaScanStepRunner(operationRunner);

@@ -8,7 +8,7 @@ import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.log.Slf4jIntLogger;
 import com.blackduck.integration.sca.upload.client.UploaderConfig;
 import com.blackduck.integration.sca.upload.client.uploaders.UploaderFactory;
-import com.blackduck.integration.sca.upload.rest.status.DefaultUploadStatus;
+import com.blackduck.integration.sca.upload.rest.status.UploadStatus;
 import com.google.gson.Gson;
 
 public class MultipartUploaderHelper {
@@ -27,7 +27,7 @@ public class MultipartUploaderHelper {
             return new UploaderFactory(uploaderConfig, new Slf4jIntLogger(logger), new Gson());
     }
     
-    public static void handleUploadError(DefaultUploadStatus status) throws IntegrationException {
+    public static void handleUploadError(UploadStatus status) throws IntegrationException {
         if (status == null) {
             throw new IntegrationException("Unexpected empty response attempting to upload file.");
         } else if (status.getException().isPresent()) {

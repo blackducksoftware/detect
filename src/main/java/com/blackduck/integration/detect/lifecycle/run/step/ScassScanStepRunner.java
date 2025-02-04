@@ -20,7 +20,6 @@ import com.blackduck.integration.rest.HttpUrl;
 import com.blackduck.integration.rest.response.Response;
 import com.blackduck.integration.sca.upload.client.uploaders.ScassUploader;
 import com.blackduck.integration.sca.upload.client.uploaders.UploaderFactory;
-import com.blackduck.integration.sca.upload.rest.status.DefaultUploadStatus;
 import com.blackduck.integration.sca.upload.rest.status.UploadStatus;
 
 public class ScassScanStepRunner {
@@ -58,7 +57,7 @@ public class ScassScanStepRunner {
         }
 
         if (status.isError()) {
-            MultipartUploaderHelper.handleUploadError((DefaultUploadStatus) status);
+            MultipartUploaderHelper.handleUploadError(status);
         }
 
         // call /scans/{scanId}/scass-scan-processing to notify BlackDuck the file is uploaded
