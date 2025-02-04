@@ -1,5 +1,6 @@
 package com.blackduck.integration.detect.lifecycle.shutdown;
 
+import com.blackduck.integration.detect.lifecycle.BlackDuckDuplicateProjectException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +53,9 @@ public class ExceptionUtility {
     }
 
     public ExitCodeType getExitCodeFromException(Exception e) {
-        if (e instanceof OperationException) {
+        if (e instanceof BlackDuckDuplicateProjectException) {
+            return ExitCodeType.FAILURE_BLACKDUCK_DUPLICATE_PROJECT_ERROR;
+        } else if (e instanceof OperationException) {
             return getExitCodeFromException(((OperationException) e).getException());
         } else if (e instanceof DetectUserFriendlyException) {
             DetectUserFriendlyException friendlyException = (DetectUserFriendlyException) e;
