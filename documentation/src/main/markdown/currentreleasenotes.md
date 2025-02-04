@@ -9,6 +9,12 @@
 
 <note type="note">It is recommended that customers continue to maintain sig-repo.synopsys.com, and repo.blackduck.com on their allow list until February 2025 when sig-repo.synopsys.com will be fully replaced by repo.blackduck.com.</note>
 
+## Version 10.2.1
+
+### Resolved issues
+
+* (IDETECT-4560) - Update the FreeMarker Template Language (FTL) script used to build the [detect_product_short] Air Gap zips to prevent inclusion of outdated JARs.
+
 ## Version 10.2.0
 
 ### New features
@@ -24,7 +30,4 @@
 
 * (IDETECT-4447) - ID strings of detected Yarn project dependencies are now correctly formed. Related warning messages have been improved to identify entries in the yarn.lock file that have not been resolved through package.json files and could not be resolved with any standard NPM packages.
 * (IDETECT-4533) - Resolved an issue with [detect_product_short] Gradle Native Inspector causing scans to hang indefinitely when submodule has the same name as the parent module.
-
-### Dependency updates
-
-* 
+* (IDETECT-4560) - Updated version of Jackson-Core (a transitive dependency) to address a vulnerability.
