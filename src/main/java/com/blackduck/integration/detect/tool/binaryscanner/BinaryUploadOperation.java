@@ -133,8 +133,7 @@ public class BinaryUploadOperation {
 
         public CodeLocationCreationData<BinaryScanBatchOutput> uploadBinaryScanFiles(
             BinaryScanBatch binaryScanBatch,
-            BinaryScanUploadService binaryScanUploadService,
-            NameVersion projectNameVersion
+            BinaryScanUploadService binaryScanUploadService
         )
             throws DetectUserFriendlyException {
             try {

@@ -2,7 +2,6 @@ package com.blackduck.integration.detect.lifecycle.run.step;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.nullable;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -24,8 +23,6 @@ import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.data.ScanCreationResponse;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
 import com.blackduck.integration.detect.lifecycle.run.operation.blackduck.ScassScanInitiationResult;
-import com.blackduck.integration.detect.lifecycle.run.step.utility.OperationAuditLog;
-import com.blackduck.integration.detect.lifecycle.run.step.utility.OperationWrapper;
 import com.blackduck.integration.detect.workflow.codelocation.CodeLocationNameManager;
 import com.blackduck.integration.detect.workflow.file.DirectoryManager;
 import com.blackduck.integration.exception.IntegrationException;
@@ -33,6 +30,10 @@ import com.blackduck.integration.util.NameVersion;
 import com.google.gson.Gson;
 
 public class CommonScanStepRunnerTest {
+    private static final String VERSION = "version";
+
+    private static final String PROJECT_NAME = "projectName";
+
     @Mock
     private OperationRunner operationRunner;
 
@@ -79,7 +80,7 @@ public class CommonScanStepRunnerTest {
 
     @Test
     public void testPerformBlackduckInteractionsBinaryScass() throws Exception {
-        NameVersion projectNameVersion = new NameVersion("projectName", "version");
+        NameVersion projectNameVersion = new NameVersion(PROJECT_NAME, VERSION);
         File binaryScanFile = mock(File.class);
         String uploadUrl = "http://upload.url";
         
@@ -98,7 +99,7 @@ public class CommonScanStepRunnerTest {
 
     @Test
     public void testPerformBlackduckInteractionsBinaryBdba() throws OperationException, IntegrationException {
-        NameVersion projectNameVersion = new NameVersion("projectName", "version");
+        NameVersion projectNameVersion = new NameVersion(PROJECT_NAME, VERSION);
         File binaryScanFile = mock(File.class);
         
         CommonScanStepRunner commonScanStepRunner = spy(new CommonScanStepRunner());
@@ -116,7 +117,7 @@ public class CommonScanStepRunnerTest {
     
     @Test
     public void testPerformBlackduckInteractionsContainerScass() throws Exception {
-        NameVersion projectNameVersion = new NameVersion("projectName", "version");
+        NameVersion projectNameVersion = new NameVersion(PROJECT_NAME, VERSION);
         File containerScanFile = mock(File.class);
         String uploadUrl = "http://upload.url";
         
@@ -135,7 +136,7 @@ public class CommonScanStepRunnerTest {
     
     @Test
     public void testPerformBlackduckInteractionsContainerBdba() throws OperationException, IntegrationException {
-        NameVersion projectNameVersion = new NameVersion("projectName", "version");
+        NameVersion projectNameVersion = new NameVersion(PROJECT_NAME, VERSION);
         File containerScanFile = mock(File.class);
         
         CommonScanStepRunner commonScanStepRunner = spy(new CommonScanStepRunner());
