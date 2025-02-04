@@ -7,17 +7,14 @@ import static com.blackduck.integration.detect.workflow.componentlocationanalysi
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Base64.Encoder;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -125,7 +122,6 @@ import com.blackduck.integration.detect.tool.signaturescanner.operation.CreateSi
 import com.blackduck.integration.detect.tool.signaturescanner.operation.PublishSignatureScanReports;
 import com.blackduck.integration.detect.tool.signaturescanner.operation.SignatureScanOperation;
 import com.blackduck.integration.detect.tool.signaturescanner.operation.SignatureScanOuputResult;
-import com.blackduck.integration.detect.util.DetectZipUtil;
 import com.blackduck.integration.detect.util.bdio.protobuf.DetectProtobufBdioHeaderUtil;
 import com.blackduck.integration.detect.util.finder.DetectExcludedDirectoryFilter;
 import com.blackduck.integration.detect.workflow.ArtifactResolver;
@@ -596,7 +592,7 @@ public class OperationRunner {
         ScassScanInitiationResult initResult = new ScassScanInitiationResult();
         try {
             bdioHeaderFile = detectProtobufBdioHeaderUtil.createProtobufBdioHeader(outputDirectory);
-            zipFileIfNecessaryAndComputeMD5Base64(scanFile, initResult, outputDirectory);
+            computeMD5Base64(scanFile, initResult);
         } catch (IOException e) {
             throw new IntegrationException("Unable to perform file computations. Ensure the file and output directory are accessible.");
         }
@@ -604,7 +600,7 @@ public class OperationRunner {
         String operationName = "Upload BDIO Header to Initiate Scan";
         
         ScanCreationResponse scanCreationResponse 
-            = uploadBdioHeaderToInitiateScassScan(blackDuckRunData, bdioHeaderFile, operationName, gson, initResult.getZipMd5());
+            = uploadBdioHeaderToInitiateScassScan(blackDuckRunData, bdioHeaderFile, operationName, gson, initResult.getMd5Hash());
 
         initResult.setScanCreationResponse(scanCreationResponse);
 
@@ -1602,34 +1598,19 @@ public class OperationRunner {
         return this.detectConfigurationFactory;
     }
     
-    private void zipFileIfNecessaryAndComputeMD5Base64(File file, ScassScanInitiationResult initResult, File outputDirectory) throws IOException {
-        MessageDigest md = DigestUtils.getMd5Digest();
-        Encoder encoder = Base64.getEncoder();
-
-        if (DetectZipUtil.isZipFile(file)) {
-            try (FileInputStream fis = new FileInputStream(file)) {
-                byte[] buffer = new byte[8192];
-                int bytesRead;
-                while ((bytesRead = fis.read(buffer)) != -1) {
-                    md.update(buffer, 0, bytesRead);
-                }
-                byte[] md5Bytes = md.digest();
-                initResult.setZipFile(file);
-                initResult.setZipMd5(encoder.encodeToString(md5Bytes));
+    private void computeMD5Base64(File file, ScassScanInitiationResult initResult) throws IOException {
+        try (FileInputStream fis = new FileInputStream(file)) {
+            MessageDigest md = DigestUtils.getMd5Digest();
+            Encoder encoder = Base64.getEncoder();
+            
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = fis.read(buffer)) != -1) {
+                md.update(buffer, 0, bytesRead);
             }
-        } else {
-            Map<String, Path> entries = new HashMap<>();
-            entries.put(file.getName(), file.toPath());
-
-            File zipFile = new File(outputDirectory, "scass-upload.zip");
-
-            initResult.setZipFile(zipFile);
-
-            try (FileOutputStream fos = new FileOutputStream(zipFile);
-                    DigestOutputStream dos = new DigestOutputStream(fos, md)) {
-                DetectZipUtil.zip(dos, entries);
-                initResult.setZipMd5(encoder.encodeToString(md.digest()));
-            }
+            byte[] md5Bytes = md.digest();
+            initResult.setFileToUpload(file);
+            initResult.setMd5Hash(encoder.encodeToString(md5Bytes));
         }
     }
 }

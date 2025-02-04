@@ -5,24 +5,24 @@ import java.io.File;
 import com.blackduck.integration.detect.lifecycle.run.data.ScanCreationResponse;
 
 public class ScassScanInitiationResult {
-    private File zipFile;
-    private String zipMd5;
+    private File fileToUpload;
+    private String md5Hash;
     private ScanCreationResponse scanCreationResponse;
 
-    public void setZipFile(File zipFile) {
-        this.zipFile = zipFile;
+    public void setFileToUpload(File fileToUpload) {
+        this.fileToUpload = fileToUpload;
     }
 
-    public File getZipFile() {
-        return zipFile;
+    public File getFileToUpload() {
+        return fileToUpload;
     }
 
-    public void setZipMd5(String md5) {
-        this.zipMd5 = md5;
+    public void setMd5Hash(String md5Hash) {
+        this.md5Hash = md5Hash;
     }
 
-    public String getZipMd5() {
-        return zipMd5;
+    public String getMd5Hash() {
+        return md5Hash;
     }
 
     public void setScanCreationResponse(ScanCreationResponse scanCreationResponse) {
