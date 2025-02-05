@@ -30,7 +30,7 @@ public abstract class AbstractContainerScanStepRunner {
     protected final File containerRunDirectory;
     protected final File containerImage;
     protected final Gson gson;
-    private String codeLocationName;
+    protected String codeLocationName;
     private static final BlackDuckVersion MIN_BLACK_DUCK_VERSION = new BlackDuckVersion(2023, 10, 0);
 
     public AbstractContainerScanStepRunner(OperationRunner operationRunner, NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData, Gson gson)

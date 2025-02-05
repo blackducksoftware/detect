@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import com.blackduck.integration.blackduck.version.BlackDuckVersion;
 import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
+import com.blackduck.integration.detect.lifecycle.run.data.CommonScanResult;
 import com.blackduck.integration.detect.lifecycle.run.data.ScanCreationResponse;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
 import com.blackduck.integration.detect.lifecycle.run.operation.blackduck.ScassScanInitiationResult;
@@ -34,7 +35,7 @@ public class CommonScanStepRunner {
         return blackDuckVersion.isPresent() && blackDuckVersion.get().isAtLeast(MIN_SCASS_SCAN_VERSION);
     }
     
-    public UUID performCommonScan(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData,
+    public CommonScanResult performCommonScan(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData,
             Optional<File> scanFile, OperationRunner operationRunner, Gson gson, String scanType) throws OperationException, IntegrationException {
 
         String codeLocationName = createCodeLocationName(scanFile, projectNameVersion, scanType, operationRunner.getCodeLocationNameManager());
@@ -54,8 +55,10 @@ public class CommonScanStepRunner {
                 scanType.substring(0, 1).toUpperCase() + scanType.substring(1).toLowerCase());
         
         return operationRunner.getAuditLog().namedPublic(operationName, () -> {
-            return performCommonUpload(projectNameVersion, blackDuckRunData, scanFile, operationRunner, scanType,
+            UUID scanId = performCommonUpload(projectNameVersion, blackDuckRunData, scanFile, operationRunner, scanType,
                     initResult);
+            
+            return new CommonScanResult(scanId, codeLocationName);
         });
     }
 

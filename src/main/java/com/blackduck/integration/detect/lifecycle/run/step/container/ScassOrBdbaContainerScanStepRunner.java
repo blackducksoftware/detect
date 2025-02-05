@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
+import com.blackduck.integration.detect.lifecycle.run.data.CommonScanResult;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
 import com.blackduck.integration.detect.lifecycle.run.step.CommonScanStepRunner;
 import com.blackduck.integration.exception.IntegrationException;
@@ -22,12 +23,16 @@ public class ScassOrBdbaContainerScanStepRunner extends AbstractContainerScanSte
 
     @Override
     protected UUID performBlackduckInteractions() throws IntegrationException, OperationException {        
-        return commonScanStepRunner.performCommonScan(
+        CommonScanResult scanResult = commonScanStepRunner.performCommonScan(
                 projectNameVersion, 
                 blackDuckRunData, 
                 Optional.of(containerImage), 
                 operationRunner, 
                 gson, 
                 scanType);
+        
+        codeLocationName = scanResult.getCodeLocationName();
+        
+        return scanResult.getScanId();
     }
 }
