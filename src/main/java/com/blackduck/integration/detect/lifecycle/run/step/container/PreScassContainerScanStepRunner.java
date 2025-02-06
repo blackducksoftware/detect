@@ -10,7 +10,7 @@ import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
 import com.blackduck.integration.detect.lifecycle.run.step.CommonScanStepRunner;
-import com.blackduck.integration.detect.lifecycle.run.step.utility.MultipartUploaderHelper;
+import com.blackduck.integration.detect.lifecycle.run.step.utility.UploaderHelper;
 import com.blackduck.integration.detect.util.bdio.protobuf.DetectProtobufBdioHeaderUtil;
 import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.rest.response.Response;
@@ -101,7 +101,7 @@ public class PreScassContainerScanStepRunner extends AbstractContainerScanStepRu
         DefaultUploadStatus status = containerUploader.upload(containerImage.toPath());
             
         if (status == null || status.isError()) {
-            MultipartUploaderHelper.handleUploadError(status);
+            UploaderHelper.handleUploadError(status);
         }
             
         logger.debug("Multipart container scan image uploaded to storage service.");
@@ -134,7 +134,7 @@ public class PreScassContainerScanStepRunner extends AbstractContainerScanStepRu
 
     private UploaderFactory initAndOrGetContainerUploadFactory() throws IntegrationException {
         if (uploadFactory == null) {
-            uploadFactory = MultipartUploaderHelper.getUploaderFactory(blackDuckRunData);
+            uploadFactory = UploaderHelper.getUploaderFactory(blackDuckRunData);
         }
         return uploadFactory;
     }

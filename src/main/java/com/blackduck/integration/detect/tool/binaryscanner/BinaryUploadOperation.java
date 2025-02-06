@@ -18,7 +18,7 @@ import com.blackduck.integration.blackduck.exception.BlackDuckIntegrationExcepti
 import com.blackduck.integration.detect.configuration.DetectUserFriendlyException;
 import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
-import com.blackduck.integration.detect.lifecycle.run.step.utility.MultipartUploaderHelper;
+import com.blackduck.integration.detect.lifecycle.run.step.utility.UploaderHelper;
 import com.blackduck.integration.detect.workflow.codelocation.CodeLocationNameManager;
 import com.blackduck.integration.detect.workflow.status.Status;
 import com.blackduck.integration.detect.workflow.status.StatusEventPublisher;
@@ -92,7 +92,7 @@ public class BinaryUploadOperation {
         String codeLocationName = codeLocationNameManager.createBinaryScanCodeLocationName(binaryUpload,
                 projectNameVersion.getName(), projectNameVersion.getVersion());
 
-        UploaderFactory uploadFactory = MultipartUploaderHelper.getUploaderFactory(blackDuckRunData);
+        UploaderFactory uploadFactory = UploaderHelper.getUploaderFactory(blackDuckRunData);
 
         BinaryScanRequestData binaryData = new BinaryScanRequestData(projectNameVersion.getName(),
                 projectNameVersion.getVersion(), codeLocationName, "");

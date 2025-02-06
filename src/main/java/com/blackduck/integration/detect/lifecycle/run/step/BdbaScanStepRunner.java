@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
-import com.blackduck.integration.detect.lifecycle.run.step.utility.MultipartUploaderHelper;
+import com.blackduck.integration.detect.lifecycle.run.step.utility.UploaderHelper;
 import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.rest.response.Response;
 import com.blackduck.integration.sca.upload.client.uploaders.BdbaUploader;
@@ -50,14 +50,14 @@ public class BdbaScanStepRunner {
         String storageServiceEndpoint = String.join("", STORAGE_BDBA_ENDPOINT, scanId);
         logger.debug("Uploading BDBA scan artifact to storage endpoint: {}", storageServiceEndpoint);
         
-        UploaderFactory uploaderFactory = MultipartUploaderHelper.getUploaderFactory(blackDuckRunData);
+        UploaderFactory uploaderFactory = UploaderHelper.getUploaderFactory(blackDuckRunData);
             
         BdbaUploader bdbaUploader = uploaderFactory.createBdbaUploader(storageServiceEndpoint);
 
         DefaultUploadStatus status = bdbaUploader.upload(bdbaFile.toPath());
         
         if (status == null || status.isError()) {
-            MultipartUploaderHelper.handleUploadError(status);
+            UploaderHelper.handleUploadError(status);
         }
             
         logger.debug("Multipart file uploaded to storage service.");

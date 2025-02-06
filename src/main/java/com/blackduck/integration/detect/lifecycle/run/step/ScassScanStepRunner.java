@@ -2,6 +2,7 @@ package com.blackduck.integration.detect.lifecycle.run.step;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -13,7 +14,7 @@ import com.blackduck.integration.blackduck.service.BlackDuckServicesFactory;
 import com.blackduck.integration.blackduck.service.request.BlackDuckResponseRequest;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.data.ScanCreationResponse;
-import com.blackduck.integration.detect.lifecycle.run.step.utility.MultipartUploaderHelper;
+import com.blackduck.integration.detect.lifecycle.run.step.utility.UploaderHelper;
 import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.rest.HttpMethod;
 import com.blackduck.integration.rest.HttpUrl;
@@ -50,14 +51,14 @@ public class ScassScanStepRunner {
             status = scaasScanUploader.upload(
                     scanCreationResponse.getUploadUrlData() != null ? HttpMethod.fromMethod(scanCreationResponse.getUploadUrlData().getMethod()) : HttpMethod.POST,
                     scanCreationResponse.getUploadUrl(),
-                    scanCreationResponse.getAllHeaders(),
+                    UploaderHelper.getAllHeaders(scanCreationResponse.getUploadUrlData()),
                     scanFile.toPath());
         } catch (IOException e) {
             throw new IntegrationException(e);
         }
 
         if (status.isError()) {
-            MultipartUploaderHelper.handleUploadError(status);
+            UploaderHelper.handleUploadError(status);
         }
 
         // call /scans/{scanId}/scass-scan-processing to notify BlackDuck the file is uploaded
@@ -66,7 +67,9 @@ public class ScassScanStepRunner {
 
     private void validateGcpSize(Optional<File> scanFile, ScanCreationResponse scanCreationResponse)
             throws IntegrationException {
-        String gcpSizeHeader = scanCreationResponse.getAllHeaders().get("x-goog-content-length-range");
+        Map<String, String> allHeaders = UploaderHelper.getAllHeaders(scanCreationResponse.getUploadUrlData());
+        
+        String gcpSizeHeader = allHeaders.get("x-goog-content-length-range");
         if (gcpSizeHeader != null) {
             Long gcpSize = Long.valueOf(gcpSizeHeader.split(",")[1]);
 
@@ -78,7 +81,7 @@ public class ScassScanStepRunner {
     }
     
     private ScassUploader createScaasScanUploader() throws IntegrationException {
-        UploaderFactory uploadFactory = MultipartUploaderHelper.getUploaderFactory(blackDuckRunData);
+        UploaderFactory uploadFactory = UploaderHelper.getUploaderFactory(blackDuckRunData);
         
         return uploadFactory.createScassUploader();
     }
