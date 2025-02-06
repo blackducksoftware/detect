@@ -1227,7 +1227,7 @@ public class DetectProperties {
     public static final NullablePathProperty DETECT_NUGET_ARTIFACTS_PATH =
             NullablePathProperty.newBuilder("detect.nuget.artifacts.path")
                     .setInfo("Nuget Artifacts Path", DetectPropertyFromVersion.VERSION_10_3_0)
-                    .setHelp("The path to the build artifacts of the nuget project if not stored on regular path. i.e the path to the output of obj directory if not stored on the default path.")
+                    .setHelp("The path to the obj directory build artifacts of the NuGet project, if not the default path.")
                     .setGroups(DetectGroup.NUGET, DetectGroup.GLOBAL)
                     .build();
 
