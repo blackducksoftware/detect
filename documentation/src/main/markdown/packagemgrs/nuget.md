@@ -30,6 +30,15 @@ This property supports exclusion of dependencies in projects that use PackageRef
 A project might be using a dependency purely as a development harness and you might not want to expose that to projects that will consume the package. You can use the PrivateAssets metadata to control this behavior. [detect_product_short] looks for the PrivateAssets attribute used within PackageReference tags to identify a development dependency. [detect_product_short] will ignore the contents of the tag and only observe the presence of these PrivateAssets to exclude those development related dependencies.
 For packages.config file, [detect_product_short] will look for developmentDependency tags to determine whether to include or exclude a dependency.
 
+## Nuget Artifacts Path and Base Intermediate Output Path
+[detect_product_short] supports the ArtifactsPath and BaseIntermediateOutputPath properties provided by Nuget to customise the path in which build artifacts are stored. The default location for storing the artifacts is \obj folder under each project directory in which xml file for the project such as csproj is present.
+
+To simplify the output paths and gather all the artifacts in a common location, the above properties were introduced. To support these properties, [detect_product_short] introduced a property [detect.nuget.artifacts.path](../properties/detectors/nuget.md#nuget-artifacts-path) which you can provide to look for project.assets.json in a custom location.
+
+<note type="note">[detect_product_short] is aware that these properties can be found in Directory.Build.props file, but to solve the problem of .NET 6 requirement to get the resolved artifacts path, it is required that users provide with appropriate permissions in which artifacts are stored via this property.</note>
+
+[detect_product_short] will crawl through all the directories in the provided path to find the project.assets.json file for the project being scanned. 
+
 ### [detect_product_short] NuGet Inspector downloads
 
 [detect_product_short] jar execution will automatically download any required binaries not located in the cache.

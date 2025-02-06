@@ -13,7 +13,7 @@
 
 ### New features
 
-* 
+* (IDETECT-2437, IDETECT-4547) Added support for ArtifactsPath and BaseIntermediateOutputPath properties in [detect_product_long] Nuget Inspector.
 
 ### Changed features
 
@@ -22,3 +22,7 @@
 ### Resolved issues
 
 * 
+
+### Dependency updates
+
+* Released and Upgraded Nuget Inspector to version 2.1.0.
