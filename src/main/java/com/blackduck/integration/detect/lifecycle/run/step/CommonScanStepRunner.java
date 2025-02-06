@@ -25,7 +25,7 @@ import com.google.gson.Gson;
  * by Detect.
  */
 public class CommonScanStepRunner {
-    private static final BlackDuckVersion MIN_SCASS_SCAN_VERSION = new BlackDuckVersion(2025, 1, 0);
+    private static final BlackDuckVersion MIN_SCASS_SCAN_VERSION = new BlackDuckVersion(2025, 1, 1);
     
     // Supported scan types
     public static final String BINARY = "BINARY";
