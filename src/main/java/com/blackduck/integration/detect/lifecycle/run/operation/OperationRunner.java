@@ -610,8 +610,8 @@ public class OperationRunner {
             logger.warn("Scan ID was not found in the response from the server.");
             throw new IntegrationException("Scan ID was not found in the response from the server.");
         }
-        String scanIdString = scanId.toString();
-        logger.debug("Scan initiated with scan service. Scan ID received: {}", scanIdString);
+
+        logger.debug("Scan initiated with scan service. Scan ID received: {}", scanId);
         
         return initResult;
     }
