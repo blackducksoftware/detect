@@ -12,6 +12,7 @@ import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
 import com.blackduck.integration.detect.lifecycle.run.step.CommonScanStepRunner;
 import com.blackduck.integration.detect.lifecycle.run.step.utility.UploaderHelper;
 import com.blackduck.integration.detect.util.bdio.protobuf.DetectProtobufBdioHeaderUtil;
+import com.blackduck.integration.detect.workflow.codelocation.CodeLocationNameManager;
 import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.rest.response.Response;
 import com.blackduck.integration.sca.upload.client.uploaders.ContainerUploader;
@@ -25,6 +26,7 @@ public class PreScassContainerScanStepRunner extends AbstractContainerScanStepRu
     private final String projectGroupName;
     private final Long containerImageSizeInBytes;
     private UploaderFactory uploadFactory;
+    private String codeLocationName;
     private static final BlackDuckVersion MIN_MULTIPART_UPLOAD_VERSION = new BlackDuckVersion(2024, 10, 0);
     private static final String STORAGE_CONTAINERS_ENDPOINT = "/api/storage/containers/";
     private static final String STORAGE_IMAGE_CONTENT_TYPE = "application/vnd.blackducksoftware.container-scan-data-1+octet-stream";
@@ -34,6 +36,14 @@ public class PreScassContainerScanStepRunner extends AbstractContainerScanStepRu
         super(operationRunner, projectNameVersion, blackDuckRunData, gson);
         projectGroupName = operationRunner.calculateProjectGroupOptions().getProjectGroup();
         containerImageSizeInBytes = containerImage != null && containerImage.exists() ? containerImage.length() : 0;
+    }
+
+    @Override
+    public String getCodeLocationName() {
+        if (codeLocationName == null) {
+            codeLocationName = createContainerScanCodeLocationName();
+        }
+        return codeLocationName;
     }
 
     @Override
@@ -51,10 +61,19 @@ public class PreScassContainerScanStepRunner extends AbstractContainerScanStepRu
         return scanId;
     }
 
+    private String createContainerScanCodeLocationName() {
+        if (!isContainerImageResolved()) {
+            return null;
+        }
+
+        CodeLocationNameManager codeLocationNameManager = operationRunner.getCodeLocationNameManager();
+        return codeLocationNameManager.createContainerScanCodeLocationName(containerImage, projectNameVersion.getName(), projectNameVersion.getVersion());
+    }
+
     private UUID initiateScan() throws IOException, IntegrationException, OperationException {
         DetectProtobufBdioHeaderUtil detectProtobufBdioHeaderUtil = new DetectProtobufBdioHeaderUtil(
             UUID.randomUUID().toString(),
-            scanType,
+            SCAN_TYPE,
             projectNameVersion,
             projectGroupName,
             getCodeLocationName(),

@@ -14,7 +14,6 @@ import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
 import com.blackduck.integration.detect.lifecycle.run.step.CommonScanStepRunner;
-import com.blackduck.integration.detect.workflow.codelocation.CodeLocationNameManager;
 import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.exception.IntegrationTimeoutException;
 import com.blackduck.integration.util.NameVersion;
@@ -23,17 +22,16 @@ import com.google.gson.Gson;
 public abstract class AbstractContainerScanStepRunner {
 
     protected final OperationRunner operationRunner;
-    protected final String scanType = CommonScanStepRunner.CONTAINER;
     protected final Logger logger = LoggerFactory.getLogger(this.getClass());
     protected final NameVersion projectNameVersion;
     protected final BlackDuckRunData blackDuckRunData;
     protected final File containerRunDirectory;
     protected final File containerImage;
     protected final Gson gson;
-    protected String codeLocationName;
-    private static final BlackDuckVersion MIN_BLACK_DUCK_VERSION = new BlackDuckVersion(2023, 10, 0);
+    protected static final String SCAN_TYPE = CommonScanStepRunner.CONTAINER;
+    private   static final BlackDuckVersion MIN_BLACK_DUCK_VERSION = new BlackDuckVersion(2023, 10, 0);
 
-    public AbstractContainerScanStepRunner(OperationRunner operationRunner, NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData, Gson gson)
+    protected AbstractContainerScanStepRunner(OperationRunner operationRunner, NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData, Gson gson)
         throws IntegrationException, OperationException {
         this.operationRunner = operationRunner;
         this.projectNameVersion = projectNameVersion;
@@ -80,16 +78,11 @@ public abstract class AbstractContainerScanStepRunner {
         }
     }
 
+    public abstract String getCodeLocationName();
+
     protected abstract UUID performBlackduckInteractions() throws IOException, IntegrationException, OperationException;
 
-    public String getCodeLocationName() {
-        if (codeLocationName == null) {
-            codeLocationName = createContainerScanCodeLocationName();
-        }
-        return codeLocationName;
-    }
-
-    private boolean isContainerImageResolved() {
+    protected boolean isContainerImageResolved() {
         return containerImage != null && containerImage.exists();
     }
 
@@ -100,14 +93,5 @@ public abstract class AbstractContainerScanStepRunner {
     private boolean isBlackDuckVersionValid() {
         Optional<BlackDuckVersion> blackDuckVersion = blackDuckRunData.getBlackDuckServerVersion();
         return blackDuckVersion.isPresent() && blackDuckVersion.get().isAtLeast(MIN_BLACK_DUCK_VERSION);
-    }
-
-    private String createContainerScanCodeLocationName() {
-        if (!isContainerImageResolved()) {
-            return null;
-        }
-
-        CodeLocationNameManager codeLocationNameManager = operationRunner.getCodeLocationNameManager();
-        return codeLocationNameManager.createContainerScanCodeLocationName(containerImage, projectNameVersion.getName(), projectNameVersion.getVersion());
     }
 }

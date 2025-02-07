@@ -46,7 +46,7 @@ public class BdbaScanStepRunner {
         }
     }
 
-    private DefaultUploadStatus uploadBdbaFile(String scanId, BlackDuckRunData blackDuckRunData, File bdbaFile) throws IOException, OperationException, IntegrationException {
+    private DefaultUploadStatus uploadBdbaFile(String scanId, BlackDuckRunData blackDuckRunData, File bdbaFile) throws IOException, IntegrationException {
         String storageServiceEndpoint = String.join("", STORAGE_BDBA_ENDPOINT, scanId);
         logger.debug("Uploading BDBA scan artifact to storage endpoint: {}", storageServiceEndpoint);
         
