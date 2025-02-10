@@ -18,7 +18,7 @@
 
 ### New features
 
-* 
+* Added support for ArtifactsPath and BaseIntermediateOutputPath properties in [detect_product_long] NuGet Inspector.
 
 ### Changed features
 
