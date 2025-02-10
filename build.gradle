@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '10.3.0-SIGQA3-idetect-4610-fix-airgap-gradle-create-task'
+version = '10.3.0-SIGQA4-idetect-4610-fix-airgap-gradle-create-task-SNAPSHOT'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
