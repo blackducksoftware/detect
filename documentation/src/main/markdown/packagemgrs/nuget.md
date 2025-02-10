@@ -18,6 +18,7 @@ The detectors run a platform dependent self-contained executable that is current
 <note type="note">
 
 *  To retrieve project build information, NuGet Project Inspector relies on a Microsoft API which, in turn, relies on the installation of .NET 6.0 on the build machine. To ensure the most accurate results available, .NET 6.0 should be installed. The inspector will fall back to parsing the XML files if .NET 6.0 is not present. 
+	* Alternatively, as of [detect_product_short] 10.3.0, the [detect.nuget.artifacts.path](../properties/detectors/nuget.md#nuget-artifacts-path) property, which allows you to specify a custom project.assets.json location, can be used if .NET 6.0 is not installed.
 * NuGet Project Inspector relies on Project Inspector thus does not accept NuGet specific configuration properties.   
 * The NuGet Detectors do not work with mono.
 </note>
