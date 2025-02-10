@@ -13,8 +13,8 @@
 
 ### Resolved issues
 
-* (IDETECT-4610) - Improved [detect_product_short] Airgap for Gradle Creation script to remove unwanted JARs from being included.
-* (IDETECT-4611) - Improved [detect_product_short] Airgap for Gradle Creation script to remove reference to Integration Common library that is no longer a dependency.
+* (IDETECT-4610) - Improved [detect_product_short]'s air gap for Gradle creation script to prevent unwanted JAR files from being included in the gradle subdirectory.
+* (IDETECT-4611) - Updated [detect_product_short]'s air gap for Gradle creation script to remove reference to Integration Common library that is no longer a dependency.
 
 ### New features
 
