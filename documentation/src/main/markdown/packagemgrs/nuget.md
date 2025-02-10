@@ -38,7 +38,7 @@ To simplify the output paths and gather all the artifacts in a common location, 
 
 [detect_product_short] will examine all directories in the provided path to find the project.assets.json file for the project being scanned.
 
-To avoid requiring .NET 6 to get the resolved artifacts path from the Directory.Build.props file, it is required that the directory specified by the detect.nuget.artifacts.path property have permission set to allow [detect_product_short] access.
+To avoid using .NET 6 to retrieve the artifacts path from the Directory.Build.props file, it is required that the directory specified by the detect.nuget.artifacts.path property have permission set to allow [detect_product_short] access.
 
 ### [detect_product_short] NuGet Inspector downloads
 
