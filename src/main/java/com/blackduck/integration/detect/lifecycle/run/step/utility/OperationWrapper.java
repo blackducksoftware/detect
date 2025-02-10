@@ -25,7 +25,7 @@ public class OperationWrapper {
     }
 
     public <T> T wrapped(Operation operation, OperationSupplier<T> supplier) throws OperationException {
-        return wrapped(operation, supplier, () -> {}, (e) -> {});
+        return wrapped(operation, supplier, () -> {}, e -> {});
     }
 
     public <T> T wrappedWithCallbacks(Operation operation, OperationSupplier<T> supplier, Runnable successConsumer, Consumer<Exception> errorConsumer) throws OperationException {
@@ -64,9 +64,7 @@ public class OperationWrapper {
                 operation.error(e);
             }
             errorConsumer.accept(e);
-            if (e.getBlackDuckErrorCode().contains("central.constraint_violation.project_name_duplicate_not_allowed")) {
-                throw new BlackDuckDuplicateProjectException(e);
-            }
+            checkForDuplicateProjectError(e);
             throw new OperationException(e);
         } catch (Exception e) {
             // in some cases, the problem is buried in a nested exception 
@@ -84,7 +82,13 @@ public class OperationWrapper {
             operation.finish();
         }
     }
-    
+
+    private static void checkForDuplicateProjectError(BlackDuckApiException e) throws BlackDuckDuplicateProjectException {
+        if (e.getBlackDuckErrorCode().contains("central.constraint_violation.project_name_duplicate_not_allowed")) {
+            throw new BlackDuckDuplicateProjectException(e);
+        }
+    }
+
     private String rootCauseMessage(Exception e) {
         String msg = "";
         Throwable t = e.getCause();
