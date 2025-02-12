@@ -1599,6 +1599,7 @@ public class OperationRunner {
     }
     
     private void computeMD5Base64(File file, ScassScanInitiationResult initResult) throws IOException {
+        logger.debug("Beginning MD5 file computation.");
         try (FileInputStream fis = new FileInputStream(file)) {
             MessageDigest md = DigestUtils.getMd5Digest();
             Encoder encoder = Base64.getEncoder();
@@ -1612,5 +1613,6 @@ public class OperationRunner {
             initResult.setFileToUpload(file);
             initResult.setMd5Hash(encoder.encodeToString(md5Bytes));
         }
+        logger.debug("Finished MD5 file computation.");
     }
 }
