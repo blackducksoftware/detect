@@ -13,8 +13,9 @@ import com.blackduck.integration.util.NameVersion;
 import com.google.gson.Gson;
 
 public class ScassOrBdbaContainerScanStepRunner extends AbstractContainerScanStepRunner {
-    
-    CommonScanStepRunner commonScanStepRunner;
+
+    private String codeLocationName;
+    private CommonScanStepRunner commonScanStepRunner;
     
     public ScassOrBdbaContainerScanStepRunner(OperationRunner operationRunner, NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData, Gson gson) throws IntegrationException, OperationException {
         super(operationRunner, projectNameVersion, blackDuckRunData, gson);
@@ -29,10 +30,15 @@ public class ScassOrBdbaContainerScanStepRunner extends AbstractContainerScanSte
                 Optional.of(containerImage), 
                 operationRunner, 
                 gson, 
-                scanType);
+                SCAN_TYPE);
         
         codeLocationName = scanResult.getCodeLocationName();
         
         return scanResult.getScanId();
+    }
+
+    @Override
+    public String getCodeLocationName() {
+        return codeLocationName;
     }
 }

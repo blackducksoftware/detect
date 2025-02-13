@@ -570,9 +570,7 @@ public class OperationRunner {
 
             Response response = blackDuckApiClient.execute(buildBlackDuckResponseRequest);
             String contentString = response.getContentString();
-            ScanCreationResponse scanCreationResponse = gson.fromJson(contentString, ScanCreationResponse.class);
-            
-            return scanCreationResponse;
+            return gson.fromJson(contentString, ScanCreationResponse.class);
         });
     }
     
