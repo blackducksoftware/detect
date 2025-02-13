@@ -2,6 +2,8 @@ package com.blackduck.integration.detect.battery.docker;
 
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.HashMap;
 
 import com.blackduck.integration.detect.battery.docker.integration.BlackDuckAssertions;
 import com.blackduck.integration.detect.battery.docker.integration.BlackDuckTestConnection;
@@ -20,6 +22,7 @@ import com.blackduck.integration.detector.base.DetectorType;
 public class NugetInspectorTests {
 
     private static final String PROJECT_NAME = "nuget-CPM-docker";
+    public static String ARTIFACTORY_URL = System.getenv().get("SNPS_INTERNAL_ARTIFACTORY");
 
     @Test
     void nugetCPMStandardTest() throws IOException,IntegrationException {
@@ -110,4 +113,40 @@ public class NugetInspectorTests {
             blackduckAssertions.hasComponents("Microsoft.Extensions.Logging");
         }
     }
+
+    @Test
+    void nugetArtifactsPathTest() throws IOException, IntegrationException {
+        try(DetectDockerTestRunner test = new DetectDockerTestRunner("detect-nuget-inspector-artifacts","detect-dotnet-seven:1.0.4")) {
+            Map<String, String> artifactoryArgs = new HashMap<>();
+            artifactoryArgs.put("ARTIFACTORY_URL", ARTIFACTORY_URL);
+
+            BuildDockerImageProvider buildDockerImageProvider = BuildDockerImageProvider.forDockerfilResourceNamed("NugetArtifactsPath.dockerfile");
+            buildDockerImageProvider.setBuildArgs(artifactoryArgs);
+            test.withImageProvider(buildDockerImageProvider);
+
+            String projectVersion = PROJECT_NAME + "-artifacts_path";
+            BlackDuckTestConnection blackDuckTestConnection = BlackDuckTestConnection.fromEnvironment();
+            BlackDuckAssertions blackduckAssertions = blackDuckTestConnection.projectVersionAssertions(PROJECT_NAME, projectVersion);
+            blackduckAssertions.emptyOnBlackDuck();
+
+            DetectCommandBuilder commandBuilder = new DetectCommandBuilder().defaults().defaultDirectories(test);
+            commandBuilder.connectToBlackDuck(blackDuckTestConnection);
+            commandBuilder.projectNameVersion(blackduckAssertions);
+            commandBuilder.waitForResults();
+
+            commandBuilder.property(DetectProperties.DETECT_TOOLS, "DETECTOR");
+            commandBuilder.property(DetectProperties.DETECT_INCLUDED_DETECTOR_TYPES, DetectorType.NUGET.toString());
+            commandBuilder.property(DetectProperties.DETECT_NUGET_ARTIFACTS_PATH,"/opt/project/src/b");
+
+            DockerAssertions dockerAssertions = test.run(commandBuilder);
+
+            dockerAssertions.logContains("NuGet Solution Native Inspector: SUCCESS");
+            dockerAssertions.atLeastOneBdioFile();
+
+            blackduckAssertions.hasComponents("Json.NET");
+            blackduckAssertions.hasComponents("Microsoft.Extensions.Logging");
+            blackduckAssertions.checkComponentVersionExists("System.Security.AccessControl","6.0.1");
+        }
+    }
+
 }
