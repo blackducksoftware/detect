@@ -4,10 +4,10 @@
 **Notice**
 
 The [company_name] Software Integrity Group is now [var_company_name]    
-* As part of this activity, sig-repo.synopsys.com and detect.synopsys.com are being deprecated and will be decomissioned on Feb. 14th 2025. Please make use of repo.blackduck.com and detect.blackduck.com respectively.    
+* As part of this activity, sig-repo.synopsys.com and detect.synopsys.com are being deprecated and will be decomissioned on March 31st, 2025. Please make use of repo.blackduck.com and detect.blackduck.com respectively.    
 
 * Refer to the [Black Duck Domain Change FAQ](https://community.blackduck.com/s/article/Detect-Overview-of-Domain-Changes-for-Black-Duck).
-<note type="note">It is recommended that customers add both `repo.blackduck.com`, and `detect.blackduck.com`, to their allow list, while also maintaining `sig-repo.synopsys.com`, and `detect.synopsys.com`, until February 2025 when `sig-repo.synopsys.com`, and `detect.synopsys.com`, will be fully replaced by `repo.blackduck.com` and `detect.blackduck.com` respectively.</note>
+<note type="note">It is recommended that customers add both `repo.blackduck.com`, and `detect.blackduck.com`, to their allow list, while also maintaining `sig-repo.synopsys.com`, and `detect.synopsys.com`, until March 31st, 2025 when `sig-repo.synopsys.com`, and `detect.synopsys.com`, will be fully replaced by `repo.blackduck.com` and `detect.blackduck.com` respectively.</note>
 
 * [company_name] [solution_name] Azure DevOps plugin is now the [detect_product_long] Azure DevOps plugin.
 
@@ -27,14 +27,14 @@ The [company_name] Software Integrity Group is now [var_company_name]
 
 **Notice**
 
-For [detect_product_short] script downloads, `detect.synopsys.com` is being deprecated in favor of `detect.blackduck.com`. After Feb. 14th 2025, only `detect.blackduck.com` will be available.
+For [detect_product_short] script downloads, `detect.synopsys.com` is being deprecated in favor of `detect.blackduck.com`. After March 31st, 2025, only `detect.blackduck.com` will be available.
 
-<note type="attention">To continuing using the deprecated [company_name] [detect_product_short] plugin, it is essential to update to version 9.0.1, available at the [Previous Marketplace location](https://marketplace.visualstudio.com/items?itemName=synopsys-detect.synopsys-detect), before Feb. 14th 2025.</note>
+<note type="attention">To continuing using the deprecated [company_name] [detect_product_short] plugin, it is essential to update to version 9.0.1, available at the [Previous Marketplace location](https://marketplace.visualstudio.com/items?itemName=synopsys-detect.synopsys-detect), before March 31st, 2025.</note>
 **Changed features**
 
 * Adds logic to fallback between pulling the [detect_product_short] script from `detect.synopys.com` and `detect.blackduck.com`.
 
-<note type="note">It is recommended that customers add both `repo.blackduck.com`, and `detect.blackduck.com`, to their allow list, while also maintaining `sig-repo.synopsys.com`, and `detect.synopsys.com`, until February 2025 when `sig-repo.synopsys.com`, and `detect.synopsys.com`, will be fully replaced by `repo.blackduck.com` and `detect.blackduck.com` respectively.</note>
+<note type="note">It is recommended that customers add both `repo.blackduck.com`, and `detect.blackduck.com`, to their allow list, while also maintaining `sig-repo.synopsys.com`, and `detect.synopsys.com`, until March 31st, 2025 when `sig-repo.synopsys.com`, and `detect.synopsys.com`, will be fully replaced by `repo.blackduck.com` and `detect.blackduck.com` respectively.</note>
 
 ## Version 9.0.0
 **New features**
