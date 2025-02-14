@@ -5,16 +5,16 @@
 **Notice**
 
 The [company_name] Software Integrity Group is now [var_company_name]    
-* As part of this activity, sig-repo.synopsys.com and detect.synopsys.com are being deprecated and will be decommissioned in Feb. 2025. Please make use of repo.blackduck.com and detect.blackduck.com respectively.    
+* As part of this activity, sig-repo.synopsys.com and detect.synopsys.com are being deprecated and will be decommissioned on March 31st, 2025. Please make use of repo.blackduck.com and detect.blackduck.com respectively.    
 
 * Refer to the [Black Duck Domain Change FAQ](https://community.blackduck.com/s/article/Detect-Overview-of-Domain-Changes-for-Black-Duck).
-<note type="note">It is recommended that customers add both `repo.blackduck.com`, and `detect.blackduck.com`, to their allow list, while also maintaining `sig-repo.synopsys.com`, and `detect.synopsys.com`, until February 2025 when `sig-repo.synopsys.com`, and `detect.synopsys.com`, will be fully replaced by `repo.blackduck.com` and `detect.blackduck.com` respectively.</note>
+<note type="note">It is recommended that customers add both `repo.blackduck.com`, and `detect.blackduck.com`, to their allow list, while also maintaining `sig-repo.synopsys.com`, and `detect.synopsys.com`, until March 31st, 2025 when `sig-repo.synopsys.com`, and `detect.synopsys.com`, will be fully replaced by `repo.blackduck.com` and `detect.blackduck.com` respectively.</note>
 [company_name] [solution_name] Jenkins plugin is now the [detect_product_long] Jenkins plugin.
 
 For existing users, the [detect_product_long] Jenkins plugin should be considered a fresh installation as the domain has changed.
    * Prior to moving from the [detect_product_short] Jenkins plugin to the [detect_product_long] Jenkins plugin, you should record your existing system configuration for use reconfiguring your pipelines after installation. 
    * **Before** installing the [detect_product_long] Jenkins plugin, read the [additional information](../jenkinsplugin/downloadingandinstalling.md#updating-existing-jenkins) about the upgrade process.
-<note type="note">For continued functionality and to receive future updates to the Jenkins plugin, you must upgrade to [detect_product_long] Jenkins plugin version 10.0.0 prior to February 14th, 2025.</note>
+<note type="note">For continued functionality and to receive future updates to the Jenkins plugin, you must upgrade to [detect_product_long] Jenkins plugin version 10.0.0 prior to March 31st, 2025.</note>
 
 If you are a new user, you may proceed with installing the [detect_product_long] Jenkins plugin as per [Downloading and Installing](../jenkinsplugin/downloadingandinstalling.md).    
 
