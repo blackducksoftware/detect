@@ -53,9 +53,9 @@ In the junit4 case, [detect_product_short] will:
 3. Upload the discovered dependencies to [bd_product_short].
 4. Add a log entry for the [bd_product_long] Project BOM URL that you can use to view the results in [bd_product_short].
 
-Point your browser to the [bd_product_long] Project BOM URL to see the Bill Of Materials for junit4.  
+Once the scan is complete, navigate with your browser to the [bd_product_short] Project BOM URL to see the Bill Of Materials for junit4.  
 
-For guidance on getting started using, and viewing results in [bd_product_long], check out [Getting Started with Black Duck SCA](https://documentation.blackduck.com/bundle/bd-hub/page/Administration/Hub101.html)
+For guidance on getting started using, and viewing results in [bd_product_short], check out [Getting Started with Black Duck SCA](https://documentation.blackduck.com/bundle/bd-hub/page/Administration/Hub101.html)
 
 ## Next steps
 
