@@ -4,20 +4,19 @@ package com.blackduck.integration.detect.lifecycle.run.operation;
 import java.io.File;
 import java.io.IOException;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assertions;
-
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import com.blackduck.integration.detect.configuration.DetectUserFriendlyException;
 import com.blackduck.integration.detect.configuration.enumeration.BlackduckScanMode;
 import com.blackduck.integration.detect.lifecycle.OperationException;
-import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
+import com.blackduck.integration.detect.lifecycle.run.step.CommonScanStepRunner;
 import com.blackduck.integration.detect.testutils.ContainerScanTestUtils;
 import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.util.NameVersion;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 public class OperationRunnerContainerScanTest {
     private static final Gson gson = new Gson();
@@ -106,7 +105,7 @@ public class OperationRunnerContainerScanTest {
 
         Assertions.assertFalse(expectedImageMetadataObject.isJsonNull());
         Assertions.assertTrue(expectedImageMetadataObject.isJsonObject());
-        Assertions.assertEquals(expectedImageMetadataObject, operationRunner.createContainerScanImageMetadata(ContainerScanTestUtils.TEST_SCAN_ID, projectNameVersion));
+        Assertions.assertEquals(expectedImageMetadataObject, operationRunner.createScanMetadata(ContainerScanTestUtils.TEST_SCAN_ID, projectNameVersion, CommonScanStepRunner.CONTAINER));
     }
 
     @Test void testCreateContainerScanMetadataForStateless() {
@@ -124,7 +123,7 @@ public class OperationRunnerContainerScanTest {
 
         Assertions.assertFalse(expectedImageMetadataObject.isJsonNull());
         Assertions.assertTrue(expectedImageMetadataObject.isJsonObject());
-        Assertions.assertEquals(expectedImageMetadataObject, operationRunner.createContainerScanImageMetadata(ContainerScanTestUtils.TEST_SCAN_ID, projectNameVersion));
+        Assertions.assertEquals(expectedImageMetadataObject, operationRunner.createScanMetadata(ContainerScanTestUtils.TEST_SCAN_ID, projectNameVersion, CommonScanStepRunner.CONTAINER));
     }
 
 }
