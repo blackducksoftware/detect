@@ -16,10 +16,9 @@ To understand what [detect_product_short] does, it can be helpful to think about
 
 1. Look in the project directory (junit4) for hints about how dependencies are managed. In this case, the *mvnw* and *pom.xml* files are hints that dependencies are managed using Maven.
 1. Since it's a Maven project, you would likely run `./mvnw dependency:tree` to reveal the project's dependencies; both direct and transitive.
+1. Examine files in the project directory, which might identify additional dependencies not known to the package manager such as a .jar file copied in.
 
-This is basically what [detect_product_short] does on this project. In addition, [detect_product_short] runs the
-[blackduck_signature_scanner_name] on the directory, which may discover additional dependencies
-added to the project by means other than the package manager.
+This is essentially the process that [detect_product_short] expands upon and automates when it executes project manager tools and runs the [blackduck_signature_scanner_name] on the directory. Using detectors, inspectors, and other tools, [detect_product_short] may discover not only dependencies managed at the package level, but additional dependencies added to the project by means other than the package manager.
 
 ## Step 2: Run [detect_product_short] connected to [blackduck_product_name].
 
