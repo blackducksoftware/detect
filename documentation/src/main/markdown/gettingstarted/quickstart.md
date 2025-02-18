@@ -2,7 +2,7 @@
 
 The following is a simple example to help you get started using [detect_product_long].
 
-<note type="hint">For another quick path to scanning with [detect_product_short], see [Autonomous Scanning](../runningdetect/autonomousscan.dita).
+<note type="hint">For another quick path to scanning with [detect_product_short], see [Autonomous Scanning](../runningdetect/autonomousscan.dita).</note>
 
 ## Step 1: Locate or acquire a source code project on which you will run [detect_product_short].
 
@@ -51,9 +51,11 @@ In the junit4 case, [detect_product_short] will:
 1. Run the Maven detector, which uses Maven to discover dependencies.
 2. Run the [blackduck_signature_scanner_name] which scans the files in the source directory to discover dependencies.
 3. Upload the discovered dependencies to [bd_product_short].
-4. Provide in the log a Black Duck Project BOM URL that you can use to view the results in [bd_product_short].
+4. Add a log entry for the [bd_product_long] Project BOM URL that you can use to view the results in [bd_product_short].
 
-Point your browser to the Black Duck Project BOM URL to see the Bill Of Materials for junit4.
+Point your browser to the [bd_product_long] Project BOM URL to see the Bill Of Materials for junit4.  
+
+For guidance on getting started using, and viewing results in [bd_product_long], check out [Getting Started with Black Duck SCA](https://documentation.blackduck.com/bundle/bd-hub/page/Administration/Hub101.html)
 
 ## Next steps
 
