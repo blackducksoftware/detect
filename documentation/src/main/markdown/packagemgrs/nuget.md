@@ -17,6 +17,7 @@ The detectors run a platform dependent self-contained executable that is current
 
 <note type="note">
 
+*  To retrieve project build information, NuGet Project Inspector relies on a Microsoft API which is dependant upon the installation of .NET 6.0 on the build machine. To ensure the most accurate results available, .NET 6.0 should be installed. The inspector will fall back to parsing the XML files if .NET 6.0 is not present. 
 * NuGet Project Inspector does not accept NuGet specific configuration properties.
 * The NuGet Detectors do not work with mono.
 </note>
@@ -37,7 +38,7 @@ To simplify the output paths and gather all the artifacts in a common location, 
 
 [detect_product_short] will examine all directories in the provided path to find the project.assets.json file for the project being scanned.
 
-To avoid requiring .NET 6 to get the resolved artifacts path from the Directory.Build.props file, it is required that the directory specified by the detect.nuget.artifacts.path property have permission set to allow [detect_product_short] access.
+To avoid using .NET 6 to retrieve the artifacts path from the Directory.Build.props file, it is required that the directory specified by the detect.nuget.artifacts.path property have permission set to allow [detect_product_short] access.
 
 ### [detect_product_short] NuGet Inspector downloads
 
