@@ -30,6 +30,15 @@ This property supports exclusion of dependencies in projects that use PackageRef
 A project might be using a dependency purely as a development harness and you might not want to expose that to projects that will consume the package. You can use the PrivateAssets metadata to control this behavior. [detect_product_short] looks for the PrivateAssets attribute used within PackageReference tags to identify a development dependency. [detect_product_short] will ignore the contents of the tag and only observe the presence of these PrivateAssets to exclude those development related dependencies.
 For packages.config file, [detect_product_short] will look for developmentDependency tags to determine whether to include or exclude a dependency.
 
+## NuGet Artifacts and Base Intermediate Output Paths
+[detect_product_short] supports the ArtifactsPath and BaseIntermediateOutputPath properties provided by NuGet to customize the path in which build artifacts are stored. The default location for storing artifacts is the \obj folder under each project directory, in which XML files for the project such as csproj are present.
+
+To simplify the output paths and gather all the artifacts in a common location, support for the above properties was introduced. To support these properties, [detect_product_short] uses the [detect.nuget.artifacts.path](../properties/detectors/nuget.md#nuget-artifacts-path) property, which allows you to specify a custom project.assets.json location.
+
+[detect_product_short] will examine all directories in the provided path to find the project.assets.json file for the project being scanned.
+
+To avoid requiring .NET 6 to get the resolved artifacts path from the Directory.Build.props file, it is required that the directory specified by the detect.nuget.artifacts.path property have permission set to allow [detect_product_short] access.
+
 ### [detect_product_short] NuGet Inspector downloads
 
 [detect_product_short] jar execution will automatically download any required binaries not located in the cache.

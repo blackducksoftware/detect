@@ -9,14 +9,10 @@ configurations {
 }
 
 dependencies {
-    airGap 'com.synopsys.integration:integration-common:26.1.2'
+    airGap 'org.slf4j:slf4j-api:2.0.7'
 }
 
 task installDependencies(type: Copy) {
     from configurations.airGap
-    include '*.jar'
-    exclude '*jackson-core*.jar'
-    exclude '*jackson-databind*.jar'
-    exclude '*jackson-annotations*.jar'
     into "${gradleOutput}"
 }
