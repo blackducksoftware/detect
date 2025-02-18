@@ -61,7 +61,7 @@ For [detect_product_short] script downloads, `detect.synopsys.com` is being depr
 **New features** 
 
 * Updated the plugin to use [company_name] [solution_name] 7.
-* Added the ability to run [company_name] [solution_name] in AirGap mode.
+* Added the ability to run [company_name] [solution_name] in air gap mode.
 
 ## Version 6.0.0
 **Resolved issues**

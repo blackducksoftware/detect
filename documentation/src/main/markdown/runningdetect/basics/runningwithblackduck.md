@@ -28,7 +28,7 @@ Refer to [Black Duck Server properties](../../properties/configuration/blackduck
 ## Offline mode
 
 If you do not have a [bd_product_short] instance, or if your network is down, you can still run [detect_product_short] in offline mode.
-<note type="note">Offline mode is not the same as Air Gap mode. Air Gap mode requires the airgap.jar available to execute as it contains local copies of scanning libraries to support full offline execution.</note>
+<note type="note">Offline mode is not the same as air gap mode. Air gap mode requires the airgap.jar available to execute as it contains local copies of scanning libraries to support full offline execution.</note>
 In offline mode, [detect_product_short] writes output files (.bdio files and, when Vulnerability Impact Analysis runs, .bdmu files) to subdirectories
 within the run directory without attempting to upload them to [bd_product_short]. You can find the value of the run directory in the [detect_product_short] log.
 You can run [detect_product_short] in offline mode using the [offline mode property](../../properties/configuration/blackduck-server.md#offline-mode).

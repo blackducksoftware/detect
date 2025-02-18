@@ -79,7 +79,7 @@ If you are a new user, you may proceed with installing the [detect_product_long]
 * (IDTCTJNKNS-252) Update internal dependencies to latest
 * (IDTCTJNKNS-247) Detect shell scripts are executed first and then downloaded in Pipeline execution in Linux and Windows slave nodes
 * (IDTCTJNKNS-239) Avoid leaking API token string in the console output
-* (IDTCTJNKNS-228) Unable to use java version specified in pipeline when running [company_name] [solution_name] in Air Gap mode
+* (IDTCTJNKNS-228) Unable to use java version specified in pipeline when running [company_name] [solution_name] in air gap mode
 * (IDTCTJNKNS-224) Improve clarity in the transition between the different stages of [company_name] [solution_name] for Jenkins
 * (IDTCTJNKNS-220) Jenkins Build is changed to Unstable for Invalid values in [company_name] [solution_name] Installers
 * (IDTCTJNKNS-192) Size must be between 1 and 50 when --detect.project.tag is more than 50 characters
@@ -100,7 +100,7 @@ If you are a new user, you may proceed with installing the [detect_product_long]
 ## Version 3.1.0
 **New features**
 
-* Added the capability to run [company_name] [solution_name] in Air Gap mode using the [company_name] [solution_name] plugin.
+* Added the capability to run [company_name] [solution_name] in air gap mode using the [company_name] [solution_name] plugin.
 
 ## Version 3.0.0
 **New features**
