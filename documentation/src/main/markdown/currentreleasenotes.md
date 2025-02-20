@@ -11,11 +11,6 @@
 
 ## Version 10.3.0
 
-### Resolved issues
-
-* (IDETECT-4610) - Improved [detect_product_short]'s air gap for Gradle creation script to prevent unwanted JAR files from being included in the gradle subdirectory.
-* (IDETECT-4611) - Updated [detect_product_short]'s air gap for Gradle creation script to remove reference to Integration Common library that is no longer a dependency.
-
 ### New features
 
 * Added support for ArtifactsPath and BaseIntermediateOutputPath properties in [detect_product_long] NuGet Inspector.
@@ -26,7 +21,8 @@
 
 ### Resolved issues
 
-* 
+* (IDETECT-4610) - Improved [detect_product_short]'s air gap for Gradle creation script to prevent unwanted JAR files from being included in the gradle subdirectory.
+* (IDETECT-4611) - Updated [detect_product_short]'s air gap for Gradle creation script to remove reference to Integration Common library that is no longer a dependency.
 
 ### Dependency updates
 
