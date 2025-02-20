@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,7 @@ public class ConanCodeLocationGenerator {
         if (!rootNode.isPresent()) {
             throw new DetectableException("No root node found");
         }
+        verifyRecipeRevisionsExist(nodes);
         ConanGraphNode rootGraphNode = new ConanGraphNode(rootNode.get());
         populateGraphUnderNode(rootGraphNode, nodes);
         DependencyGraph dependencyGraph = new BasicDependencyGraph();
@@ -50,6 +52,17 @@ public class ConanCodeLocationGenerator {
             rootGraphNode.getConanNode().getVersion().orElse(null),
             codeLocation
         );
+    }
+
+    private void verifyRecipeRevisionsExist(Map<String, ConanNode<String>> nodes) {
+        for (ConanNode<String> node : nodes.values()) {
+            if (!node.isRootNode() && StringUtils.isBlank(node.getRecipeRevision().orElse(null))) {
+                logger.warn(
+                    "Conan dependency with ref {} has recipe revision ID 0. To match components in KB, enable revisions by setting CONAN_REVISIONS_ENABLED.",
+                    node.getRef()
+                );
+            }
+        }
     }
 
     public boolean shouldIncludeBuildDependencies() {
