@@ -19,6 +19,7 @@
 
 * (IDETECT-4610) - Improved [detect_product_short]'s air gap for Gradle creation script to prevent unwanted JAR files from being included in the gradle subdirectory.
 * (IDETECT-4611) - Updated [detect_product_short]'s air gap for Gradle creation script to remove reference to Integration Common library that is no longer a dependency.
+* (IDETECT-3932) - Improved the exit code and error output generated when a duplicate project name is used in simultaneous scans.
 
 ### Dependency updates
 
