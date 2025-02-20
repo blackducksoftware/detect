@@ -13,11 +13,7 @@
 
 ### New features
 
-* Added support for ArtifactsPath and BaseIntermediateOutputPath properties in [detect_product_long] NuGet Inspector.
-
-### Changed features
-
-* 
+* Added support for `ArtifactsPath` and `BaseIntermediateOutputPath` properties in [detect_product_long] NuGet Inspector. See [detect.nuget.artifacts.path](properties/packagemgrs/nuget.md#nuget-artifacts-and-base-intermediate-output-paths) for more details.
 
 ### Resolved issues
 
