@@ -29,6 +29,9 @@ public class ConanCodeLocationGenerator {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final EnumListFilter<ConanDependencyType> dependencyTypeFilter;
     private final boolean preferLongFormExternalIds;
+    private static final int CONAN_LOG_WARNING_LIMIT = 1;
+    private static final String CONAN_REVISIONS_DOC_URL =
+        "https://documentation.blackduck.com/bundle/detect/page/packagemgrs/conan.html";
 
     public ConanCodeLocationGenerator(EnumListFilter<ConanDependencyType> dependencyTypeFilter, boolean preferLongFormExternalIds) {
         this.dependencyTypeFilter = dependencyTypeFilter;
@@ -55,13 +58,23 @@ public class ConanCodeLocationGenerator {
     }
 
     private void verifyRecipeRevisionsExist(Map<String, ConanNode<String>> nodes) {
+        int warningCount = 0;
+        int totalInvalidRevisions = 0;
+
         for (ConanNode<String> node : nodes.values()) {
             if (!node.isRootNode() && StringUtils.isBlank(node.getRecipeRevision().orElse(null))) {
-                logger.warn(
-                    "Conan dependency with ref {} has recipe revision ID 0. To match components in KB, enable revisions by setting CONAN_REVISIONS_ENABLED.",
-                    node.getRef()
-                );
+                totalInvalidRevisions++;
+                if (warningCount < CONAN_LOG_WARNING_LIMIT) {
+                    logger.warn("Conan dependency with ref {} has recipe revision ID 0.", node.getRef());
+                    warningCount++;
+                }
             }
+        }
+        if (totalInvalidRevisions > CONAN_LOG_WARNING_LIMIT) {
+            logger.warn("Found {} more dependencies with recipe revision ID 0.", totalInvalidRevisions - CONAN_LOG_WARNING_LIMIT);
+        }
+        if (totalInvalidRevisions > 0) {
+            logger.warn("To match components in KB, enable revisions by setting CONAN_REVISIONS_ENABLED=1 environment variable. For more information, visit: {}", CONAN_REVISIONS_DOC_URL);
         }
     }
 
