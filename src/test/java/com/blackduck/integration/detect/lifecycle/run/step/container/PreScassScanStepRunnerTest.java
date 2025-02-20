@@ -1,4 +1,4 @@
-package com.blackduck.integration.detect.lifecycle.run.step;
+package com.blackduck.integration.detect.lifecycle.run.step.container;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -24,21 +24,20 @@ import com.blackduck.integration.sca.upload.rest.status.DefaultUploadStatus;
 import com.blackduck.integration.blackduck.version.BlackDuckVersion;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
-import com.blackduck.integration.detect.lifecycle.run.step.ContainerScanStepRunner;
 import com.blackduck.integration.detect.workflow.blackduck.project.options.ProjectGroupOptions;
 import com.blackduck.integration.detect.workflow.file.DirectoryManager;
 import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.util.NameVersion;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class ContainerScanStepRunnerTest {
+public class PreScassScanStepRunnerTest {
     @Mock
     private ContainerUploader mockContainerUploader;
     
     @Mock
     private File mockContainerImage;
     
-    private ContainerScanStepRunner instance;
+    private PreScassContainerScanStepRunner instance;
     
     @BeforeAll
     public void initMocks() throws Exception {
@@ -57,7 +56,7 @@ public class ContainerScanStepRunnerTest {
         String expectedProjectGroupName = "expectedProjectGroupName";
         when(mockProjectGroupOptions.getProjectGroup()).thenReturn(expectedProjectGroupName);
         when(mockOperationRunner.getDirectoryManager()).thenReturn(mockDirectoryManager);
-        when(mockDirectoryManager.getBinaryOutputDirectory()).thenReturn(mockBinaryOutputDirectory);
+        when(mockDirectoryManager.getContainerOutputDirectory()).thenReturn(mockBinaryOutputDirectory);
         when(mockBinaryOutputDirectory.exists()).thenReturn(true);
         when(mockBlackDuckRunData.getBlackDuckServerVersion()).thenReturn(Optional.of(mockBlackDuckVersion));
         
@@ -70,14 +69,9 @@ public class ContainerScanStepRunnerTest {
         
         when(mockOperationRunner.getContainerScanImage(Mockito.any(), Mockito.any())).thenReturn(mockContainerImage);
      
-        instance = new ContainerScanStepRunner(mockOperationRunner, mockNameVersion, mockBlackDuckRunData, new Gson());
-        
-        Field fieldScan = ContainerScanStepRunner.class.getDeclaredField("scanId");
-        fieldScan.setAccessible(true);
-        UUID scanId = UUID.randomUUID();
-        fieldScan.set(instance, scanId);
+        instance = new PreScassContainerScanStepRunner(mockOperationRunner, mockNameVersion, mockBlackDuckRunData, new Gson());
 
-        Field fieldFactory = ContainerScanStepRunner.class.getDeclaredField("uploadFactory");
+        Field fieldFactory = PreScassContainerScanStepRunner.class.getDeclaredField("uploadFactory");
         fieldFactory.setAccessible(true);
         fieldFactory.set(instance, mockUploadFactory);
     }
@@ -87,10 +81,10 @@ public class ContainerScanStepRunnerTest {
         DefaultUploadStatus expectedStatus = new DefaultUploadStatus(204, "", null);
         when(mockContainerUploader.upload(mockContainerImage.toPath())).thenReturn(expectedStatus);
 
-        Method method = ContainerScanStepRunner.class.getDeclaredMethod("multiPartUploadImage");
+        Method method = PreScassContainerScanStepRunner.class.getDeclaredMethod("multiPartUploadImage", UUID.class);
         method.setAccessible(true);
 
-        DefaultUploadStatus status = (DefaultUploadStatus) method.invoke(instance);
+        DefaultUploadStatus status = (DefaultUploadStatus) method.invoke(instance, UUID.randomUUID());
 
         assertEquals(204, status.getStatusCode());
     }
@@ -101,11 +95,11 @@ public class ContainerScanStepRunnerTest {
         DefaultUploadStatus expectedStatus = new DefaultUploadStatus(500, "", exception);
         when(mockContainerUploader.upload(mockContainerImage.toPath())).thenReturn(expectedStatus);
         
-        Method method = ContainerScanStepRunner.class.getDeclaredMethod("multiPartUploadImage");
+        Method method = PreScassContainerScanStepRunner.class.getDeclaredMethod("multiPartUploadImage", UUID.class);
         method.setAccessible(true);
 
         try {
-            method.invoke(instance);
+            method.invoke(instance, UUID.randomUUID());
         } catch (Exception e) {
             assertEquals("Upload failed.", e.getCause().getMessage());  
         }        

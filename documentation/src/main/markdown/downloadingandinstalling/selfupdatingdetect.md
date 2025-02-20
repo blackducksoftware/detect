@@ -66,7 +66,7 @@ Current version of [detect_product_short] matches the mapped version or there is
 Downgrading to versions earlier than 8.9.0 is not supported. 
 </li>
 <li>  
-This feature is not available in offline 'blackduck.offline.mode=true' or AirGap configurations or if the [bd_product_short] URL has not been provided via the `blackduck.url` variable.
+This feature is not available in offline 'blackduck.offline.mode=true' or air gap configurations or if the [bd_product_short] URL has not been provided via the `blackduck.url` variable.
 <li>
 When running an "Internally Hosted" instance of [detect_product_short] and using custom scripts, checks should be made to prevent [detect_product_short] from querying [bd_product_short] for version management and re-downloading itself.
 <li>
