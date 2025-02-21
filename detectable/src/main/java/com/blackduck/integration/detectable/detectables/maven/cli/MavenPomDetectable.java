@@ -62,8 +62,7 @@ public class MavenPomDetectable extends Detectable {
 
     @Override
     public Extraction extract(ExtractionEnvironment extractionEnvironment) throws ExecutableFailedException {
-        File pomFile = fileFinder.findFile(environment.getDirectory(), POM_FILENAME);
-        return mavenCliExtractor.extract(environment.getDirectory(), mavenExe, mavenCliExtractorOptions, mavenProjectInspectorDetectable, extractionEnvironment, pomFile);
+        return mavenCliExtractor.extract(environment.getDirectory(), mavenExe, mavenCliExtractorOptions, mavenProjectInspectorDetectable, extractionEnvironment);
     }
 
 }

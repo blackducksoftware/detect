@@ -41,9 +41,9 @@ public class MavenCliExtractor {
         this.toolVersionLogger = toolVersionLogger;
     }
 
-    public Extraction extract(File directory, ExecutableTarget mavenExe, MavenCliExtractorOptions mavenCliExtractorOptions, MavenProjectInspectorDetectable mavenProjectInspectorDetectable, ExtractionEnvironment extractionEnvironment, File pomFile) throws ExecutableFailedException {
+    public Extraction extract(File directory, ExecutableTarget mavenExe, MavenCliExtractorOptions mavenCliExtractorOptions, MavenProjectInspectorDetectable mavenProjectInspectorDetectable, ExtractionEnvironment extractionEnvironment) throws ExecutableFailedException {
         toolVersionLogger.log(directory, mavenExe);
-        List<String> commandArguments = mavenCliExtractorOptions.buildCliArguments(commandParser, pomFile);
+        List<String> commandArguments = mavenCliExtractorOptions.buildCliArguments(commandParser);
 
         ExecutableOutput mvnExecutableResult = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(directory, mavenExe, commandArguments));
 

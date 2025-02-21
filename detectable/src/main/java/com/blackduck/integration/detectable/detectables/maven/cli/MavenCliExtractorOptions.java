@@ -47,7 +47,7 @@ public class MavenCliExtractorOptions {
         return Optional.ofNullable(mavenBuildCommand);
     }
 
-    public List<String> buildCliArguments(CommandParser commandParser, File pomFile) {
+    public List<String> buildCliArguments(CommandParser commandParser) {
         List<String> arguments = new ArrayList<>();
         List<String> passedArgs = commandParser.parseCommandString(getMavenBuildCommand().orElse(""));
 
@@ -83,10 +83,6 @@ public class MavenCliExtractorOptions {
         // When multiple threads are enabled the tree output is often unparseable.
         arguments.add("-T1");
 
-        if(pomFile != null) {
-            arguments.add("-f");
-            arguments.add(pomFile.getName());
-        }
         return arguments;
     }
 
