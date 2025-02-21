@@ -3,6 +3,7 @@ package com.blackduck.integration.detectable.detectables.maven.cli;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.io.File;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +47,7 @@ public class MavenCliExtractorOptions {
         return Optional.ofNullable(mavenBuildCommand);
     }
 
-    public List<String> buildCliArguments(CommandParser commandParser) {
+    public List<String> buildCliArguments(CommandParser commandParser, File pomFile) {
         List<String> arguments = new ArrayList<>();
         List<String> passedArgs = commandParser.parseCommandString(getMavenBuildCommand().orElse(""));
 
@@ -81,6 +82,11 @@ public class MavenCliExtractorOptions {
         // Force maven to use a single thread to ensure the tree output is in the correct order.
         // When multiple threads are enabled the tree output is often unparseable.
         arguments.add("-T1");
+
+        if(pomFile != null) {
+            arguments.add("-f");
+            arguments.add(pomFile.getName());
+        }
         return arguments;
     }
 

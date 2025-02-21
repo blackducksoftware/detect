@@ -1,5 +1,8 @@
 package com.blackduck.integration.detectable.detectables.maven.cli;
 
+import java.io.File;
+import java.util.List;
+
 import com.blackduck.integration.common.util.finder.FileFinder;
 import com.blackduck.integration.detectable.Detectable;
 import com.blackduck.integration.detectable.DetectableEnvironment;
@@ -17,7 +20,7 @@ import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 
 @DetectableInfo(name = "Maven CLI", language = "various", forge = "Maven Central", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: pom.xml. Executable: mvnw or mvn.")
 public class MavenPomDetectable extends Detectable {
-    public static final String POM_FILENAME = "pom.xml";
+    public static final String POM_FILENAME = "*pom.xml";
 
     private final FileFinder fileFinder;
     private final MavenResolver mavenResolver;
@@ -59,7 +62,8 @@ public class MavenPomDetectable extends Detectable {
 
     @Override
     public Extraction extract(ExtractionEnvironment extractionEnvironment) throws ExecutableFailedException {
-        return mavenCliExtractor.extract(environment.getDirectory(), mavenExe, mavenCliExtractorOptions, mavenProjectInspectorDetectable, extractionEnvironment);
+        File pomFile = fileFinder.findFile(environment.getDirectory(), POM_FILENAME);
+        return mavenCliExtractor.extract(environment.getDirectory(), mavenExe, mavenCliExtractorOptions, mavenProjectInspectorDetectable, extractionEnvironment, pomFile);
     }
 
 }

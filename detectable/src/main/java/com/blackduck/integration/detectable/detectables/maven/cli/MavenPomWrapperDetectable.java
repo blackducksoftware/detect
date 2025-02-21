@@ -71,7 +71,7 @@ public class MavenPomWrapperDetectable extends Detectable {
 
     @Override
     public Extraction extract(ExtractionEnvironment extractionEnvironment) throws ExecutableFailedException {
-        return mavenCliExtractor.extract(environment.getDirectory(), mavenExe, mavenCliExtractorOptions, mavenProjectInspectorDetectable, extractionEnvironment);
+        return mavenCliExtractor.extract(environment.getDirectory(), mavenExe, mavenCliExtractorOptions, mavenProjectInspectorDetectable, extractionEnvironment, null);
     }
 
 }

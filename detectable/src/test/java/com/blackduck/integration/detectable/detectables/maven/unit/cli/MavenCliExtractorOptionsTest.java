@@ -21,7 +21,7 @@ public class MavenCliExtractorOptionsTest {
         MavenCliExtractorOptions options = new MavenCliExtractorOptions(mavenBuildCommand, null, null, null, null, false);
         assertEquals(
             expected,
-            options.buildCliArguments(commandParser)
+            options.buildCliArguments(commandParser, null)
         );
     }
 
