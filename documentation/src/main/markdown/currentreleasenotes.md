@@ -1,6 +1,7 @@
 # Current Release notes
 
-**Notice**
+**Notices**   
+
 [company_name] [solution_name] has been renamed [detect_product_long] with page links, documentation, and other URLs updated accordingly. Update any [detect_product_short] documentation, or other bookmarks you may have. See the [Domain Change FAQ](https://community.blackduck.com/s/article/Black-Duck-Domain-Change-FAQ).
 * As part of this activity, sig-repo.synopsys.com and detect.synopsys.com are being deprecated. Please make use of repo.blackduck.com and detect.blackduck.com respectively. 
     * After March 2025, [detect_product_short] script download details will only be available via detect.blackduck.com.
@@ -8,6 +9,14 @@
     * If you are using [detect_product_short] 8 or 9 it is essential to update to 8.11.2 or 9.10.1 respectively, before sig-repo is decommissioned.   
 
 <note type="note">It is recommended that customers continue to maintain sig-repo.synopsys.com, and repo.blackduck.com on their allow list until March 31st, 2025 when sig-repo.synopsys.com will be fully replaced by repo.blackduck.com.</note>
+
+* Effective March 1, 2025, [bd_product_long] is implementing a new [SCA Scanning Service (SCAss)](https://community.blackduck.com/s/question/0D5Uh00000O2ZSYKA3/black-duck-sca-new-ip-address-requirements-for-2025) which will require customers to add or update IP addresses configured in their network firewalls or allow lists. This action is required to successfully route scan data to the new service for processing.
+
+	* scass.blackduck.com - 35.244.200.22
+	* na.scass.blackduck.com - 35.244.200.22
+	* na.store.scass.blackduck.com - 34.54.95.139
+	* eu.store.scass.blackduck.com - 34.54.213.11
+	* eu.scass.blackduck.com - 34.54.38.252
 
 ## Version 10.3.0
 
