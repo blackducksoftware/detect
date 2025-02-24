@@ -23,7 +23,8 @@
 ### New features
 
 * Added support for `ArtifactsPath` and `BaseIntermediateOutputPath` properties in [detect_product_long] NuGet Inspector. See [detect.nuget.artifacts.path](packagemgrs/nuget.md#nuget-artifacts-and-base-intermediate-output-paths) for more details.
-* Support for the SCA Scanning Service (SCAss) for [bd_product_long] version 2025.1.1 or later. See IP address notice above.
+* SCA Scan Service (SCASS) is a scalable solution for performing software composition analysis scans outside of the traditional [bd_product_long] environment. This [detect_product_short] release provides support for the SCA Scanning Service (SCAss) for [bd_product_short] version 2025.1.1 or later. For further information see [About SCAss](https://documentation.blackduck.com/bundle/bd-hub/page/ComponentDiscovery/aboutScaScanService.html).
+	* See IP address notice above for details on related IP configuration for your deployments.
 
 ### Resolved issues
 
