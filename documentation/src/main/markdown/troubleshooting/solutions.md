@@ -193,3 +193,30 @@ The problem may be intermittent.
 There is no harm in leaving the directories behind in the short term but we recommend periodically removing them if the problem occurs frequently.
 Restarting Docker will force Docker to release the locks, and enable you to remove the directories.
 
+## Encoding Problems with PIP Requirements File
+
+### Symptom
+
+`requirements.txt` files created using encoding systems other than UTF-8 cause certain Unicode characters in the component names to be unreadable when inspected through [detect_product_short]. The system does not recognize these component entries, resulting in unmatched components. 
+
+Here is an example:
+````
+{
+    "@id" : "http:pypi/%EF%BF%BD%EF%BF%BDa%00p%00p%00d%00i%00r%00s%00%3D%00%3D%001%00.%004%00.%004",
+    "@type" : "https://blackducksoftware.github.io/bdio#Component",
+    "https://blackducksoftware.github.io/bdio#hasName" : "��a\u0000p\u0000p\u0000d\u0000i\u0000r\u0000s\u0000=\u0000=\u00001\u0000.\u00004\u0000.\u00004",
+    "https://blackducksoftware.github.io/bdio#hasVersion" : "",
+    "https://blackducksoftware.github.io/bdio#hasIdentifier" : "��a\u0000p\u0000p\u0000d\u0000i\u0000r\u0000s\u0000=\u0000=\u00001\u0000.\u00004\u0000.\u00004",
+    "https://blackducksoftware.github.io/bdio#hasNamespace" : "pypi"
+}
+````
+
+### Possible cause
+
+The requirements.txt file was created using encoding systems other than UTF-8.
+
+### Solution
+
+To resolve this issue, the requirements.txt file must be created using UTF-8 encoding before the [detect_product_short] inspection is run on the source code.
+
+Note: [PIP uses UTF-8 as the default encoding when creating requirements.txt files](https://pip.pypa.io/en/stable/reference/requirements-file-format/#encoding).

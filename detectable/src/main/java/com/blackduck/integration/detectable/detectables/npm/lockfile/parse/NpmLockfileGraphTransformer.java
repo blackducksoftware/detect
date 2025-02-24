@@ -36,9 +36,7 @@ public class NpmLockfileGraphTransformer {
                     packageLock.packages != null ? packageLock.packages.size() : packageLock.dependencies.size()));
 
             //First we will recreate the graph from the resolved npm dependencies
-            for (NpmDependency resolved : project.getResolvedDependencies()) {
-                transformTreeToGraph(resolved, project, dependencyGraph, externalDependencies, workspaces);
-            }
+            createGraphFromResolvedDependencies(project, externalDependencies, workspaces, dependencyGraph);
 
             //Then we will add relationships between the project (root) and the graph
             boolean atLeastOneRequired = !project.getDeclaredDependencies().isEmpty()
@@ -65,6 +63,12 @@ public class NpmLockfileGraphTransformer {
         }
 
         return dependencyGraph;
+    }
+
+    private void createGraphFromResolvedDependencies(NpmProject project, List<NameVersion> externalDependencies, List<String> workspaces, DependencyGraph dependencyGraph) {
+        for (NpmDependency resolved : project.getResolvedDependencies()) {
+            transformTreeToGraph(resolved, project, dependencyGraph, externalDependencies, workspaces);
+        }
     }
 
     private void addRootDependencies(

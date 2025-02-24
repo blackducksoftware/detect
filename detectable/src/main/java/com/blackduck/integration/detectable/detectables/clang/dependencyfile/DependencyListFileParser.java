@@ -35,10 +35,10 @@ public class DependencyListFileParser {
         String depsListString = depsMkTextParts[1];
         logger.trace(String.format("dependencies: %s", depsListString));
 
-        depsListString = depsListString.replaceAll("\n", " ");
+        depsListString = depsListString.replace("\n", " ");
         logger.trace(String.format("dependencies, newlines removed: %s", depsListString));
 
-        depsListString = depsListString.replaceAll("\\\\", " "); //TODO: This does not work on Windows paths.
+        depsListString = depsListString.replace("\\", " "); //TODO: This does not work on Windows paths.
         logger.trace(String.format("dependencies, backslashes removed: %s", depsListString));
 
         String[] deps = depsListString.split("\\s+");

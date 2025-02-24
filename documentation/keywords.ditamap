@@ -30,6 +30,7 @@
   <keydef keys="var_company_support"><topicmeta><keywords><keyword>Black Duck Support</keyword></keywords></topicmeta></keydef>
   <keydef keys="docker_inspector_name"><topicmeta><keywords><keyword>Detect Docker Inspector</keyword></keywords></topicmeta></keydef>
   <keydef keys="docker_inspector_project_name"><topicmeta><keywords><keyword>detect-docker-inspector</keyword></keywords></topicmeta></keydef>
+  <keydef keys="project_inspector_name"><topicmeta><keywords><keyword>Project Inspector</keyword></keywords></topicmeta></keydef>
   <keydef keys="image_repo_organization"><topicmeta><keywords><keyword>blackducksoftware</keyword></keywords></topicmeta></keydef>
   <keydef keys="source_raw_content_url_base"><topicmeta><keywords><keyword>https://raw.githubusercontent.com</keyword></keywords></topicmeta></keydef>
   <keydef keys="imageinspector_image_name_base"><topicmeta><keywords><keyword>blackduck-imageinspector</keyword></keywords></topicmeta></keydef>

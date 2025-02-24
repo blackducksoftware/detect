@@ -21,6 +21,7 @@ import com.blackduck.integration.detectable.detectable.executable.ExecutableFail
 import com.blackduck.integration.detectable.detectables.gradle.inspection.parse.GradleReportParser;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.parse.GradleReportTransformer;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.parse.GradleRootMetadataParser;
+import com.blackduck.integration.detectable.detectables.gradle.inspection.model.GradleReport;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.util.ToolVersionLogger;
 import com.blackduck.integration.rest.proxy.ProxyInfo;
@@ -52,7 +53,7 @@ public class GradleInspectorExtractor {
         this.toolVersionLogger = toolVersionLogger;
     }
 
-    public Extraction extract(File directory, ExecutableTarget gradleExe, @Nullable String gradleCommand, ProxyInfo proxyInfo, File gradleInspector, File outputDirectory)
+    public Extraction extract(File directory, ExecutableTarget gradleExe, @Nullable String gradleCommand, ProxyInfo proxyInfo, File gradleInspector, File outputDirectory, boolean rootOnly)
         throws ExecutableFailedException {
         try {
             toolVersionLogger.log(directory, gradleExe);
@@ -62,16 +63,27 @@ public class GradleInspectorExtractor {
             List<File> reportFiles = fileFinder.findFiles(outputDirectory,"*_dependencyGraph.txt");
             List<CodeLocation> codeLocations = new ArrayList<>();
 
+            //Get all the extraction files and sort all the files by depth number in ascending order starting from root to the deepest submodule,
+            // this will help in getting all the rich versions for parents, and then we move on to parse child submodules to see usage of those files
             File[] files = new File[reportFiles.size()];
             reportFiles.toArray(files);
             List<File> reportFilesSorted = Arrays.asList(sortFilesByDepth(files));
 
-            reportFilesSorted.stream()
-                .map(gradleReportParser::parseReport)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .map(gradleReportTransformer::transform)
-                .forEach(codeLocations::add);
+            if (rootOnly && !reportFilesSorted.isEmpty()) {
+                logger.debug("Gradle Inspector root-only option selected. Only processing root project dependencies.");
+                Optional<GradleReport> rootReport = gradleReportParser.parseReport(reportFilesSorted.get(0));
+                if (rootReport.isPresent()) {
+                    List<CodeLocation> allCodeLocationsInRootReport = gradleReportTransformer.transformRootReportOnly(rootReport.get());
+                    codeLocations = allCodeLocationsInRootReport;
+                }
+            } else {
+                reportFilesSorted.stream()
+                        .map(gradleReportParser::parseReport)
+                        .filter(Optional::isPresent)
+                        .map(Optional::get)
+                        .map(gradleReportTransformer::transform)
+                        .forEach(codeLocations::add);
+            }
 
             Optional<NameVersion> projectNameVersion = Optional.empty();
             if (rootProjectMetadataFile != null) {
@@ -99,6 +111,7 @@ public class GradleInspectorExtractor {
         }
     }
 
+    // Sort all the files containing dependency extractions in ascending-order
     private File[] sortFilesByDepth(File[] files) {
         Arrays.sort(files, new Comparator<File>() {
             @Override
@@ -111,7 +124,7 @@ public class GradleInspectorExtractor {
             private int extractDepthNumber(String name) {
                 int i;
                 try {
-                    int s = name.indexOf("depth") + 5;
+                    int s = name.lastIndexOf("depth") + 5; // File name is like project__projectname__depth3_dependencyGraph.txt, we extract the number after depth
                     int e = name.indexOf("_dependencyGraph");
                     String number = name.substring(s, e);
                     i = Integer.parseInt(number);

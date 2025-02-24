@@ -1,6 +1,6 @@
-# Running [detect_product_short] in Jenkins
+# Running [detect_product_long] in Jenkins
 
-By default, [company_name] [detect_product_short] for Jenkins downloads either the latest [detect_product_short] shell script when run on a UNIX node, or PowerShell script when it's run on a Windows node, to the Jenkins tools directory, and then executes that script. Note that you can also use the JAR option to run [detect_product_short].
+By default, [detect_product_short] for Jenkins downloads either the latest [detect_product_short] shell script when run on a UNIX node, or PowerShell script when it's run on a Windows node, to the Jenkins tools directory, and then executes that script. Note that you can also use the JAR option to run [detect_product_short].
 
 The [detect_product_short] PowerShell or shell script is downloaded once and placed in the [detect_product_short] working directory. If you want to force the plugin to fetch the latest script, clear out the Detect directory in your Jenkins tools directory.
 
@@ -33,4 +33,4 @@ Refer to the [freestyle example](../../integrations/jenkinsplugin/jenkinsfreest
 ## DSL considerations
 The [detect_product_short] for Jenkins plugin provides Dynamic DSL for both freestyle steps and pipeline steps. Read more at [Dynamic DSL](https://github.com/jenkinsci/job-dsl-plugin/wiki/Dynamic-DSL).
 
-**Note:** that versions 1.72 and later of the DSL plugin do not support the [company_name] [detect_product_short] for Jenkins plugin pipeline steps.
+**Note:** that versions 1.83 and later of the DSL plugin do not support the [detect_product_short] for Jenkins plugin pipeline steps.

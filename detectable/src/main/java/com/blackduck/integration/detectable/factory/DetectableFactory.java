@@ -5,7 +5,6 @@ import java.io.File;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
-
 import org.xml.sax.SAXException;
 
 import com.google.gson.Gson;
@@ -37,6 +36,7 @@ import com.blackduck.integration.detectable.detectable.executable.resolver.Pytho
 import com.blackduck.integration.detectable.detectable.executable.resolver.Rebar3Resolver;
 import com.blackduck.integration.detectable.detectable.executable.resolver.SbtResolver;
 import com.blackduck.integration.detectable.detectable.executable.resolver.SwiftResolver;
+import com.blackduck.integration.detectable.detectable.executable.resolver.OpamResolver;
 import com.blackduck.integration.detectable.detectable.inspector.GradleInspectorResolver;
 import com.blackduck.integration.detectable.detectable.inspector.PipInspectorResolver;
 import com.blackduck.integration.detectable.detectable.inspector.ProjectInspectorResolver;
@@ -296,6 +296,12 @@ import com.blackduck.integration.detectable.detectables.yarn.parse.entry.YarnLoc
 import com.blackduck.integration.detectable.detectables.yarn.parse.entry.section.YarnLockDependencySpecParser;
 import com.blackduck.integration.detectable.detectables.yarn.parse.entry.section.YarnLockEntrySectionParserSet;
 import com.blackduck.integration.detectable.python.util.PythonDependencyTransformer;
+import com.blackduck.integration.detectable.detectables.opam.buildexe.OpamBuildDetectable;
+import com.blackduck.integration.detectable.detectables.opam.buildexe.OpamBuildExtractor;
+import com.blackduck.integration.detectable.detectables.opam.buildexe.parse.OpamTreeParser;
+import com.blackduck.integration.detectable.detectables.opam.lockfile.OpamLockFileDetectable;
+import com.blackduck.integration.detectable.detectables.opam.lockfile.OpamLockFileExtractor;
+import com.blackduck.integration.detectable.detectables.opam.transform.OpamGraphTransformer;
 import com.blackduck.integration.detectable.util.ToolVersionLogger;
 
 /*
@@ -700,6 +706,14 @@ public class DetectableFactory {
     
     public SetupToolsBuildlessDetectable createSetupToolsBuildlessDetectable(DetectableEnvironment environment, PipResolver pipResolver) {
         return new SetupToolsBuildlessDetectable(environment, fileFinder, setupToolsExtractor(environment.getDirectory()));
+    }
+
+    public OpamBuildDetectable createOpamBuildDetectable(DetectableEnvironment environment, OpamResolver opamResolver) {
+        return new OpamBuildDetectable(environment, fileFinder, opamResolver, opamBuildExtractor(environment.getDirectory()));
+    }
+
+    public OpamLockFileDetectable createOpamLockFileDetectable(DetectableEnvironment environment, OpamResolver opamResolver) {
+        return new OpamLockFileDetectable(environment, fileFinder, opamLockFileExtractor(environment.getDirectory()));
     }
 
     // Used by three Detectables
@@ -1113,6 +1127,23 @@ public class DetectableFactory {
     private SetupToolsExtractor setupToolsExtractor(File sourceDirectory) {
         return new SetupToolsExtractor(setupToolsGraphTransformer(sourceDirectory));
     }
+
+    private OpamGraphTransformer opamGraphTransformer(File sourceDirectory) {
+        return new OpamGraphTransformer(sourceDirectory,externalIdFactory,executableRunner);
+    }
+
+    private OpamTreeParser opamTreeParser(File sourceDirectory) {
+        return new OpamTreeParser(gson, sourceDirectory, externalIdFactory);
+    }
+
+    private OpamBuildExtractor opamBuildExtractor(File sourceDirectory) {
+        return new OpamBuildExtractor(opamGraphTransformer(sourceDirectory), opamTreeParser(sourceDirectory), executableRunner, sourceDirectory);
+    }
+
+    private OpamLockFileExtractor opamLockFileExtractor(File sourceDirectory) {
+        return new OpamLockFileExtractor(opamGraphTransformer(sourceDirectory));
+    }
+
 
     //#endregion Utility
 

@@ -13,9 +13,9 @@ Centralized [detect_product_short] Version Management feature support in [bd_pro
 <note type="information">
 <ul>
 <li>
-If the [bd_product_short] **Internally Hosted** option has been configured, [detect_product_short] will be downloaded via https on the client side from the fully formatted URL specified under the "Hosting Location for [detect_product_short]" setting. Note that this setting over-rides version and integrity checks that would otherwise be performed by [detect_product_short].
+If the Black Duck **Internally Hosted** option has been configured, Detect will be downloaded via https on the client side from the fully formatted URL specified under the "Hosting Location for Detect" setting. This setting over-rides version and integrity checks that would otherwise be performed by Detect.
 <li>
-If the [bd_product_short] **Hosted** option has been configued, [detect_product_short] will be downloaded on the client side from the repository.
+If the Black Duck **Hosted** option has been configued, Detect will be downloaded on the client side from the repository.
 </li>
 </ul>
 </note>
@@ -66,7 +66,7 @@ Current version of [detect_product_short] matches the mapped version or there is
 Downgrading to versions earlier than 8.9.0 is not supported. 
 </li>
 <li>  
-This feature is not available in offline 'blackduck.offline.mode=true' or AirGap configurations or if the [bd_product_short] URL has not been provided via the `blackduck.url` variable.
+This feature is not available in offline 'blackduck.offline.mode=true' or air gap configurations or if the [bd_product_short] URL has not been provided via the `blackduck.url` variable.
 <li>
 When running an "Internally Hosted" instance of [detect_product_short] and using custom scripts, checks should be made to prevent [detect_product_short] from querying [bd_product_short] for version management and re-downloading itself.
 <li>

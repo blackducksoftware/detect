@@ -3,6 +3,7 @@ package com.blackduck.integration.detect.lifecycle.run.step.utility;
 import java.io.IOException;
 import java.util.function.Consumer;
 
+import com.blackduck.integration.detect.lifecycle.BlackDuckDuplicateProjectException;
 import com.blackduck.integration.detect.workflow.componentlocationanalysis.ComponentLocatorException;
 import org.apache.commons.lang3.StringUtils;
 
@@ -24,7 +25,7 @@ public class OperationWrapper {
     }
 
     public <T> T wrapped(Operation operation, OperationSupplier<T> supplier) throws OperationException {
-        return wrapped(operation, supplier, () -> {}, (e) -> {});
+        return wrapped(operation, supplier, () -> {}, e -> {});
     }
 
     public <T> T wrappedWithCallbacks(Operation operation, OperationSupplier<T> supplier, Runnable successConsumer, Consumer<Exception> errorConsumer) throws OperationException {
@@ -63,6 +64,7 @@ public class OperationWrapper {
                 operation.error(e);
             }
             errorConsumer.accept(e);
+            checkForDuplicateProjectError(e);
             throw new OperationException(e);
         } catch (Exception e) {
             // in some cases, the problem is buried in a nested exception 
@@ -80,7 +82,13 @@ public class OperationWrapper {
             operation.finish();
         }
     }
-    
+
+    private static void checkForDuplicateProjectError(BlackDuckApiException e) throws BlackDuckDuplicateProjectException {
+        if (e.getBlackDuckErrorCode().contains("central.constraint_violation.project_name_duplicate_not_allowed")) {
+            throw new BlackDuckDuplicateProjectException(e);
+        }
+    }
+
     private String rootCauseMessage(Exception e) {
         String msg = "";
         Throwable t = e.getCause();

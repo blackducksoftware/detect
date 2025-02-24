@@ -76,7 +76,7 @@ public class PipTest {
 
     // If updating below components, make sure to refer the test project used by the corresponding dockerfile
     private void validateComponentsForSamplePipProject(BlackDuckAssertions blackduckAssertions) throws IntegrationException {
-        blackduckAssertions.hasComponents("Jinja");
+        blackduckAssertions.hasComponents("jinjapython");
         blackduckAssertions.hasComponents("PyYAML");
         blackduckAssertions.checkComponentVersionExists("MarkupSafe", "2.1.5");
         blackduckAssertions.checkComponentVersionExists("Packaging", "24.1");

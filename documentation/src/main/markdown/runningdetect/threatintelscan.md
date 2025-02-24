@@ -22,7 +22,11 @@ Identification of malware displayed to [bd_product_short] users will include fil
  * [detect_product_short] 9.6.0 or greater.
  * Must be running [bd_product_short] 2024.4.0 or greater.
  * The [threat_intel] service container (rl-service) must be running.
- * [threat_intel] scans require network connectivity (Air gap mode is not supported).
+ * [threat_intel] scans require network connectivity (air gap mode is not supported).
+    * For more network requirement information please consult the documentation provided by [bd_product_short] under the topic:
+<xref href="Require_Network.dita" scope="peer"> Network requirements
+<data name="facets" value="pubname=bd-hub"/></xref>   
+   
  * [threat_intel] scan does not provide project and version name defaults so you need to set project and version names via properties when [threat_intel] is the only tool invoked. (If the specified project or version does not exist in [bd_product_short], it will be created.)
  
 ## Invocation
@@ -36,7 +40,7 @@ To invoke a [threat_intel] scan, which only executes in "Intelligent" mode, the 
  
 ## Results
 
-[threat_intel] scan findings will appear in the [bd_product_short] user interface under the **Malware** tab. Further information on viewing [threat_intel] results is available [here](https://documentation.blackduck.com/bundle/bd-hub/page/ComponentDiscovery/aboutReversinglabsScanning.html)
+[threat_intel] scan findings will appear in the [bd_product_short] user interface under the **Malware** tab. Further information on viewing [threat_intel] results is available [here](https://documentation.blackduck.com/bundle/bd-hub/page/ComponentDiscovery/aboutReversinglabsScanning.html).
 
 ## Further information
-For additional information regarding the related properties, see [threat-intel](../properties/configuration/threat-intel.md)
+For additional information regarding the related properties, see [threat-intel](../properties/configuration/threat-intel.md).

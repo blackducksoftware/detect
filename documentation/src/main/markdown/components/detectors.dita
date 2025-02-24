@@ -640,6 +640,37 @@
 							<entry>LOW</entry>
 						</row>
 						<row>
+                            <entry>
+                                <b>OPAM</b>
+                            </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                        </row>
+                        <row>
+                            <entry> </entry>
+                            <entry>Opam CLI</entry>
+                            <entry>OCaml</entry>
+                            <entry>opam</entry>
+                            <entry>
+                                <p>File: opam file (with .opam extension)</p>
+                                <p>Executable: opam</p>
+                            </entry>
+                            <entry>HIGH</entry>
+                        </row>
+                        <row>
+                            <entry> </entry>
+                            <entry>Opam Lock</entry>
+                            <entry>OCaml</entry>
+                            <entry>opam</entry>
+                            <entry>
+                                <p>Files: opam files (with .opam and .opam.locked extensions)</p>
+                            </entry>
+                            <entry>LOW</entry>
+                        </row>
+						<row>
 							<entry>
 								<b>PACKAGIST</b>
 							</entry>

@@ -1,26 +1,50 @@
 # Downloading, Installing, and Updating the Plugin
-To install the [company_name] [detect_product_short] for Jenkins plugin, perform the following steps:
 
-1. Navigate to **Manage Jenkins** > **Manage Plugins**.
-1. Select the **Available** tab.  (Note that if the plugin is already installed, it does not appear in the **Available** list.)
-1. Select **Blackduck Detect**.
-1. Click **Download now and install after restart**. This is the recommendation for installing the plugin.
-1. After restarting Jenkins, confirm that the plugin is successfully installed by navigating to **Manage Jenkins** > **Manage Plugins > Installed**, and verify that **[company_name] [solution_name]** displays in the list.
+## Downloading and Installing a new instance
+To install the [detect_product_short] for Jenkins plugin, perform the following steps:
 
-[company_name] [detect_product_short] plugin for Jenkins GitHub page [jenkinsci](https://github.com/jenkinsci/synopsys-detect-plugin).
-Additional download locations listed in [Download locations](../../downloadingandrunning/downloadlocations.html).
+1. Navigate to **Manage Jenkins** > **Manage Plugins**.
+1. Select the **Available** tab. (Note that if the plugin is already installed, it does not appear in the **Available** list.)
+1. Select **Blackduck [detect_product_short]**.
+1. Click **Download now and install after restart**. This is the recommendation for installing the plugin.
+1. After restarting Jenkins, confirm that the plugin is successfully installed by navigating to **Manage Jenkins** > **Manage Plugins > Installed**, and verify that **[company_name] [solution_name]** displays in the list.
 
-## Updating the [company_name] [detect_product_short] for Jenkins plugin
-You can update the [company_name] [detect_product_short] for Jenkins plugin when new versions are released.
+[detect_product_short] plugin for Jenkins GitHub page [jenkinsci](https://github.com/jenkinsci/blackduck-detect-plugin).
+Additional download locations listed in [Download locations](../../downloadingandinstalling/downloadlocations.html).
 
-**To update the Jenkins plugin:**
+## Updating [company_name] [solution_name] Jenkins plugin to [detect_product_long] Jenkins plugin{#updating-existing-jenkins}
+For existing [company_name] [solution_name] Jenkins plugin users, the [detect_product_long] Jenkins plugin should be considered a fresh installation as the domain has changed.   
+* Take note of your existing system configuration and post-build setup before moving from the [detect_product_short] Jenkins plugin to the [detect_product_long] Jenkins plugin. You will need this information when configuring or reconfiguring your pipelines.    
+   * Configuration information can be located under your `JENKINS_HOME` directory.   
+* If you are utilizing a [detect_product_short] Post Build Step, before upgrading to the [detect_product_long] plugin, make sure to record the current configuration set in the configurable pipelines, for reuse.
+* For Groovy, you will need to update the **Pipeline** script; under **Pipelines** > **Pipeline_Name** > **Configuration**, replacing the `synopsys_detect detectProperties:` portion of the script with `blackduck_detect detectProperties:`
+   
+   Example:
+    ```
+    node ('built-in') {
 
-1. Navigate to **Manage Jenkins** > **Manage Plugins**.
-1. Click the **Updates** tab.
-1. Select **Blackduck Detect**
-   1. If there are updates for the [company_name] [detect_product_short] for Jenkins plugin, the updates display in the list.  If there is not an available update, the [company_name] [detect_product_short] for Jenkins plugin does not display in this list.
-   1. Alternatively, you can force Jenkins to check for plugin updates by clicking **Check now** on the **Updates** tab.
-1. If there are updates, select the one you want, and click **Download now and install after restart**.
+        stage ('Git - Checkout') {
+        git 'https://github.com/yarnpkg/example-yarn-package.git'
+        }
+        stage ('Black Duck - Detect') {
+        blackduck_detect detectProperties: '--blackduck.trust.cert=true --detect.wait.for.results=true', downloadStrategyOverride: [$class: 'ScriptOrJarDownloadStrategy']
+            
+        }
+    }
+    ```
+   
+* For the System Configuration and [bd_product_long], before upgrading to the [detect_product_long] plugin, make sure to back up, or record the current configuration set for the Global [bd_product_short] URL and token that you have set in Manage Jenkins > Configure System > [detect_product_long] section.
+* If you are using Air Gap mode, before upgrading to the [detect_product_long] plugin, make sure to save the current tool configuration that you have set in Manage Jenkins > Tools > Detect Air Gap mode.
+
+## Updating the [detect_product_long] for Jenkins plugin
+You can update the [detect_product_short] for Jenkins plugin when new versions are released.
+
+1. Navigate to **Manage Jenkins** > **Manage Plugins**.
+1. Click the **Updates** tab.
+1. Select **Blackduck Detect**
+   1. If there are updates for the [detect_product_short] for Jenkins plugin, the updates display in the list. If there is not an available update, the [detect_product_short] for Jenkins plugin does not display in this list.
+   1. Alternatively, you can force Jenkins to check for plugin updates by clicking **Check now** on the **Updates** tab.
+1. If there are updates, select the one you want, and click **Download now and install after restart**.
 
 <!-- Commenting out until the script is updated to support the current releases
 ## Migrating from plugin version 1.5.0

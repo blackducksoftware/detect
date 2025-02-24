@@ -109,6 +109,12 @@ public class PythonDependencyTransformer {
     }
 
     public String formatLine(String line) {
+        // Replace null characters (\u0000) with empty string if any
+        line = line.replace("\u0000", "");
+
+        // Replace the replacement characters (\uFFFD) with empty string if any
+        line = line.replace("\uFFFD", "");
+        
         int ignoreAfterIndex;
         String formattedLine = line.trim();
 

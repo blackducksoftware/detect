@@ -59,6 +59,10 @@ public class ShutdownManager {
             logger.debug("Will not cleanup impact analysis folder.");
             cleanupToSkip.add(directoryManager.getImpactAnalysisOutputDirectory());
         }
+        if (cleanupDecision.shouldPreserveCsv()) {
+            logger.debug("Will not cleanup csv folder.");
+            cleanupToSkip.add(directoryManager.getCsvOutputDirectory()); 
+        }       
         if (cleanupDecision.shouldPreserveAirGap()) {
             logger.debug("Will not cleanup Air Gap file.");
             cleanupToSkip.add(cleanupDecision.getAirGapZip());

@@ -7,7 +7,7 @@
 		<prodinfo>
 			<prodname>Black Duck Detect</prodname>
 			<vrmlist>
-				<vrm version="10.0.0"/>
+				<vrm version="10.3.0"/>
 			</vrmlist>
 		</prodinfo>
 		<!-- zoomin bundle name -->
@@ -139,6 +139,7 @@
 		<topicref href="packagemgrs/maven.md" format="markdown"/>
 		<topicref href="packagemgrs/npm.md" format="markdown"/>
 		<topicref href="packagemgrs/nuget.md" format="markdown"/>
+		<topicref href="packagemgrs/opam.md" format="markdown"/>
 		<topicref href="packagemgrs/pnpm.md" format="markdown"/>
 		<topicref href="packagemgrs/python.md" format="markdown"/>
 		<topicref href="packagemgrs/sbt.md" format="markdown"/>

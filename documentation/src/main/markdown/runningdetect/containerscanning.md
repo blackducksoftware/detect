@@ -22,8 +22,9 @@ Execute Container Scan by adding the following to a run of [bd_product_short]:
  * URL provided for a remote container image must use the HTTP(S) protocol.
  
 ### Limitations
- * Container scanning is limited to images of 5GB or less for hosted services.
- * Container scanning is limited to images of 6GB or less for local, on-prem services.
+ * Container scanning is limited to images of 100GB or less for hosted or local, on-prem services.
+	<note type="note">Additional hardware allocation might be required for the BDBA container when locally scanning large images.</note>
+ * Container scanning is not supported when running [bd_product_short] with an on-prem KB. For additional information see [hosted versus on-prem KB functionality ](https://documentation.blackduck.com/bundle/bd-hub/page/General/hostedKbVsOnPremKb.html).
  
 ## Invocation
  * To invoke a container scan, which executes in "Intelligent" mode by default, the following must be provided at a minimum:   

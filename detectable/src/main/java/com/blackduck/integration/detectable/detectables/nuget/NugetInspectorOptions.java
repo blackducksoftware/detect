@@ -14,14 +14,16 @@ public class NugetInspectorOptions {
     private final List<String> packagesRepoUrl;
     private final Path nugetConfigPath;
     private final Set<NugetDependencyType> nugetExcludedDependencyTypes;
+    private final Path nugetArtifactsPath;
 
-    public NugetInspectorOptions(boolean ignoreFailures, List<String> excludedModules, List<String> includedModules, List<String> packagesRepoUrl, @Nullable Path nugetConfigPath, Set<NugetDependencyType> nugetExcludedDependencyTypes) {
+    public NugetInspectorOptions(boolean ignoreFailures, List<String> excludedModules, List<String> includedModules, List<String> packagesRepoUrl, @Nullable Path nugetConfigPath, Set<NugetDependencyType> nugetExcludedDependencyTypes, @Nullable Path nugetArtifactsPath) {
         this.ignoreFailures = ignoreFailures;
         this.excludedModules = excludedModules;
         this.includedModules = includedModules;
         this.packagesRepoUrl = packagesRepoUrl;
         this.nugetConfigPath = nugetConfigPath;
         this.nugetExcludedDependencyTypes = nugetExcludedDependencyTypes;
+        this.nugetArtifactsPath = nugetArtifactsPath;
     }
 
     public boolean isIgnoreFailures() {
@@ -45,4 +47,6 @@ public class NugetInspectorOptions {
     }
 
     public Set<NugetDependencyType> getNugetExcludedDependencyTypes() { return nugetExcludedDependencyTypes; }
+
+    public Optional<Path> getNugetArtifactsPath() { return Optional.ofNullable(nugetArtifactsPath); }
 }

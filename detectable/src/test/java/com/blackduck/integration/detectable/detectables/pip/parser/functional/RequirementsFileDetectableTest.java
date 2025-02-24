@@ -28,23 +28,7 @@ class RequirementsFileDetectableTest {
     private static File requirementsFile;
     private static RequirementsFileExtractor requirementsFileExtractor;
     private static List<ExternalId> testDependencies = new ArrayList<>();
-    private static ExternalId testDependency1;
-    private static ExternalId testDependency2;
-    private static ExternalId testDependency3;
-    private static ExternalId testDependency4;
-    private static ExternalId testDependency5;
-    private static ExternalId testDependency8;
-    private static ExternalId testDependency9;
-    private static ExternalId testDependency10;
-    private static ExternalId testDependency11;
-    private static ExternalId testDependency12;
-    private static ExternalId testDependency13;
-    private static ExternalId testDependency14;
-    private static ExternalId testDependency15;
-    private static ExternalId testDependency16;
-    private static ExternalId testDependency17;
-    private static ExternalId testDependency18;
-    private static ExternalId testDependency19;
+
     @BeforeAll
     protected static void setUp() {
         ExternalIdFactory externalIdFactory = new ExternalIdFactory();
@@ -86,6 +70,5 @@ class RequirementsFileDetectableTest {
         for (ExternalId testDependency: testDependencies) {
             nameVersionGraphAssert.hasDependency(testDependency.getName(), testDependency.getVersion());
         }
-
     }
 }

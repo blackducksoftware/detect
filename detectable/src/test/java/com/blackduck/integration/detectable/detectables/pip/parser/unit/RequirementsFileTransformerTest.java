@@ -103,6 +103,24 @@ public class RequirementsFileTransformerTest {
         Assertions.assertEquals(expectedLine, formattedLine);
     }
 
+    @Test
+    void testFormatLineWithNullCharacters() {
+        String rawInputLine = "a\u0000niso8601==9.0\u0000.1";
+        String expectedLine = "aniso8601==9.0.1";
+
+        String formattedLine = requirementsFileTransformer.formatLine(rawInputLine);
+        Assertions.assertEquals(expectedLine, formattedLine);
+    }
+
+    @Test
+    void testFormatLineWithReplacementCharacters() {
+        String rawInputLine = "a\uFFFDniso8601==9.0\uFFFD.1";
+        String expectedLine = "aniso8601==9.0.1";
+
+        String formattedLine = requirementsFileTransformer.formatLine(rawInputLine);
+        Assertions.assertEquals(expectedLine, formattedLine);
+    }
+
     public static Stream<String> getFormatTokenRawDependencyInputs() {
         return Stream.of(
             EXPECTED_DEPENDENCY_NAME + "[security]",
@@ -132,6 +150,5 @@ public class RequirementsFileTransformerTest {
         String formattedToken = requirementsFileTransformer.formatToken(rawToken);
         Assertions.assertEquals(EXPECTED_DEPENDENCY_VERSION, formattedToken);
     }
-
 
 }

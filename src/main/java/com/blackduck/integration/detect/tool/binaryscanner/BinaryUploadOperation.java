@@ -7,12 +7,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
-import com.blackduck.integration.sca.upload.client.UploaderConfig;
-import com.blackduck.integration.sca.upload.client.model.BinaryScanRequestData;
-import com.blackduck.integration.sca.upload.client.uploaders.BinaryUploader;
-import com.blackduck.integration.sca.upload.client.uploaders.UploaderFactory;
-import com.blackduck.integration.sca.upload.rest.status.BinaryUploadStatus;
 import com.blackduck.integration.blackduck.codelocation.CodeLocationCreationData;
 import com.blackduck.integration.blackduck.codelocation.Result;
 import com.blackduck.integration.blackduck.codelocation.binaryscanner.BinaryScan;
@@ -24,12 +18,17 @@ import com.blackduck.integration.blackduck.exception.BlackDuckIntegrationExcepti
 import com.blackduck.integration.detect.configuration.DetectUserFriendlyException;
 import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
+import com.blackduck.integration.detect.lifecycle.run.step.utility.UploaderHelper;
 import com.blackduck.integration.detect.workflow.codelocation.CodeLocationNameManager;
 import com.blackduck.integration.detect.workflow.status.Status;
 import com.blackduck.integration.detect.workflow.status.StatusEventPublisher;
 import com.blackduck.integration.detect.workflow.status.StatusType;
 import com.blackduck.integration.exception.IntegrationException;
-import com.blackduck.integration.log.Slf4jIntLogger;
+import com.blackduck.integration.exception.IntegrationTimeoutException;
+import com.blackduck.integration.sca.upload.client.model.BinaryScanRequestData;
+import com.blackduck.integration.sca.upload.client.uploaders.BinaryUploader;
+import com.blackduck.integration.sca.upload.client.uploaders.UploaderFactory;
+import com.blackduck.integration.sca.upload.rest.status.BinaryUploadStatus;
 import com.blackduck.integration.util.NameVersion;
 
 public class BinaryUploadOperation {
@@ -80,7 +79,12 @@ public class BinaryUploadOperation {
             exception = status.getException().get();      
         }
         
-        throw new DetectUserFriendlyException(BINARY_UPLOAD_FAILURE_MESSAGE, exception, ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR);
+        ExitCodeType type = ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR;
+        if (exception instanceof IntegrationTimeoutException) {
+            type = ExitCodeType.FAILURE_TIMEOUT;
+        }
+        
+        throw new DetectUserFriendlyException(BINARY_UPLOAD_FAILURE_MESSAGE, exception, type);
     }
     
     private BinaryUploader createMultipartBinaryScanUploader(File binaryUpload, NameVersion projectNameVersion,
@@ -88,16 +92,7 @@ public class BinaryUploadOperation {
         String codeLocationName = codeLocationNameManager.createBinaryScanCodeLocationName(binaryUpload,
                 projectNameVersion.getName(), projectNameVersion.getVersion());
 
-        UploaderConfig.Builder uploaderConfigBuilder =  UploaderConfig.createConfigFromEnvironment(
-                blackDuckRunData.getBlackDuckServerConfig().getProxyInfo())
-                .setBlackDuckTimeoutInSeconds(blackDuckRunData.getBlackDuckServerConfig().getTimeout())
-                .setMultipartUploadTimeoutInMinutes(blackDuckRunData.getBlackDuckServerConfig().getTimeout() /  60)
-                .setAlwaysTrustServerCertificate(blackDuckRunData.getBlackDuckServerConfig().isAlwaysTrustServerCertificate())
-                .setBlackDuckUrl(blackDuckRunData.getBlackDuckServerConfig().getBlackDuckUrl())
-                .setApiToken(blackDuckRunData.getBlackDuckServerConfig().getApiToken().get());
-
-        UploaderConfig uploaderConfig = uploaderConfigBuilder.build();
-        UploaderFactory uploadFactory = new UploaderFactory(uploaderConfig, new Slf4jIntLogger(logger), new Gson());
+        UploaderFactory uploadFactory = UploaderHelper.getUploaderFactory(blackDuckRunData);
 
         BinaryScanRequestData binaryData = new BinaryScanRequestData(projectNameVersion.getName(),
                 projectNameVersion.getVersion(), codeLocationName, "");
@@ -138,8 +133,7 @@ public class BinaryUploadOperation {
 
         public CodeLocationCreationData<BinaryScanBatchOutput> uploadBinaryScanFiles(
             BinaryScanBatch binaryScanBatch,
-            BinaryScanUploadService binaryScanUploadService,
-            NameVersion projectNameVersion
+            BinaryScanUploadService binaryScanUploadService
         )
             throws DetectUserFriendlyException {
             try {

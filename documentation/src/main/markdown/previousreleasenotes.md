@@ -1,6 +1,105 @@
 <!-- Check the support matrix to determine supported, non-current major version releases -->
 # Release notes for previous supported versions
 
+## Version 10.2.1
+
+### Resolved issues
+
+* (IDETECT-4560) - Update the FreeMarker Template Language (FTL) script used to build the [detect_product_short] air gap zips to prevent inclusion of outdated JARs.
+
+## Version 10.2.0
+
+### New features
+
+* The scanCLI `detect.blackduck.signature.scanner.csv.archive` property has been added for generating and uploading CSV files to [bd_product_long] 2025.1.0 or later. If used in offline mode, the generated CSV files will be located in the [detect_product_short] run directory in the csv folder.
+<note type="note">This feature is only available for intelligent persistence scans.</note>
+
+### Changed features
+
+* Use of the --detect.yarn.ignore.all.workspaces flag is not required for Yarn 4 projects, thus configuration parameters such as detect.yarn.dependency.types.excluded=NON_PRODUCTION can be employed.
+
+### Resolved issues
+
+* (IDETECT-4447) - ID strings of detected Yarn project dependencies are now correctly formed. Related warning messages have been improved to identify entries in the yarn.lock file that have not been resolved through package.json files and could not be resolved with any standard NPM packages.
+* (IDETECT-4533) - Resolved an issue with [detect_product_short] Gradle Native Inspector causing scans to hang indefinitely when submodule has the same name as the parent module.
+* (IDETECT-4560) - Updated version of Jackson-Core (a transitive dependency) to address a vulnerability.
+
+## Version 10.1.0
+
+### New features
+
+* npm lockfile and shrinkwrap detectors now ignore packages flagged as extraneous in the package-lock.json and npm-shrinkwrap.json files.
+* Support added for Opam Package Manager via [Opam Detector](packagemgrs/opam.md).
+* New Gradle Native Inspector option to only process the root dependencies of a Gradle project. See [detect.gradle.root.only](properties/detectors/gradle.md#gradle-root-only-enabled-advanced) for more details.
+
+### Changed features
+
+* npm version 1 package-lock.json and npm-shrinkwrap.json file parsing has been restored.
+* The `detect.project.codelocation.unmap` property has been deprecated.
+* Changed [detect_product_long]'s JAR signing authority from Synopsys, Inc. to Black Duck Software, Inc.
+
+### Resolved issues
+
+* (IDETECT-4517) - [detect_product_short] now correctly indicates a timeout failure occurred when multipart binary or container scans timeout during an upload.
+* (IDETECT-4540) - Multipart binary and container scans now correctly retry when authentication errors are received during transmission.
+* (IDETECT-4469) - Eliminating null (`\u0000`) and replacement (`\uFFFD`) characters during the processing of Python requirements.txt files to ensure successful extraction of dependency information.
+
+### Dependency updates
+
+* Upgraded and released [docker_inspector_name] version 11.1.0.
+* Upgraded to [project_inspector_name] v2024.12.1.
+
+## Version 10.0.0
+
+[company_name] [solution_name] has been renamed [detect_product_long] with page links, documentation, and other URLs updated accordingly. Update any [detect_product_short] documentation, or other bookmarks you may have. See the [Domain Change FAQ](https://community.blackduck.com/s/article/Black-Duck-Domain-Change-FAQ).
+* As part of this activity, sig-repo.synopsys.com and detect.synopsys.com are being deprecated. Please make use of repo.blackduck.com and detect.blackduck.com respectively. 
+    * After March 2025, [detect_product_short] script download details will only be available via detect.blackduck.com.
+    * [detect_product_short] 10.0.0 will only work when using repo.blackduck.com.
+
+<note type="note">It is recommended that customers continue to maintain sig-repo.synopsys.com, and repo.blackduck.com on their allow list until March 31st, 2025 when sig-repo.synopsys.com will be fully replaced by repo.blackduck.com.</note>
+
+### New features
+
+* The npm package.json detector now performs additional parsing when attempting to find dependency versions. This can result in additional matches since versions like `^1.2.0` will now be extracted as `1.2.0` instead of as the raw `^1.2.0` string. In the case where multiple versions for a dependency are discovered, the earliest version will be used.
+* Support for Python has now been extended with Pip 24.2, Pipenv 2024.0.1, and Setuptools 74.0.0.
+* Support for npm has been extended to 10.8.2 and Node.js 22.7.0.
+* Support for Maven has been extended to 3.9.9.
+* Support for pnpm has been extended to 9.0.
+* Support for BitBake is now extended to 2.8.0 (Yocto 5.0.3)
+* Support for Nuget has been extended to 6.11.
+* Support for GoLang is now extended to Go 1.22.7.
+* Correlated Scanning is a new Match as a Service (MaaS) feature which correlates match results from Package Manager (Detector), and Signature scans when running [detect_product_short] with [bd_product_long] 2024.10.0 or later.
+    * Correlation between scanning methods increases accuracy and provides for more comprehensive scan results.
+    See the [detect.blackduck.correlated.scanning.enabled](properties/configuration/general.html#correlated-scanning-enabled) property for more information
+    <note type="note">Correlated Scanning support is available for persistent Package Manager and Signature Scanning only.</note>
+* [detect_product_short] now supports container scanning of large files via a chunking method employed during upload.
+    <note type="note">This feature requires [bd_product_long] 2024.10.0 or later.</note>
+
+### Changed features
+
+* The `logging.level.com.synopsys.integration` property deprecated in [detect_product_short] 9.x, has been removed. Use `logging.level.detect` instead.
+* The FULL_SNIPPET_MATCHING and FULL_SNIPPET_MATCHING_ONLY options for the `detect.blackduck.signature.scanner.snippet.matching` property deprecated in [detect_product_short] 9.x, have been removed.
+* The `.blackduck` temporary folder has been added to the default exclusion list.
+
+### Dependency updates
+
+* Updated jackson-core library to version 2.15.0 to resolve a security vulnerability.
+* Upgraded and released Nuget Inspector version 2.0.0.
+* Upgraded and released [detect_product_short] Docker Inspector version 11.0.1
+
+## Version 9.10.1
+
+<note type="notice">`sig-repo.synopsys.com` and `detect.synopsys.com` are being deprecated. Please make use of `repo.blackduck.com` and `detect.blackduck.com` respectively.</note>
+* After February 2025, [detect_product_short] script download details will only be available via detect.blackduck.com.
+* See the [Domain Change FAQ for the deprecation of sig-repo](https://community.blackduck.com/s/question/0D5Uh00000Jq18XKAR/black-duck-sca-and-the-impact-of-decommissioning-of-sigrepo).
+<note type="important">It is essential to update to 9.10.1 before sig-repo is decommissioned.</note>
+
+<note type="note">It is recommended that customers continue to maintain `sig-repo.synopsys.com`, and `repo.blackduck.com` on their allow list until February 2025 when `sig-repo.synopsys.com` will be fully replaced by `repo.blackduck.com`.</note>
+
+### Changed features
+
+* Adds logic to pull necessary artifacts from the repo.blackduck.com repository. If this is not accessible, artifacts will be downloaded from the sig-repo.synopsys.com repository. 
+
 ## Version 9.10.0
 
 ### Changed features
@@ -221,6 +320,19 @@
 * Released and Upgraded Project Inspector to version 2021.9.10.
 * Released and Upgraded Nuget Inspector to version 1.1.0.
 * Fixed EsotericSoftware YAMLBeans library version to resolve critical severity [CVE-2023-24621](https://nvd.nist.gov/vuln/detail/CVE-2023-24621)
+
+## Version 8.11.2
+
+<note type="notice">`sig-repo.synopsys.com` and `detect.synopsys.com` are being deprecated. Please make use of `repo.blackduck.com` and `detect.blackduck.com` respectively.</note>
+* After February 2025, [detect_product_short] script download details will only be available via detect.blackduck.com.
+* See the [Domain Change FAQ for the deprecation of sig-repo](https://community.blackduck.com/s/question/0D5Uh00000Jq18XKAR/black-duck-sca-and-the-impact-of-decommissioning-of-sigrepo).
+<note type="important">It is essential to update to 8.11.2 before sig-repo is decommissioned.</note>
+
+<note type="note">It is recommended that customers continue to maintain `sig-repo.synopsys.com`, and `repo.blackduck.com` on their allow list until February 2025 when `sig-repo.synopsys.com` will be fully replaced by `repo.blackduck.com`.</note>
+
+### Changed features
+
+* Adds logic to pull necessary artifacts from the repo.blackduck.com repository. If this is not accessible, artifacts will be downloaded from the sig-repo.synopsys.com repository. 
 
 ## Version 8.11.1
 

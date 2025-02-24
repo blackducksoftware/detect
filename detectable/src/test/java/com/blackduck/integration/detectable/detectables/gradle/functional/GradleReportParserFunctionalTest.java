@@ -34,7 +34,7 @@ public class GradleReportParserFunctionalTest {
         Assumptions.assumeFalse(SystemUtils.IS_OS_WINDOWS); //Does not work on windows due to path issues.
 
         GradleReportParser gradleReportParser = new GradleReportParser();
-        Optional<GradleReport> gradleReport = gradleReportParser.parseReport(FunctionalTestFiles.asFile("/gradle/dependencyGraph.txt"));
+        Optional<GradleReport> gradleReport = gradleReportParser.parseReport(FunctionalTestFiles.asFile("/gradle/projectname_depth0_dependencyGraph.txt"));
         Assertions.assertTrue(gradleReport.isPresent());
         GradleReportTransformer transformer = new GradleReportTransformer(EnumListFilter.excludeNone());
         CodeLocation codeLocation = transformer.transform(gradleReport.get());
@@ -49,7 +49,7 @@ public class GradleReportParserFunctionalTest {
 
     @Test
     void complexTest() {
-        Optional<CodeLocation> codeLocation = buildCodeLocation("/gradle/complex_dependencyGraph.txt", true);
+        Optional<CodeLocation> codeLocation = buildCodeLocation("/gradle/complex_depth0_dependencyGraph.txt", true);
         Assertions.assertTrue(codeLocation.isPresent());
         DependencyGraph graph = codeLocation.get().getDependencyGraph();
 
@@ -93,7 +93,7 @@ public class GradleReportParserFunctionalTest {
 
     @Test
     void testImplementationsGraph() {
-        Optional<CodeLocation> codeLocation = buildCodeLocation("/gradle/gradle_implementations_dependencyGraph.txt", true);
+        Optional<CodeLocation> codeLocation = buildCodeLocation("/gradle/gradle_implementations_depth0_dependencyGraph.txt", true);
         Assertions.assertTrue(codeLocation.isPresent());
 
         DependencyGraph dependencyGraph = codeLocation.get().getDependencyGraph();
@@ -105,7 +105,7 @@ public class GradleReportParserFunctionalTest {
 
     @Test
     void testUnresolvedConfigurations() {
-        Optional<CodeLocation> codeLocation = buildCodeLocation("/gradle/gradle_implementations_dependencyGraph.txt", false);
+        Optional<CodeLocation> codeLocation = buildCodeLocation("/gradle/gradle_implementations_depth0_dependencyGraph.txt", false);
         Assertions.assertTrue(codeLocation.isPresent());
 
         DependencyGraph dependencyGraph = codeLocation.get().getDependencyGraph();

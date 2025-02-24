@@ -146,6 +146,7 @@ public class DetectableOptionFactory {
         List<String> includedProjectPaths = detectConfiguration.getValue(DetectProperties.DETECT_GRADLE_INCLUDED_PROJECT_PATHS);
         List<String> excludedConfigurationNames = detectConfiguration.getValue(DetectProperties.DETECT_GRADLE_EXCLUDED_CONFIGURATIONS);
         List<String> includedConfigurationNames = detectConfiguration.getValue(DetectProperties.DETECT_GRADLE_INCLUDED_CONFIGURATIONS);
+        boolean rootOnlyOption = detectConfiguration.getValue(DetectProperties.DETECT_GRADLE_ROOT_ONLY);
         String customRepository = ArtifactoryConstants.GRADLE_INSPECTOR_MAVEN_REPO;
 
         Set<GradleConfigurationType> excludedConfigurationTypes = detectConfiguration.getValue(DetectProperties.DETECT_GRADLE_CONFIGURATION_TYPES_EXCLUDED).representedValueSet();
@@ -158,7 +159,8 @@ public class DetectableOptionFactory {
             includedProjectPaths,
             excludedConfigurationNames,
             includedConfigurationNames,
-            customRepository
+            customRepository,
+            rootOnlyOption
         );
         String gradleBuildCommand = detectConfiguration.getNullableValue(DetectProperties.DETECT_GRADLE_BUILD_COMMAND);
         return new GradleInspectorOptions(gradleBuildCommand, scriptOptions, proxyInfo, dependencyTypeFilter);
@@ -284,12 +286,12 @@ public class DetectableOptionFactory {
 
     public YarnLockOptions createYarnLockOptions() {
         Set<YarnDependencyType> excludedDependencyTypes = detectConfiguration.getValue(DetectProperties.DETECT_YARN_DEPENDENCY_TYPES_EXCLUDED).representedValueSet();
-        Boolean monorepoMode = detectConfiguration.getValue(DetectProperties.DETECT_YARN_MONOREPO_MODE);
+        Boolean yarnIgnoreAllWorkspacesMode = detectConfiguration.getValue(DetectProperties.DETECT_YARN_IGNORE_ALL_WORKSPACES_MODE);
         EnumListFilter<YarnDependencyType> yarnDependencyTypeFilter = EnumListFilter.fromExcluded(excludedDependencyTypes);
 
         List<String> excludedWorkspaces = detectConfiguration.getValue(DetectProperties.DETECT_YARN_EXCLUDED_WORKSPACES);
         List<String> includedWorkspaces = detectConfiguration.getValue(DetectProperties.DETECT_YARN_INCLUDED_WORKSPACES);
-        return new YarnLockOptions(yarnDependencyTypeFilter, excludedWorkspaces, includedWorkspaces, monorepoMode);
+        return new YarnLockOptions(yarnDependencyTypeFilter, excludedWorkspaces, includedWorkspaces, yarnIgnoreAllWorkspacesMode);
     }
 
     public NugetInspectorOptions createNugetInspectorOptions() {
@@ -299,7 +301,8 @@ public class DetectableOptionFactory {
         List<String> packagesRepoUrl = detectConfiguration.getValue(DetectProperties.DETECT_NUGET_PACKAGES_REPO_URL);
         Path nugetConfigPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_CONFIG_PATH);
         Set<NugetDependencyType> nugetExcludedDependencyTypes = detectConfiguration.getValue(DetectProperties.DETECT_NUGET_DEPENDENCY_TYPES_EXCLUDED).representedValueSet();
-        return new NugetInspectorOptions(ignoreFailures, excludedModules, includedModules, packagesRepoUrl, nugetConfigPath, nugetExcludedDependencyTypes);
+        Path nugetArtifactsPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_ARTIFACTS_PATH);
+        return new NugetInspectorOptions(ignoreFailures, excludedModules, includedModules, packagesRepoUrl, nugetConfigPath, nugetExcludedDependencyTypes, nugetArtifactsPath);
     }
 
     private boolean getFollowSymLinks() {

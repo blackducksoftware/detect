@@ -44,7 +44,7 @@ public class MavenShadedDependenciesTest {
             dockerAssertions.atLeastOneBdioFile();
 
             blackduckAssertions.hasComponents("ch.randelshofer:fastdoubleparser");
-            blackduckAssertions.hasComponents("Java Concurrency Tools Core Library");
+            blackduckAssertions.hasComponents("JCTTools");
             blackduckAssertions.hasComponents("Byte Buddy (with dependencies)");
         }
     }

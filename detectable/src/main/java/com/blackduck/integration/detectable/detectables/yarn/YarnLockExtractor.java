@@ -46,7 +46,7 @@ public class YarnLockExtractor {
             YarnLock yarnLock = readYarnLock(yarnLockFile);
 
             YarnResult yarnResult;
-            if (yarnLockOptions.getMonorepoMode()) {
+            if (yarnLockOptions.getYarnIgnoreAllWorkspacesMode()) {
                 yarnResult = yarnPackager.generateCodeLocation(rootPackageJson, yarnLock, new ArrayList<>());
             } else {
                 YarnWorkspaces workspaceData = collectWorkspaceData(projectDir);
