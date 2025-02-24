@@ -50,6 +50,21 @@ public class PipInspectorTreeParserTest {
     }
 
     @Test
+    public void packageNotFoundTest() {
+        List<String> pipInspectorOutput = Arrays.asList(
+            "--scikit-learn",
+            "projectName==projectVersionName",
+            "   with-dashes==1.0.0",
+            "   Uppercase==2.0.0",
+            "      child==3.0.0",
+            "   test==4.0.0"
+        );
+
+        Optional<NameVersionCodeLocation> result = parser.parse(pipInspectorOutput, "");
+        Assertions.assertFalse(result.isPresent());
+    }
+
+    @Test
     public void invalidParseTest() {
         List<String> invalidText = new ArrayList<>();
         invalidText.add("i am not a valid file");
