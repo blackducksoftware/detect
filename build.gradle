@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '10.4.0-SIGQA2-devm.maven-pom-change-SNAPSHOT'
+version = '10.4.0-SIGQA2-devm.maven-pom-change'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
