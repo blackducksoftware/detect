@@ -7,6 +7,9 @@ import com.blackduck.integration.detect.tool.detector.report.DetectorDirectoryRe
 import com.blackduck.integration.detect.workflow.status.DetectIssue;
 import com.blackduck.integration.detect.workflow.status.DetectIssueType;
 import com.blackduck.integration.detect.workflow.status.StatusEventPublisher;
+import com.blackduck.integration.detector.base.DetectorStatusCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DetectorIssuePublisher {
     public void publishIssues(StatusEventPublisher statusEventPublisher, List<DetectorDirectoryReport> reports) {
@@ -25,4 +28,12 @@ public class DetectorIssuePublisher {
         }
     }
 
+    public boolean hasOutOfMemoryIssue(List<DetectorDirectoryReport> reports) {
+        return reports.stream()
+            .flatMap(report -> report.getNotExtractedDetectors().stream())
+            .flatMap(notExtracted -> notExtracted.getAttemptedDetectables().stream())
+            .anyMatch(attemptedDetectableReport -> {
+                return attemptedDetectableReport.getStatusCode() == DetectorStatusCode.EXECUTABLE_TERMINATED_LIKELY_OUT_OF_MEMORY;
+            });
+    }
 }
