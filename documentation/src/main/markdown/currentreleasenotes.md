@@ -31,4 +31,4 @@
 ### Dependency updates
 
 * Upgraded and released NuGet Inspector version 2.1.0.
-* Upgraded to Rebranded Method Analyzer Core Library version 1.0.1 for Vulnerability Impact Analysis.
+* Upgraded to rebranded Method Analyzer Core Library version 1.0.1 for Vulnerability Impact Analysis.
