@@ -141,15 +141,18 @@ def recursively_resolve_dependencies(package_name, history):
 use_pip_internal_to_search_packages = True
 
 try:
+    # current package location as of this implementation: https://github.com/pypa/pip/blob/5a43d671bcd1fee3209568a829bc9170746875f9/src/pip/_internal/commands/show.py
     from pip._internal.commands.show import search_packages_info
 except ImportError:
     try:
+        # try package location prior to commit https://github.com/pypa/pip/commit/95bcf8c5f6394298035a7332c441868f3b0169f4
         from pip.commands.show import search_packages_info
     except ImportError:
         use_pip_internal_to_search_packages = False
 
 if use_pip_internal_to_search_packages:
     def get_package_by_name(package_name):
+        """Looks up a package from the pip cache using internal pip API"""
         if package_name is None:
             return None, None
 
@@ -158,14 +161,14 @@ if use_pip_internal_to_search_packages:
         if package_info is None:
             return None, None
 
-        if type(package_info) == dict: # prior to pip 21.2 search_packages_info results were dicts
+        if isinstance(package_info, dict): # prior to pip 21.2 search_packages_info results were dicts
             return DependencyNode(package_info["name"], package_info["version"]), package_info["requires"]
         return DependencyNode(package_info.name, package_info.version), package_info.requires
 else:
     from pkg_resources import working_set, Requirement
 
     def get_package_by_name(package_name):
-        """Looks up a package from the pip cache"""
+        """Looks up a package from the pip cache using pkg_resouces"""
         if package_name is None:
             return None, None
 
@@ -173,8 +176,6 @@ else:
 
         package_dict = working_set.by_key
         try:
-            # TODO: By using pkg_resources.Requirement.parse to get the correct key, we may not need to attempt the other
-            #     methods. Robust tests are needed to confirm.
             package = package_dict[Requirement.parse(package_name).key]
         except:
             name_variants = (package_name, package_name.lower(), package_name.replace('-', '_'), package_name.replace('_', '-'))
