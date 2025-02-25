@@ -47,7 +47,7 @@ public class PreScassContainerScanStepRunner extends AbstractContainerScanStepRu
     }
 
     @Override
-    protected UUID performBlackduckInteractions() throws IOException, IntegrationException, OperationException {
+    public UUID performBlackduckInteractions() throws IOException, IntegrationException, OperationException {
         UUID scanId = initiateScan();
         logger.info("Container scan initiated. Uploading container scan image.");
 

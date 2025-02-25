@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -98,7 +99,7 @@ public class CommonScanStepRunnerTest {
     }
 
     @Test
-    public void testPerformBlackduckInteractionsBinaryBdba() throws OperationException, IntegrationException {
+    public void testPerformBlackduckInteractionsBinaryBdba() throws OperationException, IntegrationException, IOException {
         NameVersion projectNameVersion = new NameVersion(PROJECT_NAME, VERSION);
         File binaryScanFile = mock(File.class);
         
@@ -135,7 +136,7 @@ public class CommonScanStepRunnerTest {
     }
     
     @Test
-    public void testPerformBlackduckInteractionsContainerBdba() throws OperationException, IntegrationException {
+    public void testPerformBlackduckInteractionsContainerBdba() throws OperationException, IntegrationException, IOException {
         NameVersion projectNameVersion = new NameVersion(PROJECT_NAME, VERSION);
         File containerScanFile = mock(File.class);
         
