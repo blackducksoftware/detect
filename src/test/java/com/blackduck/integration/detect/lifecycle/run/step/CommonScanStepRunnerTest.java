@@ -24,7 +24,6 @@ import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.data.ScanCreationResponse;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
 import com.blackduck.integration.detect.lifecycle.run.operation.blackduck.ScassScanInitiationResult;
-import com.blackduck.integration.detect.workflow.blackduck.project.options.ProjectGroupOptions;
 import com.blackduck.integration.detect.workflow.codelocation.CodeLocationNameManager;
 import com.blackduck.integration.detect.workflow.file.DirectoryManager;
 import com.blackduck.integration.exception.IntegrationException;
@@ -92,9 +91,7 @@ public class CommonScanStepRunnerTest {
 
         when(scanCreationResponse.getUploadUrl()).thenReturn(uploadUrl);
         when(commonScanStepRunner.isAccessible(uploadUrl)).thenReturn(true);
-//        ProjectGroupOptions projectGroupOptions = mock(ProjectGroupOptions.class);
-//        when(operationRunner.calculateProjectGroupOptions()).thenReturn(projectGroupOptions);
-//        when(operationRunner.calculateProjectGroupOptions().getProjectGroup()).thenReturn(CODE_LOCATION_NAME);
+        
         doNothing().when(scassScanStepRunner).runScassScan(any(), any());
 
         doReturn(scassScanStepRunner).when(commonScanStepRunner).createScassScanStepRunner(nullable(BlackDuckRunData.class));

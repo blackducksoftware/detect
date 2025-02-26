@@ -31,7 +31,7 @@ import com.google.gson.Gson;
  * by Detect.
  */
 public class CommonScanStepRunner {
-    private static final BlackDuckVersion MIN_SCASS_SCAN_VERSION = new BlackDuckVersion(2025, 1, 0);
+    private static final BlackDuckVersion MIN_SCASS_SCAN_VERSION = new BlackDuckVersion(2025, 1, 1);
     
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     
@@ -90,10 +90,6 @@ public class CommonScanStepRunner {
             } else {
                 isFallback = true;
             }
-            
-            //else {
-                //scanId = performFallbackOld(scanType, operationRunner, projectNameVersion, blackDuckRunData, initResult.getFileToUpload(), scanId.toString());
-            //}
         } 
             
         if (isFallback) {

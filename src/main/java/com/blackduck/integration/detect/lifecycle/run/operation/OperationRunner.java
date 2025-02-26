@@ -580,22 +580,6 @@ public class OperationRunner {
         });
     }
     
-    public void deleteScan(BlackDuckRunData blackDuckRunData, String previousScanId) throws OperationException, IntegrationException {
-            BlackDuckServicesFactory blackDuckServicesFactory = blackDuckRunData.getBlackDuckServicesFactory();
-            BlackDuckApiClient blackDuckApiClient = blackDuckServicesFactory.getBlackDuckApiClient();
-
-            String scanServicePostEndpoint = getScanServicePostEndpoint();
-            HttpUrl postUrl = blackDuckRunData.getBlackDuckServerConfig().getBlackDuckUrl().appendRelativeUrl(scanServicePostEndpoint).appendRelativeUrl(previousScanId);
-
-            String scanServicePostContentType = "application/vnd.blackducksoftware.intelligent-persistence-scan-4+protobuf-jsonld";
-            BlackDuckResponseRequest buildBlackDuckResponseRequest = new BlackDuckRequestBuilder()
-                .method(HttpMethod.DELETE)
-                .buildBlackDuckResponseRequest(postUrl);
-
-            Response response = blackDuckApiClient.execute(buildBlackDuckResponseRequest);
-            String contentString = response.getContentString();
-    }
-    
     public ScassScanInitiationResult initiateScan(NameVersion projectNameVersion, File scanFile, File outputDirectory, BlackDuckRunData blackDuckRunData, String type, Gson gson, String codeLocationName) throws OperationException, IntegrationException {
         String projectGroupName = calculateProjectGroupOptions().getProjectGroup();
 
