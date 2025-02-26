@@ -138,21 +138,21 @@ def recursively_resolve_dependencies(package_name, history):
 
     return dependency_node
 
-use_pip_internal_to_search_packages = True
-
-try:
-    # current package location as of this implementation: https://github.com/pypa/pip/blob/5a43d671bcd1fee3209568a829bc9170746875f9/src/pip/_internal/commands/show.py
-    from pip._internal.commands.show import search_packages_info
-except ImportError:
-    try:
-        # try package location prior to commit https://github.com/pypa/pip/commit/95bcf8c5f6394298035a7332c441868f3b0169f4
-        from pip.commands.show import search_packages_info
-    except ImportError:
-        use_pip_internal_to_search_packages = False
+use_pip_internal_to_search_packages = False
+if sys.version_info.major > 3 or sys.version_info.major == 3 and sys.version_info.minor >= 12:
+    # Python version 3.12 is used as a cutoff for the following reasons:
+    #  * it is the version in which pkg_resources is no longer included by default
+    #  * a test confirmed that this version of python is incompatible with PIP versions below 21.2,
+    #    which was the most recent version in which PIP search_packages_info interface changed
+    use_pip_internal_to_search_packages = True
 
 if use_pip_internal_to_search_packages:
+    from pip._internal.commands.show import search_packages_info
+
     def get_package_by_name(package_name):
-        """Looks up a package from the pip cache using internal pip API"""
+        """Looks up a package from the pip cache using internal pip API.
+        This should not be used when PIP is older than 21.2 since the internal API was slightly different then.
+        """
         if package_name is None:
             return None, None
 
@@ -161,8 +161,6 @@ if use_pip_internal_to_search_packages:
         if package_info is None:
             return None, None
 
-        if isinstance(package_info, dict): # prior to pip 21.2 search_packages_info results were dicts
-            return DependencyNode(package_info["name"], package_info["version"]), package_info["requires"]
         return DependencyNode(package_info.name, package_info.version), package_info.requires
 else:
     from pkg_resources import working_set, Requirement
