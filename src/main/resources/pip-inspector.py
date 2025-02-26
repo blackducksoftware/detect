@@ -1,6 +1,6 @@
 # pylint: disable=fixme, line-too-long, import-error, no-name-in-module
 #
-# Copyright (c) 2024 Black Duck Software Inc.
+# Copyright (c) 2025 Black Duck Software Inc.
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements. See the NOTICE file
