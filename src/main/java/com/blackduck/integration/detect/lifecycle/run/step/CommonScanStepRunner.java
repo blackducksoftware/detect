@@ -97,8 +97,8 @@ public class CommonScanStepRunner {
         } 
             
         if (isFallback) {
-            // We already tried SCASS and failed we need to cleanup the SCASS scanId and create a new one
-            // TODO cancel SCASS ID
+            // We already tried SCASS and failed, create a new scanId so we can try the BDBA flow.
+            // Note: as of 2025.1.1 there is no endpoint to cancel a SCASS scan.
             scanId = createFallbackScanId(operationRunner, scanType, projectNameVersion, codeLocationName, scanFile.get().length(), blackDuckRunData);
         }
         
