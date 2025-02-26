@@ -18,8 +18,7 @@ import com.blackduck.integration.detect.lifecycle.run.data.CommonScanResult;
 import com.blackduck.integration.detect.lifecycle.run.data.ScanCreationResponse;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
 import com.blackduck.integration.detect.lifecycle.run.operation.blackduck.ScassScanInitiationResult;
-import com.blackduck.integration.detect.lifecycle.run.step.binary.PreScassBinaryScanStepRunner;
-import com.blackduck.integration.detect.lifecycle.run.step.container.PreScassContainerScanStepRunner;
+import com.blackduck.integration.detect.util.bdio.protobuf.DetectProtobufBdioHeaderUtil;
 import com.blackduck.integration.detect.workflow.codelocation.CodeLocationNameManager;
 import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.util.NameVersion;
@@ -65,7 +64,7 @@ public class CommonScanStepRunner {
         
         return operationRunner.getAuditLog().namedPublic(operationName, () -> {
             UUID scanId = performCommonUpload(projectNameVersion, blackDuckRunData, scanFile, operationRunner, scanType,
-                    initResult);
+                    initResult, codeLocationName);
             
             return new CommonScanResult(scanId, codeLocationName);
         });
@@ -73,49 +72,67 @@ public class CommonScanStepRunner {
 
     public UUID performCommonUpload(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData,
             Optional<File> scanFile, OperationRunner operationRunner, String scanType,
-            ScassScanInitiationResult initResult) throws IntegrationException, OperationException, IOException {
+            ScassScanInitiationResult initResult, String codeLocationName) throws IntegrationException, OperationException, IOException {
         ScanCreationResponse scanCreationResponse = initResult.getScanCreationResponse();
         
         String uploadUrl = scanCreationResponse.getUploadUrl();
         UUID scanId = UUID.fromString(scanCreationResponse.getScanId());
+        
+        boolean isFallback = false;
         
         if (StringUtils.isNotEmpty(uploadUrl)) {
             if (isAccessible(uploadUrl)) {
                 // This is a SCASS capable server server and SCASS is enabled.
                 ScassScanStepRunner scassScanStepRunner = createScassScanStepRunner(blackDuckRunData);
                 scassScanStepRunner.runScassScan(Optional.of(initResult.getFileToUpload()), scanCreationResponse);
+                
+                return scanId;
             } else {
-                scanId = performFallback(scanType, operationRunner, projectNameVersion, blackDuckRunData, initResult.getFileToUpload(), scanId.toString());
+                isFallback = true;
             }
-        } else {
-            // This is a SCASS capable server server but SCASS is not enabled.
-            BdbaScanStepRunner bdbaScanStepRunner = createBdbaScanStepRunner(operationRunner);
-
-            bdbaScanStepRunner.runBdbaScan(projectNameVersion, blackDuckRunData, scanFile, scanCreationResponse.getScanId(), scanType);
+            
+            //else {
+                //scanId = performFallbackOld(scanType, operationRunner, projectNameVersion, blackDuckRunData, initResult.getFileToUpload(), scanId.toString());
+            //}
+        } 
+            
+        if (isFallback) {
+            // We already tried SCASS and failed we need to cleanup the SCASS scanId and create a new one
+            // TODO cancel SCASS ID
+            scanId = createFallbackScanId(operationRunner, scanType, projectNameVersion, codeLocationName, scanFile.get().length(), blackDuckRunData);
         }
+        
+        // This is a SCASS capable server server but SCASS is not enabled or the GCP URL is inaccessible.
+        BdbaScanStepRunner bdbaScanStepRunner = createBdbaScanStepRunner(operationRunner);
+
+        bdbaScanStepRunner.runBdbaScan(projectNameVersion, blackDuckRunData, scanFile, scanId.toString(), scanType);
 
         return scanId;
     }
     
-    private UUID performFallback(String scanType, OperationRunner operationRunner, NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData, File fileToUpload, String previousScanId) throws OperationException, IntegrationException, IOException {
-        // TODO cancel old scan
-        //operationRunner.deleteScan(blackDuckRunData, previousScanId);
+    private UUID createFallbackScanId(OperationRunner operationRunner, String scanType, NameVersion projectNameVersion, String codeLocationName, long fileLength, BlackDuckRunData blackDuckRunData) throws IntegrationException {
+        String projectGroupName = operationRunner.calculateProjectGroupOptions().getProjectGroup();
+
+        DetectProtobufBdioHeaderUtil detectProtobufBdioHeaderUtil = new DetectProtobufBdioHeaderUtil(
+            UUID.randomUUID().toString(),
+            scanType,
+            projectNameVersion,
+            projectGroupName,
+            codeLocationName,
+            fileLength);
         
-        switch (scanType) {
-        case BINARY:
-            PreScassBinaryScanStepRunner binaryScanStepRunner = new PreScassBinaryScanStepRunner(operationRunner);
+        File bdioHeaderFile;
 
-            return binaryScanStepRunner.performBlackduckInteractions(projectNameVersion, blackDuckRunData, Optional.of(fileToUpload));
-        case CONTAINER:
-            PreScassContainerScanStepRunner containerScanStepRunner = new PreScassContainerScanStepRunner(operationRunner, projectNameVersion, blackDuckRunData, new Gson());
-
-            return containerScanStepRunner.performBlackduckInteractions();
-        default:
-            throw new IntegrationException("Unexpected scan type:" + scanType);
+        try {
+            bdioHeaderFile = detectProtobufBdioHeaderUtil.createProtobufBdioHeader(getOutputDirectory(operationRunner, scanType));
+        } catch (IOException e) {
+            throw new IntegrationException("Unable to create new scan. Ensure the file and output directory are accessible.");
         }
+        
+        return operationRunner.initiatePreScassScan(blackDuckRunData, bdioHeaderFile);
     }
 
-    private boolean isAccessible(String uploadUrl) {
+    public boolean isAccessible(String uploadUrl) {
         try {
             URL url = new URL(uploadUrl);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();

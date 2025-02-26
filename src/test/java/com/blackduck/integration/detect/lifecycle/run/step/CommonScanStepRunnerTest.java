@@ -24,6 +24,7 @@ import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.data.ScanCreationResponse;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
 import com.blackduck.integration.detect.lifecycle.run.operation.blackduck.ScassScanInitiationResult;
+import com.blackduck.integration.detect.workflow.blackduck.project.options.ProjectGroupOptions;
 import com.blackduck.integration.detect.workflow.codelocation.CodeLocationNameManager;
 import com.blackduck.integration.detect.workflow.file.DirectoryManager;
 import com.blackduck.integration.exception.IntegrationException;
@@ -31,6 +32,8 @@ import com.blackduck.integration.util.NameVersion;
 import com.google.gson.Gson;
 
 public class CommonScanStepRunnerTest {
+    private static final String CODE_LOCATION_NAME = "codeLocationName";
+
     private static final String VERSION = "version";
 
     private static final String PROJECT_NAME = "projectName";
@@ -88,12 +91,16 @@ public class CommonScanStepRunnerTest {
         CommonScanStepRunner commonScanStepRunner = spy(new CommonScanStepRunner());
 
         when(scanCreationResponse.getUploadUrl()).thenReturn(uploadUrl);
+        when(commonScanStepRunner.isAccessible(uploadUrl)).thenReturn(true);
+//        ProjectGroupOptions projectGroupOptions = mock(ProjectGroupOptions.class);
+//        when(operationRunner.calculateProjectGroupOptions()).thenReturn(projectGroupOptions);
+//        when(operationRunner.calculateProjectGroupOptions().getProjectGroup()).thenReturn(CODE_LOCATION_NAME);
         doNothing().when(scassScanStepRunner).runScassScan(any(), any());
 
         doReturn(scassScanStepRunner).when(commonScanStepRunner).createScassScanStepRunner(nullable(BlackDuckRunData.class));
 
         commonScanStepRunner.performCommonUpload(projectNameVersion,
-                blackDuckRunData, Optional.of(binaryScanFile), operationRunner, CommonScanStepRunner.BINARY, initResult);
+                blackDuckRunData, Optional.of(binaryScanFile), operationRunner, CommonScanStepRunner.BINARY, initResult, CODE_LOCATION_NAME);
 
         verify(scassScanStepRunner).runScassScan(Optional.of(initResult.getFileToUpload()), scanCreationResponse);
     }
@@ -111,7 +118,7 @@ public class CommonScanStepRunnerTest {
         doReturn(bdbaScanStepRunner).when(commonScanStepRunner).createBdbaScanStepRunner(nullable(OperationRunner.class));
        
         commonScanStepRunner.performCommonUpload(projectNameVersion,
-                blackDuckRunData, Optional.of(binaryScanFile), operationRunner, CommonScanStepRunner.BINARY, initResult);
+                blackDuckRunData, Optional.of(binaryScanFile), operationRunner, CommonScanStepRunner.BINARY, initResult, CODE_LOCATION_NAME);
 
         verify(bdbaScanStepRunner).runBdbaScan(projectNameVersion, blackDuckRunData, Optional.of(binaryScanFile), scanCreationResponse.getScanId(), CommonScanStepRunner.BINARY);
     }
@@ -125,12 +132,13 @@ public class CommonScanStepRunnerTest {
         CommonScanStepRunner commonScanStepRunner = spy(new CommonScanStepRunner());
 
         when(scanCreationResponse.getUploadUrl()).thenReturn(uploadUrl);
+        when(commonScanStepRunner.isAccessible(uploadUrl)).thenReturn(true);
         doNothing().when(scassScanStepRunner).runScassScan(any(), any());
 
         doReturn(scassScanStepRunner).when(commonScanStepRunner).createScassScanStepRunner(nullable(BlackDuckRunData.class));
 
         commonScanStepRunner.performCommonUpload(projectNameVersion,
-                blackDuckRunData, Optional.of(containerScanFile), operationRunner, CommonScanStepRunner.CONTAINER, initResult);
+                blackDuckRunData, Optional.of(containerScanFile), operationRunner, CommonScanStepRunner.CONTAINER, initResult, CODE_LOCATION_NAME);
         
         verify(scassScanStepRunner).runScassScan(Optional.of(initResult.getFileToUpload()), scanCreationResponse);
     }
@@ -148,7 +156,7 @@ public class CommonScanStepRunnerTest {
         doReturn(bdbaScanStepRunner).when(commonScanStepRunner).createBdbaScanStepRunner(nullable(OperationRunner.class));
 
         commonScanStepRunner.performCommonUpload(projectNameVersion,
-                blackDuckRunData, Optional.of(containerScanFile), operationRunner, CommonScanStepRunner.CONTAINER, initResult);
+                blackDuckRunData, Optional.of(containerScanFile), operationRunner, CommonScanStepRunner.CONTAINER, initResult, CODE_LOCATION_NAME);
         
         verify(bdbaScanStepRunner).runBdbaScan(projectNameVersion, blackDuckRunData, Optional.of(containerScanFile), scanCreationResponse.getScanId(), CommonScanStepRunner.CONTAINER);
     }
