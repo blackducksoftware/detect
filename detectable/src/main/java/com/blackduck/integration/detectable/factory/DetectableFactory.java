@@ -5,6 +5,9 @@ import java.io.File;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
+
+import com.blackduck.integration.detectable.detectable.executable.resolver.*;
+import com.blackduck.integration.detectable.detectables.cargo.CargoCliDetectable;
 import org.xml.sax.SAXException;
 
 import com.google.gson.Gson;
@@ -14,29 +17,6 @@ import com.blackduck.integration.common.util.finder.FileFinder;
 import com.blackduck.integration.common.util.parse.CommandParser;
 import com.blackduck.integration.detectable.DetectableEnvironment;
 import com.blackduck.integration.detectable.detectable.executable.DetectableExecutableRunner;
-import com.blackduck.integration.detectable.detectable.executable.resolver.BashResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.BazelResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.CondaResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.CpanResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.CpanmResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.DartResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.DockerResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.FlutterResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.GitResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.GoResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.GradleResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.JavaResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.LernaResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.MavenResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.NpmResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.PearResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.PipResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.PipenvResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.PythonResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.Rebar3Resolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.SbtResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.SwiftResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.OpamResolver;
 import com.blackduck.integration.detectable.detectable.inspector.GradleInspectorResolver;
 import com.blackduck.integration.detectable.detectable.inspector.PipInspectorResolver;
 import com.blackduck.integration.detectable.detectable.inspector.ProjectInspectorResolver;
@@ -367,6 +347,10 @@ public class DetectableFactory {
         CargoLockPackageTransformer cargoLockPackageTransformer = new CargoLockPackageTransformer();
         CargoExtractor cargoExtractor = new CargoExtractor(cargoTomlParser, cargoLockPackageDataTransformer, cargoLockPackageTransformer);
         return new CargoLockDetectable(environment, fileFinder, cargoExtractor);
+    }
+
+    public CargoCliDetectable createCargoCliDetectable(DetectableEnvironment environment, CargoResolver cargoResolver) {
+        return new CargoCliDetectable(environment, fileFinder, cargoResolver, null, null, null);
     }
 
     public CarthageLockDetectable createCarthageDetectable(DetectableEnvironment environment) {

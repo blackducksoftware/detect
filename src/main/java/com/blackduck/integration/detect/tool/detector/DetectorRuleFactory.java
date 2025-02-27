@@ -2,6 +2,7 @@ package com.blackduck.integration.detect.tool.detector;
 
 import com.blackduck.integration.detect.tool.detector.factory.DetectDetectableFactory;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectable;
+import com.blackduck.integration.detectable.detectables.cargo.CargoCliDetectable;
 import com.blackduck.integration.detectable.detectables.cargo.CargoLockDetectable;
 import com.blackduck.integration.detectable.detectables.carthage.CarthageLockDetectable;
 import com.blackduck.integration.detectable.detectables.clang.ClangDetectable;
@@ -67,9 +68,11 @@ public class DetectorRuleFactory {
         DetectorRuleSetBuilder rules = new DetectorRuleSetBuilder(detectableFactory);
 
         rules.addDetector(DetectorType.CARGO, detector -> {
+            detector.entryPoint(CargoCliDetectable.class)
+                .search().defaults();
             detector.entryPoint(CargoLockDetectable.class)
                 .search().defaults();
-        });
+        }).allEntryPointsFallbackToNext();
 
         rules.addDetector(DetectorType.CARTHAGE, detector -> {
             detector.entryPoint(CarthageLockDetectable.class)
