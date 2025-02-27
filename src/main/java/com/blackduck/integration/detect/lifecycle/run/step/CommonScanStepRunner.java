@@ -78,24 +78,18 @@ public class CommonScanStepRunner {
         String uploadUrl = scanCreationResponse.getUploadUrl();
         UUID scanId = UUID.fromString(scanCreationResponse.getScanId());
         
-        boolean isFallback = false;
-        
         if (StringUtils.isNotEmpty(uploadUrl)) {
             if (isAccessible(uploadUrl)) {
-                // This is a SCASS capable server server and SCASS is enabled.
+                // This is a SCASS capable server server, SCASS is enabled, and we can access the upload URL.
                 ScassScanStepRunner scassScanStepRunner = createScassScanStepRunner(blackDuckRunData);
                 scassScanStepRunner.runScassScan(Optional.of(initResult.getFileToUpload()), scanCreationResponse);
                 
                 return scanId;
             } else {
-                isFallback = true;
+                // If we can't access the SCASS uplaod URL, we create a new scanId so we can try the BDBA flow.
+                // Note: as of 2025.1.1 there is no endpoint to cancel a SCASS scan.
+                scanId = createFallbackScanId(operationRunner, scanType, projectNameVersion, codeLocationName, scanFile.get().length(), blackDuckRunData);
             }
-        } 
-            
-        if (isFallback) {
-            // We already tried SCASS and failed, create a new scanId so we can try the BDBA flow.
-            // Note: as of 2025.1.1 there is no endpoint to cancel a SCASS scan.
-            scanId = createFallbackScanId(operationRunner, scanType, projectNameVersion, codeLocationName, scanFile.get().length(), blackDuckRunData);
         }
         
         // This is a SCASS capable server server but SCASS is not enabled or the GCP URL is inaccessible.
