@@ -11,6 +11,7 @@ import com.blackduck.integration.detectable.detectable.DetectableAccuracyType;
 import com.blackduck.integration.detectable.detectable.Requirements;
 import com.blackduck.integration.detectable.detectable.annotation.DetectableInfo;
 import com.blackduck.integration.detectable.detectable.exception.DetectableException;
+import com.blackduck.integration.detectable.detectable.executable.ExecutableFailedException;
 import com.blackduck.integration.detectable.detectable.result.DetectableResult;
 import com.blackduck.integration.detectable.detectables.cargo.parse.CargoTomlParser;
 import com.blackduck.integration.detectable.extraction.Extraction;
@@ -18,30 +19,27 @@ import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 import com.blackduck.integration.detectable.detectable.executable.resolver.CargoResolver;
 import com.blackduck.integration.executable.ExecutableRunner;
 import com.blackduck.integration.executable.ExecutableRunnerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @DetectableInfo(name = "Cargo CLI", language = "Rust", forge = "crates", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "Command: cargo tree")
 public class CargoCliDetectable extends Detectable {
+    private static final Logger logger = LoggerFactory.getLogger(CargoCliDetectable.class);
+
     public static final String CARGO_LOCK_FILENAME = "Cargo.lock";
     public static final String CARGO_TOML_FILENAME = "Cargo.toml";
 
     private final FileFinder fileFinder;
 
     private final CargoResolver cargoResolver;
-    private final ExecutableRunner executableRunner;
-    private final CargoExtractor cargoExtractor;
-    private final CargoTomlParser cargoTomlParser;
+    private final CargoCliExtractor cargoCliExtractor;
     private ExecutableTarget cargoExe;
 
-//    private File cargoLock;
-//    private File cargoToml;
-
-    public CargoCliDetectable(DetectableEnvironment environment, FileFinder fileFinder, CargoResolver cargoResolver, ExecutableRunner executableRunner, CargoExtractor cargoExtractor, CargoTomlParser cargoTomlParser) {
+    public CargoCliDetectable(DetectableEnvironment environment, FileFinder fileFinder, CargoResolver cargoResolver, CargoCliExtractor cargoCliExtractor) {
         super(environment);
         this.fileFinder = fileFinder;
         this.cargoResolver = cargoResolver;
-        this.executableRunner = executableRunner;
-        this.cargoExtractor = cargoExtractor;
-        this.cargoTomlParser = cargoTomlParser;
+        this.cargoCliExtractor = cargoCliExtractor;
     }
 
     @Override
@@ -59,6 +57,12 @@ public class CargoCliDetectable extends Detectable {
 
     @Override
     public Extraction extract(ExtractionEnvironment extractionEnvironment) throws IOException, DetectableException, MissingExternalIdException, ExecutableRunnerException {
-        return null;
+        try {
+            return cargoCliExtractor.extract(environment.getDirectory(), cargoExe);
+        } catch (Exception e) {
+            logger.error("Failed to extract Cargo dependencies.", e);
+            return new Extraction.Builder().failure("Cargo extraction failed due to an exception: " + e.getMessage()).build();
+        }
     }
+
 }

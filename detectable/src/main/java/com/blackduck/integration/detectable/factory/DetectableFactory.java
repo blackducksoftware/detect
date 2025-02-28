@@ -7,7 +7,7 @@ import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
 import com.blackduck.integration.detectable.detectable.executable.resolver.*;
-import com.blackduck.integration.detectable.detectables.cargo.CargoCliDetectable;
+import com.blackduck.integration.detectable.detectables.cargo.*;
 import org.xml.sax.SAXException;
 
 import com.google.gson.Gson;
@@ -41,8 +41,6 @@ import com.blackduck.integration.detectable.detectables.bitbake.parse.LicenseMan
 import com.blackduck.integration.detectable.detectables.bitbake.parse.PwdOutputParser;
 import com.blackduck.integration.detectable.detectables.bitbake.transform.BitbakeDependencyGraphTransformer;
 import com.blackduck.integration.detectable.detectables.bitbake.transform.BitbakeGraphTransformer;
-import com.blackduck.integration.detectable.detectables.cargo.CargoExtractor;
-import com.blackduck.integration.detectable.detectables.cargo.CargoLockDetectable;
 import com.blackduck.integration.detectable.detectables.cargo.parse.CargoDependencyLineParser;
 import com.blackduck.integration.detectable.detectables.cargo.parse.CargoTomlParser;
 import com.blackduck.integration.detectable.detectables.cargo.transform.CargoLockPackageDataTransformer;
@@ -350,8 +348,14 @@ public class DetectableFactory {
     }
 
     public CargoCliDetectable createCargoCliDetectable(DetectableEnvironment environment, CargoResolver cargoResolver) {
-        return new CargoCliDetectable(environment, fileFinder, cargoResolver, null, null, null);
+        CargoMetadataParser cargoMetadataParser = new CargoMetadataParser();
+        CargoDependencyTransformer cargoDependencyTransformer = new CargoDependencyTransformer();
+        CargoCliExtractor cargoCliExtractor = new CargoCliExtractor(executableRunner, cargoMetadataParser, cargoDependencyTransformer);
+
+        return new CargoCliDetectable(environment, fileFinder, cargoResolver, cargoCliExtractor);
     }
+
+
 
     public CarthageLockDetectable createCarthageDetectable(DetectableEnvironment environment) {
         CartfileResolvedParser cartfileResolvedParser = new CartfileResolvedParser();
