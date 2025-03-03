@@ -23,9 +23,8 @@ public class CargoDependencyTransformer {
     public DependencyGraph transform(JsonObject jsonObject) {
         BasicDependencyGraph graph = new BasicDependencyGraph();
         Map<String, Dependency> packageIdToDependency = new HashMap<>();
-        Set<String> allDependencies = new HashSet<>(); // Track all dependencies
+        Set<String> allDependencies = new HashSet<>();
 
-        // First pass: Create all Dependency objects
         JsonArray packages = jsonObject.getAsJsonArray("packages");
         for (JsonElement pkg : packages) {
             JsonObject packageObj = pkg.getAsJsonObject();
@@ -41,7 +40,6 @@ public class CargoDependencyTransformer {
             packageIdToDependency.put(packageId, dep);
         }
 
-        // Second pass: Build dependency relationships
         for (JsonElement pkg : packages) {
             JsonObject packageObj = pkg.getAsJsonObject();
             String currentPackageId = packageObj.get("id").getAsString();
@@ -51,18 +49,17 @@ public class CargoDependencyTransformer {
             for (JsonElement dep : deps) {
                 JsonObject depObj = dep.getAsJsonObject();
                 String depName = depObj.get("name").getAsString();
-                String depReq = depObj.get("req").getAsString(); // Version requirement
+                String depReq = depObj.get("req").getAsString();
 
                 String depPackageId = findPackageId(packages, depName, depReq);
                 if (depPackageId != null) {
                     Dependency childDep = packageIdToDependency.get(depPackageId);
                     graph.addParentWithChild(currentDep, childDep);
-                    allDependencies.add(depPackageId); // Mark as a dependency
+                    allDependencies.add(depPackageId);
                 }
             }
         }
 
-        // Third pass: Identify root dependencies (not in allDependencies set)
         for (JsonElement pkg : packages) {
             JsonObject packageObj = pkg.getAsJsonObject();
             String packageId = packageObj.get("id").getAsString();

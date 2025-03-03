@@ -1,5 +1,6 @@
 package com.blackduck.integration.detectable.detectables.cargo;
 
+import java.io.File;
 import java.io.IOException;
 
 import com.blackduck.integration.bdio.graph.builder.MissingExternalIdException;
@@ -34,6 +35,7 @@ public class CargoCliDetectable extends Detectable {
     private final CargoResolver cargoResolver;
     private final CargoCliExtractor cargoCliExtractor;
     private ExecutableTarget cargoExe;
+    private File cargoToml;
 
     public CargoCliDetectable(DetectableEnvironment environment, FileFinder fileFinder, CargoResolver cargoResolver, CargoCliExtractor cargoCliExtractor) {
         super(environment);
@@ -45,6 +47,7 @@ public class CargoCliDetectable extends Detectable {
     @Override
     public DetectableResult applicable() {
         Requirements requirements = new Requirements(fileFinder, environment);
+        cargoToml = requirements.file(CARGO_TOML_FILENAME);
         return requirements.result();
     }
 
@@ -64,5 +67,4 @@ public class CargoCliDetectable extends Detectable {
             return new Extraction.Builder().failure("Cargo extraction failed due to an exception: " + e.getMessage()).build();
         }
     }
-
 }

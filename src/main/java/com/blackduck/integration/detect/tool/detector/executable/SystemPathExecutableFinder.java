@@ -26,25 +26,10 @@ public class SystemPathExecutableFinder {
             .map(File::new)
             .collect(Collectors.toList());
 
-        addCargoExecutableIfNeeded(executable, systemPathLocations);
-
         File found = executableFinder.findExecutable(executable, systemPathLocations);
         if (found == null) {
             logger.debug(String.format("Could not find the executable: %s while searching through: %s", executable, systemPath));
         }
         return found;
-    }
-
-    private void addCargoExecutableIfNeeded(String executable, List<File> systemPathLocations) {
-        if ("cargo".equals(executable)) {
-            String cargoHome = System.getenv("CARGO_HOME");
-            if (cargoHome == null || cargoHome.isEmpty()) {
-                cargoHome = System.getProperty("user.home") + File.separator + ".cargo";
-            }
-            File cargoBinDir = new File(cargoHome + File.separator + "bin");
-            if (!systemPathLocations.contains(cargoBinDir)) {
-                systemPathLocations.add(cargoBinDir);
-            }
-        }
     }
 }
