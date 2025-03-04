@@ -419,10 +419,9 @@ public class OperationRunner {
     }
     
     public File downloadContainerImage(Gson gson, File downloadDirectory, String containerImageUri) throws DetectUserFriendlyException, IntegrationException, IOException {
-        String targetPathName = downloadDirectory.toString().concat("/targetImage");
         ConnectionFactory connectionFactory = new ConnectionFactory(detectConfigurationFactory.createConnectionDetails());
         ArtifactResolver artifactResolver = new ArtifactResolver(connectionFactory, gson);
-        return artifactResolver.downloadArtifact(new File(targetPathName), containerImageUri);
+        return artifactResolver.parseFileNameAndDownloadArtifact(downloadDirectory, containerImageUri);
     }
 
     public File getContainerScanImage(Gson gson, File downloadDirectory) throws OperationException {
@@ -431,7 +430,8 @@ public class OperationRunner {
             File containerImageFile = null;
             if (containerImageFilePath.isPresent()) {
                 String containerImageUri = containerImageFilePath.get();
-                if (containerImageUri.startsWith("http")) {
+
+                if (containerImageUri.startsWith("http://") || containerImageUri.startsWith("https://")) {
                     containerImageFile = downloadContainerImage(gson, downloadDirectory, containerImageUri);
                 } else {
                     containerImageFile = new File(containerImageUri);
