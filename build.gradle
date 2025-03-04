@@ -265,7 +265,7 @@ task signJar() {
     finalizedBy 'verifyJar'
     doLast {
         exec {
-            commandLine 'signing-client', '--username', "${System.getenv('SIGNING_USER')}", '--password', "env:SIGNING_TOKEN", '--server', "${System.getenv('SIGNING_SERVER')}", '--port', "${System.getenv('SIGNING_SERVER_PORT')}", '--signer', 'jarsigner', '--output', "${createArtifactName()}", "${createArtifactName()}", "--debug"
+            commandLine 'signing-client', '--username', "${System.getenv('SIGNING_USER')}", '--password', "env:SIGNING_TOKEN", '--server', "${System.getenv('SIGNING_SERVER')}", '--port', "${System.getenv('SIGNING_SERVER_PORT')}", '--signer', 'jarsigner', '--output', "${createArtifactName()}", "${createArtifactName()}"
         }
     }
 }
