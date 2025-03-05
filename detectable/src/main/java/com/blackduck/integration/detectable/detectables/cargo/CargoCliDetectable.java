@@ -61,7 +61,7 @@ public class CargoCliDetectable extends Detectable {
     @Override
     public Extraction extract(ExtractionEnvironment extractionEnvironment) throws IOException, DetectableException, MissingExternalIdException, ExecutableRunnerException {
         try {
-            return cargoCliExtractor.extract(environment.getDirectory(), cargoExe);
+            return cargoCliExtractor.extract(environment.getDirectory(), cargoExe, cargoToml);
         } catch (Exception e) {
             logger.error("Failed to extract Cargo dependencies.", e);
             return new Extraction.Builder().failure("Cargo extraction failed due to an exception: " + e.getMessage()).build();

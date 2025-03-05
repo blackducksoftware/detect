@@ -6,40 +6,50 @@ import com.blackduck.integration.detectable.ExecutableUtils;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import com.blackduck.integration.detectable.detectable.executable.DetectableExecutableRunner;
 import com.blackduck.integration.detectable.detectable.executable.ExecutableFailedException;
+import com.blackduck.integration.detectable.detectables.cargo.parse.CargoTomlParser;
 import com.blackduck.integration.detectable.extraction.Extraction;
-import com.blackduck.integration.detectable.util.ToolVersionLogger;
 import com.blackduck.integration.executable.ExecutableOutput;
-import com.google.gson.JsonObject;
+import com.blackduck.integration.util.NameVersion;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 public class CargoCliExtractor {
-    private static final Logger logger = LoggerFactory.getLogger(CargoCliExtractor.class.getName());
     private final DetectableExecutableRunner executableRunner;
-    private final CargoMetadataParser cargoMetadataParser;
-    private final CargoDependencyTransformer cargoDependencyTransformer;
+    private final CargoDependencyTransformer cargoTreeParser; // New parser for cargo tree output
+    private final CargoTomlParser cargoTomlParser; // New parser for cargo tree output
 
-    public CargoCliExtractor(DetectableExecutableRunner executableRunner, CargoMetadataParser cargoMetadataParser, CargoDependencyTransformer cargoDependencyTransformer) {
+    public CargoCliExtractor(DetectableExecutableRunner executableRunner, CargoDependencyTransformer cargoTreeParser, CargoTomlParser cargoTomlParser) {
         this.executableRunner = executableRunner;
-        this.cargoMetadataParser = cargoMetadataParser;
-        this.cargoDependencyTransformer = cargoDependencyTransformer;
+        this.cargoTreeParser = cargoTreeParser;
+        this.cargoTomlParser = cargoTomlParser;
     }
 
-    public Extraction extract(File directory, ExecutableTarget cargoExe) throws ExecutableFailedException {
-        List<String> commandArguments = Arrays.asList("metadata", "--format-version=1");
+    public Extraction extract(File directory, ExecutableTarget cargoExe, File cargoTomlFile) throws ExecutableFailedException, IOException {
+        List<String> commandArguments = Arrays.asList("tree", "--no-dedupe", "--prefix", "depth");
         ExecutableOutput cargoOutput = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(directory, cargoExe, commandArguments));
-        String cargoMetadataJson = cargoOutput.getStandardOutput();
+        List<String> cargoTreeOutput = cargoOutput.getStandardOutputAsList();
 
-        JsonObject jsonObject = cargoMetadataParser.parseMetadata(cargoMetadataJson);
-        DependencyGraph graph = cargoDependencyTransformer.transform(jsonObject);
+        DependencyGraph graph = cargoTreeParser.transform(cargoTreeOutput);
+
+        Optional<NameVersion> projectNameVersion = Optional.empty();
+        if (cargoTomlFile != null) {
+            String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
+            projectNameVersion = cargoTomlParser.parseNameVersionFromCargoToml(cargoTomlContents);
+        }
 
         CodeLocation codeLocation = new CodeLocation(graph);
+
         return new Extraction.Builder()
             .success(codeLocation)
+            .nameVersionIfPresent(projectNameVersion)
             .build();
     }
 }

@@ -4,89 +4,73 @@ import com.blackduck.integration.bdio.graph.BasicDependencyGraph;
 import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.Forge;
 import com.blackduck.integration.bdio.model.dependency.Dependency;
-
-import com.blackduck.integration.bdio.model.dependency.ProjectDependency;
 import com.blackduck.integration.bdio.model.externalid.ExternalId;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
-//TODO: Proposed CargoDependency Parser, Need to be implemented to parser
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
 
 public class CargoDependencyTransformer {
+    private static final Logger logger = LoggerFactory.getLogger(CargoDependencyTransformer.class);
 
-    public DependencyGraph transform(JsonObject jsonObject) {
-        BasicDependencyGraph graph = new BasicDependencyGraph();
-        Map<String, Dependency> packageIdToDependency = new HashMap<>();
-        Set<String> allDependencies = new HashSet<>();
+    public DependencyGraph transform(List<String> cargoTreeOutput) {
+        DependencyGraph graph = new BasicDependencyGraph();
+        Deque<Dependency> dependencyStack = new ArrayDeque<>();
 
-        JsonArray packages = jsonObject.getAsJsonArray("packages");
-        for (JsonElement pkg : packages) {
-            JsonObject packageObj = pkg.getAsJsonObject();
-            String packageId = packageObj.get("id").getAsString();
-            String name = packageObj.get("name").getAsString();
-            String version = packageObj.get("version").getAsString();
+        for (String line : cargoTreeOutput) {
+            line = line.trim();
+            if (line.isEmpty()) {
+                continue;
+            }
 
-            ExternalId externalId = new ExternalId(Forge.CRATES);
-            externalId.setName(name);
-            externalId.setVersion(version);
+            int currentLevel = extractDepth(line);
+            String dependencyInfo = line.substring(String.valueOf(currentLevel).length()).trim();
+            Dependency dependency = parseDependency(dependencyInfo);
 
-            Dependency dep = new ProjectDependency(name, version, externalId);
-            packageIdToDependency.put(packageId, dep);
-        }
-
-        for (JsonElement pkg : packages) {
-            JsonObject packageObj = pkg.getAsJsonObject();
-            String currentPackageId = packageObj.get("id").getAsString();
-            Dependency currentDep = packageIdToDependency.get(currentPackageId);
-
-            JsonArray deps = packageObj.getAsJsonArray("dependencies");
-            for (JsonElement dep : deps) {
-                JsonObject depObj = dep.getAsJsonObject();
-                String depName = depObj.get("name").getAsString();
-                String depReq = depObj.get("req").getAsString();
-
-                String depPackageId = findPackageId(packages, depName, depReq);
-                if (depPackageId != null) {
-                    Dependency childDep = packageIdToDependency.get(depPackageId);
-                    graph.addParentWithChild(currentDep, childDep);
-                    allDependencies.add(depPackageId);
+            if (dependency != null) {
+                while (!dependencyStack.isEmpty() && dependencyStack.size() >= currentLevel) {
+                    dependencyStack.pop();
                 }
+
+                if (currentLevel == 1) {
+                    graph.addDirectDependency(dependency);
+                    // clearing stack to search for the next direct dependency
+                    dependencyStack.clear();
+                } else if (!dependencyStack.isEmpty()) {
+                    graph.addParentWithChild(dependencyStack.peek(), dependency);
+                } else {
+                    logger.warn("No parent found for dependency: {} {}", dependency.getName(), dependency.getVersion());
+                }
+                dependencyStack.push(dependency);
             }
         }
-
-        for (JsonElement pkg : packages) {
-            JsonObject packageObj = pkg.getAsJsonObject();
-            String packageId = packageObj.get("id").getAsString();
-            Dependency dependency = packageIdToDependency.get(packageId);
-
-            if (!allDependencies.contains(packageId)) {
-                graph.addDirectDependency(dependency);
-            }
-        }
-
         return graph;
     }
 
-    private String findPackageId(JsonArray packages, String name, String req) {
-        for (JsonElement pkg : packages) {
-            JsonObject packageObj = pkg.getAsJsonObject();
-            String packageName = packageObj.get("name").getAsString();
-            String packageVersion = packageObj.get("version").getAsString();
-
-            if (packageName.equals(name) && satisfiesVersionRequirement(packageVersion, req)) {
-                return packageObj.get("id").getAsString();
-            }
+    private int extractDepth(String line) {
+        int depth = 0;
+        while (depth < line.length() && Character.isDigit(line.charAt(depth))) {
+            depth++;
         }
-        return null;
+        return Integer.parseInt(line.substring(0, depth));
     }
 
-    private boolean satisfiesVersionRequirement(String version, String req) {
-        return version.startsWith(req.replace("^", "").replace("~", ""));
+    private Dependency parseDependency(String dependencyInfo) {
+        String[] parts = dependencyInfo.split(" ");
+        if (parts.length < 2) {
+            logger.warn("Unable to parse dependency from line: {}", dependencyInfo);
+            return null;
+        }
+
+        String name = parts[0];
+        String version = parts[1].replace("v", ""); // Remove 'v' prefix from version
+
+        ExternalId externalId = new ExternalId(Forge.CRATES);
+        externalId.setName(name);
+        externalId.setVersion(version);
+
+        return new Dependency(name, version, externalId);
     }
 }
