@@ -12,6 +12,9 @@ Each [detect_product_short] run consists of running any applicable [detect_produ
 
 [detect_product_short] uses [detectors](detectors.md), appropriate to your package manager ecosystem, to find and extract dependencies from all supported package managers.
 
+For a quick tutorial on detectors see: [Detectors Introduction](https://community.blackduck.com/s/article/Black-Duck-Detectors-Introduction).
+
 ## Inspectors
 
 An [inspector](inspectors.md) is typically a plugin that [detect_product_short] uses to access the internal resources of a package manager through its API.
+
