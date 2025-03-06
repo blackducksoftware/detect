@@ -15,7 +15,7 @@ The default option for the build agent is the Microsoft hosted agent. To be able
    * Select a self-hosted agent from your Agent pool or select Azure Pipelines for an Azure-hosted agent.
    * If you select a hosted agent, then you must select an operating system such as macOS, Windows, or a version of Linux for the hosted agent VM.
    
-<note type="tip">This is not an airgap option as internet connections are still required for downloading other tools and the script will still download new content if needed.</note>
+<note type="tip">This is not an air gap option as internet connections are still required for downloading other tools and the script will still download new content if needed.</note>
 
 <note type="note">If the agent is behind a proxy, [detect_product_short] Azure plug-in will utilize the agent proxy by default.</note>
 

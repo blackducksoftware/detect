@@ -1,6 +1,49 @@
 <!-- Check the support matrix to determine supported, non-current major version releases -->
 # Release notes for previous supported versions
 
+## Version 10.3.0
+
+### New features
+
+* Added support for `ArtifactsPath` and `BaseIntermediateOutputPath` properties in [detect_product_long] NuGet Inspector. See [detect.nuget.artifacts.path](packagemgrs/nuget.md#nuget-artifacts-and-base-intermediate-output-paths) for more details.
+* SCA Scan Service (SCASS) is a scalable solution for performing software composition analysis scans outside of the traditional [bd_product_long] environment. This [detect_product_short] release provides support for the SCA Scan Service (SCASS) for [bd_product_short] version 2025.1.1 or later. For further information see [About SCASS](https://documentation.blackduck.com/bundle/bd-hub/page/ComponentDiscovery/aboutScaScanService.html).
+	* See IP address notice above for details on related IP configuration for your deployments.
+
+### Resolved issues
+
+* (IDETECT-4610) - Improved [detect_product_short]'s air gap for Gradle creation script to prevent unwanted JAR files from being included in the gradle subdirectory.
+* (IDETECT-4611) - Updated [detect_product_short]'s air gap for Gradle creation script to remove reference to Integration Common library that is no longer a dependency.
+* (IDETECT-3932) - Improved the exit code and error output generated when a duplicate project name is used in simultaneous scans.
+* (IDETECT-4327) - Updated the Conan 2 detector to provide log entries in case of error.
+
+### Dependency updates
+
+* Upgraded and released NuGet Inspector version 2.1.0.
+* Upgraded to rebranded Method Analyzer Core Library version 1.0.1 for Vulnerability Impact Analysis.
+
+## Version 10.2.1
+
+### Resolved issues
+
+* (IDETECT-4560) - Update the FreeMarker Template Language (FTL) script used to build the [detect_product_short] air gap zips to prevent inclusion of outdated JARs.
+
+## Version 10.2.0
+
+### New features
+
+* The scanCLI `detect.blackduck.signature.scanner.csv.archive` property has been added for generating and uploading CSV files to [bd_product_long] 2025.1.0 or later. If used in offline mode, the generated CSV files will be located in the [detect_product_short] run directory in the csv folder.
+<note type="note">This feature is only available for intelligent persistence scans.</note>
+
+### Changed features
+
+* Use of the --detect.yarn.ignore.all.workspaces flag is not required for Yarn 4 projects, thus configuration parameters such as detect.yarn.dependency.types.excluded=NON_PRODUCTION can be employed.
+
+### Resolved issues
+
+* (IDETECT-4447) - ID strings of detected Yarn project dependencies are now correctly formed. Related warning messages have been improved to identify entries in the yarn.lock file that have not been resolved through package.json files and could not be resolved with any standard NPM packages.
+* (IDETECT-4533) - Resolved an issue with [detect_product_short] Gradle Native Inspector causing scans to hang indefinitely when submodule has the same name as the parent module.
+* (IDETECT-4560) - Updated version of Jackson-Core (a transitive dependency) to address a vulnerability.
+
 ## Version 10.1.0
 
 ### New features
@@ -30,10 +73,10 @@
 
 [company_name] [solution_name] has been renamed [detect_product_long] with page links, documentation, and other URLs updated accordingly. Update any [detect_product_short] documentation, or other bookmarks you may have. See the [Domain Change FAQ](https://community.blackduck.com/s/article/Black-Duck-Domain-Change-FAQ).
 * As part of this activity, sig-repo.synopsys.com and detect.synopsys.com are being deprecated. Please make use of repo.blackduck.com and detect.blackduck.com respectively. 
-    * After February 2025, [detect_product_short] script download details will only be available via detect.blackduck.com.
+    * After March 2025, [detect_product_short] script download details will only be available via detect.blackduck.com.
     * [detect_product_short] 10.0.0 will only work when using repo.blackduck.com.
 
-<note type="note">It is recommended that customers continue to maintain sig-repo.synopsys.com, and repo.blackduck.com on their allow list until February 2025 when sig-repo.synopsys.com will be fully replaced by repo.blackduck.com.</note>
+<note type="note">It is recommended that customers continue to maintain sig-repo.synopsys.com, and repo.blackduck.com on their allow list until March 31st, 2025 when sig-repo.synopsys.com will be fully replaced by repo.blackduck.com.</note>
 
 ### New features
 

@@ -1,6 +1,6 @@
 repositories {
     maven {
-        url 'https://sig-repo.synopsys.com/bds-integration-public-cache/'
+        url 'https://repo.blackduck.com/bds-integration-public-cache/'
     }
 }
 
@@ -9,11 +9,10 @@ configurations {
 }
 
 dependencies {
-    airGap 'com.synopsys.integration:integration-common:26.1.2'
+    airGap 'org.slf4j:slf4j-api:2.0.7'
 }
 
 task installDependencies(type: Copy) {
     from configurations.airGap
-    include '*.jar'
     into "${gradleOutput}"
 }

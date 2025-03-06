@@ -63,7 +63,7 @@ public class PipInspectorTreeParser {
 
         adviseIfUnresolvedPackages(unResolvedPackageCount);
 
-        if (project != null) {
+        if (project != null && unResolvedPackageCount == 0) {
             CodeLocation codeLocation = new CodeLocation(graph, project.getExternalId());
             parseResult = new NameVersionCodeLocation(project.getName(), project.getVersion(), codeLocation);
         }

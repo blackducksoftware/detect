@@ -335,7 +335,9 @@ public class DetectProperties {
         NullableStringProperty.newBuilder("detect.container.scan.file.path")
             .setInfo("Container Scan Target", DetectPropertyFromVersion.VERSION_9_1_0)
             .setHelp(
-                "If specified, this file and this file only will be uploaded for container scan analysis. The CONTAINER_SCAN tool does not provide project and version name defaults to Detect, so you need to set project and version names via properties when only the CONTAINER_SCAN tool is invoked.")
+                "If specified, this file and this file only will be uploaded for container scan analysis.",
+                "Detect will accept either a user provided local file path, or remote HTTP/HTTPS URL to fetch a container image for scanning. The CONTAINER_SCAN tool does not provide project and version name defaults to Detect, so you need to set project and version names via properties when only the CONTAINER_SCAN tool is invoked."
+            )
             .setGroups(DetectGroup.CONTAINER_SCANNER, DetectGroup.SOURCE_PATH)
             .build();
 
@@ -1219,10 +1221,17 @@ public class DetectProperties {
     public static final NoneEnumListProperty<NugetDependencyType> DETECT_NUGET_DEPENDENCY_TYPES_EXCLUDED =
         NoneEnumListProperty.newBuilder("detect.nuget.dependency.types.excluded", NoneEnum.NONE, NugetDependencyType.class)
             .setInfo("Nuget Dependency Types Excluded", DetectPropertyFromVersion.VERSION_9_4_0)
-            .setHelp(createTypeFilterHelpText("Nuget dependency types"), "This property supports exclusion of dependencies in projects that use PackageReference, and packages.config for listing dependencies that are not stored in JSON files.")
+            .setHelp(createTypeFilterHelpText("Nuget dependency types"), "This property supports exclusion of dependencies in projects that use PackageReference or packages.config. This property does not apply to scans that analyze project.json, project.lock.json or project.assets.json.")
             .setExample(String.format("%s", NugetDependencyType.DEV.name()))
             .setGroups(DetectGroup.NUGET, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
+
+    public static final NullablePathProperty DETECT_NUGET_ARTIFACTS_PATH =
+            NullablePathProperty.newBuilder("detect.nuget.artifacts.path")
+                    .setInfo("Nuget Artifacts Path", DetectPropertyFromVersion.VERSION_10_3_0)
+                    .setHelp("The path to the obj directory build artifacts of the NuGet project, if not the default path.")
+                    .setGroups(DetectGroup.NUGET, DetectGroup.GLOBAL)
+                    .build();
 
     public static final NullablePathProperty DETECT_OUTPUT_PATH =
         NullablePathProperty.newBuilder("detect.output.path")
