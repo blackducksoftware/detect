@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 public class AirGapPathFinder {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     public static final String NUGET = "nuget";
-    public static final String GRADLE = "gradle";
     public static final String DOCKER = "docker";
     public static final String PROJECT_INSPECTOR = "project-inspector";
 

@@ -147,7 +147,6 @@ public class DetectableOptionFactory {
         List<String> excludedConfigurationNames = detectConfiguration.getValue(DetectProperties.DETECT_GRADLE_EXCLUDED_CONFIGURATIONS);
         List<String> includedConfigurationNames = detectConfiguration.getValue(DetectProperties.DETECT_GRADLE_INCLUDED_CONFIGURATIONS);
         boolean rootOnlyOption = detectConfiguration.getValue(DetectProperties.DETECT_GRADLE_ROOT_ONLY);
-        String customRepository = ArtifactoryConstants.GRADLE_INSPECTOR_MAVEN_REPO;
 
         Set<GradleConfigurationType> excludedConfigurationTypes = detectConfiguration.getValue(DetectProperties.DETECT_GRADLE_CONFIGURATION_TYPES_EXCLUDED).representedValueSet();
         EnumListFilter<GradleConfigurationType> dependencyTypeFilter = EnumListFilter.fromExcluded(excludedConfigurationTypes);
@@ -159,7 +158,6 @@ public class DetectableOptionFactory {
             includedProjectPaths,
             excludedConfigurationNames,
             includedConfigurationNames,
-            customRepository,
             rootOnlyOption
         );
         String gradleBuildCommand = detectConfiguration.getNullableValue(DetectProperties.DETECT_GRADLE_BUILD_COMMAND);

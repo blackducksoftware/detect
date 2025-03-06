@@ -61,7 +61,6 @@ import com.blackduck.integration.detect.workflow.airgap.AirGapCreator;
 import com.blackduck.integration.detect.workflow.airgap.AirGapPathFinder;
 import com.blackduck.integration.detect.workflow.airgap.DetectFontAirGapCreator;
 import com.blackduck.integration.detect.workflow.airgap.DockerAirGapCreator;
-import com.blackduck.integration.detect.workflow.airgap.GradleAirGapCreator;
 import com.blackduck.integration.detect.workflow.airgap.NugetInspectorAirGapCreator;
 import com.blackduck.integration.detect.workflow.airgap.ProjectInspectorAirGapCreator;
 import com.blackduck.integration.detect.workflow.blackduck.analytics.AnalyticsConfigurationService;
@@ -166,7 +165,6 @@ public class DetectBootFactory {
         DetectExecutableResolver detectExecutableResolver = new DetectExecutableResolver(directoryExecutableFinder, systemPathExecutableFinder, detectExecutableOptions);
 
         DetectExecutableRunner runner = DetectExecutableRunner.newDebug(eventSystem);
-        GradleAirGapCreator gradleAirGapCreator = new GradleAirGapCreator(detectExecutableResolver, runner, freemarkerConfiguration);
 
         NugetInspectorAirGapCreator nugetAirGapCreator = new NugetInspectorAirGapCreator(new ArtifactoryNugetInspectorInstaller(
             detectInfo,
@@ -188,7 +186,6 @@ public class DetectBootFactory {
         return new AirGapCreator(
             new AirGapPathFinder(),
             eventSystem,
-            gradleAirGapCreator,
             nugetAirGapCreator,
             dockerAirGapCreator,
             detectFontAirGapCreator,
