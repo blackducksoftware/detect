@@ -37,7 +37,7 @@ labels:
 # List of resources to make available to the offline build context
 resources:
 - filename: detect-RELEASE_VERSION-air-gap.zip
-  url: https://repo.blackduck.com/artifactory/blackduck-repo1.dso.mil-generic/blackduck-client/detect-RELEASE_VERSION-air-gap.zip
+  url: https://repo.blackduck.com/blackduck-repo1.dso.mil-generic/blackduck-client/detect-RELEASE_VERSION-air-gap.zip
   validation:
     type: sha256
     value: ZIP_SHA256_VALUE
