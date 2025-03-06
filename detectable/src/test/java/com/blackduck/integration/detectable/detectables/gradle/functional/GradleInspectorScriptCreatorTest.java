@@ -25,7 +25,7 @@ public class GradleInspectorScriptCreatorTest {
     public File tempDir;
 
     @Test
-    void testOffline() throws DetectableException, IOException {
+    void testInspectorCreation() throws DetectableException, IOException {
         List<String> excludedProjectNames = Arrays.asList("excludedProject");
         List<String> includedProjectNames = Arrays.asList("includedProject");
         List<String> excludedConfigurationNames = Arrays.asList("excludedConfig");
@@ -38,7 +38,6 @@ public class GradleInspectorScriptCreatorTest {
             Collections.emptyList(),
             excludedConfigurationNames,
             includedConfigurationNames,
-            gradleInspectorRepositoryUrl,
             false
         );
 
@@ -47,12 +46,12 @@ public class GradleInspectorScriptCreatorTest {
         File targetFile = new File(tempDir, "init-detect.gradle");
 
         String airGapLibraryPaths = "airGap/library/dir";
-        gradleInspectorScriptCreator.createOfflineGradleInspector(targetFile, scriptOptions, airGapLibraryPaths);
+        gradleInspectorScriptCreator.createGradleInspector(targetFile, scriptOptions);
 
         String generatedScriptContent = FileUtils.readFileToString(targetFile, StandardCharsets.UTF_8);
 
-        assertTrue(generatedScriptContent.contains("dirs 'airGap/library/dir'"));
-        assertTrue(generatedScriptContent.contains("File('airGap/library/dir').eachFile"));
+        assertTrue(generatedScriptContent.contains("Set<String> projectNameExcludeFilter = convertStringToSet('excludedProject')"));
+        assertTrue(generatedScriptContent.contains("Set<String> projectNameIncludeFilter = convertStringToSet('includedProject')"));
     }
 
     private Configuration createFreemarkerConfiguration() throws IOException {
