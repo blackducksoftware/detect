@@ -7,12 +7,11 @@ import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation
 import com.blackduck.integration.detectable.detectable.executable.DetectableExecutableRunner;
 import com.blackduck.integration.detectable.detectable.executable.ExecutableFailedException;
 import com.blackduck.integration.detectable.detectables.cargo.parse.CargoTomlParser;
+import com.blackduck.integration.detectable.detectables.cargo.transform.CargoDependencyTransformer;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.executable.ExecutableOutput;
 import com.blackduck.integration.util.NameVersion;
 import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,12 +22,12 @@ import java.util.Optional;
 
 public class CargoCliExtractor {
     private final DetectableExecutableRunner executableRunner;
-    private final CargoDependencyTransformer cargoTreeParser; // New parser for cargo tree output
-    private final CargoTomlParser cargoTomlParser; // New parser for cargo tree output
+    private final CargoDependencyTransformer cargoDependencyTransformer;
+    private final CargoTomlParser cargoTomlParser;
 
-    public CargoCliExtractor(DetectableExecutableRunner executableRunner, CargoDependencyTransformer cargoTreeParser, CargoTomlParser cargoTomlParser) {
+    public CargoCliExtractor(DetectableExecutableRunner executableRunner, CargoDependencyTransformer cargoDependencyTransformer, CargoTomlParser cargoTomlParser) {
         this.executableRunner = executableRunner;
-        this.cargoTreeParser = cargoTreeParser;
+        this.cargoDependencyTransformer = cargoDependencyTransformer;
         this.cargoTomlParser = cargoTomlParser;
     }
 
@@ -37,7 +36,7 @@ public class CargoCliExtractor {
         ExecutableOutput cargoOutput = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(directory, cargoExe, commandArguments));
         List<String> cargoTreeOutput = cargoOutput.getStandardOutputAsList();
 
-        DependencyGraph graph = cargoTreeParser.transform(cargoTreeOutput);
+        DependencyGraph graph = cargoDependencyTransformer.transform(cargoTreeOutput);
 
         Optional<NameVersion> projectNameVersion = Optional.empty();
         if (cargoTomlFile != null) {

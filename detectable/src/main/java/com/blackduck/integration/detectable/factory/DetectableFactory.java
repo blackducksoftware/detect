@@ -8,6 +8,7 @@ import javax.xml.parsers.SAXParserFactory;
 
 import com.blackduck.integration.detectable.detectable.executable.resolver.*;
 import com.blackduck.integration.detectable.detectables.cargo.*;
+import com.blackduck.integration.detectable.detectables.cargo.transform.CargoDependencyTransformer;
 import org.xml.sax.SAXException;
 
 import com.google.gson.Gson;
