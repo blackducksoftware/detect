@@ -26,7 +26,7 @@
 
 ### Resolved issues
 
-* 
+* (IDETECT-4641) - Improved [detect_product_short]'s Yarn detector to handle non-standard version entries for component dependencies.
 
 ### Dependency updates
 
