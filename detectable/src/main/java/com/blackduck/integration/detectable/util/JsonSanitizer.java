@@ -1,19 +1,11 @@
 package com.blackduck.integration.detectable.util;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 
 public class JsonSanitizer {
-    private static final Gson GSON = new GsonBuilder()
-        .disableHtmlEscaping()
-        .serializeNulls()
-        .create();
-
-    public static String sanitize(String json) throws JsonSyntaxException {
-        JsonObject jsonObject = JsonParser.parseString(json).getAsJsonObject();
-        return GSON.toJson(jsonObject);
+    public static JsonObject sanitize(String json) throws JsonSyntaxException {
+        return JsonParser.parseString(json).getAsJsonObject();
     }
 }
