@@ -2,6 +2,8 @@ package com.blackduck.integration.detectable.detectables.cargo;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
 import com.blackduck.integration.bdio.graph.builder.MissingExternalIdException;
 import com.blackduck.integration.common.util.finder.FileFinder;
@@ -12,36 +14,36 @@ import com.blackduck.integration.detectable.detectable.DetectableAccuracyType;
 import com.blackduck.integration.detectable.detectable.Requirements;
 import com.blackduck.integration.detectable.detectable.annotation.DetectableInfo;
 import com.blackduck.integration.detectable.detectable.exception.DetectableException;
-import com.blackduck.integration.detectable.detectable.executable.ExecutableFailedException;
+import com.blackduck.integration.detectable.detectable.executable.DetectableExecutableRunner;
+import com.blackduck.integration.detectable.detectable.result.CargoExecutableVersionMismatchResult;
 import com.blackduck.integration.detectable.detectable.result.DetectableResult;
-import com.blackduck.integration.detectable.detectables.cargo.parse.CargoTomlParser;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 import com.blackduck.integration.detectable.detectable.executable.resolver.CargoResolver;
-import com.blackduck.integration.executable.ExecutableRunner;
+import com.blackduck.integration.executable.ExecutableOutput;
 import com.blackduck.integration.executable.ExecutableRunnerException;
+import com.blackduck.integration.detectable.ExecutableUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @DetectableInfo(name = "Cargo CLI", language = "Rust", forge = "crates", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "Command: cargo tree")
 public class CargoCliDetectable extends Detectable {
     private static final Logger logger = LoggerFactory.getLogger(CargoCliDetectable.class);
-
-    public static final String CARGO_LOCK_FILENAME = "Cargo.lock";
     public static final String CARGO_TOML_FILENAME = "Cargo.toml";
-
+    private static final String MINIMUM_CARGO_VERSION = "1.44.0";
     private final FileFinder fileFinder;
-
     private final CargoResolver cargoResolver;
     private final CargoCliExtractor cargoCliExtractor;
+    private final DetectableExecutableRunner executableRunner;
     private ExecutableTarget cargoExe;
     private File cargoToml;
 
-    public CargoCliDetectable(DetectableEnvironment environment, FileFinder fileFinder, CargoResolver cargoResolver, CargoCliExtractor cargoCliExtractor) {
+    public CargoCliDetectable(DetectableEnvironment environment, FileFinder fileFinder, CargoResolver cargoResolver, CargoCliExtractor cargoCliExtractor, DetectableExecutableRunner executableRunner) {
         super(environment);
         this.fileFinder = fileFinder;
         this.cargoResolver = cargoResolver;
         this.cargoCliExtractor = cargoCliExtractor;
+        this.executableRunner = executableRunner;
     }
 
     @Override
@@ -55,6 +57,9 @@ public class CargoCliDetectable extends Detectable {
     public DetectableResult extractable() throws DetectableException {
         Requirements requirements = new Requirements(fileFinder, environment);
         cargoExe = requirements.executable(() -> cargoResolver.resolveCargo(environment), "cargo");
+        if (cargoExe != null && !isCargoVersionValid(cargoExe)) {
+            return new CargoExecutableVersionMismatchResult(environment.getDirectory().getAbsolutePath());
+        }
         return requirements.result();
     }
 
@@ -66,5 +71,20 @@ public class CargoCliDetectable extends Detectable {
             logger.error("Failed to extract Cargo dependencies.", e);
             return new Extraction.Builder().failure("Cargo extraction failed due to an exception: " + e.getMessage()).build();
         }
+    }
+
+    private boolean isCargoVersionValid(ExecutableTarget cargoExe) {
+        try {
+            List<String> commandArguments = Collections.singletonList("--version");
+            ExecutableOutput cargoOutput = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(environment.getDirectory(), cargoExe, commandArguments));
+            List<String> cargoVersionOutput = cargoOutput.getStandardOutputAsList();
+            if (!cargoVersionOutput.isEmpty()) {
+                String version = cargoVersionOutput.get(0).split(" ")[1];
+                return VersionUtils.compareVersions(version, MINIMUM_CARGO_VERSION) >= 0;
+            }
+        } catch (Exception e) {
+            logger.error("Failed to get Cargo version.", e);
+        }
+        return false;
     }
 }

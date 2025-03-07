@@ -352,7 +352,7 @@ public class DetectableFactory {
         CargoDependencyGraphTransformer cargoDependencyTransformer= new CargoDependencyGraphTransformer(externalIdFactory);
         CargoTomlParser cargoTomlParser = new CargoTomlParser();
         CargoCliExtractor cargoCliExtractor = new CargoCliExtractor(executableRunner, cargoDependencyTransformer, cargoTomlParser);
-        return new CargoCliDetectable(environment, fileFinder, cargoResolver, cargoCliExtractor);
+        return new CargoCliDetectable(environment, fileFinder, cargoResolver, cargoCliExtractor, executableRunner);
     }
 
 
