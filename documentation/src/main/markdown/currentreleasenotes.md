@@ -22,7 +22,7 @@
 
 ### New features
 
-* 
+* Support for Conda has been extended to 25.1.1.
 
 ### Resolved issues
 
