@@ -7,7 +7,7 @@ import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation
 import com.blackduck.integration.detectable.detectable.executable.DetectableExecutableRunner;
 import com.blackduck.integration.detectable.detectable.executable.ExecutableFailedException;
 import com.blackduck.integration.detectable.detectables.cargo.parse.CargoTomlParser;
-import com.blackduck.integration.detectable.detectables.cargo.transform.CargoDependencyTransformer;
+import com.blackduck.integration.detectable.detectables.cargo.transform.CargoDependencyGraphTransformer;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.executable.ExecutableOutput;
 import com.blackduck.integration.util.NameVersion;
@@ -22,10 +22,10 @@ import java.util.Optional;
 
 public class CargoCliExtractor {
     private final DetectableExecutableRunner executableRunner;
-    private final CargoDependencyTransformer cargoDependencyTransformer;
+    private final CargoDependencyGraphTransformer cargoDependencyTransformer;
     private final CargoTomlParser cargoTomlParser;
 
-    public CargoCliExtractor(DetectableExecutableRunner executableRunner, CargoDependencyTransformer cargoDependencyTransformer, CargoTomlParser cargoTomlParser) {
+    public CargoCliExtractor(DetectableExecutableRunner executableRunner, CargoDependencyGraphTransformer cargoDependencyTransformer, CargoTomlParser cargoTomlParser) {
         this.executableRunner = executableRunner;
         this.cargoDependencyTransformer = cargoDependencyTransformer;
         this.cargoTomlParser = cargoTomlParser;

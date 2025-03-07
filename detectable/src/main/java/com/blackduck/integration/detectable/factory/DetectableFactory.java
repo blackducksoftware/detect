@@ -8,7 +8,7 @@ import javax.xml.parsers.SAXParserFactory;
 
 import com.blackduck.integration.detectable.detectable.executable.resolver.*;
 import com.blackduck.integration.detectable.detectables.cargo.*;
-import com.blackduck.integration.detectable.detectables.cargo.transform.CargoDependencyTransformer;
+import com.blackduck.integration.detectable.detectables.cargo.transform.CargoDependencyGraphTransformer;
 import org.xml.sax.SAXException;
 
 import com.google.gson.Gson;
@@ -349,7 +349,7 @@ public class DetectableFactory {
     }
 
     public CargoCliDetectable createCargoCliDetectable(DetectableEnvironment environment, CargoResolver cargoResolver) {
-        CargoDependencyTransformer cargoDependencyTransformer= new CargoDependencyTransformer();
+        CargoDependencyGraphTransformer cargoDependencyTransformer= new CargoDependencyGraphTransformer(externalIdFactory);
         CargoTomlParser cargoTomlParser = new CargoTomlParser();
         CargoCliExtractor cargoCliExtractor = new CargoCliExtractor(executableRunner, cargoDependencyTransformer, cargoTomlParser);
         return new CargoCliDetectable(environment, fileFinder, cargoResolver, cargoCliExtractor);

@@ -5,6 +5,7 @@ import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.Forge;
 import com.blackduck.integration.bdio.model.dependency.Dependency;
 import com.blackduck.integration.bdio.model.externalid.ExternalId;
+import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,8 +13,14 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 
-public class CargoDependencyTransformer {
-    private static final Logger logger = LoggerFactory.getLogger(CargoDependencyTransformer.class);
+public class CargoDependencyGraphTransformer {
+
+    private final ExternalIdFactory externalIdFactory;
+    private static final Logger logger = LoggerFactory.getLogger(CargoDependencyGraphTransformer.class);
+
+    public CargoDependencyGraphTransformer(ExternalIdFactory externalIdFactory) {
+        this.externalIdFactory = externalIdFactory;
+    }
 
     public DependencyGraph transform(List<String> cargoTreeOutput) {
         DependencyGraph graph = new BasicDependencyGraph();
@@ -37,8 +44,10 @@ public class CargoDependencyTransformer {
 
         if (dependency != null) {
             updateDependencyStack(dependencyStack, currentLevel);
-            addDependencyToGraph(graph, dependencyStack, dependency, currentLevel);
-            dependencyStack.push(dependency);
+            if (currentLevel > 0) {
+                addDependencyToGraph(graph, dependencyStack, dependency, currentLevel);
+                dependencyStack.push(dependency);
+            }
         }
     }
 
@@ -76,15 +85,8 @@ public class CargoDependencyTransformer {
 
         String name = parts[0];
         String version = parts[1].replace("v", "");
-        ExternalId externalId = createExternalId(name, version);
+        ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.CRATES, name, version);
 
         return new Dependency(name, version, externalId);
-    }
-
-    private ExternalId createExternalId(String name, String version) {
-        ExternalId externalId = new ExternalId(Forge.CRATES);
-        externalId.setName(name);
-        externalId.setVersion(version);
-        return externalId;
     }
 }
