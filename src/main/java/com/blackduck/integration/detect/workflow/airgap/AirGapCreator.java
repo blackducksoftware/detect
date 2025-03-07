@@ -21,7 +21,6 @@ public class AirGapCreator {
 
     private final AirGapPathFinder airGapPathFinder;
     private final EventSystem eventSystem;
-    private final GradleAirGapCreator gradleAirGapCreator;
     private final NugetInspectorAirGapCreator nugetAirGapCreator;
     private final DockerAirGapCreator dockerAirGapCreator;
     private final DetectFontAirGapCreator detectFontAirGapCreator;
@@ -30,7 +29,6 @@ public class AirGapCreator {
     public AirGapCreator(
         AirGapPathFinder airGapPathFinder,
         EventSystem eventSystem,
-        GradleAirGapCreator gradleAirGapCreator,
         NugetInspectorAirGapCreator nugetAirGapCreator,
         DockerAirGapCreator dockerAirGapCreator,
         DetectFontAirGapCreator detectFontAirGapCreator,
@@ -38,7 +36,6 @@ public class AirGapCreator {
     ) {
         this.airGapPathFinder = airGapPathFinder;
         this.eventSystem = eventSystem;
-        this.gradleAirGapCreator = gradleAirGapCreator;
         this.nugetAirGapCreator = nugetAirGapCreator;
         this.dockerAirGapCreator = dockerAirGapCreator;
         this.detectFontAirGapCreator = detectFontAirGapCreator;
@@ -109,13 +106,6 @@ public class AirGapCreator {
         logger.info("Installing font dependencies.");
         File fontFolder = airGapPathFinder.createRelativeFontsFile(zipFolder);
         detectFontAirGapCreator.installFonts(fontFolder);
-
-        logger.info(ReportConstants.RUN_SEPARATOR);
-
-        logger.info("Installing gradle dependencies.");
-        File gradleTemp = airGapPathFinder.createRelativePackagedInspectorsFile(zipFolder, AirGapPathFinder.GRADLE + "-temp");
-        File gradleTarget = airGapPathFinder.createRelativePackagedInspectorsFile(zipFolder, AirGapPathFinder.GRADLE);
-        gradleAirGapCreator.installGradleDependencies(gradleTemp, gradleTarget);
 
         logger.info(ReportConstants.RUN_SEPARATOR);
 

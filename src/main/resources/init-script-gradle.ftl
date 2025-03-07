@@ -8,33 +8,6 @@ import org.gradle.api.Task
 import org.gradle.api.execution.TaskExecutionListener
 import org.gradle.api.tasks.TaskState
 
-initscript {
-    repositories {
-<#if airGapLibsPath?has_content>
-        flatDir {
-            dirs '${airGapLibsPath}'
-        }
-<#else>
-        mavenLocal()
-        maven {
-            name 'GradleInspectorRepository'
-            url '${customRepositoryUrl}'
-        }
-</#if>
-    }
-
-    dependencies {
-<#if airGapLibsPath?has_content>
-        new File('${airGapLibsPath}').eachFile {
-            String fileName = it.name.find('.*\\.jar')?.replace('.jar', '')
-            if (fileName) {
-                classpath name: fileName
-            }
-        }
-</#if>
-    }
-}
-
 Set<String> projectNameExcludeFilter = convertStringToSet('${excludedProjectNames}')
 Set<String> projectNameIncludeFilter = convertStringToSet('${includedProjectNames}')
 Set<String> projectPathExcludeFilter = convertStringToSet('${excludedProjectPaths}')
