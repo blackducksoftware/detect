@@ -495,7 +495,8 @@ public class DetectConfigurationFactory {
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_SWIFT_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_SBT_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_LERNA_PATH),
-            detectConfiguration.getPathOrNull(DetectProperties.DETECT_OPAM_PATH)
+            detectConfiguration.getPathOrNull(DetectProperties.DETECT_OPAM_PATH),
+            detectConfiguration.getPathOrNull(DetectProperties.DETECT_CARGO_PATH)
         );
     }
 
