@@ -219,4 +219,4 @@ The requirements.txt file was created using encoding systems other than UTF-8.
 
 To resolve this issue, the requirements.txt file must be created using UTF-8 encoding before the [detect_product_short] inspection is run on the source code.
 
-Note: [PIP uses UTF-8 as the default encoding when creating requirements.txt files](https://pip.pypa.io/en/stable/reference/requirements-file-format/#encoding).
+<note type="note">See [PIP uses UTF-8 as the default encoding when creating requirements.txt files](https://pip.pypa.io/en/stable/reference/requirements-file-format/#encoding).</note>

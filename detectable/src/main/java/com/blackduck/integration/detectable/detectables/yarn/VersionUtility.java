@@ -2,9 +2,8 @@ package com.blackduck.integration.detectable.detectables.yarn;
 
 import com.blackduck.integration.bdio.graph.builder.LazyIdSource;
 import com.blackduck.integration.util.NameVersion;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.regex.*;
 
 public class VersionUtility {
     
@@ -20,7 +19,15 @@ public class VersionUtility {
                 sb.append(cleanVersion.charAt(i));
             }
         }
-        return new Version(sb.toString().split("\\.", 3));
+        Matcher matcher = Pattern.compile("(\\d+(?:\\.\\d+)+)(?!.*\\d+\\.\\d+)").matcher(sb.toString());
+        List<String> parts = new ArrayList<>();
+        if (matcher.find()) {
+            Matcher versionMatcher = Pattern.compile("(\\d+)").matcher(matcher.group(1));
+            while (parts.size() < 3 && versionMatcher.find()) {
+                parts.add(versionMatcher.group());
+            }
+        }
+        return new Version(parts.toArray(new String[0]));
     }
     
     Optional<String> resolveYarnVersion(List<Version> versionList, String version) {

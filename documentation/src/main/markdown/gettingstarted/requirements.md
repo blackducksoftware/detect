@@ -20,7 +20,7 @@ Visit the [Black Duck release page](https://github.com/blackducksoftware/hub/rel
 * The [bd_product_short] notifications module must be enabled.
 * A [bd_product_short] user with the [required roles](usersandroles.md).
 * On Alpine Linux you will also need to override the Java installation used by the [blackduck_signature_scanner_name] as
-described [here](../troubleshooting/solutions.md#black-duck-signature-scanner-fails-on-alpine-linux).
+described [here](../troubleshooting/solutions.md#ariaid-title29).
 
 ## Project type-specific requirements
 

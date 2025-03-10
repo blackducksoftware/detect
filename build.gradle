@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '10.4.0-SNAPSHOT'
+version = '10.4.0-SIGQA9-SNAPSHOT'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
@@ -153,7 +153,7 @@ dependencies {
     implementation 'com.blackducksoftware.bdio:bdio-protobuf:3.2.10'
     implementation "com.blackduck.integration:blackduck-common:${blackDuckCommonVersion}"
     implementation 'com.blackduck.integration:blackduck-upload-common:4.1.2'
-    implementation 'com.synopsys:method-analyzer-core:0.2.9'
+    implementation 'com.blackducksoftware:method-analyzer-core:1.0.1'
     implementation "${locatorGroup}:${locatorModule}:2.0.0"
 
     implementation 'org.apache.maven.shared:maven-invoker:3.0.0'
@@ -265,7 +265,7 @@ task signJar() {
     finalizedBy 'verifyJar'
     doLast {
         exec {
-            commandLine 'signing-client', '--username', "${System.getenv('SIGNING_USER')}", '--password', "env:SIGNING_TOKEN", '--server', "${System.getenv('SIGNING_SERVER')}", '--port', '8000', '--signer', 'jarsigner', '--output', "${createArtifactName()}", "${createArtifactName()}"
+            commandLine 'signing-client', '--username', "${System.getenv('SIGNING_USER')}", '--password', "env:SIGNING_TOKEN", '--server', "${System.getenv('SIGNING_SERVER')}", '--port', "${System.getenv('SIGNING_SERVER_PORT')}", '--signer', 'jarsigner', '--output', "${createArtifactName()}", "${createArtifactName()}"
         }
     }
 }
