@@ -582,6 +582,13 @@ public class DetectProperties {
             .setGroups(DetectGroup.CONDA, DetectGroup.GLOBAL)
             .build();
 
+    public static final NullablePathProperty DETECT_CARGO_PATH =
+        NullablePathProperty.newBuilder("detect.cargo.path")
+            .setInfo("Cargo Executable", DetectPropertyFromVersion.VERSION_10_4_0)
+            .setHelp("The path to the cargo executable.")
+            .setGroups(DetectGroup.CARGO, DetectGroup.GLOBAL)
+            .build();
+
     public static final NullablePathProperty DETECT_CPAN_PATH =
         NullablePathProperty.newBuilder("detect.cpan.path")
             .setInfo("cpan Executable", DetectPropertyFromVersion.VERSION_3_0_0)

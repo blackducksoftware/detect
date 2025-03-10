@@ -9,6 +9,7 @@ import com.blackduck.integration.detectable.detectable.inspector.ProjectInspecto
 import com.blackduck.integration.detectable.detectable.inspector.nuget.NugetInspectorResolver;
 import com.blackduck.integration.detectable.detectables.bazel.BazelDetectable;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectable;
+import com.blackduck.integration.detectable.detectables.cargo.CargoCliDetectable;
 import com.blackduck.integration.detectable.detectables.cargo.CargoLockDetectable;
 import com.blackduck.integration.detectable.detectables.carthage.CarthageLockDetectable;
 import com.blackduck.integration.detectable.detectables.clang.ClangDetectable;
@@ -118,6 +119,10 @@ public class DetectDetectableFactory {
 
     public CargoLockDetectable createCargoDetectable(DetectableEnvironment environment) {
         return detectableFactory.createCargoDetectable(environment);
+    }
+
+    public CargoCliDetectable createCargoCliDetectable(DetectableEnvironment environment) {
+        return detectableFactory.createCargoCliDetectable(environment, detectExecutableResolver);
     }
 
     public CarthageLockDetectable createCarthageDetectable(DetectableEnvironment environment) {
