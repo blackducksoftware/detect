@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 public class CargoCliExtractor {
+    private static final List<String> CARGO_TREE_COMMAND = Arrays.asList("tree", "--no-dedupe", "--prefix", "depth");
     private final DetectableExecutableRunner executableRunner;
     private final CargoDependencyGraphTransformer cargoDependencyTransformer;
     private final CargoTomlParser cargoTomlParser;
@@ -32,8 +33,7 @@ public class CargoCliExtractor {
     }
 
     public Extraction extract(File directory, ExecutableTarget cargoExe, File cargoTomlFile) throws ExecutableFailedException, IOException {
-        List<String> commandArguments = Arrays.asList("tree", "--no-dedupe", "--prefix", "depth");
-        ExecutableOutput cargoOutput = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(directory, cargoExe, commandArguments));
+        ExecutableOutput cargoOutput = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(directory, cargoExe, CARGO_TREE_COMMAND));
         List<String> cargoTreeOutput = cargoOutput.getStandardOutputAsList();
 
         DependencyGraph graph = cargoDependencyTransformer.transform(cargoTreeOutput);

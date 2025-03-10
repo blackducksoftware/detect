@@ -582,7 +582,7 @@ public class DetectProperties {
 
     public static final NullablePathProperty DETECT_CARGO_PATH =
         NullablePathProperty.newBuilder("detect.cargo.path")
-            .setInfo("Cargo Executable", DetectPropertyFromVersion.VERSION_10_3_0)
+            .setInfo("Cargo Executable", DetectPropertyFromVersion.VERSION_10_4_0)
             .setHelp("The path to the cargo executable.")
             .setGroups(DetectGroup.CARGO, DetectGroup.GLOBAL)
             .build();

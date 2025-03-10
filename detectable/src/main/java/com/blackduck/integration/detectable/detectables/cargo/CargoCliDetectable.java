@@ -17,6 +17,7 @@ import com.blackduck.integration.detectable.detectable.exception.DetectableExcep
 import com.blackduck.integration.detectable.detectable.executable.DetectableExecutableRunner;
 import com.blackduck.integration.detectable.detectable.result.CargoExecutableVersionMismatchResult;
 import com.blackduck.integration.detectable.detectable.result.DetectableResult;
+import com.blackduck.integration.detectable.detectable.result.ExecutableNotFoundDetectableResult;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 import com.blackduck.integration.detectable.detectable.executable.resolver.CargoResolver;
@@ -57,9 +58,14 @@ public class CargoCliDetectable extends Detectable {
     public DetectableResult extractable() throws DetectableException {
         Requirements requirements = new Requirements(fileFinder, environment);
         cargoExe = requirements.executable(() -> cargoResolver.resolveCargo(environment), "cargo");
-        if (cargoExe != null && !isCargoVersionValid(cargoExe)) {
-            return new CargoExecutableVersionMismatchResult(environment.getDirectory().getAbsolutePath());
+        if (cargoExe == null) {
+            return new ExecutableNotFoundDetectableResult("cargo");
         }
+
+        if (!isCargoVersionValid(cargoExe)) {
+            return new CargoExecutableVersionMismatchResult(environment.getDirectory().getAbsolutePath(), MINIMUM_CARGO_VERSION);
+        }
+
         return requirements.result();
     }
 
