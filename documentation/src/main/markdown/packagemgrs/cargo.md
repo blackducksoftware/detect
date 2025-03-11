@@ -2,17 +2,17 @@
 
 ## Overview  
 
-[detect_product_short] now includes two Cargo detectors:
+[detect_product_short] includes two Cargo detectors:
 
-* **Cargo CLI Detector** (New)  
+* **Cargo CLI Detector** 
 * **Cargo Lockfile Detector**  
 
 ## Cargo CLI Detector  
 
-A new cli detector for Cargo projects, which extracts **direct and transitive dependencies** using the `cargo tree` command. This improves the accuracy of dependency detection over the previous flat-list detection.
+Detector for Cargo projects, extracts **direct and transitive dependencies** using the `cargo tree` command.
 
 **Requirements:**  
-* Cargo version **1.44.0+** is required (as `cargo tree` was introduced in this version).  
+* Cargo version 1.44.0+ required to support `cargo tree`.  
 * A `Cargo.toml` file must be present in the project.  
 * A valid `cargo` executable must be available on the system.
 
