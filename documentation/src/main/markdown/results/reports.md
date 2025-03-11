@@ -24,7 +24,7 @@ When generating the risk report file, non-alphanumeric characters separating por
 
 ### Air Gap
 
-Normally font files used in creating the risk report pdf are downloaded from Artifactory. If you are using the [detect_product_short] air gap, the font files are retrieved from a directory called 'fonts' that is a child to the root of the air gap directory.
+Normally, font files used in creating the risk report PDF are downloaded from Artifactory. If you are using the [detect_product_short] air gap zip, the font files are retrieved from a directory called 'fonts' that is a child to the root of the air gap directory
 
 To specify custom fonts when using the [detect_product_short] air gap zip, you must unzip the produced airgap zip file and then place a .ttf font file in a directory called "custom-regular" and/or "custom-bold" that is a child to the directory airGapRoot/fonts.
 

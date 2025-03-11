@@ -22,7 +22,7 @@ Identification of malware displayed to [bd_product_short] users will include fil
  * [detect_product_short] 9.6.0 or greater.
  * Must be running [bd_product_short] 2024.4.0 or greater.
  * The [threat_intel] service container (rl-service) must be running.
- * [threat_intel] scans require network connectivity (Air gap mode is not supported).
+ * [threat_intel] scans require network connectivity (air gap mode is not supported).
     * For more network requirement information please consult the documentation provided by [bd_product_short] under the topic:
 <xref href="Require_Network.dita" scope="peer"> Network requirements
 <data name="facets" value="pubname=bd-hub"/></xref>   

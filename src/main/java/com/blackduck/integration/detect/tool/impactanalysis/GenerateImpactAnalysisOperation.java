@@ -10,7 +10,7 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.synopsys.method.analyzer.core.MethodUseAnalyzer;
+import com.blackduck.method.analyzer.core.MethodUseAnalyzer;
 
 public class GenerateImpactAnalysisOperation {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());

@@ -8,7 +8,7 @@ The best practice for resilience is to add [detect_product_short] on the path, a
 
 1. Download Java and make sure it is on your PATH
 2. Download the version of [detect_product_short] you want to use from https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/detect/
-    * You should download the air-gap zip if you do not want [detect_product_short] to download Inspectors at runtime
+    * You should download the air gap zip if you do not want [detect_product_short] to download Inspectors at runtime
 3. Put the [detect_product_short] jar/zip somewhere you can manage it
     * Examples: 
     *    Mac/Linux: 	$HOME/detect/download/detect-X.X.X.jar
@@ -20,7 +20,7 @@ The best practice for resilience is to add [detect_product_short] on the path, a
 
 1. Download Java and make sure it is on your PATH
 2. Download the version of [detect_product_short] you want to use from https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/detect/
-   * You should download the air-gap zip if you do not want [detect_product_short] to download Inspectors at runtime
+   * You should download the air gap zip if you do not want [detect_product_short] to download Inspectors at runtime
 3. Create a symlink for the [detect_product_short] jar
    *     ln -s $HOME/detect/download/detect-X.X.X.jar $HOME/detect/download/latest-detect.jar
 4. Create a bash script named "detect" with the following content.
@@ -37,7 +37,7 @@ The best practice for resilience is to add [detect_product_short] on the path, a
 
 1. Download Java and make sure it is on your PATH
 2. Download the version of [detect_product_short] you want to use from https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/detect/
-   * You should download the air-gap zip if you do not want [detect_product_short] to download Inspectors at runtime
+   * You should download the air gap zip if you do not want [detect_product_short] to download Inspectors at runtime
 3. Create a symbolic link for the [detect_product_short] jar, called latest-detect.jar
    * Start a command prompt in the folder you downloaded detect.
    * Run the following: mklink latest-detect.jar detect-X.X.X.jar

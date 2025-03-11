@@ -26,6 +26,7 @@ import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.data.DockerTargetData;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
+import com.blackduck.integration.detect.lifecycle.run.step.container.PreScassContainerScanStepRunner;
 import com.blackduck.integration.detect.lifecycle.run.step.utility.StepHelper;
 import com.blackduck.integration.detect.tool.signaturescanner.operation.SignatureScanOuputResult;
 import com.blackduck.integration.detect.tool.signaturescanner.operation.SignatureScanResult;
@@ -87,7 +88,7 @@ public class RapidModeStepRunner {
             // Check if this is an SCA environment. Stateless Binary Scans are only supported there.
             if (scaaasFilePath.isPresent()) {
                 List<HttpUrl> bdbaResultUrls = new ArrayList<>();
-                invokeBdbaRapidScan(blackDuckRunData, projectVersion, blackDuckUrl, bdbaResultUrls, false, scaaasFilePath.get());
+                invokeBdbaRapidScan(blackDuckRunData, blackDuckUrl, bdbaResultUrls, false, scaaasFilePath.get());
                 processScanResults(bdbaResultUrls, parsedUrls, formattedCodeLocations, DetectTool.BINARY_SCAN.name());
             } else {
                 logger.debug("Stateless binary scan detected but no detect.scaaas.scan.path specified, skipping.");
@@ -101,10 +102,10 @@ public class RapidModeStepRunner {
                 // Check if this is an SCA environment.
                 if (scaaasFilePath.isPresent()) {
                     List<HttpUrl> containerResultUrls = new ArrayList<>();
-                    invokeBdbaRapidScan(blackDuckRunData, projectVersion, blackDuckUrl, containerResultUrls, true, scaaasFilePath.get());
+                    invokeBdbaRapidScan(blackDuckRunData, blackDuckUrl, containerResultUrls, true, scaaasFilePath.get());
                     processScanResults(containerResultUrls, parsedUrls, formattedCodeLocations, DetectTool.CONTAINER_SCAN.name());
                 } else {
-                    ContainerScanStepRunner containerScanStepRunner = new ContainerScanStepRunner(operationRunner, projectVersion, blackDuckRunData, gson);
+                    PreScassContainerScanStepRunner containerScanStepRunner = new PreScassContainerScanStepRunner(operationRunner, projectVersion, blackDuckRunData, gson);
                     logger.debug("Invoking stateless container scan.");
                     Optional<UUID> scanId = containerScanStepRunner.invokeContainerScanningWorkflow();
                     if (scanId.isPresent()) {
@@ -152,7 +153,7 @@ public class RapidModeStepRunner {
         }
     }
 
-    private void invokeBdbaRapidScan(BlackDuckRunData blackDuckRunData, NameVersion projectVersion, String blackDuckUrl,
+    private void invokeBdbaRapidScan(BlackDuckRunData blackDuckRunData, String blackDuckUrl,
             List<HttpUrl> parsedUrls, boolean isContainerScan, String scaasFilePath)
             throws IntegrationException, IOException, InterruptedException, OperationException, DetectUserFriendlyException {
         // Generate the UUID we use to communicate with BDBA

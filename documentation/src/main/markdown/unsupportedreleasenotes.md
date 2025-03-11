@@ -71,7 +71,7 @@
 
 ### Changed features
 
-* Updated [company_name] [solution_name] to package Air Gap with the latest Nuget Inspectors: IntegrationNugetInspector:3.1.1, BlackduckNugetInspector:1.1.1, NugetDotnet3Inspector:1.1.1,
+* Updated [company_name] [solution_name] to package air gap with the latest Nuget Inspectors: IntegrationNugetInspector:3.1.1, BlackduckNugetInspector:1.1.1, NugetDotnet3Inspector:1.1.1,
   NugetDotnet5Inspector:1.1.1.
 
 ## Version 7.11.0
@@ -201,7 +201,7 @@
 * Maven defaults to the legacy buildless parser, Project Inspector must be enabled with detect.maven.buildless.legacy.mode. In version 8, it will default to Project Inspector.
 * Deprecated detect.maven.include.plugins as Project Inspector does not support plugins. In version 8, we will only support the Project Inspector Maven implementation which will
   have its own configuration mechanism.
-* The Air Gap Zip generation options no longer support individual package managers. Instead, either a FULL air gap can be created, or a NO_DOCKER air gap can be created. This is to
+* The air gap zip generation options no longer support individual package managers. Instead, either a FULL air gap can be created, or a NO_DOCKER air gap can be created. This is to
   help support project inspector which spans multiple package managers.
 
 ### Resolved issues
@@ -847,7 +847,7 @@
 * Cosmetic changes: from Black Duck Detect to Synopsys Detect.
 * Streamlined execution of Coverity and Black Duck scans through a single continuous integration job.
 * Updated location of the shell/PowerShell scripts.
-* Updated location of the air-gapped archive.
+* Updated location of the air gap archive.
 
 ## Version 5.1.0
 

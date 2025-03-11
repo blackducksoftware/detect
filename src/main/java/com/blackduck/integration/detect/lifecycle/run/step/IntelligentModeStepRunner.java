@@ -12,22 +12,25 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
 import com.blackduck.integration.blackduck.api.generated.view.ProjectVersionView;
 import com.blackduck.integration.blackduck.codelocation.CodeLocationCreationData;
 import com.blackduck.integration.blackduck.codelocation.binaryscanner.BinaryScanBatchOutput;
-import com.blackduck.integration.blackduck.codelocation.upload.UploadOutput;
-import com.blackduck.integration.blackduck.codelocation.binaryscanner.BinaryScanBatchOutput;
 import com.blackduck.integration.blackduck.codelocation.upload.UploadBatchOutput;
+import com.blackduck.integration.blackduck.codelocation.upload.UploadOutput;
 import com.blackduck.integration.blackduck.service.BlackDuckServicesFactory;
 import com.blackduck.integration.blackduck.service.model.ProjectVersionWrapper;
-import com.blackduck.integration.blackduck.version.BlackDuckVersion;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
 import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.data.DockerTargetData;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
 import com.blackduck.integration.detect.lifecycle.run.operation.blackduck.BdioUploadResult;
+import com.blackduck.integration.detect.lifecycle.run.step.binary.AbstractBinaryScanStepRunner;
+import com.blackduck.integration.detect.lifecycle.run.step.binary.PreScassBinaryScanStepRunner;
+import com.blackduck.integration.detect.lifecycle.run.step.binary.ScassOrBdbaBinaryScanStepRunner;
+import com.blackduck.integration.detect.lifecycle.run.step.container.AbstractContainerScanStepRunner;
+import com.blackduck.integration.detect.lifecycle.run.step.container.PreScassContainerScanStepRunner;
+import com.blackduck.integration.detect.lifecycle.run.step.container.ScassOrBdbaContainerScanStepRunner;
 import com.blackduck.integration.detect.lifecycle.run.step.utility.StepHelper;
 import com.blackduck.integration.detect.tool.iac.IacScanCodeLocationData;
 import com.blackduck.integration.detect.tool.impactanalysis.service.ImpactAnalysisBatchOutput;
@@ -37,8 +40,8 @@ import com.blackduck.integration.detect.workflow.bdio.BdioResult;
 import com.blackduck.integration.detect.workflow.blackduck.codelocation.CodeLocationAccumulator;
 import com.blackduck.integration.detect.workflow.blackduck.codelocation.CodeLocationResults;
 import com.blackduck.integration.detect.workflow.blackduck.codelocation.CodeLocationWaitData;
-import com.blackduck.integration.detect.workflow.blackduck.integratedmatching.model.ScanCountsPayload;
 import com.blackduck.integration.detect.workflow.blackduck.integratedmatching.ScanCountsPayloadCreator;
+import com.blackduck.integration.detect.workflow.blackduck.integratedmatching.model.ScanCountsPayload;
 import com.blackduck.integration.detect.workflow.report.util.ReportConstants;
 import com.blackduck.integration.detect.workflow.result.BlackDuckBomDetectResult;
 import com.blackduck.integration.detect.workflow.result.DetectResult;
@@ -48,6 +51,7 @@ import com.blackduck.integration.detect.workflow.status.OperationType;
 import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.rest.HttpUrl;
 import com.blackduck.integration.util.NameVersion;
+import com.google.gson.Gson;
 
 public class IntelligentModeStepRunner {
     private final OperationRunner operationRunner;
@@ -56,7 +60,6 @@ public class IntelligentModeStepRunner {
     private final Gson gson;
     private final ScanCountsPayloadCreator scanCountsPayloadCreator;
     private final String detectRunUuid;
-    private static final BlackDuckVersion MIN_MULTIPART_BINARY_VERSION = new BlackDuckVersion(2024, 7, 0);
 
     public IntelligentModeStepRunner(OperationRunner operationRunner, StepHelper stepHelper, Gson gson, ScanCountsPayloadCreator scanCountsPayloadCreator, String detectRunUuid) {
         this.operationRunner = operationRunner;
@@ -137,23 +140,14 @@ public class IntelligentModeStepRunner {
             codeLocationAccumulator.addNonWaitableCodeLocation(signatureScannerCodeLocationResult.getNonWaitableCodeLocationData());
         });
 
-        stepHelper.runToolIfIncluded(DetectTool.BINARY_SCAN, "Binary Scanner", () -> {
-            BinaryScanStepRunner binaryScanStepRunner = new BinaryScanStepRunner(operationRunner);
-            invokeBinaryScanningWorkflow(DetectTool.BINARY_SCAN, binaryScanStepRunner, dockerTargetData, projectNameVersion, blackDuckRunData, binaryTargets, scanIdsToWaitFor, codeLocationAccumulator, mustWaitAtBomSummaryLevel);
+        stepHelper.runToolIfIncluded(DetectTool.BINARY_SCAN, "Binary Scanner", () -> {           
+            invokeBinaryScanningWorkflow(DetectTool.BINARY_SCAN, dockerTargetData, projectNameVersion, blackDuckRunData, binaryTargets, scanIdsToWaitFor, codeLocationAccumulator, mustWaitAtBomSummaryLevel);
         });
 
         stepHelper.runToolIfIncluded(
             DetectTool.CONTAINER_SCAN,
             "Container Scanner",
-            () -> {
-                ContainerScanStepRunner containerScanStepRunner = new ContainerScanStepRunner(operationRunner, projectNameVersion, blackDuckRunData, gson);
-                logger.debug("Invoking intelligent persistent container scan.");
-                Optional<UUID> scanId = containerScanStepRunner.invokeContainerScanningWorkflow();
-                scanId.ifPresent(uuid -> scanIdsToWaitFor.add(uuid.toString()));
-                Set<String> containerScanCodeLocations = new HashSet<>();
-                containerScanCodeLocations.add(containerScanStepRunner.getCodeLocationName());
-                codeLocationAccumulator.addNonWaitableCodeLocation(containerScanCodeLocations);
-            }
+            () -> invokeContainerScanningWorkflow(scanIdsToWaitFor, codeLocationAccumulator, blackDuckRunData, projectNameVersion)
         );
 
         stepHelper.runToolIfIncludedWithCallbacks(
@@ -219,7 +213,6 @@ public class IntelligentModeStepRunner {
 
     private void invokeBinaryScanningWorkflow(
         DetectTool detectTool,
-        BinaryScanStepRunner binaryScanStepRunner,
         DockerTargetData dockerTargetData,
         NameVersion projectNameVersion,
         BlackDuckRunData blackDuckRunData,
@@ -229,25 +222,47 @@ public class IntelligentModeStepRunner {
         AtomicBoolean mustWaitAtBomSummaryLevel
     )
         throws IntegrationException, OperationException {
+        logger.debug("Invoking intelligent persistent binary scan.");
+        
+        AbstractBinaryScanStepRunner binaryScanStepRunner = CommonScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion()) ?
+            new ScassOrBdbaBinaryScanStepRunner(operationRunner) :
+            new PreScassBinaryScanStepRunner(operationRunner);
 
-        if (isMultipartUploadPossible(blackDuckRunData)) {
-            Optional<String> scanId =
-                binaryScanStepRunner.runBinaryScan(dockerTargetData, projectNameVersion, blackDuckRunData, binaryTargets);
-
-            if (scanId.isPresent()) {
-                scanIdsToWaitFor.add(scanId.get());
-            }
+        Optional<UUID> scanId = binaryScanStepRunner.invokeBinaryScanningWorkflow(dockerTargetData, projectNameVersion, 
+                blackDuckRunData, binaryTargets);
+        
+        if (scanId.isPresent()) {
+            scanIdsToWaitFor.add(scanId.get().toString());
         } else {
-            Optional<CodeLocationCreationData<BinaryScanBatchOutput>> codeLocationData =
-                binaryScanStepRunner.runLegacyBinaryScan(dockerTargetData, projectNameVersion, blackDuckRunData, binaryTargets);
-
-            if (codeLocationData.isPresent()) {
-                codeLocationAccumulator.addWaitableCodeLocations(detectTool, codeLocationData.get());
+            Optional<CodeLocationCreationData<BinaryScanBatchOutput>> codeLocations = binaryScanStepRunner.getCodeLocations();
+            
+            if (codeLocations.isPresent()) {
+                codeLocationAccumulator.addWaitableCodeLocations(detectTool, codeLocations.get());
                 mustWaitAtBomSummaryLevel.set(true);
             }
         }
+    }
 
+    private void invokeContainerScanningWorkflow(
+        Set<String> scanIdsToWaitFor,
+        CodeLocationAccumulator codeLocationAccumulator,
+        BlackDuckRunData blackDuckRunData,
+        NameVersion projectNameVersion
+    ) throws IntegrationException, OperationException{
+        logger.debug("Invoking intelligent persistent container scan.");
 
+        AbstractContainerScanStepRunner containerScanStepRunner;
+        if (CommonScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion())) {
+            containerScanStepRunner = new ScassOrBdbaContainerScanStepRunner(operationRunner, projectNameVersion, blackDuckRunData, gson);
+        } else {
+            containerScanStepRunner = new PreScassContainerScanStepRunner(operationRunner, projectNameVersion, blackDuckRunData, gson);
+        }
+
+        Optional<UUID> scanId = containerScanStepRunner.invokeContainerScanningWorkflow();
+        scanId.ifPresent(uuid -> scanIdsToWaitFor.add(uuid.toString()));
+        Set<String> containerScanCodeLocations = new HashSet<>();
+        containerScanCodeLocations.add(containerScanStepRunner.getCodeLocationName());
+        codeLocationAccumulator.addNonWaitableCodeLocation(containerScanCodeLocations);
     }
 
     private void pollForBomScanCompletion(BlackDuckRunData blackDuckRunData, ProjectVersionWrapper projectVersion,
@@ -399,10 +414,5 @@ public class IntelligentModeStepRunner {
             operationRunner.publishReport(new ReportDetectResult("Notices Report", noticesFile.getCanonicalPath()));
 
         }
-    }
-    
-    private boolean isMultipartUploadPossible(BlackDuckRunData blackDuckRunData) {
-        Optional<BlackDuckVersion> blackDuckVersion = blackDuckRunData.getBlackDuckServerVersion();
-        return blackDuckVersion.isPresent() && blackDuckVersion.get().isAtLeast(MIN_MULTIPART_BINARY_VERSION);
     }
 }

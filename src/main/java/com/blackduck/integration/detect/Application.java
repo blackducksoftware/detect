@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -64,7 +65,10 @@ public class Application implements ApplicationRunner {
     
     private static final String STATUS_JSON_FILE_NAME = "status.json";
     public static final Long START_TIME = System.currentTimeMillis();
-
+    private static final String SPRING_CONFIG_LOCATION_ENV = "SPRING_CONFIG_LOCATION";
+    private static final String SPRING_CONFIG_LOCATION_PROPERTY = "spring.config.location";
+    private static final String LOGGING_GROUP_DETECT = "logging.group.detect";
+    private static final String DEFAULT_LOGGING_GROUP = "com.blackduck.integration";
     private final ConfigurableEnvironment environment;
 
     @Autowired
@@ -82,6 +86,7 @@ public class Application implements ApplicationRunner {
     }
 
     public static void main(String[] args) {
+        configureLoggingGroupIfNeeded(args);
         SpringApplicationBuilder builder = new SpringApplicationBuilder(Application.class);
         builder.logStartupInfo(false);
         boolean selfUpdated = false;
@@ -102,6 +107,17 @@ public class Application implements ApplicationRunner {
                 System.exit(ExitCodeType.FAILURE_UNKNOWN_ERROR.getExitCode());
             }
         }
+    }
+
+    private static void configureLoggingGroupIfNeeded(String[] args) {
+        if (System.getenv(SPRING_CONFIG_LOCATION_ENV) != null || containsSpringConfigLocation(args)) {
+            System.setProperty(LOGGING_GROUP_DETECT, DEFAULT_LOGGING_GROUP);
+        }
+    }
+
+    private static boolean containsSpringConfigLocation(String[] args) {
+        return Arrays.stream(args)
+            .anyMatch(arg -> arg.contains(SPRING_CONFIG_LOCATION_PROPERTY));
     }
 
     @Override

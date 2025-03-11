@@ -36,6 +36,7 @@ public class DirectoryManager {
     private enum RunDirectory {
         BDIO("bdio"),
         BINARY("binary"),
+        CONTAINER("container"),
         CSV("csv"),
         EXTRACTION("extractions"),
         IMPACT_ANALYSIS("impact-analysis"),
@@ -176,6 +177,10 @@ public class DirectoryManager {
 
     public File getBinaryOutputDirectory() {
         return getRunDirectory(RunDirectory.BINARY);
+    }
+
+    public File getContainerOutputDirectory() {
+        return getRunDirectory(RunDirectory.CONTAINER);
     }
 
     public File getImpactAnalysisOutputDirectory() {

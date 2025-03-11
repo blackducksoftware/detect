@@ -4,10 +4,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import com.blackduck.integration.detectable.util.JsonSanitizer;
+import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
 import com.blackduck.integration.detectable.detectables.npm.packagejson.model.YarnPackageJson;
 
 public class PackageJsonReader {
@@ -20,7 +21,7 @@ public class PackageJsonReader {
     }
 
     public NullSafePackageJson read(String packageJsonText) {
-        YarnPackageJson rawPackageJson = gson.fromJson(packageJsonText, YarnPackageJson.class);
+        YarnPackageJson rawPackageJson = gson.fromJson(JsonSanitizer.sanitize(packageJsonText), YarnPackageJson.class);
         return new NullSafePackageJson(rawPackageJson);
     }
 

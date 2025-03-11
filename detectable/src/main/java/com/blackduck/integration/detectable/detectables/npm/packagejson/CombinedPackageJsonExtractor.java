@@ -10,9 +10,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import com.blackduck.integration.detectable.util.JsonSanitizer;
+import com.google.gson.Gson;
 import org.apache.commons.io.FileUtils;
 
-import com.google.gson.Gson;
 import com.blackduck.integration.detectable.detectables.npm.packagejson.model.PackageJson;
 
 public class CombinedPackageJsonExtractor {
@@ -31,7 +32,7 @@ public class CombinedPackageJsonExtractor {
             return null;
         }
         
-        PackageJson packageJson = Optional.ofNullable(packageJsonText)
+        PackageJson packageJson = Optional.ofNullable(JsonSanitizer.sanitize(packageJsonText))
             .map(content -> gson.fromJson(content, PackageJson.class))
             .orElse(null);
         
@@ -86,7 +87,6 @@ public class CombinedPackageJsonExtractor {
         
         return combinedPackageJson;
     }
-
 
     /**
      * Takes an absolute path to a workspace and converts it to a relative one for
