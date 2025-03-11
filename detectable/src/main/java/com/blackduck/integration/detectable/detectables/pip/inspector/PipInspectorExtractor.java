@@ -17,6 +17,7 @@ import com.blackduck.integration.detectable.detectables.pip.inspector.model.Name
 import com.blackduck.integration.detectable.detectables.pip.inspector.parser.PipInspectorTreeParser;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.util.ToolVersionLogger;
+import com.blackduck.integration.executable.ExecutableOutput;
 import com.blackduck.integration.executable.ExecutableRunnerException;
 
 public class PipInspectorExtractor {
@@ -44,6 +45,11 @@ public class PipInspectorExtractor {
         Extraction extractionResult;
         try {
             String projectName = getProjectName(directory, pythonExe, setupFile, providedProjectName);
+
+            if (StringUtils.isEmpty(projectName) && requirementFilePaths.isEmpty()) {
+                return new Extraction.Builder().failure("Unable to run the Pip Inspector without a project name or a requirements file").build();
+            }
+
             List<CodeLocation> codeLocations = new ArrayList<>();
             String projectVersion = null;
 
@@ -57,7 +63,7 @@ public class PipInspectorExtractor {
 
             for (Path requirementFilePath : requirementsPaths) {
                 List<String> inspectorOutput = runInspector(directory, pythonExe, pipInspector, projectName, requirementFilePath);
-                Optional<NameVersionCodeLocation> result = pipInspectorTreeParser.parse(inspectorOutput, directory.toString());
+                Optional<NameVersionCodeLocation> result = pipInspectorTreeParser.parse(inspectorOutput, directory.toString(), StringUtils.isNotEmpty(projectName));
                 if (result.isPresent()) {
                     codeLocations.add(result.get().getCodeLocation());
                     String potentialProjectVersion = result.get().getProjectVersion();
@@ -104,8 +110,11 @@ public class PipInspectorExtractor {
 
         if (StringUtils.isBlank(projectName) && setupFile != null && setupFile.exists()) {
             List<String> pythonArguments = Arrays.asList(setupFile.getAbsolutePath(), "--name");
-            List<String> output = executableRunner.execute(ExecutableUtils.createFromTarget(directory, pythonExe, pythonArguments)).getStandardOutputAsList();
-            projectName = output.get(output.size() - 1).replace('_', '-').trim();
+            ExecutableOutput executableOutput = executableRunner.execute(ExecutableUtils.createFromTarget(directory, pythonExe, pythonArguments));
+            if (executableOutput.getReturnCode() == 0) {
+                List<String> output = executableOutput.getStandardOutputAsList();
+                projectName = output.get(output.size() - 1).replace('_', '-').trim();
+            }
         }
 
         return projectName;
