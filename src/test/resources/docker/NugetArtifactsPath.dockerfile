@@ -1,9 +1,13 @@
 FROM mcr.microsoft.com/dotnet/sdk:7.0
 
+ARG ARTIFACTORY_URL
+
 ENV SRC_DIR=/opt/project/src
 
-RUN apt-get update
+RUN apt update \
+   && apt install -y vim
 
+RUN apt-get install -y git bash wget unzip
 # Install java
 RUN mkdir -p /usr/share/man/man1/
 # Above due to: https://github.com/geerlingguy/ansible-role-java/issues/64

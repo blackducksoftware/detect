@@ -18,7 +18,7 @@ import com.blackduck.integration.detect.battery.docker.util.DockerAssertions;
 import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detector.base.DetectorType;
 
-@Tag("integration")
+//@Tag("integration")
 public class NugetInspectorTests {
 
     private static final String PROJECT_NAME = "nuget-CPM-docker";
