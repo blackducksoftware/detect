@@ -258,7 +258,11 @@ public class DetectableOptionFactory {
     public PnpmLockOptions createPnpmLockOptions() {
         Set<PnpmDependencyType> excludedDependencyTypes = detectConfiguration.getValue(DetectProperties.DETECT_PNPM_DEPENDENCY_TYPES_EXCLUDED).representedValueSet();
         EnumListFilter<PnpmDependencyType> dependencyTypeFilter = EnumListFilter.fromExcluded(excludedDependencyTypes);
-        return new PnpmLockOptions(dependencyTypeFilter);
+        
+        List<String> excludedDirectories = detectConfiguration.getValue(DetectProperties.DETECT_PNPM_EXCLUDED_DIRECTORIES);
+        List<String> includedDirectories = detectConfiguration.getValue(DetectProperties.DETECT_PNPM_INCLUDED_DIRECTORIES);
+        
+        return new PnpmLockOptions(dependencyTypeFilter, excludedDirectories, includedDirectories);
     }
 
     public PoetryOptions createPoetryOptions() {

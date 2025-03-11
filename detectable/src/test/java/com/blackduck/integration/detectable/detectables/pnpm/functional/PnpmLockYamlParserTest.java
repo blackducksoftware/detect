@@ -2,6 +2,7 @@ package com.blackduck.integration.detectable.detectables.pnpm.functional;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -15,6 +16,7 @@ import com.google.gson.Gson;
 import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
+import com.blackduck.integration.detectable.detectables.pnpm.lockfile.PnpmLockOptions;
 import com.blackduck.integration.detectable.detectables.pnpm.lockfile.model.PnpmDependencyType;
 import com.blackduck.integration.detectable.detectables.pnpm.lockfile.process.PnpmLinkedPackageResolver;
 import com.blackduck.integration.detectable.detectables.pnpm.lockfile.process.PnpmLockYamlParserInitial;
@@ -46,7 +48,9 @@ public class PnpmLockYamlParserTest {
     private void evaluatePnpmLockYamlParsing(File pnpmLockYaml)
             throws IOException, IntegrationException, MultipleFailuresError {
         EnumListFilter<PnpmDependencyType> dependencyTypeFilter = EnumListFilter.excludeNone();
-        PnpmLockYamlParserInitial pnpmLockYamlParser = new PnpmLockYamlParserInitial(dependencyTypeFilter);
+        PnpmLockOptions pnpmLockOptions = new PnpmLockOptions(dependencyTypeFilter, Collections.emptyList(), Collections.emptyList());
+        
+        PnpmLockYamlParserInitial pnpmLockYamlParser = new PnpmLockYamlParserInitial(pnpmLockOptions);
         PnpmLinkedPackageResolver pnpmLinkedPackageResolver = new PnpmLinkedPackageResolver(
             FunctionalTestFiles.asFile("/pnpm"),
             new PackageJsonFiles(new PackageJsonReader(new Gson()))

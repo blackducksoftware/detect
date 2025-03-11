@@ -27,10 +27,13 @@ public class PnpmLockYamlParser {
     }
 
     public List<CodeLocation> parse(File parentFile, PnpmLockYaml pnpmLockYaml,
-            PnpmLinkedPackageResolver linkedPackageResolver, @Nullable NameVersion projectNameVersion)
+            PnpmLinkedPackageResolver linkedPackageResolver, @Nullable NameVersion projectNameVersion, List<String> excludedDirectories, List<String> includedDirectories)
             throws IntegrationException {
         List<CodeLocation> codeLocationsFromImports = createCodeLocationsFromImports(parentFile, pnpmLockYaml,
-                linkedPackageResolver, projectNameVersion);
+                linkedPackageResolver, projectNameVersion, excludedDirectories, includedDirectories);
+        // TODO we likely don't need to exclude the root because that is their workspace
+        // and they have mentioned wanting to exclude below that. But if we do we would 
+        // check and exclude based on parentFile.
         if (codeLocationsFromImports.isEmpty()) {
             return createCodeLocationsFromRoot(parentFile, pnpmLockYaml, projectNameVersion, linkedPackageResolver);
         }
@@ -46,7 +49,7 @@ public class PnpmLockYamlParser {
     }
 
     private List<CodeLocation> createCodeLocationsFromImports(File sourcePath, PnpmLockYaml pnpmLockYaml,
-            PnpmLinkedPackageResolver linkedPackageResolver, @Nullable NameVersion projectNameVersion)
+            PnpmLinkedPackageResolver linkedPackageResolver, @Nullable NameVersion projectNameVersion, List<String> excludedDirectories, List<String> includedDirectories)
             throws IntegrationException {
         if (MapUtils.isEmpty(pnpmLockYaml.importers)) {
             return Collections.emptyList();
@@ -55,6 +58,16 @@ public class PnpmLockYamlParser {
         List<CodeLocation> codeLocations = new LinkedList<>();
         for (Map.Entry<String, PnpmProjectPackage> projectPackageInfo : pnpmLockYaml.importers.entrySet()) {
             String projectKey = projectPackageInfo.getKey();
+            
+            // TODO if projectKey is not included/excluded, etc then continue and don't 
+            // bring in the dependencies.
+            // TODO this is doing direct matches which won't work because we often have the
+            // full path
+            // TODO need to handle wildcards too
+            if (excludedDirectories.contains(projectKey)) {
+                continue;
+            }
+            
             PnpmProjectPackage projectPackage = projectPackageInfo.getValue();
             NameVersion extractedNameVersion = extractProjectInfo(projectPackageInfo, linkedPackageResolver,
                     projectNameVersion);
