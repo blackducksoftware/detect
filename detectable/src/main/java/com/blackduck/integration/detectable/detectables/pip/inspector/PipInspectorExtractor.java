@@ -47,7 +47,7 @@ public class PipInspectorExtractor {
             String projectName = getProjectName(directory, pythonExe, setupFile, providedProjectName);
 
             if (StringUtils.isEmpty(projectName) && requirementFilePaths.isEmpty()) {
-                return new Extraction.Builder().failure("Unable to run the Pip Inspector without a project name nor a requirements file").build();
+                return new Extraction.Builder().failure("Unable to run the Pip Inspector without a project name or a requirements file").build();
             }
 
             List<CodeLocation> codeLocations = new ArrayList<>();
@@ -63,7 +63,7 @@ public class PipInspectorExtractor {
 
             for (Path requirementFilePath : requirementsPaths) {
                 List<String> inspectorOutput = runInspector(directory, pythonExe, pipInspector, projectName, requirementFilePath);
-                Optional<NameVersionCodeLocation> result = pipInspectorTreeParser.parse(inspectorOutput, directory.toString(), !StringUtils.isEmpty(projectName));
+                Optional<NameVersionCodeLocation> result = pipInspectorTreeParser.parse(inspectorOutput, directory.toString(), StringUtils.isNotEmpty(projectName));
                 if (result.isPresent()) {
                     codeLocations.add(result.get().getCodeLocation());
                     String potentialProjectVersion = result.get().getProjectVersion();
