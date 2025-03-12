@@ -4,8 +4,6 @@ public class ArtifactoryConstants {
     public static final String ARTIFACTORY_URL = "https://repo.blackduck.com/";
     public static final String VERSION_PLACEHOLDER = "<VERSION>";
 
-    public static final String GRADLE_INSPECTOR_MAVEN_REPO = ARTIFACTORY_URL + "bds-integration-public-cache/";
-
     public static final String NUGET_INSPECTOR_PROPERTY_REPO = "bds-integrations-release/com/blackduck/integration/detect";
     public static final String NUGET_INSPECTOR_MAC_PROPERTY = "NUGET_INSPECTOR_MAC_LATEST_1";
     public static final String NUGET_INSPECTOR_LINUX_PROPERTY = "NUGET_INSPECTOR_LINUX_LATEST_1";
