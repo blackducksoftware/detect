@@ -9,12 +9,12 @@
 
 ## Cargo CLI Detector  
 
-Detector for Cargo projects, extracts **direct and transitive dependencies** using the `cargo tree` command.
+* Detector for Cargo projects, extracts **direct and transitive dependencies** using the [cargo tree](https://doc.rust-lang.org/cargo/commands/cargo-tree.html) command.
 
 **Requirements:**  
-* Cargo version 1.44.0+ required to support `cargo tree`.  
-* A `Cargo.toml` file must be present in the project.  
 * A valid `cargo` executable must be available on the system.
+* A `Cargo.toml` file must be present in the project.
+* Cargo version 1.44.0+ required to support `cargo tree`.
 
 **Behavior:**  
 * Executes `cargo tree` to analyze dependencies.  
