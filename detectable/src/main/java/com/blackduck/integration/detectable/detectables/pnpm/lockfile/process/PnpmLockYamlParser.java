@@ -15,6 +15,7 @@ import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation
 import com.blackduck.integration.detectable.detectables.pnpm.lockfile.model.PnpmLockYaml;
 import com.blackduck.integration.detectable.detectables.pnpm.lockfile.model.PnpmProjectPackage;
 import com.blackduck.integration.exception.IntegrationException;
+import com.blackduck.integration.util.ExcludedIncludedWildcardFilter;
 import com.blackduck.integration.util.NameVersion;
 
 public class PnpmLockYamlParser {
@@ -61,10 +62,18 @@ public class PnpmLockYamlParser {
             
             // TODO if projectKey is not included/excluded, etc then continue and don't 
             // bring in the dependencies.
-            // TODO this is doing direct matches which won't work because we often have the
-            // full path
-            // TODO need to handle wildcards too
-            if (excludedDirectories.contains(projectKey)) {
+            
+            // TODO potentially declare the filter higher up so we don't do it for each package
+            
+            ExcludedIncludedWildcardFilter workspacesFilter;
+            if (excludedDirectories.isEmpty() && includedDirectories.isEmpty()) {
+                workspacesFilter = null; // Include all
+            } else {
+                workspacesFilter = ExcludedIncludedWildcardFilter.fromCollections(excludedDirectories, includedDirectories);
+            }
+
+            if ((workspacesFilter != null) && !workspacesFilter.shouldInclude(projectKey)) {
+                // skip as the user specified filters and this projectKey is not something they want
                 continue;
             }
             
