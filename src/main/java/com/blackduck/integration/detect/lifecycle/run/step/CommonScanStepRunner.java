@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Map;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -72,29 +74,27 @@ public class CommonScanStepRunner {
 
     public UUID performCommonUpload(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData,
             Optional<File> scanFile, OperationRunner operationRunner, String scanType,
-            ScassScanInitiationResult initResult, String codeLocationName) throws IntegrationException, OperationException, IOException {
+            ScassScanInitiationResult initResult, String codeLocationName) throws IntegrationException, OperationException {
         ScanCreationResponse scanCreationResponse = initResult.getScanCreationResponse();
-        
-        String uploadUrl = scanCreationResponse.getUploadUrl();
+
         UUID scanId = UUID.fromString(scanCreationResponse.getScanId());
         
-        if (StringUtils.isNotEmpty(uploadUrl)) {
-            if (isAccessible(uploadUrl)) {
+        if (StringUtils.isNotEmpty(scanCreationResponse.getUploadUrl())) {
+            try {
                 // This is a SCASS capable server server, SCASS is enabled, and we can access the upload URL.
                 ScassScanStepRunner scassScanStepRunner = createScassScanStepRunner(blackDuckRunData);
                 scassScanStepRunner.runScassScan(Optional.of(initResult.getFileToUpload()), scanCreationResponse);
-                
+
                 return scanId;
-            } else {
+            } catch (IntegrationException e) {
                 // If we can't access the SCASS uplaod URL, we create a new scanId so we can try the BDBA flow.
                 // Note: as of 2025.1.1 there is no endpoint to cancel a SCASS scan.
+                logger.info("Attempted to access SCASS URL but failed. Please allow the url through your firewall to perform SCASS SCAN.");
                 scanId = createFallbackScanId(operationRunner, scanType, projectNameVersion, codeLocationName, scanFile.get().length(), blackDuckRunData);
             }
         }
-        
         // This is a SCASS capable server server but SCASS is not enabled or the GCP URL is inaccessible.
         BdbaScanStepRunner bdbaScanStepRunner = createBdbaScanStepRunner(operationRunner);
-
         bdbaScanStepRunner.runBdbaScan(projectNameVersion, blackDuckRunData, scanFile, scanId.toString(), scanType);
 
         return scanId;
@@ -122,23 +122,27 @@ public class CommonScanStepRunner {
         return operationRunner.initiatePreScassScan(blackDuckRunData, bdioHeaderFile);
     }
 
-    public boolean isAccessible(String uploadUrl) {
-        try {
-            URL url = new URL(uploadUrl);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("HEAD");
-            int responseCode = connection.getResponseCode();
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                return true;
-            } else {
-                logger.debug("Attempted to access SCASS URL but failed. Response code: {}", responseCode);
-                return false;
-            }
-        } catch (IOException e) {
-            logger.debug("Error checking SCASS URL: " + e.getMessage());
-            return false;
-        }
-    }
+//    public boolean isAccessible(ScanCreationResponse scanCreationResponse) {
+//        try {
+//            URL url = new URL(scanCreationResponse.getUploadUrl());
+//            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+//            connection.setRequestMethod("HEAD");
+//            List<Map<String,String>> headers = scanCreationResponse.getUploadUrlData().getHeaders();
+//            for(Map<String,String> header : headers) {
+//                connection.setRequestProperty(header.get("name"), header.get("value"));
+//            }
+//            int responseCode = connection.getResponseCode();
+//            if (responseCode == HttpURLConnection.HTTP_OK) {
+//                return true;
+//            } else {
+//                logger.debug("Attempted to access SCASS URL but failed. Response code: {}", responseCode);
+//                return false;
+//            }
+//        } catch (IOException e) {
+//            logger.debug("Error checking SCASS URL: " + e.getMessage());
+//            return false;
+//        }
+//    }
 
     private File getOutputDirectory(OperationRunner operationRunner, String scanType) throws IntegrationException {
         switch (scanType) {
