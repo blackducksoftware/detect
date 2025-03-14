@@ -118,28 +118,6 @@ public class CommonScanStepRunner {
         return operationRunner.initiatePreScassScan(blackDuckRunData, bdioHeaderFile);
     }
 
-//    public boolean isAccessible(ScanCreationResponse scanCreationResponse) {
-//        try {
-//            URL url = new URL(scanCreationResponse.getUploadUrl());
-//            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-//            connection.setRequestMethod("HEAD");
-//            List<Map<String,String>> headers = scanCreationResponse.getUploadUrlData().getHeaders();
-//            for(Map<String,String> header : headers) {
-//                connection.setRequestProperty(header.get("name"), header.get("value"));
-//            }
-//            int responseCode = connection.getResponseCode();
-//            if (responseCode == HttpURLConnection.HTTP_OK) {
-//                return true;
-//            } else {
-//                logger.debug("Attempted to access SCASS URL but failed. Response code: {}", responseCode);
-//                return false;
-//            }
-//        } catch (IOException e) {
-//            logger.debug("Error checking SCASS URL: " + e.getMessage());
-//            return false;
-//        }
-//    }
-
     private File getOutputDirectory(OperationRunner operationRunner, String scanType) throws IntegrationException {
         switch (scanType) {
             case BINARY:
