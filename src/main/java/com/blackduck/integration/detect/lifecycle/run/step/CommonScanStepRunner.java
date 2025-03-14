@@ -2,10 +2,6 @@ package com.blackduck.integration.detect.lifecycle.run.step;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.Map;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
