@@ -82,7 +82,7 @@ public class CommonScanStepRunner {
                 scassScanStepRunner.runScassScan(Optional.of(initResult.getFileToUpload()), scanCreationResponse);
 
                 return scanId;
-            } catch (IntegrationException e) {
+            } catch (Exception e) {
                 // If we can't access the SCASS uplaod URL, we create a new scanId so we can try the BDBA flow.
                 // Note: as of 2025.1.1 there is no endpoint to cancel a SCASS scan.
                 logger.info("Attempted to access SCASS URL but failed. Please allow the url through your firewall to perform SCASS SCAN.");
