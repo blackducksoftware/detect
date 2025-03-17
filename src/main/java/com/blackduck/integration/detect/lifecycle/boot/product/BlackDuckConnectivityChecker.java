@@ -30,6 +30,7 @@ import com.blackduck.integration.rest.client.ConnectionResult;
 public class BlackDuckConnectivityChecker {
     private static final LinkMultipleResponses<UserGroupView> USERGROUPS = new LinkMultipleResponses<>("usergroups", UserGroupView.class);
 
+    private final String SYS_ADMIN_ROLE = "System Administrator";
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     public BlackDuckConnectivityResult determineConnectivity(BlackDuckServerConfig blackDuckServerConfig)
@@ -51,15 +52,15 @@ public class BlackDuckConnectivityChecker {
 
         String version = "";
         try {
-            version = blackDuckRegistrationService.getBlackDuckServerData().getVersion();
+            UserView userView = userService.findCurrentUser();
+            UserGroupService userGroupService = blackDuckServicesFactory.createUserGroupService();
+            List<RoleAssignmentView> roles = userGroupService.getServerRolesForUser(userView);
+            boolean isAdmin = checkIsAdmin(roles);
+            version = blackDuckRegistrationService.getBlackDuckServerData(isAdmin).getVersion();
             logger.info(String.format("Successfully connected to Black Duck (version %s)!", version));
 
             if (logger.isDebugEnabled()) {
-                UserView userView = userService.findCurrentUser();
                 logger.debug("Connected as: " + userView.getUserName());
-
-                UserGroupService userGroupService = blackDuckServicesFactory.createUserGroupService();
-                List<RoleAssignmentView> roles = userGroupService.getServerRolesForUser(userView);
                 logger.debug("Server Roles: " + roles.stream().map(RoleAssignmentView::getName).distinct().collect(Collectors.joining(", ")));
 
                 BlackDuckApiClient blackDuckApiClient = blackDuckServicesFactory.getBlackDuckApiClient();
@@ -74,5 +75,9 @@ public class BlackDuckConnectivityChecker {
             );
         }
         return  BlackDuckConnectivityResult.success(blackDuckServicesFactory, blackDuckServerConfig, version);
+    }
+
+    private boolean checkIsAdmin(List<RoleAssignmentView> roles) {
+        return roles.stream().anyMatch(role -> SYS_ADMIN_ROLE.equals(role.getName()));
     }
 }
