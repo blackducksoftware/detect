@@ -65,7 +65,7 @@ public class DetectorResultStatusCodeLookup {
         map.put(PackageResolvedNotFoundDetectableResult.class, DetectorStatusCode.EXCLUDED);
         map.put(SetupToolsRequiresNotFoundDetectableResult.class, DetectorStatusCode.SETUP_TOOLS_REQUIRES_NOT_FOUND);
         map.put(SetupToolsNoDependenciesDetectableResult.class, DetectorStatusCode.SETUP_TOOLS_NO_DEPENDENCIES);
-        map.put(CargoExecutableVersionMismatchResult.class, DetectorStatusCode.EXECUTABLE_VERSION_MISMATCH); // TODO write new status code?
+        map.put(CargoExecutableVersionMismatchResult.class, DetectorStatusCode.ATTEMPTED);
 
         return map;
     }
