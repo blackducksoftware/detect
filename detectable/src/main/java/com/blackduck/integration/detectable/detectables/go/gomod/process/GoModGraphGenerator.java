@@ -29,8 +29,8 @@ public class GoModGraphGenerator {
 
     public CodeLocation generateGraph(GoListModule projectModule, GoRelationshipManager goRelationshipManager, GoModDependencyManager goModDependencyManager) {
         DependencyGraph graph = new BasicDependencyGraph();
-        String moduleName = projectModule.getPath();
-        if (goRelationshipManager.hasRelationshipsFor(moduleName)) {
+        String moduleName = projectModule.getPath(); // version is null for main module (commons-service)
+        if (goRelationshipManager.hasRelationshipsFor(moduleName)) { // has to be name version, but main module doesnt have version
             goRelationshipManager.getRelationshipsFor(moduleName).stream()
                 .map(relationship -> relationship.getChild().getName())
                 .forEach(childName -> addModuleToGraph(childName, null, graph, goRelationshipManager, goModDependencyManager));

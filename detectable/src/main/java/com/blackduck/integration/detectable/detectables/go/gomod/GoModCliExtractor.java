@@ -62,9 +62,9 @@ public class GoModCliExtractor {
         List<GoGraphRelationship> goGraphRelationships = listGraphRelationships(directory, goExe, goVersion);
         Set<String> excludedModules = listExcludedModules(directory, goExe);
 
-        GoRelationshipManager goRelationshipManager = new GoRelationshipManager(goGraphRelationships, excludedModules);
+        GoRelationshipManager goRelationshipManager = new GoRelationshipManager(goGraphRelationships, excludedModules); // confirm excludedModules functionality is not impacted
         GoModDependencyManager goModDependencyManager = new GoModDependencyManager(goListAllModules, externalIdFactory);
-        List<CodeLocation> codeLocations = goListModules.stream()
+        List<CodeLocation> codeLocations = goListModules.stream() // goListModules (first one is always main module? or the module with no version is always the main module?)
             .map(goListModule -> goModGraphGenerator.generateGraph(goListModule, goRelationshipManager, goModDependencyManager))
             .collect(Collectors.toList());
 

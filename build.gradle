@@ -113,6 +113,7 @@ allprojects {
         implementation 'org.yaml:snakeyaml:2.0'
         // jackson-core is a transitive dep coming from jackson-dataformat-yaml, earlier versions have vulnerability sonatype-2022-6438
         implementation('com.fasterxml.jackson.core:jackson-core:2.15.0')
+
         implementation 'org.freemarker:freemarker:2.3.31'
         implementation 'org.apache.httpcomponents:httpclient-osgi:4.5.14'
 
@@ -149,6 +150,8 @@ dependencies {
     implementation project(':detector')
 
     implementation 'ch.qos.logback:logback-classic:1.2.13'
+    implementation 'com.blackduck.integration:integration-common:27.0.2-SNAPSHOT-4602'
+
 
     implementation 'com.blackducksoftware.bdio:bdio-protobuf:3.2.10'
     implementation "com.blackduck.integration:blackduck-common:${blackDuckCommonVersion}"
