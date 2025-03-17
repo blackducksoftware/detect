@@ -3,34 +3,9 @@ package com.blackduck.integration.detector.base;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.blackduck.integration.detectable.detectable.result.*;
 import org.jetbrains.annotations.Nullable;
 
-import com.blackduck.integration.detectable.detectable.result.CargoLockfileNotFoundDetectableResult;
-import com.blackduck.integration.detectable.detectable.result.CartfileResolvedNotFoundDetectableResult;
-import com.blackduck.integration.detectable.detectable.result.ExceptionDetectableResult;
-import com.blackduck.integration.detectable.detectable.result.ExcludedDetectableResult;
-import com.blackduck.integration.detectable.detectable.result.ExecutableNotFoundDetectableResult;
-import com.blackduck.integration.detectable.detectable.result.ExecutablesNotFoundDetectableResult;
-import com.blackduck.integration.detectable.detectable.result.FailedDetectableResult;
-import com.blackduck.integration.detectable.detectable.result.FileNotFoundDetectableResult;
-import com.blackduck.integration.detectable.detectable.result.FilesNotFoundDetectableResult;
-import com.blackduck.integration.detectable.detectable.result.GivenFileNotFoundDetectableResult;
-import com.blackduck.integration.detectable.detectable.result.GoPkgLockfileNotFoundDetectableResult;
-import com.blackduck.integration.detectable.detectable.result.InspectorNotFoundDetectableResult;
-import com.blackduck.integration.detectable.detectable.result.NpmNodeModulesNotFoundDetectableResult;
-import com.blackduck.integration.detectable.detectable.result.PackageResolvedNotFoundDetectableResult;
-import com.blackduck.integration.detectable.detectable.result.PassedDetectableResult;
-import com.blackduck.integration.detectable.detectable.result.PipfileLockNotFoundDetectableResult;
-import com.blackduck.integration.detectable.detectable.result.PoetryLockfileNotFoundDetectableResult;
-import com.blackduck.integration.detectable.detectable.result.PoorlyFormattedJson;
-import com.blackduck.integration.detectable.detectable.result.PropertyInsufficientDetectableResult;
-import com.blackduck.integration.detectable.detectable.result.PubSpecLockNotFoundDetectableResult;
-import com.blackduck.integration.detectable.detectable.result.SbtMissingPluginDetectableResult;
-import com.blackduck.integration.detectable.detectable.result.SectionNotFoundDetectableResult;
-import com.blackduck.integration.detectable.detectable.result.SetupToolsNoDependenciesDetectableResult;
-import com.blackduck.integration.detectable.detectable.result.SetupToolsRequiresNotFoundDetectableResult;
-import com.blackduck.integration.detectable.detectable.result.WrongConanExecutableVersionResult;
-import com.blackduck.integration.detectable.detectable.result.WrongOperatingSystemResult;
 import com.blackduck.integration.detector.result.ExcludedDetectorResult;
 import com.blackduck.integration.detector.result.FailedDetectorResult;
 import com.blackduck.integration.detector.result.ForcedNestedPassedDetectorResult;
@@ -90,6 +65,7 @@ public class DetectorResultStatusCodeLookup {
         map.put(PackageResolvedNotFoundDetectableResult.class, DetectorStatusCode.EXCLUDED);
         map.put(SetupToolsRequiresNotFoundDetectableResult.class, DetectorStatusCode.SETUP_TOOLS_REQUIRES_NOT_FOUND);
         map.put(SetupToolsNoDependenciesDetectableResult.class, DetectorStatusCode.SETUP_TOOLS_NO_DEPENDENCIES);
+        map.put(CargoExecutableVersionMismatchResult.class, DetectorStatusCode.EXECUTABLE_VERSION_MISMATCH); // TODO write new status code?
 
         return map;
     }
