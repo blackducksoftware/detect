@@ -12,18 +12,29 @@ import com.blackduck.integration.detectable.detectables.go.gomod.model.GoGraphRe
 import com.blackduck.integration.util.NameVersion;
 
 public class GoRelationshipManager {
-    private final Map<NameVersion, List<GoGraphRelationship>> relationshipMap;
+    private final Map<String, List<GoGraphRelationship>> relationshipMap;
+//    private final Map<NameVersion, List<GoGraphRelationship>> relationshipMapNEW;
     private final Set<String> excludedModules;
 
     public GoRelationshipManager(List<GoGraphRelationship> goGraphRelationships, Set<String> excludedModules) {
         this.excludedModules = excludedModules;
         relationshipMap = new HashMap<>();
         for (GoGraphRelationship goGraphRelationship : goGraphRelationships) {
-            NameVersion parentName = goGraphRelationship.getParent();
-            relationshipMap.putIfAbsent(parentName, new LinkedList<>()); // TODO test to confirm new equals works as expected
+            String parentName = goGraphRelationship.getParent().getName();
+            relationshipMap.putIfAbsent(parentName, new LinkedList<>());
             relationshipMap.get(parentName).add(goGraphRelationship);
         }
     }
+
+//    public GoRelationshipManager(List<GoGraphRelationship> goGraphRelationships, Set<String> excludedModules) {
+//        this.excludedModules = excludedModules;
+//        relationshipMap = new HashMap<>();
+//        for (GoGraphRelationship goGraphRelationship : goGraphRelationships) {
+//            NameVersion parentName = goGraphRelationship.getParent();
+//            relationshipMap.putIfAbsent(parentName, new LinkedList<>()); // TODO test to confirm new equals() works as expected
+//            relationshipMap.get(parentName).add(goGraphRelationship);
+//        }
+//    }
 
     public boolean hasRelationshipsFor(String moduleName) {
         return relationshipMap.containsKey(moduleName);
@@ -37,7 +48,15 @@ public class GoRelationshipManager {
         return Optional.ofNullable(relationshipMap.get(moduleName)).orElse(Collections.emptyList());
     }
 
+    public List<GoGraphRelationship> getRelationshipsForNEW(NameVersion moduleNameVersion) {
+        return Optional.ofNullable(relationshipMap.get(moduleNameVersion)).orElse(Collections.emptyList());
+    }
+
     public boolean isNotUsedByMainModule(String moduleName) {
         return excludedModules.contains(moduleName);
+    }
+
+    public boolean isNotUsedByMainModuleNEW(NameVersion moduleNameVersion) {
+        return excludedModules.contains(moduleNameVersion);
     }
 }
