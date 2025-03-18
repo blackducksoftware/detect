@@ -1,8 +1,6 @@
 # Troubleshooting Docker Inspector
 
-To troubleshoot issues with [docker_inspector_name], run with DEBUG logging enabled:
-
-    --logging.level.detect=DEBUG
+To troubleshoot issues with [docker_inspector_name], run with DEBUG logging enabled: `--logging.level.detect=DEBUG`
 
 ## Considerations when running on Windows
 
