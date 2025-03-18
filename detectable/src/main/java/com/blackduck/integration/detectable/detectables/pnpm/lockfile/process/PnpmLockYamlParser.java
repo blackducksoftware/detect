@@ -32,9 +32,6 @@ public class PnpmLockYamlParser {
             throws IntegrationException {
         List<CodeLocation> codeLocationsFromImports = createCodeLocationsFromImports(parentFile, pnpmLockYaml,
                 linkedPackageResolver, projectNameVersion, excludedDirectories, includedDirectories);
-        // TODO we likely don't need to exclude the root because that is their workspace
-        // and they have mentioned wanting to exclude below that. But if we do we would 
-        // check and exclude based on parentFile.
         if (codeLocationsFromImports.isEmpty()) {
             return createCodeLocationsFromRoot(parentFile, pnpmLockYaml, projectNameVersion, linkedPackageResolver);
         }
