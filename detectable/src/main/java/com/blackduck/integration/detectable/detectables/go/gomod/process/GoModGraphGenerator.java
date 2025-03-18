@@ -29,7 +29,7 @@ public class GoModGraphGenerator {
 
     public CodeLocation generateGraph(GoListModule projectModule, GoRelationshipManager goRelationshipManager, GoModDependencyManager goModDependencyManager) {
         DependencyGraph graph = new BasicDependencyGraph();
-        String moduleName = projectModule.getPath(); // version is null for main module (commons-service)
+        String moduleName = projectModule.getPath(); // version is null for main module (commons-service) What is path?
         if (goRelationshipManager.hasRelationshipsFor(moduleName)) { // has to be name version, but main module doesnt have version
             goRelationshipManager.getRelationshipsFor(moduleName).stream()
                 .map(relationship -> relationship.getChild().getName())
@@ -39,7 +39,7 @@ public class GoModGraphGenerator {
         return new CodeLocation(graph, externalIdFactory.createNameVersionExternalId(Forge.GOLANG, projectModule.getPath(), projectModule.getVersion()));
     }
 
-    private void addModuleToGraph(
+    private void addModuleToGraph( // recursiveeeeeeeeeee -- first time we call this, parent is null.
         String moduleName,
         @Nullable Dependency parent,
         DependencyGraph graph,
@@ -47,15 +47,15 @@ public class GoModGraphGenerator {
         GoModDependencyManager goModDependencyManager
     ) {
         if (goRelationshipManager.isNotUsedByMainModule(moduleName)) {
-            logger.debug("Excluding module '{}' because it is not used by the main module.", moduleName);
+            logger.debug("Excluding module '{}' because it is not used by the main module.", moduleName); // confirm excluded modules are not impacted.. modules == deps?
             return;
         }
 
-        Dependency dependency = goModDependencyManager.getDependencyForModule(moduleName);
+        Dependency dependency = goModDependencyManager.getDependencyForModule(moduleName); // just the name, what?
         if (parent != null) {
             graph.addChildWithParent(dependency, parent);
         } else {
-            graph.addDirectDependency(dependency);
+            graph.addDirectDependency(dependency); // do we do this for anyone except main module?
         }
 
         if (!fullyGraphedModules.contains(moduleName) && goRelationshipManager.hasRelationshipsFor(moduleName)) {

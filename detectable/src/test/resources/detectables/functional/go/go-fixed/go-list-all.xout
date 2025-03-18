@@ -1,0 +1,54 @@
+{
+	"Path": "commons-service",
+	"Main": true,
+	"Dir": "/Users/shanty/blackduck/example-source/go/ToReferLatest/GoViperTest",
+	"GoMod": "/Users/shanty/blackduck/example-source/go/ToReferLatest/GoViperTest/go.mod",
+	"GoVersion": "1.20"
+}
+{
+	"Path": "github.com/spf13/viper",
+	"Version": "v1.8.1",
+	"Time": "2021-06-25T11:55:36Z",
+	"GoMod": "/Users/shanty/go/pkg/mod/cache/download/github.com/spf13/viper/@v/v1.8.1.mod",
+	"GoVersion": "1.12",
+	"Sum": "h1:Kq1fyeebqsBfbjZj4EL7gj2IO0mMaiyjYUWcUsl2O44=",
+	"GoModSum": "h1:o0Pch8wJ9BVSWGQMbra6iw0oQ5oktSIBaujf1rJH9Ns="
+}
+{
+	"Path": "github.com/bketelsen/crypt",
+	"Version": "v0.0.4",
+	"Time": "2021-06-15T23:16:27Z",
+	"Indirect": true,
+	"GoMod": "/Users/shanty/go/pkg/mod/cache/download/github.com/bketelsen/crypt/@v/v0.0.4.mod",
+	"GoVersion": "1.12",
+	"Sum": "h1:w/jqZtC9YD4DS/Vp9GhWfWcCpuAL58oTnLoI8vE9YHU=",
+	"GoModSum": "h1:aI6NrJ0pMGgvZKL1iVgXLnfIFJtfV+bKCoqOes/6LfM="
+}
+{
+	"Path": "github.com/fsnotify/fsnotify",
+	"Version": "v1.6.0",
+	"Time": "2022-10-13T01:18:11Z",
+	"GoMod": "/Users/shanty/go/pkg/mod/cache/download/github.com/fsnotify/fsnotify/@v/v1.6.0.mod",
+	"GoVersion": "1.16",
+	"Sum": "h1:n+5WquG0fcWoWp6xPWfHdbskMCQaFnG6PfBrh1Ky4HY=",
+	"GoModSum": "h1:sl3t1tCWJFWoRz9R8WJCbQihKKwmorjAbSClcnxKAGw="
+}
+{
+	"Path": "github.com/coreos/bbolt",
+	"Version": "v1.3.2",
+	"Time": "2019-01-28T18:11:30Z",
+	"Indirect": true,
+	"GoMod": "/Users/shanty/go/pkg/mod/cache/download/github.com/coreos/bbolt/@v/v1.3.2.mod",
+	"Sum": "h1:wZwiHHUieZCquLkDL0B8UhzreNWsPHooDAG3q34zk0s=",
+	"GoModSum": "h1:iRUV2dpdMOn7Bo10OQBFzIJO9kkE559Wcmn+qkEiiKk="
+}
+{
+	"Path": "github.com/gogo/protobuf",
+	"Version": "v1.3.2",
+	"Time": "2021-01-10T08:01:47Z",
+	"Indirect": true,
+	"GoMod": "/Users/shanty/go/pkg/mod/cache/download/github.com/gogo/protobuf/@v/v1.3.2.mod",
+	"GoVersion": "1.15",
+	"Sum": "h1:Ov1cvc58UF3b5XjBnZv7+opcTcQFZebYjWzi34vdm4Q=",
+	"GoModSum": "h1:P1XiOD3dCwIKUDQYPy72D8LYyHL2YPYrpS2s69NZV8Q="
+}

@@ -22,19 +22,42 @@ class GoRelationshipManagerTest {
     static NameVersion child2 = new NameVersion("child2", "v4");
     static NameVersion grandchild = new NameVersion("grandchild1", "v3");
     static GoRelationshipManager goRelationshipManager;
+    // 4602 use case
+    static NameVersion parentv1 = new NameVersion("parent", "v1");
+    static NameVersion parentv2 = new NameVersion("parent", "v2");
+    static NameVersion transitiveAv1 = new NameVersion("transitiveA", "v1");
+    static NameVersion transitiveBv1 = new NameVersion("transitiveB", "v1");
+    static NameVersion transitiveCv1 = new NameVersion("transitiveC", "v1");
+    static NameVersion transitiveCv2 = new NameVersion("transitiveC", "v2");
+
 
     @BeforeAll
     static void init() {
         List<GoGraphRelationship> goGraphRelationships = Arrays.asList(
-            new GoGraphRelationship(parent, child),
-            new GoGraphRelationship(parent, child2),
-            new GoGraphRelationship(child, grandchild)
+//            new GoGraphRelationship(parent, child),
+//            new GoGraphRelationship(parent, child2),
+//            new GoGraphRelationship(child, grandchild),
+                new GoGraphRelationship(parentv1, transitiveAv1),
+                new GoGraphRelationship(parentv1, transitiveCv1),
+                new GoGraphRelationship(parentv2, transitiveBv1),
+                new GoGraphRelationship(parentv2, transitiveCv2)
         );
 
         Set<String> excludedModules = new HashSet<>();
         excludedModules.add(child2.getName());
 
         goRelationshipManager = new GoRelationshipManager(goGraphRelationships, excludedModules);
+    }
+
+
+    @Test
+    void testIncorrectDirectDepTransitives() {
+        // test that parentv1 incorrectly gets transitives of parentv2 assigned to it
+        // parentv1 and v2 are present in relationship map (indistinguishable due to version being stripped)
+        assertTrue(goRelationshipManager.hasRelationshipsFor(parentv1.getName()));
+        assertTrue(goRelationshipManager.hasRelationshipsFor(parentv2.getName()));
+        List<GoGraphRelationship> parentRelationships = goRelationshipManager.getRelationshipsFor(parentv1.getName());
+            // getRelationshipsFor(parentv1) returns alllll relationships for v1 and v2.
     }
 
     @Test

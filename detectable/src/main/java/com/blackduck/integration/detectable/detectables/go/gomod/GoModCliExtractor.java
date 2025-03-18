@@ -86,7 +86,7 @@ public class GoModCliExtractor {
         List<String> modGraphOutput = goModCommandRunner.runGoModGraph(directory, goExe);
 
         // Get the actual main module that produced this graph
-        String mainMod = goModCommandRunner.runGoModGetMainModule(directory, goExe, goVersion);
+        String mainMod = goModCommandRunner.runGoModGetMainModule(directory, goExe, goVersion); // Regardless of # of modules, each go mod execution targets one module (corresponding to a go.mod file directory)
 
         // Get the list of TRUE direct dependencies, then use the main mod name and
         // this list to create a TRUE dependency graph from the requirement graph
