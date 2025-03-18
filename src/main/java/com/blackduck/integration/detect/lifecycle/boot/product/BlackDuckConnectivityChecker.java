@@ -16,11 +16,7 @@ import com.blackduck.integration.blackduck.service.BlackDuckServicesFactory;
 import com.blackduck.integration.blackduck.service.dataservice.BlackDuckRegistrationService;
 import com.blackduck.integration.blackduck.service.dataservice.UserGroupService;
 import com.blackduck.integration.blackduck.service.dataservice.UserService;
-import com.blackduck.integration.configuration.property.Properties;
-import com.blackduck.integration.configuration.property.types.enums.EnumProperty;
-import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detect.configuration.DetectUserFriendlyException;
-import com.blackduck.integration.detect.configuration.enumeration.BlackduckScanMode;
 import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
 import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.log.SilentIntLogger;
@@ -29,8 +25,7 @@ import com.blackduck.integration.rest.client.ConnectionResult;
 
 public class BlackDuckConnectivityChecker {
     private static final LinkMultipleResponses<UserGroupView> USERGROUPS = new LinkMultipleResponses<>("usergroups", UserGroupView.class);
-
-    private final String SYS_ADMIN_ROLE = "System Administrator";
+    private static final String SYS_ADMIN_ROLE = "System Administrator";
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     public BlackDuckConnectivityResult determineConnectivity(BlackDuckServerConfig blackDuckServerConfig)
