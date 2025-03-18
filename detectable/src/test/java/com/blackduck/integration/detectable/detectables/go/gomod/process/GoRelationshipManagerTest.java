@@ -33,6 +33,7 @@ class GoRelationshipManagerTest {
 
     @BeforeAll
     static void init() {
+        // TODO should move to different init based on test case?
         List<GoGraphRelationship> goGraphRelationships = Arrays.asList(
 //            new GoGraphRelationship(parent, child),
 //            new GoGraphRelationship(parent, child2),
@@ -56,8 +57,12 @@ class GoRelationshipManagerTest {
         // parentv1 and v2 are present in relationship map (indistinguishable due to version being stripped)
         assertTrue(goRelationshipManager.hasRelationshipsFor(parentv1.getName()));
         assertTrue(goRelationshipManager.hasRelationshipsFor(parentv2.getName()));
+
         List<GoGraphRelationship> parentRelationships = goRelationshipManager.getRelationshipsFor(parentv1.getName());
             // getRelationshipsFor(parentv1) returns alllll relationships for v1 and v2.
+        // check if parentv2 snuck in
+        boolean parentv2Present = parentRelationships.stream().anyMatch(r -> parentv2.equals(r.getParent()));
+        assertFalse(parentv2Present, "Expected only parentv1 relationships.");
     }
 
     @Test

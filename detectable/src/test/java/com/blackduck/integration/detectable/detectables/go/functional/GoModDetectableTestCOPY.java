@@ -19,6 +19,7 @@ import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+// recreates IDETECT-4602
 public class GoModDetectableTestCOPY extends DetectableFunctionalTest {
     public GoModDetectableTestCOPY() throws IOException {
         super("gomod");
