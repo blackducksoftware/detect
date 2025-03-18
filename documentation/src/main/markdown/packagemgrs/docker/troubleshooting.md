@@ -1,4 +1,4 @@
-# Troubleshooting overview
+# Troubleshooting Docker Inspector
 
 To troubleshoot issues with [docker_inspector_name], run with DEBUG logging enabled:
 
@@ -36,6 +36,16 @@ of the pulled image is a close match to the Windows version of your machine.
 
 The following suggestions are related to specific problems.
 
+### Problem: Error message containing "Error inspecting image: There was a problem trying to getBdio."
+
+Possible cause: This error may occur if your image contains an unsupported operating system. Please refer to the [supported format documentation](../docker/formats.md).
+
+
+### Problem: Error message containing "Possible unsupported input archive file type. Please refer to Docker Inspector documentation. Unrecognized media type %s of layer %s.", mediaType, digest."
+ 
+Possible cause: This error may occur if your OCI image has neither the regular manifest media type or the index media type. Please refer to the [supported format documentation](../docker/formats.md).
+
+
 ### Problem: When directly invoking the .jar file, an error message displays "Malformed input or input contains unmappable characters."
 
 Possible cause: Your local character encoding does not match the target container file system character encoding.
@@ -47,8 +57,7 @@ Solution/workaround: Set the character encoding to UTF-8 when invoking Java:
 ### Problem: Property values are set in unexpected ways.
 
 Possible cause: [docker_inspector_name] is built using the Spring Boot application framework.
-Spring Boot provides a variety of ways to set property values. This can produce unexpected results if,
-for example, you have an environment variable whose name maps to a [docker_inspector_name] property name.
+Spring Boot provides a variety of ways to set property values. This can produce unexpected results if, for example, you have an environment variable whose name maps to a [docker_inspector_name] property name.
 Refer to the
 [Spring Boot documentation on external configuration](https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html)
 for more details.
