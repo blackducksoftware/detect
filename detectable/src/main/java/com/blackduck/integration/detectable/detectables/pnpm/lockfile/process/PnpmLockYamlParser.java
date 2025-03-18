@@ -55,22 +55,17 @@ public class PnpmLockYamlParser {
         if (MapUtils.isEmpty(pnpmLockYaml.importers)) {
             return Collections.emptyList();
         }
+        
+        ExcludedIncludedWildcardFilter workspacesFilter;
+        if (excludedDirectories.isEmpty() && includedDirectories.isEmpty()) {
+            workspacesFilter = null; // Include all
+        } else {
+            workspacesFilter = ExcludedIncludedWildcardFilter.fromCollections(excludedDirectories, includedDirectories);
+        }
 
         List<CodeLocation> codeLocations = new LinkedList<>();
         for (Map.Entry<String, PnpmProjectPackage> projectPackageInfo : pnpmLockYaml.importers.entrySet()) {
             String projectKey = projectPackageInfo.getKey();
-            
-            // TODO if projectKey is not included/excluded, etc then continue and don't 
-            // bring in the dependencies.
-            
-            // TODO potentially declare the filter higher up so we don't do it for each package
-            
-            ExcludedIncludedWildcardFilter workspacesFilter;
-            if (excludedDirectories.isEmpty() && includedDirectories.isEmpty()) {
-                workspacesFilter = null; // Include all
-            } else {
-                workspacesFilter = ExcludedIncludedWildcardFilter.fromCollections(excludedDirectories, includedDirectories);
-            }
 
             if ((workspacesFilter != null) && !workspacesFilter.shouldInclude(projectKey)) {
                 // skip as the user specified filters and this projectKey is not something they want
