@@ -30,8 +30,5 @@
 
 * (IDETECT-4642) - Improved handling of pnpm packages that contain detailed version information in the pnpm-lock.yaml. Resolving [detect_product_short] missing some packages through failure to link direct and transitive dependencies. 
 * (IDETECT-4641) - Improved [detect_product_short]'s Yarn detector to handle non-standard version entries for component dependencies.
-* (IDETECT-4594) - Resolved [detect_product_short] failing to handle duplicate keys in package.json files across npm, pnpm, Lerna, and Yarn projects.
+* (IDETECT-4594) - Resolved [detect_product_short] failing to handle duplicate keys in `package.json` files across npm, pnpm, Lerna, and Yarn projects.
 
-### Dependency updates
-
-* 
