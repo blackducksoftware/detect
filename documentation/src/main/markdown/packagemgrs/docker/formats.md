@@ -10,4 +10,4 @@ Image files passed to [detect_product_short] via the *detect.docker.tar* propert
 
 The base layer OS package manager invocation and resolution of installed packages by [docker_inspector_name] is restricted to Ubuntu, CentOS, and Alpine base OS layer images. If the image meets other requirements and regardless of the base layer OS, [docker_inspector_name] will run a signature scan/analysis on the tarball of the image and produce matches if any. For example, if the base layer OS is CentOS, [docker_inspector_name] will start CentOS image inspector container service, mount the image onto this container and run "rpm qa" to get a list of installed packages if available. 
  
-Should unresolvable errors occur during attempts to scan Docker images we recommend switching to analysis via either [Container Scan](../../runningdetect/containerscanning.md) or [Binary scanning](../../properties/configuration/binary-scanner.md) on Docker images.
+Should unresolvable errors occur during attempts to scan Docker images we recommend switching to analysis via [Container Scan](../../runningdetect/containerscanning.md) of Docker images.
