@@ -212,6 +212,11 @@ public class PnpmYamlTransformer {
     }
 
     private Optional<NameVersion> parseNameVersionFromId(String id) {
+        if (id == null) {
+            logger.debug("The provided id is null.");
+            return Optional.empty();
+        }
+
         // ids follow format: /name@version in v6, name@version in v9
         try {
             id = removeExtraVersionInformation(id);

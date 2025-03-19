@@ -90,8 +90,6 @@ public class CommonScanStepRunnerTest {
         CommonScanStepRunner commonScanStepRunner = spy(new CommonScanStepRunner());
 
         when(scanCreationResponse.getUploadUrl()).thenReturn(uploadUrl);
-        when(commonScanStepRunner.isAccessible(uploadUrl)).thenReturn(true);
-        
         doNothing().when(scassScanStepRunner).runScassScan(any(), any());
 
         doReturn(scassScanStepRunner).when(commonScanStepRunner).createScassScanStepRunner(nullable(BlackDuckRunData.class));
@@ -129,7 +127,6 @@ public class CommonScanStepRunnerTest {
         CommonScanStepRunner commonScanStepRunner = spy(new CommonScanStepRunner());
 
         when(scanCreationResponse.getUploadUrl()).thenReturn(uploadUrl);
-        when(commonScanStepRunner.isAccessible(uploadUrl)).thenReturn(true);
         doNothing().when(scassScanStepRunner).runScassScan(any(), any());
 
         doReturn(scassScanStepRunner).when(commonScanStepRunner).createScassScanStepRunner(nullable(BlackDuckRunData.class));
