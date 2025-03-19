@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.blackduck.integration.util.NameVersion;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
 
@@ -57,8 +58,13 @@ public class GoModDependencyManager {
         return new Dependency(moduleName, moduleVersion, externalIdFactory.createNameVersionExternalId(Forge.GOLANG, moduleName, moduleVersion));
     }
 
+    @Deprecated // TODO confirm test cases still pass
     public Dependency getDependencyForModule(String moduleName) {
         return modulesAsDependencies.getOrDefault(moduleName, convertToDependency(moduleName, null));
+    }
+
+    public Dependency getDependencyForModuleNameVersion(NameVersion moduleNameVersion) {
+        return modulesAsDependencies.getOrDefault(moduleNameVersion.getName(), convertToDependency(moduleNameVersion.getName(), moduleNameVersion.getVersion())); // ***PROBLEM***: modulesAsDependencies would store viper1.7.0 and 1.8.1 together? or?
     }
 
     // When a version contains a commit hash, the KB only accepts the git hash, so we must strip out the rest.

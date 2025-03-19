@@ -24,11 +24,11 @@ public class GoModuleDependencyHelper {
      * requirements graph to a dependency graph. True direct dependencies will be left unchanged.
      * @param main - The string name of the main go module
      * @param directs - The obtained list of the main module's direct dependency.
-     * @param whyList - A list of all modules with their relationship to the main module
+     * @param whyList - A list of all modules with their relationship to the main module // TOME other modules .. hmm
      * @param graph - The list produced by "go mod graph"- the intended "target".
      * @return - the actual dependency list
      */
-    public Set<String> computeDependencies(String main, List<String> directs, List<String> whyList, List<String>graph) {
+    public Set<String> computeDependencies(String main, List<String> directs, List<String> whyList, List<String>graph) { // read through this and make sure it's not impacted
         Set<String> goModGraph = new HashSet<>();
         List<String> correctedDependencies = new ArrayList<>();
         Map<String, List<String>> whyMap = whyListStructureTransform.convertWhyListToWhyMap(whyList);
@@ -47,7 +47,7 @@ public class GoModuleDependencyHelper {
             boolean needsRedux = !containsDirect && splitLine[0].equals(main);
             
             /* This searches for instances where the main module is apparently referring to itself.  
-            This can step on the indirect dependency making it seem to be direct.*/
+            This can step on the indirect dependency making it seem to be direct.*/ // might affect 4581
             if (splitLine[0].startsWith(main) && splitLine[0].contains("@")) {
                 boolean gotoNext = hasDependency(correctedDependencies, splitLine[1]);
                 if (gotoNext) {
