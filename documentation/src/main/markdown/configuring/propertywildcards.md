@@ -2,21 +2,13 @@
 
 When providing input values for the following [detect_product_short] properties, you can utilize filename globbing-style wildcards.
 
-* detect.binary.scan.file.name.patterns
-* detect.excluded.directories
-* detect.gradle.included.configurations  
-* detect.gradle.excluded.configurations
-* detect.gradle.excluded.projects  
-* detect.gradle.included.projects
-* detect.lerna.included.packages
-* detect.lerna.excluded.packages
-* detect.maven.included.scopes
-* detect.maven.excluded.scopes 
-* detect.maven.included.modules
-* detect.maven.excluded.modules
-* detect.pnpm.included.packages 
-* detect.pnpm.excluded.packages
-  
+| General 	| Gradle 	| Lerna 	| Maven 	| pnpm 	|
+|---	|---	|---	|---	|---	|
+| detect.binary.scan.file.name.patterns 	| detect.gradle.included.configurations 	| detect.lerna.excluded.packages 	| detect.maven.included.scopes 	| detect.pnpm.included.packages 	|
+| detect.excluded.directories 	| detect.gradle.excluded.configurations 	| detect.lerna.included.packages 	| detect.maven.excluded.scopes 	| detect.pnpm.excluded.packages 	|
+|  	| detect.gradle.included.projects 	|  	| detect.maven.included.modules 	|  	|
+|  	| detect.gradle.excluded.projects 	|  	| detect.maven.excluded.modules 	|  	|
+ 
 | Wildcard      | Effect | Example |
 | ----------- | ----------- | ---------- |
 | Asterisk (*)| matches any sequence of zero or more characters | `*.jpg` matches `someimage.jpg`, but not `somedocument.doc` |
