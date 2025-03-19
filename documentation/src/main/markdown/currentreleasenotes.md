@@ -25,7 +25,7 @@
 * Support for Conda has been extended to 25.1.1.
 * Cargo CLI Detector, leveraging `cargo tree` to extract direct and transitive dependencies, improving accuracy over the previous flat lockfile detection. This build-based detector is triggered for Cargo projects with a `Cargo.toml` file and requires Cargo version **1.44.0+**. For further information, see [Cargo package manager support](packagemgrs/cargo.md).
 * Added property [detect.cargo.path](properties/detectors/cargo.md) to allow user specification of a custom Cargo executable path.   
-* The new `detect.pnpm.included.directories` and `detect.pnpm.included.directories` properties for pnpm allow for increased control over what directories [detect_product_short] scans under an pnpm project.
+* New `detect.pnpm.included.directories` and `detect.pnpm.included.directories` properties for pnpm provide increased control over what directories [detect_product_short] scans under a pnpm project. See the [pnpm](properties/configuration/pnpm.html) property page for more information.
 
 ### Resolved issues
 

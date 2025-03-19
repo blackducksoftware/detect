@@ -1350,7 +1350,7 @@ public class DetectProperties {
                 .setInfo("pnpm Exclude Directories", DetectPropertyFromVersion.VERSION_10_4_0)
                 .setHelp(
                     "A comma-separated list of pnpm directories to exclude.",
-                    "As Detect examines the pnpm project for dependencies, if this property is set, Detect will exclude only those pnpm directories specified via this property. This property accepts filename globbing-style wildcards. Refer to the <i>Configuring Black Duck Detect</i> > <i>Property wildcard support</i> page for more details."
+                    "If set, Detect will only exclude those pnpm directories specified via this property when examining the pnpm project for dependencies. This property accepts filename globbing-style wildcards. Refer to the <i>Configuring Black Duck Detect</i> > <i>Property wildcard support</i> page for more details."
                 )
                 .setGroups(DetectGroup.PNPM, DetectGroup.SOURCE_SCAN)
                 .setCategory(DetectCategory.Advanced)
@@ -1361,7 +1361,7 @@ public class DetectProperties {
                 .setInfo("pnpm Include Directories", DetectPropertyFromVersion.VERSION_10_4_0)
                 .setHelp(
                     "A comma-separated list of pnpm directories to include.",
-                    "As Detect examines the pnpm project for dependencies, if this property is set, Detect will include only those pnpm directories specified via this property that are not excluded. Leaving this unset implies 'include all'. Exclusion rules always win. This property accepts filename globbing-style wildcards. Refer to the <i>Configuring Black Duck Detect</i> > <i>Property wildcard support</i> page for more details."
+                    "If set, Detect will only include the pnpm directories specified via this property when examining the pnpm project for dependencies, unless the directory is set for exclusion. Exclusion rules take precedence over inclusion. Leaving this property unset implies 'include all'. This property accepts filename globbing-style wildcards. Refer to the <i>Configuring Black Duck Detect</i> > <i>Property wildcard support</i> page for more details."
                 )
                 .setGroups(DetectGroup.PNPM, DetectGroup.SOURCE_SCAN)
                 .setCategory(DetectCategory.Advanced)
