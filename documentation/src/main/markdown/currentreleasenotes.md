@@ -23,6 +23,7 @@
 ### New features
 
 * Support for Conda has been extended to 25.1.1.
+* The new `detect.pnpm.included.directories` and `detect.pnpm.included.directories` properties for pnpm allow for increased control over what directories [detect_product_short] scans under an pnpm project.
 
 ### Resolved issues
 
