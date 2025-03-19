@@ -33,13 +33,6 @@ class GoRelationshipManagerTest {
     static NameVersion versionedMainModuleAsTransitiveDep = new NameVersion("code.byted.org/tiktok/rpc_gen", "v1.2.8");
     static NameVersion transitiveDep = new NameVersion("bou.ke/monkey", "v1.0.2");
 
-    /**
-     * code.byted.org/tiktok/rpc_gen
-     *     \-code.byted.org/tiktok/user_core_client@v1.0.47
-     *           \-code.byted.org/tiktok/rpc_gen@v1.2.8         (Indirect dependency on an older version of the main module, rpc_gen)
-     *                 \-bou.ke/monkey@v1.0.2                   (causes bou.ke/monkey to be incorrectly classified as direct of main module)
-     */
-
     @BeforeAll
     static void init() {
         List<GoGraphRelationship> goGraphRelationshipsSimple = Arrays.asList(
