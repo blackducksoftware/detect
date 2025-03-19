@@ -12,18 +12,18 @@ import com.blackduck.integration.detectable.detectables.go.gomod.model.GoGraphRe
 import com.blackduck.integration.util.NameVersion;
 
 public class GoRelationshipManager {
-    private final Map<String, List<GoGraphRelationship>> relationshipMap;
+//    private final Map<String, List<GoGraphRelationship>> relationshipMap;
     private final Map<NameVersion, List<GoGraphRelationship>> relationshipMapNEW;
     private final Set<String> excludedModules; // comes from detect property. to leave that unchanged, modules cannot have version specifier? only name?
 
     public GoRelationshipManager(List<GoGraphRelationship> goGraphRelationships, Set<String> excludedModules) {
         this.excludedModules = excludedModules;
-        relationshipMap = new HashMap<>();
+//        relationshipMap = new HashMap<>();
         relationshipMapNEW = new HashMap<>();
         for (GoGraphRelationship goGraphRelationship : goGraphRelationships) {
-            String parentName = goGraphRelationship.getParent().getName();
-            relationshipMap.putIfAbsent(parentName, new LinkedList<>());
-            relationshipMap.get(parentName).add(goGraphRelationship);
+            NameVersion parentNameVersion = goGraphRelationship.getParent();
+            relationshipMapNEW.putIfAbsent(parentNameVersion, new LinkedList<>());
+            relationshipMapNEW.get(parentNameVersion).add(goGraphRelationship);
         }
     }
 
@@ -37,20 +37,20 @@ public class GoRelationshipManager {
 //        }
 //    }
 
-    public boolean hasRelationshipsFor(String moduleName) {
-        return relationshipMap.containsKey(moduleName);
-    }
+//    public boolean hasRelationshipsFor(String moduleName) {
+//        return relationshipMap.containsKey(moduleName);
+//    }
 
     public boolean hasRelationshipsForNEW(NameVersion moduleNameVersion) {
-        return relationshipMap.containsKey(moduleNameVersion);
+        return relationshipMapNEW.containsKey(moduleNameVersion);
     }
 
-    public List<GoGraphRelationship> getRelationshipsFor(String moduleName) {
-        return Optional.ofNullable(relationshipMap.get(moduleName)).orElse(Collections.emptyList());
-    }
+//    public List<GoGraphRelationship> getRelationshipsFor(String moduleName) {
+//        return Optional.ofNullable(relationshipMap.get(moduleName)).orElse(Collections.emptyList());
+//    }
 
     public List<GoGraphRelationship> getRelationshipsForNEW(NameVersion moduleNameVersion) {
-        return Optional.ofNullable(relationshipMap.get(moduleNameVersion)).orElse(Collections.emptyList());
+        return Optional.ofNullable(relationshipMapNEW.get(moduleNameVersion)).orElse(Collections.emptyList());
     }
 
     public boolean isNotUsedByMainModule(String moduleName) {
