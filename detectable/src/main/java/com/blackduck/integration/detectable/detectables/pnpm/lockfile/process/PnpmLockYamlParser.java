@@ -15,6 +15,7 @@ import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation
 import com.blackduck.integration.detectable.detectables.pnpm.lockfile.model.PnpmLockYaml;
 import com.blackduck.integration.detectable.detectables.pnpm.lockfile.model.PnpmProjectPackage;
 import com.blackduck.integration.exception.IntegrationException;
+import com.blackduck.integration.util.ExcludedIncludedWildcardFilter;
 import com.blackduck.integration.util.NameVersion;
 
 public class PnpmLockYamlParser {
@@ -27,10 +28,10 @@ public class PnpmLockYamlParser {
     }
 
     public List<CodeLocation> parse(File parentFile, PnpmLockYaml pnpmLockYaml,
-            PnpmLinkedPackageResolver linkedPackageResolver, @Nullable NameVersion projectNameVersion)
+            PnpmLinkedPackageResolver linkedPackageResolver, @Nullable NameVersion projectNameVersion, List<String> excludedDirectories, List<String> includedDirectories)
             throws IntegrationException {
         List<CodeLocation> codeLocationsFromImports = createCodeLocationsFromImports(parentFile, pnpmLockYaml,
-                linkedPackageResolver, projectNameVersion);
+                linkedPackageResolver, projectNameVersion, excludedDirectories, includedDirectories);
         if (codeLocationsFromImports.isEmpty()) {
             return createCodeLocationsFromRoot(parentFile, pnpmLockYaml, projectNameVersion, linkedPackageResolver);
         }
@@ -46,15 +47,28 @@ public class PnpmLockYamlParser {
     }
 
     private List<CodeLocation> createCodeLocationsFromImports(File sourcePath, PnpmLockYaml pnpmLockYaml,
-            PnpmLinkedPackageResolver linkedPackageResolver, @Nullable NameVersion projectNameVersion)
+            PnpmLinkedPackageResolver linkedPackageResolver, @Nullable NameVersion projectNameVersion, List<String> excludedDirectories, List<String> includedDirectories)
             throws IntegrationException {
         if (MapUtils.isEmpty(pnpmLockYaml.importers)) {
             return Collections.emptyList();
+        }
+        
+        ExcludedIncludedWildcardFilter workspacesFilter;
+        if (excludedDirectories.isEmpty() && includedDirectories.isEmpty()) {
+            workspacesFilter = null; // Include all
+        } else {
+            workspacesFilter = ExcludedIncludedWildcardFilter.fromCollections(excludedDirectories, includedDirectories);
         }
 
         List<CodeLocation> codeLocations = new LinkedList<>();
         for (Map.Entry<String, PnpmProjectPackage> projectPackageInfo : pnpmLockYaml.importers.entrySet()) {
             String projectKey = projectPackageInfo.getKey();
+
+            if ((workspacesFilter != null) && !workspacesFilter.shouldInclude(projectKey)) {
+                // skip as the user specified filters and this projectKey is not something they want
+                continue;
+            }
+            
             PnpmProjectPackage projectPackage = projectPackageInfo.getValue();
             NameVersion extractedNameVersion = extractProjectInfo(projectPackageInfo, linkedPackageResolver,
                     projectNameVersion);

@@ -620,7 +620,7 @@ public class DetectableFactory {
     }
 
     public PnpmLockDetectable createPnpmLockDetectable(DetectableEnvironment environment, PnpmLockOptions pnpmLockOptions) {
-        PnpmLockYamlParserInitial pnpmLockYamlParser = new PnpmLockYamlParserInitial(pnpmLockOptions.getDependencyTypeFilter());
+        PnpmLockYamlParserInitial pnpmLockYamlParser = new PnpmLockYamlParserInitial(pnpmLockOptions);
         PnpmLockExtractor pnpmLockExtractor = new PnpmLockExtractor(pnpmLockYamlParser, packageJsonFiles());
         return new PnpmLockDetectable(environment, fileFinder, pnpmLockExtractor, packageJsonFiles());
     }

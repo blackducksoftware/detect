@@ -1344,6 +1344,28 @@ public class DetectProperties {
             .setHelp(createTypeFilterHelpText("pnpm dependency types"))
             .setGroups(DetectGroup.PNPM, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
+    
+    public static final CaseSensitiveStringListProperty DETECT_PNPM_EXCLUDED_DIRECTORIES =
+            CaseSensitiveStringListProperty.newBuilder("detect.pnpm.excluded.directories")
+                .setInfo("pnpm Exclude Directories", DetectPropertyFromVersion.VERSION_10_4_0)
+                .setHelp(
+                    "A comma-separated list of pnpm directories to exclude.",
+                    "If set, Detect will only exclude those pnpm directories specified via this property when examining the pnpm project for dependencies. This property accepts filename globbing-style wildcards. Refer to the <i>Configuring Black Duck Detect</i> > <i>Property wildcard support</i> page for more details."
+                )
+                .setGroups(DetectGroup.PNPM, DetectGroup.SOURCE_SCAN)
+                .setCategory(DetectCategory.Advanced)
+                .build();
+    
+    public static final CaseSensitiveStringListProperty DETECT_PNPM_INCLUDED_DIRECTORIES =
+            CaseSensitiveStringListProperty.newBuilder("detect.pnpm.included.directories")
+                .setInfo("pnpm Include Directories", DetectPropertyFromVersion.VERSION_10_4_0)
+                .setHelp(
+                    "A comma-separated list of pnpm directories to include.",
+                    "If set, Detect will only include the pnpm directories specified via this property when examining the pnpm project for dependencies, unless the directory is set for exclusion. Exclusion rules take precedence over inclusion. Leaving this property unset implies 'include all'. This property accepts filename globbing-style wildcards. Refer to the <i>Configuring Black Duck Detect</i> > <i>Property wildcard support</i> page for more details."
+                )
+                .setGroups(DetectGroup.PNPM, DetectGroup.SOURCE_SCAN)
+                .setCategory(DetectCategory.Advanced)
+                .build();
 
     public static final CaseSensitiveStringListProperty DETECT_POETRY_DEPENDENCY_GROUPS_EXCLUDED =
         CaseSensitiveStringListProperty.newBuilder("detect.poetry.dependency.groups.excluded")

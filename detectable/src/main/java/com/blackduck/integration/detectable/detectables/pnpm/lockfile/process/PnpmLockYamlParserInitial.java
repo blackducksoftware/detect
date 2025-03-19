@@ -16,6 +16,7 @@ import org.yaml.snakeyaml.representer.Representer;
 
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
+import com.blackduck.integration.detectable.detectables.pnpm.lockfile.PnpmLockOptions;
 import com.blackduck.integration.detectable.detectables.pnpm.lockfile.model.PnpmDependencyType;
 import com.blackduck.integration.detectable.detectables.pnpm.lockfile.model.PnpmLockYamlBase;
 import com.blackduck.integration.detectable.detectables.pnpm.lockfile.model.PnpmLockYamlv5;
@@ -29,9 +30,13 @@ import com.blackduck.integration.util.NameVersion;
 public class PnpmLockYamlParserInitial {
 
     private final EnumListFilter<PnpmDependencyType> dependencyFilter;
+    private final List<String> excludedDirectories;
+    private final List<String> includedDirectories;
 
-    public PnpmLockYamlParserInitial(EnumListFilter<PnpmDependencyType> dependencyFilter) {
-        this.dependencyFilter = dependencyFilter;
+    public PnpmLockYamlParserInitial(PnpmLockOptions pnpmLockOptions) {
+        this.dependencyFilter = pnpmLockOptions.getDependencyTypeFilter();
+        this.excludedDirectories = pnpmLockOptions.getExcludedDirectories();
+        this.includedDirectories = pnpmLockOptions.getIncludedDirectories();
     }
 
     public List<CodeLocation> parse(File pnpmLockYamlFile, @Nullable NameVersion projectNameVersion, PnpmLinkedPackageResolver linkedPackageResolver)
@@ -41,7 +46,7 @@ public class PnpmLockYamlParserInitial {
         if (pnpmLockYaml instanceof PnpmLockYaml) {
             PnpmYamlTransformer pnpmYamlTransformer = new PnpmYamlTransformer(dependencyFilter, pnpmLockYaml.lockfileVersion);
             PnpmLockYamlParser pnpmYamlParser = new PnpmLockYamlParser(pnpmYamlTransformer);
-            return pnpmYamlParser.parse(pnpmLockYamlFile.getParentFile(), (PnpmLockYaml) pnpmLockYaml, linkedPackageResolver, projectNameVersion);
+            return pnpmYamlParser.parse(pnpmLockYamlFile.getParentFile(), (PnpmLockYaml) pnpmLockYaml, linkedPackageResolver, projectNameVersion, excludedDirectories, includedDirectories);
         } else {
             PnpmYamlTransformerv5 pnpmYamlTransformer = new PnpmYamlTransformerv5(dependencyFilter);
             PnpmLockYamlParserv5 pnpmYamlParser = new PnpmLockYamlParserv5(pnpmYamlTransformer);
