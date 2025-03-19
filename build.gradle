@@ -151,7 +151,7 @@ dependencies {
     implementation project(':detector')
 
     implementation 'ch.qos.logback:logback-classic:1.2.13'
-    implementation 'com.blackduck.integration:integration-common:27.0.2-SNAPSHOT-4602'
+    implementation 'com.blackduck.integration:integration-common:27.0.2-SNAPSHOT-4602-update'
 
 
     implementation 'com.blackducksoftware.bdio:bdio-protobuf:3.2.10'

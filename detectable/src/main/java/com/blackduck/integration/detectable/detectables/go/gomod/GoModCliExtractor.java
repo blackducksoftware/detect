@@ -57,14 +57,14 @@ public class GoModCliExtractor {
 
     public Extraction extract(File directory, ExecutableTarget goExe) throws ExecutableFailedException, JsonSyntaxException, DetectableException {
         GoVersion goVersion = goVersion(directory, goExe);
-        List<GoListModule> goListModules = listModules(directory, goExe);
+        List<GoListModule> goListModules = listModules(directory, goExe); // only ever prints one module, the current module? Is this true even in "multi-module" projects? If they exist?
         List<GoListAllData> goListAllModules = listAllModules(directory, goExe, goVersion);
         List<GoGraphRelationship> goGraphRelationships = listGraphRelationships(directory, goExe, goVersion);
         Set<String> excludedModules = listExcludedModules(directory, goExe);
 
         GoRelationshipManager goRelationshipManager = new GoRelationshipManager(goGraphRelationships, excludedModules); // confirm excludedModules functionality is not impacted
         GoModDependencyManager goModDependencyManager = new GoModDependencyManager(goListAllModules, externalIdFactory);
-        List<CodeLocation> codeLocations = goListModules.stream() // goListModules (first one is always main module? or the module with no version is always the main module?)
+        List<CodeLocation> codeLocations = goListModules.stream() // goListModules corresponds to output of "go list -m -json" which should just print the main module, but iterating over stream suggests there could be more? need an example. looks like for each one we create a new code location
             .map(goListModule -> goModGraphGenerator.generateGraph(goListModule, goRelationshipManager, goModDependencyManager))
             .collect(Collectors.toList());
 
