@@ -141,6 +141,7 @@ test {
     testLogging {
         exceptionFormat = 'full'
     }
+    useJUnitPlatform()
 }
 
 dependencies {

@@ -37,6 +37,6 @@ public class GoListParser {
             }
         }
 
-        return listEntries; //
+        return listEntries;
     }
 }
