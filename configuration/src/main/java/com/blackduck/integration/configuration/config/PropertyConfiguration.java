@@ -11,7 +11,10 @@ import java.util.stream.Collectors;
 import java.util.SortedMap;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import com.blackduck.integration.configuration.config.resolution.NoPropertyResolution;
@@ -31,6 +34,7 @@ import com.blackduck.integration.configuration.property.base.ValuedProperty;
 import com.blackduck.integration.configuration.source.PropertySource;
 
 public class PropertyConfiguration {
+    private static final Logger logger = LoggerFactory.getLogger(PropertyConfiguration.class);
     private final Map<String, PropertyResolution> resolutionCache = new HashMap<>();
     private final Map<String, PropertyValue<?>> valueCache = new HashMap<>();
     private final List<PropertySource> orderedPropertySources;
@@ -221,6 +225,9 @@ public class PropertyConfiguration {
     @NotNull
     public Map<String, String> getMaskedRawValueMap(@NotNull Set<Property> properties, Predicate<String> shouldMask) {
         Map<String, String> rawMap = new HashMap<>();
+        Set<String> validKeys = properties.stream().map(Property::getKey).collect(Collectors.toSet());
+        Set<String> collectedKeys = getKeys();
+        handleInvalidKeys(collectedKeys, validKeys);
         for (Property property : properties) {
             String rawKey = property.getKey();
             if (property instanceof PassthroughProperty) {
@@ -235,6 +242,24 @@ public class PropertyConfiguration {
             }
         }
         return rawMap;
+    }
+
+    public static void handleInvalidKeys(Set<String> collectedKeys, Set<String> validKeys) {
+        for (String key : collectedKeys) {
+            if (!validKeys.contains(key)) {
+                List<String> similarKeys = findSimilarKeys(key, validKeys);
+                if (!similarKeys.isEmpty()) {
+                    logger.warn("Property key '{}' is not valid. The most similar keys are: {}", key, similarKeys);
+                }
+            }
+        }
+    }
+
+    public static List<String> findSimilarKeys(String invalidKey, Set<String> validKeys) {
+        LevenshteinDistance levenshtein = new LevenshteinDistance();
+        return validKeys.stream()
+                .filter(key -> levenshtein.apply(invalidKey, key) <= 3)
+                .collect(Collectors.toList());
     }
 
     public String maskValue(String rawKey, String rawValue, Predicate<String> shouldMask) {
