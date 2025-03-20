@@ -27,15 +27,15 @@ public class GoModDependencyManager {
 
     private final ExternalIdFactory externalIdFactory;
 
-    private final Map<String, Dependency> modulesAsDependencies;
+    private final Map<NameVersion, Dependency> modulesAsDependencies;
 
     public GoModDependencyManager(List<GoListAllData> allModules, ExternalIdFactory externalIdFactory) {
         this.externalIdFactory = externalIdFactory;
         modulesAsDependencies = convertModulesToDependencies(allModules);
     }
 
-    private Map<String, Dependency> convertModulesToDependencies(List<GoListAllData> allModules) {
-        Map<String, Dependency> dependencies = new HashMap<>();
+    private Map<NameVersion, Dependency> convertModulesToDependencies(List<GoListAllData> allModules) {
+        Map<NameVersion, Dependency> dependencies = new HashMap<>();
 
         for (GoListAllData module : allModules) {
             String name = Optional.ofNullable(module.getReplace())
@@ -48,7 +48,7 @@ public class GoModDependencyManager {
                 version = handleGitHash(version);
                 version = removeIncompatibleSuffix(version);
             }
-            dependencies.put(module.getPath(), convertToDependency(name, version));
+            dependencies.put(new NameVersion(name, version), convertToDependency(name, version));
         }
 
         return dependencies;
@@ -58,13 +58,13 @@ public class GoModDependencyManager {
         return new Dependency(moduleName, moduleVersion, externalIdFactory.createNameVersionExternalId(Forge.GOLANG, moduleName, moduleVersion));
     }
 
-    @Deprecated // TODO confirm test cases still pass
-    public Dependency getDependencyForModule(String moduleName) {
-        return modulesAsDependencies.getOrDefault(moduleName, convertToDependency(moduleName, null));
-    }
-
-    public Dependency getDependencyForModuleNameVersion(NameVersion moduleNameVersion) {
-        return modulesAsDependencies.getOrDefault(moduleNameVersion.getName(), convertToDependency(moduleNameVersion.getName(), moduleNameVersion.getVersion())); // ***PROBLEM***: modulesAsDependencies would store viper1.7.0 and 1.8.1 together? or?
+    @Deprecated // TODO confirm test cases still pass. Is there a test case for null version?
+    /**
+     * Returns the Dependency object associated with this module name.
+     * If it doesn't exist, returns a Dependency that just has a name and null as its version. (is that null handled properly .. that who knows.)
+     */
+    public Dependency getDependencyForModule(NameVersion module) {
+        return modulesAsDependencies.getOrDefault(module, convertToDependency(module.getName(), null));
     }
 
     // When a version contains a commit hash, the KB only accepts the git hash, so we must strip out the rest.

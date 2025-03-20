@@ -62,8 +62,8 @@ public class GoModCliExtractor {
         List<GoGraphRelationship> goGraphRelationships = listGraphRelationships(directory, goExe, goVersion);
         Set<String> excludedModules = listExcludedModules(directory, goExe);
 
-        GoRelationshipManager goRelationshipManager = new GoRelationshipManager(goGraphRelationships, excludedModules); // confirm excludedModules functionality is not impacted
-        GoModDependencyManager goModDependencyManager = new GoModDependencyManager(goListAllModules, externalIdFactory);
+        GoRelationshipManager goRelationshipManager = new GoRelationshipManager(goGraphRelationships, excludedModules); // at this point the relationship mapping is correct.
+        GoModDependencyManager goModDependencyManager = new GoModDependencyManager(goListAllModules, externalIdFactory); // next round of breaking changes
         List<CodeLocation> codeLocations = goListModules.stream() // goListModules corresponds to output of "go list -m -json" which should just print the main module, but iterating over stream suggests there could be more? need an example. looks like for each one we create a new code location
             .map(goListModule -> goModGraphGenerator.generateGraph(goListModule, goRelationshipManager, goModDependencyManager))
             .collect(Collectors.toList());
