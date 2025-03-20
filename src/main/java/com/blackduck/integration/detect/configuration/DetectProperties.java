@@ -1346,7 +1346,7 @@ public class DetectProperties {
             .build();
     
     public static final CaseSensitiveStringListProperty DETECT_PNPM_EXCLUDED_DIRECTORIES =
-            CaseSensitiveStringListProperty.newBuilder("detect.pnpm.excluded.directories")
+            CaseSensitiveStringListProperty.newBuilder("detect.pnpm.excluded.packages")
                 .setInfo("pnpm Exclude Directories", DetectPropertyFromVersion.VERSION_10_4_0)
                 .setHelp(
                     "A comma-separated list of pnpm directories to exclude.",
@@ -1357,7 +1357,7 @@ public class DetectProperties {
                 .build();
     
     public static final CaseSensitiveStringListProperty DETECT_PNPM_INCLUDED_DIRECTORIES =
-            CaseSensitiveStringListProperty.newBuilder("detect.pnpm.included.directories")
+            CaseSensitiveStringListProperty.newBuilder("detect.pnpm.included.packages")
                 .setInfo("pnpm Include Directories", DetectPropertyFromVersion.VERSION_10_4_0)
                 .setHelp(
                     "A comma-separated list of pnpm directories to include.",
