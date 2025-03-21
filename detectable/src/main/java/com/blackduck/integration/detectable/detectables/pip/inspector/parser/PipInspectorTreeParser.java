@@ -55,6 +55,9 @@ public class PipInspectorTreeParser {
                 }
                 continue;
             }
+            if (trimmedLine.startsWith(UNKNOWN_PROJECT_NAME)) {
+                logger.info("Pip inspector did not find a package matching project name");
+            }
             Dependency currentDependency = parseDependencyFromLine(trimmedLine, sourcePath);
             adjustForIndentLevel(history, line);
             project = addDependencyToGraph(graph, history, project, currentDependency);
