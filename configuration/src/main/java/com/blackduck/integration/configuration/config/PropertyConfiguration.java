@@ -245,12 +245,13 @@ public class PropertyConfiguration {
         return rawMap;
     }
 
-    public static void handleInvalidKeys(Set<Property> properties, Set<String> currentPropertyKeys) {
+    public static void handleInvalidKeys(Set<Property> properties, Set<String> currentPropertyKeys) throws InvalidPropertyKeyException {
         Set<String> validKeys = properties.stream().map(Property::getKey).collect(Collectors.toSet());
         List<String> invalidKeys = new ArrayList<>();
+        LevenshteinDistance levenshtein = new LevenshteinDistance();
         for (String key : currentPropertyKeys) {
             if (!validKeys.contains(key)) {
-                List<String> similarKeys = findSimilarKeys(key, validKeys);
+                List<String> similarKeys = findSimilarKeys(key, validKeys, levenshtein);
                 if (!similarKeys.isEmpty()) {
                     logger.warn("Property key '{}' is not valid. The most similar keys are: {}", key, similarKeys);
                 }
@@ -258,12 +259,12 @@ public class PropertyConfiguration {
             }
         }
         if (!invalidKeys.isEmpty()) {
-            throw new InvalidPropertyKeyException(String.join(", ", invalidKeys));
+            String message = String.format("Invalid property key(s): %s", String.join(", ", invalidKeys));
+            throw new InvalidPropertyKeyException(message);
         }
     }
 
-    public static List<String> findSimilarKeys(String invalidKey, Set<String> validKeys) {
-        LevenshteinDistance levenshtein = new LevenshteinDistance();
+    public static List<String> findSimilarKeys(String invalidKey, Set<String> validKeys, LevenshteinDistance levenshtein) {
         return validKeys.stream()
                 .filter(key -> levenshtein.apply(invalidKey, key) <= 3)
                 .collect(Collectors.toList());
