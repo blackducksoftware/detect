@@ -35,7 +35,7 @@ public class PipInspectorTreeParserTest {
             "   test==4.0.0"
         );
 
-        Optional<NameVersionCodeLocation> validParse = parser.parse(pipInspectorOutput, "", true);
+        Optional<NameVersionCodeLocation> validParse = parser.parse(pipInspectorOutput, "");
         Assertions.assertTrue(validParse.isPresent());
         Assertions.assertEquals("projectName", validParse.get().getProjectName());
         Assertions.assertEquals("projectVersionName", validParse.get().getProjectVersion());
@@ -59,7 +59,7 @@ public class PipInspectorTreeParserTest {
             "   test==4.0.0"
         );
 
-        Optional<NameVersionCodeLocation> validParse = parser.parse(pipInspectorOutput, "src/path", false);
+        Optional<NameVersionCodeLocation> validParse = parser.parse(pipInspectorOutput, "src/path");
         Assertions.assertTrue(validParse.isPresent());
         Assertions.assertEquals("", validParse.get().getProjectName());
         Assertions.assertEquals("", validParse.get().getProjectVersion());
@@ -74,20 +74,6 @@ public class PipInspectorTreeParserTest {
     }
 
     @Test
-    void projectNotFoundWhenNameGivenTest() {
-        List<String> pipInspectorOutput = Arrays.asList(
-            "n?==v?",
-            "   with-dashes==1.0.0",
-            "   Uppercase==2.0.0",
-            "      child==3.0.0",
-            "   test==4.0.0"
-        );
-
-        Optional<NameVersionCodeLocation> invalidParse = parser.parse(pipInspectorOutput, "src/path", true);
-        Assertions.assertFalse(invalidParse.isPresent());
-    }
-
-    @Test
     public void packageNotFoundTest() {
         List<String> pipInspectorOutput = Arrays.asList(
             "--scikit-learn",
@@ -98,7 +84,7 @@ public class PipInspectorTreeParserTest {
             "   test==4.0.0"
         );
 
-        Optional<NameVersionCodeLocation> result = parser.parse(pipInspectorOutput, "src/path", true);
+        Optional<NameVersionCodeLocation> result = parser.parse(pipInspectorOutput, "src/path");
         Assertions.assertFalse(result.isPresent());
     }
 
@@ -107,7 +93,7 @@ public class PipInspectorTreeParserTest {
         List<String> invalidText = new ArrayList<>();
         invalidText.add("i am not a valid file");
         invalidText.add("the status should be optional.empty()");
-        Optional<NameVersionCodeLocation> invalidParse = parser.parse(invalidText, "", true);
+        Optional<NameVersionCodeLocation> invalidParse = parser.parse(invalidText, "");
         Assertions.assertFalse(invalidParse.isPresent());
     }
 
@@ -117,7 +103,7 @@ public class PipInspectorTreeParserTest {
         invalidText.add(PipInspectorTreeParser.UNKNOWN_PACKAGE_PREFIX + "probably_an_internal_dependency_PY");
         invalidText.add(PipInspectorTreeParser.UNPARSEABLE_REQUIREMENTS_PREFIX + "/not/a/real/path/encrypted/requirements.txt");
         invalidText.add(PipInspectorTreeParser.UNKNOWN_REQUIREMENTS_PREFIX + "/not/a/real/path/requirements.txt");
-        Optional<NameVersionCodeLocation> invalidParse = parser.parse(invalidText, "", true);
+        Optional<NameVersionCodeLocation> invalidParse = parser.parse(invalidText, "");
         Assertions.assertFalse(invalidParse.isPresent());
     }
 }

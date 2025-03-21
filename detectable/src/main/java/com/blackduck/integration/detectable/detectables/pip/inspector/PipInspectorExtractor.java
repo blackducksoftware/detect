@@ -63,7 +63,7 @@ public class PipInspectorExtractor {
 
             for (Path requirementFilePath : requirementsPaths) {
                 List<String> inspectorOutput = runInspector(directory, pythonExe, pipInspector, projectName, requirementFilePath);
-                Optional<NameVersionCodeLocation> result = pipInspectorTreeParser.parse(inspectorOutput, directory.toString(), StringUtils.isNotEmpty(projectName));
+                Optional<NameVersionCodeLocation> result = pipInspectorTreeParser.parse(inspectorOutput, directory.toString());
                 if (result.isPresent()) {
                     codeLocations.add(result.get().getCodeLocation());
                     String potentialProjectVersion = result.get().getProjectVersion();
