@@ -1,14 +1,8 @@
 package com.blackduck.integration.configuration.config;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.SortedMap;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.similarity.LevenshteinDistance;
@@ -182,6 +176,15 @@ public class PropertyConfiguration {
             .collect(Collectors.toSet());
     }
 
+    @NotNull
+    public Set<String> getCurrentDetectPropertyKeys() {
+        return orderedPropertySources.stream()
+                .map(PropertySource::getKeys)
+                .flatMap(Set::stream)
+                .filter(key -> key.startsWith("detect") || key.startsWith("blackduck"))
+                .collect(Collectors.toSet());
+    }
+
     public <V, R> Optional<ValueParseException> getPropertyException(@NotNull TypedProperty<V, R> property) {
         assertPropertyNotNull(property);
         return valueFromCache(property).getException();
@@ -225,9 +228,7 @@ public class PropertyConfiguration {
     @NotNull
     public Map<String, String> getMaskedRawValueMap(@NotNull Set<Property> properties, Predicate<String> shouldMask) {
         Map<String, String> rawMap = new HashMap<>();
-        Set<String> validKeys = properties.stream().map(Property::getKey).collect(Collectors.toSet());
-        Set<String> collectedKeys = getKeys();
-        handleInvalidKeys(collectedKeys, validKeys);
+        handleInvalidKeys(properties, getCurrentDetectPropertyKeys());
         for (Property property : properties) {
             String rawKey = property.getKey();
             if (property instanceof PassthroughProperty) {
@@ -244,14 +245,20 @@ public class PropertyConfiguration {
         return rawMap;
     }
 
-    public static void handleInvalidKeys(Set<String> collectedKeys, Set<String> validKeys) {
-        for (String key : collectedKeys) {
+    public static void handleInvalidKeys(Set<Property> properties, Set<String> currentPropertyKeys) {
+        Set<String> validKeys = properties.stream().map(Property::getKey).collect(Collectors.toSet());
+        List<String> invalidKeys = new ArrayList<>();
+        for (String key : currentPropertyKeys) {
             if (!validKeys.contains(key)) {
                 List<String> similarKeys = findSimilarKeys(key, validKeys);
                 if (!similarKeys.isEmpty()) {
                     logger.warn("Property key '{}' is not valid. The most similar keys are: {}", key, similarKeys);
                 }
+                invalidKeys.add(key);
             }
+        }
+        if (!invalidKeys.isEmpty()) {
+            throw new InvalidPropertyKeyException(String.join(", ", invalidKeys));
         }
     }
 
