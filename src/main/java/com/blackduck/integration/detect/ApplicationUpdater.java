@@ -1,8 +1,11 @@
 package com.blackduck.integration.detect;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -27,9 +30,11 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
@@ -37,29 +42,6 @@ import java.util.stream.Collectors;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 
-import java.util.Set;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.blackduck.integration.blackduck.service.BlackDuckServicesFactory;
-import com.blackduck.integration.detect.configuration.DetectInfo;
-import com.blackduck.integration.detect.configuration.DetectInfoUtility;
-import com.blackduck.integration.exception.IntegrationException;
-import com.blackduck.integration.log.LogLevel;
-import com.blackduck.integration.log.SilentIntLogger;
-import com.blackduck.integration.rest.HttpMethod;
-import com.blackduck.integration.rest.HttpUrl;
-import com.blackduck.integration.rest.client.IntHttpClient;
-import com.blackduck.integration.rest.credentials.Credentials;
-import com.blackduck.integration.rest.credentials.CredentialsBuilder;
-import com.blackduck.integration.rest.proxy.ProxyInfo;
-import com.blackduck.integration.rest.proxy.ProxyInfoBuilder;
-import com.blackduck.integration.rest.request.Request;
-import com.blackduck.integration.rest.response.Response;
-
-import freemarker.template.Version;
-import java.util.Locale;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpStatus;
@@ -77,8 +59,29 @@ import org.apache.http.ssl.SSLContexts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.blackduck.integration.blackduck.service.BlackDuckServicesFactory;
+import com.blackduck.integration.detect.configuration.DetectInfo;
+import com.blackduck.integration.detect.configuration.DetectInfoUtility;
+import com.blackduck.integration.exception.IntegrationException;
+import com.blackduck.integration.log.LogLevel;
+import com.blackduck.integration.log.SilentIntLogger;
+import com.blackduck.integration.rest.HttpMethod;
+import com.blackduck.integration.rest.HttpUrl;
+import com.blackduck.integration.rest.client.IntHttpClient;
+import com.blackduck.integration.rest.credentials.Credentials;
+import com.blackduck.integration.rest.credentials.CredentialsBuilder;
+import com.blackduck.integration.rest.proxy.ProxyInfo;
+import com.blackduck.integration.rest.proxy.ProxyInfoBuilder;
+import com.blackduck.integration.rest.request.Request;
+import com.blackduck.integration.rest.response.Response;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import freemarker.template.Version;
+
 public class ApplicationUpdater extends URLClassLoader {
-    
+
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     
     protected static final String DOWNLOAD_VERSION_HEADER = "Version";
@@ -86,6 +89,7 @@ public class ApplicationUpdater extends URLClassLoader {
     private static final String DOWNLOAD_URL = "api/tools/detect";
     private static final String DOWNLOADED_FILE_NAME = "X-Artifactory-Filename";
     private static final String JAR_SUFFIX = ".jar";
+    private static final String VERSION_FILE_PATH = "BOOT-INF/classes/version.txt";
     private static final String JAR_SUFFIX_UPPER = JAR_SUFFIX.toUpperCase();
     private static final Version MINIMUM_DETECT_VERSION = new Version(8, 9, 0);
 
@@ -654,30 +658,95 @@ public class ApplicationUpdater extends URLClassLoader {
     }
     
     private File handleResponse(Response response, String currentInstalledVersion, File installDirectory, HttpUrl downloadUrl) throws IOException, IntegrationException {
+        String newVersionString = getVersionFromHeaders(response);
+
+        if (response.isStatusCodeSuccess()) {
+            // TODO restructure so this method doesn't need the version since it is trying to get the file so we can
+            // figure out the version.
+            File potentialNewJar = handleSuccessResponse(response, installDirectory.getAbsolutePath(), "");
+            
+            // If we still have not obtained the version, get it from the jar's version.txt file
+            if (newVersionString == null) {
+                newVersionString = getVersionFromJar(potentialNewJar);
+            } 
+            
+            // If we have the version at this point, see if we should update.
+            if (newVersionString != null) {
+                // TODO test if this works on random downloaded versions, we might need to also read this version.txt file
+                currentInstalledVersion = getVersionFromDetectFileName(currentInstalledVersion);
+                
+                logger.debug("{} Old version: {}, New Version: {}", LOG_PREFIX, currentInstalledVersion, newVersionString);
+                if (StringUtils.isNotBlank(newVersionString)
+                    && !newVersionString.equals(currentInstalledVersion)
+                    && !isDownloadVersionTooOld(currentInstalledVersion, newVersionString)) {
+                    // TODO need to restructure so only download once
+                    return handleSuccessResponse(response, installDirectory.getAbsolutePath(), newVersionString);
+                }
+            }
+        } 
+        
+        // We haven't updated, see why and explain to the user.
+        explainSkippedUpdate(response, downloadUrl, newVersionString);
+        
+        return null;
+    }
+
+    /**
+     * @param response
+     * @return
+     */
+    public String getVersionFromHeaders(Response response) {
         String newVersionString = response.getHeaderValue(DOWNLOAD_VERSION_HEADER);
         String newFileName;
+        
+        // If we have not obtained the version, get it from the filename header
         if (newVersionString == null && (newFileName = response.getHeaderValue(DOWNLOADED_FILE_NAME)) != null) {
             newVersionString = getVersionFromDetectFileName(newFileName);
         }
-        currentInstalledVersion = getVersionFromDetectFileName(currentInstalledVersion);
-        if (response.isStatusCodeSuccess() && newVersionString != null) {
-            logger.debug("{} Old version: {}, New Version: {}", LOG_PREFIX, currentInstalledVersion, newVersionString);
-            if (StringUtils.isNotBlank(newVersionString)
-                && !newVersionString.equals(currentInstalledVersion)
-                && !isDownloadVersionTooOld(currentInstalledVersion, newVersionString)) {
-                return handleSuccessResponse(response, installDirectory.getAbsolutePath(), newVersionString);
-            }
-        } else if (response.getStatusCode() == HttpStatus.SC_NOT_MODIFIED) {
+        return newVersionString;
+    }
+
+    /**
+     * @param response
+     * @param downloadUrl
+     * @param newVersionString
+     * @throws IOException
+     */
+    public void explainSkippedUpdate(Response response, HttpUrl downloadUrl, String newVersionString)
+            throws IOException {
+        if (response.getStatusCode() == HttpStatus.SC_NOT_MODIFIED) {
             logger.info("{} Present Detect installation is up to date - skipping download.", LOG_PREFIX);
+        } else if (newVersionString == null) {
+            logger.warn("Unable to extract information from update headers or specified Detect jar. An update will not take place.");
         } else {
             String problemUrl = captureProblemDetectUrl(downloadUrl);
             String message = StringUtils.isNotBlank(response.getStatusMessage()) ? response.getStatusMessage() : EnglishReasonPhraseCatalog.INSTANCE.getReason(response.getStatusCode(), Locale.ENGLISH);
             logger.warn("{} Unable to download artifact from {}.", LOG_PREFIX, problemUrl);
             logger.warn("{} Response code from {} was: {} {}", LOG_PREFIX, problemUrl, response.getStatusCode(), message);
         }
-        return null;
     }
     
+    private String getVersionFromJar(File potentialNewJar) throws IOException {
+        if (potentialNewJar != null) {
+            try (JarFile jarFile = new JarFile(potentialNewJar.getAbsolutePath())) {
+                JarEntry entry = jarFile.getJarEntry(VERSION_FILE_PATH);
+                if (entry != null) {
+                    try (InputStream inputStream = jarFile.getInputStream(entry);
+                            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            if (line.startsWith("version=")) {
+                                return line.substring("version=".length());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return null;
+    }
+
     /**
      * This method attempts to determine the true URL that is hosting Detect as we
      * are often redirected from the BlackDuck hosted URL.
@@ -739,12 +808,14 @@ public class ApplicationUpdater extends URLClassLoader {
                 try(final ReadableByteChannel readableByteChannel = Channels.newChannel(response.getContent())) {
                     try(final FileOutputStream fileOutputStream = new FileOutputStream(targetFilePath.toFile())) {
                         fileOutputStream.getChannel().transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
-                        logger.debug("{} Successfully downloaded new Detect version to {}.", LOG_PREFIX, targetFilePath.toAbsolutePath());
+                        logger.debug("{} Successfully downloaded potential new Detect version to {}.", LOG_PREFIX, targetFilePath.toAbsolutePath());
                     }
                 }
             }
-            final File newJarFile = targetFilePath.toFile();
+            File newJarFile = targetFilePath.toFile();
             String newFileName = targetFilePath.getFileName().toString();
+            // TODO don't believe we need to validate the file name now that we can read the jar but we do need to 
+            // make that validate call to set the execution bit.
             if (isValidDetectFileName(newFileName)) {
                 logger.debug("{} New File Name: {}, New Version String: {}", LOG_PREFIX, newFileName, newVersionString);
                 return validateDownloadedJar(newJarFile);
