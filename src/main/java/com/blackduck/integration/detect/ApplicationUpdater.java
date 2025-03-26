@@ -658,15 +658,31 @@ public class ApplicationUpdater extends URLClassLoader {
     }
     
     private File handleResponse(Response response, String currentInstalledVersion, File installDirectory, HttpUrl downloadUrl) throws IOException, IntegrationException {
-        String newVersionString = getVersionFromHeaders(response);
+        String newVersionString = response.getHeaderValue(DOWNLOAD_VERSION_HEADER);
+        String newFileName = response.getHeaderValue(DOWNLOADED_FILE_NAME);
+        
+        // If we have not obtained the version, get it from the filename header
+        if (newVersionString == null && newFileName != null) {
+            newVersionString = getVersionFromDetectFileName(newFileName);
+        }
+        
+        File potentialNewJar = null;
 
-        if (response.isStatusCodeSuccess()) {
-            // TODO restructure so this method doesn't need the version since it is trying to get the file so we can
-            // figure out the version.
-            File potentialNewJar = handleSuccessResponse(response, installDirectory.getAbsolutePath(), "");
-            
+        if (response.isStatusCodeSuccess()) {          
             // If we still have not obtained the version, get it from the jar's version.txt file
-            if (newVersionString == null) {
+            // TODO we need to get the file name before we can handle the response, extract it from the URL if we
+            // couldn't get it from the headers.
+            if (newFileName == null) {
+                String problemUrl = captureProblemDetectUrl(downloadUrl);
+                URL url = new URL(problemUrl);
+                String path = url.getPath();
+                newFileName = path.substring(path.lastIndexOf('/') + 1);
+                
+                // TODO restructure so this method doesn't need the version since it is trying to get the file so we can
+                // figure out the version.
+                potentialNewJar = handleSuccessResponse(response, installDirectory.getAbsolutePath(), "", newFileName);
+                
+                // TODO need to only update in handleSuccessResponse if jar is newer than the one we have.
                 newVersionString = getVersionFromJar(potentialNewJar);
             } 
             
@@ -680,7 +696,11 @@ public class ApplicationUpdater extends URLClassLoader {
                     && !newVersionString.equals(currentInstalledVersion)
                     && !isDownloadVersionTooOld(currentInstalledVersion, newVersionString)) {
                     // TODO need to restructure so only download once
-                    return handleSuccessResponse(response, installDirectory.getAbsolutePath(), newVersionString);
+                    if (potentialNewJar == null) {
+                        handleSuccessResponse(response, installDirectory.getAbsolutePath(), newVersionString, null);
+                    }
+                    
+                    return validateDownloadedJar(potentialNewJar);
                 }
             }
         } 
@@ -689,21 +709,6 @@ public class ApplicationUpdater extends URLClassLoader {
         explainSkippedUpdate(response, downloadUrl, newVersionString);
         
         return null;
-    }
-
-    /**
-     * @param response
-     * @return
-     */
-    public String getVersionFromHeaders(Response response) {
-        String newVersionString = response.getHeaderValue(DOWNLOAD_VERSION_HEADER);
-        String newFileName;
-        
-        // If we have not obtained the version, get it from the filename header
-        if (newVersionString == null && (newFileName = response.getHeaderValue(DOWNLOADED_FILE_NAME)) != null) {
-            newVersionString = getVersionFromDetectFileName(newFileName);
-        }
-        return newVersionString;
     }
 
     /**
@@ -800,8 +805,13 @@ public class ApplicationUpdater extends URLClassLoader {
         return problemUrl;
     }
 
-    private File handleSuccessResponse(Response response, String installDirAbsolutePath, String newVersionString) throws IOException, IntegrationException {
-        final Path targetFilePath = Paths.get(installDirAbsolutePath, "/", response.getHeaderValue(DOWNLOADED_FILE_NAME));
+    private File handleSuccessResponse(Response response, String installDirAbsolutePath, String newVersionString, String fileName) throws IOException, IntegrationException {
+        if (fileName == null) {
+            fileName = response.getHeaderValue(DOWNLOADED_FILE_NAME);
+        }
+        
+        
+        final Path targetFilePath = Paths.get(installDirAbsolutePath, "/", fileName);
         if (targetFilePath != null) {
             if (!targetFilePath.toFile().exists()) {
                 logger.debug("{} Writing to file {}.", LOG_PREFIX, targetFilePath.toAbsolutePath());
@@ -816,10 +826,10 @@ public class ApplicationUpdater extends URLClassLoader {
             String newFileName = targetFilePath.getFileName().toString();
             // TODO don't believe we need to validate the file name now that we can read the jar but we do need to 
             // make that validate call to set the execution bit.
-            if (isValidDetectFileName(newFileName)) {
+           // if (isValidDetectFileName(newFileName)) {
                 logger.debug("{} New File Name: {}, New Version String: {}", LOG_PREFIX, newFileName, newVersionString);
-                return validateDownloadedJar(newJarFile);
-            }
+                return newJarFile;
+           // }
         }
         return null;
     }
@@ -837,6 +847,7 @@ public class ApplicationUpdater extends URLClassLoader {
 
     private Optional<String> determineInstalledVersion() {
         final String detectVersion = detectInfo.getDetectVersion();
+        logger.error("********version is*********: " + detectVersion);
         if (detectVersion != null) {
             return Optional.of(detectInfo.getDetectVersion());
         } else {
