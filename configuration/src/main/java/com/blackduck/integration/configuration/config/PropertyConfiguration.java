@@ -1,17 +1,15 @@
 package com.blackduck.integration.configuration.config;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.SortedMap;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.similarity.JaroWinklerSimilarity;
+import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import com.blackduck.integration.configuration.config.resolution.NoPropertyResolution;
@@ -31,6 +29,7 @@ import com.blackduck.integration.configuration.property.base.ValuedProperty;
 import com.blackduck.integration.configuration.source.PropertySource;
 
 public class PropertyConfiguration {
+    private static final Logger logger = LoggerFactory.getLogger(PropertyConfiguration.class);
     private final Map<String, PropertyResolution> resolutionCache = new HashMap<>();
     private final Map<String, PropertyValue<?>> valueCache = new HashMap<>();
     private final List<PropertySource> orderedPropertySources;
@@ -178,6 +177,15 @@ public class PropertyConfiguration {
             .collect(Collectors.toSet());
     }
 
+    @NotNull
+    public Set<String> getCurrentDetectPropertyKeys() {
+        return orderedPropertySources.stream()
+                .map(PropertySource::getKeys)
+                .flatMap(Set::stream)
+                .filter(key -> key.startsWith("detect") || key.startsWith("blackduck"))
+                .collect(Collectors.toSet());
+    }
+
     public <V, R> Optional<ValueParseException> getPropertyException(@NotNull TypedProperty<V, R> property) {
         assertPropertyNotNull(property);
         return valueFromCache(property).getException();
@@ -221,6 +229,7 @@ public class PropertyConfiguration {
     @NotNull
     public Map<String, String> getMaskedRawValueMap(@NotNull Set<Property> properties, Predicate<String> shouldMask) {
         Map<String, String> rawMap = new HashMap<>();
+        handleInvalidKeys(properties, getCurrentDetectPropertyKeys());
         for (Property property : properties) {
             String rawKey = property.getKey();
             if (property instanceof PassthroughProperty) {
@@ -235,6 +244,28 @@ public class PropertyConfiguration {
             }
         }
         return rawMap;
+    }
+
+    public static void handleInvalidKeys(Set<Property> properties, Set<String> currentPropertyKeys) {
+        Set<String> validKeys = properties.stream().map(Property::getKey).collect(Collectors.toSet());
+        LevenshteinDistance levenshtein = new LevenshteinDistance();
+        JaroWinklerSimilarity jaroWinkler = new JaroWinklerSimilarity();
+        for (String key : currentPropertyKeys) {
+            if (!validKeys.contains(key)) {
+                List<String> similarKeys = findSimilarKeys(key, validKeys, levenshtein, jaroWinkler);
+                if (!similarKeys.isEmpty()) {
+                    logger.warn("Property key '{}' is not valid. The most similar keys are: {}", key, similarKeys);
+                }
+            }
+        }
+    }
+
+    public static List<String> findSimilarKeys(String invalidKey, Set<String> validKeys, LevenshteinDistance levenshtein, JaroWinklerSimilarity jaroWinkler) {
+        int levenshteinThreshold = 3;
+        double jaroWinklerThreshold = 0.94;
+        return validKeys.stream()
+                .filter(key -> jaroWinkler.apply(invalidKey, key) >= jaroWinklerThreshold)
+                .collect(Collectors.toList());
     }
 
     public String maskValue(String rawKey, String rawValue, Predicate<String> shouldMask) {
