@@ -668,8 +668,7 @@ public class ApplicationUpdater extends URLClassLoader {
         
         File potentialNewJar = null;
 
-        if (response.isStatusCodeSuccess()) {          
-            // If we still have not obtained the version, get it from the jar's version.txt file
+        if (response.isStatusCodeSuccess()) {
             // TODO we need to get the file name before we can handle the response, extract it from the URL if we
             // couldn't get it from the headers.
             if (newFileName == null) {
@@ -677,46 +676,42 @@ public class ApplicationUpdater extends URLClassLoader {
                 URL url = new URL(problemUrl);
                 String path = url.getPath();
                 newFileName = path.substring(path.lastIndexOf('/') + 1);
-                
-                // TODO restructure so this method doesn't need the version since it is trying to get the file so we can
-                // figure out the version.
-                potentialNewJar = handleSuccessResponse(response, installDirectory.getAbsolutePath(), "", newFileName);
-                
+            }
+            
+            // Initial call successful, follow the redirect to download the jar
+            potentialNewJar = handleSuccessResponse(response, installDirectory.getAbsolutePath(), newFileName);
+            logger.debug("{} New File Name: {}", LOG_PREFIX, newFileName);
+            
+            if (newVersionString == null) {
+                System.out.println("***2***");
+                // If we still have not obtained the version, get it from the jar's version.txt file
                 // TODO need to only update in handleSuccessResponse if jar is newer than the one we have.
                 newVersionString = getVersionFromJar(potentialNewJar);
-            } 
+                System.out.println("***3***");
+            }
             
             // If we have the version at this point, see if we should update.
-            if (newVersionString != null) {
-                // TODO test if this works on random downloaded versions, we might need to also read this version.txt file
-                currentInstalledVersion = getVersionFromDetectFileName(currentInstalledVersion);
-                
+            System.out.println("***4***");
+            currentInstalledVersion = getVersionFromDetectFileName(currentInstalledVersion);
+            System.out.println("***5***");
+            if (StringUtils.isNotBlank(newVersionString)) {
                 logger.debug("{} Old version: {}, New Version: {}", LOG_PREFIX, currentInstalledVersion, newVersionString);
-                if (StringUtils.isNotBlank(newVersionString)
-                    && !newVersionString.equals(currentInstalledVersion)
-                    && !isDownloadVersionTooOld(currentInstalledVersion, newVersionString)) {
-                    // TODO need to restructure so only download once
-                    if (potentialNewJar == null) {
-                        handleSuccessResponse(response, installDirectory.getAbsolutePath(), newVersionString, null);
-                    }
-                    
+                if (!newVersionString.equals(currentInstalledVersion)
+                        && !isDownloadVersionTooOld(currentInstalledVersion, newVersionString)) {
+                    System.out.println("***6***");
                     return validateDownloadedJar(potentialNewJar);
                 }
             }
-        } 
+    }
         
-        // We haven't updated, see why and explain to the user.
-        explainSkippedUpdate(response, downloadUrl, newVersionString);
-        
-        return null;
+            // We haven't updated, see why and explain to the user.
+            // TODO we flow into here if the versions are equal or if it is too old and we don't update then we
+            // incorrectly mention how we can't download the artifact.
+            explainSkippedUpdate(response, downloadUrl, newVersionString);
+            
+            return null;
     }
 
-    /**
-     * @param response
-     * @param downloadUrl
-     * @param newVersionString
-     * @throws IOException
-     */
     public void explainSkippedUpdate(Response response, HttpUrl downloadUrl, String newVersionString)
             throws IOException {
         if (response.getStatusCode() == HttpStatus.SC_NOT_MODIFIED) {
@@ -805,12 +800,7 @@ public class ApplicationUpdater extends URLClassLoader {
         return problemUrl;
     }
 
-    private File handleSuccessResponse(Response response, String installDirAbsolutePath, String newVersionString, String fileName) throws IOException, IntegrationException {
-        if (fileName == null) {
-            fileName = response.getHeaderValue(DOWNLOADED_FILE_NAME);
-        }
-        
-        
+    private File handleSuccessResponse(Response response, String installDirAbsolutePath, String fileName) throws IOException, IntegrationException {
         final Path targetFilePath = Paths.get(installDirAbsolutePath, "/", fileName);
         if (targetFilePath != null) {
             if (!targetFilePath.toFile().exists()) {
@@ -822,14 +812,7 @@ public class ApplicationUpdater extends URLClassLoader {
                     }
                 }
             }
-            File newJarFile = targetFilePath.toFile();
-            String newFileName = targetFilePath.getFileName().toString();
-            // TODO don't believe we need to validate the file name now that we can read the jar but we do need to 
-            // make that validate call to set the execution bit.
-           // if (isValidDetectFileName(newFileName)) {
-                logger.debug("{} New File Name: {}, New Version String: {}", LOG_PREFIX, newFileName, newVersionString);
-                return newJarFile;
-           // }
+            return targetFilePath.toFile();
         }
         return null;
     }
