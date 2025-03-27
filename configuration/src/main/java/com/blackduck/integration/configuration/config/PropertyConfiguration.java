@@ -5,6 +5,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.similarity.JaroWinklerSimilarity;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -245,28 +246,25 @@ public class PropertyConfiguration {
         return rawMap;
     }
 
-    public static void handleInvalidKeys(Set<Property> properties, Set<String> currentPropertyKeys) throws InvalidPropertyKeyException {
+    public static void handleInvalidKeys(Set<Property> properties, Set<String> currentPropertyKeys) {
         Set<String> validKeys = properties.stream().map(Property::getKey).collect(Collectors.toSet());
-        List<String> invalidKeys = new ArrayList<>();
         LevenshteinDistance levenshtein = new LevenshteinDistance();
+        JaroWinklerSimilarity jaroWinkler = new JaroWinklerSimilarity();
         for (String key : currentPropertyKeys) {
             if (!validKeys.contains(key)) {
-                List<String> similarKeys = findSimilarKeys(key, validKeys, levenshtein);
+                List<String> similarKeys = findSimilarKeys(key, validKeys, levenshtein, jaroWinkler);
                 if (!similarKeys.isEmpty()) {
                     logger.warn("Property key '{}' is not valid. The most similar keys are: {}", key, similarKeys);
                 }
-                invalidKeys.add(key);
             }
-        }
-        if (!invalidKeys.isEmpty()) {
-            String message = String.format("Invalid property key(s): %s", String.join(", ", invalidKeys));
-            throw new InvalidPropertyKeyException(message);
         }
     }
 
-    public static List<String> findSimilarKeys(String invalidKey, Set<String> validKeys, LevenshteinDistance levenshtein) {
+    public static List<String> findSimilarKeys(String invalidKey, Set<String> validKeys, LevenshteinDistance levenshtein, JaroWinklerSimilarity jaroWinkler) {
+        int levenshteinThreshold = 3;
+        double jaroWinklerThreshold = 0.94;
         return validKeys.stream()
-                .filter(key -> levenshtein.apply(invalidKey, key) <= 3)
+                .filter(key -> jaroWinkler.apply(invalidKey, key) >= jaroWinklerThreshold)
                 .collect(Collectors.toList());
     }
 
