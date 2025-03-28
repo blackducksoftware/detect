@@ -57,14 +57,14 @@ public class GoModCliExtractor {
 
     public Extraction extract(File directory, ExecutableTarget goExe) throws ExecutableFailedException, JsonSyntaxException, DetectableException {
         GoVersion goVersion = goVersion(directory, goExe);
-        List<GoListModule> goListModules = listModules(directory, goExe);
+        List<GoListModule> goListModules = listModules(directory, goExe); // only ever prints one module, the current module? Is this true even in "multi-module" projects? If they exist?
         List<GoListAllData> goListAllModules = listAllModules(directory, goExe, goVersion);
         List<GoGraphRelationship> goGraphRelationships = listGraphRelationships(directory, goExe, goVersion);
         Set<String> excludedModules = listExcludedModules(directory, goExe);
 
-        GoRelationshipManager goRelationshipManager = new GoRelationshipManager(goGraphRelationships, excludedModules);
-        GoModDependencyManager goModDependencyManager = new GoModDependencyManager(goListAllModules, externalIdFactory);
-        List<CodeLocation> codeLocations = goListModules.stream()
+        GoRelationshipManager goRelationshipManager = new GoRelationshipManager(goGraphRelationships, excludedModules); // at this point the relationship mapping is correct.
+        GoModDependencyManager goModDependencyManager = new GoModDependencyManager(goListAllModules, externalIdFactory); // next round of breaking changes
+        List<CodeLocation> codeLocations = goListModules.stream() // goListModules corresponds to output of "go list -m -json" which should just print the main module, but iterating over stream suggests there could be more? need an example. looks like for each one we create a new code location
             .map(goListModule -> goModGraphGenerator.generateGraph(goListModule, goRelationshipManager, goModDependencyManager))
             .collect(Collectors.toList());
 
@@ -86,7 +86,7 @@ public class GoModCliExtractor {
         List<String> modGraphOutput = goModCommandRunner.runGoModGraph(directory, goExe);
 
         // Get the actual main module that produced this graph
-        String mainMod = goModCommandRunner.runGoModGetMainModule(directory, goExe, goVersion);
+        String mainMod = goModCommandRunner.runGoModGetMainModule(directory, goExe, goVersion); // Regardless of # of modules, each go mod execution targets one module (corresponding to a go.mod file directory)
 
         // Get the list of TRUE direct dependencies, then use the main mod name and
         // this list to create a TRUE dependency graph from the requirement graph
