@@ -23,6 +23,7 @@ import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.rest.response.Response;
 import com.blackduck.integration.util.NameVersion;
 
+@Deprecated
 public class ThreatIntelScanStepRunner {
     
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -36,7 +37,8 @@ public class ThreatIntelScanStepRunner {
     private static final String STORAGE_UPLOAD_ENDPOINT = "/api/storage/rldata/";
     private static final String STORAGE_RL_CONTENT_TYPE = "application/vnd.blackducksoftware.rl-data-1+octet-stream";
     private static final BlackDuckVersion MIN_BLACK_DUCK_VERSION = new BlackDuckVersion(2024, 4, 0);
-    
+
+    @Deprecated
     public ThreatIntelScanStepRunner(OperationRunner operationRunner, BlackDuckRunData blackDuckRunData, NameVersion projectNameVersion) {
         this.operationRunner = operationRunner;
         this.blackDuckRunData = blackDuckRunData;
@@ -46,8 +48,10 @@ public class ThreatIntelScanStepRunner {
         projectGroupName = operationRunner.calculateProjectGroupOptions().getProjectGroup();
     }
 
+    @Deprecated
     public Optional<UUID> invokeThreatIntelWorkflow() {
         try {
+            // insert deprecation msg?
             logger.debug("Determining if configuration is valid to run a Threat Intel scan.");
             if (!isThreatIntelEligible()) {
                 return Optional.ofNullable(scanId);
@@ -83,7 +87,8 @@ public class ThreatIntelScanStepRunner {
 
         return Optional.ofNullable(scanId);
     }
-    
+
+    @Deprecated
     public String getCodeLocationName() {
         return codeLocationName;
     }

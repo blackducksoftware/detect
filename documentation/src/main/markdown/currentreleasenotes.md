@@ -27,6 +27,11 @@
 * Added property [detect.cargo.path](properties/detectors/cargo.md) to allow user specification of a custom Cargo executable path.   
 * New `detect.pnpm.included.packages` and `detect.pnpm.excluded.packages` properties for pnpm provide increased control over what directories [detect_product_short] scans under a pnpm project. See the [pnpm](properties/configuration/pnpm.html) property page for more information.
 
+### Changed features
+
+* [ReversingLabs Scans](runningdetect/threatintelscan.md) (THREAT_INTEL value of detect.tools) has been deprecated. 
+* The detect.threatintel.scan.file.path property has been deprecated. 
+
 ### Resolved issues
 
 * (IDETECT-4642) - Improved handling of pnpm packages that contain detailed version information in the pnpm-lock.yaml. Resolving [detect_product_short] missing some packages through failure to link direct and transitive dependencies. 

@@ -169,12 +169,7 @@ public class IntelligentModeStepRunner {
         });
         
         stepHelper.runToolIfIncluded(DetectTool.THREAT_INTEL, "Threat Intel Scan", () -> {
-            ThreatIntelScanStepRunner threatIntelScanStepRunner = new ThreatIntelScanStepRunner(operationRunner, blackDuckRunData, projectNameVersion);
-            Optional<UUID> scanId = threatIntelScanStepRunner.invokeThreatIntelWorkflow();
-            scanId.ifPresent(uuid -> scanIdsToWaitFor.add(uuid.toString()));
-            Set<String> threatIntelScanCodeLocations = new HashSet<>();
-            threatIntelScanCodeLocations.add(threatIntelScanStepRunner.getCodeLocationName());
-            codeLocationAccumulator.addNonWaitableCodeLocation(threatIntelScanCodeLocations);
+            logger.info("Threat Intel scan has been deprecated and will not be run.");
         });
 
         if (operationRunner.createBlackDuckPostOptions().isCorrelatedScanningEnabled()) {
@@ -322,7 +317,7 @@ public class IntelligentModeStepRunner {
         return detectToolFilter.shouldInclude(DetectTool.SIGNATURE_SCAN) ||
             detectToolFilter.shouldInclude(DetectTool.CONTAINER_SCAN) ||
             detectToolFilter.shouldInclude(DetectTool.BINARY_SCAN) ||
-            detectToolFilter.shouldInclude(DetectTool.THREAT_INTEL);
+            detectToolFilter.shouldInclude(DetectTool.THREAT_INTEL); // remove?
     }
 
     private void publishPostResults(BdioResult bdioResult, ProjectVersionWrapper projectVersionWrapper, DetectToolFilter detectToolFilter) {
