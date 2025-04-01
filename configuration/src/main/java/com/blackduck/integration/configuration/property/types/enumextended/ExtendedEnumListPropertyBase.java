@@ -61,7 +61,7 @@ public abstract class ExtendedEnumListPropertyBase<E extends Enum<E>, B extends 
 
     public void deprecateExtendedValue(E value, String reason) {
         deprecatedExtendedValues.add(value);
-        addDeprecatedValueInfo(value.toString(), reason);
+        addDeprecatedValueInfo(value.toString(), reason); // TOME
     }
 
     @Override
