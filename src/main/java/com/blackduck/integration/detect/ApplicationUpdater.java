@@ -669,11 +669,11 @@ public class ApplicationUpdater extends URLClassLoader {
         File potentialNewJar = null;
 
         if (response.isStatusCodeSuccess()) {
-            // TODO we need to get the file name before we can handle the response, extract it from the URL if we
-            // couldn't get it from the headers.
             if (newFileName == null) {
-                String problemUrl = captureProblemDetectUrl(downloadUrl);
-                URL url = new URL(problemUrl);
+                // We need to get the file name before we can handle the response, extract it from the URL if we
+                // couldn't get it from the headers.
+                String trueDownloadUrl = getTrueDetectDownloadUrl(downloadUrl);
+                URL url = new URL(trueDownloadUrl);
                 String path = url.getPath();
                 newFileName = path.substring(path.lastIndexOf('/') + 1);
             }
@@ -683,33 +683,27 @@ public class ApplicationUpdater extends URLClassLoader {
             logger.debug("{} New File Name: {}", LOG_PREFIX, newFileName);
             
             if (newVersionString == null) {
-                System.out.println("***2***");
                 // If we still have not obtained the version, get it from the jar's version.txt file
-                // TODO need to only update in handleSuccessResponse if jar is newer than the one we have.
                 newVersionString = getVersionFromJar(potentialNewJar);
-                System.out.println("***3***");
             }
             
             // If we have the version at this point, see if we should update.
-            System.out.println("***4***");
             currentInstalledVersion = getVersionFromDetectFileName(currentInstalledVersion);
-            System.out.println("***5***");
             if (StringUtils.isNotBlank(newVersionString)) {
                 logger.debug("{} Old version: {}, New Version: {}", LOG_PREFIX, currentInstalledVersion, newVersionString);
                 if (!newVersionString.equals(currentInstalledVersion)
                         && !isDownloadVersionTooOld(currentInstalledVersion, newVersionString)) {
-                    System.out.println("***6***");
                     return validateDownloadedJar(potentialNewJar);
                 }
             }
-    }
+        }
         
-            // We haven't updated, see why and explain to the user.
-            // TODO we flow into here if the versions are equal or if it is too old and we don't update then we
-            // incorrectly mention how we can't download the artifact.
-            explainSkippedUpdate(response, downloadUrl, newVersionString);
+        // We haven't updated, see why and explain to the user.
+        // TODO we flow into here if the versions are equal or if it is too old and we don't update then we
+        // incorrectly mention how we can't download the artifact.
+        explainSkippedUpdate(response, downloadUrl, newVersionString);
             
-            return null;
+        return null;
     }
 
     public void explainSkippedUpdate(Response response, HttpUrl downloadUrl, String newVersionString)
@@ -719,7 +713,7 @@ public class ApplicationUpdater extends URLClassLoader {
         } else if (newVersionString == null) {
             logger.warn("Unable to extract information from update headers or specified Detect jar. An update will not take place.");
         } else {
-            String problemUrl = captureProblemDetectUrl(downloadUrl);
+            String problemUrl = getTrueDetectDownloadUrl(downloadUrl);
             String message = StringUtils.isNotBlank(response.getStatusMessage()) ? response.getStatusMessage() : EnglishReasonPhraseCatalog.INSTANCE.getReason(response.getStatusCode(), Locale.ENGLISH);
             logger.warn("{} Unable to download artifact from {}.", LOG_PREFIX, problemUrl);
             logger.warn("{} Response code from {} was: {} {}", LOG_PREFIX, problemUrl, response.getStatusCode(), message);
@@ -757,7 +751,7 @@ public class ApplicationUpdater extends URLClassLoader {
      *         redirect from /api/tools/detect
      * @throws IOException
      */
-    private String captureProblemDetectUrl(HttpUrl downloadUrl) throws IOException {
+    private String getTrueDetectDownloadUrl(HttpUrl downloadUrl) throws IOException {
         String problemUrl = downloadUrl.toString();
 
         // We need to build a new client to communicate with BlackDuck. This is because
