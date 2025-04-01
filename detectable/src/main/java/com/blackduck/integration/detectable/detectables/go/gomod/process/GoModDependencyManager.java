@@ -64,7 +64,11 @@ public class GoModDependencyManager {
      * If it doesn't exist, returns a Dependency that just has a name and null as its version. (is that null handled properly .. that who knows.)
      */
     public Dependency getDependencyForModule(NameVersion module) {
-        return modulesAsDependencies.getOrDefault(module, convertToDependency(module.getName(), null));
+        Dependency dep = modulesAsDependencies.getOrDefault(module, convertToDependency(module.getName(), null)); // why does viper170 not exist? because it is not part of go list -m all. if we return a dep that is not in go list, we introduce a lot of false +ves
+        if (dep.getVersion() == null) {
+            System.out.println("No version found for " + module.getName());
+        }
+        return dep;
     }
 
     // When a version contains a commit hash, the KB only accepts the git hash, so we must strip out the rest.

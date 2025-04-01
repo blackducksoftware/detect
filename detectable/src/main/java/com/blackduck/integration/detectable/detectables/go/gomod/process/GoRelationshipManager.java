@@ -14,6 +14,7 @@ import com.blackduck.integration.util.NameVersion;
 public class GoRelationshipManager {
     private final Map<NameVersion, List<GoGraphRelationship>> relationshipMapNEW;
     private final Set<String> excludedModules; // comes from detect property. to leave that unchanged, modules cannot have version specifier? only name?
+    private static int count = 0;
 
     public GoRelationshipManager(List<GoGraphRelationship> goGraphRelationships, Set<String> excludedModules) {
         this.excludedModules = excludedModules;

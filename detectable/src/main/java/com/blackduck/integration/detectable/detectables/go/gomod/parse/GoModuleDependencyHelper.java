@@ -25,15 +25,15 @@ public class GoModuleDependencyHelper {
      * @param main - The string name of the main go module
      * @param directs - The obtained list of the main module's direct dependency.
      * @param whyList - A list of all modules with their relationship to the main module // TOME other modules .. hmm
-     * @param graph - The list produced by "go mod graph"- the intended "target".
+     * @param originalGoModGraph - The list produced by "go mod graph"- the intended "target".
      * @return - the actual dependency list
      */
-    public Set<String> computeDependencies(String main, List<String> directs, List<String> whyList, List<String>graph) { // read through this and make sure it's not impacted
+    public Set<String> computeDependencies(String main, List<String> directs, List<String> whyList, List<String>originalGoModGraph) { // read through this and make sure it's not impacted
         Set<String> goModGraph = new HashSet<>();
         List<String> correctedDependencies = new ArrayList<>();
         Map<String, List<String>> whyMap = whyListStructureTransform.convertWhyListToWhyMap(whyList);
         /* Correct lines that get mis-interpreted as a direct dependency, given the list of direct deps, requirements graph etc.*/
-        for (String grphLine : graph) {
+        for (String grphLine : originalGoModGraph) {
             boolean containsDirect = containsDirectDependencies(directs, main, grphLine);
             
             // Splitting here allows matching with less effort
@@ -47,7 +47,7 @@ public class GoModuleDependencyHelper {
             boolean needsRedux = !containsDirect && splitLine[0].equals(main);
             
             /* This searches for instances where the main module is apparently referring to itself.  
-            This can step on the indirect dependency making it seem to be direct.*/ // might affect 4581
+            This can step on the indirect dependency making it seem to be direct.*/ // DEFINITELY affects 4581 or relates to it. some other module could depend on main@v1 for example TODO TODO TODO TODO
             if (splitLine[0].startsWith(main) && splitLine[0].contains("@")) {
                 boolean gotoNext = hasDependency(correctedDependencies, splitLine[1]);
                 if (gotoNext) {
@@ -58,7 +58,8 @@ public class GoModuleDependencyHelper {
             if (needsRedux) {
                 /* Redo the line to establish the direct reference module to this *indirect* module*/
                 grphLine = this.getProperParentage(grphLine, splitLine, whyMap, directs, correctedDependencies);
-            }
+            } // github.com/simonireilly/go-modules-example golang.org/x/text@v0.3.2 becomes
+              // rsc.io/quote/v3@v3.1.0 golang.org/x/text@v0.3.2 ... any intermediate dependency relationship is omitted?
             
             goModGraph.add(grphLine);
         }
@@ -79,7 +80,7 @@ public class GoModuleDependencyHelper {
     }
 
     private String getProperParentage(String grphLine, String[] splitLine, Map<String, List<String>> whyMap, List<String> directs, List<String> correctedDependencies) {
-        String childModulePath = splitLine[1].replaceAll("@.*", "");
+        String childModulePath = splitLine[1].replaceAll("@.*", ""); // has no version information, @v123 is dropped.
         correctedDependencies.add(childModulePath); // keep track of ones we've fixed.
         
         // look up the 'why' results for the module...  This will tell us
@@ -88,7 +89,7 @@ public class GoModuleDependencyHelper {
         if (trackPath != null && !trackPath.isEmpty()) {
             for (String tp : trackPath) {
                 String parent = directs.stream()
-                        .filter(directMod -> tp.contains(directMod.replaceAll("@.*","")))
+                        .filter(directMod -> tp.contains(directMod.replaceAll("@.*",""))) // drops version information, which go mod why doesnt provide anyway?
                         .findFirst()
                         .orElse(null);
                 if (parent != null) { // if real direct is found... otherwise do nothing

@@ -31,10 +31,9 @@ public class GoModGraphGenerator {
 
     public CodeLocation generateGraph(GoListModule projectModule, GoRelationshipManager goRelationshipManager, GoModDependencyManager goModDependencyManager) {
         DependencyGraph graph = new BasicDependencyGraph();
-        String moduleName = projectModule.getPath(); // version is null for main module (commons-service) What is path? same thing as name?
-        // we could grab name and version from projectModule. version is null though. Might not always be the case.
+        String moduleName = projectModule.getPath();
         NameVersion moduleNameVersion = new NameVersion(moduleName, projectModule.getVersion());
-        if (goRelationshipManager.hasRelationshipsForNEW(moduleNameVersion)) { // has to be name version, but main module doesnt have version
+        if (goRelationshipManager.hasRelationshipsForNEW(moduleNameVersion)) {
             goRelationshipManager.getRelationshipsForNEW(moduleNameVersion).stream()
                 .map(relationship -> relationship.getChild())
                 .forEach(childNameVersion -> addModuleToGraph(childNameVersion, null, graph, goRelationshipManager, goModDependencyManager)); // this w/ null is actually called 119 times == number of relationships/"direct" deps
@@ -56,15 +55,15 @@ public class GoModGraphGenerator {
         NameVersion viper170 = new NameVersion("github.com/spf13/viper", "v1.7.0");
         NameVersion coreos = new NameVersion("github.com/coreos/bbolt", "v1.3.2");
 
-//        if (moduleNameVersion.equals(coreos)) {
-//            logger.debug("Bout to process unique dep");
-//        }
+        if (moduleNameVersion.equals(viper170)) {
+            logger.debug("Bout to process viper 1.7.0 dep");
+        }
         if (goRelationshipManager.isNotUsedByMainModule(moduleNameVersion.getName())) { // keeping that method call the same to indicate we exclude by name not name and version. pretty sure excluded modules dont come with version? somewhere in the go mod outputs they also have no version i think?
             logger.debug("Excluding module '{}' because it is not used by the main module.", moduleNameVersion.getName()); // confirm excluded modules are not impacted.. modules == deps?
             return;
         }
 
-        Dependency dependency = goModDependencyManager.getDependencyForModule(moduleNameVersion);
+        Dependency dependency = goModDependencyManager.getDependencyForModule(moduleNameVersion); // dependency loses version data here
         if (parent != null) {
             graph.addChildWithParent(dependency, parent);
         } else {

@@ -59,11 +59,15 @@ public class GoModCliExtractor {
         GoVersion goVersion = goVersion(directory, goExe);
         List<GoListModule> goListModules = listModules(directory, goExe); // only ever prints one module, the current module? Is this true even in "multi-module" projects? If they exist?
         List<GoListAllData> goListAllModules = listAllModules(directory, goExe, goVersion);
-        List<GoGraphRelationship> goGraphRelationships = listGraphRelationships(directory, goExe, goVersion);
+        List<GoGraphRelationship> goGraphRelationships = listGraphRelationships(directory, goExe, goVersion); // where we modify the go mod graph output
         Set<String> excludedModules = listExcludedModules(directory, goExe);
 
-        GoRelationshipManager goRelationshipManager = new GoRelationshipManager(goGraphRelationships, excludedModules); // at this point the relationship mapping is correct.
-        GoModDependencyManager goModDependencyManager = new GoModDependencyManager(goListAllModules, externalIdFactory); // next round of breaking changes
+        GoRelationshipManager goRelationshipManager = new GoRelationshipManager(goGraphRelationships, excludedModules); // at this point the relationship mapping is correct now, 170 and 181 are independent.
+
+        System.out.println("-->>");
+        List something = goListAllModules.stream().filter(listmod -> listmod.getPath().contains("viper")).collect(Collectors.toList());
+
+        GoModDependencyManager goModDependencyManager = new GoModDependencyManager(goListAllModules, externalIdFactory); // goListAllModules doesn't contain viper170, only required deps.
         List<CodeLocation> codeLocations = goListModules.stream() // goListModules corresponds to output of "go list -m -json" which should just print the main module, but iterating over stream suggests there could be more? need an example. looks like for each one we create a new code location
             .map(goListModule -> goModGraphGenerator.generateGraph(goListModule, goRelationshipManager, goModDependencyManager))
             .collect(Collectors.toList());
@@ -90,11 +94,14 @@ public class GoModCliExtractor {
 
         // Get the list of TRUE direct dependencies, then use the main mod name and
         // this list to create a TRUE dependency graph from the requirement graph
-        List<String> directs = goModCommandRunner.runGoModDirectDeps(directory, goExe, goVersion);
+        List<String> directs = goModCommandRunner.runGoModDirectDeps(directory, goExe, goVersion); // its somehow failing to do this correctly
         List<String> whyModuleList = goModCommandRunner.runGoModWhy(directory, goExe, false);
         
         GoModuleDependencyHelper goModDependencyHelper = new GoModuleDependencyHelper();
-        Set<String> actualDependencyList = goModDependencyHelper.computeDependencies(mainMod, directs, whyModuleList, modGraphOutput);
+        Set<String> actualDependencyList = goModDependencyHelper.computeDependencies(mainMod, directs, whyModuleList, modGraphOutput); // **********
+
+        System.out.println("-->>");
+        actualDependencyList.stream().filter(s -> s.contains("benbjohnson")).forEach(System.out::println);
 
         return goGraphParser.parseRelationshipsFromGoModGraph(actualDependencyList);
     }
