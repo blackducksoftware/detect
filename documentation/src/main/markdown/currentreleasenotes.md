@@ -25,7 +25,7 @@
 * Support for Conda has been extended to 25.1.1.
 * Cargo CLI Detector, leveraging `cargo tree` to extract direct and transitive dependencies, improving accuracy over the previous flat lockfile detection. This build-based detector is triggered for Cargo projects with a `Cargo.toml` file and requires Cargo version **1.44.0+**. For further information, see [Cargo package manager support](packagemgrs/cargo.md).
 * Added property [detect.cargo.path](properties/detectors/cargo.md) to allow user specification of a custom Cargo executable path.   
-* New `detect.pnpm.included.packages` and `detect.pnpm.excluded.packages` properties for pnpm provide increased control over what directories [detect_product_short] scans under a pnpm project. See the [pnpm](properties/configuration/pnpm.html) property page for more information.
+* New `detect.pnpm.included.packages` and `detect.pnpm.excluded.packages` properties for pnpm provide increased control over what directories [detect_product_short] scans under a pnpm project. See the [pnpm](properties/detectors/pnpm.html) property page for more information.
 
 ### Resolved issues
 
@@ -33,6 +33,3 @@
 * (IDETECT-4641) - Improved [detect_product_short]'s Yarn detector to handle non-standard version entries for component dependencies.
 * (IDETECT-4594) - Resolved [detect_product_short] failing to handle duplicate keys in package.json files across npm, pnpm, Lerna, and Yarn projects.
 
-### Dependency updates
-
-* 
