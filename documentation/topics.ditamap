@@ -214,7 +214,7 @@
 			<topicref href="integrations/jenkinsplugin/runninginjenkins.md" format="markdown"/>
 			<topicref href="integrations/jenkinsplugin/jenkinspipelinejob.md" format="markdown"/>
 			<topicref href="integrations/jenkinsplugin/jenkinsfreestylejob.md" format="markdown"/>
-			<topicref href="integrations/autoescapingparameters.md" format="markdown"/>
+			<topicref href="integrations/jenkinsplugin/autoescapingparameters.md" format="markdown"/>
 			<topicref href="integrations/jenkinsplugin/airgapfordetect.md" format="markdown"/>
 			<topicref href="integrations/jenkinsplugin/dockercontainers.md" format="markdown"/>
 		</topicref>
@@ -223,7 +223,7 @@
 			<topicref href="integrations/azureplugin/azurepluginrequirements.md" format="markdown"/>
 			<topicref href="integrations/azureplugin/installingtheplugin.md" format="markdown"/>
 			<topicref href="integrations/azureplugin/configuringandrunning.md" format="markdown"/>
-			<topicref href="integrations/autoescapingparameters.md" format="markdown"/>
+			<topicref href="integrations/azureplugin/autoescapingparameters.md" format="markdown"/>
 			<topicref href="integrations/azureplugin/configuringbuildagent.md" format="markdown"/>
 			<topicref href="integrations/azureplugin/runningthetask.md" format="markdown"/>
 		</topicref>

@@ -1,6 +1,6 @@
 # Auto-escaping Parameters
 
-In Azure and Jenkins integrations for [detect_product_long], several special parameters are automatically escaped. 
+In Jenkins integrations for [detect_product_long], several special parameters are automatically escaped. 
 The workflows pertaining to quotation marks and spaces are as follows.
 
 - Detect properties must be separated by spaces or carriage returns/line feeds.
