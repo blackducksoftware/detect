@@ -685,7 +685,7 @@ public class ApplicationUpdater extends URLClassLoader {
             if (newVersionString == null) {
                 // If we still have not obtained the version, get it from the jar's version.txt file
                 newVersionString = getVersionFromJar(potentialNewJar);
-            }
+            } // TODO the failure here is currently handled later which is a bit weird
             
             // If we have the version at this point, see if we should update.
             currentInstalledVersion = getVersionFromDetectFileName(currentInstalledVersion);
@@ -694,6 +694,8 @@ public class ApplicationUpdater extends URLClassLoader {
                 if (!newVersionString.equals(currentInstalledVersion)
                         && !isDownloadVersionTooOld(currentInstalledVersion, newVersionString)) {
                     return validateDownloadedJar(potentialNewJar);
+                } else {
+                    // TODO perhaps explain why not updating here as it isn't really a problem with the response
                 }
             }
         }
