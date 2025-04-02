@@ -3,14 +3,11 @@
 ## Version 10.1.0
 **New features**
 
-* (DETECTADO-102) Added support for Node16 and Node20_1 Node.js versions which will remove warnings for Node10 end of life.
+* (DETECTADO-102) Added support for Node.js versions Node16 and Node20_1. Node10 end-of-life warning will no longer be displayed.
 
 **Resolved issues**
 
-* (DETECTADO-103) Resolved some security vulnerabilities and updated plugin to use stable versions of those components.
-
-
-
+* (DETECTADO-103) Updated dependencies to resolve their associated security vulnerabilities.
 
 ## Version 10.0.0
 **Notice**
