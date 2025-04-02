@@ -1,5 +1,17 @@
 # Release Notes for Azure DevOps Plugin
 
+## Version 10.1.0
+**New features**
+
+* (DETECTADO-102) Added support for Node16 and Node20_1 Node.js versions which will remove warnings for Node10 end of life.
+
+**Resolved issues**
+
+* (DETECTADO-103) Resolved some security vulnerabilities and updated plugin to use stable versions of those components.
+
+
+
+
 ## Version 10.0.0
 **Notice**
 
