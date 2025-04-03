@@ -341,14 +341,6 @@ public class DetectProperties {
             .setGroups(DetectGroup.CONTAINER_SCANNER, DetectGroup.SOURCE_PATH)
             .build();
 
-    public static final NullableStringProperty DETECT_THREAT_INTEL_SCAN_FILE =
-            NullableStringProperty.newBuilder("detect.threatintel.scan.file.path")
-                .setInfo("Threat Intel Scan Target", DetectPropertyFromVersion.VERSION_9_6_0)
-                .setHelp(
-                    "If specified, this file and this file only will be uploaded for Threat Intel analysis.  The THREAT_INTEL tool does not provide project and version name defaults to Detect, so you need to set project and version names via properties when only the THREAT_INTEL tool is invoked.")
-                .setGroups(DetectGroup.THREAT_INTEL, DetectGroup.SOURCE_PATH)
-                .build();
-
     // TODO: Consider removing environment sourcing code in 9.0.0. IDETECT-3167
     public static final StringProperty DETECT_BITBAKE_BUILD_ENV_NAME =
         StringProperty.newBuilder("detect.bitbake.build.env.name", "oe-init-build-env")
@@ -1768,7 +1760,7 @@ public class DetectProperties {
                     "If neither detect.tools nor detect.tools.excluded are set, Detect will allow (run if applicable, based on the values of other properties) all non-exclusive Detect tools. If detect.tools is set, and detect.tools.excluded is not set, Detect will run those tools that are specified in the detect.tools list. If detect.tools.excluded is set, Detect will only allow those tools that are not specified in the detect.tools.excluded list."
             )
             .setGroups(DetectGroup.PATHS, DetectGroup.GLOBAL)
-            .build();
+            .build().deprecateThreatIntelToolValue();
 
     public static final BooleanProperty DETECT_YARN_IGNORE_ALL_WORKSPACES_MODE =
         BooleanProperty.newBuilder("detect.yarn.ignore.all.workspaces", false)
@@ -1921,6 +1913,16 @@ public class DetectProperties {
                 DetectMajorVersion.ELEVEN
             )
             .build();
+
+    public static final NullableStringProperty DETECT_THREAT_INTEL_SCAN_FILE =
+            NullableStringProperty.newBuilder("detect.threatintel.scan.file.path")
+                    .setInfo("Threat Intel Scan Target", DetectPropertyFromVersion.VERSION_9_6_0)
+                    .setHelp(
+                            "If specified, this file and this file only will be uploaded for Threat Intel analysis. The THREAT_INTEL tool does not provide project and version name defaults to Detect, so you need to set project and version names via properties when only the THREAT_INTEL tool is invoked.")
+                    .setGroups(DetectGroup.THREAT_INTEL, DetectGroup.SOURCE_PATH)
+                    .setDeprecated("This property has been deprecated.",
+                            DetectMajorVersion.ELEVEN)
+                    .build();
 
     // Can't take in the DetectProperty<?> due to an illegal forward reference :(
     private static String createTypeFilterHelpText(String exclusionTypePlural) {

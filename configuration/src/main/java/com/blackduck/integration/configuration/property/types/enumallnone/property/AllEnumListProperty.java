@@ -57,4 +57,10 @@ public class AllEnumListProperty<B extends Enum<B>> extends ExtendedEnumListProp
     public AllEnumList<B> convertValue(List<ExtendedEnumValue<AllEnum, B>> value) {
         return new AllEnumList<>(value, bClass);
     }
+
+
+    public void deprecateThreatIntelToolValue(String reason) {
+        deprecateExtendedValue(DetectTool.THREAT_INTEL, reason);
+        return this;
+    }
 }

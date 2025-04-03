@@ -9,6 +9,10 @@ public enum DetectTool {
     BAZEL,
     IAC_SCAN,
     CONTAINER_SCAN,
+    /**
+     * @deprecated in v10.4.0, will be removed in v11.0.0
+     */
+    @Deprecated
     THREAT_INTEL,
     COMPONENT_LOCATION_ANALYSIS
 }
