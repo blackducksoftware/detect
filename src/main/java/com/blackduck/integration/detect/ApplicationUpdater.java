@@ -659,57 +659,64 @@ public class ApplicationUpdater extends URLClassLoader {
     
     private File handleResponse(Response response, String currentInstalledVersion, File installDirectory, HttpUrl downloadUrl) throws IOException, IntegrationException {
         if (response.isStatusCodeSuccess()) {
-            String newVersionString = response.getHeaderValue(DOWNLOAD_VERSION_HEADER);
-            String newFileName = response.getHeaderValue(DOWNLOADED_FILE_NAME);
-            
-            // If we have not obtained the version, get it from the filename header
-            if (newVersionString == null && newFileName != null) {
-                newVersionString = getVersionFromDetectFileName(newFileName);
-            }
-            
-            if (newFileName == null) {
-                // We need to get the file name before we can handle the response, extract it from the URL if we
-                // couldn't get it from the headers.
-                String trueDownloadUrl = getTrueDetectDownloadUrl(downloadUrl);
-                URL url = new URL(trueDownloadUrl);
-                String path = url.getPath();
-                newFileName = path.substring(path.lastIndexOf('/') + 1);
-            } else {
-                logger.warn("Unable to determine Detect file name. Detect update will not occur.");
-                return null;
-            }
-            
-            // Initial call successful, follow the redirect to download the jar
-            File potentialNewJar = handleSuccessResponse(response, installDirectory.getAbsolutePath(), newFileName);
-            logger.debug("{} New File Name: {}", LOG_PREFIX, newFileName);
-            
-            if (newVersionString == null && potentialNewJar != null) {
-                // If we still have not obtained the version, get it from the jar's version.txt file
-                newVersionString = getVersionFromJar(potentialNewJar);
-            } else {
-                logger.warn("Unable to determine version of new Detect candidate. Detect update will not occur.");
-                return null;
-            }
-            
-            // If we have the version at this point, see if we should update.
-            currentInstalledVersion = getVersionFromDetectFileName(currentInstalledVersion);
-            logger.debug("{} Old version: {}, New Version: {}", LOG_PREFIX, currentInstalledVersion, newVersionString);
-            if (!newVersionString.equals(currentInstalledVersion)
-                    && !isDownloadVersionTooOld(currentInstalledVersion, newVersionString)) {
-                return validateDownloadedJar(potentialNewJar);
-            } else {
-                logger.info("New version {} is not applicable for update. Using existing version {} instead.", newVersionString, currentInstalledVersion);
-            }
+            return handleSuccess(response, currentInstalledVersion, installDirectory, downloadUrl);
         } else if (response.getStatusCode() == HttpStatus.SC_NOT_MODIFIED) {
             logger.info("{} Present Detect installation is up to date - skipping download.", LOG_PREFIX);
         } else {
-            String problemUrl = getTrueDetectDownloadUrl(downloadUrl);
-            String message = StringUtils.isNotBlank(response.getStatusMessage()) ? response.getStatusMessage() : EnglishReasonPhraseCatalog.INSTANCE.getReason(response.getStatusCode(), Locale.ENGLISH);
-            logger.warn("{} Unable to download artifact from {}.", LOG_PREFIX, problemUrl);
-            logger.warn("{} Response code from {} was: {} {}", LOG_PREFIX, problemUrl, response.getStatusCode(), message);
+            handleFailure(response, downloadUrl);
         }
-            
         return null;
+    }
+
+    private File handleSuccess(Response response, String currentInstalledVersion, File installDirectory, HttpUrl downloadUrl) throws IOException, IntegrationException {
+        String newVersionString = response.getHeaderValue(DOWNLOAD_VERSION_HEADER);
+        String newFileName = response.getHeaderValue(DOWNLOADED_FILE_NAME);
+
+        if (newFileName == null) {
+            newFileName = extractFileNameFromUrl(downloadUrl);
+        }
+
+        File potentialNewJar = downloadNewJar(response, installDirectory, newFileName);
+
+        if (potentialNewJar == null) {
+            logger.warn("Failed to download the new Detect JAR.");
+            return null;
+        }
+
+        if (newVersionString == null) {
+            newVersionString = getVersionFromJar(potentialNewJar);
+        }
+
+        if (newVersionString == null) {
+            logger.warn("Unable to determine version of new Detect candidate. Detect update will not occur.");
+            return null;
+        }
+
+        currentInstalledVersion = getVersionFromDetectFileName(currentInstalledVersion);
+        if (shouldUpdate(currentInstalledVersion, newVersionString)) {
+            return validateDownloadedJar(potentialNewJar);
+        } else {
+            logger.info("New version {} is not applicable for update. Using existing version {} instead.", newVersionString, currentInstalledVersion);
+        }
+        return null;
+    }
+
+    private void handleFailure(Response response, HttpUrl downloadUrl) throws IOException {
+        String problemUrl = getTrueDetectDownloadUrl(downloadUrl);
+        String message = StringUtils.isNotBlank(response.getStatusMessage()) ? response.getStatusMessage() : EnglishReasonPhraseCatalog.INSTANCE.getReason(response.getStatusCode(), Locale.ENGLISH);
+        logger.warn("{} Unable to download artifact from {}.", LOG_PREFIX, problemUrl);
+        logger.warn("{} Response code from {} was: {} {}", LOG_PREFIX, problemUrl, response.getStatusCode(), message);
+    }
+
+    private String extractFileNameFromUrl(HttpUrl downloadUrl) throws IOException {
+        String trueDownloadUrl = getTrueDetectDownloadUrl(downloadUrl);
+        URL url = new URL(trueDownloadUrl);
+        String path = url.getPath();
+        return path.substring(path.lastIndexOf('/') + 1);
+    }
+
+    private boolean shouldUpdate(String currentInstalledVersion, String newVersionString) {
+        return !newVersionString.equals(currentInstalledVersion) && !isDownloadVersionTooOld(currentInstalledVersion, newVersionString);
     }
     
     private String getVersionFromJar(File potentialNewJar) throws IOException {
@@ -729,7 +736,7 @@ public class ApplicationUpdater extends URLClassLoader {
                 }
             }
         }
-        
+
         return null;
     }
 
@@ -786,8 +793,8 @@ public class ApplicationUpdater extends URLClassLoader {
         return problemUrl;
     }
 
-    private File handleSuccessResponse(Response response, String installDirAbsolutePath, String fileName) throws IOException, IntegrationException {
-        final Path targetFilePath = Paths.get(installDirAbsolutePath, "/", fileName);
+    private File downloadNewJar(Response response, File installDirectory, String fileName) throws IOException, IntegrationException {
+        final Path targetFilePath = Paths.get(installDirectory.getAbsolutePath(), "/", fileName);
         if (targetFilePath != null) {
             if (!targetFilePath.toFile().exists()) {
                 logger.debug("{} Writing to file {}.", LOG_PREFIX, targetFilePath.toAbsolutePath());
@@ -816,7 +823,6 @@ public class ApplicationUpdater extends URLClassLoader {
 
     private Optional<String> determineInstalledVersion() {
         final String detectVersion = detectInfo.getDetectVersion();
-        logger.error("********version is*********: " + detectVersion);
         if (detectVersion != null) {
             return Optional.of(detectInfo.getDetectVersion());
         } else {
