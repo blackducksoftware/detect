@@ -37,6 +37,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.HostnameVerifier;
@@ -92,6 +94,7 @@ public class ApplicationUpdater extends URLClassLoader {
     private static final String VERSION_FILE_PATH = "BOOT-INF/classes/version.txt";
     private static final String JAR_SUFFIX_UPPER = JAR_SUFFIX.toUpperCase();
     private static final Version MINIMUM_DETECT_VERSION = new Version(8, 9, 0);
+    private static final String SEMVER_PATTERN = "^(\\d+)\\.(\\d+)\\.(\\d+)$";
 
     private String blackduckHost = null;
     private String offlineMode = null;
@@ -225,7 +228,14 @@ public class ApplicationUpdater extends URLClassLoader {
                 versionBuilder.append(".");
             }
         }
-        return versionBuilder.toString();
+        
+        String possibleNewVersion = versionBuilder.toString();
+        
+        if (isValidSemVer(possibleNewVersion)) {
+          return possibleNewVersion;
+        } else {
+            return null;
+        }
     }
     
     private String removeFileExtensionIfExists(String input) {
@@ -674,17 +684,23 @@ public class ApplicationUpdater extends URLClassLoader {
 
         if (newFileName == null) {
             newFileName = extractFileNameFromUrl(downloadUrl);
-        } else {
-            logger.warn("Unable to determine Detect jar filename. Detect update will not occur.");
-            return null;
+            
+            if (newFileName == null){
+                logger.warn("Unable to determine Detect jar filename. Detect update will not occur.");
+                return null;
+            }
+        }
+        
+        if (newVersionString == null) {
+            newVersionString = getVersionFromDetectFileName(newFileName);
         }
 
         File potentialNewJar = downloadNewJarIfNeeded(response, installDirectory, newFileName, newVersionString);
 
-        if (newVersionString == null && potentialNewJar != null) {
+        if (potentialNewJar != null) {
             newVersionString = getVersionFromJar(potentialNewJar);
         }
-
+        
         if (newVersionString == null) {
             logger.warn("Unable to determine version of new Detect candidate. Detect update will not occur.");
             return null;
@@ -706,6 +722,12 @@ public class ApplicationUpdater extends URLClassLoader {
             logger.info("New version {} is not applicable for update. Using existing version {} instead.", newVersionString, currentInstalledVersion);
         }
         return null;
+    }
+
+    public boolean isValidSemVer(String version) {
+        Pattern pattern = Pattern.compile(SEMVER_PATTERN);
+        Matcher matcher = pattern.matcher(version);
+        return matcher.matches();
     }
     
     private File downloadNewJarIfNeeded(Response response, File installDirectory, String newFileName, String newVersionString) throws IOException, IntegrationException {
