@@ -665,8 +665,6 @@ public class ApplicationUpdater extends URLClassLoader {
         if (newVersionString == null && newFileName != null) {
             newVersionString = getVersionFromDetectFileName(newFileName);
         }
-        
-        File potentialNewJar = null;
 
         if (response.isStatusCodeSuccess()) {
             if (newFileName == null) {
@@ -676,10 +674,10 @@ public class ApplicationUpdater extends URLClassLoader {
                 URL url = new URL(trueDownloadUrl);
                 String path = url.getPath();
                 newFileName = path.substring(path.lastIndexOf('/') + 1);
-            }
+            } // TODO need to error if can't get filename
             
             // Initial call successful, follow the redirect to download the jar
-            potentialNewJar = handleSuccessResponse(response, installDirectory.getAbsolutePath(), newFileName);
+            File potentialNewJar = handleSuccessResponse(response, installDirectory.getAbsolutePath(), newFileName);
             logger.debug("{} New File Name: {}", LOG_PREFIX, newFileName);
             
             if (newVersionString == null) {
