@@ -674,16 +674,14 @@ public class ApplicationUpdater extends URLClassLoader {
 
         if (newFileName == null) {
             newFileName = extractFileNameFromUrl(downloadUrl);
-        }
-
-        File potentialNewJar = downloadNewJar(response, installDirectory, newFileName);
-
-        if (potentialNewJar == null) {
-            logger.warn("Failed to download the new Detect JAR.");
+        } else {
+            logger.warn("Unable to determine Detect jar filename. Detect update will not occur.");
             return null;
         }
 
-        if (newVersionString == null) {
+        File potentialNewJar = downloadNewJarIfNeeded(response, installDirectory, newFileName, newVersionString);
+
+        if (newVersionString == null && potentialNewJar != null) {
             newVersionString = getVersionFromJar(potentialNewJar);
         }
 
@@ -694,9 +692,25 @@ public class ApplicationUpdater extends URLClassLoader {
 
         currentInstalledVersion = getVersionFromDetectFileName(currentInstalledVersion);
         if (shouldUpdate(currentInstalledVersion, newVersionString)) {
+            if (potentialNewJar == null) {
+                potentialNewJar = downloadNewJar(response, installDirectory, newFileName); 
+                
+                if (potentialNewJar == null) {
+                    logger.warn("Failed to download the new Detect JAR.");
+                    return null;
+                }
+            }
+            
             return validateDownloadedJar(potentialNewJar);
         } else {
             logger.info("New version {} is not applicable for update. Using existing version {} instead.", newVersionString, currentInstalledVersion);
+        }
+        return null;
+    }
+    
+    private File downloadNewJarIfNeeded(Response response, File installDirectory, String newFileName, String newVersionString) throws IOException, IntegrationException {
+        if (newVersionString == null) {
+            return downloadNewJar(response, installDirectory, newFileName);
         }
         return null;
     }
