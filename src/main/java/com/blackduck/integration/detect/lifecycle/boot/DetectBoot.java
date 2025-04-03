@@ -17,6 +17,8 @@ import com.blackduck.integration.configuration.property.types.enumallnone.list.A
 import com.blackduck.integration.configuration.property.types.path.PathValue;
 import com.blackduck.integration.detect.configuration.connection.BlackDuckConnectionDetails;
 import com.blackduck.integration.detect.configuration.help.yaml.HelpYamlWriter;
+import com.blackduck.integration.detect.workflow.status.DetectIssue;
+import com.blackduck.integration.detect.workflow.status.DetectIssueType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -337,11 +339,19 @@ public class DetectBoot {
         }
     }
 
-    private SortedMap<String, String> collectMaskedRawPropertyValues(PropertyConfiguration propertyConfiguration) throws IllegalAccessException {
-        return new TreeMap<>(propertyConfiguration.getMaskedRawValueMap(
-            new HashSet<>(DetectProperties.allProperties().getProperties()),
-            DetectPropertyUtil.getPasswordsAndTokensPredicate()
-        ));
+    private SortedMap<String, String> collectMaskedRawPropertyValues(PropertyConfiguration propertyConfiguration) {
+        Map<String, Object> result = propertyConfiguration.getMaskedRawValueMapWithMessage(
+                new HashSet<>(DetectProperties.allProperties().getProperties()),
+                DetectPropertyUtil.getPasswordsAndTokensPredicate()
+        );
+        String aggregatedMessage = (String) result.get("aggregatedMessage");
+        if (aggregatedMessage != null && !aggregatedMessage.isEmpty()) {
+            DetectIssue.publish(eventSystem, DetectIssueType.PROPERTY_KEY, "Property Key Issue", aggregatedMessage);
+        }
+
+        Map<String, String> rawMap = (Map<String, String>) result.get("rawMap");
+
+        return new TreeMap<>(rawMap);
     }
 
     private void publishCollectedPropertyValues(Map<String, String> maskedRawPropertyValues) {

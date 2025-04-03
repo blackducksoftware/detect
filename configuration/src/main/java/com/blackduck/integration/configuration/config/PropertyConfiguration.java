@@ -229,7 +229,6 @@ public class PropertyConfiguration {
     @NotNull
     public Map<String, String> getMaskedRawValueMap(@NotNull Set<Property> properties, Predicate<String> shouldMask) {
         Map<String, String> rawMap = new HashMap<>();
-        handleInvalidKeys(properties, getCurrentDetectPropertyKeys());
         for (Property property : properties) {
             String rawKey = property.getKey();
             if (property instanceof PassthroughProperty) {
@@ -246,18 +245,37 @@ public class PropertyConfiguration {
         return rawMap;
     }
 
-    public static void handleInvalidKeys(Set<Property> properties, Set<String> currentPropertyKeys) {
+    @NotNull
+    public Map<String, Object> getMaskedRawValueMapWithMessage(@NotNull Set<Property> properties, Predicate<String> shouldMask) {
+        Map<String, String> rawMap = getMaskedRawValueMap(properties, shouldMask);
+        String aggregatedMessage = handleInvalidKeys(properties, getCurrentDetectPropertyKeys());
+        Map<String, Object> result = new HashMap<>();
+        result.put("rawMap", rawMap);
+        result.put("aggregatedMessage", aggregatedMessage);
+        return result;
+    }
+
+    public static String handleInvalidKeys(Set<Property> properties, Set<String> currentPropertyKeys) {
         Set<String> validKeys = properties.stream().map(Property::getKey).collect(Collectors.toSet());
         validKeys.addAll(ExternalProperties.getAllExternalPropertyKeys());
         JaroWinklerSimilarity jaroWinkler = new JaroWinklerSimilarity();
+        StringBuilder aggregatedMessage = new StringBuilder();
+        List<String> invalidKeys = new ArrayList<>();
+
         for (String key : currentPropertyKeys) {
             if (!validKeys.contains(key)) {
+                invalidKeys.add(key);
                 List<String> similarKeys = findSimilarKeys(key, validKeys, jaroWinkler);
                 if (!similarKeys.isEmpty()) {
-                    logger.warn("Property key '{}' is not valid. The most similar keys are: {}", key, similarKeys);
+                    String message = String.format("Property key '%s' is not valid. The most similar keys are: %s", key, similarKeys);
+                    logger.warn(message);
                 }
             }
         }
+        if (!invalidKeys.isEmpty()) {
+            aggregatedMessage.append("The following property keys are not valid: ").append(String.join(", ", invalidKeys));
+        }
+        return aggregatedMessage.toString();
     }
 
     public static List<String> findSimilarKeys(String invalidKey, Set<String> validKeys, JaroWinklerSimilarity jaroWinkler) {
