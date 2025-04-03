@@ -52,5 +52,28 @@ public class GoBattery {
         test.expectBdioResources();
         test.run();
     }
+
+    @Test
+    void modGraphCorrectParentForTransitiveDependencies() {
+        // text is a transitive dependency coming from sampler but incorrectly put under quote (though it is also correctly put under sampler)
+        DetectorBatteryTestRunner test = new DetectorBatteryTestRunner("go-mod-test-demo", "go-mod/demo");
+        test.executableFromResourceFiles(DetectProperties.DETECT_GO_PATH, "go-version.xout", "go-list.xout", "go-list-u-json.xout", "go-mod-graph.xout", "go-mod-get-main.xout", "go-mod-list-directs.xout", "go-mod-why.xout", "go-mod-why.xout");
+        test.sourceDirectoryNamed("testing-4602");
+        test.property(DetectProperties.DETECT_PROJECT_VERSION_NAME, "demo");
+        test.sourceFileFromResource("go.mod");
+        test.expectBdioResources();
+        test.run();
+    }
+
+    @Test
+    void modGraphTestViper() {
+        DetectorBatteryTestRunner test = new DetectorBatteryTestRunner("go-mod-test-viper", "go-mod/viper4602");
+        test.executableFromResourceFiles(DetectProperties.DETECT_GO_PATH, "go-version.xout", "go-list.xout", "go-list-u-json.xout", "go-mod-graph.xout", "go-mod-get-main.xout", "go-mod-list-directs.xout", "go-mod-why.xout", "go-mod-why.xout");
+        test.sourceDirectoryNamed("testing-4602");
+        test.property(DetectProperties.DETECT_PROJECT_VERSION_NAME, "demo");
+        test.sourceFileFromResource("go.mod");
+        test.expectBdioResources();
+        test.run();
+    }
 }
 

@@ -59,7 +59,7 @@ public class GoModCliExtractor {
         GoVersion goVersion = goVersion(directory, goExe);
         List<GoListModule> goListModules = listModules(directory, goExe); // only ever prints one module, the current module? Is this true even in "multi-module" projects? If they exist?
         List<GoListAllData> goListAllModules = listAllModules(directory, goExe, goVersion);
-        List<GoGraphRelationship> goGraphRelationships = listGraphRelationships(directory, goExe, goVersion); // where we modify the go mod graph output
+        List<GoGraphRelationship> goGraphRelationships = listAndCleanGraphRelationships(directory, goExe, goVersion, goListAllModules); // xxxxx****x*x*where we modify the go mod graph output
         Set<String> excludedModules = listExcludedModules(directory, goExe);
 
         GoRelationshipManager goRelationshipManager = new GoRelationshipManager(goGraphRelationships, excludedModules); // at this point the relationship mapping is correct now, 170 and 181 are independent.
@@ -86,7 +86,7 @@ public class GoModCliExtractor {
         return goListParser.parseGoListAllJsonOutput(listAllOutput);
     }
 
-    private List<GoGraphRelationship> listGraphRelationships(File directory, ExecutableTarget goExe, GoVersion goVersion) throws ExecutableFailedException {
+    private List<GoGraphRelationship> listAndCleanGraphRelationships(File directory, ExecutableTarget goExe, GoVersion goVersion, List<GoListAllData> allRequiredModules) throws ExecutableFailedException {
         List<String> modGraphOutput = goModCommandRunner.runGoModGraph(directory, goExe);
 
         // Get the actual main module that produced this graph
@@ -95,10 +95,10 @@ public class GoModCliExtractor {
         // Get the list of TRUE direct dependencies, then use the main mod name and
         // this list to create a TRUE dependency graph from the requirement graph
         List<String> directs = goModCommandRunner.runGoModDirectDeps(directory, goExe, goVersion); // its somehow failing to do this correctly
-        List<String> whyModuleList = goModCommandRunner.runGoModWhy(directory, goExe, false);
+        List<String> modWhyOutput = goModCommandRunner.runGoModWhy(directory, goExe, false);
         
         GoModuleDependencyHelper goModDependencyHelper = new GoModuleDependencyHelper();
-        Set<String> actualDependencyList = goModDependencyHelper.computeDependencies(mainMod, directs, whyModuleList, modGraphOutput); // **********
+        Set<String> actualDependencyList = goModDependencyHelper.computeDependencies(mainMod, directs, modWhyOutput, modGraphOutput, allRequiredModules); // **********
 
         System.out.println("-->>");
         actualDependencyList.stream().filter(s -> s.contains("benbjohnson")).forEach(System.out::println);

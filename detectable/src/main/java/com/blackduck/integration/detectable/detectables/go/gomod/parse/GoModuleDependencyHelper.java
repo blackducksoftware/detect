@@ -3,6 +3,7 @@ package com.blackduck.integration.detectable.detectables.go.gomod.parse;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.blackduck.integration.detectable.detectables.go.gomod.model.GoListAllData;
 import com.blackduck.integration.detectable.detectables.go.gomod.process.WhyListStructureTransform;
 import java.util.HashSet;
 import java.util.Map;
@@ -24,16 +25,16 @@ public class GoModuleDependencyHelper {
      * requirements graph to a dependency graph. True direct dependencies will be left unchanged.
      * @param main - The string name of the main go module
      * @param directs - The obtained list of the main module's direct dependency.
-     * @param whyList - A list of all modules with their relationship to the main module // TOME other modules .. hmm
-     * @param originalGoModGraph - The list produced by "go mod graph"- the intended "target".
+     * @param modWhyOutput - A list of all modules with their relationship to the main module // TOME other modules .. hmm
+     * @param originalModGraphOutput - The list produced by "go mod graph"- the intended "target".
      * @return - the actual dependency list
      */
-    public Set<String> computeDependencies(String main, List<String> directs, List<String> whyList, List<String>originalGoModGraph) { // read through this and make sure it's not impacted
+    public Set<String> computeDependencies(String main, List<String> directs, List<String> modWhyOutput, List<String> originalModGraphOutput, List<GoListAllData> allRequiredModules) { // has no unit tests! TODO TODO TODO
         Set<String> goModGraph = new HashSet<>();
         List<String> correctedDependencies = new ArrayList<>();
-        Map<String, List<String>> whyMap = whyListStructureTransform.convertWhyListToWhyMap(whyList);
+        Map<String, List<String>> whyMap = whyListStructureTransform.convertWhyListToWhyMap(modWhyOutput); // confirmed
         /* Correct lines that get mis-interpreted as a direct dependency, given the list of direct deps, requirements graph etc.*/
-        for (String grphLine : originalGoModGraph) {
+        for (String grphLine : originalModGraphOutput) {
             boolean containsDirect = containsDirectDependencies(directs, main, grphLine);
             
             // Splitting here allows matching with less effort
@@ -44,7 +45,7 @@ public class GoModuleDependencyHelper {
             }
             
             // anything that falls in here isn't a direct dependency of main
-            boolean needsRedux = !containsDirect && splitLine[0].equals(main);
+            boolean needsRedux = !containsDirect && splitLine[0].equals(main); // this is just repeating the work in containsDirect isnt it?
             
             /* This searches for instances where the main module is apparently referring to itself.  
             This can step on the indirect dependency making it seem to be direct.*/ // DEFINITELY affects 4581 or relates to it. some other module could depend on main@v1 for example TODO TODO TODO TODO
@@ -57,7 +58,7 @@ public class GoModuleDependencyHelper {
 
             if (needsRedux) {
                 /* Redo the line to establish the direct reference module to this *indirect* module*/
-                grphLine = this.getProperParentage(grphLine, splitLine, whyMap, directs, correctedDependencies);
+                grphLine = this.getProperParentage(grphLine, splitLine, whyMap, directs, correctedDependencies, allRequiredModules);
             } // github.com/simonireilly/go-modules-example golang.org/x/text@v0.3.2 becomes
               // rsc.io/quote/v3@v3.1.0 golang.org/x/text@v0.3.2 ... any intermediate dependency relationship is omitted?
             
@@ -79,14 +80,17 @@ public class GoModuleDependencyHelper {
         return false;
     }
 
-    private String getProperParentage(String grphLine, String[] splitLine, Map<String, List<String>> whyMap, List<String> directs, List<String> correctedDependencies) {
+    private String getProperParentage(String grphLine, String[] splitLine, Map<String, List<String>> whyMap, List<String> directs, List<String> correctedDependencies, List<GoListAllData> allRequiredModules) {
         String childModulePath = splitLine[1].replaceAll("@.*", ""); // has no version information, @v123 is dropped.
+        if (grphLine.contains("clockwork")) {
+            System.out.println("idk");
+        }
         correctedDependencies.add(childModulePath); // keep track of ones we've fixed.
         
         // look up the 'why' results for the module...  This will tell us
-        // the direct dependency item that pulled this item into the mix.
+        // the (directly or indirectly) required dependency item that pulled this item into the mix.
         List<String> trackPath = whyMap.get(childModulePath);
-        if (trackPath != null && !trackPath.isEmpty()) {
+        if (trackPath != null && !trackPath.isEmpty()) { // what happens when trackpath is (main module doe snot need blah blah...)
             for (String tp : trackPath) {
                 String parent = directs.stream()
                         .filter(directMod -> tp.contains(directMod.replaceAll("@.*",""))) // drops version information, which go mod why doesnt provide anyway?
