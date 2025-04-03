@@ -248,11 +248,11 @@ public class PropertyConfiguration {
 
     public static void handleInvalidKeys(Set<Property> properties, Set<String> currentPropertyKeys) {
         Set<String> validKeys = properties.stream().map(Property::getKey).collect(Collectors.toSet());
-        LevenshteinDistance levenshtein = new LevenshteinDistance();
+        validKeys.addAll(ExternalProperties.getAllExternalPropertyKeys());
         JaroWinklerSimilarity jaroWinkler = new JaroWinklerSimilarity();
         for (String key : currentPropertyKeys) {
             if (!validKeys.contains(key)) {
-                List<String> similarKeys = findSimilarKeys(key, validKeys, levenshtein, jaroWinkler);
+                List<String> similarKeys = findSimilarKeys(key, validKeys, jaroWinkler);
                 if (!similarKeys.isEmpty()) {
                     logger.warn("Property key '{}' is not valid. The most similar keys are: {}", key, similarKeys);
                 }
@@ -260,11 +260,11 @@ public class PropertyConfiguration {
         }
     }
 
-    public static List<String> findSimilarKeys(String invalidKey, Set<String> validKeys, LevenshteinDistance levenshtein, JaroWinklerSimilarity jaroWinkler) {
-        int levenshteinThreshold = 3;
-        double jaroWinklerThreshold = 0.94;
+    public static List<String> findSimilarKeys(String invalidKey, Set<String> validKeys, JaroWinklerSimilarity jaroWinkler) {
+        double jaroWinklerThreshold = 0.95;
         return validKeys.stream()
                 .filter(key -> jaroWinkler.apply(invalidKey, key) >= jaroWinklerThreshold)
+                .sorted(Comparator.comparingDouble(key -> -jaroWinkler.apply(invalidKey, key)))
                 .collect(Collectors.toList());
     }
 
