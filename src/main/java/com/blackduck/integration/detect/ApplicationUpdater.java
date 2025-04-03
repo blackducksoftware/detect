@@ -658,15 +658,15 @@ public class ApplicationUpdater extends URLClassLoader {
     }
     
     private File handleResponse(Response response, String currentInstalledVersion, File installDirectory, HttpUrl downloadUrl) throws IOException, IntegrationException {
-        String newVersionString = response.getHeaderValue(DOWNLOAD_VERSION_HEADER);
-        String newFileName = response.getHeaderValue(DOWNLOADED_FILE_NAME);
-        
-        // If we have not obtained the version, get it from the filename header
-        if (newVersionString == null && newFileName != null) {
-            newVersionString = getVersionFromDetectFileName(newFileName);
-        }
-
         if (response.isStatusCodeSuccess()) {
+            String newVersionString = response.getHeaderValue(DOWNLOAD_VERSION_HEADER);
+            String newFileName = response.getHeaderValue(DOWNLOADED_FILE_NAME);
+            
+            // If we have not obtained the version, get it from the filename header
+            if (newVersionString == null && newFileName != null) {
+                newVersionString = getVersionFromDetectFileName(newFileName);
+            }
+            
             if (newFileName == null) {
                 // We need to get the file name before we can handle the response, extract it from the URL if we
                 // couldn't get it from the headers.
@@ -674,50 +674,42 @@ public class ApplicationUpdater extends URLClassLoader {
                 URL url = new URL(trueDownloadUrl);
                 String path = url.getPath();
                 newFileName = path.substring(path.lastIndexOf('/') + 1);
-            } // TODO need to error if can't get filename
+            } else {
+                logger.warn("Unable to determine Detect file name. Detect update will not occur.");
+                return null;
+            }
             
             // Initial call successful, follow the redirect to download the jar
             File potentialNewJar = handleSuccessResponse(response, installDirectory.getAbsolutePath(), newFileName);
             logger.debug("{} New File Name: {}", LOG_PREFIX, newFileName);
             
-            if (newVersionString == null) {
+            if (newVersionString == null && potentialNewJar != null) {
                 // If we still have not obtained the version, get it from the jar's version.txt file
                 newVersionString = getVersionFromJar(potentialNewJar);
-            } // TODO the failure here is currently handled later which is a bit weird
+            } else {
+                logger.warn("Unable to determine version of new Detect candidate. Detect update will not occur.");
+                return null;
+            }
             
             // If we have the version at this point, see if we should update.
             currentInstalledVersion = getVersionFromDetectFileName(currentInstalledVersion);
-            if (StringUtils.isNotBlank(newVersionString)) {
-                logger.debug("{} Old version: {}, New Version: {}", LOG_PREFIX, currentInstalledVersion, newVersionString);
-                if (!newVersionString.equals(currentInstalledVersion)
-                        && !isDownloadVersionTooOld(currentInstalledVersion, newVersionString)) {
-                    return validateDownloadedJar(potentialNewJar);
-                } else {
-                    // TODO perhaps explain why not updating here as it isn't really a problem with the response
-                }
+            logger.debug("{} Old version: {}, New Version: {}", LOG_PREFIX, currentInstalledVersion, newVersionString);
+            if (!newVersionString.equals(currentInstalledVersion)
+                    && !isDownloadVersionTooOld(currentInstalledVersion, newVersionString)) {
+                return validateDownloadedJar(potentialNewJar);
+            } else {
+                logger.info("New version {} is not applicable for update. Using existing version {} instead.", newVersionString, currentInstalledVersion);
             }
-        }
-        
-        // We haven't updated, see why and explain to the user.
-        // TODO we flow into here if the versions are equal or if it is too old and we don't update then we
-        // incorrectly mention how we can't download the artifact.
-        explainSkippedUpdate(response, downloadUrl, newVersionString);
-            
-        return null;
-    }
-
-    public void explainSkippedUpdate(Response response, HttpUrl downloadUrl, String newVersionString)
-            throws IOException {
-        if (response.getStatusCode() == HttpStatus.SC_NOT_MODIFIED) {
+        } else if (response.getStatusCode() == HttpStatus.SC_NOT_MODIFIED) {
             logger.info("{} Present Detect installation is up to date - skipping download.", LOG_PREFIX);
-        } else if (newVersionString == null) {
-            logger.warn("Unable to extract information from update headers or specified Detect jar. An update will not take place.");
         } else {
             String problemUrl = getTrueDetectDownloadUrl(downloadUrl);
             String message = StringUtils.isNotBlank(response.getStatusMessage()) ? response.getStatusMessage() : EnglishReasonPhraseCatalog.INSTANCE.getReason(response.getStatusCode(), Locale.ENGLISH);
             logger.warn("{} Unable to download artifact from {}.", LOG_PREFIX, problemUrl);
             logger.warn("{} Response code from {} was: {} {}", LOG_PREFIX, problemUrl, response.getStatusCode(), message);
         }
+            
+        return null;
     }
     
     private String getVersionFromJar(File potentialNewJar) throws IOException {
