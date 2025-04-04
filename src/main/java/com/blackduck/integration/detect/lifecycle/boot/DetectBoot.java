@@ -350,7 +350,6 @@ public class DetectBoot {
         }
 
         Map<String, String> rawMap = (Map<String, String>) result.get("rawMap");
-
         return new TreeMap<>(rawMap);
     }
 
