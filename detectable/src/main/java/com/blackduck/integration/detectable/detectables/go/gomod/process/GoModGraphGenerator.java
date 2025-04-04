@@ -56,18 +56,18 @@ public class GoModGraphGenerator {
             return;
         }
 
-        Dependency dependency = goModDependencyManager.getDependencyForModule(moduleNameVersion); // if that name and version combo doesn't exist ... we should be skipping it.
+        Dependency dependency = goModDependencyManager.getDependencyForModule(moduleNameVersion.getName()); // when the wrong version is queried, it'll fetch the right version anyhow.
         if (parent != null) {
-            graph.addChildWithParent(dependency, parent);
+            graph.addChildWithParent(dependency, parent); // unnecessary work hmm .. since when we fetch Bx, we get Bo and Bo is already in the graph. Noop.
         } else {
             if (moduleNameVersion.getName().contains("viper")) {
                 System.out.println("processing direct dep viper181"); // by the time we get here ... its already fully graphed?
             }
             graph.addDirectDependency(dependency); // for the viper test ... if the go mod graph output was not modified ... then it is NOT necessarily true that this is a direct dep. sshhhoot
-        } // first it adds it to the bigger dependencies map (externalId, dependency)... then it also adds it to the smaller directDependencies list ... whatever that does ok
+        }
 
-        if (!fullyGraphedModules.contains(moduleNameVersion) && goRelationshipManager.hasRelationshipsForNEW(moduleNameVersion)) {
-            fullyGraphedModules.add(moduleNameVersion);
+        if (!fullyGraphedModules.contains(moduleNameVersion) && goRelationshipManager.hasRelationshipsForNEW(moduleNameVersion)) { // SHULD WE BE RECURSING NON-REQUIRED MODULES?
+            fullyGraphedModules.add(moduleNameVersion); // version may no longer be necessary
             List<GoGraphRelationship> projectRelationships = goRelationshipManager.getRelationshipsForNEW(moduleNameVersion);
             for (GoGraphRelationship projectRelationship : projectRelationships) {
                 addModuleToGraph(projectRelationship.getChild(), dependency, graph, goRelationshipManager, goModDependencyManager);
