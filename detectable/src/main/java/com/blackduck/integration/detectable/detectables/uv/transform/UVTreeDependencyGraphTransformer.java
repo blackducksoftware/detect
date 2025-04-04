@@ -7,13 +7,10 @@ import com.blackduck.integration.bdio.model.dependency.Dependency;
 import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
-import com.blackduck.integration.detectable.detectables.cargo.transform.CargoDependencyGraphTransformer;
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
-import com.blackduck.integration.util.ExcludedIncludedWildcardFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.awt.*;
 import java.io.File;
 import java.util.*;
 import java.util.List;
@@ -23,12 +20,12 @@ public class UVTreeDependencyGraphTransformer {
 
     private final ExternalIdFactory externalIdFactory;
     private static final Logger logger = LoggerFactory.getLogger(UVTreeDependencyGraphTransformer.class);
-    private final List<String> prefixStrings = Arrays.asList("├── ","│   ","└── ","    ");
+    private final List<String> prefixStrings = Arrays.asList("├── ","│   ","└── ","    "); // common indentation strings for depenendency lines
     private int depth;
-    private boolean isMemberExcluded = false;
-    private boolean isExcludedGroup = false;
-    private int devDependencyDepth;
-    private int memberDependencyDepth;
+    private boolean isMemberExcluded = false; // check if workspace Member is excluded
+    private boolean isExcludedGroup = false; // check if dependency belongs to a excluded group
+    private int groupDependencyDepth; // depth at which group dependency was found
+    private int memberDependencyDepth; // depth at which member dependency was found
     List<CodeLocation> codeLocations = new ArrayList<>();
     private DependencyGraph dependencyGraph;
 
@@ -55,12 +52,14 @@ public class UVTreeDependencyGraphTransformer {
         int previousDepth = depth;
         String cleanedLine = findDepth(line);
 
-        if(depth > devDependencyDepth && isExcludedGroup) {
+        // Check if a previous dependency was excluded being part of a group and we are parsing transitives of that
+        if(depth > groupDependencyDepth && isExcludedGroup) {
             return;
         } else {
             isExcludedGroup = false;
         }
 
+        // Check if a previous workspace member was excluded and we are parsing transitives of that member
         if(depth > memberDependencyDepth && isMemberExcluded) {
             return;
         } else {
@@ -69,11 +68,12 @@ public class UVTreeDependencyGraphTransformer {
 
         Dependency dependency = getDependency(cleanedLine, detectorOptions);
 
+        // if depth is greater than 1 and dependency was found
         if(depth > 0 && dependency != null) {
             addDependencyToGraph(dependency, dependencyStack, previousDepth);
             dependencyStack.push(dependency);
         } else if (dependency != null && depth == 0) {
-            String[] parts = line.split(" ");
+            String[] parts = line.split(" "); // parse the project line
             if(parts.length < 2) {
                 logger.warn("Unable to parse workspace member from line: {}", line);
                 return;
@@ -81,41 +81,46 @@ public class UVTreeDependencyGraphTransformer {
             String memberName = parts[0];
             String memberVersion = parts[1].replace("v", "");
 
-            isMemberExcluded = checkIfMemberExcluded(memberName, detectorOptions);
+            isMemberExcluded = checkIfMemberExcluded(memberName, detectorOptions); // check if the current workspace member is excluded
 
             if(!isMemberExcluded) {
-                initializeProject(memberName, memberVersion);
+                initializeProject(memberName, memberVersion); // initialize the project with a new code location
             }
         }
     }
 
     private void addDependencyToGraph(Dependency dependency, Deque<Dependency> dependencyStack, int previousDepth) {
+        // direct dependency
         if(depth == 1) {
             dependencyGraph.addDirectDependency(dependency);
             dependencyStack.clear();
         } else if (previousDepth == depth) {
+            // sibling of previous dependency
             dependencyStack.pop();
             dependencyGraph.addChildWithParent(dependency, dependencyStack.peek());
         } else if (previousDepth > depth) {
+            // a child of the dependency before parsing the tree for previous dependency
             while(!dependencyStack.isEmpty() && dependencyStack.size() >= depth) {
                 dependencyStack.pop();
             }
             dependencyGraph.addChildWithParent(dependency, dependencyStack.peek());
         } else {
+            // a child of the previous dependency
             dependencyGraph.addChildWithParent(dependency, dependencyStack.peek());
         }
     }
 
     private boolean checkIfMemberExcluded(String memberName, UVDetectorOptions detectorOptions) {
-        if(!detectorOptions.getExcludedWorkspaceMembers().isEmpty() && detectorOptions.getExcludedWorkspaceMembers().contains(memberName)) {
+        if(!detectorOptions.getExcludedWorkspaceMembers().isEmpty() && detectorOptions.getExcludedWorkspaceMembers().contains(memberName)) { // checking if current member is excluded
             return true;
         } else if(!detectorOptions.getIncludedWorkspaceMembers().isEmpty()){
-            return !detectorOptions.getIncludedWorkspaceMembers().contains(memberName);
+            return !detectorOptions.getIncludedWorkspaceMembers().contains(memberName); // checking if current member is not included
         } else {
             return false;
         }
     }
 
+    //create a new code location for a new workspace member
     private void initializeProject(String projectName, String projectVersion) {
         ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.PYPI ,projectName, projectVersion);
         Dependency projectDependency = new Dependency(projectName, projectVersion, externalId);
@@ -124,6 +129,7 @@ public class UVTreeDependencyGraphTransformer {
         codeLocations.add(codeLocation);
     }
 
+    // find depth of the dependency line that is being parsed
     private String findDepth(String line) {
         depth = 0;
         String cleanedLine = line;
@@ -139,11 +145,14 @@ public class UVTreeDependencyGraphTransformer {
 
     private Dependency getDependency(String line, UVDetectorOptions detectorOptions) {
 
+        // sometimes the dependency contains some extra data in the line, we strip it off
+        // Eg: dbgpt[agent, cli, client, code, framework, simple-framework] v0.7.0 (extra: base), we do not need "[agent, cli, client, code, framework, simple-framework]"
         if(line.contains("[")) {
             String parenthesis = line.substring(line.indexOf("["), line.indexOf("]") + 1);
             line = line.replace(parenthesis, "");
         }
 
+        // we keep the limit three to split it in three parts if we have group information, as an example "pytest v8.3.4 (group: dev)"
         String[] parts = line.split(" ",3);
         if(parts.length < 2) {
             logger.warn("Unable to parse dependency from line: {}", line);
@@ -154,6 +163,7 @@ public class UVTreeDependencyGraphTransformer {
             String dependencyName = parts[0];
             String dependencyVersion = parts[1].replace("v", "");
 
+            // check if the member is excluded and set flags for excluding transitives of that dependency
             if (checkIfMemberExcluded(dependencyName, detectorOptions)) {
                 isMemberExcluded = true;
                 memberDependencyDepth = depth;
@@ -169,15 +179,17 @@ public class UVTreeDependencyGraphTransformer {
             String groupName = "";
             if (parts[2].contains("group:")) {
 
+                // "pytest v8.3.4 (group: dev)" extract dev from this line
                 try {
                     groupName = parts[2].split(":")[1].replace(")", "").trim();
                 } catch (Exception e) {
                     logger.warn("Unable to parse group from dependency line: {}", line);
                 }
 
+                // check if the group is excluded and set flags for excluding transitives of that dependency
                 if (detectorOptions.getExcludedDependencyGroups().contains(groupName)) {
                     isExcludedGroup = true;
-                    devDependencyDepth = depth;
+                    groupDependencyDepth = depth;
                     return null;
                 }
             }

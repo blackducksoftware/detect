@@ -43,6 +43,7 @@ public class UVBuildExtractor {
             arguments.add("tree");
             arguments.add("--no-dedupe");
 
+            // run uv tree command
             ExecutableOutput executableOutput = executableRunner.execute(ExecutableUtils.createFromTarget(sourceDirectory, uvExe, arguments));
             List<String> uvTreeOutput = executableOutput.getStandardOutputAsList();
 
