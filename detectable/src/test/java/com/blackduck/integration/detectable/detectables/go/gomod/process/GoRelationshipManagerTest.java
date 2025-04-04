@@ -117,7 +117,7 @@ class GoRelationshipManagerTest {
 
     @Test
     void moduleUsageTest() {
-        boolean isNotUsedByMainModule = goRelationshipManagerSimple.isNotUsedByMainModule(child2.getName());
+        boolean isNotUsedByMainModule = goRelationshipManagerSimple.isModuleExcluded(child2.getName());
         assertTrue(isNotUsedByMainModule, child2.getName() + " should not be used by the main module according to exclusions.");
     }
 

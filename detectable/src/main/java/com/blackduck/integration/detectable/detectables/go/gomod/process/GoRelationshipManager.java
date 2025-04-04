@@ -34,7 +34,7 @@ public class GoRelationshipManager {
         return Optional.ofNullable(relationshipMapNEW.get(moduleNameVersion)).orElse(Collections.emptyList());
     }
 
-    public boolean isNotUsedByMainModule(String moduleName) {
+    public boolean isModuleExcluded(String moduleName) { // can correspond to "main module does not need xyz" but dont want to cause confusion with jus the output that says "module not used by main"
         return excludedModules.contains(moduleName);
     }
 }

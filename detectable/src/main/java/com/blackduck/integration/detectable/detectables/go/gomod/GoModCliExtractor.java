@@ -67,7 +67,7 @@ public class GoModCliExtractor {
         System.out.println("-->>");
         List something = goListAllModules.stream().filter(listmod -> listmod.getPath().contains("viper")).collect(Collectors.toList());
 
-        GoModDependencyManager goModDependencyManager = new GoModDependencyManager(goListAllModules, externalIdFactory); // goListAllModules doesn't contain viper170, only required deps.
+        GoModDependencyManager goModDependencyManager = new GoModDependencyManager(goListAllModules, externalIdFactory); // goListAllModules contains only required deps.
         List<CodeLocation> codeLocations = goListModules.stream() // goListModules corresponds to output of "go list -m -json" which should just print the main module, but iterating over stream suggests there could be more? need an example. looks like for each one we create a new code location
             .map(goListModule -> goModGraphGenerator.generateGraph(goListModule, goRelationshipManager, goModDependencyManager))
             .collect(Collectors.toList());

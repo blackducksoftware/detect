@@ -36,7 +36,7 @@ public class GoModGraphGenerator {
         if (goRelationshipManager.hasRelationshipsForNEW(moduleNameVersion)) {
             goRelationshipManager.getRelationshipsForNEW(moduleNameVersion).stream()
                 .map(relationship -> relationship.getChild())
-                .forEach(childNameVersion -> addModuleToGraph(childNameVersion, null, graph, goRelationshipManager, goModDependencyManager)); // this w/ null is actually called 119 times == number of relationships/"direct" deps
+                .forEach(childNameVersion -> addModuleToGraph(childNameVersion, null, graph, goRelationshipManager, goModDependencyManager)); // this w/ null is actually called 119 times == number of main -> (direct or indirect) dep.
         }
 
 //        graph.getChildrenForParent(viper180ext)
@@ -51,24 +51,20 @@ public class GoModGraphGenerator {
         GoRelationshipManager goRelationshipManager,
         GoModDependencyManager goModDependencyManager
     ) {
-        NameVersion viper181 = new NameVersion("github.com/spf13/viper", "v1.8.1");
-        NameVersion viper170 = new NameVersion("github.com/spf13/viper", "v1.7.0");
-        NameVersion coreos = new NameVersion("github.com/coreos/bbolt", "v1.3.2");
-
-        if (moduleNameVersion.equals(viper170)) {
-            logger.debug("Bout to process viper 1.7.0 dep");
-        }
-        if (goRelationshipManager.isNotUsedByMainModule(moduleNameVersion.getName())) { // keeping that method call the same to indicate we exclude by name not name and version. pretty sure excluded modules dont come with version? somewhere in the go mod outputs they also have no version i think?
+        if (goRelationshipManager.isModuleExcluded(moduleNameVersion.getName())) { // keeping that method call the same to indicate we exclude by name not name and version. pretty sure excluded modules dont come with version? somewhere in the go mod outputs they also have no version i think?
             logger.debug("Excluding module '{}' because it is not used by the main module.", moduleNameVersion.getName()); // confirm excluded modules are not impacted.. modules == deps?
             return;
         }
 
-        Dependency dependency = goModDependencyManager.getDependencyForModule(moduleNameVersion); // dependency loses version data here
+        Dependency dependency = goModDependencyManager.getDependencyForModule(moduleNameVersion); // if that name and version combo doesn't exist ... we should be skipping it.
         if (parent != null) {
             graph.addChildWithParent(dependency, parent);
         } else {
-            graph.addDirectDependency(dependency);
-        }
+            if (moduleNameVersion.getName().contains("viper")) {
+                System.out.println("processing direct dep viper181"); // by the time we get here ... its already fully graphed?
+            }
+            graph.addDirectDependency(dependency); // for the viper test ... if the go mod graph output was not modified ... then it is NOT necessarily true that this is a direct dep. sshhhoot
+        } // first it adds it to the bigger dependencies map (externalId, dependency)... then it also adds it to the smaller directDependencies list ... whatever that does ok
 
         if (!fullyGraphedModules.contains(moduleNameVersion) && goRelationshipManager.hasRelationshipsForNEW(moduleNameVersion)) {
             fullyGraphedModules.add(moduleNameVersion);

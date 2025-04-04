@@ -29,9 +29,9 @@ public class GoModDependencyManager {
 
     private final Map<NameVersion, Dependency> modulesAsDependencies;
 
-    public GoModDependencyManager(List<GoListAllData> allModules, ExternalIdFactory externalIdFactory) {
+    public GoModDependencyManager(List<GoListAllData> allRequiredModules, ExternalIdFactory externalIdFactory) {
         this.externalIdFactory = externalIdFactory;
-        modulesAsDependencies = convertModulesToDependencies(allModules);
+        modulesAsDependencies = convertModulesToDependencies(allRequiredModules);
     }
 
     private Map<NameVersion, Dependency> convertModulesToDependencies(List<GoListAllData> allModules) {
@@ -60,7 +60,7 @@ public class GoModDependencyManager {
 
     @Deprecated // TODO confirm test cases still pass. Is there a test case for null version?
     /**
-     * Returns the Dependency object associated with this module name.
+     * Returns the Dependency object associated with this module name. The version will be the SELECTED version for the build. any other version in the graph of this module would introduce a false +ve
      * If it doesn't exist, returns a Dependency that just has a name and null as its version. (is that null handled properly .. that who knows.)
      */
     public Dependency getDependencyForModule(NameVersion module) {
