@@ -28,9 +28,9 @@ public class GoModDependencyManager {
 
     private final Map<String, Dependency> modulesAsDependencies;
 
-    public GoModDependencyManager(List<GoListAllData> allModules, ExternalIdFactory externalIdFactory) {
+    public GoModDependencyManager(List<GoListAllData> allRequiredModules, ExternalIdFactory externalIdFactory) {
         this.externalIdFactory = externalIdFactory;
-        modulesAsDependencies = convertModulesToDependencies(allModules);
+        modulesAsDependencies = convertModulesToDependencies(allRequiredModules);
     }
 
     private Map<String, Dependency> convertModulesToDependencies(List<GoListAllData> allModules) {
@@ -57,6 +57,11 @@ public class GoModDependencyManager {
         return new Dependency(moduleName, moduleVersion, externalIdFactory.createNameVersionExternalId(Forge.GOLANG, moduleName, moduleVersion));
     }
 
+    // TODO confirm test cases still pass. Is there a test case for null version?
+    /**
+     * Returns the Dependency object associated with this module name. The version will be the SELECTED version for the build. any other version in the graph of this module would introduce a false +ve
+     * If it doesn't exist, returns a Dependency that just has a name and null as its version. (is that null handled properly .. that who knows.)
+     */
     public Dependency getDependencyForModule(String moduleName) {
         return modulesAsDependencies.getOrDefault(moduleName, convertToDependency(moduleName, null));
     }

@@ -1,0 +1,93 @@
+{
+	"Path": "my-main-module",
+	"Main": true,
+	"Dir": "/Users/shanty/blackduck/example-source/go/my-main-module",
+	"GoMod": "/Users/shanty/blackduck/example-source/go/my-main-module/go.mod",
+	"GoVersion": "1.23.4"
+}
+
+{
+	"Path": "viper",
+	"Version": "v1.8.1",
+	"Time": "2019-04-25T21:42:06Z",
+	"Dir": "/Users/shanty/go/pkg/mod/viper@v1.8.1",
+	"GoMod": "/Users/shanty/go/pkg/mod/cache/download/viper/@v/v1.8.1.mod",
+	"Sum": "h1:tW2bmiBqwgJj/UpqtC8EpXEZVYOwU0yG4iWbprSVAcs=",
+	"GoModSum": "h1:bEr9sfX3Q8Zfm5fL9x+3itogRgK3+ptLWKqgva+5dAk="
+}
+
+{
+	"Path": "viper",
+	"Version": "v1.7.0",
+	"Time": "2019-04-25T21:42:06Z",
+	"Indirect": true,
+	"Dir": "/Users/shanty/go/pkg/mod/viper@v1.7.0",
+	"GoMod": "/Users/shanty/go/pkg/mod/cache/download/viper/@v/v1.7.0.mod",
+	"Sum": "h1:tW2bmiBqwgJj/UpqtC8EpXEZVYOwU0yG4iWbprSVAcs=",
+	"GoModSum": "h1:bEr9sfX3Q8Zfm5fL9x+3itogRgK3+ptLWKqgva+5dAk="
+}
+
+{
+	"Path": "cobra",
+	"Version": "v1.2.1",
+	"Time": "2019-04-25T21:42:06Z",
+	"Indirect": true,
+	"Dir": "/Users/shanty/go/pkg/mod/cobra@v1.2.1",
+	"GoMod": "/Users/shanty/go/pkg/mod/cache/download/cobra/@v/v1.2.1.mod",
+	"Sum": "h1:tW2bmiBqwgJj/UpqtC8EpXEZVYOwU0yG4iWbprSVAcs=",
+	"GoModSum": "h1:bEr9sfX3Q8Zfm5fL9x+3itogRgK3+ptLWKqgva+5dAk="
+}
+
+{
+	"Path": "cobra",
+	"Version": "v1.1.3",
+	"Time": "2019-04-25T21:42:06Z",
+	"Indirect": true,
+	"Dir": "/Users/shanty/go/pkg/mod/cobra@v1.1.3",
+	"GoMod": "/Users/shanty/go/pkg/mod/cache/download/cobra/@v/v1.1.3.mod",
+	"Sum": "h1:tW2bmiBqwgJj/UpqtC8EpXEZVYOwU0yG4iWbprSVAcs=",
+	"GoModSum": "h1:bEr9sfX3Q8Zfm5fL9x+3itogRgK3+ptLWKqgva+5dAk="
+}
+
+{
+	"Path": "x",
+	"Version": "v1.0.0",
+	"Time": "2019-04-25T21:42:06Z",
+	"Dir": "/Users/shanty/go/pkg/mod/x@v1.0.0",
+	"GoMod": "/Users/shanty/go/pkg/mod/cache/download/x/@v/v1.0.0.mod",
+	"Sum": "h1:tW2bmiBqwgJj/UpqtC8EpXEZVYOwU0yG4iWbprSVAcs=",
+	"GoModSum": "h1:bEr9sfX3Q8Zfm5fL9x+3itogRgK3+ptLWKqgva+5dAk="
+}
+
+{
+	"Path": "y",
+	"Version": "v1.0.0",
+	"Time": "2019-04-25T21:42:06Z",
+	"Indirect": true,
+	"Dir": "/Users/shanty/go/pkg/mod/y@v1.0.0",
+	"GoMod": "/Users/shanty/go/pkg/mod/cache/download/y/@v/v1.0.0.mod",
+	"Sum": "h1:tW2bmiBqwgJj/UpqtC8EpXEZVYOwU0yG4iWbprSVAcs=",
+	"GoModSum": "h1:bEr9sfX3Q8Zfm5fL9x+3itogRgK3+ptLWKqgva+5dAk="
+}
+
+{
+	"Path": "A",
+	"Version": "v1.0.0",
+	"Time": "2019-04-25T21:42:06Z",
+	"Indirect": true,
+	"Dir": "/Users/shanty/go/pkg/mod/A@v1.0.0",
+	"GoMod": "/Users/shanty/go/pkg/mod/cache/download/A/@v/v1.0.0.mod",
+	"Sum": "h1:tW2bmiBqwgJj/UpqtC8EpXEZVYOwU0yG4iWbprSVAcs=",
+	"GoModSum": "h1:bEr9sfX3Q8Zfm5fL9x+3itogRgK3+ptLWKqgva+5dAk="
+}
+
+{
+	"Path": "B",
+	"Version": "v1.0.0",
+	"Time": "2019-04-25T21:42:06Z",
+	"Indirect": true,
+	"Dir": "/Users/shanty/go/pkg/mod/B@v1.0.0",
+	"GoMod": "/Users/shanty/go/pkg/mod/cache/download/B/@v/v1.0.0.mod",
+	"Sum": "h1:tW2bmiBqwgJj/UpqtC8EpXEZVYOwU0yG4iWbprSVAcs=",
+	"GoModSum": "h1:bEr9sfX3Q8Zfm5fL9x+3itogRgK3+ptLWKqgva+5dAk="
+}
