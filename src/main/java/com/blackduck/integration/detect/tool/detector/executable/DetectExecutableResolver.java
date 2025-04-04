@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.blackduck.integration.detectable.detectable.executable.resolver.*;
+import org.checkerframework.checker.units.qual.N;
 import org.jetbrains.annotations.Nullable;
 
 import com.blackduck.integration.detectable.DetectableEnvironment;
@@ -16,7 +17,7 @@ import com.blackduck.integration.detectable.detectables.conan.cli.ConanResolver;
 public class DetectExecutableResolver implements
     JavaResolver, GradleResolver, BashResolver, ConanResolver, CondaResolver, CpanmResolver, CpanResolver, DartResolver, PearResolver, Rebar3Resolver, PythonResolver, PipResolver,
     PipenvResolver, MavenResolver, NpmResolver, BazelResolver,
-    DockerResolver, GitResolver, SwiftResolver, GoResolver, LernaResolver, SbtResolver, FlutterResolver, OpamResolver, CargoResolver {
+    DockerResolver, GitResolver, SwiftResolver, GoResolver, LernaResolver, SbtResolver, FlutterResolver, OpamResolver, CargoResolver, UVResolver {
 
     private final DirectoryExecutableFinder directoryExecutableFinder;
     private final SystemPathExecutableFinder systemPathExecutableFinder;
@@ -217,6 +218,12 @@ public class DetectExecutableResolver implements
     @Override
     public ExecutableTarget resolveCargo(DetectableEnvironment environment) throws DetectableException {
         return ExecutableTarget.forFile(resolveCachedSystemExecutable("cargo", detectExecutableOptions.getCargoUserPath()));
+    }
+
+    @Override
+    @Nullable
+    public ExecutableTarget resolveUV() throws DetectableException {
+        return ExecutableTarget.forFile(resolveCachedSystemExecutable("uv", detectExecutableOptions.getUVUserPath()));
     }
 }
 
