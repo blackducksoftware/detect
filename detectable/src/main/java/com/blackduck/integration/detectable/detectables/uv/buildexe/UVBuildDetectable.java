@@ -60,6 +60,6 @@ public class UVBuildDetectable extends Detectable {
 
     @Override
     public Extraction extract(ExtractionEnvironment extractionEnvironment) throws ExecutableRunnerException {
-        return uvBuildExtractor.extract(uvExe, extractionEnvironment.getOutputDirectory(), uvDetectorOptions, uvTomlFile);
+        return uvBuildExtractor.extract(uvExe, uvDetectorOptions, uvTomlFile);
     }
 }

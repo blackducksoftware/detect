@@ -4,6 +4,7 @@ package com.blackduck.integration.detectable.detectables.uv;
 import java.util.List;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class UVDetectorOptions {
     private final Set<String> excludedDependencyGroups;
@@ -19,14 +20,14 @@ public class UVDetectorOptions {
     }
 
     public Set<String> getExcludedDependencyGroups() {
-        return excludedDependencyGroups;
+        return excludedDependencyGroups.stream().map(String::toLowerCase).collect(Collectors.toSet());
     }
 
     public Set<String> getIncludedWorkspaceMembers() {
-        return includedWorkspaceMembers;
+        return includedWorkspaceMembers.stream().map(String::toLowerCase).collect(Collectors.toSet());
     }
 
     public Set<String> getExcludedWorkspaceMembers() {
-        return excludedWorkspaceMembers;
+        return excludedWorkspaceMembers.stream().map(String::toLowerCase).collect(Collectors.toSet());
     }
 }

@@ -12,7 +12,8 @@ import com.blackduck.integration.detectable.detectables.cargo.transform.CargoDep
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildDetectable;
 import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildExtractor;
-import com.blackduck.integration.detectable.detectables.uv.buildexe.transform.UVTreeDependencyGraphTransformer;
+import com.blackduck.integration.detectable.detectables.uv.parse.UVTomlParser;
+import com.blackduck.integration.detectable.detectables.uv.transform.UVTreeDependencyGraphTransformer;
 import org.xml.sax.SAXException;
 
 import com.google.gson.Gson;
@@ -1141,7 +1142,7 @@ public class DetectableFactory {
     }
 
     private UVBuildExtractor uvBuildExtractor(File sourceDirectory) {
-        return new UVBuildExtractor(executableRunner, sourceDirectory, uvTreeDependencyGraphTransformer());
+        return new UVBuildExtractor(executableRunner, sourceDirectory, uvTreeDependencyGraphTransformer(), new UVTomlParser());
     }
 
     private UVTreeDependencyGraphTransformer uvTreeDependencyGraphTransformer() {
