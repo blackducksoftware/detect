@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.blackduck.integration.detectable.detectables.nuget.NugetDependencyType;
+import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import org.jetbrains.annotations.Nullable;
 
 import com.blackduck.integration.detect.workflow.ArtifactoryConstants;
@@ -311,5 +312,13 @@ public class DetectableOptionFactory {
 
     private boolean getFollowSymLinks() {
         return detectConfiguration.getValue(DetectProperties.DETECT_FOLLOW_SYMLINKS);
+    }
+
+    public UVDetectorOptions createUVDetectorOptions() {
+        List<String> excludedDependencyGroups = detectConfiguration.getValue(DetectProperties.DETECT_UV_DEPENDENCY_GROUPS_EXCLUDED);
+        List<String> includedWorkSpaceMembers = detectConfiguration.getValue(DetectProperties.DETECT_UV_INCLUDED_WORKSPACE_MEMBERS);
+        List<String> excludeWorkSpaceMembers = detectConfiguration.getValue(DetectProperties.DETECT_UV_EXCLUDED_WORKSPACE_MEMBERS);
+
+        return new UVDetectorOptions(excludedDependencyGroups, includedWorkSpaceMembers, excludeWorkSpaceMembers);
     }
 }
