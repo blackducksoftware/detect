@@ -43,6 +43,13 @@ public class UVBuildExtractor {
             arguments.add("tree");
             arguments.add("--no-dedupe");
 
+            if(!uvDetectorOptions.getExcludedDependencyGroups().isEmpty()) {
+                for(String group : uvDetectorOptions.getExcludedDependencyGroups()) {
+                    arguments.add("--no-group");
+                    arguments.add(group);
+                }
+            }
+
             // run uv tree command
             ExecutableOutput executableOutput = executableRunner.execute(ExecutableUtils.createFromTarget(sourceDirectory, uvExe, arguments));
             List<String> uvTreeOutput = executableOutput.getStandardOutputAsList();

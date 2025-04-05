@@ -23,8 +23,6 @@ public class UVTreeDependencyGraphTransformer {
     private final List<String> prefixStrings = Arrays.asList("├── ","│   ","└── ","    "); // common indentation strings for depenendency lines
     private int depth;
     private boolean isMemberExcluded = false; // check if workspace Member is excluded
-    private boolean isExcludedGroup = false; // check if dependency belongs to a excluded group
-    private int groupDependencyDepth; // depth at which group dependency was found
     private int memberDependencyDepth; // depth at which member dependency was found
     List<CodeLocation> codeLocations = new ArrayList<>();
     private DependencyGraph dependencyGraph;
@@ -51,13 +49,6 @@ public class UVTreeDependencyGraphTransformer {
 
         int previousDepth = depth;
         String cleanedLine = findDepth(line);
-
-        // Check if a previous dependency was excluded being part of a group and we are parsing transitives of that
-        if(depth > groupDependencyDepth && isExcludedGroup) {
-            return;
-        } else {
-            isExcludedGroup = false;
-        }
 
         // Check if a previous workspace member was excluded and we are parsing transitives of that member
         if(depth > memberDependencyDepth && isMemberExcluded) {
@@ -152,59 +143,24 @@ public class UVTreeDependencyGraphTransformer {
             line = line.replace(parenthesis, "");
         }
 
-        // we keep the limit three to split it in three parts if we have group information, as an example "pytest v8.3.4 (group: dev)"
+        // we keep the limit three to split it in three parts if we have extra information such as group or extra, as an example "pytest v8.3.4 (group: dev)"
         String[] parts = line.split(" ",3);
         if(parts.length < 2) {
             logger.warn("Unable to parse dependency from line: {}", line);
             return null;
         }
 
-        if(parts.length == 2) {
-            String dependencyName = parts[0];
-            String dependencyVersion = parts[1].replace("v", "");
+        String dependencyName = parts[0];
+        String dependencyVersion = parts[1].replace("v", "");
 
-            // check if the member is excluded and set flags for excluding transitives of that dependency
-            if (checkIfMemberExcluded(dependencyName, detectorOptions)) {
-                isMemberExcluded = true;
-                memberDependencyDepth = depth;
-                return null;
-            }
-
-            ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.PYPI, dependencyName, dependencyVersion);
-            return new Dependency(dependencyName, dependencyVersion, externalId);
-        } else if (parts.length == 3) {
-            String dependencyName = parts[0];
-            String dependencyVersion = parts[1].replace("v", "");
-
-            String groupName = "";
-            if (parts[2].contains("group:")) {
-
-                // "pytest v8.3.4 (group: dev)" extract dev from this line
-                try {
-                    groupName = parts[2].split(":")[1].replace(")", "").trim();
-                } catch (Exception e) {
-                    logger.warn("Unable to parse group from dependency line: {}", line);
-                }
-
-                // check if the group is excluded and set flags for excluding transitives of that dependency
-                if (detectorOptions.getExcludedDependencyGroups().contains(groupName)) {
-                    isExcludedGroup = true;
-                    groupDependencyDepth = depth;
-                    return null;
-                }
-            }
-
-            if (checkIfMemberExcluded(dependencyName, detectorOptions)) {
-                isMemberExcluded = true;
-                memberDependencyDepth = depth;
-                return null;
-            }
-
-            ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.PYPI, dependencyName, dependencyVersion);
-            return new Dependency(dependencyName, dependencyVersion, externalId);
-        } else {
-            logger.warn("Unable to parse dependency from line: {}", line);
+        // check if the member is excluded and set flags for excluding transitives of that dependency
+        if (checkIfMemberExcluded(dependencyName, detectorOptions)) {
+            isMemberExcluded = true;
+            memberDependencyDepth = depth;
             return null;
         }
+
+        ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.PYPI, dependencyName, dependencyVersion);
+        return new Dependency(dependencyName, dependencyVersion, externalId);
     }
 }
