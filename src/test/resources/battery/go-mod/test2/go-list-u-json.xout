@@ -1,0 +1,44 @@
+{
+	"Path": "example.com/my-main-module",
+	"Main": true,
+	"Dir": "/Users/shanty/blackduck/example-source/go/my-main-module",
+	"GoMod": "/Users/shanty/blackduck/example-source/go/my-main-module/go.mod",
+	"GoVersion": "1.23.4"
+}
+{
+	"Path": "golang.org/x/moduleB",
+	"Version": "v0.3.2",
+	"Time": "2019-04-25T21:42:06Z",
+	"Indirect": true,
+	"Dir": "/Users/shanty/go/pkg/mod/golang.org/x/moduleB@v0.3.2",
+	"GoMod": "/Users/shanty/go/pkg/mod/cache/download/golang.org/x/moduleB/@v/v0.3.2.mod",
+	"Sum": "h1:tW2bmiBqwgJj/UpqtC8EpXEZVYOwU0yG4iWbprSVAcs=",
+	"GoModSum": "h1:bEr9sfX3Q8Zfm5fL9x+3itogRgK3+ptLWKqgva+5dAk="
+}
+{
+	"Path": "golang.org/x/tools",
+	"Version": "v0.0.0-20180917221912-90fa682c2a6e",
+	"Time": "2018-09-17T22:19:12Z",
+	"Indirect": true,
+	"GoMod": "/Users/shanty/go/pkg/mod/cache/download/golang.org/x/tools/@v/v0.0.0-20180917221912-90fa682c2a6e.mod",
+	"GoModSum": "h1:n7NCudcB/nEzxVGmLbDWY5pfWTLqBcC2KZ6jyYvM4mQ="
+}
+{
+	"Path": "rsc.io/moduleA",
+	"Version": "v3.1.0",
+	"Time": "2019-03-12T14:59:12Z",
+	"Dir": "/Users/shanty/go/pkg/mod/rsc.io/moduleA@v3.1.0",
+	"GoMod": "/Users/shanty/go/pkg/mod/cache/download/rsc.io/moduleA/@v/v3.1.0.mod",
+	"Sum": "h1:9JKUTTIUgS6kzR9mK1YuGKv6Nl+DijDNIc0ghT58FaY=",
+	"GoModSum": "h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0="
+}
+{
+	"Path": "rsc.io/moduleC",
+	"Version": "v1.3.0",
+	"Time": "2018-02-13T19:05:03Z",
+	"Indirect": true,
+	"Dir": "/Users/shanty/go/pkg/mod/rsc.io/moduleC@v1.3.0",
+	"GoMod": "/Users/shanty/go/pkg/mod/cache/download/rsc.io/moduleC/@v/v1.3.0.mod",
+	"Sum": "h1:7uVkIFmeBqHfdjD+gZwtXXI+RODJ2Wc4O7MPEh/QiW4=",
+	"GoModSum": "h1:T1hPZKmBbMNahiBKFy5HrXp6adAjACjK9JXDnKaTXpA="
+}

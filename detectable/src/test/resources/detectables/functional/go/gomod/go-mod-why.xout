@@ -1,0 +1,11 @@
+# commons-service
+(main module does not need module commons-service)
+
+# github.com/spf13/viper
+(main module does not need module github.com/spf13/viper)
+
+# github.com/bketelsen/crypt
+(main module does not need module github.com/bketelsen/crypt)
+
+# github.com/fsnotify/fsnotify
+(main module does not need module github.com/fsnotify/fsnotify)

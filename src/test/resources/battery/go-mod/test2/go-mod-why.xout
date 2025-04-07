@@ -1,0 +1,20 @@
+# example.com/my-main-module
+example.com/my-main-module
+
+# golang.org/x/moduleB
+example.com/my-main-module
+rsc.io/moduleA
+rsc.io/moduleC
+golang.org/x/moduleB/language
+
+# golang.org/x/tools
+(main module does not need module golang.org/x/tools)
+
+# rsc.io/moduleA
+example.com/my-main-module
+rsc.io/moduleA
+
+# rsc.io/moduleC
+example.com/my-main-module
+rsc.io/moduleA
+rsc.io/moduleC

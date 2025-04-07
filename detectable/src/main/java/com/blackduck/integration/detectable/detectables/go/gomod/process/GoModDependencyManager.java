@@ -25,12 +25,13 @@ public class GoModDependencyManager {
     private static final Pattern SHORT_SHA1_VERSION_PATTERN = Pattern.compile(String.format(GIT_VERSION_FORMAT, SHORT_SHA1_REGEX));
 
     private final ExternalIdFactory externalIdFactory;
-
     private final Map<String, Dependency> modulesAsDependencies;
+    private final Map<String, String> modifiedVersionsMap;
 
-    public GoModDependencyManager(List<GoListAllData> allModules, ExternalIdFactory externalIdFactory) {
+    public GoModDependencyManager(List<GoListAllData> allRequiredModules, ExternalIdFactory externalIdFactory) {
         this.externalIdFactory = externalIdFactory;
-        modulesAsDependencies = convertModulesToDependencies(allModules);
+        modifiedVersionsMap = new HashMap<>();
+        modulesAsDependencies = convertModulesToDependencies(allRequiredModules);
     }
 
     private Map<String, Dependency> convertModulesToDependencies(List<GoListAllData> allModules) {
@@ -40,17 +41,28 @@ public class GoModDependencyManager {
             String name = Optional.ofNullable(module.getReplace())
                 .map(ReplaceData::getPath)
                 .orElse(module.getPath());
-            String version = Optional.ofNullable(module.getReplace())
+            String kbCompatibleVersion = Optional.ofNullable(module.getReplace())
                 .map(ReplaceData::getVersion)
                 .orElse(module.getVersion());
-            if (version != null) {
-                version = handleGitHash(version);
-                version = removeIncompatibleSuffix(version);
+            if (kbCompatibleVersion != null) {
+                String originalVersion = kbCompatibleVersion;
+                kbCompatibleVersion = handleGitHash(kbCompatibleVersion);
+                kbCompatibleVersion = removeIncompatibleSuffix(kbCompatibleVersion);
+                if (!originalVersion.equals(kbCompatibleVersion)) {
+                    modifiedVersionsMap.put(kbCompatibleVersion, originalVersion);
+                }
             }
-            dependencies.put(module.getPath(), convertToDependency(name, version));
+            dependencies.put(module.getPath(), convertToDependency(name, kbCompatibleVersion));
         }
 
         return dependencies;
+    }
+
+    public String getOriginalVersionFromKbCompatibleVersion(String shortVersion) {
+        if (modifiedVersionsMap.containsKey(shortVersion)) {
+            return modifiedVersionsMap.get(shortVersion);
+        }
+        return shortVersion;
     }
 
     private Dependency convertToDependency(String moduleName, @Nullable String moduleVersion) {
