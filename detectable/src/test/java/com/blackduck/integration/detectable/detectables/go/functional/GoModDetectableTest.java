@@ -1,12 +1,5 @@
 package com.blackduck.integration.detectable.detectables.go.functional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.io.IOException;
-import java.nio.file.Paths;
-
-import org.jetbrains.annotations.NotNull;
-
 import com.blackduck.integration.bdio.model.Forge;
 import com.blackduck.integration.detectable.Detectable;
 import com.blackduck.integration.detectable.DetectableEnvironment;
@@ -19,6 +12,12 @@ import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.functional.DetectableFunctionalTest;
 import com.blackduck.integration.detectable.util.graph.NameVersionGraphAssert;
 import com.blackduck.integration.executable.ExecutableOutput;
+import org.jetbrains.annotations.NotNull;
+
+import java.io.IOException;
+import java.nio.file.Paths;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class GoModDetectableTest extends DetectableFunctionalTest {
     public GoModDetectableTest() throws IOException {
@@ -29,7 +28,7 @@ public class GoModDetectableTest extends DetectableFunctionalTest {
     protected void setup() throws IOException {
         addFile(Paths.get("go.mod"));
 
-        ExecutableOutput goListOutput = createStandardOutputFromResource("/go/go-list.xout");
+        ExecutableOutput goListOutput = createStandardOutputFromResource("/go/gomod/go-list.xout");
         addExecutableOutput(goListOutput, "go", "list", "-m", "-json");
 
         ExecutableOutput goVersionOutput = createStandardOutput(
@@ -37,26 +36,26 @@ public class GoModDetectableTest extends DetectableFunctionalTest {
         );
         addExecutableOutput(goVersionOutput, "go", "version");
 
-        ExecutableOutput goListUJsonOutput = createStandardOutputFromResource("/go/go-list-all.xout");
+        ExecutableOutput goListUJsonOutput = createStandardOutputFromResource("/go/gomod/go-list-all.xout");
         addExecutableOutput(goListUJsonOutput, "go", "list", "-mod=readonly", "-m", "-json", "all");
 
         ExecutableOutput goModGraphOutput = createStandardOutput(
-            "github.com/gin-gonic/gin golang.org/x/text@v0.3.0",
-            "github.com/gin-gonic/gin sigs.k8s.io/yaml@v1.2.0",
-            "golang.org/x/text@v0.3.0 golang.org/x/tools@v0.0.0-20180917221912-90fa682c2a6e",
-            "gopkg.in/yaml.v2@v2.2.8 gopkg.in/check.v1@v0.0.0-20161208181325-20d25e280405",
-            "sigs.k8s.io/yaml@v1.2.0 github.com/davecgh/go-spew@v1.1.1",
-            "sigs.k8s.io/yaml@v1.2.0 gopkg.in/yaml.v2@v2.2.8"
+            "commons-service github.com/spf13/viper@v1.8.1",
+            "github.com/spf13/viper@v1.8.1 github.com/bketelsen/crypt@v0.0.4",
+            "github.com/spf13/viper@v1.8.1 github.com/fsnotify/fsnotify@v1.4.9",
+            "github.com/spf13/viper@v1.7.0 github.com/coreos/bbolt@v1.3.2",
+            "github.com/spf13/viper@v1.7.0 github.com/fsnotify/fsnotify@v1.4.7",
+            "github.com/spf13/viper@v1.7.0 github.com/gogo/protobuf@v1.2.1"
         );
         addExecutableOutput(goModGraphOutput, "go", "mod", "graph");
 
-        ExecutableOutput goListMainOutput = createStandardOutputFromResource("/go/go-mod-get-main.xout");
+        ExecutableOutput goListMainOutput = createStandardOutputFromResource("/go/gomod/go-mod-get-main.xout");
         addExecutableOutput(goListMainOutput, "go", "list", "-mod=readonly", "-m", "-f", "{{if (.Main)}}{{.Path}}{{end}}", "all");
 
-        ExecutableOutput goListDirectMods = createStandardOutputFromResource("/go/go-mod-list-directs.xout");
+        ExecutableOutput goListDirectMods = createStandardOutputFromResource("/go/gomod/go-mod-list-directs.xout");
         addExecutableOutput(goListDirectMods, "go", "list", "-mod=readonly", "-m", "-f", "{{if not (or .Indirect .Main)}}{{.Path}}@{{.Version}}{{end}}", "all");
 
-        ExecutableOutput goModWhyNvOutput = createStandardOutput("/go/gomodwhy.xout");
+        ExecutableOutput goModWhyNvOutput = createStandardOutput("/go/gomod/go-mod-why.xout");
         addExecutableOutput(goModWhyNvOutput, "go", "mod", "why", "-m", "all");
     }
 
@@ -79,22 +78,19 @@ public class GoModDetectableTest extends DetectableFunctionalTest {
         assertEquals(1, extraction.getCodeLocations().size());
 
         NameVersionGraphAssert graphAssert = new NameVersionGraphAssert(Forge.GOLANG, extraction.getCodeLocations().get(0).getDependencyGraph());
-        graphAssert.hasRootSize(2);
+        graphAssert.hasRootSize(1); // number of direct dependencies
 
-        graphAssert.hasRootDependency("golang.org/x/text", "v0.3.6");
-        // This version should be replaced with a v0.3.6
-        graphAssert.hasNoDependency("golang.org/x/text", "v0.3.0");
-
-        graphAssert.hasDependency("golang.org/x/tools", "90fa682c2a6e");
-        graphAssert.hasParentChildRelationship("golang.org/x/text", "v0.3.6", "golang.org/x/tools", "90fa682c2a6e");
-
-        graphAssert.hasRootDependency("sigs.k8s.io/yaml", "v1.2.0");
-        graphAssert.hasDependency("github.com/davecgh/go-spew", "v1.1.1");
-        graphAssert.hasParentChildRelationship("sigs.k8s.io/yaml", "v1.2.0", "github.com/davecgh/go-spew", "v1.1.1");
-        graphAssert.hasDependency("gopkg.in/yaml.v2", "v2.2.8");
-        graphAssert.hasParentChildRelationship("sigs.k8s.io/yaml", "v1.2.0", "gopkg.in/yaml.v2", "v2.2.8");
-        graphAssert.hasDependency("gopkg.in/check.v1", "20d25e280405");
-        graphAssert.hasParentChildRelationship("gopkg.in/yaml.v2", "v2.2.8", "gopkg.in/check.v1", "20d25e280405");
+        // viper 1.8.1 is a direct dep
+        graphAssert.hasRootDependency("github.com/spf13/viper", "v1.8.1");
+        // true transitive dep of viper 1.8.1
+        graphAssert.hasDependency("github.com/bketelsen/crypt", "v0.0.4");
+        graphAssert.hasParentChildRelationship("github.com/spf13/viper", "v1.8.1", "github.com/bketelsen/crypt", "v0.0.4");
+        // viper 1.7.0 and its transitives should not be present
+        graphAssert.hasNoDependency("github.com/spf13/viper", "v1.7.0");
+        graphAssert.hasNoDependency("github.com/coreos/bbolt", "v1.3.2");
+        graphAssert.hasNoDependency("github.com/gogo/protobuf", "v1.2.1");
+        // fsnotify v1.6.0 is the selected version (according to go list -m all, go mod chose this as the minimal version)
+        graphAssert.hasDependency("github.com/fsnotify/fsnotify", "v1.6.0");
     }
 
 }
