@@ -58,13 +58,13 @@ public class GoModCliExtractor {
     public Extraction extract(File directory, ExecutableTarget goExe) throws ExecutableFailedException, JsonSyntaxException, DetectableException {
         GoVersion goVersion = goVersion(directory, goExe);
         List<GoListModule> goListModules = listModules(directory, goExe); // only ever prints one module, the current module? Is this true even in "multi-module" projects? If they exist?
-        List<GoListAllData> goListAllModules = listAllModules(directory, goExe, goVersion);
-        List<GoGraphRelationship> goGraphRelationships = listAndCleanGraphRelationships(directory, goExe, goVersion, goListAllModules); // xxxxx****x*x*where we modify the go mod graph output
+        final List<GoListAllData> goListAllModules = listAllModules(directory, goExe, goVersion); // has long SHA
+        List<GoGraphRelationship> goGraphRelationships = listAndCleanGraphRelationships(directory, goExe, goVersion, goListAllModules); // has long SHA, requires long SHA b/c we are re-writing go mod graph which uses long SHA
         Set<String> excludedModules = listExcludedModules(directory, goExe);
 
-        GoRelationshipManager goRelationshipManager = new GoRelationshipManager(goGraphRelationships, excludedModules); // at this point the relationship mapping is correct now, 170 and 181 are independent.
+        GoRelationshipManager goRelationshipManager = new GoRelationshipManager(goGraphRelationships, excludedModules); // has long SHA
 
-        GoModDependencyManager goModDependencyManager = new GoModDependencyManager(goListAllModules, externalIdFactory); // goListAllModules contains only required deps.
+        GoModDependencyManager goModDependencyManager = new GoModDependencyManager(goListAllModules, externalIdFactory); // SHORT SHA INTRODUCED
         List<CodeLocation> codeLocations = goListModules.stream() // goListModules corresponds to output of "go list -m -json" which should just print the main module, but iterating over stream suggests there could be more? need an example. looks like for each one we create a new code location
             .map(goListModule -> goModGraphGenerator.generateGraph(goListModule, goRelationshipManager, goModDependencyManager))
             .collect(Collectors.toList());

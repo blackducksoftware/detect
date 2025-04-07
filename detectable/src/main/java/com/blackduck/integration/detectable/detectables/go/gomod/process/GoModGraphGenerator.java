@@ -56,18 +56,22 @@ public class GoModGraphGenerator {
             return;
         }
 
-        Dependency dependency = goModDependencyManager.getDependencyForModule(moduleNameVersion.getName()); // when the wrong version is queried, it'll fetch the right version anyhow (otherwise it'll be no version and a false +ve). Unnecessary work here?maybe?
-        NameVersion moduleNameSelectedVersion = new NameVersion(dependency.getName(), dependency.getVersion());
+        Dependency dependency = goModDependencyManager.getDependencyForModule(moduleNameVersion.getName());
+        NameVersion moduleNameSelectedVersion = new NameVersion(dependency.getName(), goModDependencyManager.getLongVersionFromShortVersion(dependency.getVersion()));
+        if (moduleNameVersion != moduleNameSelectedVersion) {
+            logger.info(moduleNameVersion + " != " + moduleNameSelectedVersion);
+        }
+        if (moduleNameVersion.getName().contains("genproto")) {
+            System.out.println("processing genproto");
+        }
+
         if (parent != null) {
-            graph.addChildWithParent(dependency, parent); // unnecessary work hmm .. since when we fetch cobra113, we get cobra121 and cobra121 is already in the graph. Noop. Also causes wrong parent. .....No actually not uncessary work b/c cobra121 might be in the graph but the relationship between etcd/server-> cobra113(becomes cobra121) is not yet in the graph.
+            graph.addChildWithParent(dependency, parent); // not unnecessary work since we might be calling addModuleToGraph() with different parent more than once
         } else {
-//            if (moduleNameVersion.getName().contains("viper")) {
-//                System.out.println("processing direct dep viper181"); // by the time we get here ... its already fully graphed?
-//            }
             graph.addDirectDependency(dependency); // for the viper test ... if the go mod graph output was not modified ... then it is NOT necessarily true that this is a direct dep. sshhhoot
         }
-        // I guess we need something like modulNameVersion versus moduleNameSelectedVersion
-        if (!fullyGraphedModules.contains(moduleNameSelectedVersion) && goRelationshipManager.hasRelationshipsForNEW(moduleNameSelectedVersion)) { // SHULD WE BE RECURSING NON-REQUIRED MODULES? gorelmngr will have non-required. fullyGraphedModules can also have non-required.
+
+        if (!fullyGraphedModules.contains(moduleNameSelectedVersion) && goRelationshipManager.hasRelationshipsForNEW(moduleNameSelectedVersion)) { // need long version here ... OR a way to grab the relationship with the shortened version
             fullyGraphedModules.add(moduleNameSelectedVersion);
             List<GoGraphRelationship> projectRelationships = goRelationshipManager.getRelationshipsForNEW(moduleNameSelectedVersion); // otherwise project relationships here actually belongs to viper170
             for (GoGraphRelationship projectRelationship : projectRelationships) {

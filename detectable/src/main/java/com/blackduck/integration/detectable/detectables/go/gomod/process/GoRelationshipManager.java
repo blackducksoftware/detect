@@ -20,7 +20,7 @@ public class GoRelationshipManager {
         this.excludedModules = excludedModules;
         relationshipMapNEW = new HashMap<>();
         for (GoGraphRelationship goGraphRelationship : goGraphRelationships) {
-            NameVersion parentNameVersion = goGraphRelationship.getParent();
+            NameVersion parentNameVersion = goGraphRelationship.getParent(); // the version here isnt the shortened hash?
             relationshipMapNEW.putIfAbsent(parentNameVersion, new LinkedList<>());
             relationshipMapNEW.get(parentNameVersion).add(goGraphRelationship);
         }
@@ -31,7 +31,7 @@ public class GoRelationshipManager {
     }
 
     public List<GoGraphRelationship> getRelationshipsForNEW(NameVersion moduleNameVersion) {
-        return Optional.ofNullable(relationshipMapNEW.get(moduleNameVersion)).orElse(Collections.emptyList());
+        return Optional.ofNullable(relationshipMapNEW.get(moduleNameVersion)).orElse(Collections.emptyList()); // why return empty list when we only ever call this method after checking hasRelationshipsForNEW()
     }
 
     public boolean isModuleExcluded(String moduleName) { // can correspond to "main module does not need xyz" but dont want to cause confusion with jus the output that says "module not used by main"

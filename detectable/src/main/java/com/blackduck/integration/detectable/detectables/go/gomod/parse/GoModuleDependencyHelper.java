@@ -80,9 +80,6 @@ public class GoModuleDependencyHelper {
 
     private String getProperParentage(String grphLine, String[] splitLine, Map<String, List<String>> whyMap, List<String> directs, List<String> correctedDependencies, List<String> allRequiredModules) {
         String childModulePath = splitLine[1].replaceAll("@.*", ""); // has no version information, @v123 is dropped.
-        if (grphLine.contains("clockwork")) {
-            System.out.println("idk");
-        }
         correctedDependencies.add(childModulePath); // keep track of ones we've fixed.
         
         // look up the 'why' results for the module...  This will tell us
