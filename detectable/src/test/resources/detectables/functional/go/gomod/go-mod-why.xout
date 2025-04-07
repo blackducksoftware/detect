@@ -9,9 +9,3 @@
 
 # github.com/fsnotify/fsnotify
 (main module does not need module github.com/fsnotify/fsnotify)
-
-# github.com/coreos/bbolt
-(main module does not need module github.com/coreos/bbolt)
-
-# github.com/gogo/protobuf
-(main module does not need module github.com/gogo/protobuf)

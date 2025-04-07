@@ -41,6 +41,7 @@ public class GoModDetectableTest extends DetectableFunctionalTest {
 
         ExecutableOutput goModGraphOutput = createStandardOutput(
             "commons-service github.com/spf13/viper@v1.8.1",
+            "commons-service github.com/fsnotify/fsnotify@v1.6.0",
             "github.com/spf13/viper@v1.8.1 github.com/bketelsen/crypt@v0.0.4",
             "github.com/spf13/viper@v1.8.1 github.com/fsnotify/fsnotify@v1.4.9",
             "github.com/spf13/viper@v1.7.0 github.com/coreos/bbolt@v1.3.2",
@@ -78,18 +79,18 @@ public class GoModDetectableTest extends DetectableFunctionalTest {
         assertEquals(1, extraction.getCodeLocations().size());
 
         NameVersionGraphAssert graphAssert = new NameVersionGraphAssert(Forge.GOLANG, extraction.getCodeLocations().get(0).getDependencyGraph());
-        graphAssert.hasRootSize(1); // number of direct dependencies
+        graphAssert.hasRootSize(2); // number of direct dependencies
 
         // viper 1.8.1 is a direct dep
         graphAssert.hasRootDependency("github.com/spf13/viper", "v1.8.1");
         // true transitive dep of viper 1.8.1
         graphAssert.hasDependency("github.com/bketelsen/crypt", "v0.0.4");
         graphAssert.hasParentChildRelationship("github.com/spf13/viper", "v1.8.1", "github.com/bketelsen/crypt", "v0.0.4");
-        // viper 1.7.0 and its transitives should not be present
+        // viper 1.7.0 and its unique transitives should not be present
         graphAssert.hasNoDependency("github.com/spf13/viper", "v1.7.0");
         graphAssert.hasNoDependency("github.com/coreos/bbolt", "v1.3.2");
         graphAssert.hasNoDependency("github.com/gogo/protobuf", "v1.2.1");
-        // fsnotify v1.6.0 is the selected version (according to go list -m all, go mod chose this as the minimal version)
+        // overlapping dependency fsnotify is a true transitive of viper 1.8.1 (with minimal version selected)
         graphAssert.hasDependency("github.com/fsnotify/fsnotify", "v1.6.0");
     }
 
