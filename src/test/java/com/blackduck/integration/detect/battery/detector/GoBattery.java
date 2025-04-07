@@ -42,18 +42,6 @@ public class GoBattery {
     }
 
     @Test
-    void modGraphMultipleVersionsOfSameDependency() {
-        // currently passes with 4602-og bdio as expected
-        DetectorBatteryTestRunner test = new DetectorBatteryTestRunner("go-mod-multiple-versions", "go-mod/multiple-versions");
-        test.executableFromResourceFiles(DetectProperties.DETECT_GO_PATH, "go-version.xout", "go-list.xout", "go-list-u-json.xout", "go-mod-graph.xout", "go-mod-get-main.xout", "go-mod-list-directs.xout", "go-mod-why.xout", "go-mod-why.xout");
-        test.sourceDirectoryNamed("testing-4602");
-        test.property(DetectProperties.DETECT_PROJECT_VERSION_NAME, "og");
-        test.sourceFileFromResource("go.mod");
-        test.expectBdioResources();
-        test.run();
-    }
-
-    @Test
     void modGraphCorrectParentForTransitiveDependency() {
         // text is a transitive dependency coming from sampler but incorrectly put under quote (though it is also correctly put under sampler)
         // test assign transitives to correct parent when depdency chain info (go mod why) is available

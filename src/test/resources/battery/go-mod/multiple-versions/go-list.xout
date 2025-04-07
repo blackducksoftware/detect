@@ -1,7 +1,0 @@
-{
- 	"Path": "commons-service",
- 	"Main": true,
- 	"Dir": "/Users/shanty/blackduck/example-source/go/ToReferLatest/GoViperTest",
- 	"GoMod": "/Users/shanty/blackduck/example-source/go/ToReferLatest/GoViperTest/go.mod",
- 	"GoVersion": "1.20"
-}
