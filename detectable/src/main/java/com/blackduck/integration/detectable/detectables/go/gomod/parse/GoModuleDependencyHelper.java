@@ -30,7 +30,7 @@ public class GoModuleDependencyHelper {
         Set<String> goModGraph = new HashSet<>();
         List<String> correctedDependencies = new ArrayList<>();
         List<String> allRequiredModules = extractAllRequiredModulePathsWithVersions(allRequiredModulesData);
-        Map<String, List<String>> whyMap = whyListStructureTransform.convertWhyListToWhyMap(modWhyOutput); // confirmed
+        Map<String, List<String>> whyMap = whyListStructureTransform.convertWhyListToWhyMap(modWhyOutput);
         /* Correct lines that get mis-interpreted as a direct dependency, given the list of direct deps, requirements graph etc.*/
         for (String grphLine : originalModGraphOutput) {
             boolean containsDirect = containsDirectDependencies(directs, main, grphLine);

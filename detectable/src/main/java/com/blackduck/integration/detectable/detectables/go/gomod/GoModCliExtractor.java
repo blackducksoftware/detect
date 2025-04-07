@@ -58,12 +58,11 @@ public class GoModCliExtractor {
     public Extraction extract(File directory, ExecutableTarget goExe) throws ExecutableFailedException, JsonSyntaxException, DetectableException {
         GoVersion goVersion = goVersion(directory, goExe);
         List<GoListModule> goListModules = listModules(directory, goExe);
-        final List<GoListAllData> goListAllModules = listAllModules(directory, goExe, goVersion);
+        List<GoListAllData> goListAllModules = listAllModules(directory, goExe, goVersion);
         List<GoGraphRelationship> goGraphRelationships = listAndCleanGraphRelationships(directory, goExe, goVersion, goListAllModules);
         Set<String> excludedModules = listExcludedModules(directory, goExe);
 
         GoRelationshipManager goRelationshipManager = new GoRelationshipManager(goGraphRelationships, excludedModules);
-
         GoModDependencyManager goModDependencyManager = new GoModDependencyManager(goListAllModules, externalIdFactory);
         List<CodeLocation> codeLocations = goListModules.stream()
             .map(goListModule -> goModGraphGenerator.generateGraph(goListModule, goRelationshipManager, goModDependencyManager))

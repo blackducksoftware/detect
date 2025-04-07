@@ -19,7 +19,7 @@ public class GoRelationshipManager {
         this.excludedModules = excludedModules;
         relationshipMap = new HashMap<>();
         for (GoGraphRelationship goGraphRelationship : goGraphRelationships) {
-            NameVersion parentNameVersion = goGraphRelationship.getParent(); // the version here isnt the shortened hash?
+            NameVersion parentNameVersion = goGraphRelationship.getParent();
             relationshipMap.putIfAbsent(parentNameVersion, new LinkedList<>());
             relationshipMap.get(parentNameVersion).add(goGraphRelationship);
         }
