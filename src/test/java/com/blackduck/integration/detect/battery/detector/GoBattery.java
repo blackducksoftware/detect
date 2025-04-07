@@ -32,7 +32,7 @@ public class GoBattery {
 
     @Test
     void mod() {
-        DetectorBatteryTestRunner test = new DetectorBatteryTestRunner("go-mod", "go-mod/original");
+        DetectorBatteryTestRunner test = new DetectorBatteryTestRunner("go-mod", "go-mod/test1");
         test.executableFromResourceFiles(DetectProperties.DETECT_GO_PATH, "go-version.xout", "go-list.xout", "go-list-u-json.xout", "go-mod-graph.xout", "go-mod-get-main.xout", "go-mod-list-directs.xout", "go-mod-why.xout", "go-mod-why.xout");
         test.sourceDirectoryNamed("source");
         test.sourceFileFromResource("go.mod");
@@ -42,9 +42,9 @@ public class GoBattery {
     }
 
     @Test
-    void modGraphCorrectParentForTransitiveDependency() {
+    void modGraphTestCorrectParentForTransitiveDependency() {
         // test assign transitives to correct parent when depedency chain info (go mod why) is available
-        DetectorBatteryTestRunner test = new DetectorBatteryTestRunner("go-mod-test-demo", "go-mod/demo");
+        DetectorBatteryTestRunner test = new DetectorBatteryTestRunner("go-mod-test-2", "go-mod/test2");
         test.executableFromResourceFiles(DetectProperties.DETECT_GO_PATH, "go-version.xout", "go-list.xout", "go-list-u-json.xout", "go-mod-graph.xout", "go-mod-get-main.xout", "go-mod-list-directs.xout", "go-mod-why.xout", "go-mod-why.xout");
         test.sourceDirectoryNamed("testing-4602");
         test.property(DetectProperties.DETECT_PROJECT_VERSION_NAME, "demo");
@@ -54,9 +54,9 @@ public class GoBattery {
     }
 
     @Test
-    void modGraphTestViper() {
+    void modGraphTestCorrectRelationshipsWhenNoGoModWhyInfo() {
         // test assign transitives to correct parent when no dependency chain (go mod why) info is available
-        DetectorBatteryTestRunner test = new DetectorBatteryTestRunner("go-mod-test-viper", "go-mod/viper4602");
+        DetectorBatteryTestRunner test = new DetectorBatteryTestRunner("go-mod-test-viper", "go-mod/test3");
         test.executableFromResourceFiles(DetectProperties.DETECT_GO_PATH, "go-version.xout", "go-list.xout", "go-list-u-json.xout", "go-mod-graph.xout", "go-mod-get-main.xout", "go-mod-list-directs.xout", "go-mod-why.xout", "go-mod-why.xout");
         test.sourceDirectoryNamed("testing-4602");
         test.property(DetectProperties.DETECT_PROJECT_VERSION_NAME, "demo");

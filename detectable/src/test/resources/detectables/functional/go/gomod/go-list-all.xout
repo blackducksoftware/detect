@@ -28,7 +28,6 @@
 	"Path": "github.com/fsnotify/fsnotify",
 	"Version": "v1.6.0",
 	"Time": "2022-10-13T01:18:11Z",
-	"Indirect": true,
 	"GoMod": "/Users/shanty/go/pkg/mod/cache/download/github.com/fsnotify/fsnotify/@v/v1.6.0.mod",
 	"GoVersion": "1.16",
 	"Sum": "h1:n+5WquG0fcWoWp6xPWfHdbskMCQaFnG6PfBrh1Ky4HY=",
