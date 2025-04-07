@@ -17,14 +17,15 @@ public class GoModuleDependencyHelper {
 
     /**
      * Takes a string that will be incorrectly computed to be a direct dependency and corrects it, such that a
-     * true indirect dependency module will be associated with the module that is the true direct dependency.  
-     * Eg. "main_module_name indirect_module" ->  "direct_dependency_module indirect_module"  - this will convert the
+     * true indirect dependency module will be associated with the required module that is its true parent.
+     * Eg. "main_module_name indirect_module" ->  "required_parent_module indirect_module"  - this will convert the
      * requirements graph to a dependency graph. True direct dependencies will be left unchanged.
      * @param main - The string name of the main go module
-     * @param directs - The obtained list of the main module's direct dependency.
+     * @param directs - The obtained list of the main module's direct dependencies.
      * @param modWhyOutput - A list of all modules with their relationship to the main module
      * @param originalModGraphOutput - The list produced by "go mod graph"- the intended "target".
-     * @return - the actual dependency list
+     * @param allRequiredModulesData - All modules, directly or indirectly, required for a build. (output of go list -m all)
+     * @return - the go mod why output cleaned up (duplicates removed + relationships corrected where applicable)
      */
     public Set<String> computeDependencies(String main, List<String> directs, List<String> modWhyOutput, List<String> originalModGraphOutput, List<GoListAllData> allRequiredModulesData) {
         Set<String> goModGraph = new HashSet<>();
@@ -56,7 +57,7 @@ public class GoModuleDependencyHelper {
 
             if (needsRedux) {
                 /* Redo the line to establish the direct reference module to this *indirect* module*/
-                grphLine = this.getProperParentage(grphLine, splitLine, whyMap, directs, correctedDependencies, allRequiredModules);
+                grphLine = this.getProperParentage(grphLine, splitLine, whyMap, correctedDependencies, allRequiredModules);
             }
             
             goModGraph.add(grphLine);
@@ -77,7 +78,7 @@ public class GoModuleDependencyHelper {
         return false;
     }
 
-    private String getProperParentage(String grphLine, String[] splitLine, Map<String, List<String>> whyMap, List<String> directs, List<String> correctedDependencies, List<String> allRequiredModules) {
+    private String getProperParentage(String grphLine, String[] splitLine, Map<String, List<String>> whyMap, List<String> correctedDependencies, List<String> allRequiredModules) {
         String childModulePath = splitLine[1].replaceAll("@.*", "");
         correctedDependencies.add(childModulePath); // keep track of ones we've fixed.
 
