@@ -97,9 +97,6 @@ public class GoModCliExtractor {
         GoModuleDependencyHelper goModDependencyHelper = new GoModuleDependencyHelper();
         Set<String> actualDependencyList = goModDependencyHelper.computeDependencies(mainMod, directs, modWhyOutput, modGraphOutput, allRequiredModules); // **********
 
-        System.out.println("-->>");
-        actualDependencyList.stream().filter(s -> s.contains("benbjohnson")).forEach(System.out::println);
-
         return goGraphParser.parseRelationshipsFromGoModGraph(actualDependencyList);
     }
 
