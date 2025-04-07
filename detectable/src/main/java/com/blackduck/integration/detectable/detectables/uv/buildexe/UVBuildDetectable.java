@@ -64,6 +64,7 @@ public class UVBuildDetectable extends Detectable {
             return new ExecutableNotFoundDetectableResult("uv");
         }
 
+        // check [tool.uv] managed setting and if set to false, skip this detector
         if(!uvTomlParser.parseManagedKey(uvTomlFile)) {
             logger.warn("Skipping this detectable, since [tool.uv] managed is set to false.");
             return new FailedDetectableResult();

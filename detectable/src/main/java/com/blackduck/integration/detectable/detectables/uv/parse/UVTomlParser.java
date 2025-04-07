@@ -31,6 +31,8 @@ public class UVTomlParser {
         return Optional.empty();
     }
 
+
+    // check [tool.uv] managed setting
     public boolean parseManagedKey(File uvTomlFile) {
 
         String uvTomlContents;
