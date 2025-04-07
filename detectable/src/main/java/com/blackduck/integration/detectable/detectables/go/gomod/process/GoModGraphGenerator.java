@@ -58,12 +58,6 @@ public class GoModGraphGenerator {
 
         Dependency dependency = goModDependencyManager.getDependencyForModule(moduleNameVersion.getName());
         NameVersion moduleNameSelectedVersion = new NameVersion(dependency.getName(), goModDependencyManager.getLongVersionFromShortVersion(dependency.getVersion()));
-        if (moduleNameVersion != moduleNameSelectedVersion) {
-            logger.info(moduleNameVersion + " != " + moduleNameSelectedVersion);
-        }
-        if (moduleNameVersion.getName().contains("genproto")) {
-            System.out.println("processing genproto");
-        }
 
         if (parent != null) {
             graph.addChildWithParent(dependency, parent); // not unnecessary work since we might be calling addModuleToGraph() with different parent more than once
