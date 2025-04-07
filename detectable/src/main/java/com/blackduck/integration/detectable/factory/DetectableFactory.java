@@ -710,7 +710,7 @@ public class DetectableFactory {
     }
 
     public UVBuildDetectable createUVBuildDetectable(DetectableEnvironment environment, UVResolver uvResolver, UVDetectorOptions uvDetectorOptions) {
-        return new UVBuildDetectable(environment, fileFinder, uvResolver, uvBuildExtractor(environment.getDirectory()), uvDetectorOptions);
+        return new UVBuildDetectable(environment, fileFinder, uvResolver, uvBuildExtractor(environment.getDirectory()), uvDetectorOptions, new UVTomlParser());
     }
 
     // Used by three Detectables
