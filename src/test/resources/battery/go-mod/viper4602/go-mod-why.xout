@@ -1,23 +1,20 @@
-# viper@v1.8.1
-(main module does not need module viper@v1.8.1)
+# my-main-module
+(main module does not need module my-main-module)
 
-# viper@v1.7.0
-(main module does not need module viper@v1.7.0)
+# github.com/spf13/viper
+(main module does not need module github.com/spf13/viper)
 
-# cobra@v1.1.3
-(main module does not need module cobra@v1.1.3)
+# k8s.io/apiextensions-apiserver
+(main module does not need module k8s.io/apiextensions-apiserver)
 
-# cobra@v1.2.1
-(main module does not need module cobra@v1.2.1)
+# github.com/spf13/cobra
+(main module does not need module github.com/spf13/cobra)
 
-# x@v1.0.0
-(main module does not need module x@v1.0.0)
+# github.com/grpc-ecosystem/go-grpc-middleware
+(main module does not need module github.com/grpc-ecosystem/go-grpc-middleware)
 
-# y@v1.0.0
-(main module does not need module y@v1.0.0)
+# go.etcd.io/etcd/server/v3
+(main module does not need module go.etcd.io/etcd/server/v3)
 
-# A@v1.0.0
-(main module does not need module A@v1.0.0)
-
-# B@v1.0.0
-(main module does not need module B@v1.0.0)
+# k8s.io/component-base
+(main module does not need module k8s.io/component-base)

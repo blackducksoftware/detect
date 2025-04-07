@@ -1,2 +1,2 @@
-viper@v1.8.1
-x@v1.0.0
+github.com/spf13/viper@v1.8.1
+k8s.io/apiextensions-apiserver@v0.23.1
