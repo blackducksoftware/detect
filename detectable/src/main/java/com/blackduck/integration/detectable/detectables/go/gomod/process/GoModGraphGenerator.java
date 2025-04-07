@@ -4,7 +4,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.util.NameVersion;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -33,14 +32,12 @@ public class GoModGraphGenerator {
         DependencyGraph graph = new BasicDependencyGraph();
         String moduleName = projectModule.getPath();
         NameVersion moduleNameVersion = new NameVersion(moduleName, projectModule.getVersion());
-        if (goRelationshipManager.hasRelationshipsForNEW(moduleNameVersion)) {
-            goRelationshipManager.getRelationshipsForNEW(moduleNameVersion).stream() // ideally this traverses over each direct dep, but that's not true if the go mog graph just says "(main module does not need .. module)"
+        if (goRelationshipManager.hasRelationshipsFor(moduleNameVersion)) {
+            goRelationshipManager.getRelationshipsFor(moduleNameVersion).stream() // ideally this traverses over each direct dep, but that's not true if the go mog graph just says "(main module does not need .. module)"
                 .map(relationship -> relationship.getChild())
-                .forEach(childNameVersion -> addModuleToGraph(childNameVersion, null, graph, goRelationshipManager, goModDependencyManager)); // this w/ null is actually called 119 times == number of main -> (direct or indirect) dep.
+                .forEach(childNameVersion -> addModuleToGraph(childNameVersion, null, graph, goRelationshipManager, goModDependencyManager));
         }
 
-//        graph.getChildrenForParent(viper180ext)
-        ExternalId viper180ext = externalIdFactory.createNameVersionExternalId(Forge.GOLANG, "github.com/spf13/viper","v1.8.1");
         return new CodeLocation(graph, externalIdFactory.createNameVersionExternalId(Forge.GOLANG, projectModule.getPath(), projectModule.getVersion()));
     }
 
@@ -57,17 +54,17 @@ public class GoModGraphGenerator {
         }
 
         Dependency dependency = goModDependencyManager.getDependencyForModule(moduleNameVersion.getName());
-        NameVersion moduleNameSelectedVersion = new NameVersion(dependency.getName(), goModDependencyManager.getLongVersionFromShortVersion(dependency.getVersion()));
+        NameVersion moduleNameSelectedVersion = new NameVersion(dependency.getName(), goModDependencyManager.getOriginalVersionFromKbCompatibleVersion(dependency.getVersion()));
 
         if (parent != null) {
-            graph.addChildWithParent(dependency, parent); // not unnecessary work since we might be calling addModuleToGraph() with different parent more than once
+            graph.addChildWithParent(dependency, parent);
         } else {
-            graph.addDirectDependency(dependency); // for the viper test ... if the go mod graph output was not modified ... then it is NOT necessarily true that this is a direct dep. sshhhoot
+            graph.addDirectDependency(dependency);
         }
 
-        if (!fullyGraphedModules.contains(moduleNameSelectedVersion) && goRelationshipManager.hasRelationshipsForNEW(moduleNameSelectedVersion)) { // need long version here ... OR a way to grab the relationship with the shortened version
+        if (!fullyGraphedModules.contains(moduleNameSelectedVersion) && goRelationshipManager.hasRelationshipsFor(moduleNameSelectedVersion)) {
             fullyGraphedModules.add(moduleNameSelectedVersion);
-            List<GoGraphRelationship> projectRelationships = goRelationshipManager.getRelationshipsForNEW(moduleNameSelectedVersion); // otherwise project relationships here actually belongs to viper170
+            List<GoGraphRelationship> projectRelationships = goRelationshipManager.getRelationshipsFor(moduleNameSelectedVersion);
             for (GoGraphRelationship projectRelationship : projectRelationships) {
                 addModuleToGraph(projectRelationship.getChild(), dependency, graph, goRelationshipManager, goModDependencyManager);
             }

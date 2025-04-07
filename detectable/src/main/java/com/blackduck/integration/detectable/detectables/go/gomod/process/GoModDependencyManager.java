@@ -26,17 +26,17 @@ public class GoModDependencyManager {
 
     private final ExternalIdFactory externalIdFactory;
 
-    private final Map<String, Dependency> modulesAsDependencies; // put modified version in this map too to reduce fetch operations?
+    private final Map<String, Dependency> modulesAsDependencies; // put modified version in this map to to reduce fetch operations?
 
     private final Map<String, String> modifiedVersionsMap;
 
     public GoModDependencyManager(List<GoListAllData> allRequiredModules, ExternalIdFactory externalIdFactory) {
         this.externalIdFactory = externalIdFactory;
         modifiedVersionsMap = new HashMap<>();
-        modulesAsDependencies = convertModulesToDependencies(allRequiredModules, modifiedVersionsMap);
+        modulesAsDependencies = convertModulesToDependencies(allRequiredModules);
     }
 
-    private Map<String, Dependency> convertModulesToDependencies(List<GoListAllData> allModules, Map<String, String> shaMap) {
+    private Map<String, Dependency> convertModulesToDependencies(List<GoListAllData> allModules) {
         Map<String, Dependency> dependencies = new HashMap<>();
 
         for (GoListAllData module : allModules) {
@@ -60,7 +60,7 @@ public class GoModDependencyManager {
         return dependencies;
     }
 
-    public String getLongVersionFromShortVersion(String shortVersion) {
+    public String getOriginalVersionFromKbCompatibleVersion(String shortVersion) {
         if (modifiedVersionsMap.containsKey(shortVersion)) {
             return modifiedVersionsMap.get(shortVersion);
         }
@@ -71,11 +71,6 @@ public class GoModDependencyManager {
         return new Dependency(moduleName, moduleVersion, externalIdFactory.createNameVersionExternalId(Forge.GOLANG, moduleName, moduleVersion));
     }
 
-    // TODO confirm test cases still pass. Is there a test case for null version?
-    /**
-     * Returns the Dependency object associated with this module name. The version will be the SELECTED version for the build. any other version in the graph of this module would introduce a false +ve
-     * If it doesn't exist, returns a Dependency that just has a name and null as its version. (is that null handled properly .. that who knows.)
-     */
     public Dependency getDependencyForModule(String moduleName) {
         return modulesAsDependencies.getOrDefault(moduleName, convertToDependency(moduleName, null));
     }

@@ -12,25 +12,25 @@ import com.blackduck.integration.detectable.detectables.go.gomod.model.GoGraphRe
 import com.blackduck.integration.util.NameVersion;
 
 public class GoRelationshipManager {
-    private final Map<NameVersion, List<GoGraphRelationship>> relationshipMapNEW;
+    private final Map<NameVersion, List<GoGraphRelationship>> relationshipMap;
     private final Set<String> excludedModules; // comes from detect property. to leave that unchanged, modules cannot have version specifier? only name?
 
     public GoRelationshipManager(List<GoGraphRelationship> goGraphRelationships, Set<String> excludedModules) {
         this.excludedModules = excludedModules;
-        relationshipMapNEW = new HashMap<>();
+        relationshipMap = new HashMap<>();
         for (GoGraphRelationship goGraphRelationship : goGraphRelationships) {
             NameVersion parentNameVersion = goGraphRelationship.getParent(); // the version here isnt the shortened hash?
-            relationshipMapNEW.putIfAbsent(parentNameVersion, new LinkedList<>());
-            relationshipMapNEW.get(parentNameVersion).add(goGraphRelationship);
+            relationshipMap.putIfAbsent(parentNameVersion, new LinkedList<>());
+            relationshipMap.get(parentNameVersion).add(goGraphRelationship);
         }
     }
 
-    public boolean hasRelationshipsForNEW(NameVersion moduleNameVersion) {
-        return relationshipMapNEW.containsKey(moduleNameVersion);
+    public boolean hasRelationshipsFor(NameVersion moduleNameVersion) {
+        return relationshipMap.containsKey(moduleNameVersion);
     }
 
-    public List<GoGraphRelationship> getRelationshipsForNEW(NameVersion moduleNameVersion) {
-        return Optional.ofNullable(relationshipMapNEW.get(moduleNameVersion)).orElse(Collections.emptyList()); // why return empty list when we only ever call this method after checking hasRelationshipsForNEW()
+    public List<GoGraphRelationship> getRelationshipsFor(NameVersion moduleNameVersion) {
+        return Optional.ofNullable(relationshipMap.get(moduleNameVersion)).orElse(Collections.emptyList()); // why return empty list when we only ever call this method after checking hasRelationshipsForNEW()
     }
 
     public boolean isModuleExcluded(String moduleName) { // can correspond to "main module does not need xyz" but dont want to cause confusion with jus the output that says "module not used by main"

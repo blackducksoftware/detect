@@ -65,10 +65,10 @@ class GoRelationshipManagerTest {
     void testDifferentVersionsOfDirectAndTransitiveDependency() {
         // Test that parentv1 does not incorrectly get transitives of parentv2 assigned to it
         // Confirm parentv1 and parentv2 have distinct relationships
-        assertTrue(goRelationshipManagerEdgeCase1.hasRelationshipsForNEW(parentv1));
-        assertTrue(goRelationshipManagerEdgeCase1.hasRelationshipsForNEW(parentv2));
+        assertTrue(goRelationshipManagerEdgeCase1.hasRelationshipsFor(parentv1));
+        assertTrue(goRelationshipManagerEdgeCase1.hasRelationshipsFor(parentv2));
 
-        List<GoGraphRelationship> parentV1Relationships = goRelationshipManagerEdgeCase1.getRelationshipsForNEW(parentv1);
+        List<GoGraphRelationship> parentV1Relationships = goRelationshipManagerEdgeCase1.getRelationshipsFor(parentv1);
         // check if any parentv2 relationships snuck in
         boolean parentv2Present = parentV1Relationships.stream().anyMatch(r -> parentv2.equals(r.getParent()));
         assertFalse(parentv2Present, "Expected only parentv1 relationships.");
@@ -78,17 +78,17 @@ class GoRelationshipManagerTest {
     void testVersionedMainModuleAsTransitiveDependency() {
         // Test that bou.ke/monkey is not incorrectly classified as a direct dependency of the main module (rpc_gen)
         // Confirm that both main module and the versioned module with the same name as the main module have distinct relationships
-        assertTrue(goRelationshipManagerEdgeCase2.hasRelationshipsForNEW(mainModule));
-        assertTrue(goRelationshipManagerEdgeCase2.hasRelationshipsForNEW(versionedMainModuleAsTransitiveDep));
+        assertTrue(goRelationshipManagerEdgeCase2.hasRelationshipsFor(mainModule));
+        assertTrue(goRelationshipManagerEdgeCase2.hasRelationshipsFor(versionedMainModuleAsTransitiveDep));
 
-        List<GoGraphRelationship> directDependencies = goRelationshipManagerEdgeCase2.getRelationshipsForNEW(mainModule);
+        List<GoGraphRelationship> directDependencies = goRelationshipManagerEdgeCase2.getRelationshipsFor(mainModule);
         boolean trueDirectDepPresent = directDependencies.stream().anyMatch(r -> trueDirectDep.equals(r.getChild()));
         boolean transitiveDepPresent = directDependencies.stream().anyMatch(r -> transitiveDep.equals(r.getChild()));
         assertTrue(trueDirectDepPresent && !transitiveDepPresent, "Expected only true-direct dependencies.");
     }
     @Test
     void parentRelationshipTest() {
-        List<GoGraphRelationship> parentRelationships = goRelationshipManagerSimple.getRelationshipsForNEW(parent);
+        List<GoGraphRelationship> parentRelationships = goRelationshipManagerSimple.getRelationshipsFor(parent);
         assertEquals(2, parentRelationships.size());
 
         assertEquals(parent, parentRelationships.get(0).getParent());
@@ -100,7 +100,7 @@ class GoRelationshipManagerTest {
 
     @Test
     void childRelationshipTest() {
-        List<GoGraphRelationship> childRelationships = goRelationshipManagerSimple.getRelationshipsForNEW(child);
+        List<GoGraphRelationship> childRelationships = goRelationshipManagerSimple.getRelationshipsFor(child);
         assertEquals(1, childRelationships.size());
         assertEquals(child, childRelationships.get(0).getParent());
         assertEquals(grandchild, childRelationships.get(0).getChild());
@@ -108,10 +108,10 @@ class GoRelationshipManagerTest {
 
     @Test
     void noRelationshipTest() {
-        boolean hasRelationships = goRelationshipManagerSimple.hasRelationshipsForNEW(grandchild);
+        boolean hasRelationships = goRelationshipManagerSimple.hasRelationshipsFor(grandchild);
         assertFalse(hasRelationships);
 
-        List<GoGraphRelationship> childRelationships = goRelationshipManagerSimple.getRelationshipsForNEW(grandchild);
+        List<GoGraphRelationship> childRelationships = goRelationshipManagerSimple.getRelationshipsFor(grandchild);
         assertEquals(0, childRelationships.size());
     }
 
