@@ -26,7 +26,7 @@ public class GoModuleDependencyHelper {
      * @param originalModGraphOutput - The list produced by "go mod graph"- the intended "target".
      * @return - the actual dependency list
      */
-    public Set<String> computeDependencies(String main, List<String> directs, List<String> modWhyOutput, List<String> originalModGraphOutput, List<GoListAllData> allRequiredModulesData) { // has no unit tests! TODO TODO TODO
+    public Set<String> computeDependencies(String main, List<String> directs, List<String> modWhyOutput, List<String> originalModGraphOutput, List<GoListAllData> allRequiredModulesData) {
         Set<String> goModGraph = new HashSet<>();
         List<String> correctedDependencies = new ArrayList<>();
         List<String> allRequiredModules = extractAllRequiredModulePathsWithVersions(allRequiredModulesData);
@@ -43,10 +43,10 @@ public class GoModuleDependencyHelper {
             }
             
             // anything that falls in here isn't a direct dependency of main
-            boolean needsRedux = !containsDirect && splitLine[0].equals(main); // this is just repeating the work in containsDirect isnt it?
+            boolean needsRedux = !containsDirect && splitLine[0].equals(main);
             
             /* This searches for instances where the main module is apparently referring to itself.  
-            This can step on the indirect dependency making it seem to be direct.*/ // DEFINITELY affects 4581 or relates to it. some other module could depend on main@v1 for example TODO TODO TODO TODO
+            This can step on the indirect dependency making it seem to be direct.*/
             if (splitLine[0].startsWith(main) && splitLine[0].contains("@")) {
                 boolean gotoNext = hasDependency(correctedDependencies, splitLine[1]);
                 if (gotoNext) {

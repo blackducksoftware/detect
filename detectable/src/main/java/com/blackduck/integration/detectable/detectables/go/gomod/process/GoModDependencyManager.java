@@ -25,9 +25,7 @@ public class GoModDependencyManager {
     private static final Pattern SHORT_SHA1_VERSION_PATTERN = Pattern.compile(String.format(GIT_VERSION_FORMAT, SHORT_SHA1_REGEX));
 
     private final ExternalIdFactory externalIdFactory;
-
-    private final Map<String, Dependency> modulesAsDependencies; // put modified version in this map to to reduce fetch operations?
-
+    private final Map<String, Dependency> modulesAsDependencies;
     private final Map<String, String> modifiedVersionsMap;
 
     public GoModDependencyManager(List<GoListAllData> allRequiredModules, ExternalIdFactory externalIdFactory) {

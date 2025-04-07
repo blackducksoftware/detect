@@ -43,14 +43,14 @@ public class GoGraphParser {
             String[] parts = dependency.split("@");
             if (parts.length != 2) {
                 logger.warn("Unknown graph dependency format, using entire entry as name: {}", dependency);
-                return new NameVersion(dependency, null); // what happens if version is null, before (null => "") change in integration-common?
+                return new NameVersion(dependency, null);
             } else {
                 String name = parts[0];
                 String version = parts[1];
                 return new NameVersion(name, version);
             }
         } else {
-            return new NameVersion(dependency, null); // what happens if version is null, before (null => "") change in integration-common?
+            return new NameVersion(dependency, null);
         }
     }
 }

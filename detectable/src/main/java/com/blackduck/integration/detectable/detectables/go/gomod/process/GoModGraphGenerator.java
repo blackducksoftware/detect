@@ -33,7 +33,7 @@ public class GoModGraphGenerator {
         String moduleName = projectModule.getPath();
         NameVersion moduleNameVersion = new NameVersion(moduleName, projectModule.getVersion());
         if (goRelationshipManager.hasRelationshipsFor(moduleNameVersion)) {
-            goRelationshipManager.getRelationshipsFor(moduleNameVersion).stream() // ideally this traverses over each direct dep, but that's not true if the go mog graph just says "(main module does not need .. module)"
+            goRelationshipManager.getRelationshipsFor(moduleNameVersion).stream()
                 .map(relationship -> relationship.getChild())
                 .forEach(childNameVersion -> addModuleToGraph(childNameVersion, null, graph, goRelationshipManager, goModDependencyManager));
         }
@@ -48,8 +48,8 @@ public class GoModGraphGenerator {
         GoRelationshipManager goRelationshipManager,
         GoModDependencyManager goModDependencyManager
     ) {
-        if (goRelationshipManager.isModuleExcluded(moduleNameVersion.getName())) { // keeping that method call the same to indicate we exclude by name not name and version. pretty sure excluded modules dont come with version? somewhere in the go mod outputs they also have no version i think?
-            logger.debug("Excluding module '{}' because it is not used by the main module.", moduleNameVersion.getName()); // confirm excluded modules are not impacted.. modules == deps?
+        if (goRelationshipManager.isModuleExcluded(moduleNameVersion.getName())) {
+            logger.debug("Excluding module '{}' because it is not used by the main module.", moduleNameVersion.getName());
             return;
         }
 

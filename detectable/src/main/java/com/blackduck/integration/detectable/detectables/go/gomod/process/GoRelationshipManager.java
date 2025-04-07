@@ -13,7 +13,7 @@ import com.blackduck.integration.util.NameVersion;
 
 public class GoRelationshipManager {
     private final Map<NameVersion, List<GoGraphRelationship>> relationshipMap;
-    private final Set<String> excludedModules; // comes from detect property. to leave that unchanged, modules cannot have version specifier? only name?
+    private final Set<String> excludedModules;
 
     public GoRelationshipManager(List<GoGraphRelationship> goGraphRelationships, Set<String> excludedModules) {
         this.excludedModules = excludedModules;
@@ -30,10 +30,10 @@ public class GoRelationshipManager {
     }
 
     public List<GoGraphRelationship> getRelationshipsFor(NameVersion moduleNameVersion) {
-        return Optional.ofNullable(relationshipMap.get(moduleNameVersion)).orElse(Collections.emptyList()); // why return empty list when we only ever call this method after checking hasRelationshipsForNEW()
+        return Optional.ofNullable(relationshipMap.get(moduleNameVersion)).orElse(Collections.emptyList());
     }
 
-    public boolean isModuleExcluded(String moduleName) { // can correspond to "main module does not need xyz" but dont want to cause confusion with jus the output that says "module not used by main"
+    public boolean isModuleExcluded(String moduleName) {
         return excludedModules.contains(moduleName);
     }
 }
