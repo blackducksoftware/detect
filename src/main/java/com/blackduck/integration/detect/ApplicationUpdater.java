@@ -702,7 +702,7 @@ public class ApplicationUpdater extends URLClassLoader {
         }
         
         if (newVersionString == null) {
-            logger.warn("Unable to determine version of new Detect candidate. Detect update will not occur.");
+            logger.warn("Unable to determine Detect jar version. Detect update will not occur.");
             return null;
         }
 
@@ -740,7 +740,7 @@ public class ApplicationUpdater extends URLClassLoader {
     private void handleFailure(Response response, HttpUrl downloadUrl) throws IOException {
         String problemUrl = getTrueDetectDownloadUrl(downloadUrl);
         String message = StringUtils.isNotBlank(response.getStatusMessage()) ? response.getStatusMessage() : EnglishReasonPhraseCatalog.INSTANCE.getReason(response.getStatusCode(), Locale.ENGLISH);
-        logger.warn("{} Unable to download artifact from {}.", LOG_PREFIX, problemUrl);
+        logger.warn("{} Unable to download jar from {}.", LOG_PREFIX, problemUrl);
         logger.warn("{} Response code from {} was: {} {}", LOG_PREFIX, problemUrl, response.getStatusCode(), message);
     }
 
