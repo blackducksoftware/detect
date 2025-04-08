@@ -782,16 +782,17 @@ public class ApplicationUpdater extends URLClassLoader {
      * 
      * @param downloadUrl the BlackDuck hosted URL to download detect from, ie:
      *                    https://localhost/api/tools/detect
-     * @return the true URL that is hosting the Detect jar after following the 302
+     * @return the true URL that is hosting the Detect jar, updated if redirect location header was supplied
      *         redirect from /api/tools/detect
      * @throws IOException
      */
     private String getTrueDetectDownloadUrl(HttpUrl downloadUrl) throws IOException {
-        String problemUrl = downloadUrl.toString();
+        String trueDownloadUrl = downloadUrl.toString();
 
         // We need to build a new client to communicate with BlackDuck. This is because
-        // the main client we use to talk to BlackDuck will follow 302 redirects and we will be unable to
-        // determine and report on where the download actually failed from.
+        // the main client we use to talk to BlackDuck will follow redirects and we will be unable to
+        // determine and report on where the download actually came from. If a location header is not
+        // returned we will not update the URL.
         try {
             HostnameVerifier hostnameVerifier;
             SSLContext sslContext;
@@ -815,7 +816,7 @@ public class ApplicationUpdater extends URLClassLoader {
                     Header locationHeader = response.getFirstHeader("location");
 
                     if (locationHeader != null) {
-                        problemUrl = locationHeader.getValue();
+                        trueDownloadUrl = locationHeader.getValue();
                     }
                 }
             }
@@ -826,7 +827,7 @@ public class ApplicationUpdater extends URLClassLoader {
             logger.debug(e.getMessage(), e);
         }
 
-        return problemUrl;
+        return trueDownloadUrl;
     }
 
     private File downloadNewJar(Response response, File installDirectory, String fileName) throws IOException, IntegrationException {
