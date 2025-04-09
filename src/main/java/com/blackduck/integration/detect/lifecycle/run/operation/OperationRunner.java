@@ -27,6 +27,7 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.blackduck.integration.blackduck.api.generated.enumeration.BomStatusScanStatusType;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.entity.ContentType;
@@ -1583,12 +1584,25 @@ public class OperationRunner {
         return auditLog.namedInternal("Wait for scan to potentially be included in BOM", () -> {
             BlackDuckServicesFactory blackDuckServicesFactory = blackDuckRunData.getBlackDuckServicesFactory();
             int fibonacciSequenceIndex = getFibonacciSequenceIndex();
-            return new BomScanWaitOperation(blackDuckServicesFactory.getBlackDuckApiClient()).waitForScan(
-                scanUrl,
-                detectConfigurationFactory.findTimeoutInSeconds(),
-                calculateMaxWaitInSeconds(fibonacciSequenceIndex)
+            BomStatusScanView bomStatusScanView = new BomScanWaitOperation(blackDuckServicesFactory.getBlackDuckApiClient()).waitForScan(
+                    scanUrl,
+                    detectConfigurationFactory.findTimeoutInSeconds(),
+                    calculateMaxWaitInSeconds(fibonacciSequenceIndex)
             );
+
+            // deliberate failure
+//            bomStatusScanView.setStatus(BomStatusScanStatusType.FAILURE);
+            checkBomStatusAndHandleFailure(bomStatusScanView, scanUrl);
+
+            return bomStatusScanView;
         });
+    }
+
+    private void checkBomStatusAndHandleFailure(BomStatusScanView bomStatusScanView, HttpUrl scanUrl) {
+        if (bomStatusScanView.getStatus() == BomStatusScanStatusType.FAILURE) {
+            logger.error("BomStatusScanView indicates " + bomStatusScanView.getStatus() + " for scan URL: " + scanUrl);
+            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_GENERAL_ERROR, "BOM scan failed or was not included due to a detected issue.");
+        }
     }
 
     public UUID getScanIdFromScanUrl(HttpUrl blackDuckScanUrl) {
