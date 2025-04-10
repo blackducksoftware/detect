@@ -28,7 +28,7 @@
 
 * (IDETECT-4642) - Improved handling of pnpm packages that contain detailed version information in the pnpm-lock.yaml. Resolving [detect_product_short] missing some packages through failure to link direct and transitive dependencies. 
 * (IDETECT-4641) - Improved [detect_product_short]'s Yarn detector to handle non-standard version entries for component dependencies.
-* (IDETECT-4602 & IDETECT-4180) - A bug causing transitive dependencies to be assigned the wrong parent has been resolved.
+* (IDETECT-4602 & IDETECT-4180) - Resolved Go dependency scan issue that resulted in transitive dependencies assigned to incorrect parent.
 
 ### Dependency updates
 
