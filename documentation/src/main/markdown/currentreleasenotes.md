@@ -22,5 +22,5 @@
 
 ### Resolved issues
 
-* (IDETECT-4177) - [detect_product_short] no longer requires that the x-artifactory-filename header is set when specifying an internally hosted version in [bd_product_long].
+* (IDETECT-4177) - [detect_product_short] no longer requires that the X-Artifactory-Filename header is set when specifying an internally hosted version in [bd_product_long].
 
