@@ -679,7 +679,6 @@ public class ApplicationUpdater extends URLClassLoader {
     }
 
     private File handleSuccess(Response response, String currentInstalledVersion, File installDirectory, HttpUrl downloadUrl) throws IOException, IntegrationException {
-        String newVersionString = response.getHeaderValue(DOWNLOAD_VERSION_HEADER);
         String newFileName = response.getHeaderValue(DOWNLOADED_FILE_NAME);
 
         if (newFileName == null) {
@@ -690,20 +689,22 @@ public class ApplicationUpdater extends URLClassLoader {
                 return null;
             }
         }
+
+        String newVersionString = getVersionFromDetectFileName(newFileName);
+
+        File potentialNewJar = null;
         
         if (newVersionString == null) {
-            newVersionString = getVersionFromDetectFileName(newFileName);
-        }
-
-        File potentialNewJar = downloadNewJarIfNeeded(response, installDirectory, newFileName, newVersionString);
-
-        if (potentialNewJar != null) {
-            newVersionString = getVersionFromJar(potentialNewJar);
-        }
-        
-        if (newVersionString == null) {
-            logger.warn("Unable to determine Detect jar version. Detect update will not occur.");
-            return null;
+            potentialNewJar = downloadNewJar(response, installDirectory, newFileName);
+            
+            if (potentialNewJar != null) {
+                newVersionString = getVersionFromJar(potentialNewJar);
+            }
+            
+            if (newVersionString == null) {
+                logger.warn("Unable to determine Detect jar version. Detect update will not occur.");
+                return null;
+            }
         }
 
         currentInstalledVersion = getVersionFromDetectFileName(currentInstalledVersion);
@@ -728,13 +729,6 @@ public class ApplicationUpdater extends URLClassLoader {
         Pattern pattern = Pattern.compile(SEMVER_PATTERN);
         Matcher matcher = pattern.matcher(version);
         return matcher.matches();
-    }
-    
-    private File downloadNewJarIfNeeded(Response response, File installDirectory, String newFileName, String newVersionString) throws IOException, IntegrationException {
-        if (newVersionString == null) {
-            return downloadNewJar(response, installDirectory, newFileName);
-        }
-        return null;
     }
 
     private void handleFailure(Response response, HttpUrl downloadUrl) throws IOException {
