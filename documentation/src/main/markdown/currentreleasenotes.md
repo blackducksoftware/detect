@@ -29,7 +29,8 @@
 
 ### Changed features
 
-* If the URL configured for SCA Scan Service (SCASS) is inaccessible, [detect_product_short] will create a new scanID and attempt a Black Duck Binary Analysis (BDBA) scan if licensed.
+* If the URL configured for SCA Scan Service (SCASS) is inaccessible when [detect_product_short] attempts a binary or container scan, [detect_product_short] will retry the scan without using SCASS.
+	* See [bd_product_long] SCA Scan Service (SCASS) notice above for information pertaining to IP addresses that require allow listing.
 
 ### Resolved issues
 
