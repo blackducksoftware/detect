@@ -27,6 +27,10 @@
 * Added property [detect.cargo.path](properties/detectors/cargo.md) to allow user specification of a custom Cargo executable path.   
 * New `detect.pnpm.included.packages` and `detect.pnpm.excluded.packages` properties for pnpm provide increased control over what directories [detect_product_short] scans under a pnpm project. See the [pnpm](properties/detectors/pnpm.html) property page for more information.
 
+### Changed features
+
+* If the URL configured for SCA Scan Service (SCASS) is inaccessible, [detect_product_short] will create a new scanID and attempt a Black Duck Binary Analysis (BDBA) scan if licensed.
+
 ### Resolved issues
 
 * (IDETECT-4642) - Improved handling of pnpm packages that contain detailed version information in the pnpm-lock.yaml. Resolving [detect_product_short] missing some packages through failure to link direct and transitive dependencies. 
