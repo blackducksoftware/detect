@@ -77,7 +77,11 @@ public class UVLockParser {
                 parseDependenciesSection(dependencyTable, dependencyName, uvDetectorOptions);
             }
         }
-        
+
+        if(rootName.equals("uvProject")) {
+            workSpaceMembers.add("uvProject");
+        }
+
         generateGraph(uvDetectorOptions);
 
     }
@@ -121,12 +125,12 @@ public class UVLockParser {
         for(String workSpaceMember: workSpaceMembers) {
             if(!checkIfMemberExcluded(workSpaceMember, uvDetectorOptions)) {
                 initializeProject(createDependency(workSpaceMember, packageDependencyMap.get(workSpaceMember)));
-                addDependenciesToGraph(workSpaceMember, null, uvDetectorOptions);
+                loopOverDependencies(workSpaceMember, null, uvDetectorOptions);
             }
         }
     }
 
-    private void addDependenciesToGraph(String dependency, Dependency parentDependency, UVDetectorOptions uvDetectorOptions) {
+    private void loopOverDependencies(String dependency, Dependency parentDependency, UVDetectorOptions uvDetectorOptions) {
         if(transitiveDependencyMap.containsKey(dependency)) {
             for(String transitiveDependency: transitiveDependencyMap.get(dependency)) {
                 if(!checkIfMemberExcluded(transitiveDependency, uvDetectorOptions)) {
@@ -134,7 +138,7 @@ public class UVLockParser {
                     if(packageDependencyMap.containsKey(transitiveDependency)) {
                         currentDependency = createDependency(transitiveDependency, packageDependencyMap.get(transitiveDependency));
                         addDependencyToGraph(currentDependency,parentDependency);
-                        addDependenciesToGraph(transitiveDependency, currentDependency, uvDetectorOptions);
+                        loopOverDependencies(transitiveDependency, currentDependency, uvDetectorOptions);
                     } else {
                         logger.warn("There seems to be a mismatch in the uv.lock. A dependency could not be found: " + transitiveDependency);
                     }

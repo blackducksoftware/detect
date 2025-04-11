@@ -1157,7 +1157,9 @@ public class DetectableFactory {
     }
 
     private UVLockfileExtractor uvLockfileExtractor(File sourceDirectory) {
-        return new UVLockfileExtractor(sourceDirectory, new UVTomlParser(), uvLockParser());
+        PythonDependencyTransformer requirementsFileTransformer = new PythonDependencyTransformer();
+        RequirementsFileDependencyTransformer requirementsFileDependencyTransformer = new RequirementsFileDependencyTransformer();
+        return new UVLockfileExtractor(sourceDirectory, new UVTomlParser(), uvLockParser(), requirementsFileTransformer, requirementsFileDependencyTransformer);
     }
 
     private UVLockParser uvLockParser() {

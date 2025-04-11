@@ -30,6 +30,15 @@ public class UVTomlParser {
         return Optional.empty();
     }
 
+    public String getProjectName(String uvTomlContents) {
+        TomlParseResult uvTomlObject = Toml.parse(uvTomlContents);
+        if (uvTomlObject.contains(PROJECT_KEY)) {
+            return uvTomlObject.getTable(PROJECT_KEY).getString(NAME_KEY);
+        }
+
+        return "uvProject";
+    }
+
 
     // check [tool.uv] managed setting
     public boolean parseManagedKey(File uvTomlFile) {
