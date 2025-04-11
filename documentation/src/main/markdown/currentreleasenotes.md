@@ -29,7 +29,7 @@
 
 ### Changed features
 
-* [ReversingLabs Scans](runningdetect/threatintelscan.md) (THREAT_INTEL value of detect.tools) has been deprecated. 
+* ReversingLabs Scans (THREAT_INTEL value of detect.tools) has been deprecated. 
 * The detect.threatintel.scan.file.path property has been deprecated. 
 
 ### Resolved issues

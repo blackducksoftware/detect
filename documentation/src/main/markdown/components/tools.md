@@ -12,6 +12,6 @@ value specified in parentheses are:
 * [Black Duck - Binary Analysis](../runningdetect/basics/runningwithblackduck.md) (--detect.tools=BINARY_SCAN)
 * [IaC Scanner](../runningdetect/basics/runningwithblackduck.md) (--detect.tools=IAC_SCAN)
 * [Container Scan](../runningdetect/containerscanning.md) (--detect.tools=CONTAINER_SCAN)
-* [ReversingLabs Scan](../runningdetect/threatintelscan.md) (--detect.tools=THREAT_INTEL)
+* ReversingLabs Scan (--detect.tools=THREAT_INTEL) **Deprecated**
 
 The detector tool runs any applicable [detectors](../components/detectors.dita).
