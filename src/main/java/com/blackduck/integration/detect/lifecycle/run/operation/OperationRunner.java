@@ -204,7 +204,6 @@ import com.blackduck.integration.detector.rule.DetectorRuleSet;
 import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.log.IntLogger;
 import com.blackduck.integration.log.Slf4jIntLogger;
-import com.blackduck.integration.rest.HttpMethod;
 import com.blackduck.integration.rest.HttpUrl;
 import com.blackduck.integration.rest.body.FileBodyContent;
 import com.blackduck.integration.rest.response.Response;
@@ -1589,9 +1588,6 @@ public class OperationRunner {
                     detectConfigurationFactory.findTimeoutInSeconds(),
                     calculateMaxWaitInSeconds(fibonacciSequenceIndex)
             );
-
-            // deliberate failure
-//            bomStatusScanView.setStatus(BomStatusScanStatusType.FAILURE);
             checkBomStatusAndHandleFailure(bomStatusScanView, scanUrl);
 
             return bomStatusScanView;
@@ -1600,8 +1596,9 @@ public class OperationRunner {
 
     private void checkBomStatusAndHandleFailure(BomStatusScanView bomStatusScanView, HttpUrl scanUrl) {
         if (bomStatusScanView.getStatus() == BomStatusScanStatusType.FAILURE) {
-            logger.error("BomStatusScanView indicates " + bomStatusScanView.getStatus() + " for scan URL: " + scanUrl);
-            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_GENERAL_ERROR, "BOM scan failed or was not included due to a detected issue.");
+            String errorMessage = String.format("Black Duck response indicates %s for scan URL: %s", BomStatusScanStatusType.FAILURE, scanUrl);
+            logger.error(errorMessage);
+            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BOM_PREPARATION, "Black Duck failed to prepare BOM for the scan");
         }
     }
 
