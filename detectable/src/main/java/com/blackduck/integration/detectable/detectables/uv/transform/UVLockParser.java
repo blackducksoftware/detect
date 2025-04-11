@@ -16,7 +16,6 @@ import org.tomlj.TomlParseResult;
 import org.tomlj.TomlTable;
 
 
-import javax.annotation.Nullable;
 import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
@@ -28,13 +27,14 @@ import java.util.HashMap;
 public class UVLockParser {
 
     private static final Logger logger = LoggerFactory.getLogger(UVLockParser.class);
-    
+
     private static final String NAME_KEY = "name";
     private static final String VERSION_KEY = "version";
     private static final String PACKAGE_KEY = "package";
     private static final String MANIFEST_KEY = "manifest";
     private static final String DEPENDENCIES_KEY = "dependencies";
     private static final String DEV_DEPENDENCIES_KEY = "dev-dependencies";
+    private static final String OPTIONAL_DEPENDENCIES_KEY = "optional-dependencies";
     private static final String MEMBERS_KEY = "members";
     private DependencyGraph dependencyGraph;
     private final Set<String> workSpaceMembers = new HashSet<>();
@@ -66,7 +66,7 @@ public class UVLockParser {
 
             if(dependencyTable != null) {
                 String dependencyName = dependencyTable.getString(NAME_KEY);
-                String dependencyVersion = dependencyTable.getString(VERSION_KEY);
+                String dependencyVersion = normalizeVersion(dependencyTable.getString(VERSION_KEY));
 
                 packageDependencyMap.put(dependencyName, dependencyVersion);
 
@@ -80,42 +80,6 @@ public class UVLockParser {
         
         generateGraph(uvDetectorOptions);
 
-    }
-
-    private boolean checkIfMemberExcluded(String memberName, UVDetectorOptions detectorOptions) {
-        if(!detectorOptions.getExcludedWorkspaceMembers().isEmpty() && detectorOptions.getExcludedWorkspaceMembers().contains(memberName)) { // checking if current member is excluded
-            return true;
-        } else if(!detectorOptions.getIncludedWorkspaceMembers().isEmpty()){
-            return !detectorOptions.getIncludedWorkspaceMembers().contains(memberName); // checking if current member is not included
-        } else {
-            return false;
-        }
-    }
-    
-    private void generateGraph(UVDetectorOptions uvDetectorOptions) {
-        for(String workSpaceMember: workSpaceMembers) {
-            if(!checkIfMemberExcluded(workSpaceMember, uvDetectorOptions)) {
-                initializeProject(createDependency(workSpaceMember, packageDependencyMap.get(workSpaceMember)));
-                generateTreeOutput(workSpaceMember, null, uvDetectorOptions);
-            }
-        }
-    }
-
-    private void generateTreeOutput(String dependency, Dependency parentDependency, UVDetectorOptions uvDetectorOptions) {
-        if(transitiveDependencyMap.containsKey(dependency)) {
-            for(String transitiveDependency: transitiveDependencyMap.get(dependency)) {
-                if(!checkIfMemberExcluded(transitiveDependency, uvDetectorOptions)) {
-                    Dependency childDependency = createDependency(transitiveDependency, packageDependencyMap.get(transitiveDependency));
-                    if(parentDependency == null) {
-                        dependencyGraph.addDirectDependency(childDependency);
-                    } else {
-                        dependencyGraph.addChildWithParent(childDependency, parentDependency);
-                    }
-
-                    generateTreeOutput(transitiveDependency, childDependency, uvDetectorOptions);
-                }
-            }
-        }
     }
 
     private void parseDependenciesSection(TomlTable dependencyTable, String dependencyName, UVDetectorOptions uvDetectorOptions) {
@@ -133,6 +97,14 @@ public class UVLockParser {
                 }
             }
         }
+
+        if(dependencyTable.contains(OPTIONAL_DEPENDENCIES_KEY)) {
+            TomlTable optionalDependencyTable = dependencyTable.getTable(OPTIONAL_DEPENDENCIES_KEY);
+            for(List<String> key: optionalDependencyTable.keyPathSet()) {
+                TomlArray optionalDependencyArray = optionalDependencyTable.getArray(key.get(0));
+                parseTransitiveDependencies(optionalDependencyArray, dependencyName);
+            }
+        }
     }
 
 
@@ -143,6 +115,47 @@ public class UVLockParser {
                 transitiveDependencyMap.computeIfAbsent(dependencyName, value -> new HashSet<>()).add(currentDependencyTable.getString(NAME_KEY));
             }
         }
+    }
+    
+    private void generateGraph(UVDetectorOptions uvDetectorOptions) {
+        for(String workSpaceMember: workSpaceMembers) {
+            if(!checkIfMemberExcluded(workSpaceMember, uvDetectorOptions)) {
+                initializeProject(createDependency(workSpaceMember, packageDependencyMap.get(workSpaceMember)));
+                addDependenciesToGraph(workSpaceMember, null, uvDetectorOptions);
+            }
+        }
+    }
+
+    private void addDependenciesToGraph(String dependency, Dependency parentDependency, UVDetectorOptions uvDetectorOptions) {
+        if(transitiveDependencyMap.containsKey(dependency)) {
+            for(String transitiveDependency: transitiveDependencyMap.get(dependency)) {
+                if(!checkIfMemberExcluded(transitiveDependency, uvDetectorOptions)) {
+                    Dependency currentDependency;
+                    if(packageDependencyMap.containsKey(transitiveDependency)) {
+                        currentDependency = createDependency(transitiveDependency, packageDependencyMap.get(transitiveDependency));
+                        addDependencyToGraph(currentDependency,parentDependency);
+                        addDependenciesToGraph(transitiveDependency, currentDependency, uvDetectorOptions);
+                    } else {
+                        logger.warn("There seems to be a mismatch in the uv.lock. A dependency could not be found: " + transitiveDependency);
+                    }
+                }
+            }
+        }
+    }
+
+    private void addDependencyToGraph(Dependency currentDependency, Dependency parentDependency) {
+        if(parentDependency == null) {
+            dependencyGraph.addDirectDependency(currentDependency);
+        } else {
+            dependencyGraph.addChildWithParent(currentDependency, parentDependency);
+        }
+    }
+
+    private String normalizeVersion(String dependencyVersion) {
+        if(dependencyVersion.contains("+")) {
+            return dependencyVersion.substring(0, dependencyVersion.indexOf("+"));
+        }
+        return dependencyVersion;
     }
 
     private void collectWorkspaceMembers(TomlParseResult uvLockObject) {
@@ -157,23 +170,21 @@ public class UVLockParser {
         }
     }
 
+    private boolean checkIfMemberExcluded(String memberName, UVDetectorOptions detectorOptions) {
+        if(!detectorOptions.getExcludedWorkspaceMembers().isEmpty() && detectorOptions.getExcludedWorkspaceMembers().contains(memberName)) { // checking if current member is excluded
+            return true;
+        } else if(!detectorOptions.getIncludedWorkspaceMembers().isEmpty()){
+            return !detectorOptions.getIncludedWorkspaceMembers().contains(memberName); // checking if current member is not included
+        } else {
+            return false;
+        }
+    }
+
     //create a new code location for a new workspace member
     private void initializeProject(Dependency projectDependency) {
         dependencyGraph = new BasicDependencyGraph();
         CodeLocation codeLocation = new CodeLocation(dependencyGraph, projectDependency.getExternalId(), new File(projectDependency.getName()));
         codeLocations.add(codeLocation);
-    }
-
-    private List<String> extractList(@Nullable TomlTable list) {
-        List<String> extractedList = new ArrayList<>();
-
-        if(list != null) {
-            for (List<String> key : list.keyPathSet()) {
-                extractedList.add(key.get(0));
-            }
-        }
-
-        return extractedList;
     }
     
     private Dependency createDependency(String dependencyName, String dependencyVersion) {

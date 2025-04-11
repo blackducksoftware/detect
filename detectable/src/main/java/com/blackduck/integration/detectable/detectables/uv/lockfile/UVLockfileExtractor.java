@@ -8,6 +8,8 @@ import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.executable.ExecutableRunnerException;
 import com.blackduck.integration.util.NameVersion;
 import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,6 +19,8 @@ import java.util.Optional;
 import java.util.List;
 
 public class UVLockfileExtractor {
+
+    private static final Logger logger = LoggerFactory.getLogger(UVLockfileExtractor.class);
 
     private final UVTomlParser uvTomlParser;
     private final File sourceDirectory;
@@ -42,6 +46,7 @@ public class UVLockfileExtractor {
                 if (projectNameVersion.isPresent()) {
                     codeLocations = uvLockParser.parseLockFile(uvLockContents, projectNameVersion.get().getName(), uvDetectorOptions);
                 } else {
+                    logger.warn("Name and Version were not found in pyproject.toml file. Creating a project with default name and version.");
                     codeLocations = uvLockParser.parseLockFile(uvLockContents, "uvProject", uvDetectorOptions);
                 }
             }
