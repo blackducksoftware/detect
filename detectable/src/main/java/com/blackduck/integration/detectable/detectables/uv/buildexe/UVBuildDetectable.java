@@ -53,6 +53,12 @@ public class UVBuildDetectable extends Detectable {
     public DetectableResult applicable() {
         Requirements requirements = new Requirements(fileFinder, environment);
         uvTomlFile = requirements.file(PYPROJECT_TOML);
+
+        // check [tool.uv] managed setting and if set to false, skip this detector
+        if(!uvTomlParser.parseManagedKey(uvTomlFile)) {
+            return new FailedDetectableResult();
+        }
+
         return requirements.result();
     }
 
@@ -62,12 +68,6 @@ public class UVBuildDetectable extends Detectable {
 
         if(uvExe == null) {
             return new ExecutableNotFoundDetectableResult("uv");
-        }
-
-        // check [tool.uv] managed setting and if set to false, skip this detector
-        if(!uvTomlParser.parseManagedKey(uvTomlFile)) {
-            logger.warn("Skipping this detectable, since [tool.uv] managed is set to false.");
-            return new FailedDetectableResult();
         }
 
         return new PassedDetectableResult();
