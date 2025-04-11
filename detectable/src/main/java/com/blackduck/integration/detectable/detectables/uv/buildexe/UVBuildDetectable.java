@@ -26,7 +26,7 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-@DetectableInfo(name = "UV Build", language = "Python", forge = "PyPi", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: pyproject.toml file. Executable: uv.")
+@DetectableInfo(name = "UV Build", language = "Python", forge = "PyPI", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: pyproject.toml file. Executable: uv.")
 public class UVBuildDetectable extends Detectable {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
