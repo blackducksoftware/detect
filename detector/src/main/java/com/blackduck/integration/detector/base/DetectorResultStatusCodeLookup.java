@@ -66,6 +66,7 @@ public class DetectorResultStatusCodeLookup {
         map.put(SetupToolsRequiresNotFoundDetectableResult.class, DetectorStatusCode.SETUP_TOOLS_REQUIRES_NOT_FOUND);
         map.put(SetupToolsNoDependenciesDetectableResult.class, DetectorStatusCode.SETUP_TOOLS_NO_DEPENDENCIES);
         map.put(CargoExecutableVersionMismatchResult.class, DetectorStatusCode.ATTEMPTED);
+        map.put(UVLockfileNotFoundDetectableResult.class, DetectorStatusCode.UV_LOCKFILE_NOT_FOUND);
 
         return map;
     }
