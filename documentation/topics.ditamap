@@ -98,7 +98,6 @@
 		<topicref href="runningdetect/iacscan.md" format="markdown"/>
 		<topicref href="runningdetect/rapidscan.md" format="markdown"/>
 		<topicref href="runningdetect/statelessscan.md" format="markdown"/>
-		<topicref href="runningdetect/threatintelscan.md" format="markdown"/>
 	</topicref>
 	<topicref href="components/overview.md" format="markdown">
 		<topicref href="components/tools.md" format="markdown"/>

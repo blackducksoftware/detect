@@ -1323,7 +1323,8 @@ public class OperationRunner {
     public void publishContainerSuccess() {
         statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.CONTAINER_SCAN, StatusType.SUCCESS));
     }
-    
+
+    @Deprecated
     public void publishThreatIntelSuccess() {
         statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.THREAT_INTEL, StatusType.SUCCESS));
     }

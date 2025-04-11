@@ -9,7 +9,6 @@
 * Vulnerability Impact Analysis Tool (generates a Vulnerability Impact Analysis Report)   
 * IaC Scanner (supports infrastructure as code scanning)   
 * Container Scanning (scanning container images to provide component risk details)   
-* ReversingLabs Scan (binary file analysis providing malware warnings)    
 
 Optional properties can be specified to explicitly enable or disable these underlying tools, but by default, [detect_product_short] will run both the Detector and Signature Scanner on the code being analyzed when a valid path with analyzable content is provided.
 
