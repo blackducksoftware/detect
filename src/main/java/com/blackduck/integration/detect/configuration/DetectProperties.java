@@ -1779,7 +1779,7 @@ public class DetectProperties {
 
     public static final CaseSensitiveStringListProperty DETECT_UV_DEPENDENCY_GROUPS_EXCLUDED =
             CaseSensitiveStringListProperty.newBuilder("detect.uv.dependency.groups.excluded")
-                    .setInfo("UV dependency groups", DetectPropertyFromVersion.VERSION_10_5_0)
+                    .setInfo("uv dependency groups", DetectPropertyFromVersion.VERSION_10_5_0)
                     .setHelp(
                             createTypeFilterHelpText("UV dependency groups"),
                             "When specified, presence of pyproject.toml file is required and either uv executable or `uv.lock` or `requirements.txt` files is required for this detector to run successfully. Components and related dependencies that belong to excluded groups will not be in the BOM unless the component also belongs to a non-excluded group. For example, to recursively exclude all components under the `[dependency-groups]` section of `pyproject.toml`: `detect.uv.dependency.groups.excluded='dev,abc'`"
