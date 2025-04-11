@@ -1,11 +1,9 @@
 package com.blackduck.integration.detectable.detectables.uv.parse;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
-import com.blackduck.integration.executable.ExecutableRunnerException;
 import org.apache.commons.io.FileUtils;
 import org.tomlj.Toml;
 import org.tomlj.TomlParseResult;
@@ -21,7 +19,7 @@ public class UVTomlParser {
     private static final String MANAGED_KEY = "managed";
     private static final String UV_TOOL_KEY = "tool.uv";
 
-    public Optional<NameVersion> parseNameVersion(String uvTomlContents) throws ExecutableRunnerException {
+    public Optional<NameVersion> parseNameVersion(String uvTomlContents) {
         TomlParseResult uvTomlObject = Toml.parse(uvTomlContents);
         if (uvTomlObject.contains(PROJECT_KEY)) {
             return Optional.ofNullable(uvTomlObject.getTable(PROJECT_KEY))
