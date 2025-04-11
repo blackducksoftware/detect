@@ -27,6 +27,7 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.blackduck.integration.blackduck.api.generated.enumeration.BomStatusScanStatusType;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.entity.ContentType;
@@ -203,7 +204,6 @@ import com.blackduck.integration.detector.rule.DetectorRuleSet;
 import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.log.IntLogger;
 import com.blackduck.integration.log.Slf4jIntLogger;
-import com.blackduck.integration.rest.HttpMethod;
 import com.blackduck.integration.rest.HttpUrl;
 import com.blackduck.integration.rest.body.FileBodyContent;
 import com.blackduck.integration.rest.response.Response;
@@ -1583,12 +1583,23 @@ public class OperationRunner {
         return auditLog.namedInternal("Wait for scan to potentially be included in BOM", () -> {
             BlackDuckServicesFactory blackDuckServicesFactory = blackDuckRunData.getBlackDuckServicesFactory();
             int fibonacciSequenceIndex = getFibonacciSequenceIndex();
-            return new BomScanWaitOperation(blackDuckServicesFactory.getBlackDuckApiClient()).waitForScan(
-                scanUrl,
-                detectConfigurationFactory.findTimeoutInSeconds(),
-                calculateMaxWaitInSeconds(fibonacciSequenceIndex)
+            BomStatusScanView bomStatusScanView = new BomScanWaitOperation(blackDuckServicesFactory.getBlackDuckApiClient()).waitForScan(
+                    scanUrl,
+                    detectConfigurationFactory.findTimeoutInSeconds(),
+                    calculateMaxWaitInSeconds(fibonacciSequenceIndex)
             );
+            checkBomStatusAndHandleFailure(bomStatusScanView);
+
+            return bomStatusScanView;
         });
+    }
+
+    private void checkBomStatusAndHandleFailure(BomStatusScanView bomStatusScanView) {
+        if (bomStatusScanView.getStatus() == BomStatusScanStatusType.FAILURE) {
+            String message = "Black Duck failed to prepare BOM for the scan";
+            logger.error("BOM Scan Status: {} - {}.", BomStatusScanStatusType.FAILURE, message);
+            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BOM_PREPARATION, message);
+        }
     }
 
     public UUID getScanIdFromScanUrl(HttpUrl blackDuckScanUrl) {

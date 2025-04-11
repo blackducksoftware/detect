@@ -31,7 +31,7 @@ public enum ExitCodeType {
     FAILURE_BLACKDUCK_DUPLICATE_PROJECT_ERROR(21, "Project name already exists, unable to create project."),
 
     FAILURE_COMPONENT_LOCATION_ANALYSIS(25, "Component Location Analysis failed."),
-
+    FAILURE_BOM_PREPARATION(30, "Black Duck failed to prepare BOM for the scan."),
     FAILURE_GENERAL_ERROR(99, "Detect encountered a known error, details of the error are provided."),
     FAILURE_UNKNOWN_ERROR(100, "Detect encountered an unknown error.");
 
