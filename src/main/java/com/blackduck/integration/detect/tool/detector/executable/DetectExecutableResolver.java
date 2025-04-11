@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.blackduck.integration.detectable.detectable.executable.resolver.*;
-import org.checkerframework.checker.units.qual.N;
 import org.jetbrains.annotations.Nullable;
 
 import com.blackduck.integration.detectable.DetectableEnvironment;

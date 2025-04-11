@@ -26,6 +26,7 @@ public class UVTomlParser {
         if (uvTomlObject.contains(PROJECT_KEY)) {
             return Optional.ofNullable(uvTomlObject.getTable(PROJECT_KEY))
                     .filter(info -> info.contains(NAME_KEY))
+                    .filter(info -> info.contains(VERSION_KEY))
                     .map(info -> new NameVersion(info.getString(NAME_KEY), info.getString(VERSION_KEY)));
         }
         return Optional.empty();
