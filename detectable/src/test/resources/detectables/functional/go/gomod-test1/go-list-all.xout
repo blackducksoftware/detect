@@ -1,0 +1,63 @@
+{
+	"Path": "github.com/gin-gonic/gin",
+	"Main": true,
+	"Dir": "/Users/jakem/workspace/sleuthifer/synopsys-detect/go-mod",
+	"GoMod": "/Users/jakem/workspace/sleuthifer/synopsys-detect/go-mod/go.mod",
+	"GoVersion": "1.13"
+}
+{
+	"Path": "github.com/davecgh/go-spew",
+	"Version": "v1.1.1",
+	"Time": "2018-02-21T23:26:28Z",
+	"Indirect": true,
+	"Dir": "/Users/jakem/go/pkg/mod/github.com/davecgh/go-spew@v1.1.1",
+	"GoMod": "/Users/jakem/go/pkg/mod/cache/download/github.com/davecgh/go-spew/@v/v1.1.1.mod"
+}
+{
+	"Path": "golang.org/x/text",
+	"Version": "v0.3.0",
+	"Replace": {
+		"Path": "golang.org/x/text",
+		"Version": "v0.3.6",
+		"Time": "2021-03-30T05:48:03Z",
+		"Dir": "/Users/jakem/go/pkg/mod/golang.org/x/text@v0.3.6",
+		"GoMod": "/Users/jakem/go/pkg/mod/cache/download/golang.org/x/text/@v/v0.3.6.mod",
+		"GoVersion": "1.11"
+	},
+	"Dir": "/Users/jakem/go/pkg/mod/golang.org/x/text@v0.3.6",
+	"GoMod": "/Users/jakem/go/pkg/mod/cache/download/golang.org/x/text/@v/v0.3.6.mod",
+	"GoVersion": "1.11"
+}
+{
+	"Path": "golang.org/x/tools",
+	"Version": "v0.0.0-20180917221912-90fa682c2a6e",
+	"Time": "2018-09-17T22:19:12Z",
+	"Indirect": true,
+	"Dir": "/Users/jakem/go/pkg/mod/golang.org/x/tools@v0.0.0-20180917221912-90fa682c2a6e",
+	"GoMod": "/Users/jakem/go/pkg/mod/cache/download/golang.org/x/tools/@v/v0.0.0-20180917221912-90fa682c2a6e.mod"
+}
+{
+	"Path": "gopkg.in/check.v1",
+	"Version": "v0.0.0-20161208181325-20d25e280405",
+	"Time": "2016-12-08T18:13:25Z",
+	"Indirect": true,
+	"Dir": "/Users/jakem/go/pkg/mod/gopkg.in/check.v1@v0.0.0-20161208181325-20d25e280405",
+	"GoMod": "/Users/jakem/go/pkg/mod/cache/download/gopkg.in/check.v1/@v/v0.0.0-20161208181325-20d25e280405.mod"
+}
+{
+	"Path": "gopkg.in/yaml.v2",
+	"Version": "v2.2.8",
+	"Time": "2020-01-21T17:19:40Z",
+	"Indirect": true,
+	"Dir": "/Users/jakem/go/pkg/mod/gopkg.in/yaml.v2@v2.2.8",
+	"GoMod": "/Users/jakem/go/pkg/mod/cache/download/gopkg.in/yaml.v2/@v/v2.2.8.mod"
+}
+{
+	"Path": "sigs.k8s.io/yaml",
+	"Version": "v1.2.0",
+	"Time": "2020-02-04T15:11:26Z",
+	"Indirect": true,
+	"Dir": "/Users/jakem/go/pkg/mod/sigs.k8s.io/yaml@v1.2.0",
+	"GoMod": "/Users/jakem/go/pkg/mod/cache/download/sigs.k8s.io/yaml/@v/v1.2.0.mod",
+	"GoVersion": "1.12"
+}

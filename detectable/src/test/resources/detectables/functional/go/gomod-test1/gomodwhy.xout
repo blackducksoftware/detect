@@ -1,0 +1,29 @@
+# example.com/go/main-module
+example.com/go/main-module
+
+# example.com/invalid-module-1
+(main module does not need module example.com/invalid-module-1)
+
+# example.com/go/valid-module-1
+example.com/go/main-module
+
+# example.com/go/valid-module-2
+example.com/go/main-module
+example.com/go/valid-module1
+
+# example.com/invalid-module-2
+(main module does not need to vendor module example.com/invalid-module-2)
+
+# example.com/invalid-comment-line
+# (main module does not need module example.com/invalid-comment-line)
+
+# example.com/invalid-module-3
+    (main module does not need module example.com/invalid-module-3)
+
+# example.com/invalid-missing-end-paren
+(main module does not need module example.com/invalid-missing-end-paren
+
+# example.com/go/valid-module-3
+example.com/go/main-module
+example.com/go/valid-module1
+example.com/go/valid-module2

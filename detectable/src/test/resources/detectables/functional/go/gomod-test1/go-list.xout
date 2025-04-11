@@ -1,0 +1,7 @@
+{
+	"Path": "github.com/gin-gonic/gin",
+	"Main": true,
+	"Dir": "/Users/jakem/workspace/sleuthifer/synopsys-detect/go-mod",
+	"GoMod": "/Users/jakem/workspace/sleuthifer/synopsys-detect/go-mod/go.mod",
+	"GoVersion": "1.13"
+}
