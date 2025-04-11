@@ -89,7 +89,7 @@ public class GoModuleDependencyHelper {
             for (int i = trackPath.size() - 2; i >= 0 ; i--) {
                 String tp = trackPath.get(i);
                 String parent = allRequiredModules.stream()
-                        .filter(requiredMod -> (tp.equalsIgnoreCase(requiredMod.replaceAll("@.*",""))))
+                        .filter(requiredMod -> (tp.contains(requiredMod.replaceAll("@.*",""))))
                         .findFirst()
                         .orElse(null);
                 if (parent != null) { // if real direct is found... otherwise do nothing
