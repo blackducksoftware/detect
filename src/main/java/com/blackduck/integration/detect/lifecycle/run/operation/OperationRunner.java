@@ -1588,17 +1588,17 @@ public class OperationRunner {
                     detectConfigurationFactory.findTimeoutInSeconds(),
                     calculateMaxWaitInSeconds(fibonacciSequenceIndex)
             );
-            checkBomStatusAndHandleFailure(bomStatusScanView, scanUrl);
+            checkBomStatusAndHandleFailure(bomStatusScanView);
 
             return bomStatusScanView;
         });
     }
 
-    private void checkBomStatusAndHandleFailure(BomStatusScanView bomStatusScanView, HttpUrl scanUrl) {
+    private void checkBomStatusAndHandleFailure(BomStatusScanView bomStatusScanView) {
         if (bomStatusScanView.getStatus() == BomStatusScanStatusType.FAILURE) {
-            String errorMessage = String.format("Black Duck response indicates %s for scan URL: %s", BomStatusScanStatusType.FAILURE, scanUrl);
-            logger.error(errorMessage);
-            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BOM_PREPARATION, "Black Duck failed to prepare BOM for the scan");
+            String message = "Black Duck failed to prepare BOM for the scan";
+            logger.error("BOM Scan Status: {} - {}.", BomStatusScanStatusType.FAILURE, message);
+            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BOM_PREPARATION, message);
         }
     }
 
