@@ -1772,7 +1772,7 @@ public class DetectProperties {
 
     public static final NullablePathProperty DETECT_UV_PATH =
             NullablePathProperty.newBuilder("detect.uv.path")
-                    .setInfo("UV Executable", DetectPropertyFromVersion.VERSION_10_5_0)
+                    .setInfo("uv Executable", DetectPropertyFromVersion.VERSION_10_5_0)
                     .setHelp("The path to the uv executable.")
                     .setGroups(DetectGroup.UV, DetectGroup.GLOBAL)
                     .build();
@@ -1782,7 +1782,7 @@ public class DetectProperties {
                     .setInfo("UV dependency groups", DetectPropertyFromVersion.VERSION_10_5_0)
                     .setHelp(
                             createTypeFilterHelpText("UV dependency groups"),
-                            "When specified, presence of either uv executable or  `uv.lock` or `requirements.txt` and `requirements.in` or `pyproject.toml` files in any combination is required for this detector to run successfully. Components and related dependencies that belong to excluded groups will not be in the BOM unless the component also belongs to a non-excluded group. For example, to recursively exclude all components under the `[dependency-groups]` section of `pyproject.toml`: `detect.uv.dependency.groups.excluded='dev,abc'`"
+                            "When specified, presence of pyproject.toml file is required and either uv executable or `uv.lock` or `requirements.txt` files is required for this detector to run successfully. Components and related dependencies that belong to excluded groups will not be in the BOM unless the component also belongs to a non-excluded group. For example, to recursively exclude all components under the `[dependency-groups]` section of `pyproject.toml`: `detect.uv.dependency.groups.excluded='dev,abc'`"
                     )
                     .setGroups(DetectGroup.UV, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
                     .build();
@@ -1791,7 +1791,7 @@ public class DetectProperties {
             CaseSensitiveStringListProperty.newBuilder("detect.uv.excluded.workspace.members")
                     .setInfo("uv Exclude Workspace Members", DetectPropertyFromVersion.VERSION_10_5_0)
                     .setHelp(
-                            "A comma-separated list of uv work space members to exclude.",
+                            "A comma-separated list of uv workspace members to exclude.",
                             "If set, Detect will only exclude those project members specified via this property when examining the uv project for dependencies."
                     )
                     .setGroups(DetectGroup.UV, DetectGroup.SOURCE_SCAN)
@@ -1802,7 +1802,7 @@ public class DetectProperties {
             CaseSensitiveStringListProperty.newBuilder("detect.uv.included.workspace.members")
                     .setInfo("uv Include Workspace Members", DetectPropertyFromVersion.VERSION_10_5_0)
                     .setHelp(
-                            "A comma-separated list of uv work space members to include.",
+                            "A comma-separated list of uv workspace members to include.",
                             "If set, Detect will only include those uv workspace members specified via this property when examining the uv project for dependencies, unless the member is set for exclusion. Exclusion rules take precedence over inclusion. Leaving this property unset implies 'include all'."
                     )
                     .setGroups(DetectGroup.UV, DetectGroup.SOURCE_SCAN)
