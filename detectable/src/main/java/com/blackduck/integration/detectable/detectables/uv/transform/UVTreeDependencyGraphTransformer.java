@@ -23,7 +23,7 @@ public class UVTreeDependencyGraphTransformer {
     private final List<String> prefixStrings = Arrays.asList("├── ","│   ","└── ","    "); // common indentation strings for depenendency lines
     private int depth;
     private boolean isMemberExcluded = false; // check if workspace Member is excluded
-    private int memberDependencyDepth; // depth at which member dependency was found
+    private int excludedMemberDependencyDepth; // depth at which member dependency was found
     List<CodeLocation> codeLocations = new ArrayList<>();
     private DependencyGraph dependencyGraph;
 
@@ -51,7 +51,7 @@ public class UVTreeDependencyGraphTransformer {
         String cleanedLine = findDepth(line);
 
         // Check if a previous workspace member was excluded and we are parsing transitives of that member
-        if(depth > memberDependencyDepth && isMemberExcluded) {
+        if(depth > excludedMemberDependencyDepth && isMemberExcluded) {
             return;
         } else {
             isMemberExcluded = false;
@@ -156,7 +156,7 @@ public class UVTreeDependencyGraphTransformer {
         // check if the member is excluded and set flags for excluding transitives of that dependency
         if (checkIfMemberExcluded(dependencyName, detectorOptions)) {
             isMemberExcluded = true;
-            memberDependencyDepth = depth;
+            excludedMemberDependencyDepth = depth;
             return null;
         }
 

@@ -21,6 +21,7 @@ import com.blackduck.integration.executable.ExecutableRunnerException;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tomlj.internal.TomlParser;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -29,34 +30,34 @@ import java.util.List;
 @DetectableInfo(name = "UV Build", language = "Python", forge = "PyPI", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: pyproject.toml file. Executable: uv.")
 public class UVBuildDetectable extends Detectable {
 
-    private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private static final String PYPROJECT_TOML = "pyproject.toml";
     private final FileFinder fileFinder;
     private final UVResolver uvResolver;
     private final UVBuildExtractor uvBuildExtractor;
     private final UVDetectorOptions uvDetectorOptions;
-    private File uvTomlFile;
-    private final UVTomlParser uvTomlParser;
+    private UVTomlParser uvTomlParser;
 
     private ExecutableTarget uvExe;
 
-    public UVBuildDetectable(DetectableEnvironment environment, FileFinder fileFinder, UVResolver uvResolver, UVBuildExtractor uvBuildExtractor, UVDetectorOptions uvDetectorOptions, UVTomlParser uvTomlParser) {
+    public UVBuildDetectable(DetectableEnvironment environment, FileFinder fileFinder, UVResolver uvResolver, UVBuildExtractor uvBuildExtractor, UVDetectorOptions uvDetectorOptions) {
         super(environment);
         this.fileFinder = fileFinder;
         this.uvResolver = uvResolver;
         this.uvBuildExtractor = uvBuildExtractor;
         this.uvDetectorOptions = uvDetectorOptions;
-        this.uvTomlParser = uvTomlParser;
     }
 
     @Override
     public DetectableResult applicable() {
         Requirements requirements = new Requirements(fileFinder, environment);
-        uvTomlFile = requirements.file(PYPROJECT_TOML);
+        File uvTomlFile = requirements.file(PYPROJECT_TOML);
 
         // check [tool.uv] managed setting and if set to false, skip this detector
-        if(!uvTomlParser.parseManagedKey(uvTomlFile)) {
-            return new FailedDetectableResult();
+        if(uvTomlFile != null) {
+            uvTomlParser = new UVTomlParser(uvTomlFile);
+            if(!uvTomlParser.parseManagedKey()) {
+                return new FailedDetectableResult();
+            }
         }
 
         return requirements.result();
@@ -75,6 +76,6 @@ public class UVBuildDetectable extends Detectable {
 
     @Override
     public Extraction extract(ExtractionEnvironment extractionEnvironment) throws ExecutableRunnerException {
-        return uvBuildExtractor.extract(uvExe, uvDetectorOptions, uvTomlFile);
+        return uvBuildExtractor.extract(uvExe, uvDetectorOptions, uvTomlParser);
     }
 }
