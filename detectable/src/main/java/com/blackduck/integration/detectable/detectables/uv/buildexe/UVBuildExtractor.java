@@ -27,17 +27,15 @@ public class UVBuildExtractor {
     private final DetectableExecutableRunner executableRunner;
     private final File sourceDirectory;
     private final UVTreeDependencyGraphTransformer uvTreeDependencyGraphTransformer;
-    private final UVTomlParser uvTomlParser;
 
 
-    public UVBuildExtractor(DetectableExecutableRunner executableRunner, File sourceDirectory, UVTreeDependencyGraphTransformer uvTreeDependencyGraphTransformer, UVTomlParser uvTomlParser) {
+    public UVBuildExtractor(DetectableExecutableRunner executableRunner, File sourceDirectory, UVTreeDependencyGraphTransformer uvTreeDependencyGraphTransformer) {
         this.executableRunner = executableRunner;
         this.sourceDirectory = sourceDirectory;
         this.uvTreeDependencyGraphTransformer = uvTreeDependencyGraphTransformer;
-        this.uvTomlParser = uvTomlParser;
     }
 
-    public Extraction extract(ExecutableTarget uvExe, UVDetectorOptions uvDetectorOptions, File uvTomlFile) throws ExecutableRunnerException {
+    public Extraction extract(ExecutableTarget uvExe, UVDetectorOptions uvDetectorOptions, UVTomlParser uvTomlParser) throws ExecutableRunnerException {
         try {
             List<String> arguments = new ArrayList<>();
             arguments.add("tree");
@@ -56,12 +54,7 @@ public class UVBuildExtractor {
 
             List<CodeLocation> codeLocations = uvTreeDependencyGraphTransformer.transform(uvTreeOutput, uvDetectorOptions);
 
-            Optional<NameVersion> projectNameVersion = Optional.empty();
-            if (uvTomlFile != null) {
-                String uvTomlContents = FileUtils.readFileToString(uvTomlFile, StandardCharsets.UTF_8);
-                projectNameVersion = uvTomlParser.parseNameVersion(uvTomlContents);
-            }
-
+            Optional<NameVersion> projectNameVersion = uvTomlParser.parseNameVersion();
 
             return new Extraction.Builder()
                     .success(codeLocations)

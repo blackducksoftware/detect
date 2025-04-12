@@ -713,7 +713,7 @@ public class DetectableFactory {
     }
 
     public UVBuildDetectable createUVBuildDetectable(DetectableEnvironment environment, UVResolver uvResolver, UVDetectorOptions uvDetectorOptions) {
-        return new UVBuildDetectable(environment, fileFinder, uvResolver, uvBuildExtractor(environment.getDirectory()), uvDetectorOptions, new UVTomlParser());
+        return new UVBuildDetectable(environment, fileFinder, uvResolver, uvBuildExtractor(environment.getDirectory()), uvDetectorOptions);
     }
 
     public UVLockFileDetectable createUVLockFileDetectable(DetectableEnvironment environment, UVDetectorOptions uvDetectorOptions) {
@@ -1149,7 +1149,7 @@ public class DetectableFactory {
     }
 
     private UVBuildExtractor uvBuildExtractor(File sourceDirectory) {
-        return new UVBuildExtractor(executableRunner, sourceDirectory, uvTreeDependencyGraphTransformer(), new UVTomlParser());
+        return new UVBuildExtractor(executableRunner, sourceDirectory, uvTreeDependencyGraphTransformer());
     }
 
     private UVTreeDependencyGraphTransformer uvTreeDependencyGraphTransformer() {
