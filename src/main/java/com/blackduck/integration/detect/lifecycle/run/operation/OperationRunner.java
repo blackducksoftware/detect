@@ -413,10 +413,6 @@ public class OperationRunner {
     public Optional<String> getContainerScanFilePath() {
         return detectConfigurationFactory.getContainerScanFilePath();
     }
-
-    public Optional<String> getThreatIntelScanFilePath() {
-        return detectConfigurationFactory.getThreatIntelScanFilePath();
-    }
     
     public File downloadContainerImage(Gson gson, File downloadDirectory, String containerImageUri) throws DetectUserFriendlyException, IntegrationException, IOException {
         ConnectionFactory connectionFactory = new ConnectionFactory(detectConfigurationFactory.createConnectionDetails());
@@ -1310,23 +1306,12 @@ public class OperationRunner {
         exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR, "CONTAINER_SCAN");
     }
     
-    public void publishThreatIntelFailure(Exception e) {
-        logger.error("Threat Intel scan failure: {}", e.getMessage());
-        statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.THREAT_INTEL, StatusType.FAILURE));
-        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR, "THREAT_INTEL");
-    }
-    
     public void publishBinarySuccess() {
         statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.BINARY_SCAN, StatusType.SUCCESS));
     }
 
     public void publishContainerSuccess() {
         statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.CONTAINER_SCAN, StatusType.SUCCESS));
-    }
-
-    @Deprecated
-    public void publishThreatIntelSuccess() {
-        statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.THREAT_INTEL, StatusType.SUCCESS));
     }
 
     public void publishImpactFailure(Exception e) {

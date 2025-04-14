@@ -1914,6 +1914,7 @@ public class DetectProperties {
             )
             .build();
 
+    @Deprecated
     public static final NullableStringProperty DETECT_THREAT_INTEL_SCAN_FILE =
             NullableStringProperty.newBuilder("detect.threatintel.scan.file.path")
                     .setInfo("Threat Intel Scan Target", DetectPropertyFromVersion.VERSION_9_6_0)
