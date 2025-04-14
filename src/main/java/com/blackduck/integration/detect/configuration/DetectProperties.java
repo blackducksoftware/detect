@@ -1947,6 +1947,7 @@ public class DetectProperties {
         }
         DETECT_TOOLS.addDeprecatedValueInfo(DetectTool.THREAT_INTEL.name(), "reason");
         DETECT_TOOLS_EXCLUDED.addDeprecatedValueInfo(DetectTool.THREAT_INTEL.name(), "reason");
+        DETECT_PROJECT_TOOL.addDeprecatedValueInfo(DetectTool.THREAT_INTEL.name(), "reason");
 
         return new Properties(properties);
     }
