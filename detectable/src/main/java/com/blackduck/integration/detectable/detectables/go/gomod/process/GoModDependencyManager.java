@@ -41,21 +41,27 @@ public class GoModDependencyManager {
             String name = Optional.ofNullable(module.getReplace())
                 .map(ReplaceData::getPath)
                 .orElse(module.getPath());
-            String kbCompatibleVersion = Optional.ofNullable(module.getReplace())
+            String version = Optional.ofNullable(module.getReplace())
                 .map(ReplaceData::getVersion)
                 .orElse(module.getVersion());
-            if (kbCompatibleVersion != null) {
-                String originalVersion = kbCompatibleVersion;
-                kbCompatibleVersion = handleGitHash(kbCompatibleVersion);
-                kbCompatibleVersion = removeIncompatibleSuffix(kbCompatibleVersion);
-                if (!originalVersion.equals(kbCompatibleVersion)) {
-                    modifiedVersionsMap.put(kbCompatibleVersion, originalVersion);
+            if (version != null) {
+                String kbCompatibleVersion = getKbCompatibleVersion(version);
+                if (!version.equals(kbCompatibleVersion)) {
+                    modifiedVersionsMap.put(kbCompatibleVersion, version);
+                    version = kbCompatibleVersion;
                 }
             }
-            dependencies.put(module.getPath(), convertToDependency(name, kbCompatibleVersion));
+            dependencies.put(module.getPath(), convertToDependency(name, version));
         }
 
         return dependencies;
+    }
+
+    private String getKbCompatibleVersion(String version) {
+        String kbCompatibleVersion;
+        kbCompatibleVersion = handleGitHash(version);
+        kbCompatibleVersion = removeIncompatibleSuffix(kbCompatibleVersion);
+        return kbCompatibleVersion;
     }
 
     public String getOriginalVersionFromKbCompatibleVersion(String shortVersion) {
