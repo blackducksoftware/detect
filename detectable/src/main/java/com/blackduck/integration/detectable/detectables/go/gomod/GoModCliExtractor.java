@@ -93,8 +93,8 @@ public class GoModCliExtractor {
         List<String> directs = goModCommandRunner.runGoModDirectDeps(directory, goExe, goVersion);
         List<String> modWhyOutput = goModCommandRunner.runGoModWhy(directory, goExe, false);
         
-        GoModuleDependencyHelper goModDependencyHelper = new GoModuleDependencyHelper();
-        Set<String> actualDependencyList = goModDependencyHelper.computeDependencies(mainMod, directs, modWhyOutput, modGraphOutput, allRequiredModules);
+        GoModuleDependencyHelper goModDependencyHelper = new GoModuleDependencyHelper(allRequiredModules);
+        Set<String> actualDependencyList = goModDependencyHelper.computeDependencies(mainMod, directs, modWhyOutput, modGraphOutput);
 
         return goGraphParser.parseRelationshipsFromGoModGraph(actualDependencyList);
     }
