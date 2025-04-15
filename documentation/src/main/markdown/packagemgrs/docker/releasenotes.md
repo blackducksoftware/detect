@@ -1,5 +1,15 @@
 # [docker_inspector_name] Release notes
 
+## Version 11.2.0
+
+### Changed features
+
+* Improved error logging and added support for OCI Image Index descriptor.
+
+### Dependency update
+
+* Updated internal build dependencies for Image inspector library to 15.0.2 and Image Inspector Web Service to 6.1.0
+
 ## Version 11.1.0
 
 ### Changed features

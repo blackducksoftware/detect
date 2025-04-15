@@ -31,9 +31,6 @@
 
 * If the URL configured for SCA Scan Service (SCASS) is inaccessible when [detect_product_short] attempts a binary or container scan, [detect_product_short] will retry the scan without using SCASS.
 	* See [bd_product_long] SCA Scan Service (SCASS) notice above for information pertaining to IP addresses that require allow listing.
-
-### Changed features
-
 * ReversingLabs Scans (`detect.tools=THREAT_INTEL`) has been deprecated.
 * The `detect.threatintel.scan.file.path` property has been deprecated. 
 
@@ -43,3 +40,6 @@
 * (IDETECT-4641) - Improved [detect_product_short]'s Yarn detector to handle non-standard version entries for component dependencies.
 * (IDETECT-4602 & IDETECT-4180) - Resolved Go dependency scan issue that resulted in transitive dependencies assigned to incorrect parent.
 * (IDETECT-4594) - Resolved [detect_product_short] failing to handle duplicate keys in `package.json` files across npm, pnpm, Lerna, and Yarn projects.
+
+### Dependency updates
+* Upgraded and released Detect Docker Inspector version 11.2.0.
