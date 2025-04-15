@@ -85,15 +85,4 @@ public class CodeLocationNameManager {
             return codeLocationNameGenerator.createIacScanCodeLocationName(targetFile, projectName, projectVersionName, prefix, suffix);
         }
     }
-
-    public String createThreatIntelScanCodeLocationName(File targetFile, String projectName, String projectVersionName) {
-        String scanCodeLocationName;
-
-        if (codeLocationNameGenerator.useCodeLocationOverride()) {
-            scanCodeLocationName = codeLocationNameGenerator.getNextCodeLocationOverrideNameUnSourced(CodeLocationNameType.THREAT_INTEL);
-        } else {
-            scanCodeLocationName = codeLocationNameGenerator.createThreatIntelCodeLocationName(targetFile, projectName, projectVersionName);
-        }
-        return scanCodeLocationName;
-    }
 }
