@@ -122,15 +122,12 @@ public class UVLockParser {
     }
 
 
-    //store all transitive dependencies of current one in a Map checking for any circular dependencies
+    //store all transitive dependencies of current one in a Map
     private void parseTransitiveDependencies(TomlArray transitiveDependencyArray, String dependencyName) {
         for (int j = 0; j < transitiveDependencyArray.size(); j++) {
             TomlTable currentDependencyTable = transitiveDependencyArray.getTable(j);
-            if (currentDependencyTable.contains(NAME_KEY) && !transitiveDependencyMap.containsKey(currentDependencyTable.getString(NAME_KEY))) {
+            if (currentDependencyTable.contains(NAME_KEY)) {
                 transitiveDependencyMap.computeIfAbsent(dependencyName, value -> new HashSet<>()).add(currentDependencyTable.getString(NAME_KEY));
-            }
-            if(transitiveDependencyMap.containsKey(currentDependencyTable.getString(NAME_KEY))) {
-                logger.info("Found Circular Dependency, skipping this dependency: " + currentDependencyTable.getString(NAME_KEY));
             }
         }
     }

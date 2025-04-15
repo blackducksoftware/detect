@@ -246,6 +246,13 @@ public class DetectorRuleFactory {
                 .search().defaults();
         });
 
+        rules.addDetector(DetectorType.UV, detector -> {
+            detector.entryPoint(UVBuildDetectable.class)
+                    .search().defaults();
+            detector.entryPoint(UVLockFileDetectable.class)
+                    .search().defaults();
+        }).allEntryPointsFallbackToNext();
+
         rules.addDetector(DetectorType.PIP, detector -> {
                 detector.entryPoint(PipenvDetectable.class)
                     .search().defaults();
@@ -257,7 +264,8 @@ public class DetectorRuleFactory {
                     .search().defaults();
             })
             .allEntryPointsFallbackToNext()
-            .yieldsTo(DetectorType.POETRY);
+            .yieldsTo(DetectorType.POETRY)
+            .yieldsTo(DetectorType.UV);
 
         rules.addDetector(DetectorType.RUBYGEMS, detector -> {
             detector.entryPoint(GemlockDetectable.class)
@@ -292,13 +300,6 @@ public class DetectorRuleFactory {
             detector.entryPoint(OpamBuildDetectable.class)
                     .search().defaults();
             detector.entryPoint(OpamLockFileDetectable.class)
-                    .search().defaults();
-        }).allEntryPointsFallbackToNext();
-
-        rules.addDetector(DetectorType.UV, detector -> {
-            detector.entryPoint(UVBuildDetectable.class)
-                    .search().defaults();
-            detector.entryPoint(UVLockFileDetectable.class)
                     .search().defaults();
         }).allEntryPointsFallbackToNext();
 
