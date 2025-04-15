@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.Collections;
 
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
@@ -69,7 +70,7 @@ public class PnpmLockDetectableTestv5 extends DetectableFunctionalTest {
     @Override
     @NotNull
     public Detectable create(@NotNull DetectableEnvironment detectableEnvironment) {
-        PnpmLockOptions pnpmLockOptions = new PnpmLockOptions(EnumListFilter.fromExcluded(PnpmDependencyType.OPTIONAL));
+        PnpmLockOptions pnpmLockOptions = new PnpmLockOptions(EnumListFilter.fromExcluded(PnpmDependencyType.OPTIONAL), Collections.emptyList(), Collections.emptyList());
         return detectableFactory.createPnpmLockDetectable(detectableEnvironment, pnpmLockOptions);
     }
 
