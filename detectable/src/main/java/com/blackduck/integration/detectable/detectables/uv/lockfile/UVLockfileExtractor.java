@@ -26,27 +26,23 @@ public class UVLockfileExtractor {
 
     private static final Logger logger = LoggerFactory.getLogger(UVLockfileExtractor.class);
 
-    private final UVTomlParser uvTomlParser;
+    private UVTomlParser uvTomlParser;
     private final File sourceDirectory;
     private final UVLockParser uvLockParser;
     private final PythonDependencyTransformer requirementsFileTransformer;
     private final RequirementsFileDependencyTransformer requirementsFileDependencyTransformer;
 
-    public UVLockfileExtractor(File sourceDirectory, UVTomlParser uvTomlParser, UVLockParser uvLockParser, PythonDependencyTransformer requirementsFileTransformer, RequirementsFileDependencyTransformer requirementsFileDependencyTransformer) {
+    public UVLockfileExtractor(File sourceDirectory, UVLockParser uvLockParser, PythonDependencyTransformer requirementsFileTransformer, RequirementsFileDependencyTransformer requirementsFileDependencyTransformer) {
         this.sourceDirectory = sourceDirectory;
-        this.uvTomlParser = uvTomlParser;
         this.uvLockParser = uvLockParser;
         this.requirementsFileTransformer = requirementsFileTransformer;
         this.requirementsFileDependencyTransformer = requirementsFileDependencyTransformer;
     }
 
-    public Extraction extract(UVDetectorOptions uvDetectorOptions, File uvTomlFile, File uvLockFile, File requirementsTxtFile) throws ExecutableRunnerException, IOException {
+    public Extraction extract(UVDetectorOptions uvDetectorOptions, UVTomlParser uvTomlParser, File uvLockFile, File requirementsTxtFile) throws ExecutableRunnerException, IOException {
         try {
-            String projectName = "uvProject";
-            if (uvTomlFile != null) {
-                String uvTomlContents = FileUtils.readFileToString(uvTomlFile, StandardCharsets.UTF_8);
-                projectName = uvTomlParser.getProjectName(uvTomlContents);
-            }
+            String projectName;
+            projectName = uvTomlParser.getProjectName();
 
             List<CodeLocation> codeLocations = new ArrayList<>();
             if (uvLockFile != null) {
@@ -61,11 +57,8 @@ public class UVLockfileExtractor {
                 codeLocations.add(codeLocation);
             }
 
-            Optional<NameVersion> projectNameVersion = Optional.empty();
-            if (uvTomlFile != null) {
-                String uvTomlContents = FileUtils.readFileToString(uvTomlFile, StandardCharsets.UTF_8);
-                projectNameVersion = uvTomlParser.parseNameVersion(uvTomlContents);
-            }
+            Optional<NameVersion> projectNameVersion;
+            projectNameVersion = uvTomlParser.parseNameVersion();
 
 
             return new Extraction.Builder()

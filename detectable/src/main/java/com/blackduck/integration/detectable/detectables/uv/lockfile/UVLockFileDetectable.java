@@ -32,24 +32,31 @@ public class UVLockFileDetectable extends Detectable {
     private static final String REQUIREMENTS_TXT = "requirements.txt";
     private final FileFinder fileFinder;
     private final UVDetectorOptions uvDetectorOptions;
-    private File uvTomlFile;
     private File uvLockFile;
     private File requirementsTxtFile;
-    private final UVTomlParser uvTomlParser;
+    private UVTomlParser uvTomlParser;
     private final UVLockfileExtractor uvLockfileExtractor;
 
-    public UVLockFileDetectable(DetectableEnvironment environment, FileFinder fileFinder, UVDetectorOptions uvDetectorOptions, UVTomlParser uvTomlParser, UVLockfileExtractor uvLockfileExtractor) {
+    public UVLockFileDetectable(DetectableEnvironment environment, FileFinder fileFinder, UVDetectorOptions uvDetectorOptions, UVLockfileExtractor uvLockfileExtractor) {
         super(environment);
         this.fileFinder = fileFinder;
         this.uvDetectorOptions = uvDetectorOptions;
-        this.uvTomlParser = uvTomlParser;
         this.uvLockfileExtractor = uvLockfileExtractor;
     }
 
     @Override
     public DetectableResult applicable() {
         Requirements requirements = new Requirements(fileFinder, environment);
-        uvTomlFile = requirements.file(PYPROJECT_TOML);
+        File uvTomlFile = requirements.file(PYPROJECT_TOML);
+
+        // check [tool.uv] managed setting and if set to false, skip this detector
+        if(uvTomlFile != null) {
+            uvTomlParser = new UVTomlParser(uvTomlFile);
+            if(!uvTomlParser.parseManagedKey()) {
+                return new FailedDetectableResult();
+            }
+        }
+
         return requirements.result();
     }
 
@@ -63,18 +70,11 @@ public class UVLockFileDetectable extends Detectable {
             return new UVLockfileNotFoundDetectableResult(environment.getDirectory().getAbsolutePath());
         }
 
-
-        // check [tool.uv] managed setting and if set to false, skip this detector
-        if(!uvTomlParser.parseManagedKey(uvTomlFile)) {
-            logger.warn("Skipping this detectable, since [tool.uv] managed is set to false.");
-            return new FailedDetectableResult();
-        }
-
         return new PassedDetectableResult();
     }
 
     @Override
     public Extraction extract(ExtractionEnvironment extractionEnvironment) throws ExecutableRunnerException, IOException {
-        return uvLockfileExtractor.extract(uvDetectorOptions, uvTomlFile, uvLockFile, requirementsTxtFile);
+        return uvLockfileExtractor.extract(uvDetectorOptions, uvTomlParser, uvLockFile, requirementsTxtFile);
     }
 }

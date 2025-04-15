@@ -60,26 +60,33 @@ public class UVLockParser {
         return codeLocations;
     }
 
+    // parse all the dependencies which are in random order two times:
+    // In the first go, we will get all dependency and transitive dependencies information,
+    // In the second go, we will recursively loop all the workspace members which will have their direct, transitives and so on to build the graph.
     private void parseDependencies(TomlArray dependencies, String rootName, UVDetectorOptions uvDetectorOptions) {
         for(int i = 0; i < dependencies.size(); i++) {
             TomlTable dependencyTable = dependencies.getTable(i);
 
             if(dependencyTable != null) {
                 String dependencyName = dependencyTable.getString(NAME_KEY);
-                String dependencyVersion = normalizeVersion(dependencyTable.getString(VERSION_KEY));
+                String dependencyVersion = "defaultVersion"; // If version is not present, create a project with default version
+                if(dependencyTable.contains(VERSION_KEY)) {
+                    dependencyVersion = normalizeVersion(dependencyTable.getString(VERSION_KEY));
+                }
 
                 packageDependencyMap.put(dependencyName, dependencyVersion);
 
+                // the way we are building the graph with different projects/workspace members is by finding direct dependencies first with the project name
+                // we parse project name and workspace members first and add them to a list, while recursively looping over dependencies, we loop over all workspaceMembers list
+                // which will in turn mean that their dependencies are direct since uv.lock always has one entry for the root project
+                // Here if rootName from pyproject.toml or workspace member is encountered then we store it
                 if(rootName.equals(dependencyName) || workSpaceMembers.contains(dependencyName)) {
                     workSpaceMembers.add(dependencyName);
                 }
 
+                //parse transitive dependencies section of current dependency
                 parseDependenciesSection(dependencyTable, dependencyName, uvDetectorOptions);
             }
-        }
-
-        if(rootName.equals("uvProject")) {
-            workSpaceMembers.add("uvProject");
         }
 
         generateGraph(uvDetectorOptions);
@@ -87,11 +94,13 @@ public class UVLockParser {
     }
 
     private void parseDependenciesSection(TomlTable dependencyTable, String dependencyName, UVDetectorOptions uvDetectorOptions) {
+        //parse dependencies section
         if(dependencyTable.contains(DEPENDENCIES_KEY)) {
             TomlArray directDependencyArray = dependencyTable.getArray(DEPENDENCIES_KEY);
             parseTransitiveDependencies(directDependencyArray, dependencyName);
         }
 
+        //parse dev dependencies, it is a toml table with group name as the key and dependencies as list, check if that group is not included then do not parse them
         if(dependencyTable.contains(DEV_DEPENDENCIES_KEY)) {
             TomlTable devDependencyTable = dependencyTable.getTable(DEV_DEPENDENCIES_KEY);
             for(List<String> key: devDependencyTable.keyPathSet()) {
@@ -102,6 +111,7 @@ public class UVLockParser {
             }
         }
 
+        //parse optional dependencies which is part of uv tree command, it can be excluded by users using uv configuration
         if(dependencyTable.contains(OPTIONAL_DEPENDENCIES_KEY)) {
             TomlTable optionalDependencyTable = dependencyTable.getTable(OPTIONAL_DEPENDENCIES_KEY);
             for(List<String> key: optionalDependencyTable.keyPathSet()) {
@@ -112,24 +122,30 @@ public class UVLockParser {
     }
 
 
+    //store all transitive dependencies of current one in a Map checking for any circular dependencies
     private void parseTransitiveDependencies(TomlArray transitiveDependencyArray, String dependencyName) {
         for (int j = 0; j < transitiveDependencyArray.size(); j++) {
             TomlTable currentDependencyTable = transitiveDependencyArray.getTable(j);
-            if (currentDependencyTable.contains(NAME_KEY)) {
+            if (currentDependencyTable.contains(NAME_KEY) && !transitiveDependencyMap.containsKey(currentDependencyTable.getString(NAME_KEY))) {
                 transitiveDependencyMap.computeIfAbsent(dependencyName, value -> new HashSet<>()).add(currentDependencyTable.getString(NAME_KEY));
             }
-        }
-    }
-    
-    private void generateGraph(UVDetectorOptions uvDetectorOptions) {
-        for(String workSpaceMember: workSpaceMembers) {
-            if(!checkIfMemberExcluded(workSpaceMember, uvDetectorOptions)) {
-                initializeProject(createDependency(workSpaceMember, packageDependencyMap.get(workSpaceMember)));
-                loopOverDependencies(workSpaceMember, null, uvDetectorOptions);
+            if(transitiveDependencyMap.containsKey(currentDependencyTable.getString(NAME_KEY))) {
+                logger.info("Found Circular Dependency, skipping this dependency: " + currentDependencyTable.getString(NAME_KEY));
             }
         }
     }
 
+    //parse over all the workspace members, which will build the dependency graph
+    private void generateGraph(UVDetectorOptions uvDetectorOptions) {
+        for(String workSpaceMember: workSpaceMembers) {
+            if(!checkIfMemberExcluded(workSpaceMember, uvDetectorOptions)) {
+                initializeProject(createDependency(workSpaceMember, packageDependencyMap.get(workSpaceMember))); // a new workspace member, initialize new code location
+                loopOverDependencies(workSpaceMember, null, uvDetectorOptions); //loop over all direct dependencies of root project
+            }
+        }
+    }
+
+    // parse all dependencies which we had stored in the Map for transitive dependency for each dependency while parsing it the first time
     private void loopOverDependencies(String dependency, Dependency parentDependency, UVDetectorOptions uvDetectorOptions) {
         if(transitiveDependencyMap.containsKey(dependency)) {
             for(String transitiveDependency: transitiveDependencyMap.get(dependency)) {
@@ -149,12 +165,13 @@ public class UVLockParser {
 
     private void addDependencyToGraph(Dependency currentDependency, Dependency parentDependency) {
         if(parentDependency == null) {
-            dependencyGraph.addDirectDependency(currentDependency);
+            dependencyGraph.addDirectDependency(currentDependency); // direct dependency
         } else {
-            dependencyGraph.addChildWithParent(currentDependency, parentDependency);
+            dependencyGraph.addChildWithParent(currentDependency, parentDependency); // transitive dependency
         }
     }
 
+    //sometimes the version has extra information which we don't want, parse and remove that eg. 2.5.1+cuddjf (only this as far as I have seen in many projects)
     private String normalizeVersion(String dependencyVersion) {
         if(dependencyVersion.contains("+")) {
             return dependencyVersion.substring(0, dependencyVersion.indexOf("+"));
@@ -162,6 +179,7 @@ public class UVLockParser {
         return dependencyVersion;
     }
 
+    // parse and store all the workspace members
     private void collectWorkspaceMembers(TomlParseResult uvLockObject) {
         if(uvLockObject.get(MANIFEST_KEY) != null) {
             TomlTable manifestTable = uvLockObject.getTable(MANIFEST_KEY);
@@ -174,6 +192,7 @@ public class UVLockParser {
         }
     }
 
+    // check if workspace members are excluded or included
     private boolean checkIfMemberExcluded(String memberName, UVDetectorOptions detectorOptions) {
         if(!detectorOptions.getExcludedWorkspaceMembers().isEmpty() && detectorOptions.getExcludedWorkspaceMembers().contains(memberName)) { // checking if current member is excluded
             return true;

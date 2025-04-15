@@ -67,6 +67,7 @@ public class UVTreeDependencyGraphTransformer {
             String[] parts = line.split(" "); // parse the project line
             if(parts.length < 2) {
                 logger.warn("Unable to parse workspace member from line: {}", line);
+                initializeProject("uvProject", "defaultVersion");
                 return;
             }
             String memberName = parts[0];

@@ -717,7 +717,7 @@ public class DetectableFactory {
     }
 
     public UVLockFileDetectable createUVLockFileDetectable(DetectableEnvironment environment, UVDetectorOptions uvDetectorOptions) {
-        return new UVLockFileDetectable(environment, fileFinder, uvDetectorOptions, new UVTomlParser(), uvLockfileExtractor(environment.getDirectory()));
+        return new UVLockFileDetectable(environment, fileFinder, uvDetectorOptions, uvLockfileExtractor(environment.getDirectory()));
     }
 
     // Used by three Detectables
@@ -1159,7 +1159,7 @@ public class DetectableFactory {
     private UVLockfileExtractor uvLockfileExtractor(File sourceDirectory) {
         PythonDependencyTransformer requirementsFileTransformer = new PythonDependencyTransformer();
         RequirementsFileDependencyTransformer requirementsFileDependencyTransformer = new RequirementsFileDependencyTransformer();
-        return new UVLockfileExtractor(sourceDirectory, new UVTomlParser(), uvLockParser(), requirementsFileTransformer, requirementsFileDependencyTransformer);
+        return new UVLockfileExtractor(sourceDirectory, uvLockParser(), requirementsFileTransformer, requirementsFileDependencyTransformer);
     }
 
     private UVLockParser uvLockParser() {

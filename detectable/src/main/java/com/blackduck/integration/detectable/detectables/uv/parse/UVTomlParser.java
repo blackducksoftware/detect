@@ -41,7 +41,7 @@ public class UVTomlParser {
         return Optional.empty();
     }
 
-    public String getProjectName(String uvTomlContents) {
+    public String getProjectName() {
         TomlParseResult uvTomlObject = Toml.parse(uvTomlContents);
         if (uvTomlObject.contains(PROJECT_KEY)) {
             return uvTomlObject.getTable(PROJECT_KEY).getString(NAME_KEY);
