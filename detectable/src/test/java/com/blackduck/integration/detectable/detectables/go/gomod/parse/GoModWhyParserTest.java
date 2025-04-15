@@ -24,7 +24,7 @@ public class GoModWhyParserTest {
         // Upgrades to the GoModWhyParser means this test case no longer breaks the parser
         expectedExclusionSet.add("example.com/invalid-missing-end-paren");
 
-        List<String> lines = FunctionalTestFiles.asListOfStrings("/go/gomodwhy.xout");
+        List<String> lines = FunctionalTestFiles.asListOfStrings("/go/gomod-test1/gomodwhy.xout");
         GoModWhyParser goModWhyParser = new GoModWhyParser();
 
         Set<String> actualExclusionSet = goModWhyParser.createModuleExclusionList(lines);

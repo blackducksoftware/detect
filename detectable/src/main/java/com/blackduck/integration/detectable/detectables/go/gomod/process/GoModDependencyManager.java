@@ -25,12 +25,13 @@ public class GoModDependencyManager {
     private static final Pattern SHORT_SHA1_VERSION_PATTERN = Pattern.compile(String.format(GIT_VERSION_FORMAT, SHORT_SHA1_REGEX));
 
     private final ExternalIdFactory externalIdFactory;
-
     private final Map<String, Dependency> modulesAsDependencies;
+    private final Map<String, String> modifiedVersionsMap;
 
-    public GoModDependencyManager(List<GoListAllData> allModules, ExternalIdFactory externalIdFactory) {
+    public GoModDependencyManager(List<GoListAllData> allRequiredModules, ExternalIdFactory externalIdFactory) {
         this.externalIdFactory = externalIdFactory;
-        modulesAsDependencies = convertModulesToDependencies(allModules);
+        modifiedVersionsMap = new HashMap<>();
+        modulesAsDependencies = convertModulesToDependencies(allRequiredModules);
     }
 
     private Map<String, Dependency> convertModulesToDependencies(List<GoListAllData> allModules) {
@@ -44,13 +45,30 @@ public class GoModDependencyManager {
                 .map(ReplaceData::getVersion)
                 .orElse(module.getVersion());
             if (version != null) {
-                version = handleGitHash(version);
-                version = removeIncompatibleSuffix(version);
+                String kbCompatibleVersion = getKbCompatibleVersion(version);
+                if (!version.equals(kbCompatibleVersion)) {
+                    modifiedVersionsMap.put(kbCompatibleVersion, version);
+                    version = kbCompatibleVersion;
+                }
             }
             dependencies.put(module.getPath(), convertToDependency(name, version));
         }
 
         return dependencies;
+    }
+
+    private String getKbCompatibleVersion(String version) {
+        String kbCompatibleVersion;
+        kbCompatibleVersion = handleGitHash(version);
+        kbCompatibleVersion = removeIncompatibleSuffix(kbCompatibleVersion);
+        return kbCompatibleVersion;
+    }
+
+    public String getOriginalVersionFromKbCompatibleVersion(String shortVersion) {
+        if (modifiedVersionsMap.containsKey(shortVersion)) {
+            return modifiedVersionsMap.get(shortVersion);
+        }
+        return shortVersion;
     }
 
     private Dependency convertToDependency(String moduleName, @Nullable String moduleVersion) {
