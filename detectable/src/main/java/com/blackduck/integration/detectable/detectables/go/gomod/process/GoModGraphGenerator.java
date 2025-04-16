@@ -53,11 +53,11 @@ public class GoModGraphGenerator {
             return;
         }
 
-        Dependency dependency = goModDependencyManager.getDependencyForModule(moduleNameVersion.getName());
-        NameVersion moduleNameSelectedVersion = new NameVersion(dependency.getName(), goModDependencyManager.getOriginalVersionFromKbCompatibleVersion(dependency.getVersion()));
+        Dependency dependency = goModDependencyManager.getDependencyForModule(moduleNameVersion.getName()); // what happens if it is a dependency that is not required for any version?
+        NameVersion moduleNameSelectedVersion = new NameVersion(dependency.getName(), goModDependencyManager.getOriginalVersionFromKbCompatibleVersion(dependency.getVersion())); // the selected version for versioned main module is always null. and we do not parse the children of an unrequired module. so if down the chain, some unrequired -> required ... it would be missing from the graph building.
 
         if (parent != null) {
-            graph.addChildWithParent(dependency, parent);
+            graph.addChildWithParent(dependency, parent); // versioned main module ends up a child of urlstruct, FIX THIS.
         } else {
             graph.addDirectDependency(dependency);
         }

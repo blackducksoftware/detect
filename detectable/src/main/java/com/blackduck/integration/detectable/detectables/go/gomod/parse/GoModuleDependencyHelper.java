@@ -25,7 +25,6 @@ public class GoModuleDependencyHelper {
      * @param directs - The obtained list of the main module's direct dependencies.
      * @param modWhyOutput - A list of all modules with their relationship to the main module
      * @param originalModGraphOutput - The list produced by "go mod graph"- the intended "target".
-     * @param allRequiredModulesData - All modules, directly or indirectly, required for a build. (output of go list -m all)
      * @return - the go mod why output cleaned up (duplicates removed + relationships corrected where applicable)
      */
     public Set<String> computeDependencies(String main, List<String> directs, List<String> modWhyOutput, List<String> originalModGraphOutput) {
@@ -34,40 +33,43 @@ public class GoModuleDependencyHelper {
         Map<String, List<String>> whyMap = whyListStructureTransform.convertWhyListToWhyMap(modWhyOutput);
         /* Correct lines that get mis-interpreted as a direct dependency, given the list of direct deps, requirements graph etc.*/
         for (String grphLine : originalModGraphOutput) {
-            boolean containsDirect = containsDirectDependencies(directs, main, grphLine);
-            
+
             // Splitting here allows matching with less effort
             String[] splitLine = grphLine.split(" ");
+            // TODO check this is at least of size 2
 
             if(splitLine[1].startsWith("go@")) {
                 continue;
             }
-            
-            // anything that falls in here isn't a direct dependency of main
-            boolean needsRedux = !containsDirect && splitLine[0].equals(main);
-            
-            /* This searches for instances where the main module is apparently referring to itself.  
-            This can step on the indirect dependency making it seem to be direct.*/
-            if (splitLine[0].startsWith(main) && splitLine[0].contains("@")) {
-                boolean gotoNext = hasDependency(correctedDependencies, splitLine[1]);
-                if (gotoNext) {
-                    continue;
-                }
-            }
+
+            boolean needsRedux = needsRedux(directs, splitLine[0], splitLine[1], main);
 
             if (needsRedux) {
                 /* Redo the line to establish the direct reference module to this *indirect* module*/
-                grphLine = this.getProperParentage(grphLine, splitLine, whyMap, correctedDependencies);
+                grphLine = this.getProperParentage(grphLine, splitLine, whyMap, correctedDependencies); // unnecessary work if we already found proper parent for req dep but now see (unreq -> req) so this is where we should call hasDependency() or just during the getParent method check we havent already corrected this one. Also add to correctedDependencies if its a direct module since that can appear again in the mod graph many times.
             }
-            
+            needsRedux(directs, splitLine[0], splitLine[1], main);
             goModGraph.add(grphLine);
         }
         return goModGraph;
     }
-    
-    private boolean containsDirectDependencies(List<String> directs, String main, String grphLine) {
-        return grphLine.startsWith(main) && directs.stream().anyMatch(grphLine::contains);
+
+
+    private boolean needsRedux(List<String> directs, String parent, String child, String main) {
+        if ( (!isDirect(directs, child) && parent.equalsIgnoreCase(main)) || (isRequired(child) && !isRequired(parent)) )
+            return true;
+        else
+            return false;
     }
+
+    private boolean isRequired(String childPathWithVersion){
+        return allRequiredModulesPathsAndVersions.containsValue(childPathWithVersion);
+    }
+
+    private boolean isDirect(List<String> directs, String modulePathWithVersion) {
+        return directs.contains(modulePathWithVersion);
+    }
+
     
     private boolean hasDependency(List<String> correctedDependencies, String splitLinePart){
         for (String adep : correctedDependencies) {
@@ -111,7 +113,11 @@ public class GoModuleDependencyHelper {
         for (GoListAllData module : allRequiredModules) {
             String path = module.getPath();
             String version = module.getVersion();
-            allRequiredModulesPathsAndVersions.putIfAbsent(path, path + "@" + version);
+            if (version == null) {
+                allRequiredModulesPathsAndVersions.putIfAbsent(path, path);
+            } else {
+                allRequiredModulesPathsAndVersions.putIfAbsent(path, path + "@" + version);
+            }
         }
     }
 }
