@@ -40,7 +40,8 @@ public enum DetectorType { // TODO: 8.0.0 Rename DetectorTypes
     YARN,
     CLANG,
     XCODE, // Remove this
-    OPAM;
+    OPAM,
+    UV;
     protected static final List<String> POSSIBLE_NAMES = Arrays.stream(DetectorType.values()).map(DetectorType::name).collect(Collectors.toList());
 
     public static List<String> getPossibleNames() {
