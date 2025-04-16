@@ -12,28 +12,21 @@ import com.blackduck.integration.detectable.python.util.PythonDependencyTransfor
 import com.blackduck.integration.executable.ExecutableRunnerException;
 import com.blackduck.integration.util.NameVersion;
 import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Optional;
 import java.util.List;
+import java.util.Optional;
 
 public class UVLockfileExtractor {
 
-    private static final Logger logger = LoggerFactory.getLogger(UVLockfileExtractor.class);
-
-    private UVTomlParser uvTomlParser;
-    private final File sourceDirectory;
     private final UVLockParser uvLockParser;
     private final PythonDependencyTransformer requirementsFileTransformer;
     private final RequirementsFileDependencyTransformer requirementsFileDependencyTransformer;
 
-    public UVLockfileExtractor(File sourceDirectory, UVLockParser uvLockParser, PythonDependencyTransformer requirementsFileTransformer, RequirementsFileDependencyTransformer requirementsFileDependencyTransformer) {
-        this.sourceDirectory = sourceDirectory;
+    public UVLockfileExtractor(UVLockParser uvLockParser, PythonDependencyTransformer requirementsFileTransformer, RequirementsFileDependencyTransformer requirementsFileDependencyTransformer) {
         this.uvLockParser = uvLockParser;
         this.requirementsFileTransformer = requirementsFileTransformer;
         this.requirementsFileDependencyTransformer = requirementsFileDependencyTransformer;
@@ -41,8 +34,8 @@ public class UVLockfileExtractor {
 
     public Extraction extract(UVDetectorOptions uvDetectorOptions, UVTomlParser uvTomlParser, File uvLockFile, File requirementsTxtFile) throws ExecutableRunnerException, IOException {
         try {
-            String projectName;
-            projectName = uvTomlParser.getProjectName();
+            Optional<NameVersion> projectNameVersion = uvTomlParser.parseNameVersion();
+            String projectName = uvTomlParser.getProjectName(); // get just project name in case version doesn't exist
 
             List<CodeLocation> codeLocations = new ArrayList<>();
             if (uvLockFile != null) {
@@ -56,9 +49,6 @@ public class UVLockfileExtractor {
                 CodeLocation codeLocation = new CodeLocation(dependencyGraph);
                 codeLocations.add(codeLocation);
             }
-
-            Optional<NameVersion> projectNameVersion;
-            projectNameVersion = uvTomlParser.parseNameVersion();
 
 
             return new Extraction.Builder()

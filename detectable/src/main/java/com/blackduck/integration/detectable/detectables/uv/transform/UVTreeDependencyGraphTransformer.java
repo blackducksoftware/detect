@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.*;
-import java.util.List;
 import java.util.regex.Pattern;
 
 public class UVTreeDependencyGraphTransformer {
@@ -67,7 +66,7 @@ public class UVTreeDependencyGraphTransformer {
             String[] parts = line.split(" "); // parse the project line
             if(parts.length < 2) {
                 logger.warn("Unable to parse workspace member from line: {}", line);
-                initializeProject("uvProject", "defaultVersion");
+                initializeProject(parts[0] != null ? parts[0] : "uvProject", "defaultVersion"); // if version doesn't exist, then create a code location with just project name and default version
                 return;
             }
             String memberName = parts[0];

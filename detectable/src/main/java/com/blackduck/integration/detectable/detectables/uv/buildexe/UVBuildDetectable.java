@@ -18,14 +18,8 @@ import com.blackduck.integration.detectable.detectables.uv.parse.UVTomlParser;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 import com.blackduck.integration.executable.ExecutableRunnerException;
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.tomlj.internal.TomlParser;
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 @DetectableInfo(name = "UV Build", language = "Python", forge = "PyPI", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: pyproject.toml file. Executable: uv.")
 public class UVBuildDetectable extends Detectable {
