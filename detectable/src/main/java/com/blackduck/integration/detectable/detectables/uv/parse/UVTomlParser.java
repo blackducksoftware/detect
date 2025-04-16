@@ -24,16 +24,15 @@ public class UVTomlParser {
     private static final String MANAGED_KEY = "managed";
     private static final String UV_TOOL_KEY = "tool.uv";
 
-    private String uvTomlContents = "";
+    private TomlParseResult uvToml;
 
     public UVTomlParser(File uvTomlFile) {
         parseUVToml(uvTomlFile);
     }
 
     public Optional<NameVersion> parseNameVersion() {
-        TomlParseResult uvTomlObject = Toml.parse(uvTomlContents);
-        if (uvTomlObject.contains(PROJECT_KEY)) {
-            return Optional.ofNullable(uvTomlObject.getTable(PROJECT_KEY))
+        if (uvToml.contains(PROJECT_KEY)) {
+            return Optional.ofNullable(uvToml.getTable(PROJECT_KEY))
                     .filter(info -> info.contains(NAME_KEY))
                     .filter(info -> info.contains(VERSION_KEY))
                     .map(info -> new NameVersion(info.getString(NAME_KEY), info.getString(VERSION_KEY)));
@@ -53,9 +52,8 @@ public class UVTomlParser {
 
     // check [tool.uv] managed setting
     public boolean parseManagedKey() {
-        TomlParseResult uvTomlObject = Toml.parse(uvTomlContents);
-        if (uvTomlObject.contains(UV_TOOL_KEY)) {
-            TomlTable uvToolTable = uvTomlObject.getTable(UV_TOOL_KEY);
+        if (uvToml.contains(UV_TOOL_KEY)) {
+            TomlTable uvToolTable = uvToml.getTable(UV_TOOL_KEY);
             if (uvToolTable.contains(MANAGED_KEY)) {
                 return uvToolTable.getBoolean(MANAGED_KEY);
             }
@@ -66,7 +64,8 @@ public class UVTomlParser {
 
     public void parseUVToml(File uvTomlFile) {
         try {
-            uvTomlContents = FileUtils.readFileToString(uvTomlFile, StandardCharsets.UTF_8);
+            String uvTomlContents = FileUtils.readFileToString(uvTomlFile, StandardCharsets.UTF_8);
+            uvToml = Toml.parse(uvTomlContents);
         } catch (Exception e) {
             logger.warn("Unable to read UV Toml file: " + uvTomlFile.getAbsolutePath(), e);
         }
