@@ -14,6 +14,9 @@ public class BlackDuckConnectivityResult {
     private final BlackDuckServicesFactory blackDuckServicesFactory;
     private final BlackDuckServerConfig blackDuckServerConfig;
 
+    // if true, the user is a system admin and can access blackduck registrationId
+    private boolean isAdminOperationAllowed;
+
     private BlackDuckConnectivityResult(
         boolean successfullyConnected,
         String failureReason,
@@ -28,8 +31,24 @@ public class BlackDuckConnectivityResult {
         this.contactedServerVersion = serverVersion.equals("") || serverVersion == null ? "0.0.0" : serverVersion;
     }
 
+    private BlackDuckConnectivityResult(
+        boolean successfullyConnected,
+        String failureReason,
+        BlackDuckServicesFactory blackDuckServicesFactory,
+        BlackDuckServerConfig blackDuckServerConfig,
+        String serverVersion,
+        boolean isAdminOperationAllowed
+    ) {
+        this(successfullyConnected, failureReason, blackDuckServicesFactory, blackDuckServerConfig, serverVersion);
+        this.isAdminOperationAllowed = isAdminOperationAllowed;
+    }
+
     public static BlackDuckConnectivityResult success(BlackDuckServicesFactory blackDuckServicesFactory, BlackDuckServerConfig blackDuckServerConfig, String serverVersion) {
         return new BlackDuckConnectivityResult(true, null, blackDuckServicesFactory, blackDuckServerConfig, serverVersion);
+    }
+
+    public static BlackDuckConnectivityResult success(BlackDuckServicesFactory blackDuckServicesFactory, BlackDuckServerConfig blackDuckServerConfig, String serverVersion, boolean isAdminOperationAllowed) {
+        return new BlackDuckConnectivityResult(true, null, blackDuckServicesFactory, blackDuckServerConfig, serverVersion, isAdminOperationAllowed);
     }
 
     public static BlackDuckConnectivityResult failure(String reason) {
@@ -54,5 +73,13 @@ public class BlackDuckConnectivityResult {
 
     public String getContactedServerVersion() {
         return this.contactedServerVersion;
+    }
+
+    public boolean isAdminOperationAllowed() {
+        return isAdminOperationAllowed;
+    }
+
+    public void setAdminOperationAllowed(boolean adminOperationAllowed) {
+        isAdminOperationAllowed = adminOperationAllowed;
     }
 }
