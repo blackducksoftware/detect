@@ -34,6 +34,7 @@ public class UVLockFileDetectable extends Detectable {
     private final UVDetectorOptions uvDetectorOptions;
     private File uvLockFile;
     private File requirementsTxtFile;
+    private File uvTomlFile;
     private UVTomlParser uvTomlParser;
     private final UVLockfileExtractor uvLockfileExtractor;
 
@@ -47,7 +48,10 @@ public class UVLockFileDetectable extends Detectable {
     @Override
     public DetectableResult applicable() {
         Requirements requirements = new Requirements(fileFinder, environment);
-        File uvTomlFile = requirements.file(PYPROJECT_TOML);
+        uvTomlFile = requirements.file(PYPROJECT_TOML);
+
+        uvLockFile = fileFinder.findFile(environment.getDirectory(), UV_LOCK_FILE);
+        requirementsTxtFile = fileFinder.findFile(environment.getDirectory(), REQUIREMENTS_TXT);
 
         // check [tool.uv] managed setting and if set to false, skip this detector
         if(uvTomlFile != null) {
@@ -62,11 +66,7 @@ public class UVLockFileDetectable extends Detectable {
 
     @Override
     public DetectableResult extractable() throws DetectableException {
-        Requirements requirements = new Requirements(fileFinder, environment);
-        uvLockFile = requirements.file(UV_LOCK_FILE);
-        requirementsTxtFile = requirements.file(REQUIREMENTS_TXT);
-
-        if(!uvLockFile.exists() && !requirementsTxtFile.exists()) {
+        if(uvLockFile == null && requirementsTxtFile == null && uvTomlFile != null) {
             return new UVLockfileNotFoundDetectableResult(environment.getDirectory().getAbsolutePath());
         }
 

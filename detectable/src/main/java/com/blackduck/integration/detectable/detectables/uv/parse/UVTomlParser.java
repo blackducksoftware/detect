@@ -31,7 +31,7 @@ public class UVTomlParser {
     }
 
     public Optional<NameVersion> parseNameVersion() {
-        if (uvToml.contains(PROJECT_KEY)) {
+        if (uvToml != null && uvToml.contains(PROJECT_KEY)) {
             return Optional.ofNullable(uvToml.getTable(PROJECT_KEY))
                     .filter(info -> info.contains(NAME_KEY))
                     .filter(info -> info.contains(VERSION_KEY))
@@ -41,9 +41,8 @@ public class UVTomlParser {
     }
 
     public String getProjectName() {
-        TomlParseResult uvTomlObject = Toml.parse(uvTomlContents);
-        if (uvTomlObject.contains(PROJECT_KEY)) {
-            return uvTomlObject.getTable(PROJECT_KEY).getString(NAME_KEY);
+        if (uvToml != null && uvToml.contains(PROJECT_KEY)) {
+            return uvToml.getTable(PROJECT_KEY).getString(NAME_KEY);
         }
 
         return "uvProject";
@@ -52,7 +51,7 @@ public class UVTomlParser {
 
     // check [tool.uv] managed setting
     public boolean parseManagedKey() {
-        if (uvToml.contains(UV_TOOL_KEY)) {
+        if (uvToml != null && uvToml.contains(UV_TOOL_KEY)) {
             TomlTable uvToolTable = uvToml.getTable(UV_TOOL_KEY);
             if (uvToolTable.contains(MANAGED_KEY)) {
                 return uvToolTable.getBoolean(MANAGED_KEY);
