@@ -5,40 +5,18 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.blackduck.integration.detectable.detectable.executable.resolver.*;
 import org.jetbrains.annotations.Nullable;
 
 import com.blackduck.integration.detectable.DetectableEnvironment;
 import com.blackduck.integration.detectable.ExecutableTarget;
 import com.blackduck.integration.detectable.detectable.exception.DetectableException;
-import com.blackduck.integration.detectable.detectable.executable.resolver.BashResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.BazelResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.CondaResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.CpanResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.CpanmResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.DartResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.DockerResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.FlutterResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.GitResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.GoResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.GradleResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.JavaResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.LernaResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.MavenResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.NpmResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.PearResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.PipResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.PipenvResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.PythonResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.Rebar3Resolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.SbtResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.SwiftResolver;
-import com.blackduck.integration.detectable.detectable.executable.resolver.OpamResolver;
 import com.blackduck.integration.detectable.detectables.conan.cli.ConanResolver;
 
 public class DetectExecutableResolver implements
     JavaResolver, GradleResolver, BashResolver, ConanResolver, CondaResolver, CpanmResolver, CpanResolver, DartResolver, PearResolver, Rebar3Resolver, PythonResolver, PipResolver,
     PipenvResolver, MavenResolver, NpmResolver, BazelResolver,
-    DockerResolver, GitResolver, SwiftResolver, GoResolver, LernaResolver, SbtResolver, FlutterResolver, OpamResolver {
+    DockerResolver, GitResolver, SwiftResolver, GoResolver, LernaResolver, SbtResolver, FlutterResolver, OpamResolver, CargoResolver {
 
     private final DirectoryExecutableFinder directoryExecutableFinder;
     private final SystemPathExecutableFinder systemPathExecutableFinder;
@@ -234,6 +212,11 @@ public class DetectExecutableResolver implements
     @Nullable
     public ExecutableTarget resolveOpam() throws DetectableException {
         return ExecutableTarget.forFile(resolveCachedSystemExecutable("opam", detectExecutableOptions.getOpamUserPath()));
+    }
+
+    @Override
+    public ExecutableTarget resolveCargo(DetectableEnvironment environment) throws DetectableException {
+        return ExecutableTarget.forFile(resolveCachedSystemExecutable("cargo", detectExecutableOptions.getCargoUserPath()));
     }
 }
 

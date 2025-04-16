@@ -84,7 +84,7 @@ Pip Native Inspector runs the [pip-inspector.py script](https://github.com/black
 python setup.py install
 pip install -r requirements.txt
 ````
-* Pip detector derives your project name using your setup.py file if you have one. If you do not have a setup.py file, you must provide the correct project name using the propety --detect.pip.project.name.
+* Pip detector attempts to derive the project name using your setup.py file if you have one. If you do not have a setup.py file, you can provide the correct project name using the propety `--detect.pip.project.name`.
 * If there are any dependencies specified in requirements.txt that are not specified in setup.py, then provide the requirements.txt file using the [detect_product_short] property.   
 <note type="tip">If you are using a virtual environment, be sure to switch to that virtual environment when you run [detect_product_short]. This also applies when you are using a tool such as Poetry that sets up a Python virtual environment.</note>
 

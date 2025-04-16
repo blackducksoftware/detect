@@ -34,7 +34,7 @@ public class PipInspectorTreeParser {
         this.externalIdFactory = externalIdFactory;
     }
 
-    public Optional<NameVersionCodeLocation> parse(List<String> pipInspectorOutputAsList, String sourcePath, boolean projectNameWasGiven) {
+    public Optional<NameVersionCodeLocation> parse(List<String> pipInspectorOutputAsList, String sourcePath) {
         NameVersionCodeLocation parseResult = null;
 
         DependencyGraph graph = new BasicDependencyGraph();
@@ -48,13 +48,15 @@ public class PipInspectorTreeParser {
                 || trimmedLine.startsWith(UNKNOWN_REQUIREMENTS_PREFIX)
                 || trimmedLine.startsWith(UNPARSEABLE_REQUIREMENTS_PREFIX)
                 || trimmedLine.startsWith(UNKNOWN_PACKAGE_PREFIX)
-                || trimmedLine.startsWith(UNKNOWN_PROJECT_NAME) && projectNameWasGiven
             ) {
                 boolean wasUnresolved = parseErrorsFromLine(trimmedLine);
                 if (wasUnresolved) {
                     unResolvedPackageCount++;
                 }
                 continue;
+            }
+            if (trimmedLine.startsWith(UNKNOWN_PROJECT_NAME)) {
+                logger.info("Pip inspector did not find a package matching project name");
             }
             Dependency currentDependency = parseDependencyFromLine(trimmedLine, sourcePath);
             adjustForIndentLevel(history, line);
@@ -118,10 +120,6 @@ public class PipInspectorTreeParser {
             unResolvedPackage = true;
         }
 
-        if (trimmedLine.startsWith(UNKNOWN_PROJECT_NAME)) {
-            logger.error("Pip inspector could not resolve the project");
-            unResolvedPackage = true;
-        }
         return unResolvedPackage;
     }
 

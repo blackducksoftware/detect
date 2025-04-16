@@ -223,6 +223,7 @@
 			<topicref href="integrations/azureplugin/azurepluginrequirements.md" format="markdown"/>
 			<topicref href="integrations/azureplugin/installingtheplugin.md" format="markdown"/>
 			<topicref href="integrations/azureplugin/configuringandrunning.md" format="markdown"/>
+			<topicref href="integrations/azureplugin/autoescapingparameters.md" format="markdown"/>
 			<topicref href="integrations/azureplugin/configuringbuildagent.md" format="markdown"/>
 			<topicref href="integrations/azureplugin/runningthetask.md" format="markdown"/>
 		</topicref>
