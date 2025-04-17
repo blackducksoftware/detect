@@ -46,7 +46,7 @@ public class GoModuleDependencyHelper {
 
             if (needsRedux) {
                 /* Redo the line to establish the direct reference module to this *indirect* module*/
-                grphLine = this.getProperParentage(grphLine, splitLine, whyMap, correctedDependencies); // unnecessary work if we already found proper parent for req dep but now see (unreq -> req) so this is where we should call hasDependency() or just during the getParent method check we havent already corrected this one. Also add to correctedDependencies if its a direct module since that can appear again in the mod graph many times.
+                grphLine = this.getProperParentage(grphLine, splitLine, whyMap, correctedDependencies, main); // unnecessary work if we already found proper parent for req dep but now see (unreq -> req) so this is where we should call hasDependency() or just during the getParent method check we havent already corrected this one. Also add to correctedDependencies if its a direct module since that can appear again in the mod graph many times.
             }
             needsRedux(directs, splitLine[0], splitLine[1], main);
             goModGraph.add(grphLine);
@@ -80,7 +80,7 @@ public class GoModuleDependencyHelper {
         return false;
     }
 
-    private String getProperParentage(String grphLine, String[] splitLine, Map<String, List<String>> whyMap, List<String> correctedDependencies) {
+    private String getProperParentage(String grphLine, String[] splitLine, Map<String, List<String>> whyMap, List<String> correctedDependencies, String main) {
         String childModulePath = splitLine[1].replaceAll("@.*", "");
         correctedDependencies.add(childModulePath); // keep track of ones we've fixed.
 
@@ -88,7 +88,7 @@ public class GoModuleDependencyHelper {
         // look up the 'why' results for the module...  This will tell us
         // the (directly or indirectly) required dependency item that pulled this item into the mix.
         List<String> trackPath = whyMap.get(childModulePath);
-        if (trackPath != null && !trackPath.isEmpty() && !indicatesUnusedModule(trackPath)) {
+        if (trackPath != null && !trackPath.isEmpty() && !indicatesUnusedModule(trackPath, childModulePath)) {
             for (int i = trackPath.size() - 2; i >= 0 ; i--) {
                 String tp = trackPath.get(i);
                 String parentPath = allRequiredModulesPathsAndVersions.keySet().stream()
@@ -102,10 +102,11 @@ public class GoModuleDependencyHelper {
                 }
             }
         }
+
         return grphLine;
     }
 
-    private boolean indicatesUnusedModule(List<String> trackPath) {
+    private boolean indicatesUnusedModule(List<String> trackPath, String childModulePath) {
         return Arrays.stream(GoModWhyParser.UNUSED_MODULE_PREFIXES).anyMatch(trackPath.get(0)::contains);
     }
 

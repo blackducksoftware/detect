@@ -1,9 +1,6 @@
 package com.blackduck.integration.detectable.detectables.go.gomod.process;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -103,5 +100,9 @@ public class GoModDependencyManager {
             version = version.substring(0, version.length() - INCOMPATIBLE_SUFFIX.length());
         }
         return version;
+    }
+
+    public Collection<Dependency> getRequiredDependencies() {
+        return modulesAsDependencies.values();
     }
 }

@@ -35,14 +35,24 @@ public class GoModGraphGenerator {
         if (goRelationshipManager.hasRelationshipsFor(mainModuleNameVersion)) {
             goRelationshipManager.getRelationshipsFor(mainModuleNameVersion).stream()
                 .map(relationship -> relationship.getChild())
-                .forEach(childNameVersion -> addModuleToGraph(mainModuleNameVersion, childNameVersion, null, graph, goRelationshipManager, goModDependencyManager));
+                .forEach(childNameVersion -> addModuleToGraph(childNameVersion, null, graph, goRelationshipManager, goModDependencyManager));
         }
+
+        addOrphanModules(graph, goModDependencyManager);
 
         return new CodeLocation(graph, externalIdFactory.createNameVersionExternalId(Forge.GOLANG, projectModule.getPath(), projectModule.getVersion()));
     }
 
+    private void addOrphanModules(DependencyGraph graph, GoModDependencyManager goModDependencyManager) {
+        for (Dependency requiredDependency : goModDependencyManager.getRequiredDependencies()) {
+            if (!graph.hasDependency(requiredDependency)) {
+                logger.debug("Adding orphan module '{}' as a direct dependency because no parent was found.", requiredDependency.getName());
+                graph.addDirectDependency(requiredDependency);
+            }
+        }
+    }
+
     private void addModuleToGraph(
-        NameVersion mainModule,
         NameVersion moduleNameVersion,
         @Nullable Dependency parent,
         DependencyGraph graph,
@@ -58,7 +68,7 @@ public class GoModGraphGenerator {
         // To prevent false positives, always grab the version of the module chosen by Go's minimal version selection
         NameVersion moduleNameSelectedVersion = new NameVersion(dependency.getName(), goModDependencyManager.getOriginalVersionFromKbCompatibleVersion(dependency.getVersion()));
 
-        if (parent != null && moduleNameSelectedVersion.equals(mainModule)) {
+        if (parent != null) {
             graph.addChildWithParent(dependency, parent);
         } else {
             graph.addDirectDependency(dependency);
@@ -68,7 +78,7 @@ public class GoModGraphGenerator {
             fullyGraphedModules.add(moduleNameSelectedVersion);
             List<GoGraphRelationship> projectRelationships = goRelationshipManager.getRelationshipsFor(moduleNameSelectedVersion);
             for (GoGraphRelationship projectRelationship : projectRelationships) {
-                addModuleToGraph(mainModule, projectRelationship.getChild(), dependency, graph, goRelationshipManager, goModDependencyManager);
+                addModuleToGraph(projectRelationship.getChild(), dependency, graph, goRelationshipManager, goModDependencyManager);
             }
         }
     }
