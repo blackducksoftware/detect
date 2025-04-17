@@ -30,18 +30,19 @@ public class GoModGraphGenerator {
 
     public CodeLocation generateGraph(GoListModule projectModule, GoRelationshipManager goRelationshipManager, GoModDependencyManager goModDependencyManager) {
         DependencyGraph graph = new BasicDependencyGraph();
-        String moduleName = projectModule.getPath();
-        NameVersion moduleNameVersion = new NameVersion(moduleName, projectModule.getVersion());
-        if (goRelationshipManager.hasRelationshipsFor(moduleNameVersion)) {
-            goRelationshipManager.getRelationshipsFor(moduleNameVersion).stream()
+        String mainModuleName = projectModule.getPath();
+        NameVersion mainModuleNameVersion = new NameVersion(mainModuleName, projectModule.getVersion());
+        if (goRelationshipManager.hasRelationshipsFor(mainModuleNameVersion)) {
+            goRelationshipManager.getRelationshipsFor(mainModuleNameVersion).stream()
                 .map(relationship -> relationship.getChild())
-                .forEach(childNameVersion -> addModuleToGraph(childNameVersion, null, graph, goRelationshipManager, goModDependencyManager));
+                .forEach(childNameVersion -> addModuleToGraph(mainModuleNameVersion, childNameVersion, null, graph, goRelationshipManager, goModDependencyManager));
         }
 
         return new CodeLocation(graph, externalIdFactory.createNameVersionExternalId(Forge.GOLANG, projectModule.getPath(), projectModule.getVersion()));
     }
 
     private void addModuleToGraph(
+        NameVersion mainModule,
         NameVersion moduleNameVersion,
         @Nullable Dependency parent,
         DependencyGraph graph,
@@ -53,11 +54,12 @@ public class GoModGraphGenerator {
             return;
         }
 
-        Dependency dependency = goModDependencyManager.getDependencyForModule(moduleNameVersion.getName()); // what happens if it is a dependency that is not required for any version?
-        NameVersion moduleNameSelectedVersion = new NameVersion(dependency.getName(), goModDependencyManager.getOriginalVersionFromKbCompatibleVersion(dependency.getVersion())); // the selected version for versioned main module is always null. and we do not parse the children of an unrequired module. so if down the chain, some unrequired -> required ... it would be missing from the graph building.
+        Dependency dependency = goModDependencyManager.getDependencyForModule(moduleNameVersion.getName());
+        // To prevent false positives, always grab the version of the module chosen by Go's minimal version selection
+        NameVersion moduleNameSelectedVersion = new NameVersion(dependency.getName(), goModDependencyManager.getOriginalVersionFromKbCompatibleVersion(dependency.getVersion()));
 
-        if (parent != null) {
-            graph.addChildWithParent(dependency, parent); // versioned main module ends up a child of urlstruct, FIX THIS.
+        if (parent != null && moduleNameSelectedVersion.equals(mainModule)) {
+            graph.addChildWithParent(dependency, parent);
         } else {
             graph.addDirectDependency(dependency);
         }
@@ -66,7 +68,7 @@ public class GoModGraphGenerator {
             fullyGraphedModules.add(moduleNameSelectedVersion);
             List<GoGraphRelationship> projectRelationships = goRelationshipManager.getRelationshipsFor(moduleNameSelectedVersion);
             for (GoGraphRelationship projectRelationship : projectRelationships) {
-                addModuleToGraph(projectRelationship.getChild(), dependency, graph, goRelationshipManager, goModDependencyManager);
+                addModuleToGraph(mainModule, projectRelationship.getChild(), dependency, graph, goRelationshipManager, goModDependencyManager);
             }
         }
     }
