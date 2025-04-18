@@ -1,22 +1,23 @@
 package com.blackduck.integration.detectable.detectables.go.gomod.process;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import com.blackduck.integration.detectable.detectables.go.gomod.model.GoGraphRelationship;
 import com.blackduck.integration.util.NameVersion;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class GoRelationshipManager {
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
     private final Map<NameVersion, List<GoGraphRelationship>> relationshipMap;
     private final Set<String> excludedModules;
+    private final Set<String> excludedChildModules;
+
 
     public GoRelationshipManager(List<GoGraphRelationship> goGraphRelationships, Set<String> excludedModules) {
         this.excludedModules = excludedModules;
+        this.excludedChildModules = new HashSet<>();
         relationshipMap = new HashMap<>();
         for (GoGraphRelationship goGraphRelationship : goGraphRelationships) {
             NameVersion parentNameVersion = goGraphRelationship.getParent();
@@ -33,7 +34,26 @@ public class GoRelationshipManager {
         return Optional.ofNullable(relationshipMap.get(moduleNameVersion)).orElse(Collections.emptyList());
     }
 
-    public boolean isModuleExcluded(String moduleName) {
-        return excludedModules.contains(moduleName);
+    public boolean isModuleExcluded(NameVersion moduleNameVersion) {
+        return excludedModules.contains(moduleNameVersion.getName());
     }
+
+    public boolean childExcludedForGoodReason(NameVersion childModuleNameVersion) {
+        // child is not really an orphan, its parent is just excluded
+        return excludedModules.contains(childModuleNameVersion.getName());
+    }
+
+    public void addChildrenToExcludedModules(NameVersion parentModuleNameVersion) {
+        if (hasRelationshipsFor(parentModuleNameVersion)) {
+            List<GoGraphRelationship> relationships = getRelationshipsFor(parentModuleNameVersion);
+            for (GoGraphRelationship r : relationships) {
+                NameVersion childModuleNameVersion = r.getChild();
+               excludedChildModules.add(childModuleNameVersion.getName());
+               logger.debug("Excluding child module '{}' because its parent ('{}') is not used by the main module.", childModuleNameVersion.getName(), parentModuleNameVersion.getName());
+            }
+
+        }
+
+    }
+
 }
