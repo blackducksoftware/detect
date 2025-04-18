@@ -28,19 +28,26 @@ public class ProductBootFactory {
         this.detectConfigurationFactory = detectConfigurationFactory;
     }
 
-    public PhoneHomeManager createPhoneHomeManager(BlackDuckServicesFactory blackDuckServicesFactory, PhoneHomeCredentials phoneHomeCredentials) {
+    private PhoneHomeManager createPhoneHomeManagerInternal(BlackDuckServicesFactory blackDuckServicesFactory, PhoneHomeCredentials phoneHomeCredentials, boolean isAdminOperationAllowed) {
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         BlackDuckPhoneHomeHelper blackDuckPhoneHomeHelper = BlackDuckPhoneHomeHelper.createAsynchronousPhoneHomeHelper(
-                blackDuckServicesFactory, phoneHomeCredentials.getApiSecret(), phoneHomeCredentials.getMeasurementId(), executorService);
-        PhoneHomeManager phoneHomeManager = new OnlinePhoneHomeManager(
+            blackDuckServicesFactory, phoneHomeCredentials.getApiSecret(), phoneHomeCredentials.getMeasurementId(), executorService);
+        return new OnlinePhoneHomeManager(
             detectConfigurationFactory.createPhoneHomeOptions().getPassthrough(),
             detectInfo,
             eventSystem,
-            blackDuckPhoneHomeHelper
+            blackDuckPhoneHomeHelper,
+            isAdminOperationAllowed
         );
-        return phoneHomeManager;
     }
 
+    public PhoneHomeManager createPhoneHomeManager(BlackDuckServicesFactory blackDuckServicesFactory, PhoneHomeCredentials phoneHomeCredentials) {
+        return createPhoneHomeManagerInternal(blackDuckServicesFactory, phoneHomeCredentials, false);
+    }
+
+    public PhoneHomeManager createPhoneHomeManager(BlackDuckServicesFactory blackDuckServicesFactory, PhoneHomeCredentials phoneHomeCredentials, boolean isAdminOperationAllowed) {
+        return createPhoneHomeManagerInternal(blackDuckServicesFactory, phoneHomeCredentials, isAdminOperationAllowed);
+    }
     public BlackDuckServerConfig createBlackDuckServerConfig() throws DetectUserFriendlyException {
         BlackDuckConnectionDetails connectionDetails = detectConfigurationFactory.createBlackDuckConnectionDetails();
         BlackDuckConfigFactory blackDuckConfigFactory = new BlackDuckConfigFactory(detectInfo, connectionDetails);
