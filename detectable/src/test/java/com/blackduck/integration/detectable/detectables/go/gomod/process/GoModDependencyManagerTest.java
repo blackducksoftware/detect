@@ -113,6 +113,8 @@ class GoModDependencyManagerTest {
         assertEquals(replaceData.getVersion(), replacedDependency.getVersion(), "The version should have been replaced.");
     }
 
+    // TODO add tests here
+
     private GoModDependencyManager createManagerWithModuleLoadedWith(String modulePath, @Nullable String moduleVersion) {
         GoListAllData module = new GoListAllData();
         module.setPath(modulePath);

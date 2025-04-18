@@ -34,6 +34,9 @@ public class GoModuleDependencyHelper {
         /* Correct lines that get mis-interpreted as a direct dependency, given the list of direct deps, requirements graph etc.*/
         for (String grphLine : originalModGraphOutput) {
 
+            if (grphLine.equalsIgnoreCase("github.com/olekukonko/tablewriter@v0.0.0-20170122224234-a0225b3f23b5 github.com/mattn/go-runewidth@v0.0.7")) {
+                System.out.println("weeeoooo");
+            }
             // Splitting here allows matching with less effort
             String[] splitLine = grphLine.split(" ");
             // TODO check this is at least of size 2

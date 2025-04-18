@@ -76,6 +76,11 @@ public class GoModGraphGenerator {
         GoRelationshipManager goRelationshipManager,
         GoModDependencyManager goModDependencyManager
     ) {
+
+        if (moduleNameVersion.getName().contains("table")) {
+            System.out.println("adding table to graph?");
+        }
+
         if (goRelationshipManager.isModuleExcluded(moduleNameVersion)) {
             logger.debug("Excluding module '{}' because it is not used by the main module.", moduleNameVersion.getName());
             // before returning we should make note of all the children of this excluded module so we do not assume they are true orphans at a later step and add them back in
@@ -83,9 +88,10 @@ public class GoModGraphGenerator {
             return;
         }
 
-        Dependency dependency = goModDependencyManager.getDependencyForModule(moduleNameVersion.getName());
+        Dependency dependency = goModDependencyManager.getDependencyForModule(moduleNameVersion.getName()); // dependency always returns the replaced path and version if replace directive was applied.
+        // IF there was a replacement, what original module did this replace?
+        NameVersion originalNameAndVersion = goModDependencyManager.getOriginalRequiredNameAndVersion(moduleNameVersion.getName()); // this version IS the version we want to grab the relationships for.
         // To prevent false positives, always grab the version of the module chosen by Go's minimal version selection
-        NameVersion moduleNameSelectedVersion = new NameVersion(dependency.getName(), goModDependencyManager.getOriginalVersionFromKbCompatibleVersion(dependency.getVersion()));
 
         if (parent != null) {
             graph.addChildWithParent(dependency, parent);
@@ -93,9 +99,9 @@ public class GoModGraphGenerator {
             graph.addDirectDependency(dependency);
         }
 
-        if (!fullyGraphedModules.contains(moduleNameSelectedVersion) && goRelationshipManager.hasRelationshipsFor(moduleNameSelectedVersion)) {
-            fullyGraphedModules.add(moduleNameSelectedVersion);
-            List<GoGraphRelationship> projectRelationships = goRelationshipManager.getRelationshipsFor(moduleNameSelectedVersion);
+        if (!fullyGraphedModules.contains(moduleNameVersion) && goRelationshipManager.hasRelationshipsFor(originalNameAndVersion)) { // grab relationships for OGname and OGSelectedversion
+            fullyGraphedModules.add(moduleNameVersion); // regardless of if its viper171 or viper 180, we only need to traverse the children of viper (selected version 180) once.
+            List<GoGraphRelationship> projectRelationships = goRelationshipManager.getRelationshipsFor(originalNameAndVersion);
             for (GoGraphRelationship projectRelationship : projectRelationships) {
                 addModuleToGraph(projectRelationship.getChild(), dependency, graph, goRelationshipManager, goModDependencyManager);
             }
