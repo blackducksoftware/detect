@@ -43,6 +43,7 @@ public class GoRelationshipManager {
         return excludedChildModules.contains(childModuleNameVersion.getName());
     }
 
+    ///  need to make this recursively
     public void addChildrenToExcludedModules(NameVersion parentModuleNameVersion) {
         if (hasRelationshipsFor(parentModuleNameVersion)) {
             List<GoGraphRelationship> relationships = getRelationshipsFor(parentModuleNameVersion);
@@ -50,8 +51,9 @@ public class GoRelationshipManager {
                 NameVersion childModuleNameVersion = r.getChild();
                excludedChildModules.add(childModuleNameVersion.getName());
                logger.debug("Excluding child module '{}' because its parent ('{}') is not used by the main module.", childModuleNameVersion.getName(), parentModuleNameVersion.getName());
+               logger.debug("Excluding next level of child modules...");
+               addChildrenToExcludedModules(childModuleNameVersion);
             }
-
         }
 
     }
