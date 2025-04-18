@@ -19,9 +19,7 @@ import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.functional.DetectableFunctionalTest;
 import com.blackduck.integration.detectable.util.graph.NameVersionGraphAssert;
 import com.blackduck.integration.executable.ExecutableOutput;
-import org.junit.jupiter.api.Disabled;
 
-@Disabled
 public class GoModDetectableUnusedTest extends DetectableFunctionalTest {
     public GoModDetectableUnusedTest() throws IOException {
         super("gomod");

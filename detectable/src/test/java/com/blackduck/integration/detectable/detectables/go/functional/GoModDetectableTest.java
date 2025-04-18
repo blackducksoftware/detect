@@ -13,14 +13,12 @@ import com.blackduck.integration.detectable.functional.DetectableFunctionalTest;
 import com.blackduck.integration.detectable.util.graph.NameVersionGraphAssert;
 import com.blackduck.integration.executable.ExecutableOutput;
 import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.Disabled;
 
 import java.io.IOException;
 import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Disabled
 public class GoModDetectableTest extends DetectableFunctionalTest {
     public GoModDetectableTest() throws IOException {
         super("gomod");
