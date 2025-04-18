@@ -88,7 +88,7 @@ public class GoModuleDependencyHelper {
         // look up the 'why' results for the module...  This will tell us
         // the (directly or indirectly) required dependency item that pulled this item into the mix.
         List<String> trackPath = whyMap.get(childModulePath);
-        if (trackPath != null && !trackPath.isEmpty() && !indicatesUnusedModule(trackPath, childModulePath)) {
+        if (trackPath != null && !trackPath.isEmpty() && !indicatesUnusedModule(trackPath)) {
             for (int i = trackPath.size() - 2; i >= 0 ; i--) {
                 String tp = trackPath.get(i);
                 String parentPath = allRequiredModulesPathsAndVersions.keySet().stream()
@@ -106,7 +106,7 @@ public class GoModuleDependencyHelper {
         return grphLine;
     }
 
-    private boolean indicatesUnusedModule(List<String> trackPath, String childModulePath) {
+    private boolean indicatesUnusedModule(List<String> trackPath) {
         return Arrays.stream(GoModWhyParser.UNUSED_MODULE_PREFIXES).anyMatch(trackPath.get(0)::contains);
     }
 
