@@ -28,7 +28,7 @@ public class GoModGraphGenerator {
         this.externalIdFactory = externalIdFactory;
     }
 
-    public CodeLocation generateGraph(GoListModule projectModule, GoRelationshipManager goRelationshipManager, GoModDependencyManager goModDependencyManager) {
+    public CodeLocation generateGraph(GoListModule projectModule, GoRelationshipManager goRelationshipManager, GoModDependencyManager goModDependencyManager, Set<String> excludedModules) {
         DependencyGraph graph = new BasicDependencyGraph();
         String mainModuleName = projectModule.getPath();
         NameVersion mainModuleNameVersion = new NameVersion(mainModuleName, projectModule.getVersion());
@@ -38,18 +38,25 @@ public class GoModGraphGenerator {
                 .forEach(childNameVersion -> addModuleToGraph(childNameVersion, null, graph, goRelationshipManager, goModDependencyManager));
         }
 
-        addOrphanModules(graph, goModDependencyManager);
+        addOrphanModules(graph, goModDependencyManager, excludedModules, mainModuleNameVersion);
 
         return new CodeLocation(graph, externalIdFactory.createNameVersionExternalId(Forge.GOLANG, projectModule.getPath(), projectModule.getVersion()));
     }
 
-    private void addOrphanModules(DependencyGraph graph, GoModDependencyManager goModDependencyManager) {
+    private void addOrphanModules(DependencyGraph graph, GoModDependencyManager goModDependencyManager, Set<String> excludedModules, NameVersion mainModuleNameVersion) {
+        // quick check areThereAnyOrphansToAdd()
+        // skip main
+        // skip unused or vendored IF flag was set. soooo we need excluded modules.
         for (Dependency requiredDependency : goModDependencyManager.getRequiredDependencies()) {
-            if (!graph.hasDependency(requiredDependency)) {
+            if (!graph.hasDependency(requiredDependency) && !excludedModules.contains(requiredDependency.getName()) && isNotMainModule(requiredDependency.getName(), requiredDependency.getVersion(), mainModuleNameVersion)) {
                 logger.debug("Adding orphan module '{}' as a direct dependency because no parent was found.", requiredDependency.getName());
                 graph.addDirectDependency(requiredDependency);
             }
         }
+    }
+
+    private boolean isNotMainModule(String name, String version, NameVersion mainModuleNameVersion) {
+        return !(name.equalsIgnoreCase(mainModuleNameVersion.getName()) && version == null);
     }
 
     private void addModuleToGraph(

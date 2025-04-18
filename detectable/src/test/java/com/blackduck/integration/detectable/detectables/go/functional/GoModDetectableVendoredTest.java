@@ -21,7 +21,6 @@ import com.blackduck.integration.detectable.util.graph.NameVersionGraphAssert;
 import com.blackduck.integration.executable.ExecutableOutput;
 import org.junit.jupiter.api.Disabled;
 
-@Disabled
 public class GoModDetectableVendoredTest extends DetectableFunctionalTest {
     public GoModDetectableVendoredTest() throws IOException {
         super("gomod");
