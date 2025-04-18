@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '10.4.0-SIGQA20-shanty.IDETECT-4684-fix-missing-go-modules-SNAPSHOT'
+version = '10.4.0-SIGQA20-shanty.IDETECT-4684-fix-missing-go-modules'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
