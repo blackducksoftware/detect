@@ -40,7 +40,7 @@ public class GoRelationshipManager {
 
     public boolean childExcludedForGoodReason(NameVersion childModuleNameVersion) {
         // child is not really an orphan, its parent is just excluded
-        return excludedModules.contains(childModuleNameVersion.getName());
+        return excludedChildModules.contains(childModuleNameVersion.getName());
     }
 
     public void addChildrenToExcludedModules(NameVersion parentModuleNameVersion) {
