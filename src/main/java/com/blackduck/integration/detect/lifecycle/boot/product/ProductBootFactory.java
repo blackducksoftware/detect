@@ -28,37 +28,26 @@ public class ProductBootFactory {
         this.detectConfigurationFactory = detectConfigurationFactory;
     }
 
-    private PhoneHomeManager createPhoneHomeManagerInternal(BlackDuckServicesFactory blackDuckServicesFactory, PhoneHomeCredentials phoneHomeCredentials, Boolean isAdminOperationAllowed) {
+    private PhoneHomeManager createPhoneHomeManagerInternal(BlackDuckServicesFactory blackDuckServicesFactory, PhoneHomeCredentials phoneHomeCredentials, boolean isAdminOperationAllowed) {
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         BlackDuckPhoneHomeHelper blackDuckPhoneHomeHelper = BlackDuckPhoneHomeHelper.createAsynchronousPhoneHomeHelper(
             blackDuckServicesFactory, phoneHomeCredentials.getApiSecret(), phoneHomeCredentials.getMeasurementId(), executorService);
-
-        if (isAdminOperationAllowed != null) {
-            return new OnlinePhoneHomeManager(
-                detectConfigurationFactory.createPhoneHomeOptions().getPassthrough(),
-                detectInfo,
-                eventSystem,
-                blackDuckPhoneHomeHelper,
-                isAdminOperationAllowed
-            );
-        } else {
-            return new OnlinePhoneHomeManager(
-                detectConfigurationFactory.createPhoneHomeOptions().getPassthrough(),
-                detectInfo,
-                eventSystem,
-                blackDuckPhoneHomeHelper
-            );
-        }
+        return new OnlinePhoneHomeManager(
+            detectConfigurationFactory.createPhoneHomeOptions().getPassthrough(),
+            detectInfo,
+            eventSystem,
+            blackDuckPhoneHomeHelper,
+            isAdminOperationAllowed
+        );
     }
 
     public PhoneHomeManager createPhoneHomeManager(BlackDuckServicesFactory blackDuckServicesFactory, PhoneHomeCredentials phoneHomeCredentials) {
-        return createPhoneHomeManagerInternal(blackDuckServicesFactory, phoneHomeCredentials, null);
+        return createPhoneHomeManagerInternal(blackDuckServicesFactory, phoneHomeCredentials, false);
     }
 
     public PhoneHomeManager createPhoneHomeManager(BlackDuckServicesFactory blackDuckServicesFactory, PhoneHomeCredentials phoneHomeCredentials, boolean isAdminOperationAllowed) {
         return createPhoneHomeManagerInternal(blackDuckServicesFactory, phoneHomeCredentials, isAdminOperationAllowed);
     }
-
     public BlackDuckServerConfig createBlackDuckServerConfig() throws DetectUserFriendlyException {
         BlackDuckConnectionDetails connectionDetails = detectConfigurationFactory.createBlackDuckConnectionDetails();
         BlackDuckConfigFactory blackDuckConfigFactory = new BlackDuckConfigFactory(detectInfo, connectionDetails);

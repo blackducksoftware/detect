@@ -10,15 +10,11 @@ import com.blackduck.integration.phonehome.PhoneHomeResponse;
 
 public class OnlinePhoneHomeManager extends PhoneHomeManager {
     private final BlackDuckPhoneHomeHelper blackDuckPhoneHomeHelper;
-    private boolean isAdminOperationAllowed;
-
-    public OnlinePhoneHomeManager(Map<String, String> additionalMetaData, DetectInfo detectInfo, EventSystem eventSystem, BlackDuckPhoneHomeHelper blackDuckPhoneHomeHelper) {
-        super(additionalMetaData, detectInfo, eventSystem);
-        this.blackDuckPhoneHomeHelper = blackDuckPhoneHomeHelper;
-    }
+    private final boolean isAdminOperationAllowed;
 
     public OnlinePhoneHomeManager(Map<String, String> additionalMetaData, DetectInfo detectInfo, EventSystem eventSystem, BlackDuckPhoneHomeHelper blackDuckPhoneHomeHelper, boolean isAdminOperationAllowed) {
-        this(additionalMetaData, detectInfo, eventSystem, blackDuckPhoneHomeHelper);
+        super(additionalMetaData, detectInfo, eventSystem);
+        this.blackDuckPhoneHomeHelper = blackDuckPhoneHomeHelper;
         this.isAdminOperationAllowed = isAdminOperationAllowed;
     }
 
