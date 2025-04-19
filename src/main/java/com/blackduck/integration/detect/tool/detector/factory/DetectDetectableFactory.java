@@ -63,8 +63,8 @@ import com.blackduck.integration.detectable.detectables.setuptools.tbuild.SetupT
 import com.blackduck.integration.detectable.detectables.setuptools.buildless.SetupToolsBuildlessDetectable;
 import com.blackduck.integration.detectable.detectables.swift.cli.SwiftCliDetectable;
 import com.blackduck.integration.detectable.detectables.swift.lock.SwiftPackageResolvedDetectable;
-import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildDetectable;
+import com.blackduck.integration.detectable.detectables.uv.lockfile.UVLockFileDetectable;
 import com.blackduck.integration.detectable.detectables.xcode.XcodeProjectDetectable;
 import com.blackduck.integration.detectable.detectables.xcode.XcodeWorkspaceDetectable;
 import com.blackduck.integration.detectable.detectables.yarn.YarnLockDetectable;
@@ -366,5 +366,9 @@ public class DetectDetectableFactory {
 
     public UVBuildDetectable createUVBuildDetectable(DetectableEnvironment environment) {
         return detectableFactory.createUVBuildDetectable(environment, detectExecutableResolver, detectableOptionFactory.createUVDetectorOptions());
+    }
+
+    public UVLockFileDetectable createUVLockfileDetectable(DetectableEnvironment environment) {
+        return detectableFactory.createUVLockFileDetectable(environment, detectableOptionFactory.createUVDetectorOptions());
     }
 }

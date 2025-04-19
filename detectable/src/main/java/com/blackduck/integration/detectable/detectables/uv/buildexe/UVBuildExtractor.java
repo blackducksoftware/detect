@@ -11,12 +11,10 @@ import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.executable.ExecutableOutput;
 import com.blackduck.integration.executable.ExecutableRunnerException;
 import com.blackduck.integration.util.NameVersion;
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
