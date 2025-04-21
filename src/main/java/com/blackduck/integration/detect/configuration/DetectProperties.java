@@ -1346,7 +1346,7 @@ public class DetectProperties {
             .build();
     
     public static final CaseSensitiveStringListProperty DETECT_PNPM_EXCLUDED_DIRECTORIES =
-            CaseSensitiveStringListProperty.newBuilder("detect.pnpm.excluded.directories")
+            CaseSensitiveStringListProperty.newBuilder("detect.pnpm.excluded.packages")
                 .setInfo("pnpm Exclude Directories", DetectPropertyFromVersion.VERSION_10_4_0)
                 .setHelp(
                     "A comma-separated list of pnpm directories to exclude.",
@@ -1357,7 +1357,7 @@ public class DetectProperties {
                 .build();
     
     public static final CaseSensitiveStringListProperty DETECT_PNPM_INCLUDED_DIRECTORIES =
-            CaseSensitiveStringListProperty.newBuilder("detect.pnpm.included.directories")
+            CaseSensitiveStringListProperty.newBuilder("detect.pnpm.included.packages")
                 .setInfo("pnpm Include Directories", DetectPropertyFromVersion.VERSION_10_4_0)
                 .setHelp(
                     "A comma-separated list of pnpm directories to include.",
@@ -1769,6 +1769,45 @@ public class DetectProperties {
             )
             .setGroups(DetectGroup.PATHS, DetectGroup.GLOBAL)
             .build();
+
+    public static final NullablePathProperty DETECT_UV_PATH =
+            NullablePathProperty.newBuilder("detect.uv.path")
+                    .setInfo("uv Executable", DetectPropertyFromVersion.VERSION_10_5_0)
+                    .setHelp("The path to the uv executable.")
+                    .setGroups(DetectGroup.UV, DetectGroup.GLOBAL)
+                    .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_UV_DEPENDENCY_GROUPS_EXCLUDED =
+            CaseSensitiveStringListProperty.newBuilder("detect.uv.dependency.groups.excluded")
+                    .setInfo("uv dependency groups", DetectPropertyFromVersion.VERSION_10_5_0)
+                    .setHelp(
+                            createTypeFilterHelpText("UV dependency groups"),
+                            "When specified, a pyproject.toml file and uv executable are required, or pyproject.toml file and either uv.lock or requirements.txt file are required. Components and related dependencies that belong to excluded groups will not be in the BOM unless the component also belongs to a non-excluded group. For example, to recursively exclude all components under the `[dependency-groups]` section of `pyproject.toml`: `detect.uv.dependency.groups.excluded='dev,abc'`"
+                    )
+                    .setGroups(DetectGroup.UV, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
+                    .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_UV_EXCLUDED_WORKSPACE_MEMBERS =
+            CaseSensitiveStringListProperty.newBuilder("detect.uv.excluded.workspace.members")
+                    .setInfo("uv Exclude Workspace Members", DetectPropertyFromVersion.VERSION_10_5_0)
+                    .setHelp(
+                            "A comma-separated list of uv workspace members to exclude.",
+                            "If set, Detect will only exclude those project members specified via this property when examining the uv project for dependencies."
+                    )
+                    .setGroups(DetectGroup.UV, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_UV_INCLUDED_WORKSPACE_MEMBERS =
+            CaseSensitiveStringListProperty.newBuilder("detect.uv.included.workspace.members")
+                    .setInfo("uv Include Workspace Members", DetectPropertyFromVersion.VERSION_10_5_0)
+                    .setHelp(
+                            "A comma-separated list of uv workspace members to include.",
+                            "If set, Detect will only include those uv workspace members specified via this property when examining the uv project for dependencies, unless the member is set for exclusion. Exclusion rules take precedence over inclusion. Leaving this property unset implies 'include all'."
+                    )
+                    .setGroups(DetectGroup.UV, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
 
     public static final BooleanProperty DETECT_YARN_IGNORE_ALL_WORKSPACES_MODE =
         BooleanProperty.newBuilder("detect.yarn.ignore.all.workspaces", false)

@@ -1,6 +1,6 @@
 # Auto-escaping Parameters
 
-In [detect_product_long] for Jenkins, several special parameters are automatically escaped. 
+In Jenkins integrations for [detect_product_long], several special parameters are automatically escaped. 
 The workflows pertaining to quotation marks and spaces are as follows.
 
 - Detect properties must be separated by spaces or carriage returns/line feeds.
@@ -8,7 +8,7 @@ The workflows pertaining to quotation marks and spaces are as follows.
 - Values containing single quotes must be surrounded with double quotation marks.
 - Values containing double quotes must be surrounded with single quotation marks.
 
-## Considerations for name escaping conventions
+## Considerations for name escaping conventions for [detect_product_long] for Jenkins
 
 You can turn off auto escaping by setting the environment variable *DETECT\_PLUGIN\_ESCAPING* to false.
 Jenkins enables you to set an environment variable at different levels, such as globally or on a per-job basis. If you set the environment variable globally to one value, you can set it at the job level to another value. It is recommended to set the environment variable globally to skip escaping (ensuring past jobs work as expected), and then if you want to make jobs with the auto escaping enabled, you modify the environment variable flag in that job's configuration to enable escaping the characters. The easiest way to accomplish this is to install the ["Environment Injector" Jenkins plugin](https://plugins.jenkins.io/envinject/).

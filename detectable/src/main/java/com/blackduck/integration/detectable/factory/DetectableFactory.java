@@ -9,6 +9,11 @@ import javax.xml.parsers.SAXParserFactory;
 import com.blackduck.integration.detectable.detectable.executable.resolver.*;
 import com.blackduck.integration.detectable.detectables.cargo.*;
 import com.blackduck.integration.detectable.detectables.cargo.transform.CargoDependencyGraphTransformer;
+import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
+import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildDetectable;
+import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildExtractor;
+import com.blackduck.integration.detectable.detectables.uv.parse.UVTomlParser;
+import com.blackduck.integration.detectable.detectables.uv.transform.UVTreeDependencyGraphTransformer;
 import org.xml.sax.SAXException;
 
 import com.google.gson.Gson;
@@ -704,6 +709,10 @@ public class DetectableFactory {
         return new OpamLockFileDetectable(environment, fileFinder, opamLockFileExtractor(environment.getDirectory()));
     }
 
+    public UVBuildDetectable createUVBuildDetectable(DetectableEnvironment environment, UVResolver uvResolver, UVDetectorOptions uvDetectorOptions) {
+        return new UVBuildDetectable(environment, fileFinder, uvResolver, uvBuildExtractor(environment.getDirectory()), uvDetectorOptions);
+    }
+
     // Used by three Detectables
     private PackageResolvedExtractor createPackageResolvedExtractor() {
         PackageResolvedParser parser = new PackageResolvedParser(gson);
@@ -1130,6 +1139,14 @@ public class DetectableFactory {
 
     private OpamLockFileExtractor opamLockFileExtractor(File sourceDirectory) {
         return new OpamLockFileExtractor(opamGraphTransformer(sourceDirectory));
+    }
+
+    private UVBuildExtractor uvBuildExtractor(File sourceDirectory) {
+        return new UVBuildExtractor(executableRunner, sourceDirectory, uvTreeDependencyGraphTransformer());
+    }
+
+    private UVTreeDependencyGraphTransformer uvTreeDependencyGraphTransformer() {
+        return new UVTreeDependencyGraphTransformer(externalIdFactory);
     }
 
 
