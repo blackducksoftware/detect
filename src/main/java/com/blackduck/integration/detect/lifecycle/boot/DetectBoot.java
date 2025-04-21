@@ -13,6 +13,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.Collections;
 
+import com.blackduck.integration.configuration.config.MaskedRawValueResult;
 import com.blackduck.integration.configuration.property.types.enumallnone.list.AllEnumList;
 import com.blackduck.integration.configuration.property.types.path.PathValue;
 import com.blackduck.integration.detect.configuration.connection.BlackDuckConnectionDetails;
@@ -340,17 +341,17 @@ public class DetectBoot {
     }
 
     private SortedMap<String, String> collectMaskedRawPropertyValues(PropertyConfiguration propertyConfiguration) {
-        Map<String, Object> result = propertyConfiguration.getMaskedRawValueMapWithMessage(
-                new HashSet<>(DetectProperties.allProperties().getProperties()),
-                DetectPropertyUtil.getPasswordsAndTokensPredicate()
+        MaskedRawValueResult result = propertyConfiguration.getMaskedRawValueResult(
+            new HashSet<>(DetectProperties.allProperties().getProperties()),
+            DetectPropertyUtil.getPasswordsAndTokensPredicate()
         );
-        String aggregatedMessage = (String) result.get("aggregatedMessage");
+
+        String aggregatedMessage = result.getAggregatedMessage();
         if (aggregatedMessage != null && !aggregatedMessage.isEmpty()) {
             DetectIssue.publish(eventSystem, DetectIssueType.PROPERTY_KEY, "Property Key Issue", aggregatedMessage);
         }
 
-        Map<String, String> rawMap = (Map<String, String>) result.get("rawMap");
-        return new TreeMap<>(rawMap);
+        return new TreeMap<>(result.getRawMap());
     }
 
     private void publishCollectedPropertyValues(Map<String, String> maskedRawPropertyValues) {

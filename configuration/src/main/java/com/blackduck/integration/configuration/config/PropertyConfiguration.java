@@ -240,13 +240,10 @@ public class PropertyConfiguration {
     // This method is used to get the masked raw value map with an aggregated message about invalid keys.
     // It uses the existing getMaskedRawValueMap method to get the valid properties and their values.
     @NotNull
-    public Map<String, Object> getMaskedRawValueMapWithMessage(@NotNull Set<Property> properties, Predicate<String> shouldMask) {
+    public MaskedRawValueResult getMaskedRawValueResult(@NotNull Set<Property> properties, Predicate<String> shouldMask) {
         Map<String, String> rawMap = getMaskedRawValueMap(properties, shouldMask);
         String aggregatedMessage = handleInvalidKeys(properties, getCurrentDetectPropertyKeys());
-        Map<String, Object> result = new HashMap<>();
-        result.put("rawMap", rawMap);
-        result.put("aggregatedMessage", aggregatedMessage);
-        return result;
+        return new MaskedRawValueResult(aggregatedMessage, rawMap);
     }
 
     // This method is used to get the current detect property keys from the property sources like command line args,
