@@ -52,8 +52,6 @@ public class GoRelationshipManager {
                if (!visitedModules.contains(childModuleNameVersion)) {
                    visitedModules.add(childModuleNameVersion);
                    excludedChildModules.add(childModuleNameVersion.getName());
-//                   logger.debug("Excluding child module '{}' because its parent ('{}') is not used by the main module.", childModuleNameVersion.getName(), parentModuleNameVersion.getName());
-//                   logger.debug("Excluding next level of child modules..."); // way too much logs for big projects ..
                    addChildrenToExcludedModules(childModuleNameVersion);
                }
 
