@@ -51,9 +51,7 @@ public class GoModGraphGenerator {
      * @param mainModuleNameVersion
      */
     private void addOrphanModules(DependencyGraph graph, GoModDependencyManager goModDependencyManager, GoRelationshipManager goRelationshipManager, Set<String> excludedModules, NameVersion mainModuleNameVersion) {
-        // quick check areThereAnyOrphansToAdd()
-        // skip main
-        // skip unused or vendored IF flag was set. soooo we need excluded modules.
+        // TODO a quick check afirst reThereAnyOrphansToAddInTheFirstPlace() to improve performance (check if graph has the same # of components as the # of required modules?)
         for (Dependency requiredDependency : goModDependencyManager.getRequiredDependencies()) {
             NameVersion requiredDepNameVersion = new NameVersion(requiredDependency.getName(), requiredDependency.getVersion());
             if (!graph.hasDependency(requiredDependency) && !excludedModules.contains(requiredDependency.getName())
@@ -76,22 +74,16 @@ public class GoModGraphGenerator {
         GoRelationshipManager goRelationshipManager,
         GoModDependencyManager goModDependencyManager
     ) {
-
-        if (moduleNameVersion.getName().contains("table")) {
-            System.out.println("adding table to graph?");
-        }
-
         if (goRelationshipManager.isModuleExcluded(moduleNameVersion)) {
             logger.debug("Excluding module '{}' because it is not used by the main module. All children of this module will also be excluded.", moduleNameVersion.getName());
-            // before returning we should make note of all the children of this excluded module so we do not assume they are true orphans at a later step and add them back in
+            // Before returning we should make note of all the children of this excluded module so we do not assume they are true orphans at a later step and incorrectly add them back to the graph
             goRelationshipManager.addChildrenToExcludedModules(moduleNameVersion);
             return;
         }
 
-        Dependency dependency = goModDependencyManager.getDependencyForModule(moduleNameVersion.getName()); // dependency always returns the replaced path and version if replace directive was applied.
-        // IF there was a replacement, what original module did this replace?
-        NameVersion originalNameAndVersion = goModDependencyManager.getOriginalRequiredNameAndVersion(moduleNameVersion.getName()); // this version IS the version we want to grab the relationships for.
-        // To prevent false positives, always grab the version of the module chosen by Go's minimal version selection
+        // To prevent false positives, always grab the version of the module chosen by Go's minimal version selection.
+        Dependency dependency = goModDependencyManager.getDependencyForModule(moduleNameVersion.getName()); // Always returns the replaced path and version if replace directives were applied.
+        NameVersion originalNameAndVersion = goModDependencyManager.getOriginalRequiredNameAndVersion(moduleNameVersion.getName());
 
         if (parent != null) {
             graph.addChildWithParent(dependency, parent);
@@ -99,8 +91,8 @@ public class GoModGraphGenerator {
             graph.addDirectDependency(dependency);
         }
 
-        if (!fullyGraphedModules.contains(moduleNameVersion) && goRelationshipManager.hasRelationshipsFor(originalNameAndVersion)) { // grab relationships for OGname and OGSelectedversion
-            fullyGraphedModules.add(moduleNameVersion); // regardless of if its viper171 or viper 180, we only need to traverse the children of viper (selected version 180) once.
+        if (!fullyGraphedModules.contains(moduleNameVersion) && goRelationshipManager.hasRelationshipsFor(originalNameAndVersion)) {
+            fullyGraphedModules.add(moduleNameVersion);
             List<GoGraphRelationship> projectRelationships = goRelationshipManager.getRelationshipsFor(originalNameAndVersion);
             for (GoGraphRelationship projectRelationship : projectRelationships) {
                 addModuleToGraph(projectRelationship.getChild(), dependency, graph, goRelationshipManager, goModDependencyManager);
