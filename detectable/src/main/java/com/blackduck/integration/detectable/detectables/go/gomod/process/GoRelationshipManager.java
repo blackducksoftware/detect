@@ -13,6 +13,7 @@ public class GoRelationshipManager {
     private final Map<NameVersion, List<GoGraphRelationship>> relationshipMap;
     private final Set<String> excludedModules;
     private final Set<String> excludedChildModules;
+    private final Set<NameVersion> visitedModules = new HashSet<>();
 
 
     public GoRelationshipManager(List<GoGraphRelationship> goGraphRelationships, Set<String> excludedModules) {
@@ -43,19 +44,21 @@ public class GoRelationshipManager {
         return excludedChildModules.contains(childModuleNameVersion.getName());
     }
 
-    ///  need to make this recursively
     public void addChildrenToExcludedModules(NameVersion parentModuleNameVersion) {
         if (hasRelationshipsFor(parentModuleNameVersion)) {
             List<GoGraphRelationship> relationships = getRelationshipsFor(parentModuleNameVersion);
             for (GoGraphRelationship r : relationships) {
-                NameVersion childModuleNameVersion = r.getChild();
-               excludedChildModules.add(childModuleNameVersion.getName());
-               logger.debug("Excluding child module '{}' because its parent ('{}') is not used by the main module.", childModuleNameVersion.getName(), parentModuleNameVersion.getName());
-               logger.debug("Excluding next level of child modules...");
-               addChildrenToExcludedModules(childModuleNameVersion);
+               NameVersion childModuleNameVersion = r.getChild();
+               if (!visitedModules.contains(childModuleNameVersion)) {
+                   visitedModules.add(childModuleNameVersion);
+                   excludedChildModules.add(childModuleNameVersion.getName());
+//                   logger.debug("Excluding child module '{}' because its parent ('{}') is not used by the main module.", childModuleNameVersion.getName(), parentModuleNameVersion.getName());
+//                   logger.debug("Excluding next level of child modules..."); // way too much logs for big projects ..
+                   addChildrenToExcludedModules(childModuleNameVersion);
+               }
+
             }
         }
-
     }
 
 }

@@ -82,7 +82,7 @@ public class GoModGraphGenerator {
         }
 
         if (goRelationshipManager.isModuleExcluded(moduleNameVersion)) {
-            logger.debug("Excluding module '{}' because it is not used by the main module.", moduleNameVersion.getName());
+            logger.debug("Excluding module '{}' because it is not used by the main module. All children of this module will also be excluded.", moduleNameVersion.getName());
             // before returning we should make note of all the children of this excluded module so we do not assume they are true orphans at a later step and add them back in
             goRelationshipManager.addChildrenToExcludedModules(moduleNameVersion);
             return;
