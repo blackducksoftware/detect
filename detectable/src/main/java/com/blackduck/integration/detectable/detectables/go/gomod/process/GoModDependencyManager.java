@@ -45,12 +45,8 @@ public class GoModDependencyManager {
         Map<String, Dependency> dependencies = new HashMap<>();
 
         for (GoListAllData module : allModules) {
-            if (module.getPath().contains("table")) {
-                System.out.println("applying replace directive to table");
-            }
-
-            /// Keep track of original module path and version
-            NameVersion ogNameVersion = new NameVersion(module.getPath(), module.getVersion()); // without replacements, without truncating commit hash version.
+            /// Keep track of original module path and version (without replacements, without truncating commit hash version)
+            NameVersion ogNameVersion = new NameVersion(module.getPath(), module.getVersion());
             originalRequiredNameAndVersion.putIfAbsent(module.getPath(), ogNameVersion);
 
             /// Apply replacements and version truncation if applicable
@@ -68,8 +64,8 @@ public class GoModDependencyManager {
                 }
             }
 
-            ///  Add dependency (will have replaced name/version = truncated commit hash if applicable)
-            dependencies.put(module.getPath(), convertToDependency(name, version)); // potentially modified if applicable
+            ///  Add dependency (will have replaced name/version + truncated commit hash if applicable)
+            dependencies.put(module.getPath(), convertToDependency(name, version));
         }
 
         return dependencies;
