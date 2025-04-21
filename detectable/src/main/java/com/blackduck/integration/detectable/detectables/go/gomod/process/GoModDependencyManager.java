@@ -30,7 +30,7 @@ public class GoModDependencyManager {
     public GoModDependencyManager(List<GoListAllData> allRequiredModules, ExternalIdFactory externalIdFactory) {
         this.externalIdFactory = externalIdFactory;
         modifiedVersionsMap = new HashMap<>(); // might no longer be necessary
-        originalRequiredNameAndVersion = new HashMap<>(); // (requiredModuleName, { unreplacedModuleName, untouchedUnreplacedVersion })
+        originalRequiredNameAndVersion = new HashMap<>();
         modulesAsDependencies = convertModulesToDependencies(allRequiredModules);
 
     }

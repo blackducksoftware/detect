@@ -33,13 +33,12 @@ public class GoModuleDependencyHelper {
         Map<String, List<String>> whyMap = whyListStructureTransform.convertWhyListToWhyMap(modWhyOutput);
         /* Correct lines that get mis-interpreted as a direct dependency, given the list of direct deps, requirements graph etc.*/
         for (String grphLine : originalModGraphOutput) {
-
-            if (grphLine.equalsIgnoreCase("github.com/olekukonko/tablewriter@v0.0.0-20170122224234-a0225b3f23b5 github.com/mattn/go-runewidth@v0.0.7")) {
-                System.out.println("weeeoooo");
-            }
             // Splitting here allows matching with less effort
             String[] splitLine = grphLine.split(" ");
-            // TODO check this is at least of size 2
+
+            if (splitLine.length != 2) {
+                continue;
+            }
 
             if(splitLine[1].startsWith("go@")) {
                 continue;
@@ -48,8 +47,8 @@ public class GoModuleDependencyHelper {
             boolean needsRedux = needsRedux(directs, splitLine[0], splitLine[1], main);
 
             if (needsRedux) {
-                /* Redo the line to establish the direct reference module to this *indirect* module*/
-                grphLine = this.getProperParentage(grphLine, splitLine, whyMap, correctedDependencies, main); // unnecessary work if we already found proper parent for req dep but now see (unreq -> req) so this is where we should call hasDependency() or just during the getParent method check we havent already corrected this one. Also add to correctedDependencies if its a direct module since that can appear again in the mod graph many times.
+                /* Redo the line to establish the appropriate parent for the indirect module before we begin graph building */
+                grphLine = this.getProperParentage(grphLine, splitLine, whyMap, correctedDependencies, main); // TODO: this could be unnecessary work if we already found proper parent for required dep but now see a line like (unreq -> req) so this is where we should call hasDependency() or just during the getProperParent method check we havent already found the right parent previously. Also add to correctedDependencies if its a direct module since that can appear again in the mod graph many times.
             }
             needsRedux(directs, splitLine[0], splitLine[1], main);
             goModGraph.add(grphLine);
@@ -85,7 +84,7 @@ public class GoModuleDependencyHelper {
 
     private String getProperParentage(String grphLine, String[] splitLine, Map<String, List<String>> whyMap, List<String> correctedDependencies, String main) {
         String childModulePath = splitLine[1].replaceAll("@.*", "");
-        correctedDependencies.add(childModulePath); // keep track of ones we've fixed.
+        correctedDependencies.add(childModulePath); // TODO keep track of ones we've fixed to prevent unnecessary double work.
 
 
         // look up the 'why' results for the module...  This will tell us
