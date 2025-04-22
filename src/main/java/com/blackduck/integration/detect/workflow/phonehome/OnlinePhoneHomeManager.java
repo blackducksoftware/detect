@@ -24,8 +24,7 @@ public class OnlinePhoneHomeManager extends PhoneHomeManager {
         metaDataToSend.putAll(metadata);
         metaDataToSend.putAll(detectorTypesMetadata);
         metaDataToSend.putAll(additionalMetaData);
-        metaDataToSend.put("isAdminOperationAllowed", Boolean.toString(isAdminOperationAllowed));
-        return blackDuckPhoneHomeHelper.handlePhoneHome("detect", detectInfo.getDetectVersion(), metaDataToSend, artifactModules);
+        return blackDuckPhoneHomeHelper.handlePhoneHome("detect", detectInfo.getDetectVersion(), metaDataToSend, isAdminOperationAllowed, artifactModules);
     }
 
 }
