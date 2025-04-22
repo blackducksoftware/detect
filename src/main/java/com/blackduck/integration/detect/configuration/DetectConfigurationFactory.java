@@ -16,7 +16,6 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import com.google.gson.Gson;
 import com.blackduck.integration.blackduck.api.generated.enumeration.PolicyRuleSeverityType;
 import com.blackduck.integration.blackduck.api.generated.enumeration.ProjectCloneCategoriesType;
 import com.blackduck.integration.blackduck.api.generated.enumeration.ProjectVersionDistributionType;
@@ -25,6 +24,7 @@ import com.blackduck.integration.blackduck.codelocation.signaturescanner.command
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.ReducedPersistence;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.SnippetMatching;
 import com.blackduck.integration.blackduck.configuration.BlackDuckServerConfig;
+import com.blackduck.integration.blackduck.version.BlackDuckVersion;
 import com.blackduck.integration.configuration.property.types.enumallnone.list.AllEnumList;
 import com.blackduck.integration.configuration.property.types.enumallnone.list.AllNoneEnumCollection;
 import com.blackduck.integration.configuration.property.types.enumallnone.list.AllNoneEnumList;
@@ -71,6 +71,7 @@ import com.blackduck.integration.rest.credentials.Credentials;
 import com.blackduck.integration.rest.credentials.CredentialsBuilder;
 import com.blackduck.integration.rest.proxy.ProxyInfo;
 import com.blackduck.integration.rest.proxy.ProxyInfoBuilder;
+import com.google.gson.Gson;
 
 public class DetectConfigurationFactory {
     private final DetectPropertyConfiguration detectConfiguration;
@@ -324,16 +325,24 @@ public class DetectConfigurationFactory {
         return parser.parseCustomFieldDocument(detectConfiguration.getRaw());
     }
 
-    public ProjectSyncOptions createDetectProjectServiceOptions() {
+    public ProjectSyncOptions createDetectProjectServiceOptions(Optional<BlackDuckVersion> blackDuckServerVersion) {
         ProjectVersionPhaseType projectVersionPhase = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_VERSION_PHASE);
         ProjectVersionDistributionType projectVersionDistribution = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_VERSION_DISTRIBUTION);
         Integer projectTier = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_TIER);
         String projectDescription = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_DESCRIPTION);
         String projectVersionNotes = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_VERSION_NOTES);
-        List<ProjectCloneCategoriesType> cloneCategories = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_CLONE_CATEGORIES).representedValues();
         Boolean projectLevelAdjustments = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_LEVEL_ADJUSTMENTS);
         Boolean forceProjectVersionUpdate = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_VERSION_UPDATE);
         String projectVersionNickname = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_VERSION_NICKNAME);
+        
+        List<ProjectCloneCategoriesType> cloneCategories;
+        AllNoneEnumList<ProjectCloneCategoriesType> categoriesEnum = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_CLONE_CATEGORIES);
+
+        if (canSendSummaryData(blackDuckServerVersion)) {
+            cloneCategories = categoriesEnum.representedValuesStreamlined();
+        } else {
+            cloneCategories = categoriesEnum.representedValues();
+        }
 
         return new ProjectSyncOptions(
             projectVersionPhase,
@@ -541,6 +550,27 @@ public class DetectConfigurationFactory {
         }
 
         return directoryExclusionPatterns;
+    }
+    
+    /**
+     * Newer BlackDuck servers allow us to send ALL and null values for project categories. BlackDuck will then 
+     * determine the appropriate values to display in the UI. For older servers we have to send all the values that we know
+     * about, for all, which can cause problems if we send a value Detect knows about but an older BlackDuck server does not.
+     * Eventually we can pull this code once all servers we support are 2023.10.0 or higher.
+     * 
+     * @param blackDuckServerVersion the version of the BlackDuck server specified in blackduck.url
+     * @return true if we can optimize the categories argument, false otherwise
+     */
+    private boolean canSendSummaryData(Optional<BlackDuckVersion> blackDuckServerVersion) {
+        boolean canSendSummaryData = false;
+
+        BlackDuckVersion minVersion = new BlackDuckVersion(2023, 10, 0);
+
+        if (blackDuckServerVersion.isPresent() && blackDuckServerVersion.get().isAtLeast(minVersion)) {
+            canSendSummaryData = true;
+        }
+
+        return canSendSummaryData;
     }
 
     public Optional<String> getContainerScanFilePath() {
