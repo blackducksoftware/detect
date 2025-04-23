@@ -24,12 +24,10 @@ public class GoModDependencyManager {
 
     private final ExternalIdFactory externalIdFactory;
     private final Map<String, Dependency> modulesAsDependencies;
-    private final Map<String, String> modifiedVersionsMap;
     private final Map<String, NameVersion> originalRequiredNameAndVersion;
 
     public GoModDependencyManager(List<GoListAllData> allRequiredModules, ExternalIdFactory externalIdFactory) {
         this.externalIdFactory = externalIdFactory;
-        modifiedVersionsMap = new HashMap<>(); // might no longer be necessary
         originalRequiredNameAndVersion = new HashMap<>();
         modulesAsDependencies = convertModulesToDependencies(allRequiredModules);
 
@@ -45,11 +43,11 @@ public class GoModDependencyManager {
         Map<String, Dependency> dependencies = new HashMap<>();
 
         for (GoListAllData module : allModules) {
-            /// Keep track of original module path and version (without replacements, without truncating commit hash version)
-            NameVersion ogNameVersion = new NameVersion(module.getPath(), module.getVersion());
-            originalRequiredNameAndVersion.putIfAbsent(module.getPath(), ogNameVersion);
+            // Keep track of original module path and version (without replacements, without truncating commit hash version)
+            NameVersion originalNameVersion = new NameVersion(module.getPath(), module.getVersion());
+            originalRequiredNameAndVersion.putIfAbsent(module.getPath(), originalNameVersion);
 
-            /// Apply replacements and version truncation if applicable
+            // Apply replacements and version truncation if applicable
             String name = Optional.ofNullable(module.getReplace())
                 .map(ReplaceData::getPath)
                 .orElse(module.getPath());
@@ -59,12 +57,11 @@ public class GoModDependencyManager {
             if (version != null) {
                 String kbCompatibleVersion = getKbCompatibleVersion(version);
                 if (!version.equals(kbCompatibleVersion)) {
-                    modifiedVersionsMap.put(kbCompatibleVersion, version);
                     version = kbCompatibleVersion;
                 }
             }
 
-            ///  Add dependency (will have replaced name/version + truncated commit hash if applicable)
+            //  Add dependency (will have replaced name/version + truncated commit hash if applicable)
             dependencies.put(module.getPath(), convertToDependency(name, version));
         }
 
@@ -78,15 +75,13 @@ public class GoModDependencyManager {
         return kbCompatibleVersion;
     }
 
+    /**
+     * @param moduleName The module name used for storing relationships that are used for graph building.
+     * @return The module name and version before any replace directives were applied. If version was modified
+     * for KB compatibility, this will return the version before any commit hash truncation was applied.
+     */
     public NameVersion getOriginalRequiredNameAndVersion(String moduleName) {
-           return originalRequiredNameAndVersion.get(moduleName); // todo handle null/not contain key
-    }
-
-    public String getOriginalVersionFromKbCompatibleVersion(String shortVersion) {
-        if (modifiedVersionsMap.containsKey(shortVersion)) {
-            return modifiedVersionsMap.get(shortVersion);
-        }
-        return shortVersion;
+           return originalRequiredNameAndVersion.getOrDefault(moduleName, new NameVersion("", ""));
     }
 
     public Collection<Dependency> getRequiredDependencies() {
