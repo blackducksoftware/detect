@@ -1,6 +1,7 @@
 package com.blackduck.integration.detectable.detectables.go.gomod.parse;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import com.blackduck.integration.detectable.detectables.go.gomod.model.GoListAllData;
 import com.blackduck.integration.detectable.detectables.go.gomod.process.WhyListStructureTransform;
@@ -17,21 +18,24 @@ public class GoModuleDependencyHelper {
     }
 
     /**
-     * Takes a string that will be incorrectly computed to be a direct dependency and corrects it, such that a
-     * true indirect dependency module will be associated with the required module that is its true parent.
-     * Eg. "main_module_name indirect_module" ->  "required_parent_module indirect_module"  - this will convert the
-     * requirements graph to a dependency graph. True direct dependencies will be left unchanged.
+     * Takes the output of go mod graph, and for each line of the form "moduleA moduleB", cleans it up such that the
+     * following modifications are made where applicable using the output of go mod why:
+     * "main_module indirect_module" ->  "true_parent_module indirect_module"
+     * "parent_but_unrequired_module required_moduleA" -> "parent_and_required_module required_moduleA"
+     * Where a required module refers to a module name and version that was actually resolved for the build.
+     * Ultimately this method takes in the requirements graph and outputs a dependency graph.
      * @param main - The string name of the main go module
      * @param directs - The obtained list of the main module's direct dependencies.
      * @param modWhyOutput - A list of all modules with their relationship to the main module
-     * @param originalModGraphOutput - The list produced by "go mod graph"- the intended "target".
+     * @param originalModGraphOutput - The list produced by "go mod graph"- the requirements graph
      * @return - the go mod why output cleaned up (duplicates removed + relationships corrected where applicable)
      */
     public Set<String> computeDependencies(String main, List<String> directs, List<String> modWhyOutput, List<String> originalModGraphOutput) {
         Set<String> goModGraph = new HashSet<>();
-        List<String> correctedDependencies = new ArrayList<>();
         Map<String, List<String>> whyMap = whyListStructureTransform.convertWhyListToWhyMap(modWhyOutput);
-        /* Correct lines that get mis-interpreted as a direct dependency, given the list of direct deps, requirements graph etc.*/
+        // Add all true direct dependencies to correctedDependencies to begin with so we avoid unnecessary work
+        Set<String> correctedDependencies = directs.stream().map(directModuleNameAndVersion -> directModuleNameAndVersion.split("@")[0]).collect(Collectors.toSet());
+
         for (String grphLine : originalModGraphOutput) {
             // Splitting here allows matching with less effort
             String[] splitLine = grphLine.split(" ");
@@ -48,14 +52,21 @@ public class GoModuleDependencyHelper {
 
             if (needsRedux) {
                 /* Redo the line to establish the appropriate parent for the indirect module before we begin graph building */
-                grphLine = this.getProperParentage(grphLine, splitLine, whyMap, correctedDependencies); // TODO: this could be unnecessary work if we already found proper parent for required dep but now see a line like (unreq -> req) so this is where we should call hasDependency() or just during the getProperParent method check we havent already found the right parent previously. Also add to correctedDependencies if its a direct module since that can appear again in the mod graph many times.
+                grphLine = this.getProperParentage(grphLine, splitLine, whyMap, correctedDependencies);
             }
             goModGraph.add(grphLine);
         }
         return goModGraph;
     }
 
-
+    /**
+     * @param directs
+     * @param parent
+     * @param child
+     * @param main
+     * @return true for requirements graph entries of the form:
+     * "main_module indirect_module" or "unrequired_module required_module"
+     */
     private boolean needsRedux(List<String> directs, String parent, String child, String main) {
         if ( (!isDirect(directs, child) && parent.equalsIgnoreCase(main)) || (isRequired(child) && !isRequired(parent)) )
             return true;
@@ -81,9 +92,10 @@ public class GoModuleDependencyHelper {
         return false;
     }
 
-    private String getProperParentage(String grphLine, String[] splitLine, Map<String, List<String>> whyMap, List<String> correctedDependencies) {
+    private String getProperParentage(String grphLine, String[] splitLine, Map<String, List<String>> whyMap, Set<String> correctedDependencies) {
         String childModulePath = splitLine[1].replaceAll("@.*", "");
-        correctedDependencies.add(childModulePath); // TODO keep track of ones we've fixed to prevent unnecessary double work.
+        // If we have already found the correct parent for this module, don't try to find it again
+        if (!correctedDependencies.add(childModulePath)) return grphLine;
 
 
         // look up the 'why' results for the module...  This will tell us
