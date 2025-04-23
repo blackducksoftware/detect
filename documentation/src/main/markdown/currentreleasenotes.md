@@ -33,6 +33,7 @@
 	* See [bd_product_long] SCA Scan Service (SCASS) notice above for information pertaining to IP addresses that require allow listing.
 * ReversingLabs Scans (`detect.tools=THREAT_INTEL`) has been deprecated.
 * The `detect.threatintel.scan.file.path` property has been deprecated. 
+* [detect_product_short] will now return a unique error code when sub processes experience "Out of memory" issues.
 
 ### Resolved issues
 
