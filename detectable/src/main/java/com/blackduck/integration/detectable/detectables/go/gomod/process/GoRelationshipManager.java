@@ -39,7 +39,7 @@ public class GoRelationshipManager {
         return excludedModules.contains(moduleNameVersion.getName());
     }
 
-    public boolean childExcludedForGoodReason(NameVersion childModuleNameVersion) {
+    public boolean isParentExcluded(NameVersion childModuleNameVersion) {
         // child is not really an orphan, its parent is just excluded
         return excludedChildModules.contains(childModuleNameVersion.getName());
     }
@@ -47,6 +47,8 @@ public class GoRelationshipManager {
     public void addChildrenToExcludedModules(NameVersion parentModuleNameVersion) {
         if (hasRelationshipsFor(parentModuleNameVersion)) {
             List<GoGraphRelationship> relationships = getRelationshipsFor(parentModuleNameVersion);
+            // When excluding a module during graph building, ensure all its children are also excluded so they do
+            // not remain in the graph as orphans
             for (GoGraphRelationship r : relationships) {
                NameVersion childModuleNameVersion = r.getChild();
                if (!visitedModules.contains(childModuleNameVersion)) {
@@ -58,5 +60,4 @@ public class GoRelationshipManager {
             }
         }
     }
-
 }

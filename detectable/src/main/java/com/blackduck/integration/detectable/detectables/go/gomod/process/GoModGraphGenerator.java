@@ -56,7 +56,7 @@ public class GoModGraphGenerator {
             NameVersion requiredDepNameVersion = new NameVersion(requiredDependency.getName(), requiredDependency.getVersion());
             if (!graph.hasDependency(requiredDependency) && !excludedModules.contains(requiredDependency.getName())
                     && isNotMainModule(requiredDependency.getName(), requiredDependency.getVersion(), mainModuleNameVersion)
-                    && !goRelationshipManager.childExcludedForGoodReason(requiredDepNameVersion)) {
+                    && !goRelationshipManager.isParentExcluded(requiredDepNameVersion)) {
                 logger.debug("Adding orphan module '{}' as a direct dependency because no parent was found.", requiredDependency.getName());
                 graph.addDirectDependency(requiredDependency);
             }
