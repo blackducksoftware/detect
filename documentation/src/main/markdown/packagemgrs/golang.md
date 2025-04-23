@@ -8,13 +8,13 @@
 
 [detect_product_short] has four detectors for GoLang:
 
-* Go Mod Cli (GO_MOD) detector (recommended)
+* Go Mod CLI (GO_MOD) detector (recommended)
 * Go Lock (GO_DEP) detector
 * Go Gradle (GO_GRADLE) detector
 * Go Vendor (GO_VENDOR) detector
 * Go Vndr (GO_VNDR) detector
 
-## Go Mod Cli (GO_MOD) detector
+## Go Mod CLI (GO_MOD) detector
 
 * Discovers dependencies of go language (GoLang) projects.
 * Attempts to run on your project if a go.mod file is found in your source directory.
