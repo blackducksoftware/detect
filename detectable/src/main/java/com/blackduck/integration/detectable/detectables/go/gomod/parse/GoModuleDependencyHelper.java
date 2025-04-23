@@ -48,9 +48,8 @@ public class GoModuleDependencyHelper {
 
             if (needsRedux) {
                 /* Redo the line to establish the appropriate parent for the indirect module before we begin graph building */
-                grphLine = this.getProperParentage(grphLine, splitLine, whyMap, correctedDependencies, main); // TODO: this could be unnecessary work if we already found proper parent for required dep but now see a line like (unreq -> req) so this is where we should call hasDependency() or just during the getProperParent method check we havent already found the right parent previously. Also add to correctedDependencies if its a direct module since that can appear again in the mod graph many times.
+                grphLine = this.getProperParentage(grphLine, splitLine, whyMap, correctedDependencies); // TODO: this could be unnecessary work if we already found proper parent for required dep but now see a line like (unreq -> req) so this is where we should call hasDependency() or just during the getProperParent method check we havent already found the right parent previously. Also add to correctedDependencies if its a direct module since that can appear again in the mod graph many times.
             }
-            needsRedux(directs, splitLine[0], splitLine[1], main);
             goModGraph.add(grphLine);
         }
         return goModGraph;
@@ -82,7 +81,7 @@ public class GoModuleDependencyHelper {
         return false;
     }
 
-    private String getProperParentage(String grphLine, String[] splitLine, Map<String, List<String>> whyMap, List<String> correctedDependencies, String main) {
+    private String getProperParentage(String grphLine, String[] splitLine, Map<String, List<String>> whyMap, List<String> correctedDependencies) {
         String childModulePath = splitLine[1].replaceAll("@.*", "");
         correctedDependencies.add(childModulePath); // TODO keep track of ones we've fixed to prevent unnecessary double work.
 
