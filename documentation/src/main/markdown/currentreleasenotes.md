@@ -42,8 +42,8 @@
 * (IDETECT-4641) - Improved [detect_product_short]'s Yarn detector to handle non-standard version entries for component dependencies.
 * (IDETECT-4602 & IDETECT-4180) - Resolved Go dependency scan issue that resulted in transitive dependencies assigned to incorrect parent.
 * (IDETECT-4594) - Resolved [detect_product_short] failing to handle duplicate keys in `package.json` files across npm, pnpm, Lerna, and Yarn projects.
-* (IDETECT-4467) - Resolved an issue where [detect_product_short] would exit with a 0 (zero) exit code despite dependency requirements not being met for PIP Native Inspector.
-	* The PIP Native Inspector will now exit with `code 15 - FAILURE_ACCURACY_NOT_MET` when it cannot resolve the dependency from the PIP cache. 
+* (IDETECT-4467) - Resolved an issue where [detect_product_short] would exit with a 0 (zero) success code despite dependency requirements not being met for PIP Native Inspector.
+	* The PIP Native Inspector will now exit with `code 15 - FAILURE_ACCURACY_NOT_MET` when it cannot resolve an expected dependency from the PIP cache. 
 
 ### Dependency updates
 * Upgraded and released Detect Docker Inspector version 11.2.0.
