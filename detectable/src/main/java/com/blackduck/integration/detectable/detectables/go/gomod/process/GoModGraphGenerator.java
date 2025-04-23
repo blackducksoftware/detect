@@ -51,7 +51,6 @@ public class GoModGraphGenerator {
      * @param mainModuleNameVersion
      */
     private void addOrphanModules(DependencyGraph graph, GoModDependencyManager goModDependencyManager, GoRelationshipManager goRelationshipManager, Set<String> excludedModules, NameVersion mainModuleNameVersion) {
-        // TODO a quick check afirst reThereAnyOrphansToAddInTheFirstPlace() to improve performance (check if graph has the same # of components as the # of required modules?)
         for (Dependency requiredDependency : goModDependencyManager.getRequiredDependencies()) {
             NameVersion requiredDepNameVersion = new NameVersion(requiredDependency.getName(), requiredDependency.getVersion());
             if (!graph.hasDependency(requiredDependency) && !excludedModules.contains(requiredDependency.getName())
