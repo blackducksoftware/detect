@@ -36,15 +36,17 @@ public class CargoCliDetectable extends Detectable {
     private final CargoResolver cargoResolver;
     private final CargoCliExtractor cargoCliExtractor;
     private final DetectableExecutableRunner executableRunner;
+    private final CargoCliDetectableOptions cargoCliDetectableOptions;
     private ExecutableTarget cargoExe;
     private File cargoToml;
 
-    public CargoCliDetectable(DetectableEnvironment environment, FileFinder fileFinder, CargoResolver cargoResolver, CargoCliExtractor cargoCliExtractor, DetectableExecutableRunner executableRunner) {
+    public CargoCliDetectable(DetectableEnvironment environment, FileFinder fileFinder, CargoResolver cargoResolver, CargoCliExtractor cargoCliExtractor, DetectableExecutableRunner executableRunner, CargoCliDetectableOptions cargoCliDetectableOptions) {
         super(environment);
         this.fileFinder = fileFinder;
         this.cargoResolver = cargoResolver;
         this.cargoCliExtractor = cargoCliExtractor;
         this.executableRunner = executableRunner;
+        this.cargoCliDetectableOptions = cargoCliDetectableOptions;
     }
 
     @Override
@@ -72,7 +74,7 @@ public class CargoCliDetectable extends Detectable {
     @Override
     public Extraction extract(ExtractionEnvironment extractionEnvironment) throws IOException, DetectableException, MissingExternalIdException, ExecutableRunnerException {
         try {
-            return cargoCliExtractor.extract(environment.getDirectory(), cargoExe, cargoToml);
+            return cargoCliExtractor.extract(environment.getDirectory(), cargoExe, cargoToml, cargoCliDetectableOptions);
         } catch (Exception e) {
             logger.error("Failed to extract Cargo dependencies.", e);
             return new Extraction.Builder().failure("Cargo extraction failed due to an exception: " + e.getMessage()).build();

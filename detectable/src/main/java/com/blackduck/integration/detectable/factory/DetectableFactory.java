@@ -353,11 +353,11 @@ public class DetectableFactory {
         return new CargoLockDetectable(environment, fileFinder, cargoExtractor);
     }
 
-    public CargoCliDetectable createCargoCliDetectable(DetectableEnvironment environment, CargoResolver cargoResolver) {
+    public CargoCliDetectable createCargoCliDetectable(DetectableEnvironment environment, CargoResolver cargoResolver, CargoCliDetectableOptions cargoCliDetectableOptions) {
         CargoDependencyGraphTransformer cargoDependencyTransformer= new CargoDependencyGraphTransformer(externalIdFactory);
         CargoTomlParser cargoTomlParser = new CargoTomlParser();
         CargoCliExtractor cargoCliExtractor = new CargoCliExtractor(executableRunner, cargoDependencyTransformer, cargoTomlParser);
-        return new CargoCliDetectable(environment, fileFinder, cargoResolver, cargoCliExtractor, executableRunner);
+        return new CargoCliDetectable(environment, fileFinder, cargoResolver, cargoCliExtractor, executableRunner, cargoCliDetectableOptions);
     }
 
 

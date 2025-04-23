@@ -16,6 +16,7 @@ import org.apache.commons.io.FileUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -32,8 +33,15 @@ public class CargoCliExtractor {
         this.cargoTomlParser = cargoTomlParser;
     }
 
-    public Extraction extract(File directory, ExecutableTarget cargoExe, File cargoTomlFile) throws ExecutableFailedException, IOException {
-        ExecutableOutput cargoOutput = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(directory, cargoExe, CARGO_TREE_COMMAND));
+    public Extraction extract(File directory, ExecutableTarget cargoExe, File cargoTomlFile, CargoCliDetectableOptions cargoCliDetectableOptions) throws ExecutableFailedException, IOException {
+        List<String> cargoTreeCommand = new ArrayList<>(CARGO_TREE_COMMAND);
+
+        if (cargoCliDetectableOptions.getDependencyTypeFilter().shouldExclude(CargoDependencyType.DEV)) {
+            cargoTreeCommand.add("--edges");
+            cargoTreeCommand.add("normal,build");
+        }
+
+        ExecutableOutput cargoOutput = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(directory, cargoExe, cargoTreeCommand));
         List<String> cargoTreeOutput = cargoOutput.getStandardOutputAsList();
 
         DependencyGraph graph = cargoDependencyTransformer.transform(cargoTreeOutput);

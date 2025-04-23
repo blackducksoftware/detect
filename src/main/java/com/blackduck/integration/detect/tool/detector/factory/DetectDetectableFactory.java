@@ -124,7 +124,7 @@ public class DetectDetectableFactory {
     }
 
     public CargoCliDetectable createCargoCliDetectable(DetectableEnvironment environment) {
-        return detectableFactory.createCargoCliDetectable(environment, detectExecutableResolver);
+        return detectableFactory.createCargoCliDetectable(environment, detectExecutableResolver, detectableOptionFactory.createCargoCliDetectableOptions());
     }
 
     public CarthageLockDetectable createCarthageDetectable(DetectableEnvironment environment) {
