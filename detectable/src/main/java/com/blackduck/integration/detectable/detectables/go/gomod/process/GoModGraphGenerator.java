@@ -28,17 +28,42 @@ public class GoModGraphGenerator {
         this.externalIdFactory = externalIdFactory;
     }
 
-    public CodeLocation generateGraph(GoListModule projectModule, GoRelationshipManager goRelationshipManager, GoModDependencyManager goModDependencyManager) {
+    public CodeLocation generateGraph(GoListModule projectModule, GoRelationshipManager goRelationshipManager, GoModDependencyManager goModDependencyManager, Set<String> excludedModules) {
         DependencyGraph graph = new BasicDependencyGraph();
-        String moduleName = projectModule.getPath();
-        NameVersion moduleNameVersion = new NameVersion(moduleName, projectModule.getVersion());
-        if (goRelationshipManager.hasRelationshipsFor(moduleNameVersion)) {
-            goRelationshipManager.getRelationshipsFor(moduleNameVersion).stream()
+        String mainModuleName = projectModule.getPath();
+        NameVersion mainModuleNameVersion = new NameVersion(mainModuleName, projectModule.getVersion());
+        if (goRelationshipManager.hasRelationshipsFor(mainModuleNameVersion)) {
+            goRelationshipManager.getRelationshipsFor(mainModuleNameVersion).stream()
                 .map(relationship -> relationship.getChild())
                 .forEach(childNameVersion -> addModuleToGraph(childNameVersion, null, graph, goRelationshipManager, goModDependencyManager));
         }
 
+        addOrphanModules(graph, goModDependencyManager, goRelationshipManager, excludedModules, mainModuleNameVersion);
+
         return new CodeLocation(graph, externalIdFactory.createNameVersionExternalId(Forge.GOLANG, projectModule.getPath(), projectModule.getVersion()));
+    }
+
+    /**
+     * An orphan is a required Go module whose parent cannot be determined from the outputs of 'go mod why' or 'go mod graph'
+     * @param graph
+     * @param goModDependencyManager
+     * @param excludedModules vendored or unused modules
+     * @param mainModuleNameVersion
+     */
+    private void addOrphanModules(DependencyGraph graph, GoModDependencyManager goModDependencyManager, GoRelationshipManager goRelationshipManager, Set<String> excludedModules, NameVersion mainModuleNameVersion) {
+        for (Dependency requiredDependency : goModDependencyManager.getRequiredDependencies()) {
+            NameVersion requiredDepNameVersion = new NameVersion(requiredDependency.getName(), requiredDependency.getVersion());
+            if (!graph.hasDependency(requiredDependency) && !excludedModules.contains(requiredDependency.getName())
+                    && isNotMainModule(requiredDependency.getName(), requiredDependency.getVersion(), mainModuleNameVersion)
+                    && !goRelationshipManager.isParentExcluded(requiredDepNameVersion)) {
+                logger.debug("Adding orphan module '{}' as a direct dependency because no parent was found.", requiredDependency.getName());
+                graph.addDirectDependency(requiredDependency);
+            }
+        }
+    }
+
+    private boolean isNotMainModule(String name, String version, NameVersion mainModuleNameVersion) {
+        return !(name.equalsIgnoreCase(mainModuleNameVersion.getName()) && version == null);
     }
 
     private void addModuleToGraph(
@@ -48,13 +73,16 @@ public class GoModGraphGenerator {
         GoRelationshipManager goRelationshipManager,
         GoModDependencyManager goModDependencyManager
     ) {
-        if (goRelationshipManager.isModuleExcluded(moduleNameVersion.getName())) {
-            logger.debug("Excluding module '{}' because it is not used by the main module.", moduleNameVersion.getName());
+        if (goRelationshipManager.isModuleExcluded(moduleNameVersion)) {
+            logger.debug("Excluding module '{}' because it is not used by the main module. All children of this module will also be excluded.", moduleNameVersion.getName());
+            // Before returning we should make note of all the children of this excluded module so we do not assume they are true orphans at a later step and incorrectly add them back to the graph
+            goRelationshipManager.addChildrenToExcludedModules(moduleNameVersion);
             return;
         }
 
-        Dependency dependency = goModDependencyManager.getDependencyForModule(moduleNameVersion.getName());
-        NameVersion moduleNameSelectedVersion = new NameVersion(dependency.getName(), goModDependencyManager.getOriginalVersionFromKbCompatibleVersion(dependency.getVersion()));
+        // To prevent false positives, always grab the version of the module chosen by Go's minimal version selection.
+        Dependency dependency = goModDependencyManager.getDependencyForModule(moduleNameVersion.getName()); // Always returns the replaced path and version if replace directives were applied.
+        NameVersion originalNameAndVersion = goModDependencyManager.getOriginalRequiredNameAndVersion(moduleNameVersion.getName());
 
         if (parent != null) {
             graph.addChildWithParent(dependency, parent);
@@ -62,9 +90,9 @@ public class GoModGraphGenerator {
             graph.addDirectDependency(dependency);
         }
 
-        if (!fullyGraphedModules.contains(moduleNameSelectedVersion) && goRelationshipManager.hasRelationshipsFor(moduleNameSelectedVersion)) {
-            fullyGraphedModules.add(moduleNameSelectedVersion);
-            List<GoGraphRelationship> projectRelationships = goRelationshipManager.getRelationshipsFor(moduleNameSelectedVersion);
+        if (!fullyGraphedModules.contains(moduleNameVersion) && goRelationshipManager.hasRelationshipsFor(originalNameAndVersion)) {
+            fullyGraphedModules.add(moduleNameVersion);
+            List<GoGraphRelationship> projectRelationships = goRelationshipManager.getRelationshipsFor(originalNameAndVersion);
             for (GoGraphRelationship projectRelationship : projectRelationships) {
                 addModuleToGraph(projectRelationship.getChild(), dependency, graph, goRelationshipManager, goModDependencyManager);
             }
