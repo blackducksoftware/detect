@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 
 public class GoModWhyParser {
-    private static final String[] UNUSED_MODULE_PREFIXES = new String[] {
+    public static final String[] UNUSED_MODULE_PREFIXES = new String[] {
         "(main module does not need module",
         "(main module does not need to vendor module"
     };

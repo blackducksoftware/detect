@@ -209,7 +209,6 @@
 ### New features
 
 * ReversingLabs Scans - this new feature provides analysis of software packages for file-based malware threats.
-	See [ReversingLabs Scans](runningdetect/threatintelscan.md) for further information.
 * Component Location Analysis upgraded to certify support for location of components in Yarn Lock and Nuget Centralized Package Management files.
 * Added support for Gradles rich model for declaring versions, allowing the combination of different levels of version information. See [rich version declarations](packagemgrs/gradle.md#rich-version-declaration-support).
 
