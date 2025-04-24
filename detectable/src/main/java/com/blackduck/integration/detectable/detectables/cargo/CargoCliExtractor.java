@@ -36,10 +36,7 @@ public class CargoCliExtractor {
     public Extraction extract(File directory, ExecutableTarget cargoExe, File cargoTomlFile, CargoCliDetectableOptions cargoCliDetectableOptions) throws ExecutableFailedException, IOException {
         List<String> cargoTreeCommand = new ArrayList<>(CARGO_TREE_COMMAND);
 
-        if (cargoCliDetectableOptions.getDependencyTypeFilter().shouldExclude(CargoDependencyType.DEV)) {
-            cargoTreeCommand.add("--edges");
-            cargoTreeCommand.add("normal,build");
-        }
+        addEdgeExclusions(cargoTreeCommand, cargoCliDetectableOptions);
 
         ExecutableOutput cargoOutput = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(directory, cargoExe, cargoTreeCommand));
         List<String> cargoTreeOutput = cargoOutput.getStandardOutputAsList();
@@ -58,5 +55,22 @@ public class CargoCliExtractor {
             .success(codeLocation)
             .nameVersionIfPresent(projectNameVersion)
             .build();
+    }
+
+    private void addEdgeExclusions(List<String> cargoTreeCommand, CargoCliDetectableOptions options) {
+        List<String> exclusions = new ArrayList<>();
+
+        if (options.getDependencyTypeFilter().shouldExclude(CargoDependencyType.DEV)) {
+            exclusions.add("no-dev");
+        }
+
+        if (options.getDependencyTypeFilter().shouldExclude(CargoDependencyType.BUILD)) {
+            exclusions.add("no-build");
+        }
+
+        if (!exclusions.isEmpty()) {
+            cargoTreeCommand.add("--edges");
+            cargoTreeCommand.add(String.join(",", exclusions));
+        }
     }
 }
