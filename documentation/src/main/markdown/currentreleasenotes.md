@@ -22,7 +22,7 @@
 
 ### New Features
 
-* Support for UV Package Manager has been added under [UV Detector](packagemgrs/python.md#uv-detector)
+* Support for UV Package Manager has been added under [UV Detector](packagemgrs/python.md#uv-package-manager)
 
 ### Resolved issues
 
