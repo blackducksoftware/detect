@@ -16,6 +16,7 @@
 	* Pip Native Inspector
 	* Pip Requirements File Parse
 * Poetry detector
+* UV detector
 
 ## Setuptools detector
 
@@ -77,7 +78,7 @@ Pip Native Inspector runs the [pip-inspector.py script](https://github.com/black
 
 ### Recommendations for Pip Detector
 
-* Be sure that [detect_product_short] is locating the correct verion of the Python executable; this can be done by running the logging level at DEBUG and then reading the log. This is a particular concern if your system has multiple versions of Python installed.
+* Be sure that [detect_product_short] is locating the correct version of the Python executable; this can be done by running the logging level at DEBUG and then reading the log. This is a particular concern if your system has multiple versions of Python installed.
 * Create a setup.py file for your project.
 * Install your project and dependencies into the pip cache:
 ````
@@ -116,3 +117,27 @@ The Poetry detector parses poetry.lock for dependency information. If the detect
 The Poetry detector extracts the project's name and version from the pyproject.toml file.  If it does not find a pyproject.toml file, it will defer to values derived by git, from the project's directory, or defaults.
 
 When the `--detect.poetry.dependency.groups.excluded` property is specified, presence of both poetry.lock and pyproject.toml files is required for this detector to run successfully.
+
+## UV detector
+
+UV detector will run on your project if a pyproject.toml file containing section `[tool.uv] managed = true` is found. The UV detector extracts the project's name and version from the pyproject.toml file. If it does not find that in a pyproject.toml file, it will defer to default values.
+
+UV has two detectors:
+
+### UV CLI detector
+
+UV CLI will run if an uv executable is found along with pyproject.toml file. It will run uv tree commands to find dependencies for the project. 
+
+### UV Lockfile detector
+
+UV Lock detector will run if uv executable is not found and either an uv.lock or requirements.txt is found along with in the source directory of the project.
+
+UV Lock detector will parse uv.lock, requirements.txt or both to find dependencies for the project.
+
+<note type="note">[detect_product_short] UV Lock detector will run if there is no uv.lock in the source, but it is usually recommended to have an uv.lock file for the highest accuracy in results. Just requirements.txt will be considered LOW accuracy since there is no source information for the dependency.</note>
+
+### Dependency and Workspace Inclusions/Exclusions
+
+[UV Properties](../properties/detectors/uv.md) supports exclusion of all the dependency groups specified. Since uv has a concept of workspaces, they can be included and excluded using the properties provided. 
+The workspace member provided in the property should be identical to key name under `tool.uv.sources` for highest matching since dependencies are created under same key name in tree and uv.lock file. 
+For excluding dependency groups and workspaces, presence of uv.lock or uv executable is required.
