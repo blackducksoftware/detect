@@ -13,13 +13,23 @@
 ### Changed features
 
 * If the URL configured for SCA Scan Service (SCASS) is inaccessible when [detect_product_short] attempts a binary or container scan, [detect_product_short] will retry the scan without using SCASS.
-    * See [bd_product_long] SCA Scan Service (SCASS) notice above for information pertaining to IP addresses that require allow listing.
+	* See [bd_product_long] SCA Scan Service (SCASS) notice above for information pertaining to IP addresses that require allow listing.
+* ReversingLabs Scans (`detect.tools=THREAT_INTEL`) has been deprecated.
+* The `detect.threatintel.scan.file.path` property has been deprecated. 
+* [detect_product_short] will now return a unique error code `code 16 - FAILURE_OUT_OF_MEMORY` when sub processes experience "Out of memory" issues.
+* PIP Native Inspector now supports Python 3.12+.
 
 ### Resolved issues
 
 * (IDETECT-4642) - Improved handling of pnpm packages that contain detailed version information in the pnpm-lock.yaml. Resolving [detect_product_short] missing some packages through failure to link direct and transitive dependencies. 
 * (IDETECT-4641) - Improved [detect_product_short]'s Yarn detector to handle non-standard version entries for component dependencies.
+* (IDETECT-4602 & IDETECT-4180) - Resolved Go dependency scan issue that resulted in transitive dependencies assigned to incorrect parent. (For further details on how the Go Mod CLI detector determines parents, please see [GoLang support](packagemgrs/golang.md).)
 * (IDETECT-4594) - Resolved [detect_product_short] failing to handle duplicate keys in `package.json` files across npm, pnpm, Lerna, and Yarn projects.
+* (IDETECT-4467) - Resolved an issue where [detect_product_short] would exit with a 0 (zero) success code despite dependency requirements not being met for PIP Native Inspector.
+	* The PIP Native Inspector will yield to other detectors when it cannot resolve an expected dependency from the PIP cache.
+
+### Dependency updates
+* Upgraded and released Detect Docker Inspector version 11.2.0.
 
 ## Version 10.3.0
 
@@ -209,7 +219,6 @@
 ### New features
 
 * ReversingLabs Scans - this new feature provides analysis of software packages for file-based malware threats.
-	See [ReversingLabs Scans](runningdetect/threatintelscan.md) for further information.
 * Component Location Analysis upgraded to certify support for location of components in Yarn Lock and Nuget Centralized Package Management files.
 * Added support for Gradles rich model for declaring versions, allowing the combination of different levels of version information. See [rich version declarations](packagemgrs/gradle.md#rich-version-declaration-support).
 

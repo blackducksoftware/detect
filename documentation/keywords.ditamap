@@ -17,7 +17,6 @@
   <keydef keys="var_company_support"><topicmeta><keywords><keyword>Technical Support</keyword></keywords></topicmeta></keydef>
   <keydef keys="var_bu_name"><topicmeta><keywords><keyword>Black Duck</keyword></keywords></topicmeta></keydef>
   <keydef keys="binary_repo_type"><topicmeta><keywords><keyword>Artifactory</keyword></keywords></topicmeta></keydef>
-  <keydef keys="threat_intel"><topicmeta><keywords><keyword>ReversingLabs</keyword></keywords></topicmeta></keydef>
   <keydef keys="source_project_name"><topicmeta><keywords><keyword>blackduck-detect</keyword></keywords></topicmeta></keydef>
   <keydef keys="bash_script_name"><topicmeta><keywords><keyword>detect10.sh</keyword></keywords></topicmeta></keydef>
   <keydef keys="powershell_script_name"><topicmeta><keywords><keyword>detect10.ps1</keyword></keywords></topicmeta></keydef>

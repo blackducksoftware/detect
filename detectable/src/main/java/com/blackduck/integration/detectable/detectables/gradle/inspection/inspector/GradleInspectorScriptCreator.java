@@ -31,26 +31,16 @@ public class GradleInspectorScriptCreator {
         this.configuration = configuration;
     }
 
-    public File createOfflineGradleInspector(File targetFile, GradleInspectorScriptOptions scriptOptions, String airGapLibraryPaths) throws DetectableException {
-        return createGradleInspector(targetFile, scriptOptions, airGapLibraryPaths);
-    }
-
-    public File createOnlineGradleInspector(File targetFile, GradleInspectorScriptOptions scriptOptions) throws DetectableException {
-        return createGradleInspector(targetFile, scriptOptions, null);
-    }
-
-    private File createGradleInspector(File targetFile, GradleInspectorScriptOptions scriptOptions, String airGapLibraryPaths) throws DetectableException {
+    public File createGradleInspector(File targetFile, GradleInspectorScriptOptions scriptOptions) throws DetectableException {
         logger.debug("Generating the gradle script file.");
         Map<String, String> gradleScriptData = new HashMap<>();
 
-        gradleScriptData.put("airGapLibsPath", StringEscapeUtils.escapeJava(Optional.ofNullable(airGapLibraryPaths).orElse("")));
         gradleScriptData.put("excludedProjectNames", toCommaSeparatedString(scriptOptions.getExcludedProjectNames()));
         gradleScriptData.put("includedProjectNames", toCommaSeparatedString(scriptOptions.getIncludedProjectNames()));
         gradleScriptData.put("excludedProjectPaths", StringEscapeUtils.escapeJava(toCommaSeparatedString(scriptOptions.getExcludedProjectPaths())));
         gradleScriptData.put("includedProjectPaths", StringEscapeUtils.escapeJava(toCommaSeparatedString(scriptOptions.getIncludedProjectPaths())));
         gradleScriptData.put("excludedConfigurationNames", toCommaSeparatedString(scriptOptions.getExcludedConfigurationNames()));
         gradleScriptData.put("includedConfigurationNames", toCommaSeparatedString(scriptOptions.getIncludedConfigurationNames()));
-        gradleScriptData.put("customRepositoryUrl", scriptOptions.getGradleInspectorRepositoryUrl());
         gradleScriptData.put("rootOnlyOption", Boolean.toString(scriptOptions.isRootOnly()));
 
         try {
