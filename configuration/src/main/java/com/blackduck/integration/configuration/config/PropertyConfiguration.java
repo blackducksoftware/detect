@@ -1,17 +1,15 @@
 package com.blackduck.integration.configuration.config;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.SortedMap;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.similarity.JaroWinklerSimilarity;
+import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import com.blackduck.integration.configuration.config.resolution.NoPropertyResolution;
@@ -31,11 +29,13 @@ import com.blackduck.integration.configuration.property.base.ValuedProperty;
 import com.blackduck.integration.configuration.source.PropertySource;
 
 public class PropertyConfiguration {
+    private static final Logger logger = LoggerFactory.getLogger(PropertyConfiguration.class);
     private final Map<String, PropertyResolution> resolutionCache = new HashMap<>();
     private final Map<String, PropertyValue<?>> valueCache = new HashMap<>();
     private final List<PropertySource> orderedPropertySources;
     private SortedMap<String, String> scanSettingsProperties;
     private static final String SCAN_SETTINGS_FAILURE_MSG = "There was an error parsing the value from Scan Settings File";
+    private static final String DETECT_PROPERTY_DOC_URL = "https://documentation.blackduck.com/bundle/detect/page/properties/all-properties.html";
 
     public PropertyConfiguration(@NotNull List<PropertySource> orderedPropertySources, SortedMap<String, String> scanSettingsProperties) {
         this.orderedPropertySources = orderedPropertySources;
@@ -235,6 +235,77 @@ public class PropertyConfiguration {
             }
         }
         return rawMap;
+    }
+
+    // This method is used to get the masked raw value map with an aggregated message about invalid keys.
+    // It uses the existing getMaskedRawValueMap method to get the valid properties and their values.
+    @NotNull
+    public MaskedRawValueResult getMaskedRawValueResult(@NotNull Set<Property> properties, Predicate<String> shouldMask) {
+        Map<String, String> rawMap = getMaskedRawValueMap(properties, shouldMask);
+        String aggregatedMessage = handleInvalidKeys(properties, getCurrentDetectPropertyKeys());
+        return new MaskedRawValueResult(aggregatedMessage, rawMap);
+    }
+
+    // This method is used to get the current detect property keys from the property sources like command line args,
+    // configuration file, environment variables etc.
+    @NotNull
+    public Set<String> getCurrentDetectPropertyKeys() {
+        LevenshteinDistance levenshtein = new LevenshteinDistance();
+        int maxDistance = 3;
+
+        return orderedPropertySources.stream()
+                .map(PropertySource::getKeys)
+                .flatMap(Set::stream)
+                .filter(key -> isMatchingKey(key, levenshtein, maxDistance))
+                .collect(Collectors.toSet());
+    }
+
+    // This method checks if the property key extracted from the sources matches any of the `detect` or `blackduck`
+    // related property keys using Levenshtein distance algorithm.
+    private boolean isMatchingKey(String key, LevenshteinDistance levenshtein, int maxDistance) {
+        String[] segments = key.split("\\.");
+        return levenshtein.apply(segments[0], "detect") <= maxDistance ||
+                levenshtein.apply(segments[0], "blackduck") <= maxDistance ||
+                (segments.length > 1 &&
+                        levenshtein.apply(segments[0], "logging") <= maxDistance &&
+                        levenshtein.apply(segments[1], "level") <= maxDistance);
+    }
+
+    // This method is used to handle invalid keys by checking if they are present in the valid keys set.
+    // If not, it suggests similar keys using Jaro-Winkler similarity algorithm.
+    public static String handleInvalidKeys(Set<Property> properties, Set<String> currentPropertyKeys) {
+        Set<String> validKeys = properties.stream().map(Property::getKey).collect(Collectors.toSet());
+        validKeys.addAll(ExternalProperties.getAllExternalPropertyKeys());
+        JaroWinklerSimilarity jaroWinkler = new JaroWinklerSimilarity();
+        StringBuilder aggregatedMessage = new StringBuilder();
+        List<String> invalidKeys = new ArrayList<>();
+
+        for (String key : currentPropertyKeys) {
+            if (!validKeys.contains(key)) {
+                invalidKeys.add(key);
+                List<String> similarKeys = findSimilarKeys(key, validKeys, jaroWinkler);
+                if (!similarKeys.isEmpty()) {
+                    String message = String.format("Property key '%s' is not valid. The most similar keys are: %s", key, similarKeys);
+                    logger.warn(message);
+                }
+            }
+        }
+        if (!invalidKeys.isEmpty()) {
+            aggregatedMessage.append("The following property keys are not valid: ")
+                    .append(String.join(", ", invalidKeys))
+                    .append(String.format(". For a comprehensive list of detect properties, visit: %s", DETECT_PROPERTY_DOC_URL));
+        }
+        return aggregatedMessage.toString();
+    }
+
+    // This method finds similar keys to the invalid key using Jaro-Winkler similarity algorithm.
+    // jaroWinklerThreshold value is set to 0.94 for a strict match. Thus suggesting most appropriate property keys.
+    public static List<String> findSimilarKeys(String invalidKey, Set<String> validKeys, JaroWinklerSimilarity jaroWinkler) {
+        double jaroWinklerThreshold = 0.94;
+        return validKeys.stream()
+                .filter(key -> jaroWinkler.apply(invalidKey, key) >= jaroWinklerThreshold)
+                .sorted(Comparator.comparingDouble(key -> -jaroWinkler.apply(invalidKey, key)))
+                .collect(Collectors.toList());
     }
 
     public String maskValue(String rawKey, String rawValue, Predicate<String> shouldMask) {
