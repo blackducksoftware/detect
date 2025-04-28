@@ -164,7 +164,12 @@ public class UVTreeDependencyGraphTransformer {
             return null;
         }
 
-        ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.PYPI, dependencyName, dependencyVersion);
-        return new Dependency(dependencyName, dependencyVersion, externalId);
+        String normalizedDependencyName = normalizePackageName(dependencyName);
+        ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.PYPI, normalizedDependencyName, dependencyVersion);
+        return new Dependency(normalizedDependencyName, dependencyVersion, externalId);
+    }
+
+    private String normalizePackageName(String packageName) {
+        return packageName.replaceAll("[_.-]+", "-").toLowerCase();
     }
 }

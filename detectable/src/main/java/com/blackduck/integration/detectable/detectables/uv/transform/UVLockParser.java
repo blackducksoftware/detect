@@ -214,8 +214,9 @@ public class UVLockParser {
     }
     
     private Dependency createDependency(String dependencyName, String dependencyVersion) {
-        ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.PYPI, normalizePackageName(dependencyName), dependencyVersion);
-        return new Dependency(normalizePackageName(dependencyName), dependencyVersion, externalId);
+        String normalizedDependencyName = normalizePackageName(dependencyName);
+        ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.PYPI, normalizedDependencyName, dependencyVersion);
+        return new Dependency(normalizedDependencyName, dependencyVersion, externalId);
     }
 
 }
