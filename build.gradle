@@ -105,6 +105,10 @@ subprojects {
 allprojects {
     repositories {
         maven { url "${internalRepoHost}/artifactory/jcenter" }
+
+        maven {
+            url "${internalRepoHost}/artifactory/bds-integrations-snapshot"
+        }
     }
 
     dependencies {
