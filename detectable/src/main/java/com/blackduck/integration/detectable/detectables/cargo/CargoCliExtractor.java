@@ -33,10 +33,10 @@ public class CargoCliExtractor {
         this.cargoTomlParser = cargoTomlParser;
     }
 
-    public Extraction extract(File directory, ExecutableTarget cargoExe, File cargoTomlFile, CargoCliDetectableOptions cargoCliDetectableOptions) throws ExecutableFailedException, IOException {
+    public Extraction extract(File directory, ExecutableTarget cargoExe, File cargoTomlFile, CargoDetectableOptions cargoDetectableOptions) throws ExecutableFailedException, IOException {
         List<String> cargoTreeCommand = new ArrayList<>(CARGO_TREE_COMMAND);
 
-        addEdgeExclusions(cargoTreeCommand, cargoCliDetectableOptions);
+        addEdgeExclusions(cargoTreeCommand, cargoDetectableOptions);
 
         ExecutableOutput cargoOutput = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(directory, cargoExe, cargoTreeCommand));
         List<String> cargoTreeOutput = cargoOutput.getStandardOutputAsList();
@@ -57,7 +57,7 @@ public class CargoCliExtractor {
             .build();
     }
 
-    private void addEdgeExclusions(List<String> cargoTreeCommand, CargoCliDetectableOptions options) {
+    private void addEdgeExclusions(List<String> cargoTreeCommand, CargoDetectableOptions options) {
         List<String> exclusions = new ArrayList<>();
 
         if (options.getDependencyTypeFilter().shouldExclude(CargoDependencyType.DEV)) {

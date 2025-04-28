@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.blackduck.integration.detectable.detectables.cargo.CargoCliDetectableOptions;
+import com.blackduck.integration.detectable.detectables.cargo.CargoDetectableOptions;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
 import com.blackduck.integration.detectable.detectables.nuget.NugetDependencyType;
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
@@ -233,10 +233,10 @@ public class DetectableOptionFactory {
         return new PearCliDetectableOptions(pearDependencyTypeFilter);
     }
 
-    public CargoCliDetectableOptions createCargoCliDetectableOptions() {
+    public CargoDetectableOptions createCargoDetectableOptions() {
         Set<CargoDependencyType> excludedDependencyTypes = detectConfiguration.getValue(DetectProperties.DETECT_CARGO_DEPENDENCY_TYPES_EXCLUDED).representedValueSet();
         EnumListFilter<CargoDependencyType> dependencyTypeFilter = EnumListFilter.fromExcluded(excludedDependencyTypes);
-        return new CargoCliDetectableOptions(dependencyTypeFilter);
+        return new CargoDetectableOptions(dependencyTypeFilter);
     }
 
     public PipenvDetectableOptions createPipenvDetectableOptions() {

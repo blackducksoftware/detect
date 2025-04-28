@@ -12,7 +12,6 @@ import com.blackduck.integration.detectable.detectables.cargo.transform.CargoDep
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildDetectable;
 import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildExtractor;
-import com.blackduck.integration.detectable.detectables.uv.parse.UVTomlParser;
 import com.blackduck.integration.detectable.detectables.uv.transform.UVTreeDependencyGraphTransformer;
 import org.xml.sax.SAXException;
 
@@ -345,19 +344,23 @@ public class DetectableFactory {
     }
 
     public CargoLockDetectable createCargoDetectable(DetectableEnvironment environment) {
+        return createCargoDetectable(environment, null);
+    }
+
+    public CargoLockDetectable createCargoDetectable(DetectableEnvironment environment, CargoDetectableOptions cargoDetectableOptions) {
         CargoTomlParser cargoTomlParser = new CargoTomlParser();
         CargoDependencyLineParser cargoDependencyLineParser = new CargoDependencyLineParser();
         CargoLockPackageDataTransformer cargoLockPackageDataTransformer = new CargoLockPackageDataTransformer(cargoDependencyLineParser);
         CargoLockPackageTransformer cargoLockPackageTransformer = new CargoLockPackageTransformer();
         CargoExtractor cargoExtractor = new CargoExtractor(cargoTomlParser, cargoLockPackageDataTransformer, cargoLockPackageTransformer);
-        return new CargoLockDetectable(environment, fileFinder, cargoExtractor);
+        return new CargoLockDetectable(environment, fileFinder, cargoExtractor, cargoDetectableOptions);
     }
 
-    public CargoCliDetectable createCargoCliDetectable(DetectableEnvironment environment, CargoResolver cargoResolver, CargoCliDetectableOptions cargoCliDetectableOptions) {
+    public CargoCliDetectable createCargoCliDetectable(DetectableEnvironment environment, CargoResolver cargoResolver, CargoDetectableOptions cargoDetectableOptions) {
         CargoDependencyGraphTransformer cargoDependencyTransformer= new CargoDependencyGraphTransformer(externalIdFactory);
         CargoTomlParser cargoTomlParser = new CargoTomlParser();
         CargoCliExtractor cargoCliExtractor = new CargoCliExtractor(executableRunner, cargoDependencyTransformer, cargoTomlParser);
-        return new CargoCliDetectable(environment, fileFinder, cargoResolver, cargoCliExtractor, executableRunner, cargoCliDetectableOptions);
+        return new CargoCliDetectable(environment, fileFinder, cargoResolver, cargoCliExtractor, executableRunner, cargoDetectableOptions);
     }
 
 
