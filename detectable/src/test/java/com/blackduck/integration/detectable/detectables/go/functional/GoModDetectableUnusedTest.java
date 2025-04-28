@@ -29,7 +29,7 @@ public class GoModDetectableUnusedTest extends DetectableFunctionalTest {
     protected void setup() throws IOException {
         addFile(Paths.get("go.mod"));
 
-        ExecutableOutput goListOutput = createStandardOutputFromResource("/go/go-list.xout");
+        ExecutableOutput goListOutput = createStandardOutputFromResource("/go/gomod-test1/go-list.xout");
         addExecutableOutput(goListOutput, "go", "list", "-m", "-json");
 
         ExecutableOutput goVersionOutput = createStandardOutput(
@@ -37,7 +37,7 @@ public class GoModDetectableUnusedTest extends DetectableFunctionalTest {
         );
         addExecutableOutput(goVersionOutput, "go", "version");
 
-        ExecutableOutput goListUJsonOutput = createStandardOutputFromResource("/go/go-list-all.xout");
+        ExecutableOutput goListUJsonOutput = createStandardOutputFromResource("/go/gomod-test1/go-list-all.xout");
         addExecutableOutput(goListUJsonOutput, "go", "list", "-mod=readonly", "-m", "-json", "all");
 
         ExecutableOutput goModGraphOutput = createStandardOutput(
@@ -77,10 +77,10 @@ public class GoModDetectableUnusedTest extends DetectableFunctionalTest {
         addExecutableOutput(goModWhyOutput, "go", "mod", "why", "-m", "all");
 
 
-        ExecutableOutput goListMainOutput = createStandardOutputFromResource("/go/go-mod-get-main.xout");
+        ExecutableOutput goListMainOutput = createStandardOutputFromResource("/go/gomod-test1/go-mod-get-main.xout");
         addExecutableOutput(goListMainOutput, "go", "list", "-mod=readonly", "-m", "-f", "{{if (.Main)}}{{.Path}}{{end}}", "all");
 
-        ExecutableOutput goListDirectMods = createStandardOutputFromResource("/go/go-mod-list-directs.xout");
+        ExecutableOutput goListDirectMods = createStandardOutputFromResource("/go/gomod-test1/go-mod-list-directs.xout");
         addExecutableOutput(goListDirectMods, "go", "list", "-mod=readonly", "-m", "-f", "{{if not (or .Indirect .Main)}}{{.Path}}@{{.Version}}{{end}}", "all");
 
     }

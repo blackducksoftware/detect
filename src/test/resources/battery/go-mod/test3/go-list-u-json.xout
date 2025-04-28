@@ -1,0 +1,72 @@
+{
+	"Path": "my-main-module",
+	"Main": true,
+	"Dir": "/Users/shanty/blackduck/example-source/go/my-main-module",
+	"GoMod": "/Users/shanty/blackduck/example-source/go/my-main-module/go.mod",
+	"GoVersion": "1.23.4"
+}
+
+{
+	"Path": "github.com/spf13/viper",
+	"Version": "v1.8.1",
+	"Time": "2021-06-25T11:55:36Z",
+	"GoMod": "/Users/shanty/go/pkg/mod/cache/download/github.com/spf13/viper/@v/v1.8.1.mod",
+	"GoVersion": "1.12",
+	"Sum": "h1:Kq1fyeebqsBfbjZj4EL7gj2IO0mMaiyjYUWcUsl2O44=",
+	"GoModSum": "h1:o0Pch8wJ9BVSWGQMbra6iw0oQ5oktSIBaujf1rJH9Ns="
+}
+
+{
+	"Path": "github.com/spf13/cobra",
+	"Version": "v1.2.1",
+	"Time": "2021-07-02T15:25:47Z",
+	"Indirect": true,
+	"GoMod": "/Users/shanty/go/pkg/mod/cache/download/github.com/spf13/cobra/@v/v1.2.1.mod",
+	"GoVersion": "1.14",
+	"Sum": "h1:+KmjbUw1hriSNMF55oPrkZcb27aECyrj8V2ytv7kWDw=",
+	"GoModSum": "h1:ExllRjgxM/piMAM+3tAZvg8fsklGAf3tPfi+i8t68Nk="
+}
+
+{
+ 	"Path": "github.com/grpc-ecosystem/go-grpc-middleware",
+ 	"Version": "v1.3.0",
+ 	"Time": "2021-04-22T23:23:41Z",
+ 	"Indirect": true,
+ 	"GoMod": "/Users/shanty/go/pkg/mod/cache/download/github.com/grpc-ecosystem/go-grpc-middleware/@v/v1.3.0.mod",
+ 	"GoVersion": "1.14",
+ 	"Sum": "h1:+9834+KizmvFV7pXQGSXQTsaWhq2GjuNUt0aUU0YBYw=",
+ 	"GoModSum": "h1:z0ButlSOZa5vEBq9m2m2hlwIgKw+rp3sdCBRoJY+30Y="
+}
+
+{
+	"Path": "go.etcd.io/etcd/server/v3",
+	"Version": "v3.5.0",
+	"Time": "2021-06-15T21:34:52Z",
+	"Indirect": true,
+	"GoMod": "/Users/shanty/go/pkg/mod/cache/download/go.etcd.io/etcd/server/v3/@v/v3.5.0.mod",
+	"GoVersion": "1.16",
+	"Sum": "h1:jk8D/lwGEDlQU9kZXUFMSANkE22Sg5+mW27ip8xcF9E=",
+	"GoModSum": "h1:3Ah5ruV+M+7RZr0+Y/5mNLwC+eQlni+mQmOVdCRJoS4="
+}
+
+{
+	"Path": "k8s.io/apiextensions-apiserver",
+	"Version": "v0.23.1",
+	"Time": "2021-12-16T18:07:13Z",
+	"GoMod": "/Users/shanty/go/pkg/mod/cache/download/k8s.io/apiextensions-apiserver/@v/v0.23.1.mod",
+	"GoVersion": "1.16",
+	"Sum": "h1:xxE0q1vLOVZiWORu1KwNRQFsGWtImueOrqSl13sS5EU=",
+	"GoModSum": "h1:0qz4fPaHHsVhRApbtk3MGXNn2Q9M/cVWWhfHdY2SxiM="
+}
+
+{
+	"Path": "k8s.io/component-base",
+	"Version": "v0.23.1",
+	"Time": "2021-12-16T17:38:48Z",
+	"Indirect": true,
+	"GoMod": "/Users/shanty/go/pkg/mod/cache/download/k8s.io/component-base/@v/v0.23.1.mod",
+	"GoVersion": "1.16",
+	"Sum": "h1:j/BqdZUWeWKCy2v/jcgnOJAzpRYWSbGcjGVYICko8Uc=",
+	"GoModSum": "h1:6llmap8QtJIXGDd4uIWJhAq0Op8AtQo6bDW2RrNMTeo="
+}
+
