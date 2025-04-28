@@ -25,10 +25,11 @@ public class UVTomlParser {
 
     private String projectName = "uvProject";
 
+    private final File uvTomlFile;
     private TomlParseResult uvToml;
 
     public UVTomlParser(File uvTomlFile) {
-        parseUVToml(uvTomlFile);
+        this.uvTomlFile = uvTomlFile;
     }
 
     public Optional<NameVersion> parseNameVersion() {
@@ -54,6 +55,7 @@ public class UVTomlParser {
 
     // check [tool.uv] managed setting
     public boolean parseManagedKey() {
+        parseUVToml();
         if (uvToml != null && uvToml.contains(UV_TOOL_KEY)) {
             TomlTable uvToolTable = uvToml.getTable(UV_TOOL_KEY);
             if (uvToolTable.contains(MANAGED_KEY)) {
@@ -64,7 +66,7 @@ public class UVTomlParser {
         return true;
     }
 
-    public void parseUVToml(File uvTomlFile) {
+    public void parseUVToml() {
         try {
             String uvTomlContents = FileUtils.readFileToString(uvTomlFile, StandardCharsets.UTF_8);
             uvToml = Toml.parse(uvTomlContents);

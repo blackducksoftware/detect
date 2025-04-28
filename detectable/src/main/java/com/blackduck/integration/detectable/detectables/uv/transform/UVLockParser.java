@@ -146,16 +146,19 @@ public class UVLockParser {
         if(transitiveDependencyMap.containsKey(dependency)) {
             for(String transitiveDependency: transitiveDependencyMap.get(dependency)) {
                 if(!checkIfMemberExcluded(transitiveDependency, uvDetectorOptions)) {
-                    Dependency currentDependency;
-                    if(packageDependencyMap.containsKey(transitiveDependency)) {
-                        currentDependency = createDependency(transitiveDependency, packageDependencyMap.get(transitiveDependency));
-                        addDependencyToGraph(currentDependency,parentDependency);
-                        loopOverDependencies(transitiveDependency, currentDependency, uvDetectorOptions);
-                    } else {
-                        logger.warn("There seems to be a mismatch in the uv.lock. A dependency could not be found: " + transitiveDependency);
-                    }
+                    handleTransitiveDependency(transitiveDependency, parentDependency, uvDetectorOptions);
                 }
             }
+        }
+    }
+
+    private void handleTransitiveDependency(String transitiveDependency, Dependency parentDependency, UVDetectorOptions uvDetectorOptions) {
+        if(packageDependencyMap.containsKey(transitiveDependency)) {
+            Dependency currentDependency = createDependency(transitiveDependency, packageDependencyMap.get(transitiveDependency));
+            addDependencyToGraph(currentDependency,parentDependency);
+            loopOverDependencies(transitiveDependency, currentDependency, uvDetectorOptions);
+        } else {
+            logger.warn("There seems to be a mismatch in the uv.lock. A dependency could not be found: " + transitiveDependency);
         }
     }
 
@@ -173,6 +176,10 @@ public class UVLockParser {
             return dependencyVersion.substring(0, dependencyVersion.indexOf("+"));
         }
         return dependencyVersion;
+    }
+
+    private String normalizePackageName(String packageName) {
+        return packageName.replaceAll("[_.-]+", "-").toLowerCase();
     }
 
     // parse and store all the workspace members
@@ -207,8 +214,8 @@ public class UVLockParser {
     }
     
     private Dependency createDependency(String dependencyName, String dependencyVersion) {
-        ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.PYPI, dependencyName, dependencyVersion);
-        return new Dependency(dependencyName, dependencyVersion, externalId);
+        ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.PYPI, normalizePackageName(dependencyName), dependencyVersion);
+        return new Dependency(normalizePackageName(dependencyName), dependencyVersion, externalId);
     }
 
 }
