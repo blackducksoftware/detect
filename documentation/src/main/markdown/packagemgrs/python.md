@@ -16,7 +16,7 @@
 	* Pip Native Inspector
 	* Pip Requirements File Parse
 * Poetry detector
-* UV Package Manager
+* UV detector
 
 ## Setuptools detector
 
