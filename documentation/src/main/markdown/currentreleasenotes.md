@@ -20,6 +20,10 @@
 
 ## Version 10.5.0
 
+### New features
+
+* (IDETECT-4671) Change-on-capability for project version to clone and update the newly created at the same time.
+
 ### Resolved issues
 
 * (IDETECT-4177) - [detect_product_short] no longer requires that the X-Artifactory-Filename header is set when specifying an internally hosted version in [bd_product_long].
