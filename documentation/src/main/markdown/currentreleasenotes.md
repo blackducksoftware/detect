@@ -22,7 +22,8 @@
 
 ### New features
 
-* (IDETECT-4671) Change-on-capability for project version to clone and update the newly created at the same time.
+* Support for UV Package Manager has been added under [UV Detector](packagemgrs/python.md#uv-package-manager)
+* With the `detect.clone.project.version.name` parameter specified and `detect.project.version.update` set to true, [detect_product_short] will now clone, scan, and update the cloned project via parameters such as `detect.project.version.phase`.
 
 ### Resolved issues
 
