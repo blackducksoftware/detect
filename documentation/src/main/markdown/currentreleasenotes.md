@@ -20,6 +20,10 @@
 
 ## Version 10.5.0
 
+### New Features
+
+* Support for UV Package Manager has been added under [UV Detector](packagemgrs/python.md#uv-package-manager)
+
 ### Resolved issues
 
 * (IDETECT-4177) - [detect_product_short] no longer requires that the X-Artifactory-Filename header is set when specifying an internally hosted version in [bd_product_long].
