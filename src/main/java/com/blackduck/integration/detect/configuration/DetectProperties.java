@@ -341,14 +341,6 @@ public class DetectProperties {
             .setGroups(DetectGroup.CONTAINER_SCANNER, DetectGroup.SOURCE_PATH)
             .build();
 
-    public static final NullableStringProperty DETECT_THREAT_INTEL_SCAN_FILE =
-            NullableStringProperty.newBuilder("detect.threatintel.scan.file.path")
-                .setInfo("Threat Intel Scan Target", DetectPropertyFromVersion.VERSION_9_6_0)
-                .setHelp(
-                    "If specified, this file and this file only will be uploaded for Threat Intel analysis.  The THREAT_INTEL tool does not provide project and version name defaults to Detect, so you need to set project and version names via properties when only the THREAT_INTEL tool is invoked.")
-                .setGroups(DetectGroup.THREAT_INTEL, DetectGroup.SOURCE_PATH)
-                .build();
-
     // TODO: Consider removing environment sourcing code in 9.0.0. IDETECT-3167
     public static final StringProperty DETECT_BITBAKE_BUILD_ENV_NAME =
         StringProperty.newBuilder("detect.bitbake.build.env.name", "oe-init-build-env")
@@ -1770,6 +1762,45 @@ public class DetectProperties {
             .setGroups(DetectGroup.PATHS, DetectGroup.GLOBAL)
             .build();
 
+    public static final NullablePathProperty DETECT_UV_PATH =
+            NullablePathProperty.newBuilder("detect.uv.path")
+                    .setInfo("uv Executable", DetectPropertyFromVersion.VERSION_10_5_0)
+                    .setHelp("The path to the uv executable.")
+                    .setGroups(DetectGroup.UV, DetectGroup.GLOBAL)
+                    .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_UV_DEPENDENCY_GROUPS_EXCLUDED =
+            CaseSensitiveStringListProperty.newBuilder("detect.uv.dependency.groups.excluded")
+                    .setInfo("uv dependency groups", DetectPropertyFromVersion.VERSION_10_5_0)
+                    .setHelp(
+                            createTypeFilterHelpText("UV dependency groups"),
+                            "When specified, a pyproject.toml file and uv executable are required, or pyproject.toml file and either uv.lock or requirements.txt file are required. Components and related dependencies that belong to excluded groups will not be in the BOM unless the component also belongs to a non-excluded group. For example, to recursively exclude all components under the `[dependency-groups]` section of `pyproject.toml`: `detect.uv.dependency.groups.excluded='dev,abc'`"
+                    )
+                    .setGroups(DetectGroup.UV, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
+                    .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_UV_EXCLUDED_WORKSPACE_MEMBERS =
+            CaseSensitiveStringListProperty.newBuilder("detect.uv.excluded.workspace.members")
+                    .setInfo("uv Exclude Workspace Members", DetectPropertyFromVersion.VERSION_10_5_0)
+                    .setHelp(
+                            "A comma-separated list of uv workspace members to exclude.",
+                            "If set, Detect will only exclude those project members specified via this property when examining the uv project for dependencies."
+                    )
+                    .setGroups(DetectGroup.UV, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_UV_INCLUDED_WORKSPACE_MEMBERS =
+            CaseSensitiveStringListProperty.newBuilder("detect.uv.included.workspace.members")
+                    .setInfo("uv Include Workspace Members", DetectPropertyFromVersion.VERSION_10_5_0)
+                    .setHelp(
+                            "A comma-separated list of uv workspace members to include.",
+                            "If set, Detect will only include those uv workspace members specified via this property when examining the uv project for dependencies, unless the member is set for exclusion. Exclusion rules take precedence over inclusion. Leaving this property unset implies 'include all'."
+                    )
+                    .setGroups(DetectGroup.UV, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
+
     public static final BooleanProperty DETECT_YARN_IGNORE_ALL_WORKSPACES_MODE =
         BooleanProperty.newBuilder("detect.yarn.ignore.all.workspaces", false)
             .setInfo("Ignore All Workspaces", DetectPropertyFromVersion.VERSION_9_4_0)
@@ -1922,6 +1953,17 @@ public class DetectProperties {
             )
             .build();
 
+    @Deprecated
+    public static final NullableStringProperty DETECT_THREAT_INTEL_SCAN_FILE =
+            NullableStringProperty.newBuilder("detect.threatintel.scan.file.path")
+                    .setInfo("Threat Intel Scan Target", DetectPropertyFromVersion.VERSION_9_6_0)
+                    .setHelp(
+                            "If specified, this file and this file only will be uploaded for Threat Intel analysis. The THREAT_INTEL tool does not provide project and version name defaults to Detect, so you need to set project and version names via properties when only the THREAT_INTEL tool is invoked.")
+                    .setGroups(DetectGroup.THREAT_INTEL, DetectGroup.SOURCE_PATH)
+                    .setDeprecated("This property has been deprecated.",
+                            DetectMajorVersion.ELEVEN)
+                    .build();
+
     // Can't take in the DetectProperty<?> due to an illegal forward reference :(
     private static String createTypeFilterHelpText(String exclusionTypePlural) {
         return String.format("Set this value to indicate which %s Detect should exclude from the BOM.", exclusionTypePlural);
@@ -1942,6 +1984,10 @@ public class DetectProperties {
                 }
             }
         }
+        DETECT_TOOLS.addDeprecatedValueInfo(DetectTool.THREAT_INTEL.name(), "This tool value has been deprecated.");
+        DETECT_TOOLS_EXCLUDED.addDeprecatedValueInfo(DetectTool.THREAT_INTEL.name(), "This tool value has been deprecated.");
+        DETECT_PROJECT_TOOL.addDeprecatedValueInfo(DetectTool.THREAT_INTEL.name(), "This tool value has been deprecated.");
+
         return new Properties(properties);
     }
 

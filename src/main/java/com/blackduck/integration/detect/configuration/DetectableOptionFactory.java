@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.blackduck.integration.detectable.detectables.nuget.NugetDependencyType;
+import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import org.jetbrains.annotations.Nullable;
 
 import com.blackduck.integration.detect.workflow.ArtifactoryConstants;
@@ -147,7 +148,6 @@ public class DetectableOptionFactory {
         List<String> excludedConfigurationNames = detectConfiguration.getValue(DetectProperties.DETECT_GRADLE_EXCLUDED_CONFIGURATIONS);
         List<String> includedConfigurationNames = detectConfiguration.getValue(DetectProperties.DETECT_GRADLE_INCLUDED_CONFIGURATIONS);
         boolean rootOnlyOption = detectConfiguration.getValue(DetectProperties.DETECT_GRADLE_ROOT_ONLY);
-        String customRepository = ArtifactoryConstants.GRADLE_INSPECTOR_MAVEN_REPO;
 
         Set<GradleConfigurationType> excludedConfigurationTypes = detectConfiguration.getValue(DetectProperties.DETECT_GRADLE_CONFIGURATION_TYPES_EXCLUDED).representedValueSet();
         EnumListFilter<GradleConfigurationType> dependencyTypeFilter = EnumListFilter.fromExcluded(excludedConfigurationTypes);
@@ -159,7 +159,6 @@ public class DetectableOptionFactory {
             includedProjectPaths,
             excludedConfigurationNames,
             includedConfigurationNames,
-            customRepository,
             rootOnlyOption
         );
         String gradleBuildCommand = detectConfiguration.getNullableValue(DetectProperties.DETECT_GRADLE_BUILD_COMMAND);
@@ -311,5 +310,13 @@ public class DetectableOptionFactory {
 
     private boolean getFollowSymLinks() {
         return detectConfiguration.getValue(DetectProperties.DETECT_FOLLOW_SYMLINKS);
+    }
+
+    public UVDetectorOptions createUVDetectorOptions() {
+        List<String> excludedDependencyGroups = detectConfiguration.getValue(DetectProperties.DETECT_UV_DEPENDENCY_GROUPS_EXCLUDED);
+        List<String> includedWorkSpaceMembers = detectConfiguration.getValue(DetectProperties.DETECT_UV_INCLUDED_WORKSPACE_MEMBERS);
+        List<String> excludeWorkSpaceMembers = detectConfiguration.getValue(DetectProperties.DETECT_UV_EXCLUDED_WORKSPACE_MEMBERS);
+
+        return new UVDetectorOptions(excludedDependencyGroups, includedWorkSpaceMembers, excludeWorkSpaceMembers);
     }
 }

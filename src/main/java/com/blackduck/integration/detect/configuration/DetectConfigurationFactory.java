@@ -496,7 +496,8 @@ public class DetectConfigurationFactory {
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_SBT_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_LERNA_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_OPAM_PATH),
-            detectConfiguration.getPathOrNull(DetectProperties.DETECT_CARGO_PATH)
+            detectConfiguration.getPathOrNull(DetectProperties.DETECT_CARGO_PATH),
+            detectConfiguration.getPathOrNull(DetectProperties.DETECT_UV_PATH)
         );
     }
 
@@ -544,9 +545,5 @@ public class DetectConfigurationFactory {
 
     public Optional<String> getContainerScanFilePath() {
         return Optional.ofNullable(detectConfiguration.getNullableValue(DetectProperties.DETECT_CONTAINER_SCAN_FILE));
-    }
-    
-    public Optional<String> getThreatIntelScanFilePath() {
-        return Optional.ofNullable(detectConfiguration.getNullableValue(DetectProperties.DETECT_THREAT_INTEL_SCAN_FILE));
     }
 }
