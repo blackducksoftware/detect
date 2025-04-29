@@ -63,7 +63,7 @@ public class UVTomlParser {
             }
             return true;
         }
-        return true;
+        return false;
     }
 
     public void parseUVToml() {
