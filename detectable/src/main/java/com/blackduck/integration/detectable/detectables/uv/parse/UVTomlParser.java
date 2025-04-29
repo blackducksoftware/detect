@@ -1,17 +1,16 @@
 package com.blackduck.integration.detectable.detectables.uv.parse;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.util.Optional;
-
+import com.blackduck.integration.util.NameVersion;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tomlj.Toml;
 import org.tomlj.TomlParseResult;
-
-import com.blackduck.integration.util.NameVersion;
 import org.tomlj.TomlTable;
+
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 public class UVTomlParser {
 
@@ -24,18 +23,31 @@ public class UVTomlParser {
     private static final String MANAGED_KEY = "managed";
     private static final String UV_TOOL_KEY = "tool.uv";
 
+    private String projectName = "uvProject";
+
+    private final File uvTomlFile;
     private TomlParseResult uvToml;
 
     public UVTomlParser(File uvTomlFile) {
-        parseUVToml(uvTomlFile);
+        this.uvTomlFile = uvTomlFile;
     }
 
     public Optional<NameVersion> parseNameVersion() {
-        if (uvToml.contains(PROJECT_KEY)) {
-            return Optional.ofNullable(uvToml.getTable(PROJECT_KEY))
-                    .filter(info -> info.contains(NAME_KEY))
-                    .filter(info -> info.contains(VERSION_KEY))
-                    .map(info -> new NameVersion(info.getString(NAME_KEY), info.getString(VERSION_KEY)));
+        if (uvToml != null && uvToml.contains(PROJECT_KEY)) {
+
+            TomlTable projectTable = uvToml.getTable(PROJECT_KEY);
+            if(projectTable.contains(NAME_KEY)) {
+                projectName = projectTable.getString(NAME_KEY);
+            } else {
+                return Optional.empty();
+            }
+
+            if(projectTable.contains(VERSION_KEY)) {
+                String version = projectTable.getString(VERSION_KEY);
+                return Optional.of(new NameVersion(projectName, version));
+            } else {
+                return Optional.empty();
+            }
         }
         return Optional.empty();
     }
@@ -43,7 +55,8 @@ public class UVTomlParser {
 
     // check [tool.uv] managed setting
     public boolean parseManagedKey() {
-        if (uvToml.contains(UV_TOOL_KEY)) {
+        parseUVToml();
+        if (uvToml != null && uvToml.contains(UV_TOOL_KEY)) {
             TomlTable uvToolTable = uvToml.getTable(UV_TOOL_KEY);
             if (uvToolTable.contains(MANAGED_KEY)) {
                 return uvToolTable.getBoolean(MANAGED_KEY);
@@ -53,7 +66,7 @@ public class UVTomlParser {
         return true;
     }
 
-    public void parseUVToml(File uvTomlFile) {
+    public void parseUVToml() {
         try {
             String uvTomlContents = FileUtils.readFileToString(uvTomlFile, StandardCharsets.UTF_8);
             uvToml = Toml.parse(uvTomlContents);
@@ -62,4 +75,7 @@ public class UVTomlParser {
         }
     }
 
+    public String getProjectName() {
+        return projectName;
+    }
 }
