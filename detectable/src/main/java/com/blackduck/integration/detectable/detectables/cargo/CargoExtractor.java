@@ -44,7 +44,7 @@ public class CargoExtractor {
 
         String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
         Map<String, String> excludableDependencyMap = cargoTomlParser.parseDependencyNameVersions(cargoTomlContents, cargoDetectableOptions);
-        excludeDependencies(cargoLockPackageDataList, excludableDependencyMap);
+//        excludeDependencies(cargoLockPackageDataList, excludableDependencyMap);
 
         List<CargoLockPackage> packages = cargoLockData.getPackages()
             .orElse(new ArrayList<>()).stream()
@@ -70,12 +70,14 @@ public class CargoExtractor {
             String name = packageData.getName().orElse(null);
             String version = packageData.getVersion().orElse(null);
 
-            if (!dependencyMap.containsKey(name)) {
+
+            if (name == null || version == null || !dependencyMap.containsKey(name)) {
                 return false;
             }
 
-            String devVersion = dependencyMap.get(name);
-            return devVersion == null || devVersion.equals(version);
+            String devVersionConstraint = dependencyMap.get(name);
+            return devVersionConstraint == null || VersionUtils.versionMatches(devVersionConstraint, version);
         });
     }
+
 }

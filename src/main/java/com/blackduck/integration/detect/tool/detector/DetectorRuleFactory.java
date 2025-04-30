@@ -69,8 +69,8 @@ public class DetectorRuleFactory {
         DetectorRuleSetBuilder rules = new DetectorRuleSetBuilder(detectableFactory);
 
         rules.addDetector(DetectorType.CARGO, detector -> {
-            detector.entryPoint(CargoCliDetectable.class)
-                .search().defaults();
+//            detector.entryPoint(CargoCliDetectable.class)
+//                .search().defaults();
             detector.entryPoint(CargoLockDetectable.class)
                 .search().defaults();
         }).allEntryPointsFallbackToNext();

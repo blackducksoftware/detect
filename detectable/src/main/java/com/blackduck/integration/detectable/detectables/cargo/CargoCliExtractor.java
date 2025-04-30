@@ -16,10 +16,7 @@ import org.apache.commons.io.FileUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public class CargoCliExtractor {
     private static final List<String> CARGO_TREE_COMMAND = Arrays.asList("tree", "--no-dedupe", "--prefix", "depth");
@@ -58,14 +55,17 @@ public class CargoCliExtractor {
     }
 
     private void addEdgeExclusions(List<String> cargoTreeCommand, CargoDetectableOptions options) {
+        Map<CargoDependencyType, String> exclusionMap = new EnumMap<>(CargoDependencyType.class);
+        exclusionMap.put(CargoDependencyType.NORMAL, "no-normal");
+        exclusionMap.put(CargoDependencyType.BUILD, "no-build");
+        exclusionMap.put(CargoDependencyType.DEV, "no-dev");
+        exclusionMap.put(CargoDependencyType.PROC_MACRO, "no-proc-macro");
+
         List<String> exclusions = new ArrayList<>();
-
-        if (options.getDependencyTypeFilter().shouldExclude(CargoDependencyType.DEV)) {
-            exclusions.add("no-dev");
-        }
-
-        if (options.getDependencyTypeFilter().shouldExclude(CargoDependencyType.BUILD)) {
-            exclusions.add("no-build");
+        for (Map.Entry<CargoDependencyType, String> entry : exclusionMap.entrySet()) {
+            if (options.getDependencyTypeFilter().shouldExclude(entry.getKey())) {
+                exclusions.add(entry.getValue());
+            }
         }
 
         if (!exclusions.isEmpty()) {

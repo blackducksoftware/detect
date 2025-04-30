@@ -14,8 +14,9 @@ public class CargoTomlParser {
     private static final String NAME_KEY = "name";
     private static final String VERSION_KEY = "version";
     private static final String PACKAGE_KEY = "package";
-    private static final String DEV_DEPENDENCIES_KEY = "dev-dependencies";
+    private static final String NORMAL_DEPENDENCIES_KEY = "dependencies";
     private static final String BUILD_DEPENDENCIES_KEY = "build-dependencies";
+    private static final String DEV_DEPENDENCIES_KEY = "dev-dependencies";
 
     public Optional<NameVersion> parseNameVersionFromCargoToml(String tomlFileContents) {
         TomlParseResult cargoTomlObject = Toml.parse(tomlFileContents);
@@ -31,11 +32,14 @@ public class CargoTomlParser {
         TomlParseResult toml = Toml.parse(tomlFileContents);
         Map<String, String> allDeps = new HashMap<>();
 
-        if (cargoDetectableOptions.getDependencyTypeFilter().shouldExclude(CargoDependencyType.DEV)) {
-            allDeps.putAll(parseNamedDependenciesFromTable(toml, DEV_DEPENDENCIES_KEY));
+        if (cargoDetectableOptions.getDependencyTypeFilter().shouldExclude(CargoDependencyType.NORMAL)) {
+            allDeps.putAll(parseNamedDependenciesFromTable(toml, NORMAL_DEPENDENCIES_KEY));
         }
         if (cargoDetectableOptions.getDependencyTypeFilter().shouldExclude(CargoDependencyType.BUILD)) {
             allDeps.putAll(parseNamedDependenciesFromTable(toml, BUILD_DEPENDENCIES_KEY));
+        }
+        if (cargoDetectableOptions.getDependencyTypeFilter().shouldExclude(CargoDependencyType.DEV)) {
+            allDeps.putAll(parseNamedDependenciesFromTable(toml, DEV_DEPENDENCIES_KEY));
         }
 
         return allDeps;
@@ -52,8 +56,10 @@ public class CargoTomlParser {
             Object value = table.get(key);
             if (value instanceof String) {
                 deps.put(key, (String) value);
-            } else {
-                deps.put(key, null);
+            } else if (value instanceof TomlTable) {
+                TomlTable dependencyTable = (TomlTable) value;
+                String version = dependencyTable.getString(VERSION_KEY); // May be null
+                deps.put(key, version);
             }
         }
 
