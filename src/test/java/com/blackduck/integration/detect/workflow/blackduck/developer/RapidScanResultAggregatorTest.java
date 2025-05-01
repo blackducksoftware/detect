@@ -1,6 +1,7 @@
 package com.blackduck.integration.detect.workflow.blackduck.developer;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -12,6 +13,7 @@ import com.blackduck.integration.blackduck.api.generated.component.DeveloperScan
 import com.blackduck.integration.blackduck.api.generated.component.DeveloperScansScanItemsPolicyViolationVulnerabilitiesView;
 import com.blackduck.integration.blackduck.api.generated.component.DeveloperScansScanItemsPolicyViolationVulnerabilitiesViolatingPoliciesView;
 import com.blackduck.integration.blackduck.api.generated.component.DeveloperScansScanItemsViolatingPoliciesView;
+import com.blackduck.integration.blackduck.api.generated.enumeration.PolicyRuleSeverityType;
 import com.blackduck.integration.blackduck.api.generated.view.DeveloperScansScanView;
 import com.blackduck.integration.detect.workflow.blackduck.developer.aggregate.RapidScanAggregateResult;
 import com.blackduck.integration.detect.workflow.blackduck.developer.aggregate.RapidScanResultAggregator;
@@ -26,7 +28,7 @@ public class RapidScanResultAggregatorTest {
     public void testEmptyResults() {
         List<DeveloperScansScanView> results = Collections.emptyList();
         RapidScanResultAggregator aggregator = new RapidScanResultAggregator();
-        RapidScanAggregateResult aggregateResult = aggregator.aggregateData(results);
+        RapidScanAggregateResult aggregateResult = aggregator.aggregateData(results, null);
         BufferedIntLogger logger = new BufferedIntLogger();
         aggregateResult.logResult(logger);
         RapidScanResultSummary summary = aggregateResult.getSummary();
@@ -43,7 +45,9 @@ public class RapidScanResultAggregatorTest {
     public void testResults() {
         List<DeveloperScansScanView> results = createResultList();
         RapidScanResultAggregator aggregator = new RapidScanResultAggregator();
-        RapidScanAggregateResult aggregateResult = aggregator.aggregateData(results);
+        List<PolicyRuleSeverityType> violatingPoicies = 
+                new ArrayList<>(Arrays.asList(PolicyRuleSeverityType.BLOCKER, PolicyRuleSeverityType.CRITICAL));
+        RapidScanAggregateResult aggregateResult = aggregator.aggregateData(results, violatingPoicies);
         BufferedIntLogger logger = new BufferedIntLogger();
         aggregateResult.logResult(logger);
         RapidScanResultSummary summary = aggregateResult.getSummary();
