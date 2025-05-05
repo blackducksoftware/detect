@@ -25,8 +25,8 @@ The detectors run a platform dependent self-contained executable that is current
 ## Excluding dependency types
 [detect_product_short] offers the ability to exclude package manager specific dependency types from the BOM.
 Nuget dependency types can be filtered with the [detect.nuget.dependency.types.excluded](../properties/detectors/nuget.md#nuget-dependency-types-excluded) property.
-This property supports exclusion of development-only dependencies in projects that use `PackageReference` or `packages.config`.
-<note type="note">Support for declaring dependencies in JSON files has been deprecated by NuGet. As such this property does not apply to scans that analyze `project.json`, `project.lock.json` or `project.assets.json`.</note>
+This property supports exclusion of development-only dependencies in projects that use `PackageReference`, `packages.config`, `project.assests.json` or `project.lock.json`.
+<note type="note">Support for declaring dependencies in JSON files has been deprecated by NuGet. As such this property does not apply to scans that analyze `project.json`.</note>
 
 A project might be using a dependency purely as a development harness and you might not want to expose that to projects that will consume the package. You can use the PrivateAssets metadata to control this behavior. [detect_product_short] looks for the PrivateAssets attribute used within PackageReference tags to identify a development dependency. [detect_product_short] will ignore the contents of the tag and only observe the presence of these PrivateAssets to exclude those development related dependencies.
 For packages.config file, [detect_product_short] will look for developmentDependency tags to determine whether to include or exclude a dependency.

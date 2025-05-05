@@ -29,4 +29,5 @@
 
 * (IDETECT-4177) - [detect_product_short] no longer requires that the X-Artifactory-Filename header is set when specifying an internally hosted version in [bd_product_long].
 * (IDETECT-3512) - To prevent issues when [bd_product_long] and [detect_product_short] disagree on the full list of categories, [detect_product_short] now sends an indicator specifying "all categories" when detect.project.clone.categories is set to ALL.
+* (IDETECT-4606) - Support for excluding dependency types in [detect_product_short] Nuget Inspector now considers `project.assets.json` and `project.lock.json` files.
 
