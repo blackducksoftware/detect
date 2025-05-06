@@ -22,8 +22,11 @@ import com.blackduck.integration.detectable.detectables.cargo.transform.CargoLoc
 import com.blackduck.integration.detectable.detectables.cargo.transform.CargoLockPackageTransformer;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.util.NameVersion;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CargoExtractor {
+    private static final Logger logger = LoggerFactory.getLogger(CargoExtractor.class);
     private final CargoTomlParser cargoTomlParser;
     private final CargoLockPackageDataTransformer cargoLockPackageDataTransformer;
     private final CargoLockPackageTransformer cargoLockPackageTransformer;
@@ -44,10 +47,9 @@ public class CargoExtractor {
 
         String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
         Map<String, String> excludableDependencyMap = cargoTomlParser.parseDependencyNameVersions(cargoTomlContents, cargoDetectableOptions);
-//        excludeDependencies(cargoLockPackageDataList, excludableDependencyMap);
+        List<CargoLockPackageData> filteredPackages = excludeDependencies(cargoLockPackageDataList, excludableDependencyMap);
 
-        List<CargoLockPackage> packages = cargoLockData.getPackages()
-            .orElse(new ArrayList<>()).stream()
+        List<CargoLockPackage> packages = filteredPackages.stream()
             .map(cargoLockPackageDataTransformer::transform)
             .collect(Collectors.toList());
 
@@ -65,19 +67,44 @@ public class CargoExtractor {
             .build();
     }
 
-    private void excludeDependencies(List<CargoLockPackageData> cargoLockPackageDataList, Map<String, String> dependencyMap) {
-        cargoLockPackageDataList.removeIf(packageData -> {
-            String name = packageData.getName().orElse(null);
-            String version = packageData.getVersion().orElse(null);
+    private List<CargoLockPackageData> excludeDependencies(
+        List<CargoLockPackageData> packages,
+        Map<String, String> excludableDependencyMap
+    ) {
+        Set<String> excludedNames = new HashSet<>();
 
+        List<CargoLockPackageData> filtered = packages.stream()
+            .filter(pkg -> {
+                String name = pkg.getName().orElse(null);
+                String version = pkg.getVersion().orElse(null);
+                if (name == null || version == null) return true;
 
-            if (name == null || version == null || !dependencyMap.containsKey(name)) {
-                return false;
-            }
+                if (excludableDependencyMap.containsKey(name)) {
+                    String constraint = excludableDependencyMap.get(name);
+                    boolean matches = constraint == null || VersionUtils.versionMatches(constraint, version);
+                    if (matches) {
+                        logger.debug("Excluding package '{}' version '{}' due to constraint '{}'", name, version, constraint);
+                        excludedNames.add(name);
+                        return false;
+                    }
+                }
 
-            String devVersionConstraint = dependencyMap.get(name);
-            return devVersionConstraint == null || VersionUtils.versionMatches(devVersionConstraint, version);
-        });
+                return true;
+            })
+            .collect(Collectors.toList());
+
+        return filtered.stream()
+            .map(pkg -> new CargoLockPackageData(
+                pkg.getName().orElse(null),
+                pkg.getVersion().orElse(null),
+                pkg.getSource().orElse(null),
+                pkg.getChecksum().orElse(null),
+                pkg.getDependencies()
+                    .orElse(new ArrayList<>())
+                    .stream()
+                    .filter(dep -> !excludedNames.contains(dep))
+                    .collect(Collectors.toList())
+            ))
+            .collect(Collectors.toList());
     }
-
 }
