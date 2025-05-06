@@ -66,7 +66,6 @@ public class GradleInspectorRootOnlyTest extends DetectableFunctionalTest {
                         Collections.emptyList(),
                         Collections.emptyList(),
                         Collections.emptyList(),
-                        "",
                         true
                 ),
                 ProxyInfo.NO_PROXY_INFO, EnumListFilter.excludeNone()

@@ -342,14 +342,6 @@ public class DetectProperties {
             .setGroups(DetectGroup.CONTAINER_SCANNER, DetectGroup.SOURCE_PATH)
             .build();
 
-    public static final NullableStringProperty DETECT_THREAT_INTEL_SCAN_FILE =
-            NullableStringProperty.newBuilder("detect.threatintel.scan.file.path")
-                .setInfo("Threat Intel Scan Target", DetectPropertyFromVersion.VERSION_9_6_0)
-                .setHelp(
-                    "If specified, this file and this file only will be uploaded for Threat Intel analysis.  The THREAT_INTEL tool does not provide project and version name defaults to Detect, so you need to set project and version names via properties when only the THREAT_INTEL tool is invoked.")
-                .setGroups(DetectGroup.THREAT_INTEL, DetectGroup.SOURCE_PATH)
-                .build();
-
     // TODO: Consider removing environment sourcing code in 9.0.0. IDETECT-3167
     public static final StringProperty DETECT_BITBAKE_BUILD_ENV_NAME =
         StringProperty.newBuilder("detect.bitbake.build.env.name", "oe-init-build-env")
@@ -1973,6 +1965,17 @@ public class DetectProperties {
             )
             .build();
 
+    @Deprecated
+    public static final NullableStringProperty DETECT_THREAT_INTEL_SCAN_FILE =
+            NullableStringProperty.newBuilder("detect.threatintel.scan.file.path")
+                    .setInfo("Threat Intel Scan Target", DetectPropertyFromVersion.VERSION_9_6_0)
+                    .setHelp(
+                            "If specified, this file and this file only will be uploaded for Threat Intel analysis. The THREAT_INTEL tool does not provide project and version name defaults to Detect, so you need to set project and version names via properties when only the THREAT_INTEL tool is invoked.")
+                    .setGroups(DetectGroup.THREAT_INTEL, DetectGroup.SOURCE_PATH)
+                    .setDeprecated("This property has been deprecated.",
+                            DetectMajorVersion.ELEVEN)
+                    .build();
+
     // Can't take in the DetectProperty<?> due to an illegal forward reference :(
     private static String createTypeFilterHelpText(String exclusionTypePlural) {
         return String.format("Set this value to indicate which %s Detect should exclude from the BOM.", exclusionTypePlural);
@@ -1993,6 +1996,10 @@ public class DetectProperties {
                 }
             }
         }
+        DETECT_TOOLS.addDeprecatedValueInfo(DetectTool.THREAT_INTEL.name(), "This tool value has been deprecated.");
+        DETECT_TOOLS_EXCLUDED.addDeprecatedValueInfo(DetectTool.THREAT_INTEL.name(), "This tool value has been deprecated.");
+        DETECT_PROJECT_TOOL.addDeprecatedValueInfo(DetectTool.THREAT_INTEL.name(), "This tool value has been deprecated.");
+
         return new Properties(properties);
     }
 

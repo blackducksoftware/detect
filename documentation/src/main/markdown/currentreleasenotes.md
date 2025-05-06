@@ -20,7 +20,13 @@
 
 ## Version 10.5.0
 
+### New features
+
+* Support for UV Package Manager has been added under [UV Detector](packagemgrs/python.md#uv-package-manager)
+* With the `detect.clone.project.version.name` parameter specified and `detect.project.version.update` set to true, [detect_product_short] will now clone, scan, and update the cloned project via parameters such as `detect.project.version.phase`.
+
 ### Resolved issues
 
 * (IDETECT-4177) - [detect_product_short] no longer requires that the X-Artifactory-Filename header is set when specifying an internally hosted version in [bd_product_long].
+* (IDETECT-3512) - To prevent issues when [bd_product_long] and [detect_product_short] disagree on the full list of categories, [detect_product_short] now sends an indicator specifying "all categories" when detect.project.clone.categories is set to ALL.
 

@@ -12,6 +12,10 @@ import com.blackduck.integration.detectable.detectables.cargo.transform.CargoDep
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildDetectable;
 import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildExtractor;
+import com.blackduck.integration.detectable.detectables.uv.lockfile.UVLockFileDetectable;
+import com.blackduck.integration.detectable.detectables.uv.lockfile.UVLockfileExtractor;
+import com.blackduck.integration.detectable.detectables.uv.parse.UVTomlParser;
+import com.blackduck.integration.detectable.detectables.uv.transform.UVLockParser;
 import com.blackduck.integration.detectable.detectables.uv.transform.UVTreeDependencyGraphTransformer;
 import org.xml.sax.SAXException;
 
@@ -716,6 +720,10 @@ public class DetectableFactory {
         return new UVBuildDetectable(environment, fileFinder, uvResolver, uvBuildExtractor(environment.getDirectory()), uvDetectorOptions);
     }
 
+    public UVLockFileDetectable createUVLockFileDetectable(DetectableEnvironment environment, UVDetectorOptions uvDetectorOptions) {
+        return new UVLockFileDetectable(environment, fileFinder, uvDetectorOptions, uvLockfileExtractor(environment.getDirectory()));
+    }
+
     // Used by three Detectables
     private PackageResolvedExtractor createPackageResolvedExtractor() {
         PackageResolvedParser parser = new PackageResolvedParser(gson);
@@ -1150,6 +1158,16 @@ public class DetectableFactory {
 
     private UVTreeDependencyGraphTransformer uvTreeDependencyGraphTransformer() {
         return new UVTreeDependencyGraphTransformer(externalIdFactory);
+    }
+
+    private UVLockfileExtractor uvLockfileExtractor(File sourceDirectory) {
+        PythonDependencyTransformer requirementsFileTransformer = new PythonDependencyTransformer();
+        RequirementsFileDependencyTransformer requirementsFileDependencyTransformer = new RequirementsFileDependencyTransformer();
+        return new UVLockfileExtractor(uvLockParser(), requirementsFileTransformer, requirementsFileDependencyTransformer);
+    }
+
+    private UVLockParser uvLockParser() {
+        return new UVLockParser(externalIdFactory);
     }
 
 

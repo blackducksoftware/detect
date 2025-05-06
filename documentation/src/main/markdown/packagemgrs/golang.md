@@ -8,19 +8,20 @@
 
 [detect_product_short] has four detectors for GoLang:
 
-* Go Mod Cli (GO_MOD) detector (recommended)
+* Go Mod CLI (GO_MOD) detector (recommended)
 * Go Lock (GO_DEP) detector
 * Go Gradle (GO_GRADLE) detector
 * Go Vendor (GO_VENDOR) detector
 * Go Vndr (GO_VNDR) detector
 
-## Go Mod Cli (GO_MOD) detector
+## Go Mod CLI (GO_MOD) detector
 
 * Discovers dependencies of go language (GoLang) projects.
 * Attempts to run on your project if a go.mod file is found in your source directory.
 * Requires the *go* executable to be on the PATH or the executable path to be set with [detect.go.path](../properties/detectors/go.md#go-executable).
-* Runs *go list -m* and *go mod graph*, and parses the output of both to discover dependencies.
-* Runs *go mod why* to remove unused Go modules such as dependencies required by the build system or tests.
+* Runs *go list -m*, *go mod why* and *go mod graph*, and parses the output of all to discover direct and transitive dependencies.
+* Transitive and unused Go modules may end up as "orphans" if no rightful parent can be found from the information gathered with the above commands. Orphans are automatically assigned as direct dependencies for ease of triaging scan results.
+  * You can exclude unused modules (recommended) via the [detect.go.mod.dependency.types.excluded=UNUSED](../properties/detectors/go.md#go-mod-dependency-types-excluded) property. See below for more details on this property. 
 
 ### Excluding Test and Build System dependencies
 
@@ -34,14 +35,7 @@ the [go mod why documentation](https://go.dev/ref/mod#go-mod-why) for additional
 
 #### Note on current exclusion behavior:
 
-Now, [detect_product_short] runs *go mod why* by default to remove unused components from the BOM. This may result in a low number of detected dependencies. This behavior can be controlled with
-the [detect.go.mod.dependency.types.excluded](../properties/detectors/go.md#go-mod-dependency-types-excluded)
-property.
-
-If the [detect.go.mod.dependency.types.excluded](../properties/detectors/go.md#go-mod-dependency-types-excluded) property is not provided, the behavior is driven by the value of this deprecated
-property [detect.go.mod.dependency.types](../properties/detectors/go.md#go-mod-dependency-types).
-
-In version 8.0.0, [detect_product_short] will not exclude any dependencies from the BOM by default and  [detect.go.mod.dependency.types](../properties/detectors/go.md#go-mod-dependency-types) will be removed.
+[detect_product_short] does not exclude any dependencies from the BOM by default.
 
 ## Go Lock (GO_DEP) detector
 
