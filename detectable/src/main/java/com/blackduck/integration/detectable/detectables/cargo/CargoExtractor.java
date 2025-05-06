@@ -44,10 +44,13 @@ public class CargoExtractor {
     public Extraction extract(File cargoLockFile, @Nullable File cargoTomlFile, CargoDetectableOptions cargoDetectableOptions) throws IOException, DetectableException, MissingExternalIdException {
         CargoLockData cargoLockData = new Toml().read(cargoLockFile).to(CargoLockData.class);
         List<CargoLockPackageData> cargoLockPackageDataList = cargoLockData.getPackages().orElse(new ArrayList<>());
-
+        List<CargoLockPackageData> filteredPackages = cargoLockPackageDataList;
         String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
-        Map<String, String> excludableDependencyMap = cargoTomlParser.parseDependencyNameVersions(cargoTomlContents, cargoDetectableOptions);
-        List<CargoLockPackageData> filteredPackages = excludeDependencies(cargoLockPackageDataList, excludableDependencyMap);
+
+        if (cargoDetectableOptions != null) {
+            Map<String, String> excludableDependencyMap = cargoTomlParser.parseDependencyNameVersions(cargoTomlContents, cargoDetectableOptions);
+            filteredPackages = excludeDependencies(cargoLockPackageDataList, excludableDependencyMap);
+        }
 
         List<CargoLockPackage> packages = filteredPackages.stream()
             .map(cargoLockPackageDataTransformer::transform)
