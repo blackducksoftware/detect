@@ -50,7 +50,7 @@ public class CargoExtractor {
         String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
 
         if (cargoDetectableOptions != null) {
-            Map<String, String> excludableDependencyMap = cargoTomlParser.parseDependencyNameVersions(cargoTomlContents, cargoDetectableOptions);
+            Map<String, String> excludableDependencyMap = cargoTomlParser.parseDependenciesToExclude(cargoTomlContents, cargoDetectableOptions);
             filteredPackages = excludeDependencies(cargoLockPackageDataList, excludableDependencyMap);
         }
 

@@ -28,24 +28,24 @@ public class CargoTomlParser {
         return Optional.empty();
     }
 
-    public Map<String, String> parseDependencyNameVersions(String tomlFileContents, CargoDetectableOptions cargoDetectableOptions) {
+    public Map<String, String> parseDependenciesToExclude(String tomlFileContents, CargoDetectableOptions cargoDetectableOptions) {
         TomlParseResult toml = Toml.parse(tomlFileContents);
         Map<String, String> allDeps = new HashMap<>();
 
         if (cargoDetectableOptions.getDependencyTypeFilter().shouldExclude(CargoDependencyType.NORMAL)) {
-            allDeps.putAll(parseNamedDependenciesFromTable(toml, NORMAL_DEPENDENCIES_KEY));
+            allDeps.putAll(parseDependenciesToExcludeFromTomlSection(toml, NORMAL_DEPENDENCIES_KEY));
         }
         if (cargoDetectableOptions.getDependencyTypeFilter().shouldExclude(CargoDependencyType.BUILD)) {
-            allDeps.putAll(parseNamedDependenciesFromTable(toml, BUILD_DEPENDENCIES_KEY));
+            allDeps.putAll(parseDependenciesToExcludeFromTomlSection(toml, BUILD_DEPENDENCIES_KEY));
         }
         if (cargoDetectableOptions.getDependencyTypeFilter().shouldExclude(CargoDependencyType.DEV)) {
-            allDeps.putAll(parseNamedDependenciesFromTable(toml, DEV_DEPENDENCIES_KEY));
+            allDeps.putAll(parseDependenciesToExcludeFromTomlSection(toml, DEV_DEPENDENCIES_KEY));
         }
 
         return allDeps;
     }
 
-    private Map<String, String> parseNamedDependenciesFromTable(TomlParseResult toml, String sectionKey) {
+    private Map<String, String> parseDependenciesToExcludeFromTomlSection(TomlParseResult toml, String sectionKey) {
         Map<String, String> deps = new HashMap<>();
         TomlTable table = toml.getTable(sectionKey);
         if (table == null) {
