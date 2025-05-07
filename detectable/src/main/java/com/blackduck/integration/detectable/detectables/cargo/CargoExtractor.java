@@ -3,7 +3,12 @@ package com.blackduck.integration.detectable.detectables.cargo;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.blackduck.integration.detectable.detectables.cargo.data.CargoLockPackageData;
@@ -22,11 +27,8 @@ import com.blackduck.integration.detectable.detectables.cargo.transform.CargoLoc
 import com.blackduck.integration.detectable.detectables.cargo.transform.CargoLockPackageTransformer;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.util.NameVersion;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class CargoExtractor {
-    private static final Logger logger = LoggerFactory.getLogger(CargoExtractor.class);
     private final CargoTomlParser cargoTomlParser;
     private final CargoLockPackageDataTransformer cargoLockPackageDataTransformer;
     private final CargoLockPackageTransformer cargoLockPackageTransformer;
@@ -86,7 +88,6 @@ public class CargoExtractor {
                     String constraint = excludableDependencyMap.get(name);
                     boolean matches = constraint == null || VersionUtils.versionMatches(constraint, version);
                     if (matches) {
-                        logger.debug("Excluding package '{}' version '{}' due to constraint '{}'", name, version, constraint);
                         excludedNames.add(name);
                         return false;
                     }
