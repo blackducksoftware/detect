@@ -1,6 +1,8 @@
 package com.blackduck.integration.detectable.detectables.cargo.parse;
 
-import java.util.*;
+import java.util.Optional;
+import java.util.Map;
+import java.util.HashMap;
 
 import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDetectableOptions;
