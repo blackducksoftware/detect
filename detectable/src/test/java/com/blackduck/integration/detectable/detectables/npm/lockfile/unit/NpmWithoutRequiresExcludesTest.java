@@ -31,6 +31,7 @@ public class NpmWithoutRequiresExcludesTest {
             Collections.emptyList(),
             Collections.emptyList(),
             Collections.emptyList(),
+            Collections.emptyList(),
             resolvedDependencies
         );
 

@@ -95,6 +95,7 @@ public class NpmCliParser {
                 boolean excludingBecausePeer = (npmDependencyTypeFilter.shouldExclude(NpmDependencyType.PEER, combinedPackageJson.getPeerDependencies())
                     && combinedPackageJson.getPeerDependencies().containsKey(elementEntry.getKey()));
                 return !excludingBecauseDev && !excludingBecausePeer;
+                // TODO need changes here for optional
             })
             .forEach(elementEntry -> processChild(elementEntry, graph, parentDependency, isRootDependency, combinedPackageJson));
     }

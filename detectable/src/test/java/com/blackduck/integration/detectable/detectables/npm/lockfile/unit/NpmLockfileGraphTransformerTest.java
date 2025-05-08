@@ -92,6 +92,7 @@ public class NpmLockfileGraphTransformerTest {
             Collections.emptyList(),
             Collections.emptyList(),
             Collections.emptyList(),
+            Collections.emptyList(),
             resolvedDependencies
         );
         

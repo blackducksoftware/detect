@@ -31,6 +31,7 @@ public class NpmDependencyConverter {
     public NpmProject convertLockFile(PackageLock packageLock, @Nullable CombinedPackageJson combinedPackageJson) {
         List<NpmRequires> declaredDevDependencies = new ArrayList<>();
         List<NpmRequires> declaredPeerDependencies = new ArrayList<>();
+        List<NpmRequires> declaredOptionalDependencies = new ArrayList<>();
         List<NpmRequires> declaredDependencies = new ArrayList<>();
         List<NpmDependency> resolvedDependencies = new ArrayList<>();
 
@@ -57,9 +58,14 @@ public class NpmDependencyConverter {
                 List<NpmRequires> rootPeerRequires = convertNameVersionMapToRequires(combinedPackageJson.getPeerDependencies());
                 declaredPeerDependencies.addAll(rootPeerRequires);
             }
+            
+            if (!combinedPackageJson.getOptionalDependencies().isEmpty()) {
+                List<NpmRequires> rootOptionalRequires = convertNameVersionMapToRequires(combinedPackageJson.getOptionalDependencies());
+                declaredOptionalDependencies.addAll(rootOptionalRequires);
+            }
         }
 
-        return new NpmProject(packageLock.name, packageLock.version, declaredDevDependencies, declaredPeerDependencies, declaredDependencies, resolvedDependencies);
+        return new NpmProject(packageLock.name, packageLock.version, declaredDevDependencies, declaredPeerDependencies, declaredDependencies, declaredOptionalDependencies, resolvedDependencies);
     }
 
     public List<NpmDependency> convertLockPackagesToNpmDependencies(NpmDependency parent, Map<String, PackageLockPackage> packages) {
