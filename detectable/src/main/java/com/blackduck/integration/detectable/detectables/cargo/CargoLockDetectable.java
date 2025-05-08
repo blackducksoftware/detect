@@ -25,14 +25,15 @@ public class CargoLockDetectable extends Detectable {
 
     private final FileFinder fileFinder;
     private final CargoExtractor cargoExtractor;
-
+    private final CargoDetectableOptions cargoDetectableOptions;
     private File cargoLock;
     private File cargoToml;
 
-    public CargoLockDetectable(DetectableEnvironment environment, FileFinder fileFinder, CargoExtractor cargoExtractor) {
+    public CargoLockDetectable(DetectableEnvironment environment, FileFinder fileFinder, CargoExtractor cargoExtractor, CargoDetectableOptions cargoDetectableOptions) {
         super(environment);
         this.fileFinder = fileFinder;
         this.cargoExtractor = cargoExtractor;
+        this.cargoDetectableOptions = cargoDetectableOptions;
     }
 
     @Override
@@ -52,6 +53,6 @@ public class CargoLockDetectable extends Detectable {
 
     @Override
     public Extraction extract(ExtractionEnvironment extractionEnvironment) throws IOException, DetectableException, MissingExternalIdException {
-        return cargoExtractor.extract(cargoLock, cargoToml);
+        return cargoExtractor.extract(cargoLock, cargoToml, cargoDetectableOptions);
     }
 }

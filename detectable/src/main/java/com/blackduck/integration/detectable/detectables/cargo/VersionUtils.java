@@ -14,4 +14,50 @@ public class VersionUtils {
         }
         return 0;
     }
+
+    public static boolean versionMatches(String constraint, String actualVersion) {
+        if (constraint == null || actualVersion == null) {
+            return false;
+        }
+
+        String normalizedActual = normalizeVersion(actualVersion);
+        String normalizedConstraintVersion;
+
+        if (constraint.startsWith(">=")) {
+            normalizedConstraintVersion = normalizeVersion(constraint.substring(2));
+            return compareVersions(normalizedActual, normalizedConstraintVersion) >= 0;
+        } else if (constraint.startsWith(">")) {
+            normalizedConstraintVersion = normalizeVersion(constraint.substring(1));
+            return compareVersions(normalizedActual, normalizedConstraintVersion) > 0;
+        } else if (constraint.startsWith("<=")) {
+            normalizedConstraintVersion = normalizeVersion(constraint.substring(2));
+            return compareVersions(normalizedActual, normalizedConstraintVersion) <= 0;
+        } else if (constraint.startsWith("<")) {
+            normalizedConstraintVersion = normalizeVersion(constraint.substring(1));
+            return compareVersions(normalizedActual, normalizedConstraintVersion) < 0;
+        } else if (constraint.startsWith("=")) {
+            normalizedConstraintVersion = normalizeVersion(constraint.substring(1));
+            return compareVersions(normalizedActual, normalizedConstraintVersion) == 0;
+        } else {
+            // Default to exact match
+            normalizedConstraintVersion = normalizeVersion(constraint);
+            return compareVersions(normalizedActual, normalizedConstraintVersion) == 0;
+        }
+    }
+
+    private static String normalizeVersion(String version) {
+        String[] parts = version.split("\\.");
+        StringBuilder normalized = new StringBuilder();
+        for (int i = 0; i < 3; i++) {
+            if (i < parts.length) {
+                normalized.append(parts[i]);
+            } else {
+                normalized.append("0");
+            }
+            if (i < 2) {
+                normalized.append(".");
+            }
+        }
+        return normalized.toString();
+    }
 }

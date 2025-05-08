@@ -1,16 +1,24 @@
 package com.blackduck.integration.detectable.detectables.cargo.parse;
 
 import java.util.Optional;
+import java.util.Map;
+import java.util.HashMap;
 
+import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
+import com.blackduck.integration.detectable.detectables.cargo.CargoDetectableOptions;
 import org.tomlj.Toml;
 import org.tomlj.TomlParseResult;
 
 import com.blackduck.integration.util.NameVersion;
+import org.tomlj.TomlTable;
 
 public class CargoTomlParser {
     private static final String NAME_KEY = "name";
     private static final String VERSION_KEY = "version";
     private static final String PACKAGE_KEY = "package";
+    private static final String NORMAL_DEPENDENCIES_KEY = "dependencies";
+    private static final String BUILD_DEPENDENCIES_KEY = "build-dependencies";
+    private static final String DEV_DEPENDENCIES_KEY = "dev-dependencies";
 
     public Optional<NameVersion> parseNameVersionFromCargoToml(String tomlFileContents) {
         TomlParseResult cargoTomlObject = Toml.parse(tomlFileContents);
@@ -22,4 +30,41 @@ public class CargoTomlParser {
         return Optional.empty();
     }
 
+    public Map<String, String> parseDependenciesToExclude(String tomlFileContents, CargoDetectableOptions cargoDetectableOptions) {
+        TomlParseResult toml = Toml.parse(tomlFileContents);
+        Map<String, String> allDeps = new HashMap<>();
+
+        if (cargoDetectableOptions.getDependencyTypeFilter().shouldExclude(CargoDependencyType.NORMAL)) {
+            allDeps.putAll(parseDependenciesToExcludeFromTomlSection(toml, NORMAL_DEPENDENCIES_KEY));
+        }
+        if (cargoDetectableOptions.getDependencyTypeFilter().shouldExclude(CargoDependencyType.BUILD)) {
+            allDeps.putAll(parseDependenciesToExcludeFromTomlSection(toml, BUILD_DEPENDENCIES_KEY));
+        }
+        if (cargoDetectableOptions.getDependencyTypeFilter().shouldExclude(CargoDependencyType.DEV)) {
+            allDeps.putAll(parseDependenciesToExcludeFromTomlSection(toml, DEV_DEPENDENCIES_KEY));
+        }
+
+        return allDeps;
+    }
+
+    private Map<String, String> parseDependenciesToExcludeFromTomlSection(TomlParseResult toml, String sectionKey) {
+        Map<String, String> deps = new HashMap<>();
+        TomlTable table = toml.getTable(sectionKey);
+        if (table == null) {
+            return deps;
+        }
+
+        for (String key : table.keySet()) {
+            Object value = table.get(key);
+            if (value instanceof String) {
+                deps.put(key, (String) value);
+            } else if (value instanceof TomlTable) {
+                TomlTable dependencyTable = (TomlTable) value;
+                String version = dependencyTable.getString(VERSION_KEY); // May be null
+                deps.put(key, version);
+            }
+        }
+
+        return deps;
+    }
 }
