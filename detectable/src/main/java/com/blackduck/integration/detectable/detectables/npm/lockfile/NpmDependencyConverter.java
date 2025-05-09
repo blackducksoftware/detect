@@ -79,7 +79,8 @@ public class NpmDependencyConverter {
             String packageName = packageEntry.getKey();
             PackageLockPackage packageLockDependency = packageEntry.getValue();
 
-            NpmDependency dependency = createNpmDependency(packageName, packageLockDependency.version, packageLockDependency.dev, packageLockDependency.peer);
+            // TODO confirm works
+            NpmDependency dependency = createNpmDependency(packageName, packageLockDependency.version, packageLockDependency.dev, packageLockDependency.peer, packageLockDependency.optional);
             dependency.setParent(parent);
             children.add(dependency);
 
@@ -103,7 +104,8 @@ public class NpmDependencyConverter {
             String packageName = packageEntry.getKey();
             PackageLockDependency packageLockDependency = packageEntry.getValue();
 
-            NpmDependency dependency = createNpmDependency(packageName, packageLockDependency.version, packageLockDependency.dev, packageLockDependency.peer);
+            // TODO confirm works
+            NpmDependency dependency = createNpmDependency(packageName, packageLockDependency.version, packageLockDependency.dev, packageLockDependency.peer, packageLockDependency.optional);
             dependency.setParent(parent);
             children.add(dependency);
 
@@ -116,9 +118,10 @@ public class NpmDependencyConverter {
         return children;
     }
 
-    private NpmDependency createNpmDependency(String name, String version, Boolean isDev, Boolean isPeer) {
+    private NpmDependency createNpmDependency(String name, String version, Boolean isDev, Boolean isPeer, Boolean isOptional) {
         boolean dev = isDev != null && isDev;
         boolean peer = isPeer != null && isPeer;
+        // TODO code needed here for optional
         ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.NPMJS, name, version);
         return new NpmDependency(name, version, externalId, dev, peer);
     }

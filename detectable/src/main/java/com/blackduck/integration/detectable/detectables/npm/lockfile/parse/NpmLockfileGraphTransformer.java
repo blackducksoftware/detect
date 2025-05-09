@@ -130,7 +130,8 @@ public class NpmLockfileGraphTransformer {
             if (workspaceDependency != null) {
                 // TODO change here
                 if ((workspaceDependency.isDevDependency() && npmDependencyTypeFilter.shouldExclude(NpmDependencyType.DEV))
-                        || (workspaceDependency.isPeerDependency() && npmDependencyTypeFilter.shouldExclude(NpmDependencyType.PEER))) {
+                        || (workspaceDependency.isPeerDependency() && npmDependencyTypeFilter.shouldExclude(NpmDependencyType.PEER))
+                        || (workspaceDependency.isOptionalDependency() && npmDependencyTypeFilter.shouldExclude(NpmDependencyType.OPTIONAL))) {
                     continue;
                 }
                 dependencyGraph.addChildrenToRoot(workspaceDependency);
