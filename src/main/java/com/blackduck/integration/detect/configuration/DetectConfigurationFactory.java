@@ -241,14 +241,7 @@ public class DetectConfigurationFactory {
     public RapidScanOptions createRapidScanOptions() {
         RapidCompareMode rapidCompareMode = detectConfiguration.getValue(DetectProperties.DETECT_BLACKDUCK_RAPID_COMPARE_MODE);
         BlackduckScanMode scanMode= detectConfiguration.getValue(DetectProperties.DETECT_BLACKDUCK_SCAN_MODE);
-        
-        AllNoneEnumList<PolicyRuleSeverityType> value = detectConfiguration.getValue(DetectProperties.DETECT_STATELESS_POLICY_CHECK_FAIL_ON_SEVERITIES);
-        List<PolicyRuleSeverityType> severitiesToFailPolicyCheck;
-        if (value.containsNone()) {
-            severitiesToFailPolicyCheck = new ArrayList<>(Arrays.asList(PolicyRuleSeverityType.BLOCKER, PolicyRuleSeverityType.CRITICAL));
-        } else {
-            severitiesToFailPolicyCheck = value.representedValues();
-        }
+        List<PolicyRuleSeverityType> severitiesToFailPolicyCheck = detectConfiguration.getValue(DetectProperties.DETECT_STATELESS_POLICY_CHECK_FAIL_ON_SEVERITIES).representedValues();
         
         long detectTimeout = findTimeoutInSeconds();
         return new RapidScanOptions(rapidCompareMode, scanMode, detectTimeout, severitiesToFailPolicyCheck);
