@@ -242,40 +242,40 @@ public class PropertyConfiguration {
     @NotNull
     public MaskedRawValueResult getMaskedRawValueResult(@NotNull Set<Property> properties, Predicate<String> shouldMask) {
         Map<String, String> rawMap = getMaskedRawValueMap(properties, shouldMask);
-        String aggregatedMessage = handleInvalidKeys(properties, getCurrentDetectPropertyKeys());
+
+        // Collecting all valid detect and external property keys
+        Set<String> validKeys = properties.stream().map(Property::getKey).collect(Collectors.toSet());
+        validKeys.addAll(ExternalProperties.getAllExternalPropertyKeys());
+
+        // Getting the current detect property keys which are closely related to the valid keys
+        Set<String> currentPropertyKeys = getCurrentDetectPropertyKeys(validKeys);
+
+        String aggregatedMessage = handleInvalidKeys(currentPropertyKeys, validKeys);
         return new MaskedRawValueResult(aggregatedMessage, rawMap);
-    }
-
-    // This method is used to get the current detect property keys from the property sources like command line args,
-    // configuration file, environment variables etc.
-    @NotNull
-    public Set<String> getCurrentDetectPropertyKeys() {
-        LevenshteinDistance levenshtein = new LevenshteinDistance();
-        int maxDistance = 3;
-
-        return orderedPropertySources.stream()
-                .map(PropertySource::getKeys)
-                .flatMap(Set::stream)
-                .filter(key -> isMatchingKey(key, levenshtein, maxDistance))
-                .collect(Collectors.toSet());
     }
 
     // This method checks if the property key extracted from the sources matches any of the `detect` or `blackduck`
     // related property keys using Levenshtein distance algorithm.
-    private boolean isMatchingKey(String key, LevenshteinDistance levenshtein, int maxDistance) {
-        String[] segments = key.split("\\.");
-        return levenshtein.apply(segments[0], "detect") <= maxDistance ||
-                levenshtein.apply(segments[0], "blackduck") <= maxDistance ||
-                (segments.length > 1 &&
-                        levenshtein.apply(segments[0], "logging") <= maxDistance &&
-                        levenshtein.apply(segments[1], "level") <= maxDistance);
+    @NotNull
+    public Set<String> getCurrentDetectPropertyKeys(Set<String> allValidKeys) {
+        LevenshteinDistance levenshtein = new LevenshteinDistance();
+        int maxDistance = 3;
+
+        return orderedPropertySources.stream()
+            .map(PropertySource::getKeys)
+            .flatMap(Set::stream)
+            .filter(key -> isCloseToAnyValidKey(key, allValidKeys, levenshtein, maxDistance))
+            .collect(Collectors.toSet());
+    }
+
+    private boolean isCloseToAnyValidKey(String key, Set<String> validKeys, LevenshteinDistance levenshtein, int maxDistance) {
+        return validKeys.stream()
+            .anyMatch(valid -> levenshtein.apply(key, valid) <= maxDistance);
     }
 
     // This method is used to handle invalid keys by checking if they are present in the valid keys set.
     // If not, it suggests similar keys using Jaro-Winkler similarity algorithm.
-    public static String handleInvalidKeys(Set<Property> properties, Set<String> currentPropertyKeys) {
-        Set<String> validKeys = properties.stream().map(Property::getKey).collect(Collectors.toSet());
-        validKeys.addAll(ExternalProperties.getAllExternalPropertyKeys());
+    public static String handleInvalidKeys(Set<String> currentPropertyKeys, Set<String> validKeys) {
         JaroWinklerSimilarity jaroWinkler = new JaroWinklerSimilarity();
         StringBuilder aggregatedMessage = new StringBuilder();
         List<String> invalidKeys = new ArrayList<>();
