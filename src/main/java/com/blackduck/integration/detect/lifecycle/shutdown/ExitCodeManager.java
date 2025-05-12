@@ -29,10 +29,23 @@ public class ExitCodeManager {
     }
 
     public ExitCodeType getWinningExitCode() {
-        ExitCodeType winningExitCodeType = ExitCodeType.SUCCESS;
-        for (ExitCodeRequest exitCodeRequest : exitCodeRequests) {
-            winningExitCodeType = ExitCodeType.getWinningExitCodeType(winningExitCodeType, exitCodeRequest.getExitCodeType());
+        ExitCodeType championExitCodeType = ExitCodeType.SUCCESS;
+        // match exitcodetype with its corresponding exitcoderequest which has reason
+        ExitCodeRequest winningRequest = null;
+        for (ExitCodeRequest exitCodeRequest : exitCodeRequests) { // exitCodeRequest has reason
+            ExitCodeType nextContender = exitCodeRequest.getExitCodeType();
+            ExitCodeType thisRoundsWinner = ExitCodeType.getWinningExitCodeType(championExitCodeType, nextContender);
+
+            // dethrone
+            if (thisRoundsWinner != championExitCodeType) {
+                championExitCodeType = thisRoundsWinner;
+                winningRequest = exitCodeRequest;
+            }
         }
-        return winningExitCodeType;
+
+        if (winningRequest != null && winningRequest.getReason() != null) {
+            championExitCodeType.setDescription(winningRequest.getReason());
+        }
+        return championExitCodeType;
     }
 }

@@ -54,7 +54,7 @@ public class PolicyChecker {
                 List<PolicyViolationInfo> fatalRulesViolated = collectFatalRulesViolated(projectVersionView, severity -> true);
                 logViolationMessages(fatalRulesViolated);
                 String violationReason = StringUtils.join(violatedPolicyNames, ", ");
-                exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_POLICY_VIOLATION, "Violated policy by names: " + violationReason);
+                exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_POLICY_VIOLATION, "Violated policy by names: " + violationReason); // lost in translation
             }
 
         } else {
@@ -83,7 +83,7 @@ public class PolicyChecker {
             // or we have noticed violations while examining components in the BOM (fatalRulesViolated),
             // fail the scan.
             if (policySeveritiesAreViolated || !fatalRulesViolated.isEmpty()) {
-                exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_POLICY_VIOLATION, policyStatusDescription.getPolicyStatusMessage());
+                exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_POLICY_VIOLATION, policyStatusDescription.getPolicyStatusMessage()); // severity case
             }
         } else {
             String availableLinks = StringUtils.join(projectVersionView.getAvailableLinks(), ", ");
