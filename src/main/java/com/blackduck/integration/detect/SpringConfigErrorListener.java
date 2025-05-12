@@ -16,7 +16,7 @@ public class SpringConfigErrorListener implements ApplicationListener<Applicatio
         logger.error("Spring Framework issued an ApplicationFailedEvent during application startup.");
         logger.error("An exception of type {} was encountered.", event.getException().getClass());
         logger.error("The exception message was: {}", event.getException().getMessage());
-        logger.error("Please check https://documentation.blackduck.com/bundle/detect/page/configuring/overview.html for possible configuration sources and values.");
+        logger.error("Please check https://documentation.blackduck.com/bundle/detect/page/configuring/configfile.html for possible configuration sources and values.");
 
         // issue an exit call to prevent a long confusing stacktrace from being printed by Spring
         System.exit(ExitCodeType.FAILURE_CONFIGURATION.getExitCode());
