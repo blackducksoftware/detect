@@ -1,4 +1,4 @@
-# Solutions to common problems
+# Common solutions
 
 ## DETECT_SOURCE was not set or computed correctly
 
@@ -166,6 +166,18 @@ Or:
 ````
 export BDS_JAVA_HOME=/usr/lib/jvm/java-11-openjdk/jre
 ````
+
+### Symptom
+
+Detector scans may fail with an error indicating Java incompatibility.
+
+### Possible cause
+
+[detect_product_short] might use package manager executables and CLI commands to investigate projects and the Java version in use by [detect_product_short] might not be compatible with the Java version used for the project.
+
+### Solution
+
+Install an appropriate [detect_product_short] supported version of Java and configure [detect_product_short] to use that version of Java by setting environment variable JAVA_HOME value for that Java installation.
 
 ## On Windows: Error trying cleanup
 
