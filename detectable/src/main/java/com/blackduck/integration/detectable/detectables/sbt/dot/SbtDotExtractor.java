@@ -5,11 +5,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.paypal.digraph.parser.GraphParser;
+import guru.nidi.graphviz.model.MutableGraph;
+import guru.nidi.graphviz.parse.Parser;
 import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.dependency.Dependency;
 import com.blackduck.integration.detectable.ExecutableTarget;
@@ -56,13 +56,13 @@ public class SbtDotExtractor {
 
             Extraction.Builder extraction = new Extraction.Builder();
             for (File dotGraph : dotGraphs) {
-                GraphParser graphParser = new GraphParser(FileUtils.openInputStream(dotGraph));
-                Set<String> rootIDs = sbtRootNodeFinder.determineRootIDs(graphParser);
+                MutableGraph mutableGraph = new Parser().read(dotGraph);
+                Set<String> rootIDs = sbtRootNodeFinder.determineRootIDs(mutableGraph);
                 File projectFolder = dotGraph.getParentFile().getParentFile();//typically found in project-folder/target/<>.dot so .parent.parent == project folder
 
                 if (rootIDs.size() == 1) {
                     String projectId = rootIDs.stream().findFirst().get();
-                    DependencyGraph graph = sbtGraphParserTransformer.transformDotToGraph(graphParser, projectId);
+                    DependencyGraph graph = sbtGraphParserTransformer.transformDotToGraph(projectId, mutableGraph);
                     Dependency projectDependency = graphNodeParser.nodeToDependency(projectId);
                     extraction.codeLocations(new CodeLocation(graph, projectDependency.getExternalId(), projectFolder));
                     if (projectFolder.equals(directory)) {
@@ -72,7 +72,7 @@ public class SbtDotExtractor {
                 } else {
                     logger.warn("Unable to determine which node was the project in an SBT graph: " + dotGraph.toString());
                     logger.warn("This may mean you have extraneous dependencies and should consider removing them. The dependencies are: " + String.join(",", rootIDs));
-                    DependencyGraph graph = sbtGraphParserTransformer.transformDotToGraph(graphParser, rootIDs);
+                    DependencyGraph graph = sbtGraphParserTransformer.transformDotToGraph(rootIDs, mutableGraph);
                     extraction.codeLocations(new CodeLocation(graph, projectFolder));
                 }
             }

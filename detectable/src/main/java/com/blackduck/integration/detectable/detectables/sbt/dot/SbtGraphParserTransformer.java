@@ -1,14 +1,16 @@
 package com.blackduck.integration.detectable.detectables.sbt.dot;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import guru.nidi.graphviz.model.Link;
+import guru.nidi.graphviz.model.MutableGraph;
+import guru.nidi.graphviz.model.MutableNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.paypal.digraph.parser.GraphEdge;
-import com.paypal.digraph.parser.GraphElement;
-import com.paypal.digraph.parser.GraphParser;
 import com.blackduck.integration.bdio.graph.BasicDependencyGraph;
 import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.dependency.Dependency;
@@ -21,26 +23,32 @@ public class SbtGraphParserTransformer {
         this.sbtDotGraphNodeParser = sbtDotGraphNodeParser;
     }
 
-    public DependencyGraph transformDotToGraph(GraphParser graphParser, String projectNodeId) {
+    public DependencyGraph transformDotToGraph(String projectNodeId, MutableGraph mutableGraph) {
         DependencyGraph graph = new BasicDependencyGraph();
 
-        Set<String> evictedIds = graphParser.getEdges().values().stream()
-        .filter(
-            edge -> edge.getAttribute("label") != null
-            && edge.getAttribute("label").toString().toLowerCase().contains("evicted")
-            )
-            .map(GraphEdge::getNode1)
-            .map(GraphElement::getId)
-            .collect(Collectors.toSet());
+        Set<String> evictedIds = new HashSet<>();
+        mutableGraph.nodes().forEach(node -> {
+            node.attrs().forEach(attr -> {
+                if(attr.getKey().equals("label")) {
+                    if(attr.getValue().toString().toLowerCase().contains("evicted")) {
+                        evictedIds.add(node.name().toString());
+                    }
+                }
+            });
+        });
 
-        for (GraphEdge graphEdge : graphParser.getEdges().values()) {
-            Dependency parent = sbtDotGraphNodeParser.nodeToDependency(graphEdge.getNode1().getId());
-            Dependency child = sbtDotGraphNodeParser.nodeToDependency(graphEdge.getNode2().getId());
-           
-            if (projectNodeId.equals(graphEdge.getNode1().getId())) {
-                graph.addChildToRoot(child);
+        List<Link> links = mutableGraph.nodes().stream().map(MutableNode::links).flatMap(List::stream).collect(Collectors.toList());
+        for (Link link : links) {
+            String parentNode = normalizeDependency(link.asLinkTarget().name().toString());
+            String childNode = normalizeDependency(link.asLinkSource().name().toString());
+
+            Dependency parent = sbtDotGraphNodeParser.nodeToDependency(parentNode);
+            Dependency child = sbtDotGraphNodeParser.nodeToDependency(childNode);
+
+            if (projectNodeId.equals(parentNode)) {
+                  graph.addDirectDependency(child);
             } else {
-                if (!evictedIds.contains(graphEdge.getNode2().getId())) {
+                if (!evictedIds.contains(childNode)) {
                     graph.addChildWithParent(child, parent);
                 }
             }
@@ -49,18 +57,32 @@ public class SbtGraphParserTransformer {
         return graph;
     }
 
-    public DependencyGraph transformDotToGraph(GraphParser graphParser, Set<String> projectNodeIds) {
+    public DependencyGraph transformDotToGraph(Set<String> projectNodeIds, MutableGraph mutableGraph) {
         DependencyGraph graph = new BasicDependencyGraph();
 
-        for (GraphEdge graphEdge : graphParser.getEdges().values()) {
-            Dependency parent = sbtDotGraphNodeParser.nodeToDependency(graphEdge.getNode1().getId());
-            Dependency child = sbtDotGraphNodeParser.nodeToDependency(graphEdge.getNode2().getId());
-            if (projectNodeIds.contains(graphEdge.getNode1().getId())) {
-                graph.addChildToRoot(parent);
+        List<Link> links = mutableGraph.nodes().stream().map(MutableNode::links).flatMap(List::stream).collect(Collectors.toList());
+        for (Link link : links) {
+            String parentNode = normalizeDependency(link.asLinkTarget().name().toString());
+            String childNode = normalizeDependency(link.asLinkSource().name().toString());
+
+            Dependency parent = sbtDotGraphNodeParser.nodeToDependency(parentNode);
+            Dependency child = sbtDotGraphNodeParser.nodeToDependency(childNode);
+
+            if (projectNodeIds.contains(parentNode)) {
+                graph.addDirectDependency(parent);
             }
+
             graph.addChildWithParent(child, parent);
+
         }
 
         return graph;
+    }
+
+    private String normalizeDependency(String dependency) {
+        if(dependency.startsWith("--")) {
+            return dependency.substring(2);
+        }
+        return dependency;
     }
 }
