@@ -24,6 +24,7 @@
 
 * Support for UV Package Manager has been added under [UV Detector](packagemgrs/python.md#uv-package-manager)
 * With the `detect.clone.project.version.name` parameter specified and `detect.project.version.update` set to true, [detect_product_short] will now clone, scan, and update the cloned project via parameters such as `detect.project.version.phase`.
+* Support for Java 21 has been added.
 
 ### Resolved issues
 
