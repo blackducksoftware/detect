@@ -8,7 +8,7 @@ public enum ExitCodeType {
     FAILURE_PROXY_CONNECTIVITY(4, "Detect was unable to use the configured proxy. Check your configuration and connection."),
     FAILURE_DETECTOR(5, "Detect had one or more detector failures while extracting dependencies. Check that all projects build and your environment is configured correctly."),
     FAILURE_SCAN(6, "Detect was unable to run the signature scanner against your source. Check your configuration."),
-    FAILURE_CONFIGURATION(7, "Detect was unable to start due to issues with it's configuration. Check and fix your configuration."),
+    FAILURE_CONFIGURATION(7, "Detect was unable to start due to configuration issues. Check and fix your configuration."),
     FAILURE_DETECTOR_REQUIRED(9, "Detect did not run all of the required detectors. Fix detector issues or disable required detectors."),
     FAILURE_BLACKDUCK_VERSION_NOT_SUPPORTED(
         10,
