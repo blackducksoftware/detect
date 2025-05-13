@@ -167,6 +167,8 @@ Or:
 export BDS_JAVA_HOME=/usr/lib/jvm/java-11-openjdk/jre
 ````
 
+## Detector scan fails with Java compatibility issues
+
 ### Symptom
 
 Detector scans may fail with an error indicating Java incompatibility.
