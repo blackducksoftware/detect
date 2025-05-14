@@ -35,6 +35,15 @@ public class SbtGraphParserTransformer {
                     }
                 }
             });
+            node.links().forEach(link -> {
+                link.attrs().forEach(attr -> {
+                    if(attr.getKey().equals("label")) {
+                        if(attr.getValue().toString().toLowerCase().contains("evicted")) {
+                            evictedIds.add(node.name().toString());
+                        }
+                    }
+                });
+            });
         });
 
         List<Link> links = mutableGraph.nodes().stream().map(MutableNode::links).flatMap(List::stream).collect(Collectors.toList());
