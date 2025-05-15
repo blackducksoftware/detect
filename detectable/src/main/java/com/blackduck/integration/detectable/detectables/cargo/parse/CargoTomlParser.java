@@ -1,5 +1,6 @@
 package com.blackduck.integration.detectable.detectables.cargo.parse;
 
+import java.util.EnumSet;
 import java.util.Optional;
 import java.util.Map;
 import java.util.HashMap;
@@ -32,22 +33,46 @@ public class CargoTomlParser {
 
     public Map<String, String> parseDependenciesToExclude(String tomlFileContents, CargoDetectableOptions cargoDetectableOptions) {
         TomlParseResult toml = Toml.parse(tomlFileContents);
-        Map<String, String> allDeps = new HashMap<>();
 
-        if (cargoDetectableOptions.getDependencyTypeFilter().shouldExclude(CargoDependencyType.NORMAL)) {
-            allDeps.putAll(parseDependenciesToExcludeFromTomlSection(toml, NORMAL_DEPENDENCIES_KEY));
-        }
-        if (cargoDetectableOptions.getDependencyTypeFilter().shouldExclude(CargoDependencyType.BUILD)) {
-            allDeps.putAll(parseDependenciesToExcludeFromTomlSection(toml, BUILD_DEPENDENCIES_KEY));
-        }
-        if (cargoDetectableOptions.getDependencyTypeFilter().shouldExclude(CargoDependencyType.DEV)) {
-            allDeps.putAll(parseDependenciesToExcludeFromTomlSection(toml, DEV_DEPENDENCIES_KEY));
+        Map<String, String> normalDeps = parseDependenciesFromTomlTable(toml, NORMAL_DEPENDENCIES_KEY);
+        Map<String, String> buildDeps = parseDependenciesFromTomlTable(toml, BUILD_DEPENDENCIES_KEY);
+        Map<String, String> devDeps = parseDependenciesFromTomlTable(toml, DEV_DEPENDENCIES_KEY);
+
+        // This map collects all types of dependencies along with their types
+        Map<String, EnumSet<CargoDependencyType>> dependencyTypeMap = new HashMap<>();
+
+        normalDeps.keySet().forEach(dep -> dependencyTypeMap
+            .computeIfAbsent(dep, k -> EnumSet.noneOf(CargoDependencyType.class))
+            .add(CargoDependencyType.NORMAL));
+
+        buildDeps.keySet().forEach(dep -> dependencyTypeMap
+            .computeIfAbsent(dep, k -> EnumSet.noneOf(CargoDependencyType.class))
+            .add(CargoDependencyType.BUILD));
+
+        devDeps.keySet().forEach(dep -> dependencyTypeMap
+            .computeIfAbsent(dep, k -> EnumSet.noneOf(CargoDependencyType.class))
+            .add(CargoDependencyType.DEV));
+
+        // Determining on which dependencies to exclude
+        Map<String, String> dependenciesToExclude = new HashMap<>();
+        for (Map.Entry<String, EnumSet<CargoDependencyType>> entry : dependencyTypeMap.entrySet()) {
+            String dependencyName = entry.getKey();
+            EnumSet<CargoDependencyType> types = entry.getValue();
+
+            boolean shouldBeExcluded = types.stream()
+                .allMatch(cargoDetectableOptions.getDependencyTypeFilter()::shouldExclude);
+
+            if (shouldBeExcluded) {
+                String version = normalDeps.getOrDefault(dependencyName,
+                    buildDeps.getOrDefault(dependencyName, devDeps.get(dependencyName)));
+                dependenciesToExclude.put(dependencyName, version);
+            }
         }
 
-        return allDeps;
+        return dependenciesToExclude;
     }
 
-    private Map<String, String> parseDependenciesToExcludeFromTomlSection(TomlParseResult toml, String sectionKey) {
+    private Map<String, String> parseDependenciesFromTomlTable(TomlParseResult toml, String sectionKey) {
         Map<String, String> deps = new HashMap<>();
         TomlTable table = toml.getTable(sectionKey);
         if (table == null) {
