@@ -615,7 +615,7 @@ public class DetectProperties {
             .setInfo("Cargo Dependency Types Excluded", DetectPropertyFromVersion.VERSION_10_5_0)
             .setHelp(
                 "A comma-separated list of dependency types that will be excluded.",
-                "The Cargo CLI Detector uses cargo tree flags to exclude the specified types, while the Cargo Lockfile Detector filters dependencies by reading Cargo.toml. For example, passing DEV will skip [dev-dependencies] from detection."
+                "The Cargo CLI Detector uses cargo tree flags to exclude the specified types, while the Cargo Lockfile Detector filters dependencies by reading Cargo.toml. For example, passing `detect.cargo.dependency.types.excluded=DEV` will skip [dev-dependencies] from detection."
             )
             .setExample(CargoDependencyType.DEV.name())
             .setGroups(DetectGroup.CARGO, DetectGroup.DETECTOR, DetectGroup.GLOBAL)
