@@ -6,6 +6,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.blackduck.integration.blackduck.api.generated.enumeration.PolicyRuleSeverityType;
 import com.blackduck.integration.blackduck.api.generated.view.DeveloperScansScanView;
 import com.blackduck.integration.detect.configuration.DetectUserFriendlyException;
 import com.blackduck.integration.detect.configuration.enumeration.BlackduckScanMode;
@@ -28,8 +29,8 @@ public class RapidModeLogReportOperation {
         this.scanMode = mode.displayName();
     }
 
-    public RapidScanResultSummary perform(List<DeveloperScansScanView> results) throws DetectUserFriendlyException {
-         RapidScanAggregateResult aggregateResult = rapidScanResultAggregator.aggregateData(results);
+    public RapidScanResultSummary perform(List<DeveloperScansScanView> results, List<PolicyRuleSeverityType> severitiesToFailPolicyCheck) throws DetectUserFriendlyException {
+        RapidScanAggregateResult aggregateResult = rapidScanResultAggregator.aggregateData(results, severitiesToFailPolicyCheck);
         logger.info(String.format("%s:", scanMode + RapidScanDetectResult.NONPERSISTENT_SCAN_RESULT_DETAILS_HEADING));
         aggregateResult.logResult(new Slf4jIntLogger(logger));
         RapidScanResultSummary summary = aggregateResult.getSummary();
