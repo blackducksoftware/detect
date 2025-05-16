@@ -33,63 +33,48 @@ public class CargoTomlParser {
 
     public Map<String, String> parseDependenciesToExclude(String tomlFileContents, CargoDetectableOptions cargoDetectableOptions) {
         TomlParseResult toml = Toml.parse(tomlFileContents);
+        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap = new HashMap<>();
 
-        Map<String, String> normalDeps = parseDependenciesFromTomlTable(toml, NORMAL_DEPENDENCIES_KEY);
-        Map<String, String> buildDeps = parseDependenciesFromTomlTable(toml, BUILD_DEPENDENCIES_KEY);
-        Map<String, String> devDeps = parseDependenciesFromTomlTable(toml, DEV_DEPENDENCIES_KEY);
+        parseDependenciesFromTomlTable(toml, NORMAL_DEPENDENCIES_KEY, CargoDependencyType.NORMAL, dependencyTypeMap);
+        parseDependenciesFromTomlTable(toml, BUILD_DEPENDENCIES_KEY, CargoDependencyType.BUILD, dependencyTypeMap);
+        parseDependenciesFromTomlTable(toml, DEV_DEPENDENCIES_KEY, CargoDependencyType.DEV, dependencyTypeMap);
 
         // This map collects all types of dependencies along with their types
-        Map<String, EnumSet<CargoDependencyType>> dependencyTypeMap = new HashMap<>();
-
-        normalDeps.keySet().forEach(dep -> dependencyTypeMap
-            .computeIfAbsent(dep, k -> EnumSet.noneOf(CargoDependencyType.class))
-            .add(CargoDependencyType.NORMAL));
-
-        buildDeps.keySet().forEach(dep -> dependencyTypeMap
-            .computeIfAbsent(dep, k -> EnumSet.noneOf(CargoDependencyType.class))
-            .add(CargoDependencyType.BUILD));
-
-        devDeps.keySet().forEach(dep -> dependencyTypeMap
-            .computeIfAbsent(dep, k -> EnumSet.noneOf(CargoDependencyType.class))
-            .add(CargoDependencyType.DEV));
-
-        // Determining on which dependencies to exclude
         Map<String, String> dependenciesToExclude = new HashMap<>();
-        for (Map.Entry<String, EnumSet<CargoDependencyType>> entry : dependencyTypeMap.entrySet()) {
-            String dependencyName = entry.getKey();
+
+        for (Map.Entry<NameVersion, EnumSet<CargoDependencyType>> entry : dependencyTypeMap.entrySet()) {
+            NameVersion nameVersion = entry.getKey();
             EnumSet<CargoDependencyType> types = entry.getValue();
 
             boolean shouldBeExcluded = types.stream()
                 .allMatch(cargoDetectableOptions.getDependencyTypeFilter()::shouldExclude);
 
             if (shouldBeExcluded) {
-                String version = normalDeps.getOrDefault(dependencyName,
-                    buildDeps.getOrDefault(dependencyName, devDeps.get(dependencyName)));
-                dependenciesToExclude.put(dependencyName, version);
+                dependenciesToExclude.put(nameVersion.getName(), nameVersion.getVersion());
             }
         }
 
         return dependenciesToExclude;
     }
 
-    private Map<String, String> parseDependenciesFromTomlTable(TomlParseResult toml, String sectionKey) {
-        Map<String, String> deps = new HashMap<>();
+    private void parseDependenciesFromTomlTable(TomlParseResult toml, String sectionKey, CargoDependencyType type, Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap) {
         TomlTable table = toml.getTable(sectionKey);
         if (table == null) {
-            return deps;
+            return;
         }
 
         for (String key : table.keySet()) {
             Object value = table.get(key);
-            if (value instanceof String) {
-                deps.put(key, (String) value);
-            } else if (value instanceof TomlTable) {
-                TomlTable dependencyTable = (TomlTable) value;
-                String version = dependencyTable.getString(VERSION_KEY); // May be null
-                deps.put(key, version);
-            }
-        }
+            String version = null;
 
-        return deps;
+            if (value instanceof String) {
+                version = (String) value;
+            } else if (value instanceof TomlTable) {
+                version = ((TomlTable) value).getString(VERSION_KEY); // May be null
+            }
+
+            NameVersion nv = new NameVersion(key, version);
+            dependencyTypeMap.computeIfAbsent(nv, k -> EnumSet.noneOf(CargoDependencyType.class)).add(type);
+        }
     }
 }
