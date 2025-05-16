@@ -90,12 +90,7 @@ public class YarnLockExtractor {
 
     @NotNull
     private YarnWorkspaces collectWorkspaceData(File dir) throws IOException {
-        Collection<YarnWorkspace> curLevelWorkspaces = packageJsonFiles.readWorkspacePackageJsonFiles(dir);
-        Collection<YarnWorkspace> allWorkspaces = new LinkedList<>(curLevelWorkspaces);
-        for (YarnWorkspace workspace : curLevelWorkspaces) {
-            Collection<YarnWorkspace> treeBranchWorkspacePackageJsons = packageJsonFiles.readWorkspacePackageJsonFiles(workspace.getWorkspacePackageJson().getDir());
-            allWorkspaces.addAll(treeBranchWorkspacePackageJsons);
-        }
+        Collection<YarnWorkspace> allWorkspaces = packageJsonFiles.readWorkspacePackageJsonFiles(dir);
         return new YarnWorkspaces(allWorkspaces);
     }
 }
