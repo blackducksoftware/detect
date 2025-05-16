@@ -5,9 +5,13 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import com.blackduck.integration.detectable.detectables.cargo.data.CargoLockPackageData;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,10 +43,18 @@ public class CargoExtractor {
         this.cargoLockPackageTransformer = cargoLockPackageTransformer;
     }
 
-    public Extraction extract(File cargoLockFile, @Nullable File cargoTomlFile) throws IOException, DetectableException, MissingExternalIdException {
+    public Extraction extract(File cargoLockFile, @Nullable File cargoTomlFile, CargoDetectableOptions cargoDetectableOptions) throws IOException, DetectableException, MissingExternalIdException {
         CargoLockData cargoLockData = new Toml().read(cargoLockFile).to(CargoLockData.class);
-        List<CargoLockPackage> packages = cargoLockData.getPackages()
-            .orElse(new ArrayList<>()).stream()
+        List<CargoLockPackageData> cargoLockPackageDataList = cargoLockData.getPackages().orElse(new ArrayList<>());
+        List<CargoLockPackageData> filteredPackages = cargoLockPackageDataList;
+        String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
+
+        if (cargoDetectableOptions != null) {
+            Map<String, String> excludableDependencyMap = cargoTomlParser.parseDependenciesToExclude(cargoTomlContents, cargoDetectableOptions);
+            filteredPackages = excludeDependencies(cargoLockPackageDataList, excludableDependencyMap);
+        }
+
+        List<CargoLockPackage> packages = filteredPackages.stream()
             .map(cargoLockPackageDataTransformer::transform)
             .collect(Collectors.toList());
 
@@ -50,15 +62,53 @@ public class CargoExtractor {
 
         Optional<NameVersion> projectNameVersion = Optional.empty();
         if (cargoTomlFile != null) {
-            String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
             projectNameVersion = cargoTomlParser.parseNameVersionFromCargoToml(cargoTomlContents);
         }
-
         CodeLocation codeLocation = new CodeLocation(graph); //TODO: Consider for producing a ProjectDependencyGraph
 
         return new Extraction.Builder()
             .success(codeLocation)
             .nameVersionIfPresent(projectNameVersion)
             .build();
+    }
+
+    private List<CargoLockPackageData> excludeDependencies(
+        List<CargoLockPackageData> packages,
+        Map<String, String> excludableDependencyMap
+    ) {
+        Set<String> excludedNames = new HashSet<>();
+
+        List<CargoLockPackageData> filtered = packages.stream()
+            .filter(pkg -> {
+                String name = pkg.getName().orElse(null);
+                String version = pkg.getVersion().orElse(null);
+                if (name == null || version == null) return true;
+
+                if (excludableDependencyMap.containsKey(name)) {
+                    String constraint = excludableDependencyMap.get(name);
+                    boolean matches = constraint == null || VersionUtils.versionMatches(constraint, version);
+                    if (matches) {
+                        excludedNames.add(name);
+                        return false;
+                    }
+                }
+
+                return true;
+            })
+            .collect(Collectors.toList());
+
+        return filtered.stream()
+            .map(pkg -> new CargoLockPackageData(
+                pkg.getName().orElse(null),
+                pkg.getVersion().orElse(null),
+                pkg.getSource().orElse(null),
+                pkg.getChecksum().orElse(null),
+                pkg.getDependencies()
+                    .orElse(new ArrayList<>())
+                    .stream()
+                    .filter(dep -> !excludedNames.contains(dep))
+                    .collect(Collectors.toList())
+            ))
+            .collect(Collectors.toList());
     }
 }
