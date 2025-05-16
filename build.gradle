@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '10.5.0-SIGQA4-andrians.IDETECT-4713-yarn-workspace-glob-optimization'
+version = '10.5.0-SIGQA5-andrians.IDETECT-4713-yarn-workspace-glob-optimization-SNAPSHOT'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
