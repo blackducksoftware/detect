@@ -1,5 +1,6 @@
 package com.blackduck.integration.detectable.detectables.opam.buildexe;
 
+import com.blackduck.integration.detectable.detectable.executable.ExecutableFailedException;
 import com.blackduck.integration.detectable.detectables.opam.buildexe.parse.OpamTreeParser;
 import com.blackduck.integration.detectable.detectables.opam.parse.OpamFileParser;
 import com.blackduck.integration.detectable.detectables.opam.parse.OpamParsedResult;
@@ -95,7 +96,7 @@ public class OpamBuildExtractor {
         }
     }
 
-    public List<String> runOpamTree(ExecutableTarget opamExe, File fullOutputFileName) throws ExecutableRunnerException {
+    public List<String> runOpamTree(ExecutableTarget opamExe, File fullOutputFileName) throws ExecutableRunnerException, ExecutableFailedException {
         List<String> arguments = new ArrayList<>();
         arguments.add("tree");
         arguments.add(".");
@@ -105,7 +106,7 @@ public class OpamBuildExtractor {
         arguments.add("--recursive");
         arguments.add("--json=" + fullOutputFileName.getAbsolutePath());
 
-        ExecutableOutput executableOutput = executableRunner.execute(ExecutableUtils.createFromTarget(sourceDirectory, opamExe, arguments));
+        ExecutableOutput executableOutput = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(sourceDirectory, opamExe, arguments));
 
         if(executableOutput.getReturnCode() == 0) {
             return executableOutput.getStandardOutputAsList();
