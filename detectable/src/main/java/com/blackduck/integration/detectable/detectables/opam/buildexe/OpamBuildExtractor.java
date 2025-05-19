@@ -1,5 +1,6 @@
 package com.blackduck.integration.detectable.detectables.opam.buildexe;
 
+import com.blackduck.integration.detectable.detectable.executable.ExecutableFailedException;
 import com.blackduck.integration.detectable.detectables.opam.buildexe.parse.OpamTreeParser;
 import com.blackduck.integration.detectable.detectables.opam.parse.OpamFileParser;
 import com.blackduck.integration.detectable.detectables.opam.parse.OpamParsedResult;
@@ -81,11 +82,11 @@ public class OpamBuildExtractor {
 
     }
 
-    private String getOpamVersion(ExecutableTarget opamExe) throws ExecutableRunnerException {
+    private String getOpamVersion(ExecutableTarget opamExe) throws ExecutableFailedException {
         List<String> arguments = new ArrayList<>();
         arguments.add("--version");
 
-        ExecutableOutput executableOutput = executableRunner.execute(ExecutableUtils.createFromTarget(sourceDirectory, opamExe, arguments));
+        ExecutableOutput executableOutput = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(sourceDirectory, opamExe, arguments));
 
         if(executableOutput.getReturnCode() == 0) {
             return executableOutput.getStandardOutputAsList().get(0);
