@@ -138,7 +138,7 @@ public class UVLockParser {
                 initializeProject(createDependency(workSpaceMember, packageDependencyMap.get(workSpaceMember))); // a new workspace member, initialize new code location
                 loopOverDependencies(workSpaceMember, null, uvDetectorOptions); //loop over all direct dependencies of root project
             } else {
-                logger.info("Skipping member '{}' as set in the detect exclusion workspace property.", workSpaceMember);
+                logger.info("Skipping member '{}' as set in the detect workspace property.", workSpaceMember);
             }
         }
     }
