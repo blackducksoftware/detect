@@ -218,6 +218,8 @@ public class SignatureScanStepRunner {
         // even though scanId just returns one.
         String pathToBdio = runDirectory + "/bdio/" + result.getScanId() + ".bdio";
         
+        // TODO should I add md5 checks?
+        
         ScassUploadStatus uploadResult = scaasScanUploader.upload(
                 HttpMethod.fromMethod(result.getUploadUrlData().getMethod()), 
                 result.getUploadUrl(), 
