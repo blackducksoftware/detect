@@ -1,6 +1,7 @@
 package com.blackduck.integration.detect.tool.signaturescanner.operation;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -22,6 +23,13 @@ public class SignatureScanResult {
     @SerializedName("scans")
     private Map<String, String> scans;
 
+    @SerializedName("uploadUrl")
+    private String uploadUrl;
+    
+    // TODO perhaps externalize this class as it is used twice now
+    @SerializedName("uploadUrlData")
+    private UploadUrlData uploadUrlData;
+
     public String getVersion() {
         return version;
     }
@@ -36,6 +44,27 @@ public class SignatureScanResult {
 
     public Map<String, String> getScans() {
         return scans;
+    }
+    
+    public String getUploadUrl() {
+        return uploadUrl;
+    }
+    
+    public UploadUrlData getUploadUrlData() {
+        return uploadUrlData;
+    }
+
+    public static class UploadUrlData {
+        private String method;
+        private List<Map<String, String>> headers;
+
+        public String getMethod() {
+            return method;
+        }
+
+        public List<Map<String, String>> getHeaders() {
+            return headers;
+        }
     }
 
     public Set<String> parseScanIds() {

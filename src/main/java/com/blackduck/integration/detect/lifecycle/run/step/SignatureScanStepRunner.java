@@ -8,7 +8,9 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -20,12 +22,18 @@ import com.google.gson.Gson;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.ScanBatch;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.ScanBatchRunner;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.ScanCommandOutput;
+import com.blackduck.integration.blackduck.http.BlackDuckRequestBuilder;
+import com.blackduck.integration.blackduck.service.BlackDuckApiClient;
+import com.blackduck.integration.blackduck.service.BlackDuckServicesFactory;
 import com.blackduck.integration.blackduck.service.model.NotificationTaskRange;
+import com.blackduck.integration.blackduck.service.request.BlackDuckResponseRequest;
 import com.blackduck.integration.detect.configuration.DetectUserFriendlyException;
 import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.data.DockerTargetData;
+import com.blackduck.integration.detect.lifecycle.run.data.ScanCreationResponse.UploadUrlData;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
+import com.blackduck.integration.detect.lifecycle.run.step.utility.UploaderHelper;
 import com.blackduck.integration.detect.tool.signaturescanner.ScanBatchRunnerUserResult;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScanPath;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerCodeLocationResult;
@@ -33,10 +41,20 @@ import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerRe
 import com.blackduck.integration.detect.tool.signaturescanner.operation.SignatureScanOuputResult;
 import com.blackduck.integration.detect.tool.signaturescanner.operation.SignatureScanResult;
 import com.blackduck.integration.detect.workflow.blackduck.codelocation.CodeLocationAccumulator;
+import com.blackduck.integration.exception.IntegrationException;
+import com.blackduck.integration.rest.HttpMethod;
+import com.blackduck.integration.rest.HttpUrl;
+import com.blackduck.integration.rest.response.Response;
+import com.blackduck.integration.sca.upload.client.uploaders.ScassUploader;
+import com.blackduck.integration.sca.upload.client.uploaders.UploaderFactory;
+import com.blackduck.integration.sca.upload.rest.status.ScassUploadStatus;
 import com.blackduck.integration.util.NameVersion;
 
 public class SignatureScanStepRunner {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
+    
+    private ScassUploader scaasScanUploader;
+    private BlackDuckRunData blackDuckRunData;
 
     private final OperationRunner operationRunner;
 
@@ -46,6 +64,19 @@ public class SignatureScanStepRunner {
 
     public SignatureScannerCodeLocationResult runSignatureScannerOnline(String detectRunUuid, BlackDuckRunData blackDuckRunData, NameVersion projectNameVersion, DockerTargetData dockerTargetData, Set<String> scanIdsToWaitFor, Gson gson)
         throws DetectUserFriendlyException, OperationException, IOException {
+
+        UploaderFactory uploadFactory;
+        try {
+            uploadFactory = UploaderHelper.getUploaderFactory(blackDuckRunData);
+            scaasScanUploader = uploadFactory.createScassUploader();
+            
+            // TODO temp
+            this.blackDuckRunData = blackDuckRunData;
+        } catch (IntegrationException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        
         ScanBatchRunner scanBatchRunner = resolveOnlineScanBatchRunner(blackDuckRunData);
 
         List<SignatureScanPath> scanPaths = operationRunner.createScanPaths(projectNameVersion, dockerTargetData);
@@ -160,7 +191,19 @@ public class SignatureScanStepRunner {
             try {
                 Reader reader = Files.newBufferedReader(Paths.get(scanOutputLocation));
 
+                // TODO need to move this out of this method as we are getting SCASS info
+                // from it now as well.
                 SignatureScanResult result = gson.fromJson(reader, SignatureScanResult.class);
+                
+                try {
+                    tempUploadAndReport(result, specificRunOutputDirectory.toString());
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                } catch (IntegrationException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
                 
                 scanIdsToWaitFor.addAll(result.parseScanIds());
             } catch (NoSuchFileException e) {
@@ -170,6 +213,61 @@ public class SignatureScanStepRunner {
         }
     }
     
+    private void tempUploadAndReport(SignatureScanResult result, String runDirectory) throws IOException, IntegrationException {
+        // TODO can we ever have more than one BDIO? See parseScanIds as we can get multiple IDs sometimes
+        // even though scanId just returns one.
+        String pathToBdio = runDirectory + "/bdio/" + result.getScanId() + ".bdio";
+        
+        ScassUploadStatus uploadResult = scaasScanUploader.upload(
+                HttpMethod.fromMethod(result.getUploadUrlData().getMethod()), 
+                result.getUploadUrl(), 
+                //result.getUploadUrlData().getHeaders(), 
+                getAllHeaders(result.getUploadUrlData()),
+                Path.of(pathToBdio));
+        
+        // TODO error handling like in ScassScanStepRunner
+        
+        notifyUploadComplete(result.getScanId());
+        
+    }
+    
+    // TODO duplicate code
+    private Map<String, String> getAllHeaders(SignatureScanResult.UploadUrlData uploadUrlData) {
+        Map<String, String> allHeaders = new HashMap<>();
+        List<Map<String, String>> headers = uploadUrlData.getHeaders();
+        
+        for (Map<String, String> singleHeader : headers) {
+            allHeaders.put(singleHeader.get("name"), singleHeader.get("value"));
+        }
+        
+        return allHeaders;
+    }
+    
+    // TODO duplicate code
+    private Response notifyUploadComplete(String scanId) throws IntegrationException {
+        BlackDuckServicesFactory blackDuckServicesFactory = blackDuckRunData.getBlackDuckServicesFactory();
+        BlackDuckApiClient blackDuckApiClient = blackDuckServicesFactory.getBlackDuckApiClient();
+        
+        String notfyUrl = "/api/scans/{}/scass-scan-processing".replace("{}", scanId);
+
+        HttpUrl postUrl = blackDuckRunData.getBlackDuckServerConfig().getBlackDuckUrl().appendRelativeUrl(notfyUrl);
+
+        BlackDuckResponseRequest buildBlackDuckResponseRequest = new BlackDuckRequestBuilder()
+            .addHeader("Content-Type", "application/vnd.blackducksoftware.scan-6+json")
+            .post()
+            .buildBlackDuckResponseRequest(postUrl);
+
+        try (Response response = blackDuckApiClient.execute(buildBlackDuckResponseRequest)) {
+            return response;
+        } catch (IntegrationException e) {
+            logger.trace("Could not notify scan container that scan upload is complete.");
+            throw new IntegrationException("Could not execute SCASS notification request.", e);
+        } catch (IOException e) {
+            logger.trace("I/O error occurred during SCASS notification request.");
+            throw new IntegrationException("I/O error occurred during SCASS notification request.", e);
+        }
+    }
+
     private void copyCsvFiles(File sourceFolder, File destFolder) throws IOException {
         File[] files = sourceFolder.listFiles((dir, name) -> name.endsWith(".csv"));
         if (files != null) {
