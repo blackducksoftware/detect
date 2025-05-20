@@ -96,12 +96,20 @@ public class PackageJsonExtractor {
             // Remove npm version selection characters that the KB won't match on
             .map(part -> part.replaceAll("[>=<~^]", ""))
             // Filter out parts that don't match the version pattern
-            .filter(part -> part.matches("\\d+\\.\\d+\\.\\d+|\\d+\\.\\d+|\\d+"))
+            .filter(part -> isProbableVersion(part))
             // Use compareSemVerVersions method to find smallest version in each value
             .min(semVerComparator)
             // If no part matches the version pattern, return the original value.
             .orElse(value);
 
         return lowestVersion;
+    }
+
+    private boolean isProbableVersion(String part) {
+        // If purely numeric and very long, it's likely a timestamp/hash
+        if (part.matches("\\d{6,}")) return false;
+
+        // Accept X, X.Y, X.Y.Z format
+        return part.matches("\\d+(\\.\\d+){0,2}");
     }
 }
