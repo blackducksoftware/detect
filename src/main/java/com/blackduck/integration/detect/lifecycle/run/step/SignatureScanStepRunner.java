@@ -216,6 +216,9 @@ public class SignatureScanStepRunner {
     private void tempUploadAndReport(SignatureScanResult result, String runDirectory) throws IOException, IntegrationException {
         // TODO can we ever have more than one BDIO? See parseScanIds as we can get multiple IDs sometimes
         // even though scanId just returns one.
+        
+        // TODO if the bdio is not there then SCASS might not be enabled and the signature scanner would operate
+        // in legacy mode.
         String pathToBdio = runDirectory + "/bdio/" + result.getScanId() + ".bdio";
         
         // TODO should I add md5 checks?
