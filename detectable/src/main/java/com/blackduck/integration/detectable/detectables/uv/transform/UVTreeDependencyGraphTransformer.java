@@ -81,7 +81,7 @@ public class UVTreeDependencyGraphTransformer {
             if(!isMemberExcluded) {
                 initializeProject(memberName, memberVersion); // initialize the project with a new code location
             } else {
-                logger.info("Skipping member '{}' as set in the detect workspace property.", memberName);
+                logger.info("Skipping member '{}' as set in the Detect workspace property.", memberName);
             }
         }
     }
