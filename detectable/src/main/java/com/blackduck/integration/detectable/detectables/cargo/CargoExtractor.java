@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.detectable.detectables.cargo.data.CargoLockPackageData;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.Nullable;
@@ -49,8 +50,8 @@ public class CargoExtractor {
         List<CargoLockPackageData> filteredPackages = cargoLockPackageDataList;
         String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
 
-        if (cargoDetectableOptions != null) {
-            Map<String, String> excludableDependencyMap = cargoTomlParser.parseDependenciesToExclude(cargoTomlContents, cargoDetectableOptions);
+        if (isDependencyExclusionEnabled(cargoDetectableOptions)) {
+            Map<String, String> excludableDependencyMap = cargoTomlParser.parseDependenciesToExclude(cargoTomlContents, cargoDetectableOptions.getDependencyTypeFilter());
             filteredPackages = excludeDependencies(cargoLockPackageDataList, excludableDependencyMap);
         }
 
@@ -70,6 +71,15 @@ public class CargoExtractor {
             .success(codeLocation)
             .nameVersionIfPresent(projectNameVersion)
             .build();
+    }
+
+    private boolean isDependencyExclusionEnabled(CargoDetectableOptions options) {
+        if (options == null) {
+            return false;
+        }
+
+        EnumListFilter<CargoDependencyType> filter = options.getDependencyTypeFilter();
+        return filter != null && !filter.shouldIncludeAll();
     }
 
     private List<CargoLockPackageData> excludeDependencies(

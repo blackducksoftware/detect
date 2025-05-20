@@ -5,8 +5,8 @@ import java.util.Optional;
 import java.util.Map;
 import java.util.HashMap;
 
+import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
-import com.blackduck.integration.detectable.detectables.cargo.CargoDetectableOptions;
 import org.tomlj.Toml;
 import org.tomlj.TomlParseResult;
 
@@ -31,7 +31,7 @@ public class CargoTomlParser {
         return Optional.empty();
     }
 
-    public Map<String, String> parseDependenciesToExclude(String tomlFileContents, CargoDetectableOptions cargoDetectableOptions) {
+    public Map<String, String> parseDependenciesToExclude(String tomlFileContents, EnumListFilter<CargoDependencyType> dependencyTypeFilter) {
         TomlParseResult toml = Toml.parse(tomlFileContents);
         Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap = new HashMap<>();
 
@@ -45,7 +45,7 @@ public class CargoTomlParser {
             EnumSet<CargoDependencyType> types = entry.getValue();
 
             boolean shouldBeExcluded = types.stream()
-                .allMatch(cargoDetectableOptions.getDependencyTypeFilter()::shouldExclude);
+                .allMatch(dependencyTypeFilter::shouldExclude);
 
             if (shouldBeExcluded) {
                 dependenciesToExclude.put(nameVersion.getName(), nameVersion.getVersion());
