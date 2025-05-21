@@ -82,24 +82,6 @@ public class SbtGraphParserTransformer {
         }
     }
 
-//    public DependencyGraph transformDotToGraph(Set<String> projectNodeIds, MutableGraph mutableGraph) {
-//        DependencyGraph graph = new BasicDependencyGraph();
-//
-//        List<Link> links = mutableGraph.nodes().stream().map(MutableNode::links).flatMap(List::stream).collect(Collectors.toList());
-//        for (Link link : links) {
-//            String parentNode = normalizeDependency(link.asLinkTarget().name().toString());
-//            String childNode = normalizeDependency(link.asLinkSource().name().toString());
-//
-//            Dependency parent = sbtDotGraphNodeParser.nodeToDependency(parentNode);
-//            Dependency child = sbtDotGraphNodeParser.nodeToDependency(childNode);
-//
-//
-//
-//        }
-//
-//        return graph;
-//    }
-
     private String normalizeDependency(String dependency) {
         if(dependency.startsWith("--")) {
             return dependency.substring(2);
