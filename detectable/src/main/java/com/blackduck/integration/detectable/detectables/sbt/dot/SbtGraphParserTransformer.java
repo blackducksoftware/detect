@@ -9,15 +9,12 @@ import java.util.stream.Collectors;
 import guru.nidi.graphviz.model.Link;
 import guru.nidi.graphviz.model.MutableGraph;
 import guru.nidi.graphviz.model.MutableNode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.blackduck.integration.bdio.graph.BasicDependencyGraph;
 import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.dependency.Dependency;
 
 public class SbtGraphParserTransformer {
-    private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final SbtDotGraphNodeParser sbtDotGraphNodeParser;
 
     public SbtGraphParserTransformer(SbtDotGraphNodeParser sbtDotGraphNodeParser) {
@@ -61,24 +58,16 @@ public class SbtGraphParserTransformer {
     private Set<String> getEvictedIds(MutableGraph mutableGraph) {
         Set<String> evictedIds = new HashSet<>();
         mutableGraph.nodes().forEach(node -> {
-            node.attrs().forEach(attr -> {
-                addEvictedEntry(attr, node, evictedIds);
-            });
-            node.links().forEach(link -> {
-                link.attrs().forEach(attr -> {
-                    addEvictedEntry(attr, node, evictedIds);
-                });
-            });
+            node.attrs().forEach(attr -> addEvictedEntry(attr, node, evictedIds));
+            node.links().forEach(link -> link.attrs().forEach(attr -> addEvictedEntry(attr, node, evictedIds)));
         });
 
         return evictedIds;
     }
 
     private void addEvictedEntry(Map.Entry<String, Object> attr, MutableNode node, Set<String> evictedIds) {
-        if(attr.getKey().equals("label")) {
-            if(attr.getValue().toString().toLowerCase().contains("evicted")) {
-                evictedIds.add(node.name().toString());
-            }
+        if(attr.getKey().equals("label") && attr.getValue().toString().toLowerCase().contains("evicted")) {
+            evictedIds.add(node.name().toString());
         }
     }
 
