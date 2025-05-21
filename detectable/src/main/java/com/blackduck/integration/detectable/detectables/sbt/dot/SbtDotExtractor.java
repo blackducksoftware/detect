@@ -60,9 +60,9 @@ public class SbtDotExtractor {
                 Set<String> rootIDs = sbtRootNodeFinder.determineRootIDs(mutableGraph);
                 File projectFolder = dotGraph.getParentFile().getParentFile();//typically found in project-folder/target/<>.dot so .parent.parent == project folder
 
+                DependencyGraph graph = sbtGraphParserTransformer.transformDotToGraph(rootIDs, mutableGraph);
                 if (rootIDs.size() == 1) {
                     String projectId = rootIDs.stream().findFirst().get();
-                    DependencyGraph graph = sbtGraphParserTransformer.transformDotToGraph(projectId, mutableGraph);
                     Dependency projectDependency = graphNodeParser.nodeToDependency(projectId);
                     extraction.codeLocations(new CodeLocation(graph, projectDependency.getExternalId(), projectFolder));
                     if (projectFolder.equals(directory)) {
@@ -72,7 +72,6 @@ public class SbtDotExtractor {
                 } else {
                     logger.warn("Unable to determine which node was the project in an SBT graph: " + dotGraph.toString());
                     logger.warn("This may mean you have extraneous dependencies and should consider removing them. The dependencies are: " + String.join(",", rootIDs));
-                    DependencyGraph graph = sbtGraphParserTransformer.transformDotToGraph(rootIDs, mutableGraph);
                     extraction.codeLocations(new CodeLocation(graph, projectFolder));
                 }
             }
