@@ -85,7 +85,7 @@ public class PackageJsonExtractor {
         return new Dependency(externalId);
     }
 
-    private String extractLowestVersion(String value) {
+    public String extractLowestVersion(String value) {
         SemVerComparator semVerComparator = new SemVerComparator();
         
         // Split the value into parts by spaces, "||", or "-".
@@ -96,7 +96,7 @@ public class PackageJsonExtractor {
             // Remove npm version selection characters that the KB won't match on
             .map(part -> part.replaceAll("[>=<~^]", ""))
             // Filter out parts that don't match the version pattern
-            .filter(part -> isProbableVersion(part))
+            .filter(this::isProbableVersion)
             // Use compareSemVerVersions method to find smallest version in each value
             .min(semVerComparator)
             // If no part matches the version pattern, return the original value.
