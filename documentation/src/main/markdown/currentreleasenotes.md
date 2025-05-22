@@ -29,6 +29,7 @@
 ### Changed features
 
 * Gradle inspector script no longer requires, or retrieves, gradle dependencies. This applies to both non-air gap and air gap zip generation.
+	* Gradle inspector relies on the existence of a user-installed Gradle instance.
 
 ### Resolved issues
 
