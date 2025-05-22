@@ -19,8 +19,6 @@ Possible values:
 * FULL (produce a full air gap zip; the default)   
 * NO_DOCKER (do not include the Docker Inspector)    
 
-Your PATH environment variable must include the *bin* directory of the Gradle distribution to generate an air gap archive.
-
 ## Running in air gap mode
 
 For information refer to [Running in air gap mode](../runningdetect/runningairgap.md).
