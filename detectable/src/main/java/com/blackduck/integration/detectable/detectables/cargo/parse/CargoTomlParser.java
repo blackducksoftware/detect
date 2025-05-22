@@ -31,7 +31,7 @@ public class CargoTomlParser {
         return Optional.empty();
     }
 
-    public Map<String, String> parseDependenciesToExclude(String tomlFileContents, EnumListFilter<CargoDependencyType> dependencyTypeFilter) {
+    public Map<NameVersion, String> parseDependenciesToExclude(String tomlFileContents, EnumListFilter<CargoDependencyType> dependencyTypeFilter) {
         TomlParseResult toml = Toml.parse(tomlFileContents);
         Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap = new HashMap<>();
 
@@ -39,7 +39,7 @@ public class CargoTomlParser {
         parseDependenciesFromTomlTable(toml, BUILD_DEPENDENCIES_KEY, CargoDependencyType.BUILD, dependencyTypeMap);
         parseDependenciesFromTomlTable(toml, DEV_DEPENDENCIES_KEY, CargoDependencyType.DEV, dependencyTypeMap);
 
-        Map<String, String> dependenciesToExclude = new HashMap<>();
+        Map<NameVersion, String> dependenciesToExclude = new HashMap<>();
         for (Map.Entry<NameVersion, EnumSet<CargoDependencyType>> entry : dependencyTypeMap.entrySet()) {
             NameVersion nameVersion = entry.getKey();
             EnumSet<CargoDependencyType> types = entry.getValue();
@@ -48,7 +48,7 @@ public class CargoTomlParser {
                 .allMatch(dependencyTypeFilter::shouldExclude);
 
             if (shouldBeExcluded) {
-                dependenciesToExclude.put(nameVersion.getName(), nameVersion.getVersion());
+                dependenciesToExclude.put(nameVersion, nameVersion.getVersion());
             }
         }
         return dependenciesToExclude;

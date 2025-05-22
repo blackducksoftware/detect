@@ -48,10 +48,21 @@ public class CargoExtractor {
         CargoLockData cargoLockData = new Toml().read(cargoLockFile).to(CargoLockData.class);
         List<CargoLockPackageData> cargoLockPackageDataList = cargoLockData.getPackages().orElse(new ArrayList<>());
         List<CargoLockPackageData> filteredPackages = cargoLockPackageDataList;
-        String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
+        boolean exclusionEnabled = isDependencyExclusionEnabled(cargoDetectableOptions);
+        String cargoTomlContents = null;
 
-        if (isDependencyExclusionEnabled(cargoDetectableOptions)) {
-            Map<String, String> excludableDependencyMap = cargoTomlParser.parseDependenciesToExclude(cargoTomlContents, cargoDetectableOptions.getDependencyTypeFilter());
+        if(cargoTomlFile == null && exclusionEnabled) {
+            return new Extraction.Builder()
+                .failure("Cargo.toml file is required to exclude dependencies, but was not provided.")
+                .build();
+        }
+
+        if (cargoTomlFile != null) {
+            cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
+        }
+
+        if (cargoTomlFile != null && exclusionEnabled) {
+            Map<NameVersion, String> excludableDependencyMap = cargoTomlParser.parseDependenciesToExclude(cargoTomlContents, cargoDetectableOptions.getDependencyTypeFilter());
             filteredPackages = excludeDependencies(cargoLockPackageDataList, excludableDependencyMap);
         }
 
@@ -84,7 +95,7 @@ public class CargoExtractor {
 
     private List<CargoLockPackageData> excludeDependencies(
         List<CargoLockPackageData> packages,
-        Map<String, String> excludableDependencyMap
+        Map<NameVersion, String> excludableDependencyMap
     ) {
         Set<String> excludedNames = new HashSet<>();
 
@@ -92,10 +103,11 @@ public class CargoExtractor {
             .filter(pkg -> {
                 String name = pkg.getName().orElse(null);
                 String version = pkg.getVersion().orElse(null);
+                NameVersion nameVersion = new NameVersion(name, version);
                 if (name == null || version == null) return true;
 
-                if (excludableDependencyMap.containsKey(name)) {
-                    String constraint = excludableDependencyMap.get(name);
+                if (excludableDependencyMap.containsKey(nameVersion)) {
+                    String constraint = excludableDependencyMap.get(nameVersion);
                     boolean matches = constraint == null || VersionUtils.versionMatches(constraint, version);
                     if (matches) {
                         excludedNames.add(name);
