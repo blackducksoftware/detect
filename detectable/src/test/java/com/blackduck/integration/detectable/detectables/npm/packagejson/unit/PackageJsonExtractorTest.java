@@ -109,6 +109,27 @@ class PackageJsonExtractorTest {
         graphAssert.hasRootSize(7);
     }
 
+    @Test
+    void shouldExtractLowestSemVerCorrectly() {
+        PackageJsonExtractor extractor = createExtractor();
+
+        assertEquals("1.0.0", extractor.extractLowestVersion("1.0.0 - 2.9999.9999"));
+        assertEquals("1.0.2", extractor.extractLowestVersion( ">=1.0.2 <2.1.2"));
+        assertEquals("1.0.0", extractor.extractLowestVersion("<1.0.0 || >=2.3.1 <2.4.5 || >=2.5.2 <3.0.0"));
+        assertEquals("1.2.0", extractor.extractLowestVersion("~1.2.0"));
+        assertEquals("3.3.0", extractor.extractLowestVersion("3.3.x"));
+        assertEquals("1.0.0", extractor.extractLowestVersion("1.0.0-SNAPSHOT"));
+        assertEquals("1.2.3", extractor.extractLowestVersion( "^1.2.3"));
+        assertEquals("1.2.3", extractor.extractLowestVersion("1.2.3-alpha"));
+        assertEquals("17.0.0", extractor.extractLowestVersion( "17.0.0-1551262265873"));
+        assertEquals("3.2.0", extractor.extractLowestVersion("^3.2.0 || 4.0.1"));
+        assertEquals("1.2.0", extractor.extractLowestVersion("~1.2.x"));
+        assertEquals("1.2.3", extractor.extractLowestVersion("1.2.3-beta.2"));
+        assertEquals("5.0.0", extractor.extractLowestVersion( "5.0.0-alpha+build.1"));
+        assertEquals("3.0.0", extractor.extractLowestVersion("3.0.0-abc123"));
+        assertEquals("10.0.0", extractor.extractLowestVersion("10.0.0-0000000000123"));
+    }
+
     private CombinedPackageJson createPackageJson() {
         CombinedPackageJson combinedPackageJson = new CombinedPackageJson();
 
