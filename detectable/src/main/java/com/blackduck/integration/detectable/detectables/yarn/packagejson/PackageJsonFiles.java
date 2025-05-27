@@ -38,40 +38,59 @@ public class PackageJsonFiles {
 
     @NotNull
     public Collection<YarnWorkspace> readWorkspacePackageJsonFiles(File workspaceDir) throws IOException {
-        String forwardSlashedWorkspaceDirPath = deriveForwardSlashedPath(workspaceDir);
         File packageJsonFile = new File(workspaceDir, YarnLockDetectable.YARN_PACKAGE_JSON);
         List<String> workspaceDirPatterns = extractWorkspaceDirPatterns(packageJsonFile);
 
-        Collection<YarnWorkspace> workspaces = new LinkedList<>();
-        for (String workspaceSubdirPattern : workspaceDirPatterns) {
-            logger.trace("workspaceSubdirPattern: {}", workspaceSubdirPattern);
-            String globString = String.format("glob:%s/%s/package.json", forwardSlashedWorkspaceDirPath, workspaceSubdirPattern);
-            logger.trace("workspace subdir globString: {}", globString);
-            PathMatcher matcher = FileSystems.getDefault().getPathMatcher(globString);
-            Files.walkFileTree(workspaceDir.toPath(), new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    if (matcher.matches(file)) {
-                        logger.trace("\tFound a match: {}", file);
-                        NullSafePackageJson packageJson = read(file.toFile());
-                        Path rel = workspaceDir.toPath().relativize(file.getParent());
-                        WorkspacePackageJson workspacePackageJson = new WorkspacePackageJson(file.toFile(), packageJson, rel.toString());
-                        YarnWorkspace workspace = new YarnWorkspace(workspacePackageJson);
-                        workspaces.add(workspace);
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                    return FileVisitResult.CONTINUE;
-                }
-            });
+        if (workspaceDirPatterns.isEmpty()) {
+            logger.debug("No workspace patterns found in {}", packageJsonFile.getAbsolutePath());
+            return new LinkedList<>();
         }
+
+        List<PathMatcher> matchers = convertWorkspaceDirPatternsToPathMatchers(workspaceDirPatterns, workspaceDir);
+
+        Collection<YarnWorkspace> workspaces = new LinkedList<>();
+
+        Files.walkFileTree(workspaceDir.toPath(), new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                if (file.getFileName().toString().equals(YarnLockDetectable.YARN_PACKAGE_JSON)) { // no need to try matching if not package.json
+                    for (PathMatcher matcher : matchers) {
+                        if (matcher.matches(file)) {
+                            logger.trace("\tFound a match: {}", file);
+                            NullSafePackageJson packageJson = read(file.toFile());
+                            Path rel = workspaceDir.toPath().relativize(file.getParent());
+                            WorkspacePackageJson workspacePackageJson = new WorkspacePackageJson(file.toFile(), packageJson, rel.toString());
+                            YarnWorkspace workspace = new YarnWorkspace(workspacePackageJson);
+                            workspaces.add(workspace);
+                            break; // no need to match the same file multiple times
+                        }
+                    }
+                }
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                return FileVisitResult.CONTINUE;
+            }
+        });
+
         if (!workspaceDirPatterns.isEmpty()) {
             logger.debug("Found {} matching workspace package.json files for workspaces listed in {}", workspaces.size(), packageJsonFile.getAbsolutePath());
         }
         return workspaces;
+    }
+
+    private List<PathMatcher> convertWorkspaceDirPatternsToPathMatchers(List<String> workspaceDirPatterns, File workspaceDir) {
+        List<PathMatcher> matchers = new LinkedList<>();
+        String forwardSlashedWorkspaceDirPath = deriveForwardSlashedPath(workspaceDir);
+        for (String workspaceDirPattern : workspaceDirPatterns) {
+            String globString = String.format("glob:%s/%s/package.json", forwardSlashedWorkspaceDirPath, workspaceDirPattern);
+            logger.trace("workspace subdir globString: {}", globString);
+            PathMatcher matcher = FileSystems.getDefault().getPathMatcher(globString);
+            matchers.add(matcher);
+        }
+        return matchers;
     }
 
     @NotNull
