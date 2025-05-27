@@ -36,16 +36,21 @@ public class CommonScanStepRunner {
     // Supported scan types
     public static final String BINARY = "BINARY";
     public static final String CONTAINER = "CONTAINER";
+    
+    // TODO I think this is right from scan summary representation endpoint
+    public static final String BDIO = "BDIO";
 
     public static boolean areScassScansPossible(Optional<BlackDuckVersion> blackDuckVersion) {
         return blackDuckVersion.isPresent() && blackDuckVersion.get().isAtLeast(MIN_SCASS_SCAN_VERSION);
     }
     
     public CommonScanResult performCommonScan(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData,
-            Optional<File> scanFile, OperationRunner operationRunner, Gson gson, String scanType) throws OperationException, IntegrationException {
+            Optional<File> scanFile, OperationRunner operationRunner, Gson gson, String scanType, String codeLocationName) throws OperationException, IntegrationException {
 
-        String codeLocationName = createCodeLocationName(scanFile, projectNameVersion, scanType, operationRunner.getCodeLocationNameManager());
-        
+        if (codeLocationName == null || codeLocationName.isEmpty()) {
+            codeLocationName = createCodeLocationName(scanFile, projectNameVersion, scanType, operationRunner.getCodeLocationNameManager());
+        }
+            
         // call BlackDuck to create a scanID and determine where to upload the file
         ScassScanInitiationResult initResult = operationRunner.initiateScan(
             projectNameVersion, 
@@ -60,11 +65,13 @@ public class CommonScanStepRunner {
         String operationName = String.format("%s Upload", 
                 scanType.substring(0, 1).toUpperCase() + scanType.substring(1).toLowerCase());
         
+        String finalCL = codeLocationName;
+        
         return operationRunner.getAuditLog().namedPublic(operationName, () -> {
             UUID scanId = performCommonUpload(projectNameVersion, blackDuckRunData, scanFile, operationRunner, scanType,
-                    initResult, codeLocationName);
+                    initResult, finalCL);
             
-            return new CommonScanResult(scanId, codeLocationName);
+            return new CommonScanResult(scanId, finalCL);
         });
     }
 
@@ -120,6 +127,8 @@ public class CommonScanStepRunner {
 
     private File getOutputDirectory(OperationRunner operationRunner, String scanType) throws IntegrationException {
         switch (scanType) {
+            case BDIO:
+                return operationRunner.getDirectoryManager().getBdioOutputDirectory();
             case BINARY:
                 return operationRunner.getDirectoryManager().getBinaryOutputDirectory();
             case CONTAINER:

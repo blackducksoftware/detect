@@ -31,6 +31,7 @@ import com.blackduck.integration.detect.lifecycle.run.step.binary.ScassOrBdbaBin
 import com.blackduck.integration.detect.lifecycle.run.step.container.AbstractContainerScanStepRunner;
 import com.blackduck.integration.detect.lifecycle.run.step.container.PreScassContainerScanStepRunner;
 import com.blackduck.integration.detect.lifecycle.run.step.container.ScassOrBdbaContainerScanStepRunner;
+import com.blackduck.integration.detect.lifecycle.run.step.packagemanager.PackageManagerStepRunner;
 import com.blackduck.integration.detect.lifecycle.run.step.utility.StepHelper;
 import com.blackduck.integration.detect.tool.iac.IacScanCodeLocationData;
 import com.blackduck.integration.detect.tool.impactanalysis.service.ImpactAnalysisBatchOutput;
@@ -115,11 +116,10 @@ public class IntelligentModeStepRunner {
         CodeLocationAccumulator codeLocationAccumulator = new CodeLocationAccumulator();
 
         if (bdioResult.isNotEmpty()) {
-            stepHelper.runAsGroup(
-                "Upload Bdio",
-                OperationType.INTERNAL,
-                () -> uploadBdio(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, operationRunner.calculateDetectTimeout())
-            );
+            stepHelper.runAsGroup("Upload Bdio", OperationType.INTERNAL, () -> {
+                //uploadBdio(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, operationRunner.calculateDetectTimeout());
+                invokePackageManagerScanningWorkflow(projectNameVersion, blackDuckRunData, scanIdsToWaitFor, bdioResult);
+            });
         } else {
             logger.debug("No BDIO results to upload. Skipping.");
         }
@@ -204,6 +204,20 @@ public class IntelligentModeStepRunner {
             noticesReport(blackDuckRunData, projectVersion);
             publishPostResults(bdioResult, projectVersion, detectToolFilter);
         });
+    }
+
+    private void invokePackageManagerScanningWorkflow(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData, Set<String> scanIdsToWaitFor, BdioResult bdioResult) {
+        // TODO check if we can do this type of scan
+       // if (CommonScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion())) {
+        PackageManagerStepRunner packageManagerScanStepRunner = new PackageManagerStepRunner(operationRunner);
+        
+        Optional<UUID> scanId = packageManagerScanStepRunner.invokeContainerScanningWorkflow(projectNameVersion, blackDuckRunData, bdioResult);
+        scanId.ifPresent(uuid -> scanIdsToWaitFor.add(uuid.toString()));
+
+          //  containerScanStepRunner = new ScassOrBdbaContainerScanStepRunner(operationRunner, projectNameVersion, blackDuckRunData, gson);
+       // } else {
+            // TODO fallback
+       // }
     }
 
     private void invokeBinaryScanningWorkflow(
