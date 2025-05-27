@@ -29,6 +29,7 @@ public class UVTreeDependencyGraphTransformer {
     private int excludedMemberDependencyDepth; // depth at which member dependency was found
     List<CodeLocation> codeLocations = new ArrayList<>();
     private DependencyGraph dependencyGraph;
+    private List<String> workSpaceMembers = new ArrayList<>();
 
     public UVTreeDependencyGraphTransformer(ExternalIdFactory externalIdFactory) {
         this.externalIdFactory = externalIdFactory;
@@ -38,11 +39,25 @@ public class UVTreeDependencyGraphTransformer {
         dependencyGraph = new BasicDependencyGraph();
         Deque<Dependency> dependencyStack = new ArrayDeque<>();
 
+        getWorkSpaces(uvTreeOutput);
         for(String line: uvTreeOutput) {
             parseLine(line, detectorOptions, dependencyStack);
         }
 
         return codeLocations;
+    }
+
+    // getting all workspace members as it might be needed for figuring out what workspaces need to be excluded if it is not set in the included workspace property
+    // not possible to get this list using toml file as it maybe wildcard characters
+    private void getWorkSpaces(List<String> uvTreeOutput) {
+        for(String line: uvTreeOutput) {
+            findDepth(line);
+
+            if(depth == 0) {
+                String[] parts = line.split(" ");
+                workSpaceMembers.add(parts[0]);
+            }
+        }
     }
 
     private void parseLine(String line, UVDetectorOptions detectorOptions, Deque<Dependency> dependencyStack) {
@@ -76,13 +91,7 @@ public class UVTreeDependencyGraphTransformer {
             String memberName = parts[0];
             String memberVersion = parts[1].replace("v", "");
 
-            isMemberExcluded = checkIfMemberExcluded(memberName, detectorOptions); // check if the current workspace member is excluded
-
-            if(!isMemberExcluded) {
-                initializeProject(memberName, memberVersion); // initialize the project with a new code location
-            } else {
-                logger.info("Skipping member '{}' as set in the Detect workspace property.", memberName);
-            }
+            initializeProject(memberName, memberVersion); // initialize the project with a new code location
         }
     }
 
@@ -111,7 +120,7 @@ public class UVTreeDependencyGraphTransformer {
         if(!detectorOptions.getExcludedWorkspaceMembers().isEmpty() && detectorOptions.getExcludedWorkspaceMembers().contains(memberName)) { // checking if current member is excluded
             return true;
         } else if(!detectorOptions.getIncludedWorkspaceMembers().isEmpty()){
-            return !detectorOptions.getIncludedWorkspaceMembers().contains(memberName); // checking if current member is not included
+            return !detectorOptions.getIncludedWorkspaceMembers().contains(memberName) && workSpaceMembers.contains(memberName); // checking if current member is not included, and checking if member is a workspace, an earlier bug was discarding components
         } else {
             return false;
         }
@@ -163,6 +172,7 @@ public class UVTreeDependencyGraphTransformer {
         if (checkIfMemberExcluded(dependencyName, detectorOptions)) {
             isMemberExcluded = true;
             excludedMemberDependencyDepth = depth;
+            logger.info("Skipping member '{}' as set in the Detect workspace property.", dependencyName);
             return null;
         }
 
