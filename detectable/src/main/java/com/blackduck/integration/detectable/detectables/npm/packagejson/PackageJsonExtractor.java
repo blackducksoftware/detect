@@ -85,7 +85,7 @@ public class PackageJsonExtractor {
         return new Dependency(externalId);
     }
 
-    private String extractLowestVersion(String value) {
+    public String extractLowestVersion(String value) {
         SemVerComparator semVerComparator = new SemVerComparator();
         
         // Split the value into parts by spaces, "||", or "-".
