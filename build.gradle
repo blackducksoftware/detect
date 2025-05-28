@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '10.5.0-SIGQA9-SNAPSHOT'
+version = '10.5.0-SIGQA9-devm.uv-workspace-bug'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
