@@ -35,6 +35,8 @@
 * (IDETECT-4177) - [detect_product_short] no longer requires that the X-Artifactory-Filename header is set when specifying an internally hosted version in [bd_product_long].
 * (IDETECT-3512) - To prevent issues when [bd_product_long] and [detect_product_short] disagree on the full list of categories, [detect_product_short] now sends an indicator specifying "all categories" when detect.project.clone.categories is set to ALL.
 * (IDETECT-4606) - Support for the exclusion of dependency types in [detect_product_short] Nuget Inspector now includes `project.assets.json` and `project.lock.json` files.
+* (IDETECT-4222) – [detect_product_short] now uses `/bom-status/{scanID}` to detect BOM failures and reports them with exit code `FAILURE_BOM_PREPARATION (30)`.
+* (IDETECT-4639) – [detect_product_short] now gracefully warns about invalid property keys and suggests corrections, improving usability.
 
 ### Dependency updates
 
