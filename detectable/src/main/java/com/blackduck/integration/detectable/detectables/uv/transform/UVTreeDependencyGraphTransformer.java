@@ -39,7 +39,7 @@ public class UVTreeDependencyGraphTransformer {
         dependencyGraph = new BasicDependencyGraph();
         Deque<Dependency> dependencyStack = new ArrayDeque<>();
 
-        getWorkSpaces(uvTreeOutput);
+        populateWorkSpaces(uvTreeOutput);
         for(String line: uvTreeOutput) {
             parseLine(line, detectorOptions, dependencyStack);
         }
@@ -49,7 +49,7 @@ public class UVTreeDependencyGraphTransformer {
 
     // getting all workspace members as it might be needed for figuring out what workspaces need to be excluded if it is not set in the included workspace property
     // not possible to get this list using toml file as it maybe wildcard characters
-    private void getWorkSpaces(List<String> uvTreeOutput) {
+    private void populateWorkSpaces(List<String> uvTreeOutput) {
         for(String line: uvTreeOutput) {
             findDepth(line);
 
