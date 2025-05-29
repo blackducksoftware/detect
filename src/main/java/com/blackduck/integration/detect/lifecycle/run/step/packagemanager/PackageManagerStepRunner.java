@@ -38,8 +38,11 @@ public class PackageManagerStepRunner {
                     Optional.of(uploadFile),
                     operationRunner, 
                     gson, 
-                    CommonScanStepRunner.BDIO,
-                    bdioResult.getUploadTargets().get(0).getCodeLocationName());
+                    CommonScanStepRunner.PACKAGE_MANAGER,
+                    // TODO for some reason it always tells me the code location already exists even
+                    // though it doesn't.
+                    "test2");
+                    //bdioResult.getUploadTargets().get(0).getCodeLocationName());
         } catch (OperationException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();

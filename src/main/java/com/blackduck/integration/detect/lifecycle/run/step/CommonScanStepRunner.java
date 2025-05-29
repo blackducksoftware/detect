@@ -38,7 +38,7 @@ public class CommonScanStepRunner {
     public static final String CONTAINER = "CONTAINER";
     
     // TODO I think this is right from scan summary representation endpoint
-    public static final String BDIO = "BDIO";
+    public static final String PACKAGE_MANAGER = "PACKAGE_MANAGER";
 
     public static boolean areScassScansPossible(Optional<BlackDuckVersion> blackDuckVersion) {
         return blackDuckVersion.isPresent() && blackDuckVersion.get().isAtLeast(MIN_SCASS_SCAN_VERSION);
@@ -127,7 +127,7 @@ public class CommonScanStepRunner {
 
     private File getOutputDirectory(OperationRunner operationRunner, String scanType) throws IntegrationException {
         switch (scanType) {
-            case BDIO:
+            case PACKAGE_MANAGER:
                 return operationRunner.getDirectoryManager().getBdioOutputDirectory();
             case BINARY:
                 return operationRunner.getDirectoryManager().getBinaryOutputDirectory();

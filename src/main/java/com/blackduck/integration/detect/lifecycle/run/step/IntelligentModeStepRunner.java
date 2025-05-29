@@ -117,8 +117,8 @@ public class IntelligentModeStepRunner {
 
         if (bdioResult.isNotEmpty()) {
             stepHelper.runAsGroup("Upload Bdio", OperationType.INTERNAL, () -> {
-                //uploadBdio(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, operationRunner.calculateDetectTimeout());
-                invokePackageManagerScanningWorkflow(projectNameVersion, blackDuckRunData, scanIdsToWaitFor, bdioResult);
+                uploadBdio(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, operationRunner.calculateDetectTimeout());
+                //invokePackageManagerScanningWorkflow(projectNameVersion, blackDuckRunData, scanIdsToWaitFor, bdioResult);
             });
         } else {
             logger.debug("No BDIO results to upload. Skipping.");
