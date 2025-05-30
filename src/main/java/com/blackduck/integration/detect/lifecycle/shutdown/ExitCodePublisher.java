@@ -16,6 +16,6 @@ public class ExitCodePublisher {
     }
 
     public void publishExitCode(ExitCodeType exitCodeType, String reason) {
-        publishExitCode(new ExitCodeRequest(exitCodeType, reason));
+        publishExitCode(new ExitCodeRequest(exitCodeType, reason)); // bunch of callers
     }
 }
