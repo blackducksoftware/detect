@@ -62,17 +62,17 @@ public class CommonScanStepRunner {
             codeLocationName
         );
         
-        String operationName = String.format("%s Upload", 
-                scanType.substring(0, 1).toUpperCase() + scanType.substring(1).toLowerCase());
-        
-        String finalCL = codeLocationName;
-        
-        return operationRunner.getAuditLog().namedPublic(operationName, () -> {
-            UUID scanId = performCommonUpload(projectNameVersion, blackDuckRunData, scanFile, operationRunner, scanType,
-                    initResult, finalCL);
+//        String operationName = String.format("%s Upload", 
+//                scanType.substring(0, 1).toUpperCase() + scanType.substring(1).toLowerCase());
+//        
+//        String finalCL = codeLocationName;
+//        
+//        return operationRunner.getAuditLog().namedPublic(operationName, () -> {
+//            UUID scanId = performCommonUpload(projectNameVersion, blackDuckRunData, scanFile, operationRunner, scanType,
+//                    initResult, finalCL);
             
-            return new CommonScanResult(scanId, finalCL);
-        });
+            return new CommonScanResult(UUID.fromString(initResult.getScanCreationResponse().getScanId()), codeLocationName);
+      //  });
     }
 
     public UUID performCommonUpload(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData,

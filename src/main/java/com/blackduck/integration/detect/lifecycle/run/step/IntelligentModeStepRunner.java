@@ -116,9 +116,10 @@ public class IntelligentModeStepRunner {
         CodeLocationAccumulator codeLocationAccumulator = new CodeLocationAccumulator();
 
         if (bdioResult.isNotEmpty()) {
+            UUID scanId = invokePackageManagerScanningWorkflow(projectNameVersion, blackDuckRunData, scanIdsToWaitFor, bdioResult);
+            
             stepHelper.runAsGroup("Upload Bdio", OperationType.INTERNAL, () -> {
-                uploadBdio(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, operationRunner.calculateDetectTimeout());
-                //invokePackageManagerScanningWorkflow(projectNameVersion, blackDuckRunData, scanIdsToWaitFor, bdioResult);
+                uploadBdio(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, operationRunner.calculateDetectTimeout(), scanId.toString());
             });
         } else {
             logger.debug("No BDIO results to upload. Skipping.");
@@ -206,13 +207,15 @@ public class IntelligentModeStepRunner {
         });
     }
 
-    private void invokePackageManagerScanningWorkflow(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData, Set<String> scanIdsToWaitFor, BdioResult bdioResult) {
+    private UUID invokePackageManagerScanningWorkflow(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData, Set<String> scanIdsToWaitFor, BdioResult bdioResult) {
         // TODO check if we can do this type of scan
        // if (CommonScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion())) {
         PackageManagerStepRunner packageManagerScanStepRunner = new PackageManagerStepRunner(operationRunner);
         
         Optional<UUID> scanId = packageManagerScanStepRunner.invokeContainerScanningWorkflow(projectNameVersion, blackDuckRunData, bdioResult);
         scanId.ifPresent(uuid -> scanIdsToWaitFor.add(uuid.toString()));
+        
+        return scanId.get();
 
           //  containerScanStepRunner = new ScassOrBdbaContainerScanStepRunner(operationRunner, projectNameVersion, blackDuckRunData, gson);
        // } else {
@@ -290,8 +293,8 @@ public class IntelligentModeStepRunner {
         }
     }
 
-    public void uploadBdio(BlackDuckRunData blackDuckRunData, BdioResult bdioResult, Set<String> scanIdsToWaitFor, CodeLocationAccumulator codeLocationAccumulator, Long timeout) throws OperationException {
-        BdioUploadResult uploadResult = operationRunner.uploadBdioIntelligentPersistent(blackDuckRunData, bdioResult, timeout);
+    public void uploadBdio(BlackDuckRunData blackDuckRunData, BdioResult bdioResult, Set<String> scanIdsToWaitFor, CodeLocationAccumulator codeLocationAccumulator, Long timeout, String scanId) throws OperationException {
+        BdioUploadResult uploadResult = operationRunner.uploadBdioIntelligentPersistent(blackDuckRunData, bdioResult, timeout, scanId);
         Optional<CodeLocationCreationData<UploadBatchOutput>> codeLocationCreationData = uploadResult.getUploadOutput();
         codeLocationCreationData.ifPresent(uploadBatchOutputCodeLocationCreationData -> codeLocationAccumulator.addWaitableCodeLocations(
             DetectTool.DETECTOR,
@@ -299,7 +302,7 @@ public class IntelligentModeStepRunner {
         ));
         if (uploadResult.getUploadOutput().isPresent()) {
             for (UploadOutput result : uploadResult.getUploadOutput().get().getOutput()) {
-                result.getScanId().ifPresent((scanId) -> scanIdsToWaitFor.add(scanId));
+                result.getScanId().ifPresent((scanId2) -> scanIdsToWaitFor.add(scanId2));
             }
         }
     }
