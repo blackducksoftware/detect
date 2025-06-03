@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '10.5.0-SIGQA12-dterry.IDETECT-4737-fix-apache-vulnerability-SNAPSHOT'
+version = '10.5.0-SIGQA12'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
