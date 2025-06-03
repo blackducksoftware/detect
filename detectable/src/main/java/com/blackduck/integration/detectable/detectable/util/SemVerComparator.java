@@ -14,8 +14,8 @@ public class SemVerComparator implements Comparator<String> {
 
         // Compare each part until we know which string is smallest
         for (int i = 0; i < maxLength; i++) {
-            int part1 = (i < v1Parts.length) ? Integer.parseInt(v1Parts[i]) : 0;
-            int part2 = (i < v2Parts.length) ? Integer.parseInt(v2Parts[i]) : 0;
+            int part1 = parseVersionPart(v1Parts, i);
+            int part2 = parseVersionPart(v2Parts, i);
 
             int comparison = Integer.compare(part1, part2);
 
@@ -27,5 +27,13 @@ public class SemVerComparator implements Comparator<String> {
 
         // If all parts are equal, return 0
         return 0;
+    }
+
+    private int parseVersionPart(String[] parts, int index) {
+        try {
+            return (index < parts.length) ? Integer.parseInt(parts[index]) : 0;
+        } catch (NumberFormatException e) {
+            return Integer.MAX_VALUE; // Treating invalid parts as larger
+        }
     }
 }
