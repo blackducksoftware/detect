@@ -4,7 +4,7 @@
 
 ### Resolved issues
 
-* Docker Java library was updated to fix a problem where symbolic links to directories were copied as clones rather than symbolic links.
+* Resolved an issue where symbolic links to directories were copied as clones rather than as symbolic links.
 
 ## Version 11.2.0
 
