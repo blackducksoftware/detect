@@ -38,7 +38,10 @@
 * (IDETECT-3512) - To prevent issues when [bd_product_long] and [detect_product_short] disagree on the full list of categories, [detect_product_short] now sends an indicator specifying "all categories" when detect.project.clone.categories is set to ALL.
 * (IDETECT-4606) - Support for the exclusion of dependency types in [detect_product_short] Nuget Inspector now includes `project.assets.json` and `project.lock.json` files.
 * (IDETECT-4209) - [detect_product_short] no longer creates numerous access denied exceptions in [bd_product_long] logs when a user does not have system administrator access.
+* (IDETECT-4222) [detect_product_short] now reports a failure status (FAILURE_BOM_PREPARATION) when BOM preparation fails in [bd_product_long].
 
 ### Dependency updates
 
 * Upgraded and released Nuget Inspector version 2.2.0.
+* Upgraded and released Docker Inspector version 11.3.0.
+* Updated usage of Apache Commons BeanUtils to version 1.11.0.
