@@ -1,5 +1,11 @@
 # [docker_inspector_name] Release notes
 
+## Version 11.3.0
+
+### Resolved issues
+
+* Docker Java library was updated to fix a problem where symbolic links to directories were copied as clones rather than symbolic links.
+
 ## Version 11.2.0
 
 ### Changed features
