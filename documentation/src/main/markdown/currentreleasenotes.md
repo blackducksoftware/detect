@@ -43,4 +43,4 @@
 ### Dependency updates
 
 * Upgraded and released Nuget Inspector version 2.2.0.
-* Updated common libraries with Apache Commons BeanUtils to version 1.11.0.
+* Updated usage of Apache Commons BeanUtils to version 1.11.0.
