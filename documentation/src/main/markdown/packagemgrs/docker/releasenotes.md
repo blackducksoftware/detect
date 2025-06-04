@@ -4,7 +4,7 @@
 
 ### Resolved issues
 
-* Resolved an issue where symbolic links to directories were copied as clones rather than as symbolic links.
+* (IDETECT-4714) Resolved an issue where symbolic links to directories were copied as clones rather than as symbolic links.
 
 ## Version 11.2.0
 
