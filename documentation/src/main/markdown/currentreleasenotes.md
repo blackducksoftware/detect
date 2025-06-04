@@ -43,4 +43,5 @@
 ### Dependency updates
 
 * Upgraded and released Nuget Inspector version 2.2.0.
+* Upgraded and released Docker Inspector version 11.3.0.
 * Updated usage of Apache Commons BeanUtils to version 1.11.0.
