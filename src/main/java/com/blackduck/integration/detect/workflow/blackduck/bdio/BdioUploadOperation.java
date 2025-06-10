@@ -18,8 +18,8 @@ import com.blackduck.integration.exception.IntegrationException;
 public abstract class BdioUploadOperation { //TODO: Could use Functional Interface.
     private final Logger logger = LoggerFactory.getLogger(BdioUploadOperation.class);
 
-    public BdioUploadResult uploadBdioFiles(BdioResult bdioResult, String scanId) throws DetectUserFriendlyException {
-        UploadBatch uploadBatch = createBatch(bdioResult, scanId);
+    public BdioUploadResult uploadBdioFiles(BdioResult bdioResult) throws DetectUserFriendlyException {
+        UploadBatch uploadBatch = createBatch(bdioResult);
         CodeLocationCreationData<UploadBatchOutput> response;
         try {
             response = executeUpload(uploadBatch);
@@ -33,11 +33,10 @@ public abstract class BdioUploadOperation { //TODO: Could use Functional Interfa
 
     protected abstract CodeLocationCreationData<UploadBatchOutput> executeUpload(UploadBatch uploadBatch) throws IntegrationException;
 
-    private UploadBatch createBatch(BdioResult bdioResult, String scanId) {
+    private UploadBatch createBatch(BdioResult bdioResult) {
         UploadBatch uploadBatch = new UploadBatch();
         for (UploadTarget uploadTarget : bdioResult.getUploadTargets()) {
             logger.debug(String.format("Uploading %s", uploadTarget.getUploadFile().getName()));
-            uploadTarget.setScanId(scanId);
             uploadBatch.addUploadTarget(uploadTarget);
         }
         return uploadBatch;
