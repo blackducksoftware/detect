@@ -31,7 +31,8 @@ public class ScassOrBdbaContainerScanStepRunner extends AbstractContainerScanSte
                 operationRunner, 
                 gson, 
                 SCAN_TYPE,
-                "");
+                "",
+                null);
         
         codeLocationName = scanResult.getCodeLocationName();
         

@@ -32,7 +32,8 @@ public class ScassOrBdbaBinaryScanStepRunner extends AbstractBinaryScanStepRunne
                     operationRunner, 
                     gson, 
                     CommonScanStepRunner.BINARY,
-                    "");
+                    "",
+                    null);
 
             logger.info("Successfully completed binary scan of file: " + binaryScanFile.get().getAbsolutePath());
             operationRunner.publishBinarySuccess();

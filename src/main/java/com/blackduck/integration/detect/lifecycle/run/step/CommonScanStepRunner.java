@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.blackduck.integration.blackduck.bdio2.model.BdioFileContent;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,12 +41,14 @@ public class CommonScanStepRunner {
     // TODO I think this is right from scan summary representation endpoint
     public static final String PACKAGE_MANAGER = "PACKAGE_MANAGER";
 
+    private boolean isSCASSPossible = true;
+
     public static boolean areScassScansPossible(Optional<BlackDuckVersion> blackDuckVersion) {
         return blackDuckVersion.isPresent() && blackDuckVersion.get().isAtLeast(MIN_SCASS_SCAN_VERSION);
     }
     
     public CommonScanResult performCommonScan(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData,
-            Optional<File> scanFile, OperationRunner operationRunner, Gson gson, String scanType, String codeLocationName) throws OperationException, IntegrationException {
+                                              Optional<File> scanFile, OperationRunner operationRunner, Gson gson, String scanType, String codeLocationName, BdioFileContent jsonldHeader) throws OperationException, IntegrationException {
 
         if (codeLocationName == null || codeLocationName.isEmpty()) {
             codeLocationName = createCodeLocationName(scanFile, projectNameVersion, scanType, operationRunner.getCodeLocationNameManager());
@@ -59,7 +62,8 @@ public class CommonScanStepRunner {
             blackDuckRunData, 
             scanType, 
             gson,
-            codeLocationName
+            codeLocationName,
+            jsonldHeader
         );
         
         String operationName = String.format("%s Upload", 
@@ -71,7 +75,7 @@ public class CommonScanStepRunner {
             UUID scanId = performCommonUpload(projectNameVersion, blackDuckRunData, scanFile, operationRunner, scanType,
                     initResult, finalCL);
             
-            return new CommonScanResult(scanId, finalCL);
+            return new CommonScanResult(scanId, finalCL, isSCASSPossible);
         });
     }
 
@@ -93,12 +97,18 @@ public class CommonScanStepRunner {
                 // If we can't access the SCASS uplaod URL, we create a new scanId so we can try the BDBA flow.
                 // Note: as of 2025.1.1 there is no endpoint to cancel a SCASS scan.
                 logger.info("Error uploading to SCASS URL: " + e.getMessage());
-                scanId = createFallbackScanId(operationRunner, scanType, projectNameVersion, codeLocationName, scanFile.get().length(), blackDuckRunData);
+                if (!scanType.equals(PACKAGE_MANAGER)) {
+                    scanId = createFallbackScanId(operationRunner, scanType, projectNameVersion, codeLocationName, scanFile.get().length(), blackDuckRunData);
+                }
             }
         }
-        // This is a SCASS capable server server but SCASS is not enabled or the GCP URL is inaccessible.
-        BdbaScanStepRunner bdbaScanStepRunner = createBdbaScanStepRunner(operationRunner);
-        bdbaScanStepRunner.runBdbaScan(projectNameVersion, blackDuckRunData, scanFile, scanId.toString(), scanType);
+        // This is a SCASS capable server server but SCASS is not enabled or the GCP URL is inaccessible. If PACKAGE_MANGER scan, we use the same scanId
+        if(!scanType.equals(PACKAGE_MANAGER)) {
+            BdbaScanStepRunner bdbaScanStepRunner = createBdbaScanStepRunner(operationRunner);
+            bdbaScanStepRunner.runBdbaScan(projectNameVersion, blackDuckRunData, scanFile, scanId.toString(), scanType);
+        } else {
+            isSCASSPossible = false;
+        }
 
         return scanId;
     }
