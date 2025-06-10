@@ -1,21 +1,18 @@
 package com.blackduck.integration.detect.tool.signaturescanner.operation;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import com.blackduck.integration.detect.lifecycle.run.data.ScanCreationResponse;
 import com.google.gson.annotations.SerializedName;
 
-public class SignatureScanResult {
+public class SignatureScanResult extends ScanCreationResponse {
     public static final String OUTPUT_FILE_PATH = "/output/scanOutput.json";
 
     @SerializedName("version")
     private String version;
-
-    @SerializedName("scanId")
-    private String scanId;
     
     @SerializedName("exitStatus")
     private String exitStatus;
@@ -23,19 +20,8 @@ public class SignatureScanResult {
     @SerializedName("scans")
     private Map<String, String> scans;
 
-    @SerializedName("uploadUrl")
-    private String uploadUrl;
-    
-    // TODO perhaps externalize this class as it is used twice now
-    @SerializedName("uploadUrlData")
-    private UploadUrlData uploadUrlData;
-
     public String getVersion() {
         return version;
-    }
-
-    public String getScanId() {
-        return scanId;
     }
 
     public String getExitStatus() {
@@ -44,27 +30,6 @@ public class SignatureScanResult {
 
     public Map<String, String> getScans() {
         return scans;
-    }
-    
-    public String getUploadUrl() {
-        return uploadUrl;
-    }
-    
-    public UploadUrlData getUploadUrlData() {
-        return uploadUrlData;
-    }
-
-    public static class UploadUrlData {
-        private String method;
-        private List<Map<String, String>> headers;
-
-        public String getMethod() {
-            return method;
-        }
-
-        public List<Map<String, String>> getHeaders() {
-            return headers;
-        }
     }
 
     public Set<String> parseScanIds() {

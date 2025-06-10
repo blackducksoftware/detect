@@ -18,7 +18,6 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.ScanBatch;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.ScanBatchRunner;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.ScanCommandOutput;
@@ -31,16 +30,15 @@ import com.blackduck.integration.detect.configuration.DetectUserFriendlyExceptio
 import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.data.DockerTargetData;
-import com.blackduck.integration.detect.lifecycle.run.data.ScanCreationResponse.UploadUrlData;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
 import com.blackduck.integration.detect.lifecycle.run.step.utility.UploaderHelper;
 import com.blackduck.integration.detect.tool.signaturescanner.ScanBatchRunnerUserResult;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScanPath;
+import com.blackduck.integration.detect.tool.signaturescanner.SignatureScanReportStatus;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerCodeLocationResult;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerReport;
 import com.blackduck.integration.detect.tool.signaturescanner.operation.SignatureScanOuputResult;
 import com.blackduck.integration.detect.tool.signaturescanner.operation.SignatureScanResult;
-import com.blackduck.integration.detect.workflow.blackduck.codelocation.CodeLocationAccumulator;
 import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.rest.HttpMethod;
 import com.blackduck.integration.rest.HttpUrl;
@@ -49,34 +47,21 @@ import com.blackduck.integration.sca.upload.client.uploaders.ScassUploader;
 import com.blackduck.integration.sca.upload.client.uploaders.UploaderFactory;
 import com.blackduck.integration.sca.upload.rest.status.ScassUploadStatus;
 import com.blackduck.integration.util.NameVersion;
+import com.google.gson.Gson;
 
 public class SignatureScanStepRunner {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
-    
-    private ScassUploader scaasScanUploader;
-    private BlackDuckRunData blackDuckRunData;
 
+    private final BlackDuckRunData blackDuckRunData;
     private final OperationRunner operationRunner;
 
-    public SignatureScanStepRunner(OperationRunner operationRunner) {
+    public SignatureScanStepRunner(OperationRunner operationRunner, BlackDuckRunData blackDuckRunData) {
         this.operationRunner = operationRunner;
+        this.blackDuckRunData = blackDuckRunData;
     }
 
-    public SignatureScannerCodeLocationResult runSignatureScannerOnline(String detectRunUuid, BlackDuckRunData blackDuckRunData, NameVersion projectNameVersion, DockerTargetData dockerTargetData, Set<String> scanIdsToWaitFor, Gson gson)
-        throws DetectUserFriendlyException, OperationException, IOException {
-
-        UploaderFactory uploadFactory;
-        try {
-            uploadFactory = UploaderHelper.getUploaderFactory(blackDuckRunData);
-            scaasScanUploader = uploadFactory.createScassUploader();
-            
-            // TODO temp
-            this.blackDuckRunData = blackDuckRunData;
-        } catch (IntegrationException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        
+    public SignatureScannerCodeLocationResult runSignatureScannerOnline(String detectRunUuid, NameVersion projectNameVersion, DockerTargetData dockerTargetData, Set<String> scanIdsToWaitFor, Gson gson)
+        throws DetectUserFriendlyException, OperationException, IOException {        
         ScanBatchRunner scanBatchRunner = resolveOnlineScanBatchRunner(blackDuckRunData);
 
         List<SignatureScanPath> scanPaths = operationRunner.createScanPaths(projectNameVersion, dockerTargetData);
@@ -114,25 +99,36 @@ public class SignatureScanStepRunner {
     }
 
     private List<SignatureScannerReport> executeScan(ScanBatch scanBatch, ScanBatchRunner scanBatchRunner, List<SignatureScanPath> scanPaths, Set<String> scanIdsToWaitFor, Gson gson, boolean shouldWaitAtScanLevel, boolean isOnline) throws OperationException, IOException {
+        // TODO can invoke the same way for SCASS and legacy but need to make a small change
+        // to pass in a boolean or something to trigger the new flag option in blackduck-common command creation class.
         SignatureScanOuputResult scanOuputResult = operationRunner.signatureScan(scanBatch, scanBatchRunner);
         
-        // Do not attempt to gather additional information, and parse files that are potentially not
-        // there, if we should not wait at the scan level
-        if (shouldWaitAtScanLevel && scanIdsToWaitFor != null) {
-            addScansToWaitFor(scanIdsToWaitFor, scanOuputResult, gson);
-        }
-        
-        // Check if we need to copy csv files. Only do this if the user asked for it and we are not
-        // connected to BlackDuck. If we are connected to BlackDuck the scanner is responsible for 
-        // sending the csv there.
-        if (scanBatch.isCsvArchive() && !isOnline) {
-            for (ScanCommandOutput output : scanOuputResult.getScanBatchOutput().getOutputs()) {
-                copyCsvFiles(output.getSpecificRunOutputDirectory(), operationRunner.getDirectoryManager().getCsvOutputDirectory());
-            }
-        }
-
         List<SignatureScannerReport> reports = operationRunner.createSignatureScanReport(scanPaths, scanOuputResult.getScanBatchOutput().getOutputs());
-        operationRunner.publishSignatureScanReport(reports);
+        SignatureScanReportStatus successStatus = operationRunner.publishSignatureScanReport(reports);
+
+        if (successStatus.isSuccess()) {
+            // TODO At this point the signature scan has been run and we will have reported on any failures in
+            // its execution. We now need to a) upload the file if this is a SCASS scan and b) wait for results
+            // if necessary.
+            
+            // TODO // > whatever signature scanner can do multiple scans and SCASS, then upload file
+            
+            
+            // TODO if failures in upload then need to publish an exit code update to say scan failed
+            
+            // Check if we need to copy csv files. Only do this if the user asked for it and we are not
+            // connected to BlackDuck. If we are connected to BlackDuck the scanner is responsible for 
+            // sending the csv there.
+            if (scanBatch.isCsvArchive() && !isOnline) {
+                for (ScanCommandOutput output : scanOuputResult.getScanBatchOutput().getOutputs()) {
+                    copyCsvFiles(output.getSpecificRunOutputDirectory(), operationRunner.getDirectoryManager().getCsvOutputDirectory());
+                }
+            }
+            
+            // Do not attempt to gather additional information, and parse files that are potentially not
+            // there, if we should not wait at the scan level
+            processEachScan(scanIdsToWaitFor, scanOuputResult, gson, shouldWaitAtScanLevel); 
+        }
 
         return reports;
     }
@@ -181,7 +177,12 @@ public class SignatureScanStepRunner {
         return ScanBatchRunnerUserResult.none();
     }
     
-    private void addScansToWaitFor(Set<String> scanIdsToWaitFor, SignatureScanOuputResult signatureScanOutputResult, Gson gson) throws IOException {
+    /**
+     * A single signature scan (scan CLI) invocation can result in multiple scans being done. For example,
+     * in addition to the main signature scan, a snippet scan or other secondary scan can occur. We need
+     * to handle each of these in turn.
+     */
+    private void processEachScan(Set<String> scanIdsToWaitFor, SignatureScanOuputResult signatureScanOutputResult, Gson gson, boolean shouldWaitAtScanLevel) throws IOException {
         List<ScanCommandOutput> outputs = signatureScanOutputResult.getScanBatchOutput().getOutputs();
 
         for (ScanCommandOutput output : outputs) {
@@ -191,49 +192,49 @@ public class SignatureScanStepRunner {
             try {
                 Reader reader = Files.newBufferedReader(Paths.get(scanOutputLocation));
 
-                // TODO need to move this out of this method as we are getting SCASS info
-                // from it now as well.
                 SignatureScanResult result = gson.fromJson(reader, SignatureScanResult.class);
                 
-                try {
-                    tempUploadAndReport(result, specificRunOutputDirectory.toString());
-                } catch (IOException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                } catch (IntegrationException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
+                // TODO if (hub > min can do signature scass)
+                performScassSteps(specificRunOutputDirectory.toString(), result);
                 
-                scanIdsToWaitFor.addAll(result.parseScanIds());
+                if (shouldWaitAtScanLevel && scanIdsToWaitFor != null) {
+                    scanIdsToWaitFor.addAll(result.parseScanIds());
+                }
             } catch (NoSuchFileException e) {
                 logger.warn("Unable to find scanOutput.json file at location: " + scanOutputLocation
                         + ". Will skip waiting for this signature scan.");
+                
+                // TODO if SCASS this is an error since the upload cannot occur, use same conditional as above
+                // todo.
             }
         }
     }
     
-    private void tempUploadAndReport(SignatureScanResult result, String runDirectory) throws IOException, IntegrationException {
-        // TODO can we ever have more than one BDIO? See parseScanIds as we can get multiple IDs sometimes
-        // even though scanId just returns one.
-        
-        // TODO if the bdio is not there then SCASS might not be enabled and the signature scanner would operate
-        // in legacy mode.
+    // TODO this is very similar to ScassScanStepRunner.runScassScan
+    private void performScassSteps(String runDirectory, SignatureScanResult result) throws IOException {
+        // TODO if the bdio is not there then SCASS might not be enabled and the
+        // signature scanner would operate in legacy mode.
         String pathToBdio = runDirectory + "/bdio/" + result.getScanId() + ".bdio";
-        
+
         // TODO should I add md5 checks?
-        
-        ScassUploadStatus uploadResult = scaasScanUploader.upload(
-                HttpMethod.fromMethod(result.getUploadUrlData().getMethod()), 
-                result.getUploadUrl(), 
-                //result.getUploadUrlData().getHeaders(), 
-                getAllHeaders(result.getUploadUrlData()),
-                Path.of(pathToBdio));
-        
-        // TODO error handling like in ScassScanStepRunner
-        
-        notifyUploadComplete(result.getScanId());
-        
+
+        ScassUploader scaasScanUploader;
+        try {
+            UploaderFactory uploadFactory = UploaderHelper.getUploaderFactory(blackDuckRunData);
+            scaasScanUploader = uploadFactory.createScassUploader();
+
+            ScassUploadStatus uploadResult = scaasScanUploader.upload(
+                    HttpMethod.fromMethod(result.getUploadUrlData().getMethod()), result.getUploadUrl(),
+                    // result.getUploadUrlData().getHeaders(),
+                    getAllHeaders(result.getUploadUrlData()), Path.of(pathToBdio));
+
+            // TODO error handling like in ScassScanStepRunner
+
+            notifyUploadComplete(result.getScanId());
+        } catch (IntegrationException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
     
     // TODO duplicate code

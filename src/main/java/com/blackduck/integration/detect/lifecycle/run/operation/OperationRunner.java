@@ -112,6 +112,7 @@ import com.blackduck.integration.detect.tool.impactanalysis.ImpactAnalysisUpload
 import com.blackduck.integration.detect.tool.impactanalysis.service.ImpactAnalysisBatchOutput;
 import com.blackduck.integration.detect.tool.impactanalysis.service.ImpactAnalysisUploadService;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScanPath;
+import com.blackduck.integration.detect.tool.signaturescanner.SignatureScanReportStatus;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerCodeLocationResult;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerReport;
 import com.blackduck.integration.detect.tool.signaturescanner.operation.CalculateScanPathsOperation;
@@ -1101,10 +1102,10 @@ public class OperationRunner {
         return auditLog.namedInternal("Create Signature Scanner Report", () -> new CreateSignatureScanReports().createReports(signatureScanPaths, scanCommandOutputList));
     }
 
-    public void publishSignatureScanReport(List<SignatureScannerReport> report) throws OperationException {
-        auditLog.namedInternal("Publish Signature Scan Report", () -> {
+    public SignatureScanReportStatus publishSignatureScanReport(List<SignatureScannerReport> report) throws OperationException {
+       return auditLog.namedInternal("Publish Signature Scan Report", () -> {
             Boolean treatSkippedAsFailure = detectConfigurationFactory.createBlackDuckSignatureScannerOptions().getTreatSkippedScansAsSuccess();
-            new PublishSignatureScanReports(exitCodePublisher, statusEventPublisher, treatSkippedAsFailure).publishReports(report);
+            return new PublishSignatureScanReports(exitCodePublisher, statusEventPublisher, treatSkippedAsFailure).publishReports(report);
         });
     }
 
