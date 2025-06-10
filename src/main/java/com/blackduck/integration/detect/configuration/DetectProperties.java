@@ -313,8 +313,8 @@ public class DetectProperties {
             .setGroups(DetectGroup.BINARY_SCANNER, DetectGroup.SOURCE_PATH)
             .build();
 
-    public static final StringListProperty DETECT_BINARY_SCAN_FILE_NAME_PATTERNS =
-        StringListProperty.newBuilder("detect.binary.scan.file.name.patterns", emptyList())
+    public static final CaseSensitiveStringListProperty DETECT_BINARY_SCAN_FILE_NAME_PATTERNS =
+        CaseSensitiveStringListProperty.newBuilder("detect.binary.scan.file.name.patterns", emptyList())
             .setInfo("Binary Scan Filename Patterns", DetectPropertyFromVersion.VERSION_6_0_0)
             .setHelp(
                 "If specified, files in the source directory whose names match these file name patterns will be zipped and uploaded for binary scan analysis. This property will not be used if detect.binary.scan.file.path is specified. Search depth is controlled by property detect.binary.scan.search.depth. Directories specified via property detect.excluded.directories are excluded from the file search. This property accepts filename globbing-style wildcards. Refer to the <i>Configuring Black Duck Detect</i> > <i>Property wildcard support</i> page for more details.")
