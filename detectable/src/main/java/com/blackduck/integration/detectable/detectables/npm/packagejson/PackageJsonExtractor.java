@@ -87,9 +87,9 @@ public class PackageJsonExtractor {
 
     public String extractLowestVersion(String value) {
         SemVerComparator semVerComparator = new SemVerComparator();
-        
-        // Split the value into parts by spaces, "||", or " - ".
-        String[] parts = value.split("\\s+|\\|\\||\\s-\\s");
+
+        // Split by whitespace or "||" (logical OR); " - " is handled implicitly by whitespace
+        String[] parts = value.split("\\s+|\\|\\|");
 
         return Arrays.stream(parts)
              // Replace "x" or "*" with "0"
