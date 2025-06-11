@@ -11,7 +11,6 @@ import com.blackduck.integration.blackduck.codelocation.signaturescanner.ScanBat
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.ScanBatchBuilder;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.ScanTarget;
 import com.blackduck.integration.blackduck.configuration.BlackDuckServerConfig;
-import com.blackduck.integration.blackduck.version.BlackDuckVersion;
 import com.blackduck.integration.detect.configuration.DetectUserFriendlyException;
 import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
@@ -24,10 +23,9 @@ import com.blackduck.integration.detect.workflow.file.DirectoryManager;
 import com.blackduck.integration.util.NameVersion;
 
 public class CreateScanBatchOperation {
-    private static final BlackDuckVersion MIN_CSV_ARCHIVE_VERSION = new BlackDuckVersion(2025, 1, 0);
-    // TODO change to 2025.7.0 before merge. For now use 2025.4.1 for testing a stable server.
-    // TODO this is probably not the right version though as scan CLI has changed.
-    private static final SignatureScannerVersion MIN_SCASS_VERSION = new SignatureScannerVersion(2025, 4, 1);
+    private static final SignatureScannerVersion MIN_CSV_ARCHIVE_VERSION = new SignatureScannerVersion(2025, 1, 0);
+    // TODO update before merge based on fix. For now use 0.1.4 for testing a stable server.
+    private static final SignatureScannerVersion MIN_SCASS_VERSION = new SignatureScannerVersion(0, 1, 4);
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final BlackDuckSignatureScannerOptions signatureScannerOptions;
     private final DirectoryManager directoryManager;
@@ -92,6 +90,8 @@ public class CreateScanBatchOperation {
         scanJobBuilder.bomCompareMode(signatureScannerOptions.getBomCompareMode().toString());
         
         attemptToSetCsvArchive(scanJobBuilder, blackDuckRunData);
+        
+        attemptToSetScassScan(scanJobBuilder, blackDuckRunData);
 
         String projectName = projectNameVersion.getName();
         String projectVersionName = projectNameVersion.getVersion();
@@ -144,10 +144,18 @@ public class CreateScanBatchOperation {
         if (signatureScannerOptions.getCsvArchive()) {
             if (blackDuckRunData != null 
                     && blackDuckRunData.getBlackDuckServerVersion().isPresent()
-                    && !blackDuckRunData.getBlackDuckServerVersion().get().isAtLeast(MIN_CSV_ARCHIVE_VERSION)) {
+                    && !MIN_CSV_ARCHIVE_VERSION.isAtLeast(blackDuckRunData.getBlackDuckServerVersion().get())) {
                 logger.error("The associated Black Duck server version is not compatible with the CSV archive feature.");
             }
             scanJobBuilder.csvArchive(signatureScannerOptions.getCsvArchive());        
+        }
+    }
+    
+    private void attemptToSetScassScan(ScanBatchBuilder scanJobBuilder, BlackDuckRunData blackDuckRunData) {
+        if (blackDuckRunData != null 
+                && blackDuckRunData.getBlackDuckServerVersion().isPresent()
+                && MIN_SCASS_VERSION.isAtLeast(blackDuckRunData.getBlackDuckServerVersion().get())) {
+            scanJobBuilder.scassScan(true);
         }
     }
 

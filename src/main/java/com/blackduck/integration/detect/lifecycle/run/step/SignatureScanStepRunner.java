@@ -86,8 +86,6 @@ public class SignatureScanStepRunner {
     }
 
     private List<SignatureScannerReport> executeScan(ScanBatch scanBatch, ScanBatchRunner scanBatchRunner, List<SignatureScanPath> scanPaths, Set<String> scanIdsToWaitFor, Gson gson, boolean shouldWaitAtScanLevel, boolean isOnline) throws OperationException, IOException {
-        // TODO can invoke the same way for SCASS and legacy but need to make a small change
-        // to pass in a boolean or something to trigger the new flag option in blackduck-common command creation class.
         SignatureScanOuputResult scanOuputResult = operationRunner.signatureScan(scanBatch, scanBatchRunner);
         
         List<SignatureScannerReport> reports = operationRunner.createSignatureScanReport(scanPaths, scanOuputResult.getScanBatchOutput().getOutputs());
@@ -103,9 +101,8 @@ public class SignatureScanStepRunner {
                 }
             }
             
-            // TODO At this point the signature scan has been run and we will have reported on any failures in
-            // its execution. We now need to a) upload the file if this is a SCASS scan and b) wait for results
-            // if necessary.
+            // At this point the signature scan has been run and we will have reported on any failures in
+            // its execution. We now need to upload the file if this is a SCASS scan
             processEachScan(scanIdsToWaitFor, scanOuputResult, gson, shouldWaitAtScanLevel); 
         }
 
@@ -155,15 +152,13 @@ public class SignatureScanStepRunner {
         }
         return ScanBatchRunnerUserResult.none();
     }
-    
-    /**
-     * A single signature scan (scan CLI) invocation can result in multiple scans being done. For example,
-     * in addition to the main signature scan, a snippet scan or other secondary scan can occur. We need
-     * to handle each of these in turn.
-     */
+
     private void processEachScan(Set<String> scanIdsToWaitFor, SignatureScanOuputResult signatureScanOutputResult, Gson gson, boolean shouldWaitAtScanLevel) throws IOException {
         List<ScanCommandOutput> outputs = signatureScanOutputResult.getScanBatchOutput().getOutputs();
 
+        // A single signature scan (scan CLI) invocation can result in multiple scans being done. For example,
+        // in addition to the main signature scan, a snippet scan or other secondary scan can occur. We need
+        // to handle each of these in turn.
         for (ScanCommandOutput output : outputs) {
             File specificRunOutputDirectory = output.getSpecificRunOutputDirectory();
             String scanOutputLocation = specificRunOutputDirectory.toString() + SignatureScanResult.OUTPUT_FILE_PATH;
@@ -173,24 +168,30 @@ public class SignatureScanStepRunner {
 
                 SignatureScanResult result = gson.fromJson(reader, SignatureScanResult.class);
                 
-                // TODO if (hub > min can do signature scass)
-                ScassScanStepRunner scassScanStepRunner = new ScassScanStepRunner(blackDuckRunData);
-                
-                // TODO if the bdio is not there then SCASS might not be enabled and the
-                // signature scanner would operate in legacy mode.
-                String pathToBdio = specificRunOutputDirectory.toString() + "/bdio/" + result.getScanId() + ".bdio";
-                
-                scassScanStepRunner.runScassScan(Optional.of(new File(pathToBdio)), result);
+                // This is a SCASS scan if we have an upload URL. We'll need to upload the BDIO.
+                // If it is not a SCASS scan skip this section as the signature scanner already uploaded
+                // the BDIO.
+                if (result.getUploadUrl() != null) {
+                    ScassScanStepRunner scassScanStepRunner = new ScassScanStepRunner(blackDuckRunData);
+                    String pathToBdio = specificRunOutputDirectory.toString() + "/bdio/" + result.getScanId() + ".bdio";
+                    Optional<File> optionalBdio = Optional.of(new File(pathToBdio));
+
+                    scassScanStepRunner.runScassScan(optionalBdio, result);
+                }
                 
                 if (shouldWaitAtScanLevel && scanIdsToWaitFor != null) {
                     scanIdsToWaitFor.addAll(result.parseScanIds());
                 }
             } catch (NoSuchFileException e) {
-                logger.warn("Unable to find scanOutput.json file at location: " + scanOutputLocation
-                        + ". Will skip waiting for this signature scan.");
+                if (shouldWaitAtScanLevel && scanIdsToWaitFor != null) {
+                    logger.warn("Unable to find scanOutput.json file at location: " + scanOutputLocation
+                            + ". Will skip waiting for this signature scan.");
+                }
                 
-                // TODO if SCASS this is an error since the upload cannot occur, use same conditional as above
-                // todo.
+                //if (result.getUploadUrl() != null) {
+                    // TODO if SCASS this is an error since the upload cannot occur, use same conditional as above
+                    // todo.
+                //}
             } catch (IntegrationException e) {
                 // TODO if failures in upload then need to publish an exit code update to say scan failed
                 e.printStackTrace();
