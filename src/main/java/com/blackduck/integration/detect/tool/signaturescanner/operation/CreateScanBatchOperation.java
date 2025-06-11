@@ -18,12 +18,16 @@ import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.data.DockerTargetData;
 import com.blackduck.integration.detect.tool.signaturescanner.BlackDuckSignatureScannerOptions;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScanPath;
+import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerVersion;
 import com.blackduck.integration.detect.workflow.codelocation.CodeLocationNameManager;
 import com.blackduck.integration.detect.workflow.file.DirectoryManager;
 import com.blackduck.integration.util.NameVersion;
 
 public class CreateScanBatchOperation {
     private static final BlackDuckVersion MIN_CSV_ARCHIVE_VERSION = new BlackDuckVersion(2025, 1, 0);
+    // TODO change to 2025.7.0 before merge. For now use 2025.4.1 for testing a stable server.
+    // TODO this is probably not the right version though as scan CLI has changed.
+    private static final SignatureScannerVersion MIN_SCASS_VERSION = new SignatureScannerVersion(2025, 4, 1);
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final BlackDuckSignatureScannerOptions signatureScannerOptions;
     private final DirectoryManager directoryManager;
@@ -135,6 +139,7 @@ public class CreateScanBatchOperation {
      * If we are online and if a user has specified they want csvArchives, warn if the 
      * BlackDuck server we are connected to can't handle it.
      */
+    // TODO might need to fix this version check
     private void attemptToSetCsvArchive(ScanBatchBuilder scanJobBuilder, BlackDuckRunData blackDuckRunData) {
         if (signatureScannerOptions.getCsvArchive()) {
             if (blackDuckRunData != null 
