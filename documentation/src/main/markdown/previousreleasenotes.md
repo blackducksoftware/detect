@@ -1,6 +1,34 @@
 <!-- Check the support matrix to determine supported, non-current major version releases -->
 # Release notes for previous supported versions
 
+## Version 10.5.0
+
+### New features
+
+* Support for UV Package Manager has been added under [UV Detector](packagemgrs/python.md#uv-package-manager)
+* With the `detect.clone.project.version.name` parameter specified and `detect.project.version.update` set to true, [detect_product_short] will now clone, scan, and update the cloned project via parameters such as `detect.project.version.phase`.
+* Support for Java 21 has been added.
+* If feasible, the most probable keys are recommended in place of invalid property keys that contain misspellings or malformations.
+
+### Changed features
+
+* Gradle inspector script no longer requires, or includes, Gradle dependencies. This applies to both non-air gap and air gap zip generation.
+* [detect_product_short] will now fail the scan if `detect.wait.for.results` is set to true and a scan is not properly included in the BOM.
+
+### Resolved issues
+
+* (IDETECT-4177) - [detect_product_short] no longer requires that the X-Artifactory-Filename header is set when specifying an internally hosted version in [bd_product_long].
+* (IDETECT-3512) - To prevent issues when [bd_product_long] and [detect_product_short] disagree on the full list of categories, [detect_product_short] now sends an indicator specifying "all categories" when detect.project.clone.categories is set to ALL.
+* (IDETECT-4606) - Support for the exclusion of dependency types in [detect_product_short] Nuget Inspector now includes `project.assets.json` and `project.lock.json` files.
+* (IDETECT-4209) - [detect_product_short] no longer creates numerous access denied exceptions in [bd_product_long] logs when a user does not have system administrator access.
+* (IDETECT-4222) [detect_product_short] now reports a failure status (FAILURE_BOM_PREPARATION) when BOM preparation fails in [bd_product_long].
+
+### Dependency updates
+
+* Upgraded and released Nuget Inspector version 2.2.0.
+* Upgraded and released Docker Inspector version 11.3.0.
+* Updated usage of Apache Commons BeanUtils to version 1.11.0.
+
 ## Version 10.4.0
 
 ### New features

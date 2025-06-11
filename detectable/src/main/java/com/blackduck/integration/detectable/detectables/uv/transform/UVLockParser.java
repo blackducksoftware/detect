@@ -202,7 +202,7 @@ public class UVLockParser {
         if(!detectorOptions.getExcludedWorkspaceMembers().isEmpty() && detectorOptions.getExcludedWorkspaceMembers().contains(memberName)) { // checking if current member is excluded
             return true;
         } else if(!detectorOptions.getIncludedWorkspaceMembers().isEmpty()){
-            return !detectorOptions.getIncludedWorkspaceMembers().contains(memberName); // checking if current member is not included
+            return !detectorOptions.getIncludedWorkspaceMembers().contains(memberName) && workSpaceMembers.contains(memberName); // checking if current member is not included
         } else {
             return false;
         }

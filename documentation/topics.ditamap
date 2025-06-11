@@ -7,7 +7,7 @@
 		<prodinfo>
 			<prodname>Black Duck Detect</prodname>
 			<vrmlist>
-				<vrm version="10.5.0"/>
+				<vrm version="10.6.0"/>
 			</vrmlist>
 		</prodinfo>
 		<!-- zoomin bundle name -->
@@ -167,6 +167,7 @@
 		<topicref href="properties/detectors/overview.md" format="markdown">
 			<topicref href="properties/detectors/bazel.md" format="markdown"/>
 			<topicref href="properties/detectors/bitbake.md" format="markdown"/>
+			<topicref href="properties/detectors/cargo.md" format="markdown"/>
 			<topicref href="properties/detectors/conan.md" format="markdown"/>
 			<topicref href="properties/detectors/conda.md" format="markdown"/>
 			<topicref href="properties/detectors/cpan.md" format="markdown"/>
@@ -179,12 +180,17 @@
 			<topicref href="properties/detectors/maven.md" format="markdown"/>
 			<topicref href="properties/detectors/npm.md" format="markdown"/>
 			<topicref href="properties/detectors/nuget.md" format="markdown"/>
+			<topicref href="properties/detectors/opam.md" format="markdown"/>
 			<topicref href="properties/detectors/packagist.md" format="markdown"/>
 			<topicref href="properties/detectors/pear.md" format="markdown"/>
 			<topicref href="properties/detectors/pip.md" format="markdown"/>
+			<topicref href="properties/detectors/pnpm.md" format="markdown"/>
+			<topicref href="properties/detectors/poetry.md" format="markdown"/>
 			<topicref href="properties/detectors/python.md" format="markdown"/>
 			<topicref href="properties/detectors/ruby.md" format="markdown"/>
 			<topicref href="properties/detectors/sbt.md" format="markdown"/>
+			<topicref href="properties/detectors/swift.md" format="markdown"/>
+			<topicref href="properties/detectors/uv.md" format="markdown"/>
 			<topicref href="properties/detectors/yarn.md" format="markdown"/>
 		</topicref>
 		<topicref href="properties/deprecated-properties.md" format="markdown"/>

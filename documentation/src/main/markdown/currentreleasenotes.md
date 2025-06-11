@@ -18,24 +18,19 @@
 	* eu.store.scass.blackduck.com - 34.54.213.11
 	* eu.scass.blackduck.com - 34.54.38.252
 
-## Version 10.5.0
+## Version 10.6.0
 
 ### New features
 
-* Support for UV Package Manager has been added under [UV Detector](packagemgrs/python.md#uv-package-manager)
-* With the `detect.clone.project.version.name` parameter specified and `detect.project.version.update` set to true, [detect_product_short] will now clone, scan, and update the cloned project via parameters such as `detect.project.version.phase`.
-* Support for Java 21 has been added.
+* 
 
 ### Changed features
 
-* Gradle inspector script no longer requires, or includes, Gradle dependencies. This applies to both non-air gap and air gap zip generation.
+* 
 
 ### Resolved issues
 
-* (IDETECT-4177) - [detect_product_short] no longer requires that the X-Artifactory-Filename header is set when specifying an internally hosted version in [bd_product_long].
-* (IDETECT-3512) - To prevent issues when [bd_product_long] and [detect_product_short] disagree on the full list of categories, [detect_product_short] now sends an indicator specifying "all categories" when detect.project.clone.categories is set to ALL.
-* (IDETECT-4606) - Support for the exclusion of dependency types in [detect_product_short] Nuget Inspector now includes `project.assets.json` and `project.lock.json` files.
-
+* 
 ### Dependency updates
 
-* Upgraded and released Nuget Inspector version 2.2.0.
+* 
