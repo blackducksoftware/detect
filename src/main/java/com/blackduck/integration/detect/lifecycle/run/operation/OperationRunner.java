@@ -112,7 +112,6 @@ import com.blackduck.integration.detect.tool.impactanalysis.ImpactAnalysisUpload
 import com.blackduck.integration.detect.tool.impactanalysis.service.ImpactAnalysisBatchOutput;
 import com.blackduck.integration.detect.tool.impactanalysis.service.ImpactAnalysisUploadService;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScanPath;
-import com.blackduck.integration.detect.tool.signaturescanner.SignatureScanReportStatus;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerCodeLocationResult;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerReport;
 import com.blackduck.integration.detect.tool.signaturescanner.operation.CalculateScanPathsOperation;
@@ -1102,10 +1101,10 @@ public class OperationRunner {
         return auditLog.namedInternal("Create Signature Scanner Report", () -> new CreateSignatureScanReports().createReports(signatureScanPaths, scanCommandOutputList));
     }
 
-    public SignatureScanReportStatus publishSignatureScanReport(List<SignatureScannerReport> report) throws OperationException {
-       return auditLog.namedInternal("Publish Signature Scan Report", () -> {
+    public void publishSignatureScanReport(List<SignatureScannerReport> report) throws OperationException {
+        auditLog.namedInternal("Publish Signature Scan Report", () -> {
             Boolean treatSkippedAsFailure = detectConfigurationFactory.createBlackDuckSignatureScannerOptions().getTreatSkippedScansAsSuccess();
-            return new PublishSignatureScanReports(exitCodePublisher, statusEventPublisher, treatSkippedAsFailure).publishReports(report);
+            new PublishSignatureScanReports(exitCodePublisher, statusEventPublisher, treatSkippedAsFailure).publishReports(report);
         });
     }
 
@@ -1307,6 +1306,12 @@ public class OperationRunner {
         logger.error("Container scan failure: {}", e.getMessage());
         statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.CONTAINER_SCAN, StatusType.FAILURE));
         exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR, "CONTAINER_SCAN");
+    }
+
+    public void publishSignatureFailure(String message) {
+        logger.error("Signature scan failure: {}", message);
+        statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.SIGNATURE_SCAN, StatusType.FAILURE));
+        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR, "SIGNATURE_SCAN");
     }
     
     public void publishBinarySuccess() {

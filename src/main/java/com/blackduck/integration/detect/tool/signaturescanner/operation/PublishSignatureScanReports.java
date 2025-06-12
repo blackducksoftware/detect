@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
 import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodePublisher;
 import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodeRequest;
-import com.blackduck.integration.detect.tool.signaturescanner.SignatureScanReportStatus;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerReport;
 import com.blackduck.integration.detect.workflow.status.DetectIssue;
 import com.blackduck.integration.detect.workflow.status.DetectIssueType;
@@ -29,10 +28,9 @@ public class PublishSignatureScanReports {
         this.treatSkippedScanAsSuccess = treatSkippedScanAsSuccess;
     }
 
-    public SignatureScanReportStatus publishReports(List<SignatureScannerReport> signatureScannerReports) {
+    public void publishReports(List<SignatureScannerReport> signatureScannerReports) {
+        // TODO this is a concern as it prints success even when we later fail with SCASS steps
         signatureScannerReports.forEach(this::publishReport);
-
-        SignatureScanReportStatus status = new SignatureScanReportStatus();
         
         signatureScannerReports.stream()
             .filter(SignatureScannerReport::isFailure)
@@ -43,7 +41,6 @@ public class PublishSignatureScanReports {
                     report.getExitCode().map(code -> " (" + code + ")").orElse(".")
                 ));
                 exitCodePublisher.publishExitCode(new ExitCodeRequest(ExitCodeType.FAILURE_SCAN));
-                status.setSuccess(false);
             });
 
         if (!treatSkippedScanAsSuccess) {
@@ -54,11 +51,8 @@ public class PublishSignatureScanReports {
                     logger.error(
                         "The Signature Scanner skipped a scan because the minimum scan interval was not met.");
                     exitCodePublisher.publishExitCode(new ExitCodeRequest(ExitCodeType.FAILURE_MINIMUM_INTERVAL_NOT_MET));
-                    status.setSuccess(false);
                 });
         }
-        
-        return status;
     }
 
     private void publishReport(SignatureScannerReport signatureScannerReport) {

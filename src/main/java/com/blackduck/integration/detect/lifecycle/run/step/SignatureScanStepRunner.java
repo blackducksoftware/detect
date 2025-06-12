@@ -16,6 +16,7 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.blackduck.integration.blackduck.codelocation.Result;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.ScanBatch;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.ScanBatchRunner;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.ScanCommandOutput;
@@ -27,7 +28,6 @@ import com.blackduck.integration.detect.lifecycle.run.data.DockerTargetData;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
 import com.blackduck.integration.detect.tool.signaturescanner.ScanBatchRunnerUserResult;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScanPath;
-import com.blackduck.integration.detect.tool.signaturescanner.SignatureScanReportStatus;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerCodeLocationResult;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerReport;
 import com.blackduck.integration.detect.tool.signaturescanner.operation.SignatureScanOuputResult;
@@ -86,12 +86,11 @@ public class SignatureScanStepRunner {
     }
 
     private List<SignatureScannerReport> executeScan(ScanBatch scanBatch, ScanBatchRunner scanBatchRunner, List<SignatureScanPath> scanPaths, Set<String> scanIdsToWaitFor, Gson gson, boolean shouldWaitAtScanLevel, boolean isOnline) throws OperationException, IOException {
-        SignatureScanOuputResult scanOuputResult = operationRunner.signatureScan(scanBatch, scanBatchRunner);
-        
-        List<SignatureScannerReport> reports = operationRunner.createSignatureScanReport(scanPaths, scanOuputResult.getScanBatchOutput().getOutputs());
-        SignatureScanReportStatus successStatus = operationRunner.publishSignatureScanReport(reports);
+        SignatureScanOuputResult scanOuputResult = operationRunner.signatureScan(scanBatch, scanBatchRunner);      
 
-        if (successStatus.isSuccess()) {
+        boolean areScansSuccessful = areScansSuccessful(scanOuputResult);
+        
+        if (areScansSuccessful) {
             // Check if we need to copy csv files. Only do this if the user asked for it and we are not
             // connected to BlackDuck. If we are connected to BlackDuck the scanner is responsible for 
             // sending the csv there.
@@ -103,10 +102,23 @@ public class SignatureScanStepRunner {
             
             // At this point the signature scan has been run and we will have reported on any failures in
             // its execution. We now need to upload the file if this is a SCASS scan
-            processEachScan(scanIdsToWaitFor, scanOuputResult, gson, shouldWaitAtScanLevel); 
+            processEachScan(scanIdsToWaitFor, scanOuputResult, gson, shouldWaitAtScanLevel, scanBatch.isScassScan()); 
         }
 
+        // TODO this is still too simplistic as we want to perhaps update and fail
+        // the scans that couldn't be processed correctly
+        List<SignatureScannerReport> reports = operationRunner.createSignatureScanReport(scanPaths, scanOuputResult.getScanBatchOutput().getOutputs());
+        operationRunner.publishSignatureScanReport(reports);
         return reports;
+    }
+
+    private boolean areScansSuccessful(SignatureScanOuputResult scanOutputResult) {
+        for (ScanCommandOutput output : scanOutputResult.getScanBatchOutput().getOutputs()) {
+            if (output.getResult() != Result.SUCCESS) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private ScanBatchRunner resolveOfflineScanBatchRunner() throws DetectUserFriendlyException, OperationException {
@@ -153,7 +165,7 @@ public class SignatureScanStepRunner {
         return ScanBatchRunnerUserResult.none();
     }
 
-    private void processEachScan(Set<String> scanIdsToWaitFor, SignatureScanOuputResult signatureScanOutputResult, Gson gson, boolean shouldWaitAtScanLevel) throws IOException {
+    private void processEachScan(Set<String> scanIdsToWaitFor, SignatureScanOuputResult signatureScanOutputResult, Gson gson, boolean shouldWaitAtScanLevel, boolean scassScan) throws IOException {
         List<ScanCommandOutput> outputs = signatureScanOutputResult.getScanBatchOutput().getOutputs();
 
         // A single signature scan (scan CLI) invocation can result in multiple scans being done. For example,
@@ -183,19 +195,21 @@ public class SignatureScanStepRunner {
                     scanIdsToWaitFor.addAll(result.parseScanIds());
                 }
             } catch (NoSuchFileException e) {
-                if (shouldWaitAtScanLevel && scanIdsToWaitFor != null) {
-                    logger.warn("Unable to find scanOutput.json file at location: " + scanOutputLocation
-                            + ". Will skip waiting for this signature scan.");
-                }
-                
-                //if (result.getUploadUrl() != null) {
-                    // TODO if SCASS this is an error since the upload cannot occur, use same conditional as above
-                    // todo.
-                //}
+                handleNoScanStatusFile(scanIdsToWaitFor, shouldWaitAtScanLevel, scassScan, scanOutputLocation);
             } catch (IntegrationException e) {
-                // TODO if failures in upload then need to publish an exit code update to say scan failed
-                e.printStackTrace();
+                operationRunner.publishSignatureFailure(e.getMessage());
             }
+        }
+    }
+
+    private void handleNoScanStatusFile(Set<String> scanIdsToWaitFor, boolean shouldWaitAtScanLevel, boolean scassScan,
+            String scanOutputLocation) {        
+        if (scassScan) {
+            String errorMessage = String.format("Unable to find scanOutput.json file at location: {}. Unable to upload BDIO to continue signature scan.", scanOutputLocation);
+            operationRunner.publishSignatureFailure(errorMessage);
+        } else if (shouldWaitAtScanLevel && scanIdsToWaitFor != null) {
+            logger.warn("Unable to find scanOutput.json file at location: " + scanOutputLocation
+                    + ". Will skip waiting for this signature scan.");
         }
     }
 
