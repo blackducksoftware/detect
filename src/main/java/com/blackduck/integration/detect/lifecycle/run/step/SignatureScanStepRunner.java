@@ -86,8 +86,12 @@ public class SignatureScanStepRunner {
     }
 
     private List<SignatureScannerReport> executeScan(ScanBatch scanBatch, ScanBatchRunner scanBatchRunner, List<SignatureScanPath> scanPaths, Set<String> scanIdsToWaitFor, Gson gson, boolean shouldWaitAtScanLevel, boolean isOnline) throws OperationException, IOException {
+        // Step 1: Run Scan CLI
         SignatureScanOuputResult scanOuputResult = operationRunner.signatureScan(scanBatch, scanBatchRunner);      
 
+        // Step 2: Check results and upload BDIO
+        // TODO might want to just bring this all into processEachScan, same with copyCsvFiles below
+        // we already loop there so can reduce to one loop and check all things.
         boolean areScansSuccessful = areScansSuccessful(scanOuputResult);
         
         if (areScansSuccessful) {
@@ -105,8 +109,11 @@ public class SignatureScanStepRunner {
             processEachScan(scanIdsToWaitFor, scanOuputResult, gson, shouldWaitAtScanLevel, scanBatch.isScassScan()); 
         }
 
+        // Step 3: Report on results
         // TODO this is still too simplistic as we want to perhaps update and fail
         // the scans that couldn't be processed correctly
+        // TODO maybe a new object with scanOutputResult and BDIO/notification status and then return report failure
+        // based on either instead of just scanCLI
         List<SignatureScannerReport> reports = operationRunner.createSignatureScanReport(scanPaths, scanOuputResult.getScanBatchOutput().getOutputs());
         operationRunner.publishSignatureScanReport(reports);
         return reports;
