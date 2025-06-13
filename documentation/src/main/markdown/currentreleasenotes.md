@@ -22,7 +22,7 @@
 
 ### New features
 
-* 
+*  A new parameter [detect.stateless.policy.check.fail.on.severities](properties/basic-properties.html#detect.stateless.policy.check.fail.on.severities) has been added which will trigger [detect_product_short] to fail the scan and notify the user if a Stateless Scan policy violation exceeds the configured value.
 
 ### Changed features
 
