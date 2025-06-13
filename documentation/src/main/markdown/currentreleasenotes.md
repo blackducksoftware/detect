@@ -26,11 +26,13 @@
 
 ### Changed features
 
-* 
+* To improve processing time when both PNPM and NPM detectors apply to a directory, only PNPM detector will execute, producing the same quality of results.
 
 ### Resolved issues
 
-* 
+* (IDETECT-4657) - Additional logging has been added for occurances of [detect_product_short] erroring out when loading a malformed Spring Boot config file. 
+<note type="hint">A valid Spring Boot config file can be specified via the `--spring.config.location=""` parameter.</note>
+
 ### Dependency updates
 
 * 
