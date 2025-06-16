@@ -47,7 +47,7 @@ public class UVBuildExtractor {
             }
 
             // run uv tree command
-            ExecutableOutput executableOutput = executableRunner.execute(ExecutableUtils.createFromTarget(sourceDirectory, uvExe, arguments));
+            ExecutableOutput executableOutput = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(sourceDirectory, uvExe, arguments));
             List<String> uvTreeOutput = executableOutput.getStandardOutputAsList();
 
             List<CodeLocation> codeLocations = uvTreeDependencyGraphTransformer.transform(uvTreeOutput, uvDetectorOptions);

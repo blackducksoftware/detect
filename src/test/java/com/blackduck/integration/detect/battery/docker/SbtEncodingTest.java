@@ -64,9 +64,9 @@ public class SbtEncodingTest {
             dockerAssertions.atLeastOneBdioFile();
             dockerAssertions.logContains("SBT: SUCCESS");
 
-            blackduckAssertions.checkComponentVersionExists("scala-compiler", "2.12.18");
-            blackduckAssertions.checkComponentVersionExists("Apache Log4J API", "2.24.3");
-            blackduckAssertions.checkComponentVersionExists("scopt", "3.7.1");
+            blackduckAssertions.checkComponentVersionExists("scala-java8-compat", "1.0.0");
+            blackduckAssertions.checkComponentVersionExists("scala3-library-bootstrapped", "3.3.2-RC1");
+            blackduckAssertions.checkComponentVersionExists("akka-actor", "2.6.20");
         }
     }
 }

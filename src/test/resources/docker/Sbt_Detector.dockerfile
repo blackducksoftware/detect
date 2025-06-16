@@ -18,8 +18,8 @@ ENV PATH="/home/app/sbt/bin:${PATH}"
 # Set up the test project
 RUN mkdir -p ${SRC_DIR}
 
-RUN wget ${ARTIFACTORY_URL}/artifactory/detect-generic-qa-local/sbt_graphviz_java.zip
-RUN unzip sbt_graphviz_java.zip -d /opt/project/src/
-RUN rm sbt_graphviz_java.zip
+RUN wget ${ARTIFACTORY_URL}/artifactory/detect-generic-qa-local/new_sbt_graphviz_java.zip
+RUN unzip new_sbt_graphviz_java.zip -d /opt/project/src/
+RUN rm new_sbt_graphviz_java.zip
 
 RUN cd ${SRC_DIR}
