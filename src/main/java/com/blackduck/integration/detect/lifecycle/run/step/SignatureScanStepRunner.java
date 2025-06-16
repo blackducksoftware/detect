@@ -8,6 +8,8 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -70,7 +72,7 @@ public class SignatureScanStepRunner {
             SignatureScanOuputResult scanResult =  operationRunner.signatureScan(scanBatch, scanBatchRunner);
 
             // publish report/scan results to status file
-            List<SignatureScannerReport> reports = operationRunner.createSignatureScanReport(scanPaths, scanResult.getScanBatchOutput().getOutputs());
+            List<SignatureScannerReport> reports = operationRunner.createSignatureScanReport(scanPaths, scanResult.getScanBatchOutput().getOutputs(), Collections.emptySet());
             operationRunner.publishSignatureScanReport(reports);
 
             return scanResult;
@@ -90,42 +92,16 @@ public class SignatureScanStepRunner {
         SignatureScanOuputResult scanOuputResult = operationRunner.signatureScan(scanBatch, scanBatchRunner);      
 
         // Step 2: Check results and upload BDIO
-        // TODO might want to just bring this all into processEachScan, same with copyCsvFiles below
-        // we already loop there so can reduce to one loop and check all things.
-        boolean areScansSuccessful = areScansSuccessful(scanOuputResult);
-        
-        if (areScansSuccessful) {
-            // Check if we need to copy csv files. Only do this if the user asked for it and we are not
-            // connected to BlackDuck. If we are connected to BlackDuck the scanner is responsible for 
-            // sending the csv there.
-            if (scanBatch.isCsvArchive() && !isOnline) {
-                for (ScanCommandOutput output : scanOuputResult.getScanBatchOutput().getOutputs()) {
-                    copyCsvFiles(output.getSpecificRunOutputDirectory(), operationRunner.getDirectoryManager().getCsvOutputDirectory());
-                }
-            }
-            
-            // At this point the signature scan has been run and we will have reported on any failures in
-            // its execution. We now need to upload the file if this is a SCASS scan
-            processEachScan(scanIdsToWaitFor, scanOuputResult, gson, shouldWaitAtScanLevel, scanBatch.isScassScan()); 
-        }
+        Set<String> failedScans = processEachScan(scanIdsToWaitFor, scanOuputResult, gson, shouldWaitAtScanLevel, scanBatch.isScassScan(), isOnline, scanBatch.isCsvArchive()); 
 
         // Step 3: Report on results
         // TODO this is still too simplistic as we want to perhaps update and fail
         // the scans that couldn't be processed correctly
-        // TODO maybe a new object with scanOutputResult and BDIO/notification status and then return report failure
+        // TODO maybe a new object with scanOutputResult and BDIO/notification status (returned from processEachScan) and then return report failure
         // based on either instead of just scanCLI
-        List<SignatureScannerReport> reports = operationRunner.createSignatureScanReport(scanPaths, scanOuputResult.getScanBatchOutput().getOutputs());
+        List<SignatureScannerReport> reports = operationRunner.createSignatureScanReport(scanPaths, scanOuputResult.getScanBatchOutput().getOutputs(), failedScans);
         operationRunner.publishSignatureScanReport(reports);
         return reports;
-    }
-
-    private boolean areScansSuccessful(SignatureScanOuputResult scanOutputResult) {
-        for (ScanCommandOutput output : scanOutputResult.getScanBatchOutput().getOutputs()) {
-            if (output.getResult() != Result.SUCCESS) {
-                return false;
-            }
-        }
-        return true;
     }
 
     private ScanBatchRunner resolveOfflineScanBatchRunner() throws DetectUserFriendlyException, OperationException {
@@ -172,13 +148,25 @@ public class SignatureScanStepRunner {
         return ScanBatchRunnerUserResult.none();
     }
 
-    private void processEachScan(Set<String> scanIdsToWaitFor, SignatureScanOuputResult signatureScanOutputResult, Gson gson, boolean shouldWaitAtScanLevel, boolean scassScan) throws IOException {
+    private Set<String> processEachScan(Set<String> scanIdsToWaitFor, SignatureScanOuputResult signatureScanOutputResult, Gson gson, boolean shouldWaitAtScanLevel, boolean scassScan, boolean isOnline, boolean isCsvArchive) throws IOException {
         List<ScanCommandOutput> outputs = signatureScanOutputResult.getScanBatchOutput().getOutputs();
+        Set<String> failedScans = new HashSet<>();
 
         // A single signature scan (scan CLI) invocation can result in multiple scans being done. For example,
         // in addition to the main signature scan, a snippet scan or other secondary scan can occur. We need
         // to handle each of these in turn.
         for (ScanCommandOutput output : outputs) {
+            if (output.getResult() != Result.SUCCESS) {
+                continue;
+            }
+            
+            // Check if we need to copy csv files. Only do this if the user asked for it and we are not
+            // connected to BlackDuck. If we are connected to BlackDuck the scanner is responsible for 
+            // sending the csv there.
+            if (isCsvArchive && !isOnline) {
+                copyCsvFiles(output.getSpecificRunOutputDirectory(), operationRunner.getDirectoryManager().getCsvOutputDirectory());
+            }
+            
             File specificRunOutputDirectory = output.getSpecificRunOutputDirectory();
             String scanOutputLocation = specificRunOutputDirectory.toString() + SignatureScanResult.OUTPUT_FILE_PATH;
 
@@ -202,11 +190,15 @@ public class SignatureScanStepRunner {
                     scanIdsToWaitFor.addAll(result.parseScanIds());
                 }
             } catch (NoSuchFileException e) {
+                failedScans.add(output.getCodeLocationName());
                 handleNoScanStatusFile(scanIdsToWaitFor, shouldWaitAtScanLevel, scassScan, scanOutputLocation);
             } catch (IntegrationException e) {
+                failedScans.add(output.getCodeLocationName());
                 operationRunner.publishSignatureFailure(e.getMessage());
             }
         }
+        
+        return failedScans;
     }
 
     private void handleNoScanStatusFile(Set<String> scanIdsToWaitFor, boolean shouldWaitAtScanLevel, boolean scassScan,

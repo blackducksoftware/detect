@@ -42,6 +42,14 @@ public class PublishSignatureScanReports {
                 ));
                 exitCodePublisher.publishExitCode(new ExitCodeRequest(ExitCodeType.FAILURE_SCAN));
             });
+        
+        signatureScannerReports.stream()
+        .filter(SignatureScannerReport::isScassError)
+        .findAny()
+        .ifPresent(report -> {
+            logger.error("The Signature Scan failed when attempting to communicate with external resources. Check connectivity to GCP and BlackDuck services.");
+            exitCodePublisher.publishExitCode(new ExitCodeRequest(ExitCodeType.FAILURE_SCAN));
+        });
 
         if (!treatSkippedScanAsSuccess) {
             signatureScannerReports.stream()
