@@ -27,6 +27,7 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.entity.ContentType;
@@ -701,8 +702,9 @@ public class OperationRunner {
 
     public final RapidScanResultSummary logRapidReport(List<DeveloperScansScanView> scanResults, BlackduckScanMode mode) throws OperationException {
         List<PolicyRuleSeverityType> severitiesToFailPolicyCheck = detectConfigurationFactory.createRapidScanOptions().getSeveritiesToFailPolicyCheck();
-        return auditLog.namedInternal("Print Rapid Mode Results", () -> 
-            new RapidModeLogReportOperation(exitCodePublisher, rapidScanResultAggregator, mode).perform(scanResults, severitiesToFailPolicyCheck));
+        RapidCompareMode rapidCompareMode = detectConfigurationFactory.createRapidScanOptions().getCompareMode();
+        return auditLog.namedInternal("Print Rapid Mode Results", () ->
+            new RapidModeLogReportOperation(exitCodePublisher, rapidScanResultAggregator, mode).perform(scanResults, severitiesToFailPolicyCheck, rapidCompareMode));
     }
 
     public final File generateRapidJsonFile(NameVersion projectNameVersion, List<DeveloperScansScanView> scanResults) throws OperationException {

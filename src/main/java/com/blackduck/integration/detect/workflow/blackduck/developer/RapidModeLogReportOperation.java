@@ -3,6 +3,7 @@ package com.blackduck.integration.detect.workflow.blackduck.developer;
 import java.util.List;
 import java.util.Set;
 
+import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,8 +30,8 @@ public class RapidModeLogReportOperation {
         this.scanMode = mode.displayName();
     }
 
-    public RapidScanResultSummary perform(List<DeveloperScansScanView> results, List<PolicyRuleSeverityType> severitiesToFailPolicyCheck) throws DetectUserFriendlyException {
-        RapidScanAggregateResult aggregateResult = rapidScanResultAggregator.aggregateData(results, severitiesToFailPolicyCheck);
+    public RapidScanResultSummary perform(List<DeveloperScansScanView> results, List<PolicyRuleSeverityType> severitiesToFailPolicyCheck, RapidCompareMode rapidCompareMode) throws DetectUserFriendlyException {
+        RapidScanAggregateResult aggregateResult = rapidScanResultAggregator.aggregateData(results, severitiesToFailPolicyCheck, rapidCompareMode);
         logger.info(String.format("%s:", scanMode + RapidScanDetectResult.NONPERSISTENT_SCAN_RESULT_DETAILS_HEADING));
         aggregateResult.logResult(new Slf4jIntLogger(logger));
         RapidScanResultSummary summary = aggregateResult.getSummary();
