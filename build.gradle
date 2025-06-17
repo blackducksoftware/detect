@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '10.6.0-SIGQA4-devm.IDETECT-4723-scass-pm'
+version = '10.6.0-SIGQA5-devm.IDETECT-4723-scass-pm-SNAPSHOT'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
