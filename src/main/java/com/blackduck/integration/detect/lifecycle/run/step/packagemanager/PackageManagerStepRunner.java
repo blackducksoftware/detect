@@ -21,10 +21,10 @@ import com.blackduck.integration.blackduck.bdio2.util.Bdio2ContentExtractor;
 
 public class PackageManagerStepRunner {
     
-    private CommonScanStepRunner commonScanStepRunner;
+    private final CommonScanStepRunner commonScanStepRunner;
     private static final String FILE_NAME_BDIO_HEADER_JSONLD = "bdio-header.jsonld";
-    private OperationRunner operationRunner;
-    private Gson gson;
+    private final OperationRunner operationRunner;
+    private final Gson gson;
     protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     public PackageManagerStepRunner(OperationRunner operationRunner) {
@@ -34,7 +34,6 @@ public class PackageManagerStepRunner {
     }
 
     public CommonScanResult invokePackageManagerScanningWorkflow(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData, BdioResult bdioResult) {
-        // TODO might have more than one bdio? Is this actually the bdio file?
         File uploadFile = bdioResult.getUploadTargets().get(0).getUploadFile();
 
         BdioFileContent jsonldHeader = null;
@@ -56,20 +55,18 @@ public class PackageManagerStepRunner {
                     blackDuckRunData, 
                     Optional.of(uploadFile),
                     operationRunner, 
-                    gson, 
+                    gson,
                     CommonScanStepRunner.PACKAGE_MANAGER,
-                    // TODO for some reason it always tells me the code location already exists even
-                    // though it doesn't.
-                    "test2",
+                    bdioResult.getUploadTargets().get(0).getCodeLocationName(),
                     jsonldHeader);
-                    //bdioResult.getUploadTargets().get(0).getCodeLocationName())
 
         } catch (OperationException | IntegrationException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            logger.error("Error completing the package manager scan. {}", e.getMessage());
+            operationRunner.publishDetectorFailure();
+            return null;
         }
 
-        logger.info("Successfully completed package manager scan of file: " + uploadFile.getAbsolutePath());
+        logger.info("Successfully completed package manager scan of file: {}", uploadFile.getAbsolutePath());
         return scanResult;
     }
 

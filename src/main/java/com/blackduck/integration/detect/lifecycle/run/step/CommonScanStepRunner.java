@@ -37,8 +37,6 @@ public class CommonScanStepRunner {
     // Supported scan types
     public static final String BINARY = "BINARY";
     public static final String CONTAINER = "CONTAINER";
-    
-    // TODO I think this is right from scan summary representation endpoint
     public static final String PACKAGE_MANAGER = "PACKAGE_MANAGER";
 
     private boolean isSCASSPossible = true;

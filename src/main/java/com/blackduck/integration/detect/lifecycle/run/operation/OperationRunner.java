@@ -607,6 +607,8 @@ public class OperationRunner {
             } catch (IOException e) {
                 throw new IntegrationException("Unable to perform file computations. Ensure the file and output directory are accessible.");
             }
+        } else {
+            initResult.setFileToUpload(scanFile);
         }
         
         String operationName = "Upload BDIO Header to Initiate Scan";
@@ -844,13 +846,13 @@ public class OperationRunner {
     //Post actions
     //End post actions
 
-    public final BdioUploadResult uploadBdioIntelligentPersistent(BlackDuckRunData blackDuckRunData, BdioResult bdioResult, Long timeout) throws OperationException {
+    public final BdioUploadResult uploadBdioIntelligentPersistent(BlackDuckRunData blackDuckRunData, BdioResult bdioResult, Long timeout, String scassScanId) throws OperationException {
         return auditLog.namedPublic(
             "Upload Intelligent Persistent Bdio",
             () -> new IntelligentPersistentUploadOperation(
                 blackDuckRunData.getBlackDuckServicesFactory().createIntelligentPersistenceService(),
                 timeout
-            ).uploadBdioFiles(bdioResult)
+            ).uploadBdioFiles(bdioResult, scassScanId, blackDuckRunData.getBlackDuckServerConfig().getBlackDuckUrl())
         );
     }
 
