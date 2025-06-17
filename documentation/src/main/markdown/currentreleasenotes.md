@@ -22,7 +22,7 @@
 
 ### New features
 
-* 
+* A new property, `detect.stateless.policy.check.fail.on.severities`, has been added that takes a comma-separated list of policy violation severities. Any policy violation with a severity in this list, and only in this list, will cause Detect to fail. This overrides the default behavior of blocker and critical being the only severities which cause a Detect exit failure. This property works for both rapid and stateless scans. Intelligent persistent scans should continue to use the existing `detect.policy.check.fail.on.severities` property.
 
 ### Changed features
 
