@@ -5,7 +5,7 @@
 * Typically, access to the internet is required to download and run [detect_product_short] and components from GitHub and other locations. For running without internet access,
 refer to [Air Gap Mode](../downloadingandinstalling/airgap.md).
 * Minimum 8GB RAM.
-* Java: OpenJDK 64-bit version 8, 11, 13, 14, 15, 16, or 17. If using Java 11: 11.0.5 or higher is required.
+* Java: OpenJDK 64-bit version 8, 11, 13, 14, 15, 16, 17, or 21. If using Java 11: 11.0.5 or higher is required.
 * Minimum curl version 7.34.0, recommended 8.4.0 or later.
 * Bash.
 * If using [powershell_script_name]: PowerShell versions 4.0 or higher.
