@@ -24,8 +24,7 @@ import com.blackduck.integration.util.NameVersion;
 
 public class CreateScanBatchOperation {
     private static final SignatureScannerVersion MIN_CSV_ARCHIVE_VERSION = new SignatureScannerVersion(2025, 1, 0);
-    // TODO update before merge based on fix. For now use 0.1.4 for testing a stable server.
-    private static final SignatureScannerVersion MIN_SCASS_VERSION = new SignatureScannerVersion(0, 1, 4);
+    private static final SignatureScannerVersion MIN_SCASS_VERSION = new SignatureScannerVersion(1, 0, 0);
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final BlackDuckSignatureScannerOptions signatureScannerOptions;
     private final DirectoryManager directoryManager;
@@ -151,6 +150,10 @@ public class CreateScanBatchOperation {
         }
     }
     
+    // TODO this isn't great, if user specifies their own scanner via
+    // detect.blackduck.signature.scanner.local.path we don't know what version it is
+    // In addition, right now we are always checking based on BlackDuck version and not
+    // looking at the blackDuckVersion.txt file.
     private void attemptToSetScassScan(ScanBatchBuilder scanJobBuilder, BlackDuckRunData blackDuckRunData) {
         if (blackDuckRunData != null 
                 && blackDuckRunData.getBlackDuckServerVersion().isPresent()

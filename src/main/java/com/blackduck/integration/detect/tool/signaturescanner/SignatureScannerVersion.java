@@ -9,35 +9,28 @@ public class SignatureScannerVersion extends BlackDuckVersion {
     }
     
     public boolean isAtLeast(BlackDuckVersion other) {
-        // Determine if this version and the other version are in the old format of year.month.iteration
-        boolean thisIsOldFormat = this.getMajor() >= 2000; // Old format has large major values
-        boolean otherIsOldFormat = other.getMajor() >= 2000;
+        boolean thisIsOldFormat = isOldFormat(this);
+        boolean otherIsOldFormat = isOldFormat(other);
 
-        // If both versions are in the same format (either old or new), compare them directly
-        if ((thisIsOldFormat && otherIsOldFormat) || (!thisIsOldFormat && !otherIsOldFormat)) {
-            if (this.getMajor() > other.getMajor()) {
-                return true;
-            }
-            if (this.getMajor() < other.getMajor()) {
-                return false;
-            }
-            if (this.getMinor() > other.getMinor()) {
-                return true;
-            }
-            if (this.getMinor() < other.getMinor()) {
-                return false;
-            }
-            if (this.getPatch() > other.getPatch()) {
-                return true;
-            }
-            if (this.getPatch() < other.getPatch()) {
-                return false;
-            }
-            return true;
+        if (thisIsOldFormat == otherIsOldFormat) {
+            return compareVersions(this, other);
         }
 
-        // Handle comparison between new and old formats
         // Treat new format as always greater than old format
         return !thisIsOldFormat;
+    }
+
+    private boolean isOldFormat(BlackDuckVersion version) {
+        return version.getMajor() >= 2000;
+    }
+
+    private boolean compareVersions(BlackDuckVersion version1, BlackDuckVersion version2) {
+        if (version1.getMajor() != version2.getMajor()) {
+            return version1.getMajor() > version2.getMajor();
+        }
+        if (version1.getMinor() != version2.getMinor()) {
+            return version1.getMinor() > version2.getMinor();
+        }
+        return version1.getPatch() >= version2.getPatch();
     }
 }
