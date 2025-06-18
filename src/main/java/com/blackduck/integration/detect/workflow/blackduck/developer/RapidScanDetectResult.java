@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.blackduck.integration.blackduck.api.generated.enumeration.PolicyRuleSeverityType;
+import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detect.configuration.enumeration.BlackduckScanMode;
 import com.blackduck.integration.detect.workflow.blackduck.developer.aggregate.RapidScanDetailGroup;
 import com.blackduck.integration.detect.workflow.blackduck.developer.aggregate.RapidScanResultSummary;
@@ -13,6 +14,7 @@ import com.blackduck.integration.detect.workflow.result.DetectResult;
 public class RapidScanDetectResult implements DetectResult {
     public static final String NONPERSISTENT_SCAN_RESULT_HEADING = " Scan Result";
     public static final String NONPERSISTENT_SCAN_RESULT_DETAILS_HEADING = " Scan Result Details";
+    public static final String ALT_POLICY_VIOLATION_HEADER_PREFIX = "detect.stateless.policy.check.fail.on.severities";
     private final String jsonFilePath;
     private final List<String> subMessages;
     private final List<String> transitiveGuidanceSubMessages;
@@ -93,9 +95,7 @@ public class RapidScanDetectResult implements DetectResult {
     }
 
     private void addErrorViolationHeader(List<String> resultMessages, List<PolicyRuleSeverityType> errorPolicies) {
-        List<PolicyRuleSeverityType> defaultPolicies = Arrays.asList(PolicyRuleSeverityType.CRITICAL, PolicyRuleSeverityType.BLOCKER);
-
-        if (errorPolicies.containsAll(defaultPolicies)) {
+        if (checkForDefaultPolicies(errorPolicies)) {
             resultMessages.add("\tCritical and blocking policy violations for");
         } else {
             String violationMessage;
@@ -106,8 +106,17 @@ public class RapidScanDetectResult implements DetectResult {
                         .map(policy -> policy.name().toLowerCase())
                         .toArray(String[]::new)) + " and " + errorPolicies.get(errorPolicies.size() - 1).name().toLowerCase();
             }
-            resultMessages.add("\tdetect.stateless.policy.check.fail.on.severities " + violationMessage);
+            resultMessages.add(String.format("\t%s %s policy violations for", ALT_POLICY_VIOLATION_HEADER_PREFIX, violationMessage));
         }
+    }
+
+    private boolean checkForDefaultPolicies(List<PolicyRuleSeverityType> errorPolicies) {
+        List<PolicyRuleSeverityType> defaultPolicies = Arrays.asList(PolicyRuleSeverityType.CRITICAL, PolicyRuleSeverityType.BLOCKER);
+
+        if (errorPolicies == null) {
+            return false;
+        }
+        return errorPolicies.equals(defaultPolicies);
     }
 
     @Override
