@@ -1,7 +1,9 @@
 package com.blackduck.integration.detect.tool.signaturescanner.operation;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -139,6 +141,7 @@ public class CreateScanBatchOperation {
      * BlackDuck server we are connected to can't handle it.
      */
     // TODO might need to fix this version check
+    // TODO this is likely okay as we are checking blackduck version and not scan cli
     private void attemptToSetCsvArchive(ScanBatchBuilder scanJobBuilder, BlackDuckRunData blackDuckRunData) {
         if (signatureScannerOptions.getCsvArchive()) {
             if (blackDuckRunData != null 
@@ -154,12 +157,30 @@ public class CreateScanBatchOperation {
     // detect.blackduck.signature.scanner.local.path we don't know what version it is
     // In addition, right now we are always checking based on BlackDuck version and not
     // looking at the blackDuckVersion.txt file.
+    // TODO we need to check file to see what version scan cli is or even run it if file isn't there
+    // TODO somewhere we need a check for BD too (check with Vlad)
     private void attemptToSetScassScan(ScanBatchBuilder scanJobBuilder, BlackDuckRunData blackDuckRunData) {
+        getSignatureScannerVersion();
+        
         if (blackDuckRunData != null 
                 && blackDuckRunData.getBlackDuckServerVersion().isPresent()
                 && MIN_SCASS_VERSION.isAtLeast(blackDuckRunData.getBlackDuckServerVersion().get())) {
             scanJobBuilder.scassScan(true);
         }
+    }
+
+    // TODO run --version if local, otherwise read file
+    private void getSignatureScannerVersion() {
+        // If user overrides where the signature scanner is it will be stored here. 
+        Optional<Path> localScannerInstallPath = signatureScannerOptions.getLocalScannerInstallPath();
+        
+        if (localScannerInstallPath.isPresent()) {
+            // Run --version to determine version
+            Path path = localScannerInstallPath.get();
+        } else {
+            // Read blackDuckVersion.txt file to determine version
+        }
+        
     }
 
     private boolean conditionalCorrelationFilter(boolean toCheck, String toWarn) {
