@@ -22,7 +22,7 @@
 
 ### New features
 
-*  A new parameter [detect.stateless.policy.check.fail.on.severities](properties/basic-properties.html#detect.stateless.policy.check.fail.on.severities) has been added which will trigger [detect_product_short] to fail the scan and notify the user if a Stateless Scan policy violation exceeds the configured value.
+* A new property, [detect.stateless.policy.check.fail.on.severities](properties/basic-properties.html#ariaid-title34) has been added, which will trigger [detect_product_short] to fail the scan and notify the user if a policy violation matches the configured value. This property overrides the default "Blocker" and "Critical" severity settings that cause [detect_product_short] scans to exit. This property applies to both [Rapid](runningdetect/rapidscan.md) and [Stateless](runningdetect/statelessscan.md) scans. Intelligent persistent scans, (when scan mode is not set to RAPID, STATELESS, or [--detect.blackduck.scan.mode](properties/all-properties.html#ariaid-title5) is explicitly set to INTELLIGENT and scan data is persisted), should continue using the [detect.policy.check.fail.on.severities](properties/basic-properties.html#ariaid-title34), property.
 
 ### Changed features
 

@@ -1,9 +1,13 @@
 package com.blackduck.integration.detect.workflow.blackduck.developer;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import com.blackduck.integration.blackduck.api.generated.enumeration.PolicyRuleSeverityType;
+import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detect.configuration.enumeration.BlackduckScanMode;
 import com.blackduck.integration.detect.workflow.blackduck.developer.aggregate.RapidScanDetailGroup;
 import com.blackduck.integration.detect.workflow.blackduck.developer.aggregate.RapidScanResultSummary;
@@ -17,9 +21,9 @@ public class RapidScanDetectResult implements DetectResult {
     private final List<String> transitiveGuidanceSubMessages;
     public static String scanMode;
 
-    public RapidScanDetectResult(String jsonFilePath, RapidScanResultSummary resultSummary, BlackduckScanMode mode) {
+    public RapidScanDetectResult(String jsonFilePath, RapidScanResultSummary resultSummary, BlackduckScanMode mode, List<PolicyRuleSeverityType> errorPolicies) {
         this.jsonFilePath = jsonFilePath;
-        this.subMessages = createResultMessages(resultSummary);
+        this.subMessages = createResultMessages(resultSummary, errorPolicies);
         this.transitiveGuidanceSubMessages = createTransitiveGuidanceMessages(resultSummary);
         scanMode = mode.displayName();
     }
@@ -51,7 +55,7 @@ public class RapidScanDetectResult implements DetectResult {
     }
     
 
-    private List<String> createResultMessages(RapidScanResultSummary summary) {
+    private List<String> createResultMessages(RapidScanResultSummary summary, List<PolicyRuleSeverityType> errorPolicies) {
         String policyGroupName = RapidScanDetailGroup.POLICY.getDisplayName();
         String securityGroupName = RapidScanDetailGroup.SECURITY.getDisplayName();
         String licenseGroupName = RapidScanDetailGroup.LICENSE.getDisplayName();
@@ -61,7 +65,7 @@ public class RapidScanDetectResult implements DetectResult {
 
         List<String> resultMessages = new LinkedList<>();
         resultMessages.add("");
-        resultMessages.add("\tCritical and blocking policy violations for");
+        addErrorViolationHeader(resultMessages, errorPolicies);
         resultMessages.add(String.format(countFormat, policyGroupName, summary.getPolicyErrorCount()));
         resultMessages.add(String.format(countFormat, securityGroupName, summary.getSecurityErrorCount()));
         resultMessages.add(String.format(countFormat, licenseGroupName, summary.getLicenseErrorCount()));
@@ -89,6 +93,35 @@ public class RapidScanDetectResult implements DetectResult {
             .forEach(component -> resultMessages.add(String.format(indentedMessageFormat, component)));
 
         return resultMessages;
+    }
+
+    private void addErrorViolationHeader(List<String> resultMessages, List<PolicyRuleSeverityType> errorPolicies) {
+        if (checkForDefaultPolicies(errorPolicies)) {
+            resultMessages.add("\tCritical and blocking policy violations for");
+        } else {
+            String violationMessage;
+            if (errorPolicies.size() == 1) {
+                violationMessage = errorPolicies.get(0).name().toLowerCase();
+            } else {
+                violationMessage = String.join(", ", errorPolicies.subList(0, errorPolicies.size() - 1).stream()
+                        .map(policy -> policy.name().toLowerCase())
+                        .toArray(String[]::new)) + " and " + errorPolicies.get(errorPolicies.size() - 1).name().toLowerCase();
+            }
+            resultMessages.add(String.format("\t%s %s policy violations for", DetectProperties.DETECT_STATELESS_POLICY_CHECK_FAIL_ON_SEVERITIES.getKey(), violationMessage));
+        }
+    }
+
+    private boolean checkForDefaultPolicies(List<PolicyRuleSeverityType> errorPolicies) {
+        List<PolicyRuleSeverityType> defaultPolicies = Arrays.asList(PolicyRuleSeverityType.CRITICAL, PolicyRuleSeverityType.BLOCKER);
+
+        if (errorPolicies == null) {
+            return false;
+        }
+        
+        Set<PolicyRuleSeverityType> errorSet = new HashSet<>(errorPolicies);
+        Set<PolicyRuleSeverityType> defaultSet = new HashSet<>(defaultPolicies);
+        
+        return errorSet.equals(defaultSet);
     }
 
     @Override
