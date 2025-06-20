@@ -25,7 +25,8 @@ import com.blackduck.integration.util.NameVersion;
 
 public class CreateScanBatchOperation {
     private static final SignatureScannerVersion MIN_CSV_ARCHIVE_VERSION = new SignatureScannerVersion(2025, 1, 0);
-    private static final SignatureScannerVersion MIN_SCASS_VERSION = new SignatureScannerVersion(1, 0, 0);
+    // TODO need to update to 1.0.0 before release
+    private static final SignatureScannerVersion MIN_SCASS_VERSION = new SignatureScannerVersion(0, 1, 4);
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final BlackDuckSignatureScannerOptions signatureScannerOptions;
     private final DirectoryManager directoryManager;

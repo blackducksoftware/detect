@@ -95,10 +95,6 @@ public class SignatureScanStepRunner {
         Set<String> failedScans = processEachScan(scanIdsToWaitFor, scanOuputResult, gson, shouldWaitAtScanLevel, scanBatch.isScassScan(), isOnline, scanBatch.isCsvArchive()); 
 
         // Step 3: Report on results
-        // TODO this is still too simplistic as we want to perhaps update and fail
-        // the scans that couldn't be processed correctly
-        // TODO maybe a new object with scanOutputResult and BDIO/notification status (returned from processEachScan) and then return report failure
-        // based on either instead of just scanCLI
         List<SignatureScannerReport> reports = operationRunner.createSignatureScanReport(scanPaths, scanOuputResult.getScanBatchOutput().getOutputs(), failedScans);
         operationRunner.publishSignatureScanReport(reports);
         return reports;
@@ -152,9 +148,6 @@ public class SignatureScanStepRunner {
         List<ScanCommandOutput> outputs = signatureScanOutputResult.getScanBatchOutput().getOutputs();
         Set<String> failedScans = new HashSet<>();
 
-        // A single signature scan (scan CLI) invocation can result in multiple scans being done. For example,
-        // in addition to the main signature scan, a snippet scan or other secondary scan can occur. We need
-        // to handle each of these in turn.
         for (ScanCommandOutput output : outputs) {
             if (output.getResult() != Result.SUCCESS) {
                 continue;

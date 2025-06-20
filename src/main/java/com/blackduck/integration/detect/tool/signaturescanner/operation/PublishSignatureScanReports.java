@@ -29,8 +29,6 @@ public class PublishSignatureScanReports {
     }
 
     public void publishReports(List<SignatureScannerReport> signatureScannerReports) {
-        // TODO this is a concern as it prints success even when we later fail with SCASS steps
-        // TODO I think the below isScassError takes care of this but need to check
         signatureScannerReports.forEach(this::publishReport);
         
         signatureScannerReports.stream()
