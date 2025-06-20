@@ -1,9 +1,13 @@
 package com.blackduck.integration.detect.tool.signaturescanner.operation;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,20 +19,27 @@ import org.slf4j.LoggerFactory;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.ScanBatch;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.ScanBatchBuilder;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.ApiScannerInstaller;
+import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.ScanPaths;
+import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.ScanPathsUtility;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.ScanTarget;
 import com.blackduck.integration.blackduck.configuration.BlackDuckServerConfig;
+import com.blackduck.integration.blackduck.exception.BlackDuckIntegrationException;
 import com.blackduck.integration.detect.configuration.DetectUserFriendlyException;
 import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.data.DockerTargetData;
 import com.blackduck.integration.detect.tool.signaturescanner.BlackDuckSignatureScannerOptions;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScanPath;
+import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerLogger;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerVersion;
 import com.blackduck.integration.detect.workflow.codelocation.CodeLocationNameManager;
 import com.blackduck.integration.detect.workflow.file.DirectoryManager;
+import com.blackduck.integration.util.IntEnvironmentVariables;
 import com.blackduck.integration.util.NameVersion;
+import com.blackduck.integration.util.OperatingSystemType;
 
 public class CreateScanBatchOperation {
+    private static final String SIGNATURE_SCAN_VERSION_FORMAT = "^(\\d+)\\.(\\d+)\\.(\\d+)(?:[-\\w]*)?$";
     private static final SignatureScannerVersion MIN_CSV_ARCHIVE_VERSION = new SignatureScannerVersion(2025, 1, 0);
     private static final SignatureScannerVersion MIN_SCASS_VERSION = new SignatureScannerVersion(1, 0, 0);
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -169,9 +180,10 @@ public class CreateScanBatchOperation {
             
             // blackDuckRunData.getBlackDuckServerVersion().get()
             
-            if (blackDuckRunData != null 
-                    && blackDuckRunData.getBlackDuckServerVersion().isPresent()
-                    && signatureScannerVersion.isAtLeast(MIN_SCASS_VERSION)) {
+//            if (blackDuckRunData != null 
+//                    && blackDuckRunData.getBlackDuckServerVersion().isPresent()
+                    //&& 
+            if (signatureScannerVersion != null && signatureScannerVersion.isAtLeast(MIN_SCASS_VERSION)) {
                 scanJobBuilder.scassScan(true);
             }
         } catch (IOException e) {
@@ -182,27 +194,57 @@ public class CreateScanBatchOperation {
 
     // TODO run --version if local, otherwise read file
     private SignatureScannerVersion getSignatureScannerVersion() throws IOException {
+        SignatureScannerVersion scannerVersion = null;
+        
         // If user overrides where the signature scanner is it will be stored here. 
         Optional<Path> localScannerInstallPath = signatureScannerOptions.getLocalScannerInstallPath();
         
         if (localScannerInstallPath.isPresent()) {
             // Run --version to determine version
-            Path path = localScannerInstallPath.get();
+            Path localScanCliPath = localScannerInstallPath.get();
             
-            return null;
+            ScanPathsUtility scanPathsUtility = new ScanPathsUtility(new SignatureScannerLogger(logger), IntEnvironmentVariables.includeSystemEnv(), OperatingSystemType.determineFromSystem());
+            try {
+                ScanPaths scannerLocation = scanPathsUtility.searchForScanPaths(localScanCliPath.toFile());
+                
+                List<String> cmd = new ArrayList<>();
+                scannerLocation.addJavaAndOnePathArguments(cmd);
+                scannerLocation.addScanExecutableArguments(cmd);
+                cmd.add("--no-prompt");
+                cmd.add("--version");
+                
+                ProcessBuilder processBuilder = new ProcessBuilder(cmd);
+                Process blackDuckCliProcess = processBuilder.start();
+                
+                try (InputStream inputStream = blackDuckCliProcess.getInputStream();
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+                       String line;
+                       while ((line = reader.readLine()) != null) {
+                           if (line.matches(SIGNATURE_SCAN_VERSION_FORMAT)) {
+                               scannerVersion = parseSemVer(line); // Parse and return the version
+                               break;
+                           }
+                       }
+                   }      
+            } catch (BlackDuckIntegrationException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
         } else {
             // Read blackDuckVersion.txt file to determine version
             File toolsDirectory = directoryManager.getPermanentDirectory();
             File scanCliDirectory = new File (toolsDirectory, ApiScannerInstaller.BLACK_DUCK_SIGNATURE_SCANNER_INSTALL_DIRECTORY);
             File scanCliVersionFile = new File(scanCliDirectory, ApiScannerInstaller.VERSION_FILENAME);
             String localScannerVersion = FileUtils.readFileToString(scanCliVersionFile, Charset.defaultCharset());
-            return parseSemVer(localScannerVersion);
-        } 
+            scannerVersion = parseSemVer(localScannerVersion);
+        }
+        
+        return scannerVersion;
     }
     
     private SignatureScannerVersion parseSemVer(String version) throws IllegalArgumentException {
         // Regular expression to match x.y.z format, optionally followed by a suffix (e.g., -SNAPSHOT)
-        String regex = "^(\\d+)\\.(\\d+)\\.(\\d+)(?:[-\\w]*)?$";
+        String regex = SIGNATURE_SCAN_VERSION_FORMAT;
         java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(regex);
         java.util.regex.Matcher matcher = pattern.matcher(version);
 
