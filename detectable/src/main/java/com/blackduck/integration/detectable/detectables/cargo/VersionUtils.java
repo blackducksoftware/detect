@@ -20,6 +20,10 @@ public class VersionUtils {
             return false;
         }
 
+        if ("*".equals(constraint.trim())) {
+            return true;
+        }
+
         String normalizedActual = normalizeVersion(actualVersion);
         String normalizedConstraintVersion;
 
@@ -67,6 +71,15 @@ public class VersionUtils {
         String[] declaredParts = declaredVersion.split("\\.");
         String[] actualParts = actualVersion.split("\\.");
 
+        if (declaredParts.length == 1) {
+            // Matching major version only (e.g., "2" matches "2.x.x")
+            return actualParts[0].equals(declaredParts[0]);
+        } else if (declaredParts.length == 2) {
+            // Matching major and minor versions (e.g., "0.8" matches "0.8.x")
+            return actualParts[0].equals(declaredParts[0]) && actualParts[1].equals(declaredParts[1]);
+        }
+
+
         // Fill both arrays to length 3 with "0" if needed
         String[] normalizedDeclared = new String[] {
             declaredParts.length > 0 ? declaredParts[0] : "0",
@@ -101,4 +114,8 @@ public class VersionUtils {
         }
     }
 
+    public static String stripBuildMetadata(String version) {
+        // Remove anything after and including '+'
+        return version.split("\\+")[0];
+    }
 }

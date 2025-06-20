@@ -3,12 +3,7 @@ package com.blackduck.integration.detectable.detectables.cargo;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
@@ -97,40 +92,101 @@ public class CargoExtractor {
         List<CargoLockPackageData> packages,
         Map<NameVersion, String> excludableDependencyMap
     ) {
-        Set<String> excludedNames = new HashSet<>();
+        Set<NameVersion> dependenciesToExclude = initializeExclusionSet(excludableDependencyMap); // collecting the direct dependencies to exclude
+        processTransitiveDependencies(packages, dependenciesToExclude); // collecting the direct transitive dependencies to exclude
+        return filterExcludedPackages(packages, dependenciesToExclude); // filtering out direct and transitive dependencies
+    }
 
-        List<CargoLockPackageData> filtered = packages.stream()
-            .filter(pkg -> {
-                String name = pkg.getName().orElse(null);
-                String version = pkg.getVersion().orElse(null);
-                NameVersion nameVersion = new NameVersion(name, version);
-                if (name == null || version == null) return true;
+    // Seed the exclusion set from excludableDependencyMap
+    private Set<NameVersion> initializeExclusionSet(Map<NameVersion, String> excludableDependencyMap) {
+        Set<NameVersion> toExclude = new HashSet<>();
+        for (Map.Entry<NameVersion, String> entry : excludableDependencyMap.entrySet()) {
+            NameVersion nv = entry.getKey();
+            String constraint = entry.getValue();
+            if (nv.getVersion() != null && (constraint == null || VersionUtils.versionMatches(constraint, nv.getVersion()))) {
+                toExclude.add(nv);
+            }
+        }
+        return toExclude;
+    }
 
-                if (excludableDependencyMap.containsKey(nameVersion)) {
-                    String constraint = excludableDependencyMap.get(nameVersion);
-                    boolean matches = constraint == null || VersionUtils.versionMatches(constraint, version);
-                    if (matches) {
-                        excludedNames.add(name);
-                        return false;
+    // Recursively excluding transitive dependencies
+    private void processTransitiveDependencies(List<CargoLockPackageData> packages, Set<NameVersion> dependenciesToExclude) {
+        Deque<NameVersion> queue = new ArrayDeque<>(dependenciesToExclude);
+        while (!queue.isEmpty()) {
+            NameVersion current = queue.pop();
+            CargoLockPackageData currentPkg = findPackageByNameVersion(current, packages);
+            if (currentPkg != null) {
+                currentPkg.getDependencies().ifPresent(dependencies -> {
+                    for (String depStr : dependencies) {
+                        NameVersion nameVersion = extractPackageNameVersion(depStr, packages);
+                        if (nameVersion != null && dependenciesToExclude.add(nameVersion)) {
+                            queue.add(nameVersion);
+                        }
                     }
-                }
+                });
+            }
+        }
+    }
 
-                return true;
-            })
-            .collect(Collectors.toList());
-
-        return filtered.stream()
+    // Filter out dependencies dependencies
+    private List<CargoLockPackageData> filterExcludedPackages(List<CargoLockPackageData> packages, Set<NameVersion> toExclude) {
+        return packages.stream()
+            .filter(pkg -> !toExclude.contains(new NameVersion(pkg.getName().orElse(null), pkg.getVersion().orElse(null))))
             .map(pkg -> new CargoLockPackageData(
                 pkg.getName().orElse(null),
                 pkg.getVersion().orElse(null),
                 pkg.getSource().orElse(null),
                 pkg.getChecksum().orElse(null),
-                pkg.getDependencies()
-                    .orElse(new ArrayList<>())
+                pkg.getDependencies().orElse(Collections.emptyList())
                     .stream()
-                    .filter(dep -> !excludedNames.contains(dep))
+                    .filter(depStr -> {
+                        NameVersion dep = extractPackageNameVersion(depStr, packages);
+                        return dep == null || !toExclude.contains(dep);
+                    })
                     .collect(Collectors.toList())
             ))
             .collect(Collectors.toList());
+    }
+
+    // Extracting NameVersion from
+    private NameVersion extractPackageNameVersion(String dependencyString, List<CargoLockPackageData> packages) {
+        if (dependencyString == null || dependencyString.isEmpty()) {
+            return null;
+        }
+
+        String[] parts = dependencyString.split(" ");
+        String depName = parts[0].trim();
+        String depVersion = (parts.length > 1) ? parts[1].trim() : null;
+
+        for (CargoLockPackageData pkg : packages) {
+            String name = pkg.getName().orElse(null);
+            String version = pkg.getVersion().orElse(null);
+
+            if (!depName.equals(name)) {
+                continue;
+            }
+
+            if (depVersion == null || depVersion.equals(version)) {
+                return new NameVersion(name, version);
+            }
+        }
+
+        return null;
+    }
+
+    private CargoLockPackageData findPackageByNameVersion(NameVersion nv, List<CargoLockPackageData> packages) {
+        for (CargoLockPackageData pkg : packages) {
+            String name = pkg.getName().orElse(null);
+            String version = pkg.getVersion().orElse(null);
+
+            // Matching name and use VersionUtils to check if the versions are compatible
+            if (nv.getName().equals(name)
+                && version != null
+                && VersionUtils.versionMatches(VersionUtils.stripBuildMetadata(nv.getVersion()), VersionUtils.stripBuildMetadata(version))) {
+                return pkg;
+            }
+        }
+        return null;
     }
 }
