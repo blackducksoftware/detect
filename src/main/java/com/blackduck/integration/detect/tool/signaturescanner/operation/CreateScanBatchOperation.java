@@ -1,16 +1,20 @@
 package com.blackduck.integration.detect.tool.signaturescanner.operation;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
+import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.ScanBatch;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.ScanBatchBuilder;
+import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.ApiScannerInstaller;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.ScanTarget;
 import com.blackduck.integration.blackduck.configuration.BlackDuckServerConfig;
 import com.blackduck.integration.detect.configuration.DetectUserFriendlyException;
@@ -160,27 +164,60 @@ public class CreateScanBatchOperation {
     // TODO we need to check file to see what version scan cli is or even run it if file isn't there
     // TODO somewhere we need a check for BD too (check with Vlad)
     private void attemptToSetScassScan(ScanBatchBuilder scanJobBuilder, BlackDuckRunData blackDuckRunData) {
-        getSignatureScannerVersion();
-        
-        if (blackDuckRunData != null 
-                && blackDuckRunData.getBlackDuckServerVersion().isPresent()
-                && MIN_SCASS_VERSION.isAtLeast(blackDuckRunData.getBlackDuckServerVersion().get())) {
-            scanJobBuilder.scassScan(true);
+        try {
+            SignatureScannerVersion signatureScannerVersion = getSignatureScannerVersion();
+            
+            // blackDuckRunData.getBlackDuckServerVersion().get()
+            
+            if (blackDuckRunData != null 
+                    && blackDuckRunData.getBlackDuckServerVersion().isPresent()
+                    && signatureScannerVersion.isAtLeast(MIN_SCASS_VERSION)) {
+                scanJobBuilder.scassScan(true);
+            }
+        } catch (IOException e) {
+            // Be cautious and do a non-SCASS scan if we can't obtain the signature scanner version.
+            scanJobBuilder.scassScan(false);
         }
     }
 
     // TODO run --version if local, otherwise read file
-    private void getSignatureScannerVersion() {
+    private SignatureScannerVersion getSignatureScannerVersion() throws IOException {
         // If user overrides where the signature scanner is it will be stored here. 
         Optional<Path> localScannerInstallPath = signatureScannerOptions.getLocalScannerInstallPath();
         
         if (localScannerInstallPath.isPresent()) {
             // Run --version to determine version
             Path path = localScannerInstallPath.get();
+            
+            return null;
         } else {
             // Read blackDuckVersion.txt file to determine version
+            File toolsDirectory = directoryManager.getPermanentDirectory();
+            File scanCliDirectory = new File (toolsDirectory, ApiScannerInstaller.BLACK_DUCK_SIGNATURE_SCANNER_INSTALL_DIRECTORY);
+            File scanCliVersionFile = new File(scanCliDirectory, ApiScannerInstaller.VERSION_FILENAME);
+            String localScannerVersion = FileUtils.readFileToString(scanCliVersionFile, Charset.defaultCharset());
+            return parseSemVer(localScannerVersion);
+        } 
+    }
+    
+    private SignatureScannerVersion parseSemVer(String version) throws IllegalArgumentException {
+        // Regular expression to match x.y.z format, optionally followed by a suffix (e.g., -SNAPSHOT)
+        String regex = "^(\\d+)\\.(\\d+)\\.(\\d+)(?:[-\\w]*)?$";
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(regex);
+        java.util.regex.Matcher matcher = pattern.matcher(version);
+
+        if (!matcher.matches()) {
+            throw new IllegalArgumentException("Invalid Signature Scanner version format: " + version);
         }
-        
+
+        try {
+            int major = Integer.parseInt(matcher.group(1));
+            int minor = Integer.parseInt(matcher.group(2));
+            int patch = Integer.parseInt(matcher.group(3));
+            return new SignatureScannerVersion(major, minor, patch);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Signature Scanner version components must be integers: " + version, e);
+        }
     }
 
     private boolean conditionalCorrelationFilter(boolean toCheck, String toWarn) {
