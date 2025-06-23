@@ -44,13 +44,19 @@ public class CommonScanStepRunner {
     public static boolean areScassScansPossible(Optional<BlackDuckVersion> blackDuckVersion) {
         return blackDuckVersion.isPresent() && blackDuckVersion.get().isAtLeast(MIN_SCASS_SCAN_VERSION);
     }
+
+
+    public CommonScanResult performCommonScan(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData,
+                                              Optional<File> scanFile, OperationRunner operationRunner, Gson gson, String scanType) throws IntegrationException, OperationException {
+
+        String codeLocationName = createCodeLocationName(scanFile, projectNameVersion, scanType, operationRunner.getCodeLocationNameManager());
+        BdioFileContent jsonldHeader = null;
+
+        return performCommonScan(projectNameVersion, blackDuckRunData, scanFile, operationRunner, gson, scanType, codeLocationName, jsonldHeader);
+    }
     
     public CommonScanResult performCommonScan(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData,
                                               Optional<File> scanFile, OperationRunner operationRunner, Gson gson, String scanType, String codeLocationName, BdioFileContent jsonldHeader) throws OperationException, IntegrationException {
-
-        if (codeLocationName == null || codeLocationName.isEmpty()) {
-            codeLocationName = createCodeLocationName(scanFile, projectNameVersion, scanType, operationRunner.getCodeLocationNameManager());
-        }
             
         // call BlackDuck to create a scanID and determine where to upload the file
         ScassScanInitiationResult initResult = operationRunner.initiateScan(
