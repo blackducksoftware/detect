@@ -36,19 +36,8 @@ public class PackageManagerStepRunner {
     public CommonScanResult invokePackageManagerScanningWorkflow(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData, BdioResult bdioResult) {
         File uploadFile = bdioResult.getUploadTargets().get(0).getUploadFile();
 
-        BdioFileContent jsonldHeader = null;
-        Bdio2ContentExtractor extractor = new Bdio2ContentExtractor();
-        try {
-           List<BdioFileContent> bdioFiles = extractor.extractContent(uploadFile);
-            jsonldHeader = bdioFiles.stream()
-                    .filter(content -> content.getFileName().equals(FILE_NAME_BDIO_HEADER_JSONLD))
-                    .findFirst()
-                    .orElseThrow(() -> new BlackDuckIntegrationException("Cannot find BDIO header file" + FILE_NAME_BDIO_HEADER_JSONLD + "."));
-        } catch (IntegrationException e) {
-            throw new RuntimeException("Error extracting the bdio file", e);
-        }
-        
-        CommonScanResult scanResult = null;
+        BdioFileContent jsonldHeader = extractBdioFileContent(uploadFile);
+        CommonScanResult scanResult;
         try {
             scanResult = commonScanStepRunner.performCommonScan(
                     projectNameVersion, 
@@ -68,6 +57,20 @@ public class PackageManagerStepRunner {
 
         logger.info("Successfully completed package manager scan of file: {}", uploadFile.getAbsolutePath());
         return scanResult;
+    }
+
+    private BdioFileContent extractBdioFileContent(File uploadFile) {
+        Bdio2ContentExtractor extractor = new Bdio2ContentExtractor();
+        try {
+            List<BdioFileContent> bdioFiles = extractor.extractContent(uploadFile);
+            return bdioFiles.stream()
+                    .filter(content -> content.getFileName().equals(FILE_NAME_BDIO_HEADER_JSONLD))
+                    .findFirst()
+                    .orElseThrow(() -> new BlackDuckIntegrationException("Cannot find BDIO header file" + FILE_NAME_BDIO_HEADER_JSONLD + "."));
+        } catch (IntegrationException | IllegalArgumentException e) {
+            operationRunner.publishDetectorFailure();
+            throw new RuntimeException("Error extracting BDIO header file from bdio" + uploadFile.getAbsolutePath(), e);
+        }
     }
 
 }

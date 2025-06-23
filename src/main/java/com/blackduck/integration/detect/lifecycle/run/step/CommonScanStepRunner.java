@@ -39,15 +39,14 @@ public class CommonScanStepRunner {
     public static final String CONTAINER = "CONTAINER";
     public static final String PACKAGE_MANAGER = "PACKAGE_MANAGER";
 
-    private boolean isSCASSPossible = true;
+    private boolean isPackageManagerScassPossible = true;
 
     public static boolean areScassScansPossible(Optional<BlackDuckVersion> blackDuckVersion) {
         return blackDuckVersion.isPresent() && blackDuckVersion.get().isAtLeast(MIN_SCASS_SCAN_VERSION);
     }
 
 
-    public CommonScanResult performCommonScan(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData,
-                                              Optional<File> scanFile, OperationRunner operationRunner, Gson gson, String scanType) throws IntegrationException, OperationException {
+    public CommonScanResult performCommonScan(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData, Optional<File> scanFile, OperationRunner operationRunner, Gson gson, String scanType) throws IntegrationException, OperationException {
 
         String codeLocationName = createCodeLocationName(scanFile, projectNameVersion, scanType, operationRunner.getCodeLocationNameManager());
         BdioFileContent jsonldHeader = null;
@@ -55,8 +54,7 @@ public class CommonScanStepRunner {
         return performCommonScan(projectNameVersion, blackDuckRunData, scanFile, operationRunner, gson, scanType, codeLocationName, jsonldHeader);
     }
     
-    public CommonScanResult performCommonScan(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData,
-                                              Optional<File> scanFile, OperationRunner operationRunner, Gson gson, String scanType, String codeLocationName, BdioFileContent jsonldHeader) throws OperationException, IntegrationException {
+    public CommonScanResult performCommonScan(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData, Optional<File> scanFile, OperationRunner operationRunner, Gson gson, String scanType, String codeLocationName, BdioFileContent jsonldHeader) throws OperationException, IntegrationException {
             
         // call BlackDuck to create a scanID and determine where to upload the file
         ScassScanInitiationResult initResult = operationRunner.initiateScan(
@@ -79,7 +77,7 @@ public class CommonScanStepRunner {
             UUID scanId = performCommonUpload(projectNameVersion, blackDuckRunData, scanFile, operationRunner, scanType,
                     initResult, finalCL);
             
-            return new CommonScanResult(scanId, finalCL, isSCASSPossible);
+            return new CommonScanResult(scanId, finalCL, isPackageManagerScassPossible);
         });
     }
 
@@ -106,12 +104,17 @@ public class CommonScanStepRunner {
                 }
             }
         }
+
+        return executeFallBack(scanType, operationRunner, blackDuckRunData, scanFile, scanId, projectNameVersion);
+    }
+
+    private UUID executeFallBack(String scanType, OperationRunner operationRunner, BlackDuckRunData blackDuckRunData, Optional<File> scanFile, UUID scanId, NameVersion projectNameVersion) throws IntegrationException, OperationException {
         // This is a SCASS capable server but SCASS is not enabled or the GCP URL is inaccessible. If PACKAGE_MANGER scan, we use the same scanId
         if(!scanType.equals(PACKAGE_MANAGER)) {
             BdbaScanStepRunner bdbaScanStepRunner = createBdbaScanStepRunner(operationRunner);
             bdbaScanStepRunner.runBdbaScan(projectNameVersion, blackDuckRunData, scanFile, scanId.toString(), scanType);
         } else {
-            isSCASSPossible = false;
+            isPackageManagerScassPossible = false;
         }
 
         return scanId;

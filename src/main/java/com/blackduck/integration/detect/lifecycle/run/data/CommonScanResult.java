@@ -5,12 +5,12 @@ import java.util.UUID;
 public class CommonScanResult {
     private final UUID scanId;
     private final String codeLocationName;
-    private boolean isSCASSPossible = true;
+    private boolean isPackageManagerScassPossible = true;
 
     public CommonScanResult(UUID scanId, String codeLocationName, boolean isSCASSPossible) {
         this.scanId = scanId;
         this.codeLocationName = codeLocationName;
-        this.isSCASSPossible = isSCASSPossible;
+        this.isPackageManagerScassPossible = isSCASSPossible;
     }
 
     public UUID getScanId() {
@@ -21,5 +21,5 @@ public class CommonScanResult {
         return codeLocationName;
     }
 
-    public boolean isSCASSPossible() { return isSCASSPossible; }
+    public boolean isPackageManagerScassPossible() { return isPackageManagerScassPossible; }
 }

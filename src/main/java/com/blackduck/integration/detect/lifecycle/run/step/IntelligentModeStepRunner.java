@@ -117,14 +117,7 @@ public class IntelligentModeStepRunner {
         CodeLocationAccumulator codeLocationAccumulator = new CodeLocationAccumulator();
 
         if (bdioResult.isNotEmpty()) {
-            CommonScanResult commonScanResult = invokePackageManagerScanningWorkflow(projectNameVersion, blackDuckRunData, scanIdsToWaitFor, bdioResult);
-
-            if(!commonScanResult.isSCASSPossible()) {
-                String scassId = commonScanResult.getScanId() == null ? null : commonScanResult.getScanId().toString();
-                stepHelper.runAsGroup("Upload Bdio", OperationType.INTERNAL, () -> {
-                    uploadBdio(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, operationRunner.calculateDetectTimeout(), scassId);
-                });
-            }
+            invokePackageManagerScanningWorkflow(projectNameVersion, blackDuckRunData, scanIdsToWaitFor, bdioResult, codeLocationAccumulator);
         } else {
             logger.debug("No BDIO results to upload. Skipping.");
         }
@@ -211,16 +204,27 @@ public class IntelligentModeStepRunner {
         });
     }
 
-    private CommonScanResult invokePackageManagerScanningWorkflow(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData, Set<String> scanIdsToWaitFor, BdioResult bdioResult) {
+    private void invokePackageManagerScanningWorkflow(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData, Set<String> scanIdsToWaitFor, BdioResult bdioResult, CodeLocationAccumulator codeLocationAccumulator) throws OperationException {
         if (CommonScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion())) {
             PackageManagerStepRunner packageManagerScanStepRunner = new PackageManagerStepRunner(operationRunner);
 
             CommonScanResult commonScanResult = packageManagerScanStepRunner.invokePackageManagerScanningWorkflow(projectNameVersion, blackDuckRunData, bdioResult);
-            scanIdsToWaitFor.add(commonScanResult.getScanId().toString());
-            return commonScanResult;
+            String scanId = commonScanResult.getScanId() == null ? null : commonScanResult.getScanId().toString();
+            scanIdsToWaitFor.add(scanId);
+
+            if(!commonScanResult.isPackageManagerScassPossible()) {
+                invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId);
+            }
         } else {
-            return new CommonScanResult(null, null, false);
+            String scanId = null;
+            invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId);
         }
+    }
+
+    private void invokePreScassPackageManagerWorkflow(BlackDuckRunData blackDuckRunData, BdioResult bdioResult, Set<String> scanIdsToWaitFor, CodeLocationAccumulator codeLocationAccumulator, String scanId) throws OperationException {
+        stepHelper.runAsGroup("Upload Bdio", OperationType.INTERNAL, () -> {
+            uploadBdio(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, operationRunner.calculateDetectTimeout(), scanId);
+        });
     }
 
     private void invokeBinaryScanningWorkflow(
