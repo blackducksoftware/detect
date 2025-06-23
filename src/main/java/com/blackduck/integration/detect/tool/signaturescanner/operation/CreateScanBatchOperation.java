@@ -155,11 +155,7 @@ public class CreateScanBatchOperation {
         try {
             SignatureScannerVersion signatureScannerVersion = 
                     SignatureScanVersionChecker.getSignatureScannerVersion(logger, signatureScannerOptions.getLocalScannerInstallPath(), directoryManager.getPermanentDirectory());
- 
-            // TODO somewhere might need a check for BD too (check with Vlad)
-//            if (blackDuckRunData != null 
-//                    && blackDuckRunData.getBlackDuckServerVersion().isPresent()
-                    //&& blackDuckRunData.getBlackDuckServerVersion().get()
+
             if (signatureScannerVersion != null && signatureScannerVersion.isAtLeast(MIN_SCASS_VERSION)) {
                 scanJobBuilder.scassScan(true);
             }
