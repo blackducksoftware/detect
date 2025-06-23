@@ -106,7 +106,7 @@ public class CommonScanStepRunner {
                 }
             }
         }
-        // This is a SCASS capable server server but SCASS is not enabled or the GCP URL is inaccessible. If PACKAGE_MANGER scan, we use the same scanId
+        // This is a SCASS capable server but SCASS is not enabled or the GCP URL is inaccessible. If PACKAGE_MANGER scan, we use the same scanId
         if(!scanType.equals(PACKAGE_MANAGER)) {
             BdbaScanStepRunner bdbaScanStepRunner = createBdbaScanStepRunner(operationRunner);
             bdbaScanStepRunner.runBdbaScan(projectNameVersion, blackDuckRunData, scanFile, scanId.toString(), scanType);
