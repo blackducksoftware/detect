@@ -66,7 +66,7 @@ public class PackageManagerStepRunner {
             return bdioFiles.stream()
                     .filter(content -> content.getFileName().equals(FILE_NAME_BDIO_HEADER_JSONLD))
                     .findFirst()
-                    .orElseThrow(() -> new BlackDuckIntegrationException("Cannot find BDIO header file" + FILE_NAME_BDIO_HEADER_JSONLD + "."));
+                    .orElseThrow(() -> new BlackDuckIntegrationException("Cannot find BDIO header file " + FILE_NAME_BDIO_HEADER_JSONLD + "."));
         } catch (IntegrationException | IllegalArgumentException e) {
             operationRunner.publishDetectorFailure();
             throw new RuntimeException("Error extracting BDIO header file from bdio" + uploadFile.getAbsolutePath(), e);
