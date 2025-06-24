@@ -79,7 +79,7 @@ public class SignatureScanVersionChecker {
         SignatureScannerVersion scannerVersion;
         
         // Read blackDuckVersion.txt file to determine version
-        File scanCliDirectory = new File (toolsDirectory, ApiScannerInstaller.BLACK_DUCK_SIGNATURE_SCANNER_INSTALL_DIRECTORY);
+        File scanCliDirectory = new File(toolsDirectory, ApiScannerInstaller.BLACK_DUCK_SIGNATURE_SCANNER_INSTALL_DIRECTORY);
         File scanCliVersionFile = new File(scanCliDirectory, ApiScannerInstaller.VERSION_FILENAME);
         String localScannerVersion = FileUtils.readFileToString(scanCliVersionFile, Charset.defaultCharset());
         scannerVersion = parseSemVer(localScannerVersion);
