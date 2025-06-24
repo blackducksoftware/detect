@@ -78,13 +78,8 @@ public class RapidScanResultAggregator {
         List<RapidScanComponentDetail> componentDetails = new LinkedList<>();
 
         for (DeveloperScansScanView resultView : results) {
-            if (RapidCompareMode.BOM_COMPARE_STRICT.equals(this.rapidCompareMode)) {
-                boolean allResolved = resultView.getPolicyStatuses() != null && !resultView.getPolicyStatuses().isEmpty()
-                        && resultView.getPolicyStatuses().stream().allMatch("RESOLVED"::equalsIgnoreCase);
-
-                if (allResolved) {
-                    continue;
-                }
+            if (shouldSkipResolvedPolicies(resultView)) {
+                continue;
             }
 
             this.compileTransitiveGuidance(resultView);
@@ -137,6 +132,14 @@ public class RapidScanResultAggregator {
         }
         
         return componentDetails;
+    }
+
+    private boolean shouldSkipResolvedPolicies(DeveloperScansScanView resultView) {
+        if (resultView.getPolicyStatuses() == null || resultView.getPolicyStatuses().isEmpty()) {
+            return false;
+        }
+        return (RapidCompareMode.BOM_COMPARE.equals(this.rapidCompareMode) || RapidCompareMode.BOM_COMPARE_STRICT.equals(this.rapidCompareMode))
+                && resultView.getPolicyStatuses().stream().allMatch("RESOLVED"::equalsIgnoreCase);
     }
 
     /**
