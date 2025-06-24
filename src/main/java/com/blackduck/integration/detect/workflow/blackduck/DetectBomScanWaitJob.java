@@ -27,7 +27,7 @@ public class DetectBomScanWaitJob implements ResilientJob<BomStatusScanView> {
         BomStatusScanView initialResponse = 
                 blackDuckApiClient.getResponse(scanUrl, BomStatusScanView.class);
         
-        if (initialResponse.getStatus() != BomStatusScanStatusType.BUILDING) {
+        if (initialResponse.getStatus() != BomStatusScanStatusType.BUILDING && initialResponse.getStatus() != BomStatusScanStatusType.NOT_INCLUDED) {
             complete = true;
             scanResponse = initialResponse;
         }
