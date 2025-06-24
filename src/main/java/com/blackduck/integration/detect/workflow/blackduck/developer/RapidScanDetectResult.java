@@ -96,7 +96,7 @@ public class RapidScanDetectResult implements DetectResult {
     }
 
     private void addErrorViolationHeader(List<String> resultMessages, List<PolicyRuleSeverityType> errorPolicies) {
-        if (checkForDefaultPolicies(errorPolicies)) {
+        if (errorPolicies == null || checkForDefaultPolicies(errorPolicies)) {
             resultMessages.add("\tCritical and blocking policy violations for");
         } else {
             String violationMessage;
@@ -112,10 +112,6 @@ public class RapidScanDetectResult implements DetectResult {
     }
 
     private boolean checkForDefaultPolicies(List<PolicyRuleSeverityType> errorPolicies) {
-        if (errorPolicies == null || errorPolicies.isEmpty()) {
-            return true;
-        }
-        
         List<PolicyRuleSeverityType> defaultPolicies = Arrays.asList(PolicyRuleSeverityType.CRITICAL, PolicyRuleSeverityType.BLOCKER);
         
         Set<PolicyRuleSeverityType> errorSet = new HashSet<>(errorPolicies);
