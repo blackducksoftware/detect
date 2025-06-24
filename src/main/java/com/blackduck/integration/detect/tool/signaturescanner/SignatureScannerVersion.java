@@ -8,6 +8,7 @@ public class SignatureScannerVersion extends BlackDuckVersion {
         super(major, minor, patch);
     }
     
+    @Override
     public boolean isAtLeast(BlackDuckVersion other) {
         boolean thisIsOldFormat = isOldFormat(this);
         boolean otherIsOldFormat = isOldFormat(other);
