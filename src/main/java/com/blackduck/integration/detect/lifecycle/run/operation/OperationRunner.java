@@ -586,27 +586,10 @@ public class OperationRunner {
     }
     
     public ScassScanInitiationResult initiateScan(NameVersion projectNameVersion, File scanFile, File outputDirectory, BlackDuckRunData blackDuckRunData, String type, Gson gson, String codeLocationName, BdioFileContent jsonldHeader) throws OperationException, IntegrationException {
-        String projectGroupName = calculateProjectGroupOptions().getProjectGroup();
-
-        DetectProtobufBdioHeaderUtil detectProtobufBdioHeaderUtil = new DetectProtobufBdioHeaderUtil(
-            UUID.randomUUID().toString(),
-            type,
-            projectNameVersion,
-            projectGroupName,
-            codeLocationName,
-            scanFile.length());
-        
         File bdioHeaderFile = null;
-
-
         ScassScanInitiationResult initResult = new ScassScanInitiationResult();
         if(!type.equals(CommonScanStepRunner.PACKAGE_MANAGER)) {
-            try {
-                bdioHeaderFile = detectProtobufBdioHeaderUtil.createProtobufBdioHeader(outputDirectory);
-                computeMD5Base64(scanFile, initResult);
-            } catch (IOException e) {
-                throw new IntegrationException("Unable to perform file computations. Ensure the file and output directory are accessible.");
-            }
+            bdioHeaderFile = createProtobufHeaderFile(type, projectNameVersion, codeLocationName, scanFile, initResult, outputDirectory);
         } else {
             initResult.setFileToUpload(scanFile);
         }
@@ -628,6 +611,27 @@ public class OperationRunner {
         logger.debug("Scan initiated with scan service. Scan ID received: {}", scanId);
         
         return initResult;
+    }
+
+    private File createProtobufHeaderFile(String type, NameVersion projectNameVersion, String codeLocationName, File scanFile, ScassScanInitiationResult initResult, File outputDirectory) throws OperationException, IntegrationException {
+        try {
+            String projectGroupName = calculateProjectGroupOptions().getProjectGroup();
+
+            DetectProtobufBdioHeaderUtil detectProtobufBdioHeaderUtil = new DetectProtobufBdioHeaderUtil(
+                    UUID.randomUUID().toString(),
+                    type,
+                    projectNameVersion,
+                    projectGroupName,
+                    codeLocationName,
+                    scanFile.length());
+
+
+            File bdioHeaderFile = detectProtobufBdioHeaderUtil.createProtobufBdioHeader(outputDirectory);
+            computeMD5Base64(scanFile, initResult);
+            return bdioHeaderFile;
+        } catch (IOException e) {
+            throw new IntegrationException("Unable to perform file computations. Ensure the file and output directory are accessible.");
+        }
     }
 
     public void uploadBdioEntries(BlackDuckRunData blackDuckRunData, UUID bdScanId) throws IntegrationException, IOException {
