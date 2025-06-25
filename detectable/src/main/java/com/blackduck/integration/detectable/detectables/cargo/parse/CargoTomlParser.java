@@ -1,9 +1,11 @@
 package com.blackduck.integration.detectable.detectables.cargo.parse;
 
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Set;
 
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
@@ -31,7 +33,7 @@ public class CargoTomlParser {
         return Optional.empty();
     }
 
-    public Map<NameVersion, String> parseDependenciesToExclude(String tomlFileContents, EnumListFilter<CargoDependencyType> dependencyTypeFilter) {
+    public Set<NameVersion> parseDependenciesToExclude(String tomlFileContents, EnumListFilter<CargoDependencyType> dependencyTypeFilter) {
         TomlParseResult toml = Toml.parse(tomlFileContents);
         Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap = new HashMap<>();
 
@@ -39,7 +41,7 @@ public class CargoTomlParser {
         parseDependenciesFromTomlTable(toml, BUILD_DEPENDENCIES_KEY, CargoDependencyType.BUILD, dependencyTypeMap);
         parseDependenciesFromTomlTable(toml, DEV_DEPENDENCIES_KEY, CargoDependencyType.DEV, dependencyTypeMap);
 
-        Map<NameVersion, String> dependenciesToExclude = new HashMap<>();
+        Set<NameVersion> dependenciesToExclude = new HashSet<>();
         for (Map.Entry<NameVersion, EnumSet<CargoDependencyType>> entry : dependencyTypeMap.entrySet()) {
             NameVersion nameVersion = entry.getKey();
             EnumSet<CargoDependencyType> types = entry.getValue();
@@ -48,12 +50,11 @@ public class CargoTomlParser {
                 .allMatch(dependencyTypeFilter::shouldExclude);
 
             if (shouldBeExcluded) {
-                dependenciesToExclude.put(nameVersion, nameVersion.getVersion());
+                dependenciesToExclude.add(nameVersion);
             }
         }
         return dependenciesToExclude;
     }
-
     private void parseDependenciesFromTomlTable(TomlParseResult toml, String sectionKey, CargoDependencyType type, Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap) {
         TomlTable table = toml.getTable(sectionKey);
         if (table == null) {

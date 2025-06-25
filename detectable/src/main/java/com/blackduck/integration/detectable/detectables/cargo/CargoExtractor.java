@@ -3,7 +3,16 @@ package com.blackduck.integration.detectable.detectables.cargo;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
@@ -57,8 +66,8 @@ public class CargoExtractor {
         }
 
         if (cargoTomlFile != null && exclusionEnabled) {
-            Map<NameVersion, String> excludableDependencyMap = cargoTomlParser.parseDependenciesToExclude(cargoTomlContents, cargoDetectableOptions.getDependencyTypeFilter());
-            filteredPackages = excludeDependencies(cargoLockPackageDataList, excludableDependencyMap);
+            Set<NameVersion> dependenciesToExclude = cargoTomlParser.parseDependenciesToExclude(cargoTomlContents, cargoDetectableOptions.getDependencyTypeFilter());
+            filteredPackages = excludeDependencies(cargoLockPackageDataList, dependenciesToExclude);
         }
 
         List<CargoLockPackage> packages = filteredPackages.stream()
@@ -90,24 +99,10 @@ public class CargoExtractor {
 
     private List<CargoLockPackageData> excludeDependencies(
         List<CargoLockPackageData> packages,
-        Map<NameVersion, String> excludableDependencyMap
+        Set<NameVersion> dependenciesToExclude
     ) {
-        Set<NameVersion> dependenciesToExclude = initializeExclusionSet(excludableDependencyMap); // collecting the direct dependencies to exclude
-        processTransitiveDependencies(packages, dependenciesToExclude); // collecting the direct transitive dependencies to exclude
-        return filterExcludedPackages(packages, dependenciesToExclude); // filtering out direct and transitive dependencies
-    }
-
-    // Seed the exclusion set from excludableDependencyMap
-    private Set<NameVersion> initializeExclusionSet(Map<NameVersion, String> excludableDependencyMap) {
-        Set<NameVersion> toExclude = new HashSet<>();
-        for (Map.Entry<NameVersion, String> entry : excludableDependencyMap.entrySet()) {
-            NameVersion nv = entry.getKey();
-            String constraint = entry.getValue();
-            if (nv.getVersion() != null && (constraint == null || VersionUtils.versionMatches(constraint, nv.getVersion()))) {
-                toExclude.add(nv);
-            }
-        }
-        return toExclude;
+        processTransitiveDependencies(packages, dependenciesToExclude); // Collect transitive dependencies to exclude
+        return filterExcludedPackages(packages, dependenciesToExclude); // Filter out direct and transitive dependencies
     }
 
     // Recursively excluding transitive dependencies
