@@ -25,7 +25,7 @@ import com.blackduck.integration.util.NameVersion;
 
 public class CreateScanBatchOperation {
     private static final SignatureScannerVersion MIN_CSV_ARCHIVE_VERSION = new SignatureScannerVersion(2025, 1, 0);
-    private static final SignatureScannerVersion MIN_SCASS_VERSION = new SignatureScannerVersion(1, 0, 0);
+    private static final SignatureScannerVersion MIN_SCASS_VERSION = new SignatureScannerVersion(1, 0, 1);
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final BlackDuckSignatureScannerOptions signatureScannerOptions;
     private final DirectoryManager directoryManager;
@@ -160,6 +160,7 @@ public class CreateScanBatchOperation {
             }
         } catch (IOException e) {
             // Be cautious and do a non-SCASS scan if we can't obtain the signature scanner version.
+            logger.debug("Unable to determine the signature scanner version. SCASS will not be performed.");
             scanJobBuilder.scassScan(false);
         }
     }

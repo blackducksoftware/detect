@@ -70,6 +70,7 @@ public class SignatureScanVersionChecker {
             }
         } catch (BlackDuckIntegrationException e) {
             // Indicate we could not obtain the version
+            logger.debug("Unable to determine signature scanner version from executing --version operation.");
             scannerVersion = null;
         }
         return scannerVersion;
