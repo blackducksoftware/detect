@@ -66,8 +66,9 @@ public class CargoExtractor {
         }
 
         if (cargoTomlFile != null && exclusionEnabled) {
-            Set<NameVersion> dependenciesToExclude = cargoTomlParser.parseDependenciesToExclude(cargoTomlContents, cargoDetectableOptions.getDependencyTypeFilter());
-            filteredPackages = excludeDependencies(cargoLockPackageDataList, dependenciesToExclude);
+            Set<NameVersion> dependenciesToInclude = cargoTomlParser.parseDependenciesToInclude(
+                    cargoTomlContents, cargoDetectableOptions.getDependencyTypeFilter());
+            filteredPackages = includeDependencies(cargoLockPackageDataList, dependenciesToInclude);
         }
 
         List<CargoLockPackage> packages = filteredPackages.stream()
@@ -97,17 +98,31 @@ public class CargoExtractor {
         return filter != null && !filter.shouldIncludeAll();
     }
 
-    private List<CargoLockPackageData> excludeDependencies(
-        List<CargoLockPackageData> packages,
-        Set<NameVersion> dependenciesToExclude
+
+    private List<CargoLockPackageData> includeDependencies(
+            List<CargoLockPackageData> packages,
+            Set<NameVersion> dependenciesToInclude
     ) {
-        processTransitiveDependencies(packages, dependenciesToExclude); // Collect transitive dependencies to exclude
-        return filterExcludedPackages(packages, dependenciesToExclude); // Filter out direct and transitive dependencies
+        processTransitiveDependenciesForInclusion(packages, dependenciesToInclude); // Collect all transitive dependencies to include
+        return filterPackagesByInclusion(packages, dependenciesToInclude); // Only keep direct and transitive dependencies
     }
 
-    // Recursively excluding transitive dependencies
-    private void processTransitiveDependencies(List<CargoLockPackageData> packages, Set<NameVersion> dependenciesToExclude) {
-        Deque<NameVersion> queue = new ArrayDeque<>(dependenciesToExclude);
+    private void processTransitiveDependenciesForInclusion(List<CargoLockPackageData> packages, Set<NameVersion> dependenciesToInclude) {
+        Set<NameVersion> resolvedToInclude = new HashSet<>();
+        for (NameVersion nv : dependenciesToInclude) {
+            CargoLockPackageData pkg = findPackageByNameVersion(nv, packages);
+            if (pkg != null) {
+                String name = pkg.getName().orElse(null);
+                String version = pkg.getVersion().orElse(null);
+                resolvedToInclude.add(new NameVersion(name, version));
+            } else {
+                resolvedToInclude.add(nv);
+            }
+        }
+        dependenciesToInclude.clear();
+        dependenciesToInclude.addAll(resolvedToInclude);
+
+        Deque<NameVersion> queue = new ArrayDeque<>(dependenciesToInclude);
         while (!queue.isEmpty()) {
             NameVersion current = queue.pop();
             CargoLockPackageData currentPkg = findPackageByNameVersion(current, packages);
@@ -115,7 +130,7 @@ public class CargoExtractor {
                 currentPkg.getDependencies().ifPresent(dependencies -> {
                     for (String depStr : dependencies) {
                         NameVersion nameVersion = extractPackageNameVersion(depStr, packages);
-                        if (nameVersion != null && dependenciesToExclude.add(nameVersion)) {
+                        if (nameVersion != null && dependenciesToInclude.add(nameVersion)) {
                             queue.add(nameVersion);
                         }
                     }
@@ -124,70 +139,26 @@ public class CargoExtractor {
         }
     }
 
-    // Filter out dependencies dependencies
-    private List<CargoLockPackageData> filterExcludedPackages(List<CargoLockPackageData> packages, Set<NameVersion> toExclude) {
+    private List<CargoLockPackageData> filterPackagesByInclusion(
+            List<CargoLockPackageData> packages,
+            Set<NameVersion> dependenciesToInclude
+    ) {
         List<CargoLockPackageData> result = new ArrayList<>();
-
         for (CargoLockPackageData pkg : packages) {
             String name = pkg.getName().orElse(null);
             String version = VersionUtils.stripBuildMetadata(pkg.getVersion().orElse(null));
-
-            if (!shouldInclude(name, version, toExclude)) {
-                continue;
+            for (NameVersion include : dependenciesToInclude) {
+                String includeName = include.getName();
+                String includeVersion = VersionUtils.stripBuildMetadata(include.getVersion());
+                if (Objects.equals(name, includeName) && VersionUtils.versionMatches(includeVersion, version)) {
+                    result.add(pkg);
+                    break;
+                }
             }
-
-            CargoLockPackageData filteredPkg = createFilteredPackage(pkg, packages, toExclude);
-            result.add(filteredPkg);
         }
-
         return result;
     }
 
-    private CargoLockPackageData createFilteredPackage(
-        CargoLockPackageData pkg,
-        List<CargoLockPackageData> allPackages,
-        Set<NameVersion> toExclude
-    ) {
-        List<String> filteredDependencies = new ArrayList<>();
-
-        for (String depStr : pkg.getDependencies().orElse(Collections.emptyList())) {
-            NameVersion nameVersion = extractPackageNameVersion(depStr, allPackages);
-
-            if (nameVersion == null) {
-                filteredDependencies.add(depStr);
-                continue;
-            }
-
-            String depName = nameVersion.getName();
-            String depVersion = VersionUtils.stripBuildMetadata(nameVersion.getVersion());
-
-            if (shouldInclude(depName, depVersion, toExclude)) {
-                filteredDependencies.add(depStr);
-            }
-        }
-
-        return new CargoLockPackageData(
-            pkg.getName().orElse(null),
-            pkg.getVersion().orElse(null),
-            pkg.getSource().orElse(null),
-            pkg.getChecksum().orElse(null),
-            filteredDependencies
-        );
-    }
-
-    private boolean shouldInclude(String name, String version, Set<NameVersion> toExclude) {
-        for (NameVersion nameVersion : toExclude) {
-            String exName = nameVersion.getName();
-            String exVersion = VersionUtils.stripBuildMetadata(nameVersion.getVersion());
-
-            if (Objects.equals(name, exName) && VersionUtils.versionMatches(exVersion, version)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    // Extracting NameVersion from
     private NameVersion extractPackageNameVersion(String dependencyString, List<CargoLockPackageData> packages) {
         if (dependencyString == null || dependencyString.isEmpty()) {
             return null;
@@ -197,20 +168,18 @@ public class CargoExtractor {
         String depName = parts[0].trim();
         String depVersion = (parts.length > 1) ? parts[1].trim() : null;
 
-        for (CargoLockPackageData pkg : packages) {
-            String name = pkg.getName().orElse(null);
-            String version = pkg.getVersion().orElse(null);
-
-            if (!depName.equals(name)) {
-                continue;
-            }
-
-            if (depVersion == null || depVersion.equals(version)) {
-                return new NameVersion(name, version);
+        // If depVersion is null or empty, find by name only.
+        // Otherwise, find by name and version.
+        if (depVersion == null || depVersion.isEmpty()) {
+            for (CargoLockPackageData pkg : packages) {
+                String name = pkg.getName().orElse(null);
+                String version = pkg.getVersion().orElse(null);
+                if (depName.equals(name)) {
+                    return new NameVersion(name, version);
+                }
             }
         }
-
-        return null;
+        return new NameVersion(depName, depVersion);
     }
 
     private CargoLockPackageData findPackageByNameVersion(NameVersion nv, List<CargoLockPackageData> packages) {
