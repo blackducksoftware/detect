@@ -73,7 +73,7 @@ public class IntelligentModeStepRunner {
 
     public void runOffline(NameVersion projectNameVersion, DockerTargetData dockerTargetData, BdioResult bdio) throws OperationException {
         stepHelper.runToolIfIncluded(DetectTool.SIGNATURE_SCAN, "Signature Scanner", () -> { //Internal: Sig scan publishes its own status.
-            SignatureScanStepRunner signatureScanStepRunner = new SignatureScanStepRunner(operationRunner);
+            SignatureScanStepRunner signatureScanStepRunner = new SignatureScanStepRunner(operationRunner, null);
             signatureScanStepRunner.runSignatureScannerOffline(detectRunUuid, projectNameVersion, dockerTargetData);
         });
         stepHelper.runToolIfIncludedWithCallbacks(
@@ -125,10 +125,9 @@ public class IntelligentModeStepRunner {
         logger.debug("Completed Detect Code Location processing.");
 
         stepHelper.runToolIfIncluded(DetectTool.SIGNATURE_SCAN, "Signature Scanner", () -> {
-            SignatureScanStepRunner signatureScanStepRunner = new SignatureScanStepRunner(operationRunner);
+            SignatureScanStepRunner signatureScanStepRunner = new SignatureScanStepRunner(operationRunner, blackDuckRunData);
             SignatureScannerCodeLocationResult signatureScannerCodeLocationResult = signatureScanStepRunner.runSignatureScannerOnline(
                 detectRunUuid,
-                blackDuckRunData,
                 projectNameVersion,
                 dockerTargetData,
                 scanIdsToWaitFor,

@@ -3,6 +3,7 @@ package com.blackduck.integration.detect.tool.signaturescanner.operation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -18,19 +19,19 @@ import com.blackduck.integration.detect.tool.signaturescanner.enums.SignatureSca
 public class CreateSignatureScanReports {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    public List<SignatureScannerReport> createReports(List<SignatureScanPath> signatureScanPaths, List<ScanCommandOutput> scanCommandOutputList) {
+    public List<SignatureScannerReport> createReports(List<SignatureScanPath> signatureScanPaths, List<ScanCommandOutput> scanCommandOutputList, Set<String> failedScans) {
         List<SignatureScannerReport> signatureScannerReports = new ArrayList<>();
         for (SignatureScanPath signatureScanPath : signatureScanPaths) {
             Optional<ScanCommandOutput> scanCommandOutput = scanCommandOutputList.stream()
                 .filter(output -> output.getScanTarget().equals(signatureScanPath.getTargetCanonicalPath()))
                 .findFirst();
-            SignatureScannerReport signatureScannerReport = createReport(signatureScanPath, scanCommandOutput.orElse(null));
+            SignatureScannerReport signatureScannerReport = createReport(signatureScanPath, scanCommandOutput.orElse(null), failedScans);
             signatureScannerReports.add(signatureScannerReport);
         }
         return signatureScannerReports;
     }
 
-    public static SignatureScannerReport createReport(SignatureScanPath signatureScanPath, @Nullable ScanCommandOutput scanCommandOutput) {
+    public static SignatureScannerReport createReport(SignatureScanPath signatureScanPath, @Nullable ScanCommandOutput scanCommandOutput, Set<String> failedScans) {
         SignatureScanStatusType statusType;
 
         if (scanCommandOutput == null) {
@@ -39,6 +40,8 @@ public class CreateSignatureScanReports {
             statusType = SignatureScanStatusType.SKIPPED;
         } else if (Result.FAILURE.equals(scanCommandOutput.getResult())) {
             statusType = SignatureScanStatusType.FAILURE;
+        } else if (failedScans.contains(scanCommandOutput.getCodeLocationName())) {
+            statusType = SignatureScanStatusType.SCASS_ERROR; 
         } else {
             statusType = SignatureScanStatusType.SUCCESS;
         }
