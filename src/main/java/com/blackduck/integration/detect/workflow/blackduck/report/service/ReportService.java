@@ -4,6 +4,7 @@ import java.awt.*;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.reflect.Modifier;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -15,13 +16,11 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.blackduck.integration.detect.workflow.blackduck.report.json.RiskReportJsonWriter;
+import com.google.gson.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.blackduck.integration.blackduck.api.core.response.UrlMultipleResponses;
 import com.blackduck.integration.blackduck.api.generated.deprecated.view.PolicyStatusView;
 import com.blackduck.integration.blackduck.api.generated.discovery.ApiDiscovery;
@@ -197,6 +196,12 @@ public class ReportService extends DataService {
         return createReportPdfFile(outputDirectory, reportData, fontLoader, boldFontLoader);
     }
 
+    public File createReportJsonFile(File outputDirectory, ProjectView project, ProjectVersionView version)
+            throws IntegrationException, IOException {
+        ReportData reportData = getRiskReportData(project, version);
+        return createReportJsonFile(outputDirectory, reportData);
+    }
+
     public File createReportPdfFile(File outputDirectory, ReportData reportData) throws BlackDuckIntegrationException {
         return createReportPdfFile(outputDirectory, reportData, document -> PDType1Font.HELVETICA, document -> PDType1Font.HELVETICA_BOLD);
     }
@@ -211,6 +216,14 @@ public class ReportService extends DataService {
         } catch (RiskReportException | IOException e) {
             throw new BlackDuckIntegrationException(e.getMessage(), e);
         }
+    }
+
+    public File createReportJsonFile(File outputDirectory, ReportData reportData) throws IOException {
+        logger.trace("Creating Risk Report json in : " + outputDirectory.getCanonicalPath());
+        File jsonFile = RiskReportJsonWriter.createRiskReportJsonFile(outputDirectory, reportData);
+        logger.trace("Created Risk Report Json : " + jsonFile.getCanonicalPath());
+
+        return jsonFile;
     }
 
     private HttpUrl getComponentPolicyURL(HttpUrl versionURL, String componentURL) throws IntegrationException {

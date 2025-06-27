@@ -397,19 +397,34 @@ public class IntelligentModeStepRunner {
     }
 
     public void riskReport(BlackDuckRunData blackDuckRunData, ProjectVersionWrapper projectVersion) throws IOException, OperationException {
-        Optional<File> riskReportFile = operationRunner.calculateRiskReportFileLocation();
-        if (riskReportFile.isPresent()) {
+        Optional<File> riskReportPdfFile = operationRunner.calculateRiskReportPdfFileLocation();
+        if (riskReportPdfFile.isPresent()) {
             logger.info("Creating risk report pdf");
-            File reportDirectory = riskReportFile.get();
+            File reportDirectory = riskReportPdfFile.get();
 
             if (!reportDirectory.exists() && !reportDirectory.mkdirs()) {
                 logger.warn(String.format("Failed to create risk report pdf directory: %s", reportDirectory));
             }
 
-            File createdPdf = operationRunner.createRiskReportFile(blackDuckRunData, projectVersion, reportDirectory);
+            File createdPdf = operationRunner.createRiskReportFile(blackDuckRunData, projectVersion, reportDirectory, true);
 
             logger.info(String.format("Created risk report pdf: %s", createdPdf.getCanonicalPath()));
             operationRunner.publishReport(new ReportDetectResult("Risk Report", createdPdf.getCanonicalPath()));
+        }
+
+        Optional<File> riskReportJsonFile = operationRunner.calculateRiskReportJsonFileLocation();
+        if (riskReportJsonFile.isPresent()) {
+            logger.info("Creating risk report json file");
+            File reportDirectory = riskReportJsonFile.get();
+
+            if (!reportDirectory.exists() && !reportDirectory.mkdirs()) {
+                logger.warn(String.format("Failed to create risk report json directory: %s", reportDirectory));
+            }
+
+            File createdJson = operationRunner.createRiskReportFile(blackDuckRunData, projectVersion, reportDirectory, false);
+
+            logger.info(String.format("Created risk report json: %s", createdJson.getCanonicalPath()));
+            operationRunner.publishReport(new ReportDetectResult("Risk Report", createdJson.getCanonicalPath()));
         }
     }
 

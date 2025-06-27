@@ -957,17 +957,25 @@ public class OperationRunner {
         );
     }
 
-    public File createRiskReportFile(BlackDuckRunData blackDuckRunData, ProjectVersionWrapper projectVersionWrapper, File reportDirectory) throws OperationException {
+    public File createRiskReportFile(BlackDuckRunData blackDuckRunData, ProjectVersionWrapper projectVersionWrapper, File reportDirectory, boolean isPdfFile) throws OperationException {
         return auditLog.namedPublic("Create Risk Report File", "RiskReport", () -> {
-            DetectFontLoader detectFontLoader = detectFontLoaderFactory.detectFontLoader();
             ReportService reportService = creatReportService(blackDuckRunData);
-            return reportService.createReportPdfFile(
-                reportDirectory,
-                projectVersionWrapper.getProjectView(),
-                projectVersionWrapper.getProjectVersionView(),
-                detectFontLoader::loadFont,
-                detectFontLoader::loadBoldFont
-            );
+            if(isPdfFile) {
+                DetectFontLoader detectFontLoader = detectFontLoaderFactory.detectFontLoader();
+                return reportService.createReportPdfFile(
+                        reportDirectory,
+                        projectVersionWrapper.getProjectView(),
+                        projectVersionWrapper.getProjectVersionView(),
+                        detectFontLoader::loadFont,
+                        detectFontLoader::loadBoldFont
+                );
+            } else {
+                return reportService.createReportJsonFile(
+                        reportDirectory,
+                        projectVersionWrapper.getProjectView(),
+                        projectVersionWrapper.getProjectVersionView()
+                );
+            }
         });
     }
 
@@ -1209,12 +1217,23 @@ public class OperationRunner {
         });
     }
 
-    public Optional<File> calculateRiskReportFileLocation() throws OperationException { //TODO Should be a decision in boot
+    public Optional<File> calculateRiskReportPdfFileLocation() throws OperationException { //TODO Should be a decision in boot
         return auditLog.namedInternal("Decide Risk Report Path", () -> {
             BlackDuckPostOptions postOptions = detectConfigurationFactory.createBlackDuckPostOptions();
-            if (postOptions.shouldGenerateRiskReport()) {
+            if (postOptions.shouldGenerateRiskReportPdf()) {
                 return Optional.of(postOptions.getRiskReportPdfPath().map(Path::toFile)
                     .orElse(directoryManager.getSourceDirectory()));
+            }
+            return Optional.empty();
+        });
+    }
+
+    public Optional<File> calculateRiskReportJsonFileLocation() throws OperationException { //TODO Should be a decision in boot
+        return auditLog.namedInternal("Decide Risk Report Path", () -> {
+            BlackDuckPostOptions postOptions = detectConfigurationFactory.createBlackDuckPostOptions();
+            if (postOptions.shouldGenerateRiskReportJson()) {
+                return Optional.of(postOptions.getRiskReportJsonPath().map(Path::toFile)
+                        .orElse(directoryManager.getSourceDirectory()));
             }
             return Optional.empty();
         });
