@@ -26,9 +26,11 @@ import java.util.concurrent.Executors;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import com.blackduck.integration.blackduck.bdio2.model.BdioFileContent;
 import com.blackduck.integration.detect.lifecycle.run.step.CommonScanStepRunner;
+import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.entity.ContentType;
@@ -594,23 +596,23 @@ public class OperationRunner {
         } else {
             initResult.setFileToUpload(scanFile);
         }
-        
+
         String operationName = "Upload BDIO Header to Initiate Scan";
-        
-        ScanCreationResponse scanCreationResponse 
+
+        ScanCreationResponse scanCreationResponse
             = uploadBdioHeaderToInitiateScassScan(blackDuckRunData, bdioHeaderFile, operationName, gson, initResult.getMd5Hash(), jsonldHeader);
 
         initResult.setScanCreationResponse(scanCreationResponse);
 
         String scanId = scanCreationResponse.getScanId();
-        
+
         if (scanId == null) {
             logger.warn("Scan ID was not found in the response from the server.");
             throw new IntegrationException("Scan ID was not found in the response from the server.");
         }
 
         logger.debug("Scan initiated with scan service. Scan ID received: {}", scanId);
-        
+
         return initResult;
     }
 
@@ -718,21 +720,42 @@ public class OperationRunner {
         });
     }
 
+    public static boolean shouldSkipResolvedPolicies(DeveloperScansScanView resultView, RapidCompareMode rapidCompareMode) {
+        if (resultView.getPolicyStatuses() == null || resultView.getPolicyStatuses().isEmpty()) {
+            return false;
+        }
+        return (RapidCompareMode.BOM_COMPARE.equals(rapidCompareMode) || RapidCompareMode.BOM_COMPARE_STRICT.equals(rapidCompareMode))
+                && resultView.getPolicyStatuses().stream().allMatch("RESOLVED"::equalsIgnoreCase);
+    }
+
+    public static List<DeveloperScansScanView> filterUnresolvedPolicyResults(List<DeveloperScansScanView> scanResults, RapidCompareMode rapidCompareMode) {
+        return scanResults.stream()
+                .filter(resultView -> !shouldSkipResolvedPolicies(resultView, rapidCompareMode))
+                .collect(Collectors.toList());
+    }
+
     public final RapidScanResultSummary logRapidReport(List<DeveloperScansScanView> scanResults, BlackduckScanMode mode) throws OperationException {
-        List<PolicyRuleSeverityType> severitiesToFailPolicyCheck = detectConfigurationFactory.createRapidScanOptions().getSeveritiesToFailPolicyCheck();
-        return auditLog.namedInternal("Print Rapid Mode Results", () -> 
-            new RapidModeLogReportOperation(exitCodePublisher, rapidScanResultAggregator, mode).perform(scanResults, severitiesToFailPolicyCheck));
+        RapidScanOptions rapidScanOptions = detectConfigurationFactory.createRapidScanOptions();
+        List<PolicyRuleSeverityType> severitiesToFailPolicyCheck = rapidScanOptions.getSeveritiesToFailPolicyCheck();
+        RapidCompareMode rapidCompareMode = rapidScanOptions.getCompareMode();
+        List<DeveloperScansScanView> filteredResults = filterUnresolvedPolicyResults(scanResults, rapidCompareMode);
+
+        return auditLog.namedInternal("Print Rapid Mode Results", () ->
+            new RapidModeLogReportOperation(exitCodePublisher, rapidScanResultAggregator, mode).perform(filteredResults, severitiesToFailPolicyCheck));
     }
 
     public final File generateRapidJsonFile(NameVersion projectNameVersion, List<DeveloperScansScanView> scanResults) throws OperationException {
+        RapidCompareMode rapidCompareMode = detectConfigurationFactory.createRapidScanOptions().getCompareMode();
+        List<DeveloperScansScanView> filteredResults = filterUnresolvedPolicyResults(scanResults, rapidCompareMode);
+
         return auditLog.namedPublic(
             "Generate Rapid Json File",
             "RapidScan",
-            () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFile(projectNameVersion, scanResults)
+            () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFile(projectNameVersion, filteredResults)
         );
     }
 
-    public final void publishRapidResults(File jsonFile, RapidScanResultSummary summary, BlackduckScanMode mode) throws OperationException {        
+    public final void publishRapidResults(File jsonFile, RapidScanResultSummary summary, BlackduckScanMode mode) throws OperationException {
         auditLog.namedInternal("Publish Rapid Results", () -> statusEventPublisher.publishDetectResult(new RapidScanDetectResult(jsonFile.getCanonicalPath(), summary, mode, detectConfigurationFactory.getPoliciesToFailOn())));
     }
     //End Rapid

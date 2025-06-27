@@ -18,7 +18,6 @@ import com.blackduck.integration.blackduck.api.generated.enumeration.PolicyRuleS
 import org.apache.commons.lang3.StringUtils;
 
 import com.blackduck.integration.blackduck.api.generated.view.DeveloperScansScanView;
-import com.blackduck.integration.detect.workflow.blackduck.developer.RapidScanOptions;
 
 public class RapidScanResultAggregator {
     
