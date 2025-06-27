@@ -24,7 +24,7 @@ import com.blackduck.integration.util.IntEnvironmentVariables;
 import com.blackduck.integration.util.OperatingSystemType;
 
 public class SignatureScanVersionChecker {
-    private static final String SIGNATURE_SCAN_VERSION_FORMAT = "^(\\d+)\\.(\\d+)\\.(\\d+)(?:[-\\w]*)?$";
+    private static final String SIGNATURE_SCAN_VERSION_FORMAT = "^(\\d+)\\.(\\d+)\\.(\\d+)(?:[-\\w]+)?$";
     
     public static SignatureScannerVersion getSignatureScannerVersion(Logger logger,
             Optional<Path> localScannerInstallPath, File toolsDirectory) throws IOException {
