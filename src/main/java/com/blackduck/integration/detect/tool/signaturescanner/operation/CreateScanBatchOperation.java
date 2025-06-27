@@ -160,7 +160,7 @@ public class CreateScanBatchOperation {
             }
         } catch (IOException e) {
             // Be cautious and do a non-SCASS scan if we can't obtain the signature scanner version.
-            logger.debug("Unable to determine the signature scanner version. SCASS will not be performed.");
+            logger.debug("Unable to determine the signature scanner version. {}. SCASS will not be performed.", e.getMessage());
             scanJobBuilder.scassScan(false);
         }
     }
