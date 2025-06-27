@@ -187,19 +187,13 @@ public class ReportService extends DataService {
     }
 
     public File createReportPdfFile(File outputDirectory, ProjectView project, ProjectVersionView version) throws IntegrationException {
-        return createReportPdfFile(outputDirectory, project, version, document -> PDType1Font.HELVETICA, document -> PDType1Font.HELVETICA_BOLD);
+        ReportData reportData = getRiskReportData(project, version);
+        return createReportPdfFile(outputDirectory, document -> PDType1Font.HELVETICA, document -> PDType1Font.HELVETICA_BOLD, reportData);
     }
 
-    public File createReportPdfFile(File outputDirectory, ProjectView project, ProjectVersionView version, FontLoader fontLoader, FontLoader boldFontLoader)
+    public File createReportPdfFile(File outputDirectory, FontLoader fontLoader, FontLoader boldFontLoader, ReportData reportData)
         throws IntegrationException {
-        ReportData reportData = getRiskReportData(project, version);
         return createReportPdfFile(outputDirectory, reportData, fontLoader, boldFontLoader);
-    }
-
-    public File createReportJsonFile(File outputDirectory, ProjectView project, ProjectVersionView version)
-            throws IntegrationException, IOException {
-        ReportData reportData = getRiskReportData(project, version);
-        return createReportJsonFile(outputDirectory, reportData);
     }
 
     public File createReportPdfFile(File outputDirectory, ReportData reportData) throws BlackDuckIntegrationException {

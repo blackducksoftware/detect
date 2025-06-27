@@ -45,6 +45,8 @@ import com.blackduck.integration.detect.workflow.blackduck.codelocation.CodeLoca
 import com.blackduck.integration.detect.workflow.blackduck.integratedmatching.ScanCountsPayloadCreator;
 import com.blackduck.integration.detect.workflow.blackduck.integratedmatching.model.ScanCountsPayload;
 import com.blackduck.integration.detect.workflow.report.util.ReportConstants;
+import com.blackduck.integration.detect.workflow.blackduck.report.ReportData;
+import com.blackduck.integration.detect.workflow.blackduck.report.service.ReportService;
 import com.blackduck.integration.detect.workflow.result.BlackDuckBomDetectResult;
 import com.blackduck.integration.detect.workflow.result.DetectResult;
 import com.blackduck.integration.detect.workflow.result.ReportDetectResult;
@@ -396,8 +398,18 @@ public class IntelligentModeStepRunner {
         return operationRunner.generateImpactAnalysisFile(impactAnalysisName);
     }
 
-    public void riskReport(BlackDuckRunData blackDuckRunData, ProjectVersionWrapper projectVersion) throws IOException, OperationException {
+    public void riskReport(BlackDuckRunData blackDuckRunData, ProjectVersionWrapper projectVersion) throws IOException, OperationException, IntegrationException {
         Optional<File> riskReportPdfFile = operationRunner.calculateRiskReportPdfFileLocation();
+        Optional<File> riskReportJsonFile = operationRunner.calculateRiskReportJsonFileLocation();
+
+        ReportService reportService = null;
+        ReportData reportData = null;
+
+        if(riskReportPdfFile.isPresent() || riskReportJsonFile.isPresent()) {
+            reportService = operationRunner.creatReportService(blackDuckRunData);
+            reportData = reportService.getRiskReportData(projectVersion.getProjectView(), projectVersion.getProjectVersionView());
+        }
+
         if (riskReportPdfFile.isPresent()) {
             logger.info("Creating risk report pdf");
             File reportDirectory = riskReportPdfFile.get();
@@ -406,13 +418,13 @@ public class IntelligentModeStepRunner {
                 logger.warn(String.format("Failed to create risk report pdf directory: %s", reportDirectory));
             }
 
-            File createdPdf = operationRunner.createRiskReportFile(blackDuckRunData, projectVersion, reportDirectory, true);
+            File createdPdf = operationRunner.createRiskReportFile(reportDirectory, true, reportService, reportData);
 
             logger.info(String.format("Created risk report pdf: %s", createdPdf.getCanonicalPath()));
             operationRunner.publishReport(new ReportDetectResult("Risk Report", createdPdf.getCanonicalPath()));
         }
 
-        Optional<File> riskReportJsonFile = operationRunner.calculateRiskReportJsonFileLocation();
+
         if (riskReportJsonFile.isPresent()) {
             logger.info("Creating risk report json file");
             File reportDirectory = riskReportJsonFile.get();
@@ -421,7 +433,7 @@ public class IntelligentModeStepRunner {
                 logger.warn(String.format("Failed to create risk report json directory: %s", reportDirectory));
             }
 
-            File createdJson = operationRunner.createRiskReportFile(blackDuckRunData, projectVersion, reportDirectory, false);
+            File createdJson = operationRunner.createRiskReportFile(reportDirectory, false, reportService, reportData);
 
             logger.info(String.format("Created risk report json: %s", createdJson.getCanonicalPath()));
             operationRunner.publishReport(new ReportDetectResult("Risk Report", createdJson.getCanonicalPath()));

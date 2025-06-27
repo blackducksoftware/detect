@@ -29,6 +29,7 @@ import java.util.regex.Pattern;
 
 import com.blackduck.integration.blackduck.bdio2.model.BdioFileContent;
 import com.blackduck.integration.detect.lifecycle.run.step.CommonScanStepRunner;
+import com.blackduck.integration.detect.workflow.blackduck.report.ReportData;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.entity.ContentType;
@@ -957,23 +958,20 @@ public class OperationRunner {
         );
     }
 
-    public File createRiskReportFile(BlackDuckRunData blackDuckRunData, ProjectVersionWrapper projectVersionWrapper, File reportDirectory, boolean isPdfFile) throws OperationException {
+    public File createRiskReportFile(File reportDirectory, boolean isPdfFile, ReportService reportService, ReportData reportData) throws OperationException {
         return auditLog.namedPublic("Create Risk Report File", "RiskReport", () -> {
-            ReportService reportService = creatReportService(blackDuckRunData);
             if(isPdfFile) {
                 DetectFontLoader detectFontLoader = detectFontLoaderFactory.detectFontLoader();
                 return reportService.createReportPdfFile(
                         reportDirectory,
-                        projectVersionWrapper.getProjectView(),
-                        projectVersionWrapper.getProjectVersionView(),
                         detectFontLoader::loadFont,
-                        detectFontLoader::loadBoldFont
+                        detectFontLoader::loadBoldFont,
+                        reportData
                 );
             } else {
                 return reportService.createReportJsonFile(
                         reportDirectory,
-                        projectVersionWrapper.getProjectView(),
-                        projectVersionWrapper.getProjectVersionView()
+                        reportData
                 );
             }
         });
@@ -994,7 +992,7 @@ public class OperationRunner {
         });
     }
 
-    private ReportService creatReportService(BlackDuckRunData blackDuckRunData) throws OperationException {
+    public ReportService creatReportService(BlackDuckRunData blackDuckRunData) throws OperationException {
         return auditLog.namedInternal("Create Report Service", () -> {
             BlackDuckServicesFactory blackDuckServicesFactory = blackDuckRunData.getBlackDuckServicesFactory();
             Gson gson = blackDuckServicesFactory.getGson();
