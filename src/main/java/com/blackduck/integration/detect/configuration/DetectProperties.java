@@ -1220,7 +1220,7 @@ public class DetectProperties {
     public static final NoneEnumListProperty<NugetDependencyType> DETECT_NUGET_DEPENDENCY_TYPES_EXCLUDED =
         NoneEnumListProperty.newBuilder("detect.nuget.dependency.types.excluded", NoneEnum.NONE, NugetDependencyType.class)
             .setInfo("Nuget Dependency Types Excluded", DetectPropertyFromVersion.VERSION_9_4_0)
-            .setHelp(createTypeFilterHelpText("Nuget dependency types"), "This property supports exclusion of dependencies in projects that use PackageReference or packages.config. This property does not apply to scans that analyze project.json, project.lock.json or project.assets.json.")
+            .setHelp(createTypeFilterHelpText("Nuget dependency types"), "This property supports exclusion of dependencies in projects that use PackageReference, packages.config, project.lock.json or project.assets.json. This property does not apply to scans that analyze project.json.")
             .setExample(String.format("%s", NugetDependencyType.DEV.name()))
             .setGroups(DetectGroup.NUGET, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
@@ -1396,9 +1396,9 @@ public class DetectProperties {
     
     public static final AllNoneEnumListProperty<PolicyRuleSeverityType> DETECT_STATELESS_POLICY_CHECK_FAIL_ON_SEVERITIES =
         AllNoneEnumListProperty.newBuilder("detect.stateless.policy.check.fail.on.severities", Arrays.asList(PolicyRuleSeverityType.BLOCKER, PolicyRuleSeverityType.CRITICAL), PolicyRuleSeverityType.class)
-            .setInfo("Fail on Stateless Policy Violation Severities", DetectPropertyFromVersion.VERSION_10_5_0)
+            .setInfo("Fail on Stateless Policy Violation Severities", DetectPropertyFromVersion.VERSION_10_6_0)
             .setHelp(
-                "A comma-separated list of policy violation severities that will fail Detect. If this is set to NONE, Detect will not fail due to policy violations. A value of ALL is equivalent to all of the other possible values except NONE.")
+                "A comma-separated list of policy violation severities that will fail Detect. If this is set to NONE, Detect will not fail due to policy violations. A value of ALL is equivalent to all of the other possible values except NONE. This property works for both stateless and rapid scans.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.GLOBAL, DetectGroup.PROJECT_SETTING, DetectGroup.POLICY)
             .build();
 

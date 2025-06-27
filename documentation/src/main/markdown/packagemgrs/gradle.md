@@ -29,8 +29,8 @@ Runs `gradlew gatherDependencies` to get a list of the project's dependencies, a
 
 Gradle Native Inspector allows you to filter projects based on both the name and the path. The path is unique for each project in the hierarchy and follows the form ":parent:child". Both filtering mechanism support wildcards.
 
-The inspector defines the custom task 'gatherDependencies' with the help of a Gradle script (`init-detect.gradle`), which it usually downloads automatically. The file init-detect.gradle has a dependencies on ExcludedIncludedFilter,
-ExcludedIncludedWildcardFilter, and IntegrationEscapeUtil that come from https://github.com/blackducksoftware/integration-common. Filtering (including/excluding projects and configurations) is performed by the Gradle/Groovy code to control
+The inspector defines the custom task 'gatherDependencies' with the help of a Gradle script (`init-detect.gradle`). 
+Filtering (including/excluding projects and configurations) is performed by the Gradle/Groovy code to control
 the output of the `dependencies` Gradle task invoked by the 'gradlew gatherDependencies' command.
 
 The init-detect.gradle script configures each project with the custom 'gatherDependencies' task, which invokes the 'dependencies' Gradle task on each project. This ensures the same output is produced as previous versions. The inspector consumes the output of `gradlew gatherDependencies` task.

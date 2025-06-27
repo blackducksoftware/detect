@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.blackduck.integration.detect.lifecycle.run.data.CommonScanResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +32,7 @@ import com.blackduck.integration.detect.lifecycle.run.step.binary.ScassOrBdbaBin
 import com.blackduck.integration.detect.lifecycle.run.step.container.AbstractContainerScanStepRunner;
 import com.blackduck.integration.detect.lifecycle.run.step.container.PreScassContainerScanStepRunner;
 import com.blackduck.integration.detect.lifecycle.run.step.container.ScassOrBdbaContainerScanStepRunner;
+import com.blackduck.integration.detect.lifecycle.run.step.packagemanager.PackageManagerStepRunner;
 import com.blackduck.integration.detect.lifecycle.run.step.utility.StepHelper;
 import com.blackduck.integration.detect.tool.iac.IacScanCodeLocationData;
 import com.blackduck.integration.detect.tool.impactanalysis.service.ImpactAnalysisBatchOutput;
@@ -115,11 +117,7 @@ public class IntelligentModeStepRunner {
         CodeLocationAccumulator codeLocationAccumulator = new CodeLocationAccumulator();
 
         if (bdioResult.isNotEmpty()) {
-            stepHelper.runAsGroup(
-                "Upload Bdio",
-                OperationType.INTERNAL,
-                () -> uploadBdio(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, operationRunner.calculateDetectTimeout())
-            );
+            invokePackageManagerScanningWorkflow(projectNameVersion, blackDuckRunData, scanIdsToWaitFor, bdioResult, codeLocationAccumulator);
         } else {
             logger.debug("No BDIO results to upload. Skipping.");
         }
@@ -205,6 +203,29 @@ public class IntelligentModeStepRunner {
         });
     }
 
+    private void invokePackageManagerScanningWorkflow(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData, Set<String> scanIdsToWaitFor, BdioResult bdioResult, CodeLocationAccumulator codeLocationAccumulator) throws OperationException {
+        if (CommonScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion())) {
+            PackageManagerStepRunner packageManagerScanStepRunner = new PackageManagerStepRunner(operationRunner);
+
+            CommonScanResult commonScanResult = packageManagerScanStepRunner.invokePackageManagerScanningWorkflow(projectNameVersion, blackDuckRunData, bdioResult);
+            String scanId = commonScanResult.getScanId() == null ? null : commonScanResult.getScanId().toString();
+            scanIdsToWaitFor.add(scanId);
+
+            if(!commonScanResult.isPackageManagerScassPossible()) {
+                invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId);
+            }
+        } else {
+            String scanId = null;
+            invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId);
+        }
+    }
+
+    private void invokePreScassPackageManagerWorkflow(BlackDuckRunData blackDuckRunData, BdioResult bdioResult, Set<String> scanIdsToWaitFor, CodeLocationAccumulator codeLocationAccumulator, String scanId) throws OperationException {
+        stepHelper.runAsGroup("Upload Bdio", OperationType.INTERNAL, () -> {
+            uploadBdio(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, operationRunner.calculateDetectTimeout(), scanId);
+        });
+    }
+
     private void invokeBinaryScanningWorkflow(
         DetectTool detectTool,
         DockerTargetData dockerTargetData,
@@ -275,8 +296,8 @@ public class IntelligentModeStepRunner {
         }
     }
 
-    public void uploadBdio(BlackDuckRunData blackDuckRunData, BdioResult bdioResult, Set<String> scanIdsToWaitFor, CodeLocationAccumulator codeLocationAccumulator, Long timeout) throws OperationException {
-        BdioUploadResult uploadResult = operationRunner.uploadBdioIntelligentPersistent(blackDuckRunData, bdioResult, timeout);
+    public void uploadBdio(BlackDuckRunData blackDuckRunData, BdioResult bdioResult, Set<String> scanIdsToWaitFor, CodeLocationAccumulator codeLocationAccumulator, Long timeout, String scassScanId) throws OperationException {
+        BdioUploadResult uploadResult = operationRunner.uploadBdioIntelligentPersistent(blackDuckRunData, bdioResult, timeout, scassScanId);
         Optional<CodeLocationCreationData<UploadBatchOutput>> codeLocationCreationData = uploadResult.getUploadOutput();
         codeLocationCreationData.ifPresent(uploadBatchOutputCodeLocationCreationData -> codeLocationAccumulator.addWaitableCodeLocations(
             DetectTool.DETECTOR,

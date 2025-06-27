@@ -137,6 +137,8 @@ public class UVLockParser {
             if(!checkIfMemberExcluded(workSpaceMember, uvDetectorOptions)) {
                 initializeProject(createDependency(workSpaceMember, packageDependencyMap.get(workSpaceMember))); // a new workspace member, initialize new code location
                 loopOverDependencies(workSpaceMember, null, uvDetectorOptions); //loop over all direct dependencies of root project
+            } else {
+                logger.info("Skipping member '{}' as set in the Detect workspace property.", workSpaceMember);
             }
         }
     }
@@ -200,7 +202,7 @@ public class UVLockParser {
         if(!detectorOptions.getExcludedWorkspaceMembers().isEmpty() && detectorOptions.getExcludedWorkspaceMembers().contains(memberName)) { // checking if current member is excluded
             return true;
         } else if(!detectorOptions.getIncludedWorkspaceMembers().isEmpty()){
-            return !detectorOptions.getIncludedWorkspaceMembers().contains(memberName); // checking if current member is not included
+            return !detectorOptions.getIncludedWorkspaceMembers().contains(memberName) && workSpaceMembers.contains(memberName); // checking if current member is not included
         } else {
             return false;
         }
