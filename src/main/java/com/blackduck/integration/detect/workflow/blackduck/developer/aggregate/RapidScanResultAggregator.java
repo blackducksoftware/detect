@@ -15,7 +15,6 @@ import java.util.stream.Collectors;
 import com.blackduck.integration.blackduck.api.generated.component.*;
 import com.blackduck.integration.blackduck.api.generated.enumeration.PolicyRuleSeverityType;
 
-import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
 import org.apache.commons.lang3.StringUtils;
 
 import com.blackduck.integration.blackduck.api.generated.view.DeveloperScansScanView;

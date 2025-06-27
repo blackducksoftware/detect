@@ -3,7 +3,6 @@ package com.blackduck.integration.detect.workflow.blackduck.developer;
 import java.util.List;
 import java.util.Set;
 
-import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
