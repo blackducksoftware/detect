@@ -30,8 +30,8 @@ public class RapidModeLogReportOperation {
         this.scanMode = mode.displayName();
     }
 
-    public RapidScanResultSummary perform(List<DeveloperScansScanView> results, List<PolicyRuleSeverityType> severitiesToFailPolicyCheck, RapidCompareMode rapidCompareMode) throws DetectUserFriendlyException {
-        RapidScanAggregateResult aggregateResult = rapidScanResultAggregator.aggregateData(results, severitiesToFailPolicyCheck, rapidCompareMode);
+    public RapidScanResultSummary perform(List<DeveloperScansScanView> results, List<PolicyRuleSeverityType> severitiesToFailPolicyCheck) throws DetectUserFriendlyException {
+        RapidScanAggregateResult aggregateResult = rapidScanResultAggregator.aggregateData(results, severitiesToFailPolicyCheck);
         logger.info(String.format("%s:", scanMode + RapidScanDetectResult.NONPERSISTENT_SCAN_RESULT_DETAILS_HEADING));
         aggregateResult.logResult(new Slf4jIntLogger(logger));
         RapidScanResultSummary summary = aggregateResult.getSummary();

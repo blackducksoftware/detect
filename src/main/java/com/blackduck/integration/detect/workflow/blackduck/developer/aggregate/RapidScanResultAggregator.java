@@ -24,14 +24,6 @@ public class RapidScanResultAggregator {
     
     private final Map<String, Set<String>> directToTransitiveChildren = new HashMap<>();
     private final Map<String, String[]> directUpgradeGuidanceVersions = new HashMap<>();
-    private RapidCompareMode rapidCompareMode;
-
-    public RapidScanAggregateResult aggregateData(List<DeveloperScansScanView> results,
-                                                  List<PolicyRuleSeverityType> severitiesToFailPolicyCheck,
-                                                  RapidCompareMode rapidCompareMode) {
-        this.rapidCompareMode = rapidCompareMode;
-        return aggregateData(results, severitiesToFailPolicyCheck); // calling existing method
-    }
     
     public RapidScanAggregateResult aggregateData(List<DeveloperScansScanView> results, List<PolicyRuleSeverityType> severitiesToFailPolicyCheck) {
         Collection<RapidScanComponentDetail> componentDetails = aggregateComponentData(results, severitiesToFailPolicyCheck);
@@ -78,10 +70,6 @@ public class RapidScanResultAggregator {
         List<RapidScanComponentDetail> componentDetails = new LinkedList<>();
 
         for (DeveloperScansScanView resultView : results) {
-            if (shouldSkipResolvedPolicies(resultView)) {
-                continue;
-            }
-
             this.compileTransitiveGuidance(resultView);
 
             RapidScanComponentDetail componentDetail = createDetail(resultView);
@@ -132,14 +120,6 @@ public class RapidScanResultAggregator {
         }
         
         return componentDetails;
-    }
-
-    private boolean shouldSkipResolvedPolicies(DeveloperScansScanView resultView) {
-        if (resultView.getPolicyStatuses() == null || resultView.getPolicyStatuses().isEmpty()) {
-            return false;
-        }
-        return (RapidCompareMode.BOM_COMPARE.equals(this.rapidCompareMode) || RapidCompareMode.BOM_COMPARE_STRICT.equals(this.rapidCompareMode))
-                && resultView.getPolicyStatuses().stream().allMatch("RESOLVED"::equalsIgnoreCase);
     }
 
     /**

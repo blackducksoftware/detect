@@ -50,7 +50,7 @@ public class RapidModeLogReportOperationTest {
         policyViolationNames.add("testPolicy2");
         Mockito.when(summary.getPolicyViolationNames()).thenReturn(policyViolationNames);
 
-        RapidScanResultSummary returnedSummary = op.perform(results, violatingPoicies, null);
+        RapidScanResultSummary returnedSummary = op.perform(results, violatingPoicies);
 
         assertEquals(summary, returnedSummary);
         Mockito.verify(exitCodePublisher, Mockito.times(1))
