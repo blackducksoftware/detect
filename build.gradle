@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '10.6.0-SIGQA7-andrians.yarn-optimizations'
+version = '10.6.0-SIGQA8-andrians.yarn-optimizations-SNAPSHOT'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
