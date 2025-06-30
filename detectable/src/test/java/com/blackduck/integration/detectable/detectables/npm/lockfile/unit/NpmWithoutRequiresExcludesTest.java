@@ -24,7 +24,7 @@ public class NpmWithoutRequiresExcludesTest {
         PackageLock packageLock = new PackageLock();
 
         List<NpmDependency> resolvedDependencies = new ArrayList<>();
-        resolvedDependencies.add(new NpmDependency("example", "1.0.0", true, true));
+        resolvedDependencies.add(new NpmDependency("example", "1.0.0", true, true, true));
         NpmProject npmProject = new NpmProject(
             StringUtils.EMPTY,
             StringUtils.EMPTY,
