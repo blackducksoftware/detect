@@ -121,9 +121,9 @@ public class NpmDependencyConverter {
     private NpmDependency createNpmDependency(String name, String version, Boolean isDev, Boolean isPeer, Boolean isOptional) {
         boolean dev = isDev != null && isDev;
         boolean peer = isPeer != null && isPeer;
-        // TODO code needed here for optional
+        boolean optional = isOptional != null && isOptional;
         ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.NPMJS, name, version);
-        return new NpmDependency(name, version, externalId, dev, peer, isOptional);
+        return new NpmDependency(name, version, externalId, dev, peer, optional);
     }
 
     public List<NpmRequires> convertNameVersionMapToRequires(MultiValuedMap<String, String> requires) {
