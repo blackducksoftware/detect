@@ -18,7 +18,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Optional;
+import java.util.Map;
+import java.util.EnumMap;
 
 public class CargoCliExtractor {
     private static final List<String> CARGO_TREE_COMMAND = Arrays.asList("tree", "--no-dedupe", "--prefix", "depth");
@@ -32,8 +35,12 @@ public class CargoCliExtractor {
         this.cargoTomlParser = cargoTomlParser;
     }
 
-    public Extraction extract(File directory, ExecutableTarget cargoExe, File cargoTomlFile) throws ExecutableFailedException, IOException {
-        ExecutableOutput cargoOutput = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(directory, cargoExe, CARGO_TREE_COMMAND));
+    public Extraction extract(File directory, ExecutableTarget cargoExe, File cargoTomlFile, CargoDetectableOptions cargoDetectableOptions) throws ExecutableFailedException, IOException {
+        List<String> cargoTreeCommand = new ArrayList<>(CARGO_TREE_COMMAND);
+
+        addEdgeExclusions(cargoTreeCommand, cargoDetectableOptions);
+
+        ExecutableOutput cargoOutput = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(directory, cargoExe, cargoTreeCommand));
         List<String> cargoTreeOutput = cargoOutput.getStandardOutputAsList();
 
         DependencyGraph graph = cargoDependencyTransformer.transform(cargoTreeOutput);
@@ -50,5 +57,25 @@ public class CargoCliExtractor {
             .success(codeLocation)
             .nameVersionIfPresent(projectNameVersion)
             .build();
+    }
+
+    private void addEdgeExclusions(List<String> cargoTreeCommand, CargoDetectableOptions options) {
+        Map<CargoDependencyType, String> exclusionMap = new EnumMap<>(CargoDependencyType.class);
+        exclusionMap.put(CargoDependencyType.NORMAL, "no-normal");
+        exclusionMap.put(CargoDependencyType.BUILD, "no-build");
+        exclusionMap.put(CargoDependencyType.DEV, "no-dev");
+        exclusionMap.put(CargoDependencyType.PROC_MACRO, "no-proc-macro");
+
+        List<String> exclusions = new ArrayList<>();
+        for (Map.Entry<CargoDependencyType, String> entry : exclusionMap.entrySet()) {
+            if (options.getDependencyTypeFilter().shouldExclude(entry.getKey())) {
+                exclusions.add(entry.getValue());
+            }
+        }
+
+        if (!exclusions.isEmpty()) {
+            cargoTreeCommand.add("--edges");
+            cargoTreeCommand.add(String.join(",", exclusions));
+        }
     }
 }

@@ -30,7 +30,7 @@ public class PublishSignatureScanReports {
 
     public void publishReports(List<SignatureScannerReport> signatureScannerReports) {
         signatureScannerReports.forEach(this::publishReport);
-
+        
         signatureScannerReports.stream()
             .filter(SignatureScannerReport::isFailure)
             .findAny()
@@ -41,6 +41,14 @@ public class PublishSignatureScanReports {
                 ));
                 exitCodePublisher.publishExitCode(new ExitCodeRequest(ExitCodeType.FAILURE_SCAN));
             });
+        
+        signatureScannerReports.stream()
+        .filter(SignatureScannerReport::isScassError)
+        .findAny()
+        .ifPresent(report -> {
+            logger.error("The Signature Scan failed when attempting to communicate with external resources. Check connectivity to SCASS IPs and Black Duck services.");
+            exitCodePublisher.publishExitCode(new ExitCodeRequest(ExitCodeType.FAILURE_SCAN));
+        });
 
         if (!treatSkippedScanAsSuccess) {
             signatureScannerReports.stream()

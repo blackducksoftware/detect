@@ -5,16 +5,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import com.blackduck.integration.detect.lifecycle.run.data.ScanCreationResponse;
 import com.google.gson.annotations.SerializedName;
 
-public class SignatureScanResult {
+public class SignatureScanResult extends ScanCreationResponse {
     public static final String OUTPUT_FILE_PATH = "/output/scanOutput.json";
 
     @SerializedName("version")
     private String version;
-
-    @SerializedName("scanId")
-    private String scanId;
     
     @SerializedName("exitStatus")
     private String exitStatus;
@@ -24,10 +22,6 @@ public class SignatureScanResult {
 
     public String getVersion() {
         return version;
-    }
-
-    public String getScanId() {
-        return scanId;
     }
 
     public String getExitStatus() {
