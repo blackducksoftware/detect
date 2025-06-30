@@ -9,10 +9,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonPrimitive;
 import com.blackduck.integration.bdio.graph.BasicDependencyGraph;
 import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.Forge;
@@ -24,7 +20,10 @@ import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.detectable.detectables.npm.NpmDependencyType;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.result.NpmPackagerResult;
 import com.blackduck.integration.detectable.detectables.npm.packagejson.CombinedPackageJson;
-import com.blackduck.integration.detectable.detectables.npm.packagejson.model.PackageJson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 
 public class NpmCliParser {
     private final Logger logger = LoggerFactory.getLogger(NpmCliParser.class);
@@ -94,7 +93,9 @@ public class NpmCliParser {
                     elementEntry.getKey()));
                 boolean excludingBecausePeer = (npmDependencyTypeFilter.shouldExclude(NpmDependencyType.PEER, combinedPackageJson.getPeerDependencies())
                     && combinedPackageJson.getPeerDependencies().containsKey(elementEntry.getKey()));
-                return !excludingBecauseDev && !excludingBecausePeer;
+                boolean excludingBecauseOptional = (npmDependencyTypeFilter.shouldExclude(NpmDependencyType.OPTIONAL, combinedPackageJson.getOptionalDependencies())
+                    && combinedPackageJson.getOptionalDependencies().containsKey(elementEntry.getKey()));
+                return !excludingBecauseDev && !excludingBecausePeer && !excludingBecauseOptional;
                 // TODO need changes here for optional
             })
             .forEach(elementEntry -> processChild(elementEntry, graph, parentDependency, isRootDependency, combinedPackageJson));
