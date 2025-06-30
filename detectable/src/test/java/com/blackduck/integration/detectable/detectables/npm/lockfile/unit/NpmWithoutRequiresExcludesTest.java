@@ -36,7 +36,7 @@ public class NpmWithoutRequiresExcludesTest {
         );
 
         NpmLockfileGraphTransformer graphTransformer = new NpmLockfileGraphTransformer(
-            EnumListFilter.fromExcluded(NpmDependencyType.DEV, NpmDependencyType.PEER)
+            EnumListFilter.fromExcluded(NpmDependencyType.DEV, NpmDependencyType.PEER, NpmDependencyType.OPTIONAL)
         );
         
         // Test with packages for v2/v3 lockfile

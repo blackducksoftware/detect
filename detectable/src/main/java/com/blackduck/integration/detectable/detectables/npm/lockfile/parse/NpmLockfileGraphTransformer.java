@@ -175,7 +175,7 @@ public class NpmLockfileGraphTransformer {
 
     private boolean shouldIncludeDependency(NpmDependency packageLockDependency) {
         // TODO change here
-        return (!packageLockDependency.isDevDependency() && !packageLockDependency.isPeerDependency()) // If the type is not dev or peer, we always want to include it.
+        return (!packageLockDependency.isDevDependency() && !packageLockDependency.isPeerDependency() && !packageLockDependency.isOptionalDependency()) // If the type is not dev or peer, we always want to include it.
             || (packageLockDependency.isDevDependency() && npmDependencyTypeFilter.shouldInclude(NpmDependencyType.DEV))
             || (packageLockDependency.isPeerDependency() && npmDependencyTypeFilter.shouldInclude(NpmDependencyType.PEER))
             || (packageLockDependency.isOptionalDependency() && npmDependencyTypeFilter.shouldInclude(NpmDependencyType.OPTIONAL));
