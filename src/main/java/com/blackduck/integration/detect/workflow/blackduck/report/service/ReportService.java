@@ -4,7 +4,6 @@ import java.awt.*;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.reflect.Modifier;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -17,7 +16,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.blackduck.integration.detect.workflow.blackduck.report.json.RiskReportJsonWriter;
-import com.google.gson.*;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 
@@ -210,6 +212,11 @@ public class ReportService extends DataService {
         } catch (RiskReportException | IOException e) {
             throw new BlackDuckIntegrationException(e.getMessage(), e);
         }
+    }
+
+    public File createReportJsonFile(File outputDirectory, ProjectView project, ProjectVersionView version) throws IntegrationException, IOException {
+        ReportData reportData = getRiskReportData(project, version);
+        return createReportJsonFile(outputDirectory, reportData);
     }
 
     public File createReportJsonFile(File outputDirectory, ReportData reportData) throws IOException {

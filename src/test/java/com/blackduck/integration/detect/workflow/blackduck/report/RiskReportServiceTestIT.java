@@ -1,6 +1,7 @@
 package com.blackduck.integration.detect.workflow.blackduck.report;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 
 import org.junit.jupiter.api.Assertions;
@@ -19,7 +20,7 @@ import com.blackduck.integration.detect.battery.docker.integration.BlackDuckTest
 import com.blackduck.integration.detect.workflow.blackduck.report.service.ReportService;
 import com.blackduck.integration.exception.IntegrationException;
 
-@Tag("integration")
+//@Tag("integration")
 public class RiskReportServiceTestIT {
     public static final String PROJECT_NAME = "detect risk report test";
     public static final String PROJECT_VERSION_NAME = "1.0.0";
@@ -50,6 +51,20 @@ public class RiskReportServiceTestIT {
         File pdfFile = reportService.createReportPdfFile(folder, projectVersionWrapper.getProjectView(), projectVersionWrapper.getProjectVersionView());
         Assertions.assertNotNull(pdfFile);
         Assertions.assertTrue(pdfFile.exists());
+    }
+
+    @Test
+    @ExtendWith(TempDirectory.class)
+    public void createReportJsonFileTest(@TempDirectory.TempDir Path folderForReport) throws IntegrationException, IOException {
+        BlackDuckTestConnection blackDuckTestConnection = BlackDuckTestConnection.fromEnvironment();
+        ReportService reportService = blackDuckTestConnection.createReportService();
+
+        ProjectVersionWrapper projectVersionWrapper = blackDuckTestConnection.projectVersionAssertions(PROJECT_NAME, PROJECT_VERSION_NAME).getProjectVersionWrapper();
+
+        File folder = folderForReport.toFile();
+        File jsonFile = reportService.createReportJsonFile(folder, projectVersionWrapper.getProjectView(), projectVersionWrapper.getProjectVersionView());
+        Assertions.assertNotNull(jsonFile);
+        Assertions.assertTrue(jsonFile.exists());
     }
 
     @Test

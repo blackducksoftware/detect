@@ -28,7 +28,7 @@ import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
 import com.blackduck.integration.detect.workflow.blackduck.report.service.ReportService;
 import com.blackduck.integration.exception.IntegrationException;
 
-@Tag("integration")
+//@Tag("integration")
 public class DetectOnDetectTest {
     @Test
     void detectOnDetect() throws IOException, IntegrationException {
@@ -96,11 +96,13 @@ public class DetectOnDetectTest {
             commandBuilder.connectToBlackDuck(blackDuckTestConnection);
             commandBuilder.projectNameVersion(blackDuckAssertions.getProjectNameVersion());
             commandBuilder.property(DetectProperties.DETECT_RISK_REPORT_PDF, "true");
+            commandBuilder.property(DetectProperties.DETECT_RISK_REPORT_JSON, "true");
             commandBuilder.property(DetectProperties.DETECT_TIMEOUT, "1200");
             commandBuilder.tools(DetectTool.DETECTOR);
 
             DockerAssertions dockerAssertions = test.run(commandBuilder);
             dockerAssertions.resultProducedAtLocation("/opt/project/src/detect_junit_risk_report_default_BlackDuck_RiskReport.pdf");
+            dockerAssertions.resultProducedAtLocation("/opt/project/src/detect_junit_risk_report_default_BlackDuck_RiskReport.json");
         }
     }
 
@@ -120,23 +122,32 @@ public class DetectOnDetectTest {
             File reportDirectory = test.directories().createResultDirectory("report");
             test.directories().withBinding(reportDirectory, reportDirectoryImagePath);
 
-            long initialFileLength = assertEmptyRiskReport(reportDirectory, projectVersionWrapper, reportService);
+            long initialFileLengthPdf = assertEmptyRiskReportPdf(reportDirectory, projectVersionWrapper, reportService);
+            long initialFileLengthJson = assertEmptyRiskReportJson(reportDirectory, projectVersionWrapper, reportService);
 
             DetectCommandBuilder commandBuilder = new DetectCommandBuilder().defaults().defaultDirectories(test);
             commandBuilder.connectToBlackDuck(blackDuckTestConnection);
             commandBuilder.projectNameVersion(blackDuckAssertions.getProjectNameVersion());
             commandBuilder.property(DetectProperties.DETECT_RISK_REPORT_PDF, "true");
+            commandBuilder.property(DetectProperties.DETECT_RISK_REPORT_JSON, "true");
             commandBuilder.property(DetectProperties.DETECT_TIMEOUT, "1200");
             commandBuilder.property(DetectProperties.DETECT_RISK_REPORT_PDF_PATH, reportDirectoryImagePath);
+            commandBuilder.property(DetectProperties.DETECT_RISK_REPORT_JSON_PATH, reportDirectoryImagePath);
             commandBuilder.tools(DetectTool.DETECTOR);
 
             DockerAssertions dockerAssertions = test.run(commandBuilder);
             dockerAssertions.resultProducedAtLocation("/opt/report/detect_junit_risk_report_custom_BlackDuck_RiskReport.pdf");
+            dockerAssertions.resultProducedAtLocation("/opt/report/detect_junit_risk_report_custom_BlackDuck_RiskReport.json");
 
             List<File> pdfFiles = getPdfFiles(reportDirectory);
             assertEquals(1, pdfFiles.size());
-            long postLength = pdfFiles.get(0).length();
-            assertTrue(postLength > initialFileLength);
+            long postLengthPdf = pdfFiles.get(0).length();
+            assertTrue(postLengthPdf > initialFileLengthPdf);
+
+            List<File> jsonFiles = getJsonFiles(reportDirectory);
+            assertEquals(1, pdfFiles.size());
+            long postLengthJson = jsonFiles.get(0).length();
+            assertTrue(postLengthJson > initialFileLengthJson);
         }
     }
 
@@ -164,7 +175,7 @@ public class DetectOnDetectTest {
         }
     }
 
-    private long assertEmptyRiskReport(File reportDirectory, ProjectVersionWrapper projectVersionWrapper, ReportService reportService) throws IntegrationException {
+    private long assertEmptyRiskReportPdf(File reportDirectory, ProjectVersionWrapper projectVersionWrapper, ReportService reportService) throws IntegrationException {
         List<File> pdfFiles = getPdfFiles(reportDirectory);
         assertEquals(0, pdfFiles.size());
         File riskReportPdf = reportService.createReportPdfFile(reportDirectory, projectVersionWrapper.getProjectView(), projectVersionWrapper.getProjectVersionView());
@@ -179,12 +190,38 @@ public class DetectOnDetectTest {
         return initialFileLength;
     }
 
+    private long assertEmptyRiskReportJson(File reportDirectory, ProjectVersionWrapper projectVersionWrapper, ReportService reportService) throws IntegrationException, IOException {
+        List<File> pdfFiles = getJsonFiles(reportDirectory);
+        assertEquals(0, pdfFiles.size());
+        File riskReportPdf = reportService.createReportJsonFile(reportDirectory, projectVersionWrapper.getProjectView(), projectVersionWrapper.getProjectVersionView());
+        pdfFiles = getJsonFiles(reportDirectory);
+        assertEquals(1, pdfFiles.size());
+        long initialFileLength = pdfFiles.get(0).length();
+        assertTrue(initialFileLength > 0);
+        FileUtils.deleteQuietly(pdfFiles.get(0));
+        pdfFiles = getJsonFiles(reportDirectory);
+        assertEquals(0, pdfFiles.size());
+
+        return initialFileLength;
+    }
+
     private List<File> getPdfFiles(File directory) {
         File[] files = directory.listFiles();
         if (files != null) {
             return Arrays.stream(files)
                 .filter(file -> file.getName().endsWith(".pdf"))
                 .collect(Collectors.toList());
+        } else {
+            return Collections.emptyList();
+        }
+    }
+
+    private List<File> getJsonFiles(File directory) {
+        File[] files = directory.listFiles();
+        if (files != null) {
+            return Arrays.stream(files)
+                    .filter(file -> file.getName().endsWith(".json"))
+                    .collect(Collectors.toList());
         } else {
             return Collections.emptyList();
         }
