@@ -79,7 +79,6 @@ public class NpmDependencyConverter {
             String packageName = packageEntry.getKey();
             PackageLockPackage packageLockDependency = packageEntry.getValue();
 
-            // TODO confirm works
             NpmDependency dependency = createNpmDependency(packageName, packageLockDependency.version, packageLockDependency.dev, packageLockDependency.peer, packageLockDependency.optional);
             dependency.setParent(parent);
             children.add(dependency);
@@ -104,7 +103,6 @@ public class NpmDependencyConverter {
             String packageName = packageEntry.getKey();
             PackageLockDependency packageLockDependency = packageEntry.getValue();
 
-            // TODO confirm works
             NpmDependency dependency = createNpmDependency(packageName, packageLockDependency.version, packageLockDependency.dev, packageLockDependency.peer, packageLockDependency.optional);
             dependency.setParent(parent);
             children.add(dependency);

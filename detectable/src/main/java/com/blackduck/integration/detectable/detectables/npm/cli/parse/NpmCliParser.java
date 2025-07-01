@@ -86,7 +86,7 @@ public class NpmCliParser {
             .filter(elementEntry -> elementEntry.getValue().isJsonObject())
             .filter(elementEntry -> {
                 if (!isRootDependency) {
-                    // Transitives can be both application and dev/peer dependency graphs, but Detect shouldn't be walking a dev or peer dependency tree unless it passed the filter already.
+                    // Transitives can be both application and dev/peer/optional dependency graphs, but Detect shouldn't be walking a dev, peer, or optional dependency tree unless it passed the filter already.
                     return true;
                 }
                 boolean excludingBecauseDev = (npmDependencyTypeFilter.shouldExclude(NpmDependencyType.DEV, combinedPackageJson.getDevDependencies()) && combinedPackageJson.getDevDependencies().containsKey(
@@ -96,7 +96,6 @@ public class NpmCliParser {
                 boolean excludingBecauseOptional = (npmDependencyTypeFilter.shouldExclude(NpmDependencyType.OPTIONAL, combinedPackageJson.getOptionalDependencies())
                     && combinedPackageJson.getOptionalDependencies().containsKey(elementEntry.getKey()));
                 return !excludingBecauseDev && !excludingBecausePeer && !excludingBecauseOptional;
-                // TODO need changes here for optional
             })
             .forEach(elementEntry -> processChild(elementEntry, graph, parentDependency, isRootDependency, combinedPackageJson));
     }
