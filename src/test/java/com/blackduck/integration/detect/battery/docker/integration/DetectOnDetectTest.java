@@ -28,7 +28,7 @@ import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
 import com.blackduck.integration.detect.workflow.blackduck.report.service.ReportService;
 import com.blackduck.integration.exception.IntegrationException;
 
-//@Tag("integration")
+@Tag("integration")
 public class DetectOnDetectTest {
     @Test
     void detectOnDetect() throws IOException, IntegrationException {

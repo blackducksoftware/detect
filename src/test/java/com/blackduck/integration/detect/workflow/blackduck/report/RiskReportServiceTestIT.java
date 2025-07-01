@@ -20,7 +20,7 @@ import com.blackduck.integration.detect.battery.docker.integration.BlackDuckTest
 import com.blackduck.integration.detect.workflow.blackduck.report.service.ReportService;
 import com.blackduck.integration.exception.IntegrationException;
 
-//@Tag("integration")
+@Tag("integration")
 public class RiskReportServiceTestIT {
     public static final String PROJECT_NAME = "detect risk report test";
     public static final String PROJECT_VERSION_NAME = "1.0.0";
