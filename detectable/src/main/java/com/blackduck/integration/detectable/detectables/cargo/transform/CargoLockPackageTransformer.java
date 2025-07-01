@@ -1,6 +1,8 @@
 package com.blackduck.integration.detectable.detectables.cargo.transform;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.graph.builder.LazyExternalIdDependencyGraphBuilder;
@@ -13,12 +15,42 @@ import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.exception.DetectableException;
 import com.blackduck.integration.detectable.detectables.cargo.model.CargoLockPackage;
 import com.blackduck.integration.detectable.util.NameOptionalVersion;
+import com.blackduck.integration.util.NameVersion;
 
 public class CargoLockPackageTransformer {
     private final ExternalIdFactory externalIdFactory = new ExternalIdFactory();
     private final DependencyFactory dependencyFactory = new DependencyFactory(externalIdFactory);
 
-    public DependencyGraph transformToGraph(List<CargoLockPackage> lockPackages) throws MissingExternalIdException, DetectableException {
+    public DependencyGraph transformToGraph(
+            List<CargoLockPackage> lockPackages,
+            Set<NameVersion> rootDependencies) throws MissingExternalIdException, DetectableException {
+        verifyNoDuplicatePackages(lockPackages);
+
+        LazyExternalIdDependencyGraphBuilder graph = new LazyExternalIdDependencyGraphBuilder();
+        for (CargoLockPackage lockPackage : lockPackages) {
+            String name = lockPackage.getPackageNameVersion().getName();
+            String version = lockPackage.getPackageNameVersion().getVersion();
+            LazyId id = LazyId.fromNameAndVersion(name, version);
+            Dependency dep = dependencyFactory.createNameVersionDependency(Forge.CRATES, name, version);
+
+            // Only add as root if in rootDependencies
+            if (rootDependencies.contains(new NameVersion(name, version))) {
+                graph.addChildToRoot(id);
+            }
+            graph.setDependencyInfo(id, dep.getName(), dep.getVersion(), dep.getExternalId());
+            graph.setDependencyAsAlias(id, LazyId.fromName(name));
+
+            for (NameOptionalVersion child : lockPackage.getDependencies()) {
+                LazyId childId = child.getVersion().isPresent()
+                        ? LazyId.fromNameAndVersion(child.getName(), child.getVersion().get())
+                        : LazyId.fromName(child.getName());
+                graph.addChildWithParent(childId, id);
+            }
+        }
+        return graph.build();
+    }
+
+/*    public DependencyGraph transformToGraph(List<CargoLockPackage> lockPackages) throws MissingExternalIdException, DetectableException {
         verifyNoDuplicatePackages(lockPackages);
 
         LazyExternalIdDependencyGraphBuilder graph = new LazyExternalIdDependencyGraphBuilder();
@@ -44,7 +76,7 @@ public class CargoLockPackageTransformer {
         });
 
         return graph.build();
-    }
+    }*/
 
     private void verifyNoDuplicatePackages(List<CargoLockPackage> lockPackages) throws DetectableException {
         for (CargoLockPackage cargoLockPackage : lockPackages) {

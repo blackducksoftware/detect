@@ -27,7 +27,7 @@ public class CargoLockPackageTransformerTest {
         input.add(createPackage("test1", "1.0.0"));
         input.add(createPackage("test2", "2.0.0"));
         CargoLockPackageTransformer cargoLockPackageTransformer = new CargoLockPackageTransformer();
-        DependencyGraph graph = cargoLockPackageTransformer.transformToGraph(input);
+        DependencyGraph graph = cargoLockPackageTransformer.transformToGraph(input, null);
 
         NameVersionGraphAssert graphAssert = new NameVersionGraphAssert(Forge.CRATES, graph);
         graphAssert.hasRootSize(2);
@@ -43,7 +43,7 @@ public class CargoLockPackageTransformerTest {
         input.add(createPackage("parent1", "anything", new NameOptionalVersion("child1")));
         CargoLockPackageTransformer cargoLockPackageTransformer = new CargoLockPackageTransformer();
 
-        assertThrows(DetectableException.class, () -> cargoLockPackageTransformer.transformToGraph(input));
+        assertThrows(DetectableException.class, () -> cargoLockPackageTransformer.transformToGraph(input, null));
     }
 
     @Test
@@ -56,7 +56,7 @@ public class CargoLockPackageTransformerTest {
         input.add(createPackage("dep1", "0.5.0"));
         input.add(createPackage("dep2", "0.6.0"));
         CargoLockPackageTransformer cargoLockPackageTransformer = new CargoLockPackageTransformer();
-        DependencyGraph graph = cargoLockPackageTransformer.transformToGraph(input);
+        DependencyGraph graph = cargoLockPackageTransformer.transformToGraph(input, null);
 
         NameVersionGraphAssert graphAssert = new NameVersionGraphAssert(Forge.CRATES, graph);
         graphAssert.hasRootDependency("test1", "1.0.0");

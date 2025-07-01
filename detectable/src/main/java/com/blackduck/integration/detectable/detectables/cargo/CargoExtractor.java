@@ -3,19 +3,12 @@ package com.blackduck.integration.detectable.detectables.cargo;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.detectable.detectables.cargo.data.CargoLockPackageData;
+import com.blackduck.integration.detectable.util.NameOptionalVersion;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.Nullable;
 
@@ -53,6 +46,7 @@ public class CargoExtractor {
         List<CargoLockPackageData> filteredPackages = cargoLockPackageDataList;
         boolean exclusionEnabled = isDependencyExclusionEnabled(cargoDetectableOptions);
         String cargoTomlContents = null;
+        Set<NameVersion> dependenciesToInclude = new HashSet<>();
 
         if(cargoTomlFile == null && exclusionEnabled) {
             return new Extraction.Builder()
@@ -62,19 +56,21 @@ public class CargoExtractor {
 
         if (cargoTomlFile != null) {
             cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
-        }
-
-        if (cargoTomlFile != null && exclusionEnabled) {
-            Set<NameVersion> dependenciesToInclude = cargoTomlParser.parseDependenciesToInclude(
+            dependenciesToInclude = cargoTomlParser.parseDependenciesToInclude(
                     cargoTomlContents, cargoDetectableOptions.getDependencyTypeFilter());
-            filteredPackages = includeDependencies(cargoLockPackageDataList, dependenciesToInclude);
+            if (exclusionEnabled) {
+                filteredPackages = includeDependencies(cargoLockPackageDataList, dependenciesToInclude);
+            }
         }
 
+        Map<String, List<CargoLockPackageData>> packageLookupMap = indexPackagesByName(filteredPackages);
         List<CargoLockPackage> packages = filteredPackages.stream()
-            .map(cargoLockPackageDataTransformer::transform)
-            .collect(Collectors.toList());
+                .map(cargoLockPackageDataTransformer::transform)
+                .collect(Collectors.toList());
+        List<CargoLockPackage> resolvedPackages = resolveDependencyVersions(packages, packageLookupMap);
+        Set<NameVersion> resolvedRootDependencies = resolveRootDependencies(dependenciesToInclude, packageLookupMap);
 
-        DependencyGraph graph = cargoLockPackageTransformer.transformToGraph(packages);
+        DependencyGraph graph = cargoLockPackageTransformer.transformToGraph(resolvedPackages, resolvedRootDependencies);
 
         Optional<NameVersion> projectNameVersion = Optional.empty();
         if (cargoTomlFile != null) {
@@ -156,6 +152,30 @@ public class CargoExtractor {
             }
         }
         return resolvedRootDependencies;
+    }
+
+    private List<CargoLockPackage> resolveDependencyVersions(
+            List<CargoLockPackage> packages,
+            Map<String, List<CargoLockPackageData>> packageLookupMap
+    ) {
+        List<CargoLockPackage> resolvedPackages = new ArrayList<>();
+        for (CargoLockPackage pkg : packages) {
+            List<NameOptionalVersion> resolvedDependencies = new ArrayList<>();
+            for (NameOptionalVersion dep : pkg.getDependencies()) {
+                if (!dep.getVersion().isPresent()) {
+                    NameVersion resolved = extractPackageNameVersion(dep.getName(), packageLookupMap);
+                    if (resolved != null) {
+                        resolvedDependencies.add(new NameOptionalVersion(resolved.getName(), resolved.getVersion()));
+                    } else {
+                        resolvedDependencies.add(dep);
+                    }
+                } else {
+                    resolvedDependencies.add(dep);
+                }
+            }
+            resolvedPackages.add(new CargoLockPackage(pkg.getPackageNameVersion(), resolvedDependencies));
+        }
+        return resolvedPackages;
     }
 
     private List<CargoLockPackageData> filterPackagesByInclusion(
