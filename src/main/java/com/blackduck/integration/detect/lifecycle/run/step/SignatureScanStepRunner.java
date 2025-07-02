@@ -160,38 +160,48 @@ public class SignatureScanStepRunner {
                 copyCsvFiles(output.getSpecificRunOutputDirectory(), operationRunner.getDirectoryManager().getCsvOutputDirectory());
             }
             
-            File specificRunOutputDirectory = output.getSpecificRunOutputDirectory();
-            String scanOutputLocation = specificRunOutputDirectory.toString() + SignatureScanResult.OUTPUT_FILE_PATH;
+            if (isOnline) {
+                File specificRunOutputDirectory = output.getSpecificRunOutputDirectory();
+                String scanOutputLocation = specificRunOutputDirectory.toString()
+                        + SignatureScanResult.OUTPUT_FILE_PATH;
 
-            try {
-                Reader reader = Files.newBufferedReader(Paths.get(scanOutputLocation));
-
-                SignatureScanResult result = gson.fromJson(reader, SignatureScanResult.class);
-                
-                // This is a SCASS scan if we have an upload URL. We'll need to upload the BDIO.
-                // If it is not a SCASS scan skip this section as the signature scanner already uploaded
-                // the BDIO.
-                if (result.getUploadUrl() != null) {
-                    ScassScanStepRunner scassScanStepRunner = new ScassScanStepRunner(blackDuckRunData);
-                    String pathToBdio = specificRunOutputDirectory.toString() + "/bdio/" + result.getScanId() + ".bdio";
-                    Optional<File> optionalBdio = Optional.of(new File(pathToBdio));
-
-                    scassScanStepRunner.runScassScan(optionalBdio, result);
-                }
-                
-                if (shouldWaitAtScanLevel && scanIdsToWaitFor != null) {
-                    scanIdsToWaitFor.addAll(result.parseScanIds());
-                }
-            } catch (NoSuchFileException e) {
-                failedScans.add(output.getCodeLocationName());
-                handleNoScanStatusFile(scanIdsToWaitFor, shouldWaitAtScanLevel, scassScan, scanOutputLocation);
-            } catch (IntegrationException e) {
-                failedScans.add(output.getCodeLocationName());
-                operationRunner.publishSignatureFailure(e.getMessage());
+                processOnlineScan(scanIdsToWaitFor, gson, shouldWaitAtScanLevel, scassScan, failedScans, output,
+                        specificRunOutputDirectory, scanOutputLocation);
             }
         }
         
         return failedScans;
+    }
+
+    private void processOnlineScan(Set<String> scanIdsToWaitFor, Gson gson, boolean shouldWaitAtScanLevel,
+            boolean scassScan, Set<String> failedScans, ScanCommandOutput output, File specificRunOutputDirectory,
+            String scanOutputLocation) throws IOException {
+        try {
+            Reader reader = Files.newBufferedReader(Paths.get(scanOutputLocation));
+
+            SignatureScanResult result = gson.fromJson(reader, SignatureScanResult.class);
+            
+            // This is a SCASS scan if we have an upload URL. We'll need to upload the BDIO.
+            // If it is not a SCASS scan skip this section as the signature scanner already uploaded
+            // the BDIO.
+            if (result.getUploadUrl() != null) {
+                ScassScanStepRunner scassScanStepRunner = new ScassScanStepRunner(blackDuckRunData);
+                String pathToBdio = specificRunOutputDirectory.toString() + "/bdio/" + result.getScanId() + ".bdio";
+                Optional<File> optionalBdio = Optional.of(new File(pathToBdio));
+
+                scassScanStepRunner.runScassScan(optionalBdio, result);
+            }
+            
+            if (shouldWaitAtScanLevel && scanIdsToWaitFor != null) {
+                scanIdsToWaitFor.addAll(result.parseScanIds());
+            }
+        } catch (NoSuchFileException e) {
+            failedScans.add(output.getCodeLocationName());
+            handleNoScanStatusFile(scanIdsToWaitFor, shouldWaitAtScanLevel, scassScan, scanOutputLocation);
+        } catch (IntegrationException e) {
+            failedScans.add(output.getCodeLocationName());
+            operationRunner.publishSignatureFailure(e.getMessage());
+        }
     }
 
     private void handleNoScanStatusFile(Set<String> scanIdsToWaitFor, boolean shouldWaitAtScanLevel, boolean scassScan,
