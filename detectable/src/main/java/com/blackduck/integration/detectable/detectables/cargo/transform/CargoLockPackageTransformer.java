@@ -1,7 +1,7 @@
 package com.blackduck.integration.detectable.detectables.cargo.transform;
 
-import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import com.blackduck.integration.bdio.graph.DependencyGraph;
@@ -31,52 +31,24 @@ public class CargoLockPackageTransformer {
             String name = lockPackage.getPackageNameVersion().getName();
             String version = lockPackage.getPackageNameVersion().getVersion();
             LazyId id = LazyId.fromNameAndVersion(name, version);
-            Dependency dep = dependencyFactory.createNameVersionDependency(Forge.CRATES, name, version);
+            Dependency dependency = dependencyFactory.createNameVersionDependency(Forge.CRATES, name, version);
 
             // Only add as root if in rootDependencies
             if (rootDependencies.contains(new NameVersion(name, version))) {
                 graph.addChildToRoot(id);
             }
-            graph.setDependencyInfo(id, dep.getName(), dep.getVersion(), dep.getExternalId());
+            graph.setDependencyInfo(id, dependency.getName(), dependency.getVersion(), dependency.getExternalId());
             graph.setDependencyAsAlias(id, LazyId.fromName(name));
 
             for (NameOptionalVersion child : lockPackage.getDependencies()) {
-                LazyId childId = child.getVersion().isPresent()
-                        ? LazyId.fromNameAndVersion(child.getName(), child.getVersion().get())
-                        : LazyId.fromName(child.getName());
+                Optional<String> optionalVersion = child.getVersion();
+                LazyId childId = optionalVersion.map(s -> LazyId.fromNameAndVersion(child.getName(), s))
+                        .orElseGet(() -> LazyId.fromName(child.getName()));
                 graph.addChildWithParent(childId, id);
             }
         }
         return graph.build();
     }
-
-/*    public DependencyGraph transformToGraph(List<CargoLockPackage> lockPackages) throws MissingExternalIdException, DetectableException {
-        verifyNoDuplicatePackages(lockPackages);
-
-        LazyExternalIdDependencyGraphBuilder graph = new LazyExternalIdDependencyGraphBuilder();
-        lockPackages.forEach(lockPackage -> {
-            String parentName = lockPackage.getPackageNameVersion().getName();
-            String parentVersion = lockPackage.getPackageNameVersion().getVersion();
-            LazyId parentId = LazyId.fromNameAndVersion(parentName, parentVersion);
-            Dependency parentDependency = dependencyFactory.createNameVersionDependency(Forge.CRATES, parentName, parentVersion);
-
-            graph.addChildToRoot(parentId);
-            graph.setDependencyInfo(parentId, parentDependency.getName(), parentDependency.getVersion(), parentDependency.getExternalId());
-            graph.setDependencyAsAlias(parentId, LazyId.fromName(parentName));
-
-            lockPackage.getDependencies().forEach(childPackage -> {
-                if (childPackage.getVersion().isPresent()) {
-                    LazyId childId = LazyId.fromNameAndVersion(childPackage.getName(), childPackage.getVersion().get());
-                    graph.addChildWithParent(childId, parentId);
-                } else {
-                    LazyId childId = LazyId.fromName(childPackage.getName());
-                    graph.addChildWithParent(childId, parentId);
-                }
-            });
-        });
-
-        return graph.build();
-    }*/
 
     private void verifyNoDuplicatePackages(List<CargoLockPackage> lockPackages) throws DetectableException {
         for (CargoLockPackage cargoLockPackage : lockPackages) {
@@ -92,5 +64,4 @@ public class CargoLockPackageTransformer {
             }
         }
     }
-
 }
