@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.blackduck.integration.detect.workflow.blackduck.report.json.RiskReportJsonWriter;
+import com.blackduck.integration.detect.workflow.blackduck.report.util.ReportFileUtil;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -97,15 +98,7 @@ public class ReportService extends DataService {
         if (noticesReportContent == null) {
             return null;
         }
-        String escapedProjectName = escapeUtil.replaceWithUnderscore(projectName);
-        String escapedProjectVersionName = escapeUtil.replaceWithUnderscore(projectVersionName);
-        File noticesReportFile = new File(outputDirectory, escapedProjectName + "_" + escapedProjectVersionName + "_Black_Duck_Notices_Report.txt");
-        if (noticesReportFile.exists()) {
-            boolean deleted = noticesReportFile.delete();
-            if (!deleted) {
-                logger.warn(String.format("Unable to delete existing file %s before re-creating it", noticesReportFile.getAbsolutePath()));
-            }
-        }
+        File noticesReportFile = ReportFileUtil.createReportFile(outputDirectory, projectName, projectVersionName, "txt");
         try (FileWriter writer = new FileWriter(noticesReportFile)) {
             logger.trace("Creating Notices Report in : " + outputDirectory.getCanonicalPath());
             writer.write(noticesReportContent);

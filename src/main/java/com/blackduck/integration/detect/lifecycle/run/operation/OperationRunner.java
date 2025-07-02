@@ -958,9 +958,10 @@ public class OperationRunner {
         );
     }
 
-    public File createRiskReportFile(File reportDirectory, boolean isPdfFile, ReportService reportService, ReportData reportData) throws OperationException {
+    public File createRiskReportFile(File reportDirectory, String reportType, ReportService reportService, ReportData reportData) throws OperationException {
+        final String PDF_SUFFIX = "pdf";
         return auditLog.namedPublic("Create Risk Report File", "RiskReport", () -> {
-            if(isPdfFile) {
+            if(reportType.equals(PDF_SUFFIX)) {
                 DetectFontLoader detectFontLoader = detectFontLoaderFactory.detectFontLoader();
                 return reportService.createReportPdfFile(
                         reportDirectory,

@@ -84,7 +84,7 @@ public class DetectOnDetectTest {
 
     @Test
     //Simply verify a risk report is generated at the expected location.
-    public void riskReportResultProduced() throws Exception {
+    public void riskReportPdfProduced() throws Exception {
         try (DetectDockerTestRunner test = new DetectDockerTestRunner("detect-on-detect-riskreport-default", "detect-7.1.0:1.0.0")) {
             test.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("Detect-7.1.0.dockerfile"));
 
@@ -96,12 +96,33 @@ public class DetectOnDetectTest {
             commandBuilder.connectToBlackDuck(blackDuckTestConnection);
             commandBuilder.projectNameVersion(blackDuckAssertions.getProjectNameVersion());
             commandBuilder.property(DetectProperties.DETECT_RISK_REPORT_PDF, "true");
-            commandBuilder.property(DetectProperties.DETECT_RISK_REPORT_JSON, "true");
             commandBuilder.property(DetectProperties.DETECT_TIMEOUT, "1200");
             commandBuilder.tools(DetectTool.DETECTOR);
 
             DockerAssertions dockerAssertions = test.run(commandBuilder);
             dockerAssertions.resultProducedAtLocation("/opt/project/src/detect_junit_risk_report_default_BlackDuck_RiskReport.pdf");
+            dockerAssertions.resultNotPresentAtLocation("/opt/project/src/detect_junit_risk_report_default_BlackDuck_RiskReport.json");
+        }
+    }
+
+    @Test
+    public void riskReportJsonProduced() throws Exception {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("detect-on-detect-riskreport-default", "detect-7.1.0:1.0.1")) {
+            test.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("Detect-7.1.0.dockerfile"));
+
+            BlackDuckTestConnection blackDuckTestConnection = BlackDuckTestConnection.fromEnvironment();
+            BlackDuckAssertions blackDuckAssertions = blackDuckTestConnection.projectVersionAssertions("detect-junit", "risk-report-default");
+            blackDuckAssertions.emptyOnBlackDuck();
+
+            DetectCommandBuilder commandBuilder = new DetectCommandBuilder().defaults().defaultDirectories(test);
+            commandBuilder.connectToBlackDuck(blackDuckTestConnection);
+            commandBuilder.projectNameVersion(blackDuckAssertions.getProjectNameVersion());
+            commandBuilder.property(DetectProperties.DETECT_RISK_REPORT_JSON, "true");
+            commandBuilder.property(DetectProperties.DETECT_TIMEOUT, "1200");
+            commandBuilder.tools(DetectTool.DETECTOR);
+
+            DockerAssertions dockerAssertions = test.run(commandBuilder);
+            dockerAssertions.resultNotPresentAtLocation("/opt/project/src/detect_junit_risk_report_default_BlackDuck_RiskReport.pdf");
             dockerAssertions.resultProducedAtLocation("/opt/project/src/detect_junit_risk_report_default_BlackDuck_RiskReport.json");
         }
     }
@@ -145,7 +166,7 @@ public class DetectOnDetectTest {
             assertTrue(postLengthPdf > initialFileLengthPdf);
 
             List<File> jsonFiles = getJsonFiles(reportDirectory);
-            assertEquals(1, pdfFiles.size());
+            assertEquals(1, jsonFiles.size());
             long postLengthJson = jsonFiles.get(0).length();
             assertTrue(postLengthJson > initialFileLengthJson);
         }
@@ -191,16 +212,16 @@ public class DetectOnDetectTest {
     }
 
     private long assertEmptyRiskReportJson(File reportDirectory, ProjectVersionWrapper projectVersionWrapper, ReportService reportService) throws IntegrationException, IOException {
-        List<File> pdfFiles = getJsonFiles(reportDirectory);
-        assertEquals(0, pdfFiles.size());
-        File riskReportPdf = reportService.createReportJsonFile(reportDirectory, projectVersionWrapper.getProjectView(), projectVersionWrapper.getProjectVersionView());
-        pdfFiles = getJsonFiles(reportDirectory);
-        assertEquals(1, pdfFiles.size());
-        long initialFileLength = pdfFiles.get(0).length();
+        List<File> jsonFiles = getJsonFiles(reportDirectory);
+        assertEquals(0, jsonFiles.size());
+        File riskReportJson = reportService.createReportJsonFile(reportDirectory, projectVersionWrapper.getProjectView(), projectVersionWrapper.getProjectVersionView());
+        jsonFiles = getJsonFiles(reportDirectory);
+        assertEquals(1, jsonFiles.size());
+        long initialFileLength = jsonFiles.get(0).length();
         assertTrue(initialFileLength > 0);
-        FileUtils.deleteQuietly(pdfFiles.get(0));
-        pdfFiles = getJsonFiles(reportDirectory);
-        assertEquals(0, pdfFiles.size());
+        FileUtils.deleteQuietly(jsonFiles.get(0));
+        jsonFiles = getJsonFiles(reportDirectory);
+        assertEquals(0, jsonFiles.size());
 
         return initialFileLength;
     }

@@ -410,33 +410,26 @@ public class IntelligentModeStepRunner {
         }
 
         if (riskReportPdfFile.isPresent()) {
-            logger.info("Creating risk report pdf");
-            File reportDirectory = riskReportPdfFile.get();
-
-            if (!reportDirectory.exists() && !reportDirectory.mkdirs()) {
-                logger.warn(String.format("Failed to create risk report pdf directory: %s", reportDirectory));
-            }
-
-            File createdPdf = operationRunner.createRiskReportFile(reportDirectory, true, reportService, reportData);
-
-            logger.info(String.format("Created risk report pdf: %s", createdPdf.getCanonicalPath()));
-            operationRunner.publishReport(new ReportDetectResult("Risk Report", createdPdf.getCanonicalPath()));
+            riskReportCreation(reportData, reportService, "pdf", riskReportPdfFile);
         }
-
 
         if (riskReportJsonFile.isPresent()) {
-            logger.info("Creating risk report json file");
-            File reportDirectory = riskReportJsonFile.get();
-
-            if (!reportDirectory.exists() && !reportDirectory.mkdirs()) {
-                logger.warn(String.format("Failed to create risk report json directory: %s", reportDirectory));
-            }
-
-            File createdJson = operationRunner.createRiskReportFile(reportDirectory, false, reportService, reportData);
-
-            logger.info(String.format("Created risk report json: %s", createdJson.getCanonicalPath()));
-            operationRunner.publishReport(new ReportDetectResult("Risk Report", createdJson.getCanonicalPath()));
+            riskReportCreation(reportData, reportService, "json", riskReportJsonFile);
         }
+    }
+
+    private void riskReportCreation(ReportData reportData, ReportService reportService, String reportType, Optional<File> riskReportFile) throws OperationException, IOException {
+        logger.info("Creating risk report {}", reportType);
+        File reportDirectory = riskReportFile.get();
+
+        if (!reportDirectory.exists() && !reportDirectory.mkdirs()) {
+            logger.warn(String.format("Failed to create risk report %s directory: %s", reportType, reportDirectory));
+        }
+
+        File createdReport = operationRunner.createRiskReportFile(reportDirectory, reportType, reportService, reportData);
+
+        logger.info(String.format("Created risk report %s: %s", reportType, createdReport.getCanonicalPath()));
+        operationRunner.publishReport(new ReportDetectResult("Risk Report", createdReport.getCanonicalPath()));
     }
 
     public void noticesReport(BlackDuckRunData blackDuckRunData, ProjectVersionWrapper projectVersion) throws OperationException, IOException {

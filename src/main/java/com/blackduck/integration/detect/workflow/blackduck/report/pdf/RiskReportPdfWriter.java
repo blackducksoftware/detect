@@ -11,6 +11,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.blackduck.integration.detect.workflow.blackduck.report.util.ReportFileUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
@@ -58,16 +59,7 @@ public class RiskReportPdfWriter {
     }
 
     public File createPDFReportFile(File outputDirectory, ReportData report) throws RiskReportException {
-        IntegrationEscapeUtil escapeUtil = new IntegrationEscapeUtil();
-        String escapedProjectName = escapeUtil.replaceWithUnderscore(report.getProjectName());
-        String escapedProjectVersionName = escapeUtil.replaceWithUnderscore(report.getProjectVersion());
-        File pdfFile = new File(outputDirectory, escapedProjectName + "_" + escapedProjectVersionName + "_BlackDuck_RiskReport.pdf");
-        if (pdfFile.exists()) {
-            boolean deleted = pdfFile.delete();
-            if (!deleted) {
-                logger.warn(String.format("Unable to delete existing file %s before re-creating it", pdfFile.getAbsolutePath()));
-            }
-        }
+        File pdfFile = ReportFileUtil.createReportFile(outputDirectory, report.getProjectName(), report.getProjectVersion(), "pdf");
         PDDocument document = new PDDocument();
 
         font = fontLoader.loadFont(document);
