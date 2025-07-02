@@ -136,23 +136,16 @@ public class ReportService extends DataService {
         HttpUrl originalVersionUrl = version.getHref();
         boolean policyFailure = false;
         for (ProjectVersionComponentVersionView projectVersionComponentView : bomEntries) {
+            if(projectVersionComponentView.getIgnored()) {
+                continue;
+            }
             String policyStatus = projectVersionComponentView.getApprovalStatus().toString();
             if (StringUtils.isBlank(policyStatus)) {
-                HttpUrl componentPolicyStatusURL;
-                if (!StringUtils.isBlank(projectVersionComponentView.getComponentVersion())) {
-                    componentPolicyStatusURL = getComponentPolicyURL(originalVersionUrl, projectVersionComponentView.getComponentVersion());
-                } else {
-                    componentPolicyStatusURL = getComponentPolicyURL(originalVersionUrl, projectVersionComponentView.getComponent());
-                }
-                if (!policyFailure) {
-                    // FIXME if we could check if Black Duck has the policy module we could remove a lot of the mess
-                    try {
-                        PolicyStatusView bomPolicyStatus = blackDuckApiClient.getResponse(componentPolicyStatusURL, PolicyStatusView.class);
-                        policyStatus = bomPolicyStatus.getApprovalStatus().toString();
-                    } catch (IntegrationException e) {
-                        policyFailure = true;
-                        logger.debug("Could not get the component policy status, the Black Duck policy module is not enabled");
-                    }
+                try {
+                    policyStatus = checkPolicyStatusIfBlank(projectVersionComponentView, policyStatus, originalVersionUrl, policyFailure);
+                } catch (IntegrationException e) {
+                    policyFailure = true;
+                    logger.debug("Could not get the component policy status, the Black Duck policy module is not enabled");
                 }
             }
 
@@ -166,6 +159,22 @@ public class ReportService extends DataService {
         reportData.setDateTimeOfLatestScan(dateTime);
 
         return reportData;
+    }
+
+    private String checkPolicyStatusIfBlank(ProjectVersionComponentVersionView projectVersionComponentView, String policyStatus, HttpUrl originalVersionUrl, boolean policyFailure) throws IntegrationException {
+        HttpUrl componentPolicyStatusURL;
+        if (!StringUtils.isBlank(projectVersionComponentView.getComponentVersion())) {
+            componentPolicyStatusURL = getComponentPolicyURL(originalVersionUrl, projectVersionComponentView.getComponentVersion());
+        } else {
+            componentPolicyStatusURL = getComponentPolicyURL(originalVersionUrl, projectVersionComponentView.getComponent());
+        }
+        if (!policyFailure) {
+            // FIXME if we could check if Black Duck has the policy module we could remove a lot of the mess
+            PolicyStatusView bomPolicyStatus = blackDuckApiClient.getResponse(componentPolicyStatusURL, PolicyStatusView.class);
+            policyStatus = bomPolicyStatus.getApprovalStatus().toString();
+            return policyStatus;
+        }
+        return policyStatus;
     }
 
     private LocalDateTime getDateTimeOfLatestScanForProjectVersion(ProjectVersionView projectVersion, String projectName) throws IntegrationException {
