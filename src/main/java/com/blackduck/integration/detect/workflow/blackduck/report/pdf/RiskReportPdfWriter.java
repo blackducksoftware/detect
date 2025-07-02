@@ -59,7 +59,7 @@ public class RiskReportPdfWriter {
     }
 
     public File createPDFReportFile(File outputDirectory, ReportData report) throws RiskReportException {
-        File pdfFile = ReportFileUtil.createReportFile(outputDirectory, report.getProjectName(), report.getProjectVersion(), "pdf");
+        File pdfFile = ReportFileUtil.createReportFile(outputDirectory, report.getProjectName(), report.getProjectVersion(), "pdf","_BlackDuck_RiskReport");
         PDDocument document = new PDDocument();
 
         font = fontLoader.loadFont(document);

@@ -24,7 +24,7 @@ public class RiskReportJsonWriter {
     private static final Logger logger = LoggerFactory.getLogger(RiskReportJsonWriter.class);
 
     public static File createRiskReportJsonFile(File outputDirectory, ReportData reportData) throws IOException {
-        File jsonFile = ReportFileUtil.createReportFile(outputDirectory, reportData.getProjectName(), reportData.getProjectVersion(), "json");
+        File jsonFile = ReportFileUtil.createReportFile(outputDirectory, reportData.getProjectName(), reportData.getProjectVersion(), "json", "_BlackDuck_RiskReport");
         String serializedReportData = serializeRiskReport(reportData);
 
         try (FileWriter fw = new FileWriter(jsonFile)) {

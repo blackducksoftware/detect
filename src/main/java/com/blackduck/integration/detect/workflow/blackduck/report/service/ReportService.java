@@ -98,7 +98,7 @@ public class ReportService extends DataService {
         if (noticesReportContent == null) {
             return null;
         }
-        File noticesReportFile = ReportFileUtil.createReportFile(outputDirectory, projectName, projectVersionName, "txt");
+        File noticesReportFile = ReportFileUtil.createReportFile(outputDirectory, projectName, projectVersionName, "txt","_Black_Duck_Notices_Report");
         try (FileWriter writer = new FileWriter(noticesReportFile)) {
             logger.trace("Creating Notices Report in : " + outputDirectory.getCanonicalPath());
             writer.write(noticesReportContent);

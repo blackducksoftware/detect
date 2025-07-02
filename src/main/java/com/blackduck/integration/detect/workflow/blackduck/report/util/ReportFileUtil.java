@@ -10,11 +10,11 @@ public class ReportFileUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(ReportFileUtil.class);
 
-    public static File createReportFile(File outputDirectory, String projectName, String projectVersion, String reportFileExtension) {
+    public static File createReportFile(File outputDirectory, String projectName, String projectVersion, String reportFileExtension, String reportName) {
         IntegrationEscapeUtil escapeUtil = new IntegrationEscapeUtil();
         String escapedProjectName = escapeUtil.replaceWithUnderscore(projectName);
         String escapedProjectVersionName = escapeUtil.replaceWithUnderscore(projectVersion);
-        File reportFile = new File(outputDirectory, escapedProjectName + "_" + escapedProjectVersionName + "_BlackDuck_RiskReport."+reportFileExtension);
+        File reportFile = new File(outputDirectory, escapedProjectName + "_" + escapedProjectVersionName + reportName + ".+" +reportFileExtension);
         if (reportFile.exists()) {
             boolean deleted = reportFile.delete();
             if (!deleted) {
