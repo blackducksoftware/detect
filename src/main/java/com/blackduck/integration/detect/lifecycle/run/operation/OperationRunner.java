@@ -257,6 +257,7 @@ public class OperationRunner {
     private static final String INTELLIGENT_SCAN_SCASS_CONTENT_TYPE = "application/vnd.blackducksoftware.intelligent-persistence-scan-4+protobuf-jsonld";
     public static final ImmutableList<Integer> RETRYABLE_AFTER_WAIT_HTTP_EXCEPTIONS = ImmutableList.of(408, 429, 502, 503, 504);
     public static final ImmutableList<Integer> RETRYABLE_WITH_BACKOFF_HTTP_EXCEPTIONS = ImmutableList.of(425, 500);
+    private static final String POLICY_STATUS_RESOLVED = "RESOLVED";
     private List<File> binaryUserTargets = new ArrayList<>();
     BinaryScanFindMultipleTargetsOperation binaryScanFindMultipleTargetsOperation;
 
@@ -725,7 +726,7 @@ public class OperationRunner {
             return false;
         }
         return (RapidCompareMode.BOM_COMPARE.equals(rapidCompareMode) || RapidCompareMode.BOM_COMPARE_STRICT.equals(rapidCompareMode))
-                && resultView.getPolicyStatuses().stream().allMatch("RESOLVED"::equalsIgnoreCase);
+                && resultView.getPolicyStatuses().stream().allMatch(POLICY_STATUS_RESOLVED::equalsIgnoreCase);
     }
 
     public static List<DeveloperScansScanView> filterUnresolvedPolicyResults(List<DeveloperScansScanView> scanResults, RapidCompareMode rapidCompareMode) {
