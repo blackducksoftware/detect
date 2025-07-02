@@ -54,4 +54,47 @@ public class NpmWithoutRequiresExcludesTest {
         graphAssert = new GraphAssert(Forge.NPMJS, graph);
         graphAssert.hasRootSize(0);
     }
+    
+    @Test
+    public void testOptionalDependencyExcluded() {
+        PackageLock packageLock = new PackageLock();
+
+        List<NpmDependency> resolvedDependencies = new ArrayList<>();
+        resolvedDependencies.add(new NpmDependency("example", "1.0.0", false, false, true));
+        NpmProject npmProject = new NpmProject(
+            StringUtils.EMPTY,
+            StringUtils.EMPTY,
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Collections.emptyList(),
+            resolvedDependencies
+        );
+
+        NpmLockfileGraphTransformer graphTransformer = new NpmLockfileGraphTransformer(
+            EnumListFilter.fromExcluded(NpmDependencyType.OPTIONAL)
+        );
+        
+        // Test with packages for v2/v3 lockfile
+        packageLock.packages = new HashMap<>();
+        
+        DependencyGraph graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), null);
+
+        GraphAssert graphAssert = new GraphAssert(Forge.NPMJS, graph);
+        graphAssert.hasRootSize(0);
+        
+        // Test with dependencies for v1 lockfile
+        packageLock.dependencies = new HashMap<>();
+        graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), null);
+
+        graphAssert = new GraphAssert(Forge.NPMJS, graph);
+        graphAssert.hasRootSize(0);
+        
+        // Clear filtering and check we get a dependency
+        graphTransformer = new NpmLockfileGraphTransformer(EnumListFilter.fromExcluded());
+        graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), null);
+        
+        graphAssert = new GraphAssert(Forge.NPMJS, graph);
+        graphAssert.hasRootSize(1);
+    }
 }
