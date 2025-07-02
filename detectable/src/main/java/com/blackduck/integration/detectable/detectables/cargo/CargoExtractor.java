@@ -48,7 +48,7 @@ public class CargoExtractor {
         String cargoTomlContents = null;
         Set<NameVersion> dependenciesToInclude;
         Set<NameVersion> resolvedRootDependencies = new HashSet<>();
-        Map<String, List<CargoLockPackageData>> packageLookupMap;
+        Map<String, List<CargoLockPackageData>> packageLookupMap = indexPackagesByName(filteredPackages);
 
         if(cargoTomlFile == null && exclusionEnabled) {
             return new Extraction.Builder()
@@ -60,11 +60,9 @@ public class CargoExtractor {
             cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
             dependenciesToInclude = cargoTomlParser.parseDependenciesToInclude(
                     cargoTomlContents, cargoDetectableOptions.getDependencyTypeFilter());
-
             filteredPackages = includeDependencies(cargoLockPackageDataList, dependenciesToInclude, resolvedRootDependencies);
         }
 
-        packageLookupMap = indexPackagesByName(filteredPackages);
         List<CargoLockPackage> packages = filteredPackages.stream()
                 .map(cargoLockPackageDataTransformer::transform)
                 .collect(Collectors.toList());
@@ -92,7 +90,6 @@ public class CargoExtractor {
         EnumListFilter<CargoDependencyType> filter = options.getDependencyTypeFilter();
         return filter != null && !filter.shouldIncludeAll();
     }
-
 
     private List<CargoLockPackageData> includeDependencies(
             List<CargoLockPackageData> packages,

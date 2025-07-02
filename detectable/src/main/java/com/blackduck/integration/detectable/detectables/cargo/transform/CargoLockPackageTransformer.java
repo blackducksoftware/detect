@@ -33,10 +33,12 @@ public class CargoLockPackageTransformer {
             LazyId id = LazyId.fromNameAndVersion(name, version);
             Dependency dependency = dependencyFactory.createNameVersionDependency(Forge.CRATES, name, version);
 
-            // Only add as root if in rootDependencies
-            if (rootDependencies.contains(new NameVersion(name, version))) {
+            // Root dependencies empty means that Cargo.toml was not used, so we add all packages as root.
+            // If rootDependencies is not empty, we only add the package if it is in the set.
+            if (rootDependencies.isEmpty() || rootDependencies.contains(new NameVersion(name, version))) {
                 graph.addChildToRoot(id);
             }
+
             graph.setDependencyInfo(id, dependency.getName(), dependency.getVersion(), dependency.getExternalId());
             graph.setDependencyAsAlias(id, LazyId.fromName(name));
 
