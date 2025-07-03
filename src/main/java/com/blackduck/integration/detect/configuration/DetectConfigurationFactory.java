@@ -3,6 +3,7 @@ package com.blackduck.integration.detect.configuration;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -76,6 +77,9 @@ import com.google.gson.Gson;
 public class DetectConfigurationFactory {
     private final DetectPropertyConfiguration detectConfiguration;
     private final Gson gson;
+    
+    private static final String POLICY_SEVERITY_BLOCKER = "BLOCKER";
+    private static final String POLICY_SEVERITY_CRITICAL = "CRITICAL";
 
     public DetectConfigurationFactory(DetectPropertyConfiguration detectConfiguration, Gson gson) {
         this.detectConfiguration = detectConfiguration;
@@ -237,8 +241,14 @@ public class DetectConfigurationFactory {
     public RapidScanOptions createRapidScanOptions() {
         RapidCompareMode rapidCompareMode = detectConfiguration.getValue(DetectProperties.DETECT_BLACKDUCK_RAPID_COMPARE_MODE);
         BlackduckScanMode scanMode= detectConfiguration.getValue(DetectProperties.DETECT_BLACKDUCK_SCAN_MODE);
+        List<PolicyRuleSeverityType> severitiesToFailPolicyCheck = getPoliciesToFailOn();
+        
         long detectTimeout = findTimeoutInSeconds();
-        return new RapidScanOptions(rapidCompareMode, scanMode, detectTimeout);
+        return new RapidScanOptions(rapidCompareMode, scanMode, detectTimeout, severitiesToFailPolicyCheck);
+    }
+
+    public List<PolicyRuleSeverityType> getPoliciesToFailOn() {
+        return detectConfiguration.getValue(DetectProperties.DETECT_STATELESS_POLICY_CHECK_FAIL_ON_SEVERITIES).representedValues();
     }
 
     public BlackduckScanMode createScanMode() {

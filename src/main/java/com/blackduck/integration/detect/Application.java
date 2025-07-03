@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.ApplicationListener;
 import org.springframework.core.env.ConfigurableEnvironment;
 
 import com.google.gson.Gson;
@@ -59,7 +60,7 @@ import com.blackduck.integration.detect.workflow.status.DetectIssueType;
 import com.blackduck.integration.detect.workflow.status.DetectStatusManager;
 
 public class Application implements ApplicationRunner {
-    private final Logger logger = LoggerFactory.getLogger(Application.class);
+    private static final Logger logger = LoggerFactory.getLogger(Application.class);
 
     private static boolean SHOULD_EXIT = true;
     
@@ -89,15 +90,16 @@ public class Application implements ApplicationRunner {
         configureLoggingGroupIfNeeded(args);
         SpringApplicationBuilder builder = new SpringApplicationBuilder(Application.class);
         builder.logStartupInfo(false);
+        builder.listeners(new SpringConfigErrorListener());
+
         boolean selfUpdated = false;
         ApplicationUpdaterUtility utility = new ApplicationUpdaterUtility();
         try(ApplicationUpdater updater = new ApplicationUpdater(utility, args)) {
             selfUpdated = updater.selfUpdate();
             updater.closeUpdater();
         } catch (IOException ex) {
-            Logger staticLogger = LoggerFactory.getLogger(Application.class);
-            staticLogger.warn("There was a problem running the Self-Update feature.");
-            staticLogger.debug("Reason: ", ex);
+            logger.warn("There was a problem running the Self-Update feature.");
+            logger.debug("Reason: ", ex);
         }
         if (!selfUpdated) {
             try {

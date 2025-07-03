@@ -86,23 +86,24 @@ public class PackageJsonExtractor {
         return new Dependency(externalId);
     }
 
-    private String extractLowestVersion(String value) {
+    public String extractLowestVersion(String value) {
         SemVerComparator semVerComparator = new SemVerComparator();
-        
-        // Split the value into parts by spaces, "||", or "-".
-        String[] parts = value.split("\\s+|\\|\\||-");
-        String lowestVersion = Arrays.stream(parts)
+
+        // Split by whitespace or "||" (logical OR); " - " is handled implicitly by whitespace
+        String[] parts = value.split("\\s+|\\|\\|");
+
+        return Arrays.stream(parts)
              // Replace "x" or "*" with "0"
             .map(part -> part.replaceAll("x|\\*", "0"))
             // Remove npm version selection characters that the KB won't match on
             .map(part -> part.replaceAll("[>=<~^]", ""))
+            // Strip pre-release & build metadata appended by "+" or "-" characters
+            .map(part -> part.replaceAll("[-+].*", ""))
             // Filter out parts that don't match the version pattern
             .filter(part -> part.matches("\\d+\\.\\d+\\.\\d+|\\d+\\.\\d+|\\d+"))
-            // Use compareSemVerVersions method to find smallest version in each value
+            // Use compareSemVerVersions method to find the smallest version in each value
             .min(semVerComparator)
             // If no part matches the version pattern, return the original value.
             .orElse(value);
-
-        return lowestVersion;
     }
 }

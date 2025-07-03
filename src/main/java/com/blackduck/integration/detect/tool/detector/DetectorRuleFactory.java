@@ -206,6 +206,11 @@ public class DetectorRuleFactory {
                 .search().defaultLock();
         }).yieldsTo(DetectorType.LERNA);
 
+        rules.addDetector(DetectorType.PNPM, detector -> {
+            detector.entryPoint(PnpmLockDetectable.class)
+                .search().defaultLock();
+        }).yieldsTo(DetectorType.LERNA);
+
         rules.addDetector(DetectorType.NPM, detector -> {
                 detector.entryPoint(NpmShrinkwrapDetectable.class)
                     .search().defaultLock();
@@ -217,11 +222,6 @@ public class DetectorRuleFactory {
                     .search().defaults(); //maybe this one should be defaultLock?
             }).allEntryPointsFallbackToNext()
             .yieldsTo(DetectorType.LERNA, DetectorType.YARN, DetectorType.PNPM);
-
-        rules.addDetector(DetectorType.PNPM, detector -> {
-            detector.entryPoint(PnpmLockDetectable.class)
-                .search().defaultLock();
-        }).yieldsTo(DetectorType.LERNA);
 
         rules.addDetector(DetectorType.NUGET, detector -> {
             //four different detectables, last one will be the project inspector

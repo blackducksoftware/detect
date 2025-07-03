@@ -70,7 +70,7 @@ public class CommonScanStepRunnerTest {
         when(operationRunner.getDirectoryManager()).thenReturn(directoryManager);
         when(directoryManager.getBinaryOutputDirectory()).thenReturn(mockOutputDirectory);
         when(directoryManager.getContainerOutputDirectory()).thenReturn(mockOutputDirectory);
-        when(operationRunner.initiateScan(any(), any(), any(), any(), any(), any(), any())).thenReturn(initResult);
+        when(operationRunner.initiateScan(any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(initResult);
         when(initResult.getScanCreationResponse()).thenReturn(scanCreationResponse);
         when(initResult.getFileToUpload()).thenReturn(mock(File.class));
         when(scanCreationResponse.getScanId()).thenReturn(UUID.randomUUID().toString());
@@ -154,4 +154,24 @@ public class CommonScanStepRunnerTest {
         
         verify(bdbaScanStepRunner).runBdbaScan(projectNameVersion, blackDuckRunData, Optional.of(containerScanFile), scanCreationResponse.getScanId(), CommonScanStepRunner.CONTAINER);
     }
+
+    @Test
+    public void testPerformBlackduckInteractionsPackageManagerScass() throws Exception {
+        NameVersion projectNameVersion = new NameVersion(PROJECT_NAME, VERSION);
+        File containerScanFile = mock(File.class);
+        String uploadUrl = "http://upload.url";
+
+        CommonScanStepRunner commonScanStepRunner = spy(new CommonScanStepRunner());
+
+        when(scanCreationResponse.getUploadUrl()).thenReturn(uploadUrl);
+        doNothing().when(scassScanStepRunner).runScassScan(any(), any());
+
+        doReturn(scassScanStepRunner).when(commonScanStepRunner).createScassScanStepRunner(nullable(BlackDuckRunData.class));
+
+        commonScanStepRunner.performCommonUpload(projectNameVersion,
+                blackDuckRunData, Optional.of(containerScanFile), operationRunner, CommonScanStepRunner.PACKAGE_MANAGER, initResult, CODE_LOCATION_NAME);
+
+        verify(scassScanStepRunner).runScassScan(Optional.of(initResult.getFileToUpload()), scanCreationResponse);
+    }
+
 }
