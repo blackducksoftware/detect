@@ -14,7 +14,7 @@ public class ReportFileUtil {
         IntegrationEscapeUtil escapeUtil = new IntegrationEscapeUtil();
         String escapedProjectName = escapeUtil.replaceWithUnderscore(projectName);
         String escapedProjectVersionName = escapeUtil.replaceWithUnderscore(projectVersion);
-        File reportFile = new File(outputDirectory, escapedProjectName + "_" + escapedProjectVersionName + reportName + ".+" +reportFileExtension);
+        File reportFile = new File(outputDirectory, escapedProjectName + "_" + escapedProjectVersionName + reportName + "." + reportFileExtension);
         if (reportFile.exists()) {
             boolean deleted = reportFile.delete();
             if (!deleted) {
