@@ -2,9 +2,7 @@ package com.blackduck.integration.detectable.detectables.cargo.transform;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import org.junit.jupiter.api.Test;
 
@@ -27,7 +25,12 @@ public class CargoLockPackageTransformerTest {
         input.add(createPackage("test1", "1.0.0"));
         input.add(createPackage("test2", "2.0.0"));
         CargoLockPackageTransformer cargoLockPackageTransformer = new CargoLockPackageTransformer();
-        DependencyGraph graph = cargoLockPackageTransformer.transformToGraph(input, null);
+
+        Set<NameVersion> rootDependencies = new HashSet<>();
+        rootDependencies.add(new NameVersion("test1", "1.0.0"));
+        rootDependencies.add(new NameVersion("test2", "2.0.0"));
+
+        DependencyGraph graph = cargoLockPackageTransformer.transformToGraph(input, rootDependencies);
 
         NameVersionGraphAssert graphAssert = new NameVersionGraphAssert(Forge.CRATES, graph);
         graphAssert.hasRootSize(2);
@@ -41,9 +44,13 @@ public class CargoLockPackageTransformerTest {
         input.add(createPackage("child1", "version1"));
         input.add(createPackage("child1", "version2"));
         input.add(createPackage("parent1", "anything", new NameOptionalVersion("child1")));
+
+        Set<NameVersion> rootDependencies = new HashSet<>();
+        rootDependencies.add(new NameVersion("parent", "anything"));
+
         CargoLockPackageTransformer cargoLockPackageTransformer = new CargoLockPackageTransformer();
 
-        assertThrows(DetectableException.class, () -> cargoLockPackageTransformer.transformToGraph(input, null));
+        assertThrows(DetectableException.class, () -> cargoLockPackageTransformer.transformToGraph(input, rootDependencies));
     }
 
     @Test
@@ -56,7 +63,13 @@ public class CargoLockPackageTransformerTest {
         input.add(createPackage("dep1", "0.5.0"));
         input.add(createPackage("dep2", "0.6.0"));
         CargoLockPackageTransformer cargoLockPackageTransformer = new CargoLockPackageTransformer();
-        DependencyGraph graph = cargoLockPackageTransformer.transformToGraph(input, null);
+
+        Set<NameVersion> rootDependencies = new HashSet<>();
+        rootDependencies.add(new NameVersion("test1", "1.0.0"));
+        rootDependencies.add(new NameVersion("dep1", "0.5.0"));
+        rootDependencies.add(new NameVersion("dep2", "0.6.0"));
+
+        DependencyGraph graph = cargoLockPackageTransformer.transformToGraph(input, rootDependencies);
 
         NameVersionGraphAssert graphAssert = new NameVersionGraphAssert(Forge.CRATES, graph);
         graphAssert.hasRootDependency("test1", "1.0.0");
