@@ -404,7 +404,7 @@ public class IntelligentModeStepRunner {
         ReportService reportService = null;
         ReportData reportData = null;
 
-        if(riskReportPdfFile.isPresent() || riskReportJsonFile.isPresent()) {
+        if (riskReportPdfFile.isPresent() || riskReportJsonFile.isPresent()) {
             reportService = operationRunner.creatReportService(blackDuckRunData);
             reportData = reportService.getRiskReportData(projectVersion.getProjectView(), projectVersion.getProjectVersionView());
         }
