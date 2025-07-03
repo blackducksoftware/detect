@@ -31,6 +31,7 @@ public class NpmDependencyConverter {
     public NpmProject convertLockFile(PackageLock packageLock, @Nullable CombinedPackageJson combinedPackageJson) {
         List<NpmRequires> declaredDevDependencies = new ArrayList<>();
         List<NpmRequires> declaredPeerDependencies = new ArrayList<>();
+        List<NpmRequires> declaredOptionalDependencies = new ArrayList<>();
         List<NpmRequires> declaredDependencies = new ArrayList<>();
         List<NpmDependency> resolvedDependencies = new ArrayList<>();
 
@@ -57,9 +58,14 @@ public class NpmDependencyConverter {
                 List<NpmRequires> rootPeerRequires = convertNameVersionMapToRequires(combinedPackageJson.getPeerDependencies());
                 declaredPeerDependencies.addAll(rootPeerRequires);
             }
+            
+            if (!combinedPackageJson.getOptionalDependencies().isEmpty()) {
+                List<NpmRequires> rootOptionalRequires = convertNameVersionMapToRequires(combinedPackageJson.getOptionalDependencies());
+                declaredOptionalDependencies.addAll(rootOptionalRequires);
+            }
         }
 
-        return new NpmProject(packageLock.name, packageLock.version, declaredDevDependencies, declaredPeerDependencies, declaredDependencies, resolvedDependencies);
+        return new NpmProject(packageLock.name, packageLock.version, declaredDevDependencies, declaredPeerDependencies, declaredDependencies, declaredOptionalDependencies, resolvedDependencies);
     }
 
     public List<NpmDependency> convertLockPackagesToNpmDependencies(NpmDependency parent, Map<String, PackageLockPackage> packages) {
@@ -73,7 +79,7 @@ public class NpmDependencyConverter {
             String packageName = packageEntry.getKey();
             PackageLockPackage packageLockDependency = packageEntry.getValue();
 
-            NpmDependency dependency = createNpmDependency(packageName, packageLockDependency.version, packageLockDependency.dev, packageLockDependency.peer);
+            NpmDependency dependency = createNpmDependency(packageName, packageLockDependency.version, packageLockDependency.dev, packageLockDependency.peer, packageLockDependency.optional);
             dependency.setParent(parent);
             children.add(dependency);
 
@@ -97,7 +103,7 @@ public class NpmDependencyConverter {
             String packageName = packageEntry.getKey();
             PackageLockDependency packageLockDependency = packageEntry.getValue();
 
-            NpmDependency dependency = createNpmDependency(packageName, packageLockDependency.version, packageLockDependency.dev, packageLockDependency.peer);
+            NpmDependency dependency = createNpmDependency(packageName, packageLockDependency.version, packageLockDependency.dev, packageLockDependency.peer, packageLockDependency.optional);
             dependency.setParent(parent);
             children.add(dependency);
 
@@ -110,11 +116,12 @@ public class NpmDependencyConverter {
         return children;
     }
 
-    private NpmDependency createNpmDependency(String name, String version, Boolean isDev, Boolean isPeer) {
+    private NpmDependency createNpmDependency(String name, String version, Boolean isDev, Boolean isPeer, Boolean isOptional) {
         boolean dev = isDev != null && isDev;
         boolean peer = isPeer != null && isPeer;
+        boolean optional = isOptional != null && isOptional;
         ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.NPMJS, name, version);
-        return new NpmDependency(name, version, externalId, dev, peer);
+        return new NpmDependency(name, version, externalId, dev, peer, optional);
     }
 
     public List<NpmRequires> convertNameVersionMapToRequires(MultiValuedMap<String, String> requires) {

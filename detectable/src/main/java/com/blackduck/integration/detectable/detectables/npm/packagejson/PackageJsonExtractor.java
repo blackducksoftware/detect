@@ -54,7 +54,8 @@ public class PackageJsonExtractor {
         List<Dependency> dependencies = transformDependencies(combinedPackageJson.getDependencies());
         npmDependencyTypeFilter.ifShouldInclude(NpmDependencyType.DEV, transformDependencies(combinedPackageJson.getDevDependencies()), dependencies::addAll);
         npmDependencyTypeFilter.ifShouldInclude(NpmDependencyType.PEER, transformDependencies(combinedPackageJson.getPeerDependencies()), dependencies::addAll);
-
+        npmDependencyTypeFilter.ifShouldInclude(NpmDependencyType.OPTIONAL, transformDependencies(combinedPackageJson.getOptionalDependencies()), dependencies::addAll);
+        
         DependencyGraph dependencyGraph = new BasicDependencyGraph();
         dependencyGraph.addChildrenToRoot(dependencies);
 

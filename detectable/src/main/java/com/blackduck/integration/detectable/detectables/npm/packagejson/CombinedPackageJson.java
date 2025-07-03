@@ -15,11 +15,13 @@ public class CombinedPackageJson {
     private MultiValuedMap<String, String> dependencies;
     private MultiValuedMap<String, String> devDependencies;
     private MultiValuedMap<String, String> peerDependencies;
+    private MultiValuedMap<String, String> optionalDependencies;
     
     public CombinedPackageJson() {
         dependencies = new HashSetValuedHashMap<>();
         devDependencies = new HashSetValuedHashMap<>();
         peerDependencies = new HashSetValuedHashMap<>();
+        optionalDependencies = new HashSetValuedHashMap<>();
     }
 
     public MultiValuedMap<String, String> getDependencies() {
@@ -32,6 +34,10 @@ public class CombinedPackageJson {
 
     public MultiValuedMap<String, String> getPeerDependencies() {
         return peerDependencies;
+    }
+    
+    public MultiValuedMap<String, String> getOptionalDependencies() {
+        return optionalDependencies;
     }
     
     public List<String> getRelativeWorkspaces() {        
