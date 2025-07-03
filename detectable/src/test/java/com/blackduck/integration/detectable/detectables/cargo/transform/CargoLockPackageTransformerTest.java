@@ -2,7 +2,6 @@ package com.blackduck.integration.detectable.detectables.cargo.transform;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.util.*;
 
 import org.junit.jupiter.api.Test;
 
@@ -16,6 +15,12 @@ import com.blackduck.integration.detectable.util.CycleDetectedException;
 import com.blackduck.integration.detectable.util.NameOptionalVersion;
 import com.blackduck.integration.detectable.util.graph.NameVersionGraphAssert;
 import com.blackduck.integration.util.NameVersion;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class CargoLockPackageTransformerTest {
 
