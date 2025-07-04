@@ -1,43 +1,5 @@
 package com.blackduck.integration.detect.lifecycle.run.operation;
 
-import static com.blackduck.integration.componentlocator.ComponentLocator.SUPPORTED_DETECTORS;
-import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.OPERATION_NAME;
-import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.SUPPORTED_DETECTORS_LOG_MSG;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Base64.Encoder;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.function.Predicate;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import com.blackduck.integration.blackduck.bdio2.model.BdioFileContent;
-import com.blackduck.integration.detect.lifecycle.run.step.CommonScanStepRunner;
-import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
-import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.http.entity.ContentType;
-import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.blackduck.integration.bdio.graph.ProjectDependencyGraph;
 import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.blackduck.api.generated.discovery.ApiDiscovery;
@@ -46,6 +8,7 @@ import com.blackduck.integration.blackduck.api.generated.enumeration.PolicyRuleS
 import com.blackduck.integration.blackduck.api.generated.view.BomStatusScanView;
 import com.blackduck.integration.blackduck.api.generated.view.DeveloperScansScanView;
 import com.blackduck.integration.blackduck.api.generated.view.ProjectVersionView;
+import com.blackduck.integration.blackduck.bdio2.model.BdioFileContent;
 import com.blackduck.integration.blackduck.bdio2.model.GitInfo;
 import com.blackduck.integration.blackduck.bdio2.util.Bdio2ContentExtractor;
 import com.blackduck.integration.blackduck.bdio2.util.Bdio2Factory;
@@ -68,13 +31,13 @@ import com.blackduck.integration.common.util.finder.FileFinder;
 import com.blackduck.integration.componentlocator.beans.Component;
 import com.blackduck.integration.detect.configuration.DetectConfigurationFactory;
 import com.blackduck.integration.detect.configuration.DetectInfo;
-import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detect.configuration.DetectUserFriendlyException;
 import com.blackduck.integration.detect.configuration.DetectorToolOptions;
 import com.blackduck.integration.detect.configuration.connection.ConnectionFactory;
 import com.blackduck.integration.detect.configuration.enumeration.BlackduckScanMode;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
 import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
+import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
 import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.autonomous.AutonomousManager;
 import com.blackduck.integration.detect.lifecycle.run.DetectFontLoaderFactory;
@@ -86,6 +49,7 @@ import com.blackduck.integration.detect.lifecycle.run.operation.blackduck.ScassS
 import com.blackduck.integration.detect.lifecycle.run.singleton.BootSingletons;
 import com.blackduck.integration.detect.lifecycle.run.singleton.EventSingletons;
 import com.blackduck.integration.detect.lifecycle.run.singleton.UtilitySingletons;
+import com.blackduck.integration.detect.lifecycle.run.step.CommonScanStepRunner;
 import com.blackduck.integration.detect.lifecycle.run.step.utility.OperationAuditLog;
 import com.blackduck.integration.detect.lifecycle.run.step.utility.OperationWrapper;
 import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodePublisher;
@@ -222,6 +186,40 @@ import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.entity.ContentType;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Base64.Encoder;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import static com.blackduck.integration.componentlocator.ComponentLocator.SUPPORTED_DETECTORS;
+import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.OPERATION_NAME;
+import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.SUPPORTED_DETECTORS_LOG_MSG;
 
 public class OperationRunner {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -446,6 +444,7 @@ public class OperationRunner {
     public List<File> getMultiBinaryTargets() {
         return binaryScanFindMultipleTargetsOperation.getMultipleBinaryTargets();
     }
+
     public void updateBinaryUserTargets(File file) {
         binaryUserTargets.add(file);
     }
@@ -746,13 +745,10 @@ public class OperationRunner {
     }
 
     public final File generateRapidJsonFile(NameVersion projectNameVersion, List<DeveloperScansScanView> scanResults) throws OperationException {
-        RapidCompareMode rapidCompareMode = detectConfigurationFactory.createRapidScanOptions().getCompareMode();
-        List<DeveloperScansScanView> filteredResults = filterUnresolvedPolicyResults(scanResults, rapidCompareMode);
-
         return auditLog.namedPublic(
             "Generate Rapid Json File",
             "RapidScan",
-            () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFile(projectNameVersion, filteredResults)
+            () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFile(projectNameVersion, scanResults)
         );
     }
 
@@ -777,6 +773,7 @@ public class OperationRunner {
     /**
      * Given a BDIO, creates a JSON file called {@value GenerateComponentLocationAnalysisOperation#DETECT_OUTPUT_FILE_NAME} containing
      * every detected component's {@link ExternalId} along with its declaration location when applicable.
+     *
      * @param bdio
      * @throws OperationException
      */
@@ -808,6 +805,7 @@ public class OperationRunner {
     /**
      * Given a Rapid/Stateless Detector Scan result, creates a JSON file called {@value GenerateComponentLocationAnalysisOperation#DETECT_OUTPUT_FILE_NAME} containing
      * every reported component's {@link ExternalId} along with its declaration location and upgrade guidance information when applicable.
+     *
      * @param rapidResults
      * @param bdio
      * @throws OperationException
@@ -858,6 +856,7 @@ public class OperationRunner {
     /**
      * Since component location analysis is not supported for online Intelligent scans in 8.11, an appropriate console
      * msg is logged and status=FAILURE is recorded in the status.json file
+     *
      * @throws OperationException
      */
     public void attemptToGenerateComponentLocationAnalysisIfEnabled() throws OperationException {
