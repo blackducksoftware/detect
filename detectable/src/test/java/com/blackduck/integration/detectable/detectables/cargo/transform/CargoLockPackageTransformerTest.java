@@ -51,7 +51,7 @@ public class CargoLockPackageTransformerTest {
         input.add(createPackage("parent1", "anything", new NameOptionalVersion("child1")));
 
         Set<NameVersion> rootDependencies = new HashSet<>();
-        rootDependencies.add(new NameVersion("parent", "anything"));
+        rootDependencies.add(new NameVersion("parent1", "anything"));
 
         CargoLockPackageTransformer cargoLockPackageTransformer = new CargoLockPackageTransformer();
 
