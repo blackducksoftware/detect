@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '10.6.0-SIGQA8-dterry.IDETECT-3707-optional-npm'
+version = '10.6.0-SIGQA9-dterry.IDETECT-3707-optional-npm-SNAPSHOT'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
