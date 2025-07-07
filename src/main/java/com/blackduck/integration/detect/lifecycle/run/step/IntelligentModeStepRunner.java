@@ -210,10 +210,11 @@ public class IntelligentModeStepRunner {
             PackageManagerStepRunner packageManagerScanStepRunner = new PackageManagerStepRunner(operationRunner);
 
             CommonScanResult commonScanResult = packageManagerScanStepRunner.invokePackageManagerScanningWorkflow(projectNameVersion, blackDuckRunData, bdioResult);
-            String scanId = commonScanResult.getScanId() == null ? null : commonScanResult.getScanId().toString();
-            scanIdsToWaitFor.add(scanId);
-
-            if(!commonScanResult.isPackageManagerScassPossible()) {
+            String scanId = null;
+            if(commonScanResult != null && commonScanResult.isPackageManagerScassPossible()) {
+                scanId = commonScanResult.getScanId() == null ? null : commonScanResult.getScanId().toString();
+                scanIdsToWaitFor.add(scanId);
+            } else {
                 invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId);
             }
         } else {
