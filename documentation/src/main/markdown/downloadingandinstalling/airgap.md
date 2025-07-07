@@ -1,4 +1,4 @@
-# Air Gap Mode
+# [detect_product_short] Air Gap Mode
 
 To run [detect_product_long] on an air-gapped computer or network, you must first download and install [detect_product_short] and dependencies that [detect_product_short] normally downloads as it runs. These include inspectors for Docker, NuGet and other files. These files are packaged together in an air gap archive that will be extracted on the target system.
 

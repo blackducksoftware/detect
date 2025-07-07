@@ -1,4 +1,4 @@
-# Current Release notes
+# Current [detect_product_short] Release notes
 
 **Notices**   
 

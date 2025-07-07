@@ -1,4 +1,4 @@
-# Configuration Overview
+# [detect_product_short] Configuration Overview
 
 What [detect_product_long] looks at and how it performs analysis depends on how it is configured.
 

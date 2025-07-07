@@ -1,4 +1,4 @@
-# Risk Report Generation
+# Risk Report Generation via [detect_product_short]
 
 [detect_product_long] can generate a [bd_product_long] risk report in PDF and JSON format.
 [detect_product_short] looks for risk report generation details in the properties whose names start with detect.risk.report, including:

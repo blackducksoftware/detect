@@ -1,4 +1,4 @@
-# Common solutions
+# Common [detect_product_short] troubleshooting solutions
 
 ## DETECT_SOURCE was not set or computed correctly
 
