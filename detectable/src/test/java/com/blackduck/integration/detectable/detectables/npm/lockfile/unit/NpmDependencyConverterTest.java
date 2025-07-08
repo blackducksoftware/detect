@@ -4,13 +4,13 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.google.gson.Gson;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.NpmDependencyConverter;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.model.PackageLock;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.model.PackageLockPackage;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.parse.NpmLockfilePackager;
 import com.blackduck.integration.detectable.util.FunctionalTestFiles;
+import com.google.gson.Gson;
 
 public class NpmDependencyConverterTest {
     
@@ -72,6 +72,7 @@ public class NpmDependencyConverterTest {
         Assertions.assertTrue(testPackage.dependencies.containsKey("dep1"));
         Assertions.assertTrue(testPackage.dependencies.containsKey("dev1"));
         Assertions.assertTrue(testPackage.dependencies.containsKey("peer1"));
+        Assertions.assertTrue(testPackage.dependencies.containsKey("optional1"));
     }
     
     private void validatePackageLinkage(String lockFileText) {

@@ -50,6 +50,9 @@ public class NpmLockfileGraphTransformer {
                 if (npmDependencyTypeFilter.shouldInclude(NpmDependencyType.PEER)) {
                     addRootDependencies(project.getResolvedDependencies(), project.getDeclaredPeerDependencies(), dependencyGraph, externalDependencies);
                 }
+                if (npmDependencyTypeFilter.shouldInclude(NpmDependencyType.OPTIONAL)) {
+                    addRootDependencies(project.getResolvedDependencies(), project.getDeclaredOptionalDependencies(), dependencyGraph, externalDependencies);
+                }
             } else {
                 project.getResolvedDependencies()
                     .stream()
@@ -126,7 +129,8 @@ public class NpmLockfileGraphTransformer {
             
             if (workspaceDependency != null) {
                 if ((workspaceDependency.isDevDependency() && npmDependencyTypeFilter.shouldExclude(NpmDependencyType.DEV))
-                        || (workspaceDependency.isPeerDependency() && npmDependencyTypeFilter.shouldExclude(NpmDependencyType.PEER))) {
+                        || (workspaceDependency.isPeerDependency() && npmDependencyTypeFilter.shouldExclude(NpmDependencyType.PEER))
+                        || (workspaceDependency.isOptionalDependency() && npmDependencyTypeFilter.shouldExclude(NpmDependencyType.OPTIONAL))) {
                     continue;
                 }
                 dependencyGraph.addChildrenToRoot(workspaceDependency);
@@ -169,8 +173,9 @@ public class NpmLockfileGraphTransformer {
     }
 
     private boolean shouldIncludeDependency(NpmDependency packageLockDependency) {
-        return (!packageLockDependency.isDevDependency() && !packageLockDependency.isPeerDependency()) // If the type is not dev or peer, we always want to include it.
+        return (!packageLockDependency.isDevDependency() && !packageLockDependency.isPeerDependency() && !packageLockDependency.isOptionalDependency()) // If the type is not dev or peer, we always want to include it.
             || (packageLockDependency.isDevDependency() && npmDependencyTypeFilter.shouldInclude(NpmDependencyType.DEV))
-            || (packageLockDependency.isPeerDependency() && npmDependencyTypeFilter.shouldInclude(NpmDependencyType.PEER));
+            || (packageLockDependency.isPeerDependency() && npmDependencyTypeFilter.shouldInclude(NpmDependencyType.PEER))
+            || (packageLockDependency.isOptionalDependency() && npmDependencyTypeFilter.shouldInclude(NpmDependencyType.OPTIONAL));
     }
 }

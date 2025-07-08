@@ -16,6 +16,9 @@
       },
       "peerDependencies": {
         "peer1": "1.0.0"
+      },
+      "optionalDependencies": {
+        "optional1": "1.0.0"
       }
     }
   }
