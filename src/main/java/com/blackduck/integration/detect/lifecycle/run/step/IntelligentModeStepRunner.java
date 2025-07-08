@@ -214,6 +214,8 @@ public class IntelligentModeStepRunner {
             if(commonScanResult != null && commonScanResult.isPackageManagerScassPossible()) {
                 scanId = commonScanResult.getScanId() == null ? null : commonScanResult.getScanId().toString();
                 scanIdsToWaitFor.add(scanId);
+                codeLocationAccumulator.addNonWaitableCodeLocation(commonScanResult.getCodeLocationName());
+                codeLocationAccumulator.incrementAdditionalCounts(DetectTool.DETECTOR, 1);
             } else {
                 invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId);
             }
@@ -315,7 +317,7 @@ public class IntelligentModeStepRunner {
     
     public void uploadCorrelatedScanCounts(BlackDuckRunData blackDuckRunData, CodeLocationAccumulator codeLocationAccumulator, String detectRunUuid) throws OperationException {
         logger.debug("Uploading correlated scan counts to Black Duck (correlation ID: {})", detectRunUuid);
-        ScanCountsPayload scanCountsPayload = scanCountsPayloadCreator.create(codeLocationAccumulator.getWaitableCodeLocations());
+        ScanCountsPayload scanCountsPayload = scanCountsPayloadCreator.create(codeLocationAccumulator.getWaitableCodeLocations(), codeLocationAccumulator.getAdditionalCountsByTool());
         operationRunner.uploadCorrelatedScanCounts(blackDuckRunData, detectRunUuid, scanCountsPayload);        
     }
 
