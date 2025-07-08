@@ -39,26 +39,7 @@ public class NpmLockfileGraphTransformer {
             createGraphFromResolvedDependencies(project, externalDependencies, workspaces, dependencyGraph);
 
             //Then we will add relationships between the project (root) and the graph
-            boolean atLeastOneRequired = !project.getDeclaredDependencies().isEmpty()
-                || !project.getDeclaredDevDependencies().isEmpty()
-                || !project.getDeclaredPeerDependencies().isEmpty();
-            if (atLeastOneRequired) {
-                addRootDependencies(project.getResolvedDependencies(), project.getDeclaredDependencies(), dependencyGraph, externalDependencies);
-                if (npmDependencyTypeFilter.shouldInclude(NpmDependencyType.DEV)) {
-                    addRootDependencies(project.getResolvedDependencies(), project.getDeclaredDevDependencies(), dependencyGraph, externalDependencies);
-                }
-                if (npmDependencyTypeFilter.shouldInclude(NpmDependencyType.PEER)) {
-                    addRootDependencies(project.getResolvedDependencies(), project.getDeclaredPeerDependencies(), dependencyGraph, externalDependencies);
-                }
-                if (npmDependencyTypeFilter.shouldInclude(NpmDependencyType.OPTIONAL)) {
-                    addRootDependencies(project.getResolvedDependencies(), project.getDeclaredOptionalDependencies(), dependencyGraph, externalDependencies);
-                }
-            } else {
-                project.getResolvedDependencies()
-                    .stream()
-                    .filter(this::shouldIncludeDependency)
-                    .forEach(dependencyGraph::addChildToRoot);
-            }
+            addRootDependencies(project, dependencyGraph, externalDependencies);
 
             logger.debug(String.format("Found %d root dependencies.", dependencyGraph.getRootDependencies().size()));
         } else {
@@ -71,6 +52,29 @@ public class NpmLockfileGraphTransformer {
     private void createGraphFromResolvedDependencies(NpmProject project, List<NameVersion> externalDependencies, List<String> workspaces, DependencyGraph dependencyGraph) {
         for (NpmDependency resolved : project.getResolvedDependencies()) {
             transformTreeToGraph(resolved, project, dependencyGraph, externalDependencies, workspaces);
+        }
+    }
+
+    private void addRootDependencies(NpmProject project, DependencyGraph dependencyGraph, List<NameVersion> externalDependencies) {
+        boolean atLeastOneRequired = !project.getDeclaredDependencies().isEmpty()
+            || !project.getDeclaredDevDependencies().isEmpty()
+            || !project.getDeclaredPeerDependencies().isEmpty();
+        if (atLeastOneRequired) {
+            addRootDependencies(project.getResolvedDependencies(), project.getDeclaredDependencies(), dependencyGraph, externalDependencies);
+            if (npmDependencyTypeFilter.shouldInclude(NpmDependencyType.DEV)) {
+                addRootDependencies(project.getResolvedDependencies(), project.getDeclaredDevDependencies(), dependencyGraph, externalDependencies);
+            }
+            if (npmDependencyTypeFilter.shouldInclude(NpmDependencyType.PEER)) {
+                addRootDependencies(project.getResolvedDependencies(), project.getDeclaredPeerDependencies(), dependencyGraph, externalDependencies);
+            }
+            if (npmDependencyTypeFilter.shouldInclude(NpmDependencyType.OPTIONAL)) {
+                addRootDependencies(project.getResolvedDependencies(), project.getDeclaredOptionalDependencies(), dependencyGraph, externalDependencies);
+            }
+        } else {
+            project.getResolvedDependencies()
+                .stream()
+                .filter(this::shouldIncludeDependency)
+                .forEach(dependencyGraph::addChildToRoot);
         }
     }
 
