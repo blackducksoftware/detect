@@ -29,6 +29,7 @@ import java.util.regex.Pattern;
 
 import com.blackduck.integration.blackduck.bdio2.model.BdioFileContent;
 import com.blackduck.integration.detect.lifecycle.run.step.CommonScanStepRunner;
+import com.blackduck.integration.detect.workflow.blackduck.report.ReportData;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.entity.ContentType;
@@ -957,17 +958,23 @@ public class OperationRunner {
         );
     }
 
-    public File createRiskReportFile(BlackDuckRunData blackDuckRunData, ProjectVersionWrapper projectVersionWrapper, File reportDirectory) throws OperationException {
+    public File createRiskReportFile(File reportDirectory, String reportType, ReportService reportService, ReportData reportData) throws OperationException {
+        final String PDF_SUFFIX = "pdf";
         return auditLog.namedPublic("Create Risk Report File", "RiskReport", () -> {
-            DetectFontLoader detectFontLoader = detectFontLoaderFactory.detectFontLoader();
-            ReportService reportService = creatReportService(blackDuckRunData);
-            return reportService.createReportPdfFile(
-                reportDirectory,
-                projectVersionWrapper.getProjectView(),
-                projectVersionWrapper.getProjectVersionView(),
-                detectFontLoader::loadFont,
-                detectFontLoader::loadBoldFont
-            );
+            if(reportType.equals(PDF_SUFFIX)) {
+                DetectFontLoader detectFontLoader = detectFontLoaderFactory.detectFontLoader();
+                return reportService.createReportPdfFile(
+                        reportDirectory,
+                        detectFontLoader::loadFont,
+                        detectFontLoader::loadBoldFont,
+                        reportData
+                );
+            } else {
+                return reportService.createReportJsonFile(
+                        reportDirectory,
+                        reportData
+                );
+            }
         });
     }
 
@@ -986,7 +993,7 @@ public class OperationRunner {
         });
     }
 
-    private ReportService creatReportService(BlackDuckRunData blackDuckRunData) throws OperationException {
+    public ReportService creatReportService(BlackDuckRunData blackDuckRunData) throws OperationException {
         return auditLog.namedInternal("Create Report Service", () -> {
             BlackDuckServicesFactory blackDuckServicesFactory = blackDuckRunData.getBlackDuckServicesFactory();
             Gson gson = blackDuckServicesFactory.getGson();
@@ -1209,12 +1216,23 @@ public class OperationRunner {
         });
     }
 
-    public Optional<File> calculateRiskReportFileLocation() throws OperationException { //TODO Should be a decision in boot
+    public Optional<File> calculateRiskReportPdfFileLocation() throws OperationException { //TODO Should be a decision in boot
         return auditLog.namedInternal("Decide Risk Report Path", () -> {
             BlackDuckPostOptions postOptions = detectConfigurationFactory.createBlackDuckPostOptions();
-            if (postOptions.shouldGenerateRiskReport()) {
+            if (postOptions.shouldGenerateRiskReportPdf()) {
                 return Optional.of(postOptions.getRiskReportPdfPath().map(Path::toFile)
                     .orElse(directoryManager.getSourceDirectory()));
+            }
+            return Optional.empty();
+        });
+    }
+
+    public Optional<File> calculateRiskReportJsonFileLocation() throws OperationException { //TODO Should be a decision in boot
+        return auditLog.namedInternal("Decide Risk Report Path", () -> {
+            BlackDuckPostOptions postOptions = detectConfigurationFactory.createBlackDuckPostOptions();
+            if (postOptions.shouldGenerateRiskReportJson()) {
+                return Optional.of(postOptions.getRiskReportJsonPath().map(Path::toFile)
+                        .orElse(directoryManager.getSourceDirectory()));
             }
             return Optional.empty();
         });

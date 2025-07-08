@@ -28,6 +28,8 @@
 
 * Node Package Manager (npm) scans now report optional dependencies. The `detect.dependency.types.excluded` property has been extended to exclude optional dependencies if OPTIONAL is specified in the list of arguments.
 
+* [detect_product_long] will now provide an option to generate [bd_product_long] risk report in a parseable (JSON) format. See [Risk Report Generation](results/reports.md) for more details.
+
 ### Changed features
 
 * To improve processing time when both PNPM and NPM detectors apply to a directory, only PNPM detector will execute, producing the same quality of results.
