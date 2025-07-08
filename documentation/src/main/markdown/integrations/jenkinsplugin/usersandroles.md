@@ -1,4 +1,4 @@
-# Users and Roles for Jenkins Plugin
+# Users and roles for Jenkins Plugin
 First you must configure a user/API token in [bd_product_short] so that the [detect_product_short] findings are analyzed in [bd_product_short].
 
 ## Generating an API token
