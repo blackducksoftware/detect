@@ -28,10 +28,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.blackduck.integration.blackduck.bdio2.model.BdioFileContent;
+import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
 import com.blackduck.integration.detect.lifecycle.run.step.CommonScanStepRunner;
 import com.blackduck.integration.detect.workflow.blackduck.report.ReportData;
+import com.blackduck.integration.rest.exception.IntegrationRestException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpStatus;
 import org.apache.http.entity.ContentType;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -709,14 +712,49 @@ public class OperationRunner {
         return auditLog.namedInternal("Rapid Wait", () -> {
             BlackDuckServicesFactory blackDuckServicesFactory = blackDuckRunData.getBlackDuckServicesFactory();
             int fibonacciSequenceIndex = getFibonacciSequenceIndex();
-            return new RapidModeWaitOperation(blackDuckServicesFactory.getBlackDuckApiClient()).waitForScans(
-                rapidScans,
-                detectConfigurationFactory.findTimeoutInSeconds(),
-                RapidModeWaitOperation.DEFAULT_WAIT_INTERVAL_IN_SECONDS,
-                mode,
-                calculateMaxWaitInSeconds(fibonacciSequenceIndex)
-            );
+
+            try {
+                return new RapidModeWaitOperation(blackDuckServicesFactory.getBlackDuckApiClient()).waitForScans(
+                        rapidScans,
+                        detectConfigurationFactory.findTimeoutInSeconds(),
+                        RapidModeWaitOperation.DEFAULT_WAIT_INTERVAL_IN_SECONDS,
+                        mode,
+                        calculateMaxWaitInSeconds(fibonacciSequenceIndex)
+                );
+            } catch (IntegrationRestException e) {
+                throw handleRapidScanException(e);
+            } catch (Exception e) {
+                logger.error("Exception while waiting for rapid results: {}", e.getMessage(), e);
+                throw new OperationException(e);
+            }
         });
+    }
+
+    private OperationException handleRapidScanException(IntegrationRestException e) {
+        RapidCompareMode rapidCompareMode = detectConfigurationFactory.createRapidScanOptions().getCompareMode();
+
+        if (isBomCompareError(e, rapidCompareMode)) {
+            String enhancedMessage = createBomCompareErrorMessage(e.getMessage());
+            logger.error("Rapid scan failed. {}", enhancedMessage);
+            return new OperationException(new IntegrationRestException(
+                    e.getHttpMethod(), e.getHttpUrl(), e.getHttpStatusCode(),
+                    e.getHttpStatusMessage(), e.getHttpResponseContent(), enhancedMessage));
+        }
+
+        logger.error("Rapid scan failed. {}", e.getMessage());
+        return new OperationException(e);
+    }
+
+    private boolean isBomCompareError(IntegrationRestException e, RapidCompareMode rapidCompareMode) {
+        return HttpStatus.SC_BAD_REQUEST == e.getHttpStatusCode() &&
+                (RapidCompareMode.BOM_COMPARE.equals(rapidCompareMode) ||
+                        RapidCompareMode.BOM_COMPARE_STRICT.equals(rapidCompareMode));
+    }
+
+    private String createBomCompareErrorMessage(String originalMessage) {
+        return originalMessage + " BOM_COMPARE mode requires the target project version to exist in Black Duck Hub. " +
+                "Please ensure 'detect.project.version.name' match an existing project version. " +
+                "Consider running a full scan first if the version hasn't been uploaded yet.";
     }
 
     public final RapidScanResultSummary logRapidReport(List<DeveloperScansScanView> scanResults, BlackduckScanMode mode) throws OperationException {
