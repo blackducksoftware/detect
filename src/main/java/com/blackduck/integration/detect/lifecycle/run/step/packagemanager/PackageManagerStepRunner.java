@@ -51,7 +51,6 @@ public class PackageManagerStepRunner {
 
         } catch (OperationException | IntegrationException e) {
             logger.error("Error completing the package manager scan. {}", e.getMessage());
-            operationRunner.publishDetectorFailure();
             return null;
         }
 
