@@ -753,7 +753,7 @@ public class OperationRunner {
 
     private String createBomCompareErrorMessage(String originalMessage) {
         return originalMessage + " BOM_COMPARE mode requires the target project version to exist in Black Duck Hub. " +
-                "Please ensure 'detect.project.version.name' match an existing project version. " +
+                "Please ensure 'detect.project.version.name' matches an existing project version. " +
                 "Consider running a full scan first if the version hasn't been uploaded yet.";
     }
 
