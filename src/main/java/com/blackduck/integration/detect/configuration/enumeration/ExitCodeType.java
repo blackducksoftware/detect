@@ -16,7 +16,7 @@ public enum ExitCodeType {
     ),
     FAILURE_BLACKDUCK_FEATURE_ERROR(
         11,
-        "Detect encountered an error while attempting an operation on Black Duck. Ensure that your Black Duck version is compatible with this version of Detect, and that your Black Duck user account has the required roles."
+        "Detect encountered an error while attempting an operation on Black Duck. Ensure that your Black Duck version is compatible with this version of Detect, and that your Black Duck user account has the required roles, and the project version exists in Black Duck when using BOM_COMPARE mode in a rapid scan."
     ),
     FAILURE_MINIMUM_INTERVAL_NOT_MET(13, "Detect did not wait the minimum required scan interval."),
     FAILURE_IAC(
