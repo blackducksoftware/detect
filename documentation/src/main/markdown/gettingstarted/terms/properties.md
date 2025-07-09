@@ -1,4 +1,4 @@
-# Properties
+# [detect_product_short] Properties
 
 Properties in [detect_product_long] provide information used to determine how and what actions [detect_product_short] takes during a scanning run. A property to which you assign a value is like a flag or a parameter on the command line or in a script that provides instructions for the [detect_product_short] scan task.
 
