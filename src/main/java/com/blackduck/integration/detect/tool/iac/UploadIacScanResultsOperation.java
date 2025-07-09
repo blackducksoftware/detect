@@ -3,6 +3,7 @@ package com.blackduck.integration.detect.tool.iac;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
 
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -24,6 +25,13 @@ public class UploadIacScanResultsOperation {
         try {
             logger.trace("Reading {} using character encoding {}", resultsFile.getAbsolutePath(), StandardCharsets.UTF_8);
             resultsFileContent = FileUtils.readFileToString(resultsFile, StandardCharsets.UTF_8);
+
+            // normalize string because special char might have been encoded differently?
+            String normalizedResultsFileContent = Normalizer.normalize(resultsFileContent, Normalizer.Form.NFC);
+            logger.debug("IaC results file content normalized: {}", Normalizer.isNormalized(normalizedResultsFileContent, Normalizer.Form.NFC));
+            logger.debug("Original: {}" + resultsFileContent);
+            logger.debug("Normalized: {}" + normalizedResultsFileContent);
+
         } catch (IOException e) {
             throw new IntegrationException("Unable to parse Iac Scan results file: " + resultsFile.getAbsolutePath(), e);
         }
