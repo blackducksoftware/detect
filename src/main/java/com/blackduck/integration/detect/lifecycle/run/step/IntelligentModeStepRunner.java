@@ -206,19 +206,21 @@ public class IntelligentModeStepRunner {
     }
 
     private void invokePackageManagerScanningWorkflow(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData, Set<String> scanIdsToWaitFor, BdioResult bdioResult, CodeLocationAccumulator codeLocationAccumulator) throws OperationException {
-        if (CommonScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion())) {
+        if (CommonScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion(), CommonScanStepRunner.PACKAGE_MANAGER)) {
             PackageManagerStepRunner packageManagerScanStepRunner = new PackageManagerStepRunner(operationRunner);
 
             CommonScanResult commonScanResult = packageManagerScanStepRunner.invokePackageManagerScanningWorkflow(projectNameVersion, blackDuckRunData, bdioResult);
             String scanId = null;
-            if(commonScanResult != null && commonScanResult.isPackageManagerScassPossible()) {
+            if(commonScanResult != null) {
                 scanId = commonScanResult.getScanId() == null ? null : commonScanResult.getScanId().toString();
-                scanIdsToWaitFor.add(scanId);
-                codeLocationAccumulator.addNonWaitableCodeLocation(commonScanResult.getCodeLocationName());
-                codeLocationAccumulator.incrementAdditionalCounts(DetectTool.DETECTOR, 1);
-            } else {
-                invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId);
+                if(commonScanResult.isPackageManagerScassPossible()) {
+                    scanIdsToWaitFor.add(scanId);
+                    codeLocationAccumulator.addNonWaitableCodeLocation(commonScanResult.getCodeLocationName());
+                    codeLocationAccumulator.incrementAdditionalCounts(DetectTool.DETECTOR, 1);
+                    return;
+                }
             }
+            invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId);
         } else {
             String scanId = null;
             invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId);
@@ -244,7 +246,7 @@ public class IntelligentModeStepRunner {
         throws IntegrationException, OperationException {
         logger.debug("Invoking intelligent persistent binary scan.");
         
-        AbstractBinaryScanStepRunner binaryScanStepRunner = CommonScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion()) ?
+        AbstractBinaryScanStepRunner binaryScanStepRunner = CommonScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion(), CommonScanStepRunner.BINARY) ?
             new ScassOrBdbaBinaryScanStepRunner(operationRunner) :
             new PreScassBinaryScanStepRunner(operationRunner);
 
@@ -272,7 +274,7 @@ public class IntelligentModeStepRunner {
         logger.debug("Invoking intelligent persistent container scan.");
 
         AbstractContainerScanStepRunner containerScanStepRunner;
-        if (CommonScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion())) {
+        if (CommonScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion(), CommonScanStepRunner.CONTAINER)) {
             containerScanStepRunner = new ScassOrBdbaContainerScanStepRunner(operationRunner, projectNameVersion, blackDuckRunData, gson);
         } else {
             containerScanStepRunner = new PreScassContainerScanStepRunner(operationRunner, projectNameVersion, blackDuckRunData, gson);

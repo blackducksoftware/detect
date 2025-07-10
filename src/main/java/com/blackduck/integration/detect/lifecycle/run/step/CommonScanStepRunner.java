@@ -31,6 +31,8 @@ import com.google.gson.Gson;
  */
 public class CommonScanStepRunner {
     private static final BlackDuckVersion MIN_SCASS_SCAN_VERSION = new BlackDuckVersion(2025, 1, 1);
+
+    private static final BlackDuckVersion MIN_PACKAGE_MANAGER_SCASS_VERSION = new BlackDuckVersion(2025, 7, 0);
     
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     
@@ -41,8 +43,12 @@ public class CommonScanStepRunner {
 
     private boolean isPackageManagerScassPossible = true;
 
-    public static boolean areScassScansPossible(Optional<BlackDuckVersion> blackDuckVersion) {
-        return blackDuckVersion.isPresent() && blackDuckVersion.get().isAtLeast(MIN_SCASS_SCAN_VERSION);
+    public static boolean areScassScansPossible(Optional<BlackDuckVersion> blackDuckVersion, String scanType) {
+        if(scanType.equals(PACKAGE_MANAGER)) {
+            return blackDuckVersion.isPresent() && blackDuckVersion.get().isAtLeast(MIN_PACKAGE_MANAGER_SCASS_VERSION);
+        } else {
+            return blackDuckVersion.isPresent() && blackDuckVersion.get().isAtLeast(MIN_SCASS_SCAN_VERSION);
+        }
     }
 
 
