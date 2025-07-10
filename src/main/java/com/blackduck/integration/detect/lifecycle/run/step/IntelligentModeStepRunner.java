@@ -206,7 +206,7 @@ public class IntelligentModeStepRunner {
     }
 
     private void invokePackageManagerScanningWorkflow(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData, Set<String> scanIdsToWaitFor, BdioResult bdioResult, CodeLocationAccumulator codeLocationAccumulator) throws OperationException {
-        if (CommonScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion(), CommonScanStepRunner.PACKAGE_MANAGER)) {
+        if (PackageManagerStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion())) {
             PackageManagerStepRunner packageManagerScanStepRunner = new PackageManagerStepRunner(operationRunner);
 
             CommonScanResult commonScanResult = packageManagerScanStepRunner.invokePackageManagerScanningWorkflow(projectNameVersion, blackDuckRunData, bdioResult);
@@ -246,7 +246,7 @@ public class IntelligentModeStepRunner {
         throws IntegrationException, OperationException {
         logger.debug("Invoking intelligent persistent binary scan.");
         
-        AbstractBinaryScanStepRunner binaryScanStepRunner = CommonScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion(), CommonScanStepRunner.BINARY) ?
+        AbstractBinaryScanStepRunner binaryScanStepRunner = CommonScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion()) ?
             new ScassOrBdbaBinaryScanStepRunner(operationRunner) :
             new PreScassBinaryScanStepRunner(operationRunner);
 
@@ -274,7 +274,7 @@ public class IntelligentModeStepRunner {
         logger.debug("Invoking intelligent persistent container scan.");
 
         AbstractContainerScanStepRunner containerScanStepRunner;
-        if (CommonScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion(), CommonScanStepRunner.CONTAINER)) {
+        if (CommonScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion())) {
             containerScanStepRunner = new ScassOrBdbaContainerScanStepRunner(operationRunner, projectNameVersion, blackDuckRunData, gson);
         } else {
             containerScanStepRunner = new PreScassContainerScanStepRunner(operationRunner, projectNameVersion, blackDuckRunData, gson);

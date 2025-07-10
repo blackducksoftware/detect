@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import com.blackduck.integration.blackduck.bdio2.model.BdioFileContent;
 import com.blackduck.integration.blackduck.exception.BlackDuckIntegrationException;
+import com.blackduck.integration.blackduck.version.BlackDuckVersion;
 import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.data.CommonScanResult;
@@ -27,10 +28,16 @@ public class PackageManagerStepRunner {
     private final Gson gson;
     protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
+    private static final BlackDuckVersion MIN_SCASS_SCAN_VERSION = new BlackDuckVersion(2025, 7, 0);
+
     public PackageManagerStepRunner(OperationRunner operationRunner) {
         this.operationRunner = operationRunner;
         commonScanStepRunner = new CommonScanStepRunner();
         this.gson = new Gson();
+    }
+
+    public static boolean areScassScansPossible(Optional<BlackDuckVersion> blackDuckVersion) {
+        return blackDuckVersion.isPresent() && blackDuckVersion.get().isAtLeast(MIN_SCASS_SCAN_VERSION);
     }
 
     public CommonScanResult invokePackageManagerScanningWorkflow(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData, BdioResult bdioResult) {
