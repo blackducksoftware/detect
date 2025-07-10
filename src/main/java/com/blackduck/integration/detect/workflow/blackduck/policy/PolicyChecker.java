@@ -44,17 +44,21 @@ public class PolicyChecker {
         if (activePolicyRulesOptional.isPresent()) {
             List<ProjectVersionPolicyRulesView> activePolicyRules = activePolicyRulesOptional.get();
 
-            List<String> violatedPolicyNames = activePolicyRules.stream()
-                .filter(rule -> ProjectVersionComponentPolicyStatusType.IN_VIOLATION.equals(rule.getStatus()))
-                .map(ProjectVersionPolicyRulesView::getName)
+            List<String> allViolatedPolicyNames = activePolicyRules.stream()
+                    .filter(rule -> ProjectVersionComponentPolicyStatusType.IN_VIOLATION.equals(rule.getStatus()))
+                    .map(ProjectVersionPolicyRulesView::getName)
+                    .collect(Collectors.toList());
+
+            List<String> fatalViolatedPolicyNames = allViolatedPolicyNames.stream()
                 .filter(policyNamesToFailPolicyCheck::contains)
                 .collect(Collectors.toList());
 
-            if (CollectionUtils.isNotEmpty(violatedPolicyNames)) {
-                List<PolicyViolationInfo> fatalRulesViolated = collectFatalRulesViolated(projectVersionView, severity -> true);
-                logViolationMessages(fatalRulesViolated);
-                String violationReason = StringUtils.join(violatedPolicyNames, ", ");
-                exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_POLICY_VIOLATION, "Violated policy by names: " + violationReason); // lost in translation
+            if (CollectionUtils.isNotEmpty(fatalViolatedPolicyNames)) {
+                AllPolicyViolations componentsThatHavePolicyRulesViolated = collectFatalRulesViolatedByName(projectVersionView, name -> fatalViolatedPolicyNames.contains(name));
+                logFatalViolationMessages(componentsThatHavePolicyRulesViolated.fatalViolations);
+                logNonFatalViolationMessages(componentsThatHavePolicyRulesViolated.otherViolations);
+                String violationReason = StringUtils.join(fatalViolatedPolicyNames, ", ");
+                exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_POLICY_VIOLATION, "Detect found policy violations by name. The following policies were violated: " + violationReason); // lost in translation
             }
 
         } else {
@@ -72,9 +76,12 @@ public class PolicyChecker {
         if (policyStatusDescriptionOptional.isPresent()) {
             PolicyStatusDescription policyStatusDescription = policyStatusDescriptionOptional.get();
             logger.info(policyStatusDescription.getPolicyStatusMessage());
-            List<PolicyViolationInfo> fatalRulesViolated = collectFatalRulesViolated(projectVersionView, severitiesToFailPolicyCheck::contains);
-            if (!fatalRulesViolated.isEmpty()) {
-                logViolationMessages(fatalRulesViolated);
+            AllPolicyViolations componentsThatHavePolicyRulesViolated = collectFatalRulesViolatedBySeverity(projectVersionView, severitiesToFailPolicyCheck::contains);
+            if (!componentsThatHavePolicyRulesViolated.fatalViolations.isEmpty()) {
+                logFatalViolationMessages(componentsThatHavePolicyRulesViolated.fatalViolations);
+            }
+            if (!componentsThatHavePolicyRulesViolated.otherViolations.isEmpty()) {
+                logNonFatalViolationMessages(componentsThatHavePolicyRulesViolated.otherViolations);
             }
             
             boolean policySeveritiesAreViolated = arePolicySeveritiesViolated(policyStatusDescription, severitiesToFailPolicyCheck);
@@ -82,7 +89,7 @@ public class PolicyChecker {
             // If Black Duck has reported policy violations in status description (policySeveritiesAreViolated),
             // or we have noticed violations while examining components in the BOM (fatalRulesViolated),
             // fail the scan.
-            if (policySeveritiesAreViolated || !fatalRulesViolated.isEmpty()) {
+            if (policySeveritiesAreViolated || !componentsThatHavePolicyRulesViolated.fatalViolations.isEmpty()) {
                 exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_POLICY_VIOLATION, "Detect found policy violations."); // keep severity case same as before
             }
         } else {
@@ -101,37 +108,79 @@ public class PolicyChecker {
             .toOptional();
     }
 
-    private List<PolicyViolationInfo> collectFatalRulesViolated(ProjectVersionView projectVersionView, Predicate<PolicyRuleSeverityType> violationIsFatalCheck)
+    private AllPolicyViolations collectFatalRulesViolatedBySeverity(ProjectVersionView projectVersionView, Predicate<PolicyRuleSeverityType> violationIsFatalCheckSeverity)
         throws IntegrationException {
 
         List<PolicyViolationInfo> fatalRulesViolated = new ArrayList<>();
-        logger.info("Searching BOM for components in violation of fatal policy rules.");
+        List<PolicyViolationInfo> otherRulesViolated = new ArrayList<>();
+        logger.info("Searching BOM for components in violation of policy rules.");
 
         List<ProjectVersionComponentVersionView> bomComponents = projectBomService.getComponentsForProjectVersion(projectVersionView);
-        for (ProjectVersionComponentVersionView projectVersionComponentView : bomComponents) {
-            if (!projectVersionComponentView.getPolicyStatus().equals(ProjectVersionComponentPolicyStatusType.IN_VIOLATION)) {
+        for (ProjectVersionComponentVersionView component : bomComponents) {
+            if (!component.getPolicyStatus().equals(ProjectVersionComponentPolicyStatusType.IN_VIOLATION)) {
                 continue;
             }
-            for (ComponentPolicyRulesView componentPolicyRulesView : blackDuckApiClient.getAllResponses(projectVersionComponentView.metaPolicyRulesLink())) {
-                if (componentPolicyRulesView.getPolicyApprovalStatus().equals(ProjectVersionComponentPolicyStatusType.IN_VIOLATION)
-                    && (violationIsFatalCheck.test(componentPolicyRulesView.getSeverity()))) {
-                    fatalRulesViolated.add(new PolicyViolationInfo(projectVersionComponentView, componentPolicyRulesView));
+            for (ComponentPolicyRulesView componentPolicyRulesView : blackDuckApiClient.getAllResponses(component.metaPolicyRulesLink())) { // for each policy this component violates?
+                if (componentPolicyRulesView.getPolicyApprovalStatus().equals(ProjectVersionComponentPolicyStatusType.IN_VIOLATION)) { // if the policy is in violation
+                    if (violationIsFatalCheckSeverity.test(componentPolicyRulesView.getSeverity())) { // AND its severity is specified as fatal
+                        // if we're checking by severity, only the specified severities are considered fatal.
+                        fatalRulesViolated.add(new PolicyViolationInfo(component, componentPolicyRulesView));
+                    } else {
+                        otherRulesViolated.add(new PolicyViolationInfo(component, componentPolicyRulesView));
+                    }
                 }
             }
         }
-        return fatalRulesViolated;
+        return new AllPolicyViolations(fatalRulesViolated, otherRulesViolated); // this collects any and all components that violate some policy. not necessarily fatal. collectPolicyViolatingComponents() is what this hsould be called.
     }
 
-    private void logViolationMessages(List<PolicyViolationInfo> ruleViolationsToLog) {
+    private AllPolicyViolations collectFatalRulesViolatedByName(ProjectVersionView projectVersionView, Predicate<String> violationIsFatalCheckName) throws IntegrationException {
+
+        List<PolicyViolationInfo> fatalRulesViolated = new ArrayList<>();
+        List<PolicyViolationInfo> otherRulesViolated = new ArrayList<>();
+        logger.info("Searching BOM for components in violation of policy rules.");
+
+        List<ProjectVersionComponentVersionView> bomComponents = projectBomService.getComponentsForProjectVersion(projectVersionView);
+        for (ProjectVersionComponentVersionView component : bomComponents) {
+            if (!component.getPolicyStatus().equals(ProjectVersionComponentPolicyStatusType.IN_VIOLATION)) {
+                continue;
+            }
+            for (ComponentPolicyRulesView componentPolicyRulesView : blackDuckApiClient.getAllResponses(component.metaPolicyRulesLink())) { // for each policy this component violates?
+                if (componentPolicyRulesView.getPolicyApprovalStatus().equals(ProjectVersionComponentPolicyStatusType.IN_VIOLATION)) { // if the policy is in violation
+                    if (violationIsFatalCheckName.test(componentPolicyRulesView.getName())) { // AND the name of this policy is specified
+                        fatalRulesViolated.add(new PolicyViolationInfo(component, componentPolicyRulesView));
+                    }
+                    else {
+                    otherRulesViolated.add(new PolicyViolationInfo(component, componentPolicyRulesView));
+                }
+                }
+            }
+        }
+        return new AllPolicyViolations(fatalRulesViolated, otherRulesViolated); // this collects any and all components that violate some policy. not necessarily fatal. collectPolicyViolatingComponents() is what this hsould be called.
+    }
+
+    private void logFatalViolationMessages(List<PolicyViolationInfo> fatalRulesViolated) {
+        logger.info("Fatal:");
+        logViolationMessages(fatalRulesViolated, false);
+    }
+
+    private void logNonFatalViolationMessages(List<PolicyViolationInfo> otherRulesViolated) {
+        logger.debug("Other:");
+        logViolationMessages(otherRulesViolated, true);
+    }
+
+    private void logViolationMessages(List<PolicyViolationInfo> ruleViolationsToLog, boolean logAtDebugLevel) {
         for (PolicyViolationInfo ruleViolation : ruleViolationsToLog) {
-            logMessagesForPolicyViolation(ruleViolation.getProjectVersionComponentVersionView(), ruleViolation.getComponentPolicyRulesView());
+            logMessagesForPolicyViolation(ruleViolation.getProjectVersionComponentVersionView(), ruleViolation.getComponentPolicyRulesView(), logAtDebugLevel);
         }
     }
 
     private void logMessagesForPolicyViolation(
         ProjectVersionComponentVersionView projectVersionComponentView,
-        ComponentPolicyRulesView componentPolicyRulesView
+        ComponentPolicyRulesView componentPolicyRulesView,
+        boolean logAtDebugLevel
     ) {
+        LogAction loggerHelper = logAtDebugLevel ? logger::debug : logger::info;
         String componentId = projectVersionComponentView.getComponentName();
         if (StringUtils.isNotBlank(projectVersionComponentView.getComponentVersionName())) {
             componentId += ":" + projectVersionComponentView.getComponentVersionName();
@@ -141,7 +190,7 @@ public class PolicyChecker {
         if (StringUtils.isNotBlank(projectVersionComponentView.getComponentVersion())) {
             policyRuleComponentVersionSuffix = String.format(" (%s).", projectVersionComponentView.getComponentVersion());
         }
-        logger.info(String.format(
+        loggerHelper.logAtAppropriateLevel(String.format(
             "Policy rule \"%s\" was violated by component \"%s\"%s",
             componentPolicyRulesView.getName(),
             componentId,
@@ -153,8 +202,8 @@ public class PolicyChecker {
             policyRuleSuffix = String.format(" with description: %s", componentPolicyRulesView.getDescription());
         }
 
-        logger.info(String.format(
-            "Policy rule \"%s\" has a fatal severity type: %s%s",
+        loggerHelper.logAtAppropriateLevel(String.format(
+            "Policy rule \"%s\" has severity type: %s%s",
             componentPolicyRulesView.getName(),
             componentPolicyRulesView.getSeverity().prettyPrint(),
             policyRuleSuffix
@@ -165,5 +214,20 @@ public class PolicyChecker {
         return policySeverities.stream()
             .map(policyStatusDescription::getCountOfSeverity)
             .anyMatch(severityCount -> severityCount > 0);
+    }
+
+    private static class AllPolicyViolations {
+        public final List<PolicyViolationInfo> fatalViolations;
+        public final List<PolicyViolationInfo> otherViolations;
+
+        public AllPolicyViolations(List<PolicyViolationInfo> fatalViolations, List<PolicyViolationInfo> otherViolations) {
+            this.fatalViolations = fatalViolations;
+            this.otherViolations = otherViolations;
+        }
+    }
+
+    @FunctionalInterface
+    private interface LogAction {
+        void logAtAppropriateLevel(String message);
     }
 }
