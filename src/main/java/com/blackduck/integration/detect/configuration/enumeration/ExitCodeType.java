@@ -6,7 +6,6 @@ public enum ExitCodeType {
     FAILURE_TIMEOUT(2, "Detect was unable to wait for actions to be completed on Black Duck. Check your Black Duck server or increase your timeout."),
     FAILURE_POLICY_VIOLATION(3, "Detect found policy violations."), // this will not get printed with the part 1 changes or?
     FAILURE_POLICY_NAME_VIOLATION(3, "Detect found policy name violations."),
-    FAILURE_POLICY_SEVERITY_VIOLATION(3, "Detect found policy severity violations."),
     FAILURE_PROXY_CONNECTIVITY(4, "Detect was unable to use the configured proxy. Check your configuration and connection."),
     FAILURE_DETECTOR(5, "Detect had one or more detector failures while extracting dependencies. Check that all projects build and your environment is configured correctly."),
     FAILURE_SCAN(6, "Detect was unable to run the signature scanner against your source. Check your configuration."),

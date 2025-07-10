@@ -181,7 +181,7 @@ public class Application implements ApplicationRunner {
             // system must now know or be able to compute the winning exit
             // code.  We'll pass this to FormattedOutput.createFormattedOutput
             // via Application.createStatusOutputFile.
-            ExitCodeType exitCodeType = exitCodeManager.getWinningExitCode(); // double check status file
+            ExitCodeType exitCodeType = exitCodeManager.getWinningExitCode();
             logger.info("");
             detectBootResult.getDirectoryManager()
                 .ifPresent(directoryManager -> createStatusOutputFile(formattedOutputManager, detectInfo, directoryManager, exitCodeType, autonomousManagerOptional));
@@ -252,13 +252,13 @@ public class Application implements ApplicationRunner {
     }
 
     private void createStatusOutputFile(FormattedOutputManager formattedOutputManager, DetectInfo detectInfo, DirectoryManager directoryManager, ExitCodeType exitCodeType, Optional<AutonomousManager> autonomousManagerOptional) {
-        logger.info(""); // status file has enum and description
+        logger.info("");
         try {
             File statusFile = new File(directoryManager.getStatusOutputDirectory(), STATUS_JSON_FILE_NAME);
             logger.info("Creating status file: {}", statusFile);
 
             Gson formattedGson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-            String json = formattedGson.toJson(formattedOutputManager.createFormattedOutput(detectInfo, exitCodeType, autonomousManagerOptional)); // exit code reason lost by now. only description available.
+            String json = formattedGson.toJson(formattedOutputManager.createFormattedOutput(detectInfo, exitCodeType, autonomousManagerOptional));
             FileUtils.writeStringToFile(statusFile, json, Charset.defaultCharset());
             
             if (directoryManager.getJsonStatusOutputDirectory() != null) {
