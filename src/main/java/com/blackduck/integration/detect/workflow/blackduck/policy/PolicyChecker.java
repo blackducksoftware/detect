@@ -83,7 +83,7 @@ public class PolicyChecker {
             // or we have noticed violations while examining components in the BOM (fatalRulesViolated),
             // fail the scan.
             if (policySeveritiesAreViolated || !fatalRulesViolated.isEmpty()) {
-                exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_POLICY_VIOLATION, policyStatusDescription.getPolicyStatusMessage()); // severity case
+                exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_POLICY_VIOLATION, "Detect found policy violations."); // keep severity case same as before
             }
         } else {
             String availableLinks = StringUtils.join(projectVersionView.getAvailableLinks(), ", ");
