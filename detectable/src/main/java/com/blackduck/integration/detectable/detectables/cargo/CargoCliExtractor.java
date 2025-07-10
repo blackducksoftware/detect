@@ -38,22 +38,18 @@ public class CargoCliExtractor {
     public Extraction extract(File directory, ExecutableTarget cargoExe, File cargoTomlFile, CargoDetectableOptions cargoDetectableOptions) throws ExecutableFailedException, IOException {
         List<String> fullTreeCommand = new ArrayList<>(CARGO_TREE_COMMAND);
 
-        // Add the --edges exclusion option based on the CargoDetectableOptions to the cargo command
+        // Adding the --edges exclusion option based on the CargoDetectableOptions to the cargo tree command
+        // This excludes build, dev, and proc-macro dependencies if specified
+        // Normal dependencies are handled separately later as a special case
         addEdgeExclusions(fullTreeCommand, cargoDetectableOptions);
 
-        // constructing the DEV,BUILD excluded tree
-        List<String> fullTreeOutput = runCargoTree(directory, cargoExe, fullTreeCommand);
+        List<String> fullTreeOutput = runCargoTreeCommand(directory, cargoExe, fullTreeCommand);
 
-        // Check whether NORMAL is to be excluded, if so, collect normal dependencies and subtract from the above tree
+        // Checking whether normal dependencies are to be excluded
+        // if so, collect normal dependencies and subtract from the above tree
         boolean excludeNormal = cargoDetectableOptions.getDependencyTypeFilter().shouldExclude(CargoDependencyType.NORMAL);
         if (excludeNormal) {
-            List<String> normalOnlyCommand = new ArrayList<>(CARGO_TREE_COMMAND);
-            normalOnlyCommand.add("--edges");
-            normalOnlyCommand.add("normal");
-            List<String> normalTreeOutput = runCargoTree(directory, cargoExe, normalOnlyCommand);
-
-            // Subtract normal tree output from full output
-            fullTreeOutput = subtractNormalDependencies(fullTreeOutput, normalTreeOutput);
+            fullTreeOutput = handleNormalDependencyExclusion(directory, cargoExe, fullTreeOutput);
         }
 
         DependencyGraph graph = cargoDependencyTransformer.transform(fullTreeOutput);
@@ -72,11 +68,20 @@ public class CargoCliExtractor {
             .build();
     }
 
-    private List<String> runCargoTree(File directory, ExecutableTarget cargoExe, List<String> commandArgs) throws ExecutableFailedException {
+    private List<String> runCargoTreeCommand(File directory, ExecutableTarget cargoExe, List<String> commandArgs) throws ExecutableFailedException {
         ExecutableOutput output = executableRunner.executeSuccessfully(
             ExecutableUtils.createFromTarget(directory, cargoExe, commandArgs)
         );
         return output.getStandardOutputAsList();
+    }
+
+    private List<String> handleNormalDependencyExclusion(File directory, ExecutableTarget cargoExe, List<String> fullTreeOutput) throws ExecutableFailedException {
+        List<String> normalOnlyCommand = new ArrayList<>(CARGO_TREE_COMMAND);
+        normalOnlyCommand.add("--edges");
+        normalOnlyCommand.add("normal");
+        List<String> normalTreeOutput = runCargoTreeCommand(directory, cargoExe, normalOnlyCommand);
+
+        return subtractNormalDependencies(fullTreeOutput, normalTreeOutput);
     }
 
     private List<String> subtractNormalDependencies(List<String> fullTreeOutput, List<String> normalTreeOutput) {
@@ -84,7 +89,7 @@ public class CargoCliExtractor {
         for (String normalLine : normalTreeOutput) {
             int index = result.indexOf(normalLine);
             if (index != -1) {
-                result.remove(index); // remove only the first match
+                result.remove(index);
             }
         }
         return result;
