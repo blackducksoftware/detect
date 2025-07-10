@@ -6,11 +6,20 @@ import static com.blackduck.integration.blackduck.api.generated.enumeration.Risk
 import static com.blackduck.integration.blackduck.api.generated.enumeration.RiskPriorityType.MEDIUM;
 
 import com.blackduck.integration.blackduck.api.generated.component.RiskProfileCountsView;
+import com.google.gson.annotations.SerializedName;
 
 public class BomRiskCounts {
+
+    @SerializedName("critical")
     private int critical;
+
+    @SerializedName("high")
     private int high;
+
+    @SerializedName("medium")
     private int medium;
+
+    @SerializedName("low")
     private int low;
 
     public void add(RiskProfileCountsView countsView) {

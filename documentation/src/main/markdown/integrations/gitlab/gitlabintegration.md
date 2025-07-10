@@ -1,4 +1,4 @@
-# GitLab Integration
+# [detect_product_short] GitLab integration
 [detect_product_long] is designed to run in the native build environment of the project you want to scan. The following procedures provide guidance on setting up [detect_product_short] with your GitLab continuous integration builds.
 
 ## Configuring with API tokens

@@ -45,6 +45,8 @@ import com.blackduck.integration.detect.workflow.blackduck.codelocation.CodeLoca
 import com.blackduck.integration.detect.workflow.blackduck.integratedmatching.ScanCountsPayloadCreator;
 import com.blackduck.integration.detect.workflow.blackduck.integratedmatching.model.ScanCountsPayload;
 import com.blackduck.integration.detect.workflow.report.util.ReportConstants;
+import com.blackduck.integration.detect.workflow.blackduck.report.ReportData;
+import com.blackduck.integration.detect.workflow.blackduck.report.service.ReportService;
 import com.blackduck.integration.detect.workflow.result.BlackDuckBomDetectResult;
 import com.blackduck.integration.detect.workflow.result.DetectResult;
 import com.blackduck.integration.detect.workflow.result.ReportDetectResult;
@@ -73,7 +75,7 @@ public class IntelligentModeStepRunner {
 
     public void runOffline(NameVersion projectNameVersion, DockerTargetData dockerTargetData, BdioResult bdio) throws OperationException {
         stepHelper.runToolIfIncluded(DetectTool.SIGNATURE_SCAN, "Signature Scanner", () -> { //Internal: Sig scan publishes its own status.
-            SignatureScanStepRunner signatureScanStepRunner = new SignatureScanStepRunner(operationRunner);
+            SignatureScanStepRunner signatureScanStepRunner = new SignatureScanStepRunner(operationRunner, null);
             signatureScanStepRunner.runSignatureScannerOffline(detectRunUuid, projectNameVersion, dockerTargetData);
         });
         stepHelper.runToolIfIncludedWithCallbacks(
@@ -125,10 +127,9 @@ public class IntelligentModeStepRunner {
         logger.debug("Completed Detect Code Location processing.");
 
         stepHelper.runToolIfIncluded(DetectTool.SIGNATURE_SCAN, "Signature Scanner", () -> {
-            SignatureScanStepRunner signatureScanStepRunner = new SignatureScanStepRunner(operationRunner);
+            SignatureScanStepRunner signatureScanStepRunner = new SignatureScanStepRunner(operationRunner, blackDuckRunData);
             SignatureScannerCodeLocationResult signatureScannerCodeLocationResult = signatureScanStepRunner.runSignatureScannerOnline(
                 detectRunUuid,
-                blackDuckRunData,
                 projectNameVersion,
                 dockerTargetData,
                 scanIdsToWaitFor,
@@ -209,10 +210,13 @@ public class IntelligentModeStepRunner {
             PackageManagerStepRunner packageManagerScanStepRunner = new PackageManagerStepRunner(operationRunner);
 
             CommonScanResult commonScanResult = packageManagerScanStepRunner.invokePackageManagerScanningWorkflow(projectNameVersion, blackDuckRunData, bdioResult);
-            String scanId = commonScanResult.getScanId() == null ? null : commonScanResult.getScanId().toString();
-            scanIdsToWaitFor.add(scanId);
-
-            if(!commonScanResult.isPackageManagerScassPossible()) {
+            String scanId = null;
+            if(commonScanResult != null && commonScanResult.isPackageManagerScassPossible()) {
+                scanId = commonScanResult.getScanId() == null ? null : commonScanResult.getScanId().toString();
+                scanIdsToWaitFor.add(scanId);
+                codeLocationAccumulator.addNonWaitableCodeLocation(commonScanResult.getCodeLocationName());
+                codeLocationAccumulator.incrementAdditionalCounts(DetectTool.DETECTOR, 1);
+            } else {
                 invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId);
             }
         } else {
@@ -313,7 +317,7 @@ public class IntelligentModeStepRunner {
     
     public void uploadCorrelatedScanCounts(BlackDuckRunData blackDuckRunData, CodeLocationAccumulator codeLocationAccumulator, String detectRunUuid) throws OperationException {
         logger.debug("Uploading correlated scan counts to Black Duck (correlation ID: {})", detectRunUuid);
-        ScanCountsPayload scanCountsPayload = scanCountsPayloadCreator.create(codeLocationAccumulator.getWaitableCodeLocations());
+        ScanCountsPayload scanCountsPayload = scanCountsPayloadCreator.create(codeLocationAccumulator.getWaitableCodeLocations(), codeLocationAccumulator.getAdditionalCountsByTool());
         operationRunner.uploadCorrelatedScanCounts(blackDuckRunData, detectRunUuid, scanCountsPayload);        
     }
 
@@ -396,21 +400,39 @@ public class IntelligentModeStepRunner {
         return operationRunner.generateImpactAnalysisFile(impactAnalysisName);
     }
 
-    public void riskReport(BlackDuckRunData blackDuckRunData, ProjectVersionWrapper projectVersion) throws IOException, OperationException {
-        Optional<File> riskReportFile = operationRunner.calculateRiskReportFileLocation();
-        if (riskReportFile.isPresent()) {
-            logger.info("Creating risk report pdf");
-            File reportDirectory = riskReportFile.get();
+    public void riskReport(BlackDuckRunData blackDuckRunData, ProjectVersionWrapper projectVersion) throws IOException, OperationException, IntegrationException {
+        Optional<File> riskReportPdfFile = operationRunner.calculateRiskReportPdfFileLocation();
+        Optional<File> riskReportJsonFile = operationRunner.calculateRiskReportJsonFileLocation();
 
-            if (!reportDirectory.exists() && !reportDirectory.mkdirs()) {
-                logger.warn(String.format("Failed to create risk report pdf directory: %s", reportDirectory));
-            }
+        ReportService reportService = null;
+        ReportData reportData = null;
 
-            File createdPdf = operationRunner.createRiskReportFile(blackDuckRunData, projectVersion, reportDirectory);
-
-            logger.info(String.format("Created risk report pdf: %s", createdPdf.getCanonicalPath()));
-            operationRunner.publishReport(new ReportDetectResult("Risk Report", createdPdf.getCanonicalPath()));
+        if (riskReportPdfFile.isPresent() || riskReportJsonFile.isPresent()) {
+            reportService = operationRunner.creatReportService(blackDuckRunData);
+            reportData = reportService.getRiskReportData(projectVersion.getProjectView(), projectVersion.getProjectVersionView());
         }
+
+        if (riskReportPdfFile.isPresent()) {
+            riskReportCreation(reportData, reportService, "pdf", riskReportPdfFile);
+        }
+
+        if (riskReportJsonFile.isPresent()) {
+            riskReportCreation(reportData, reportService, "json", riskReportJsonFile);
+        }
+    }
+
+    private void riskReportCreation(ReportData reportData, ReportService reportService, String reportType, Optional<File> riskReportFile) throws OperationException, IOException {
+        logger.info("Creating risk report {}", reportType);
+        File reportDirectory = riskReportFile.get();
+
+        if (!reportDirectory.exists() && !reportDirectory.mkdirs()) {
+            logger.warn(String.format("Failed to create risk report %s directory: %s", reportType, reportDirectory));
+        }
+
+        File createdReport = operationRunner.createRiskReportFile(reportDirectory, reportType, reportService, reportData);
+
+        logger.info(String.format("Created risk report %s: %s", reportType, createdReport.getCanonicalPath()));
+        operationRunner.publishReport(new ReportDetectResult("Risk Report", createdReport.getCanonicalPath()));
     }
 
     public void noticesReport(BlackDuckRunData blackDuckRunData, ProjectVersionWrapper projectVersion) throws OperationException, IOException {

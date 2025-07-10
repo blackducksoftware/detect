@@ -1,4 +1,4 @@
-# [detect_product_long] Basic Workflow
+# [detect_product_long] basic workflow
 
 Using [detect_product_long] to analyze your code typically involves the following basic steps:
 

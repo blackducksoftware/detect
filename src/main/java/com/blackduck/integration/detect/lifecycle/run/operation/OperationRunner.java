@@ -983,17 +983,23 @@ public class OperationRunner {
         );
     }
 
-    public File createRiskReportFile(BlackDuckRunData blackDuckRunData, ProjectVersionWrapper projectVersionWrapper, File reportDirectory) throws OperationException {
+    public File createRiskReportFile(File reportDirectory, String reportType, ReportService reportService, ReportData reportData) throws OperationException {
+        final String PDF_SUFFIX = "pdf";
         return auditLog.namedPublic("Create Risk Report File", "RiskReport", () -> {
-            DetectFontLoader detectFontLoader = detectFontLoaderFactory.detectFontLoader();
-            ReportService reportService = creatReportService(blackDuckRunData);
-            return reportService.createReportPdfFile(
-                reportDirectory,
-                projectVersionWrapper.getProjectView(),
-                projectVersionWrapper.getProjectVersionView(),
-                detectFontLoader::loadFont,
-                detectFontLoader::loadBoldFont
-            );
+            if(reportType.equals(PDF_SUFFIX)) {
+                DetectFontLoader detectFontLoader = detectFontLoaderFactory.detectFontLoader();
+                return reportService.createReportPdfFile(
+                        reportDirectory,
+                        detectFontLoader::loadFont,
+                        detectFontLoader::loadBoldFont,
+                        reportData
+                );
+            } else {
+                return reportService.createReportJsonFile(
+                        reportDirectory,
+                        reportData
+                );
+            }
         });
     }
 
@@ -1012,7 +1018,7 @@ public class OperationRunner {
         });
     }
 
-    private ReportService creatReportService(BlackDuckRunData blackDuckRunData) throws OperationException {
+    public ReportService creatReportService(BlackDuckRunData blackDuckRunData) throws OperationException {
         return auditLog.namedInternal("Create Report Service", () -> {
             BlackDuckServicesFactory blackDuckServicesFactory = blackDuckRunData.getBlackDuckServicesFactory();
             Gson gson = blackDuckServicesFactory.getGson();
@@ -1141,9 +1147,9 @@ public class OperationRunner {
         return auditLog.namedPublic("Execute Signature Scan CLI", "SigScan", () -> new SignatureScanOperation().performScanActions(scanBatch, scanBatchRunner));
     }
 
-    public List<SignatureScannerReport> createSignatureScanReport(List<SignatureScanPath> signatureScanPaths, List<ScanCommandOutput> scanCommandOutputList)
+    public List<SignatureScannerReport> createSignatureScanReport(List<SignatureScanPath> signatureScanPaths, List<ScanCommandOutput> scanCommandOutputList, Set<String> failedScans)
         throws OperationException {
-        return auditLog.namedInternal("Create Signature Scanner Report", () -> new CreateSignatureScanReports().createReports(signatureScanPaths, scanCommandOutputList));
+        return auditLog.namedInternal("Create Signature Scanner Report", () -> new CreateSignatureScanReports().createReports(signatureScanPaths, scanCommandOutputList, failedScans));
     }
 
     public void publishSignatureScanReport(List<SignatureScannerReport> report) throws OperationException {
@@ -1235,12 +1241,23 @@ public class OperationRunner {
         });
     }
 
-    public Optional<File> calculateRiskReportFileLocation() throws OperationException { //TODO Should be a decision in boot
+    public Optional<File> calculateRiskReportPdfFileLocation() throws OperationException { //TODO Should be a decision in boot
         return auditLog.namedInternal("Decide Risk Report Path", () -> {
             BlackDuckPostOptions postOptions = detectConfigurationFactory.createBlackDuckPostOptions();
-            if (postOptions.shouldGenerateRiskReport()) {
+            if (postOptions.shouldGenerateRiskReportPdf()) {
                 return Optional.of(postOptions.getRiskReportPdfPath().map(Path::toFile)
                     .orElse(directoryManager.getSourceDirectory()));
+            }
+            return Optional.empty();
+        });
+    }
+
+    public Optional<File> calculateRiskReportJsonFileLocation() throws OperationException { //TODO Should be a decision in boot
+        return auditLog.namedInternal("Decide Risk Report Path", () -> {
+            BlackDuckPostOptions postOptions = detectConfigurationFactory.createBlackDuckPostOptions();
+            if (postOptions.shouldGenerateRiskReportJson()) {
+                return Optional.of(postOptions.getRiskReportJsonPath().map(Path::toFile)
+                        .orElse(directoryManager.getSourceDirectory()));
             }
             return Optional.empty();
         });
@@ -1351,6 +1368,12 @@ public class OperationRunner {
         logger.error("Container scan failure: {}", e.getMessage());
         statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.CONTAINER_SCAN, StatusType.FAILURE));
         exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR, "CONTAINER_SCAN");
+    }
+
+    public void publishSignatureFailure(String message) {
+        logger.error("Signature scan failure: {}", message);
+        statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.SIGNATURE_SCAN, StatusType.FAILURE));
+        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR, "SIGNATURE_SCAN");
     }
     
     public void publishBinarySuccess() {
