@@ -38,6 +38,7 @@
 
 * (IDETECT-4657) - Additional logging has been added for occurances of [detect_product_short] erroring out when loading a malformed Spring Boot config file. 
 <note type="hint">A valid Spring Boot config file can be specified via the `--spring.config.location=""` parameter.</note>
+* (IDETECT-4700) – Fixed Rapid Scans in BOM_COMPARE and BOM_COMPARE_STRICT modes reporting policy violations from previous full scans. Now only new violations are reported.
 
 ### Dependency updates
 
