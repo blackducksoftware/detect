@@ -39,4 +39,4 @@
 
 ### Dependency updates
 
-* 
+* Upgraded and released Detect Docker Inspector version 11.4.0.
