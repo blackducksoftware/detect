@@ -54,9 +54,9 @@ public class CargoCliExtractor {
         CodeLocation codeLocation = new CodeLocation(graph);
 
         return new Extraction.Builder()
-                .success(codeLocation)
-                .nameVersionIfPresent(projectNameVersion)
-                .build();
+            .success(codeLocation)
+            .nameVersionIfPresent(projectNameVersion)
+            .build();
     }
 
     private void addEdgeExclusions(List<String> cargoTreeCommand, CargoDetectableOptions options) {
