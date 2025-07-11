@@ -112,7 +112,7 @@ public class PolicyChecker {
             .toOptional();
     }
 
-    private <T> AllPolicyViolations collectComponentsWithPolicyViolations(ProjectVersionView projectVersionView, Function<ComponentPolicyRulesView, T> valueExtractor, Predicate<T> failFilter)
+    private <T> AllPolicyViolations collectComponentsWithPolicyViolations(ProjectVersionView projectVersionView, Function<ComponentPolicyRulesView, T> policyNameOrSeverityExtractor, Predicate<T> fatalPolicyCondition)
             throws IntegrationException {
         List<PolicyViolationInfo> fatalRulesViolated = new ArrayList<>();
         List<PolicyViolationInfo> otherRulesViolated = new ArrayList<>();
@@ -127,7 +127,7 @@ public class PolicyChecker {
             for (ComponentPolicyRulesView policyRule : blackDuckApiClient.getAllResponses(component.metaPolicyRulesLink())) {
                 if (policyRule.getPolicyApprovalStatus().equals(ProjectVersionComponentPolicyStatusType.IN_VIOLATION)) {
                     PolicyViolationInfo violationInfo = new PolicyViolationInfo(component, policyRule);
-                    if (failFilter.test(valueExtractor.apply(policyRule))) { // fatalPolicyCondition.test(policyNameOrSeverityExtractor.apply(policyRule)) ... policyValueExtractor.apply(policyRule)
+                    if (fatalPolicyCondition.test(policyNameOrSeverityExtractor.apply(policyRule))) {
                         fatalRulesViolated.add(violationInfo);
                     } else {
                         otherRulesViolated.add(violationInfo);
