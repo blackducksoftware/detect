@@ -32,7 +32,7 @@ public class ExitCodeManager {
         ExitCodeType championExitCodeType = ExitCodeType.SUCCESS;
         // match exitcodetype with its corresponding exitcoderequest which has reason
         ExitCodeRequest winningRequest = null;
-        for (ExitCodeRequest exitCodeRequest : exitCodeRequests) { // exitCodeRequest has reason
+        for (ExitCodeRequest exitCodeRequest : exitCodeRequests) {
             ExitCodeType nextContender = exitCodeRequest.getExitCodeType();
             ExitCodeType thisRoundsWinner = ExitCodeType.getWinningExitCodeType(championExitCodeType, nextContender);
 

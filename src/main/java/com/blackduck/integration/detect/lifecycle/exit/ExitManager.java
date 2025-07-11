@@ -38,7 +38,7 @@ public class ExitManager {
         }
 
         //Find the final (as requested) exit code
-        ExitCodeType finalExitCode = exitCodeManager.getWinningExitCode(); // should print reason, might cause regressions..
+        ExitCodeType finalExitCode = exitCodeManager.getWinningExitCode();
 
         //Print detect's status
         statusManager.logDetectResults(new Slf4jIntLogger(logger), finalExitCode, autonomousManagerOptional);

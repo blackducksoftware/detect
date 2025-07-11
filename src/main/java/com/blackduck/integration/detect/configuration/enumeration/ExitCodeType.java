@@ -4,7 +4,7 @@ public enum ExitCodeType {
     SUCCESS(0, "Detect exited successfully."),
     FAILURE_BLACKDUCK_CONNECTIVITY(1, "Detect was unable to connect to Black Duck. Check your configuration and connection."),
     FAILURE_TIMEOUT(2, "Detect was unable to wait for actions to be completed on Black Duck. Check your Black Duck server or increase your timeout."),
-    FAILURE_POLICY_VIOLATION(3, "Detect found policy violations."), // this will not get printed with the part 1 changes or?
+    FAILURE_POLICY_VIOLATION(3, "Detect found policy violations."),
     FAILURE_POLICY_NAME_VIOLATION(3, "Detect found policy name violations."),
     FAILURE_PROXY_CONNECTIVITY(4, "Detect was unable to use the configured proxy. Check your configuration and connection."),
     FAILURE_DETECTOR(5, "Detect had one or more detector failures while extracting dependencies. Check that all projects build and your environment is configured correctly."),
@@ -37,7 +37,7 @@ public enum ExitCodeType {
     FAILURE_UNKNOWN_ERROR(100, "Detect encountered an unknown error.");
 
     private final int exitCode;
-    private String description; // frowned upon but Detect is not multithreaded (at least not by the time we report exit status?)
+    private String description;
     private final double priority;
 
     ExitCodeType(int exitCode, String description) {
@@ -73,7 +73,7 @@ public enum ExitCodeType {
         return this == SUCCESS;
     }
 
-    public String getDescription() { // called in 3 places.
+    public String getDescription() {
         return description;
     }
 
