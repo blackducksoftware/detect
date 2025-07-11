@@ -1,5 +1,11 @@
 # [docker_inspector_name] Release notes
 
+## Version 11.4.0
+
+### Resolved issues
+
+* (IDETECT-4679) Updated forge name for PhotonOS namespace to resolve unmatched components. 
+
 ## Version 11.3.0
 
 ### Resolved issues
