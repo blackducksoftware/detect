@@ -18,8 +18,11 @@ import com.blackduck.integration.rest.HttpUrl;
 import com.blackduck.integration.rest.exception.IntegrationRestException;
 import com.blackduck.integration.rest.response.Response;
 import com.blackduck.integration.wait.ResilientJob;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DetectRapidScanWaitJobFull implements ResilientJob<List<DeveloperScansScanView>> {
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final BlackDuckApiClient blackDuckApiClient;
     private final List<HttpUrl> remainingUrls;
     private final List<HttpUrl> completedUrls;
@@ -43,7 +46,6 @@ public class DetectRapidScanWaitJobFull implements ResilientJob<List<DeveloperSc
             complete = true;
             return;
         }
-        
         for (HttpUrl url : remainingUrls) {
             if (isComplete(url)) {
                 completedUrls.add(url);
@@ -56,7 +58,7 @@ public class DetectRapidScanWaitJobFull implements ResilientJob<List<DeveloperSc
 
     private boolean isComplete(HttpUrl url) throws IntegrationException {
         BlackDuckResponseRequest request = new DetectRapidScanRequestBuilder()
-            .createResponseRequest(url);
+                .createResponseRequest(url);
         try (Response response = blackDuckApiClient.execute(request)) {
             return response.isStatusCodeSuccess();
         } catch (IntegrationRestException ex) {
@@ -90,6 +92,7 @@ public class DetectRapidScanWaitJobFull implements ResilientJob<List<DeveloperSc
     }
 
     private List<DeveloperScansScanView> getScanResultsForUrl(HttpUrl url) throws IntegrationException {
+        logger.debug("Fetching scan results from endpoint: {}", url.string());
         BlackDuckMultipleRequest<DeveloperScansScanView> request =
             new DetectRapidScanRequestBuilder()
                 .createFullRequest(url);
