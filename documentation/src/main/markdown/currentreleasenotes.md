@@ -41,4 +41,4 @@
 
 ### Dependency updates
 
-* 
+* Support for SBT is now extended to 1.11.3.
