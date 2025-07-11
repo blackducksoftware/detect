@@ -60,12 +60,11 @@ public class PolicyChecker {
                 AllPolicyViolations allComponentsWithViolations = collectComponentsWithPolicyViolations(projectVersionView, ComponentPolicyRulesView::getName, fatalViolatedPolicyNames::contains);
                 logFatalViolationMessages(allComponentsWithViolations.fatalViolations);
                 logNonFatalViolationMessages(allComponentsWithViolations.otherViolations);
-                String violationReason = StringUtils.join(fatalViolatedPolicyNames, ", ");
-                exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_POLICY_VIOLATION, "Detect found policy violations by name. The following policies were violated: " + violationReason);
-            } else {
-                logger.info("No violated policies found.");
+                if (!allComponentsWithViolations.fatalViolations.isEmpty()) {
+                    String violationReason = StringUtils.join(fatalViolatedPolicyNames, ", ");
+                    exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_POLICY_NAME_VIOLATION, "Detect found policy violations by name. The following policies were violated: " + violationReason);
+                }
             }
-
         } else {
             String availableLinks = StringUtils.join(projectVersionView.getAvailableLinks(), ", ");
             logger.warn(String.format(
@@ -87,18 +86,14 @@ public class PolicyChecker {
 
             if (atLeastOneViolationFound) {
                 AllPolicyViolations allComponentsWithViolations = collectComponentsWithPolicyViolations(projectVersionView, ComponentPolicyRulesView::getSeverity, severitiesToFailPolicyCheck::contains);
-                if (!allComponentsWithViolations.fatalViolations.isEmpty()) {
-                    logFatalViolationMessages(allComponentsWithViolations.fatalViolations);
-                }
-                if (!allComponentsWithViolations.otherViolations.isEmpty()) {
-                    logNonFatalViolationMessages(allComponentsWithViolations.otherViolations);
-                }
+                logFatalViolationMessages(allComponentsWithViolations.fatalViolations);
+                logNonFatalViolationMessages(allComponentsWithViolations.otherViolations);
 
                 // If Black Duck has reported policy violations in status description (fatalPolicySeveritiesAreViolated),
                 // or we have noticed violations while examining components in the BOM (fatalRulesViolated),
                 // fail the scan.
-                if (!allComponentsWithViolations.fatalViolations.isEmpty()) { // left hand side might be true (non-fatal violation) but this owuld still fail?
-                    exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_POLICY_VIOLATION, "Detect found policy violations.");
+                if (!allComponentsWithViolations.fatalViolations.isEmpty()) {
+                    exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_POLICY_VIOLATION, policyStatusDescription.getPolicyStatusMessage());
                 }
             }
         } else {
