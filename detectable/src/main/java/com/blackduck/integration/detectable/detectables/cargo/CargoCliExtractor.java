@@ -36,14 +36,23 @@ public class CargoCliExtractor {
     }
 
     public Extraction extract(File directory, ExecutableTarget cargoExe, File cargoTomlFile, CargoDetectableOptions cargoDetectableOptions) throws ExecutableFailedException, IOException {
-        List<String> cargoTreeCommand = new ArrayList<>(CARGO_TREE_COMMAND);
+        List<String> fullTreeCommand = new ArrayList<>(CARGO_TREE_COMMAND);
 
-        addEdgeExclusions(cargoTreeCommand, cargoDetectableOptions);
+        // Adding the --edges exclusion option based on the CargoDetectableOptions to the cargo tree command
+        // This excludes build, dev, and proc-macro dependencies if specified
+        // Normal dependencies are handled separately later as a special case
+        addEdgeExclusions(fullTreeCommand, cargoDetectableOptions);
 
-        ExecutableOutput cargoOutput = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(directory, cargoExe, cargoTreeCommand));
-        List<String> cargoTreeOutput = cargoOutput.getStandardOutputAsList();
+        List<String> fullTreeOutput = runCargoTreeCommand(directory, cargoExe, fullTreeCommand);
 
-        DependencyGraph graph = cargoDependencyTransformer.transform(cargoTreeOutput);
+        // Checking whether normal dependencies are to be excluded
+        // if so, collect normal dependencies and subtract from the above tree
+        boolean excludeNormal = cargoDetectableOptions.getDependencyTypeFilter().shouldExclude(CargoDependencyType.NORMAL);
+        if (excludeNormal) {
+            fullTreeOutput = handleNormalDependencyExclusion(directory, cargoExe, fullTreeOutput);
+        }
+
+        DependencyGraph graph = cargoDependencyTransformer.transform(fullTreeOutput);
 
         Optional<NameVersion> projectNameVersion = Optional.empty();
         if (cargoTomlFile != null) {
@@ -59,9 +68,35 @@ public class CargoCliExtractor {
             .build();
     }
 
+    private List<String> runCargoTreeCommand(File directory, ExecutableTarget cargoExe, List<String> commandArgs) throws ExecutableFailedException {
+        ExecutableOutput output = executableRunner.executeSuccessfully(
+            ExecutableUtils.createFromTarget(directory, cargoExe, commandArgs)
+        );
+        return output.getStandardOutputAsList();
+    }
+
+    private List<String> handleNormalDependencyExclusion(File directory, ExecutableTarget cargoExe, List<String> fullTreeOutput) throws ExecutableFailedException {
+        List<String> normalOnlyCommand = new ArrayList<>(CARGO_TREE_COMMAND);
+        normalOnlyCommand.add("--edges");
+        normalOnlyCommand.add("normal");
+        List<String> normalTreeOutput = runCargoTreeCommand(directory, cargoExe, normalOnlyCommand);
+
+        return subtractNormalDependencies(fullTreeOutput, normalTreeOutput);
+    }
+
+    private List<String> subtractNormalDependencies(List<String> fullTreeOutput, List<String> normalTreeOutput) {
+        List<String> result = new ArrayList<>(fullTreeOutput);
+        for (String normalLine : normalTreeOutput) {
+            int index = result.indexOf(normalLine);
+            if (index != -1) {
+                result.remove(index);
+            }
+        }
+        return result;
+    }
+
     private void addEdgeExclusions(List<String> cargoTreeCommand, CargoDetectableOptions options) {
         Map<CargoDependencyType, String> exclusionMap = new EnumMap<>(CargoDependencyType.class);
-        exclusionMap.put(CargoDependencyType.NORMAL, "no-normal");
         exclusionMap.put(CargoDependencyType.BUILD, "no-build");
         exclusionMap.put(CargoDependencyType.DEV, "no-dev");
         exclusionMap.put(CargoDependencyType.PROC_MACRO, "no-proc-macro");
