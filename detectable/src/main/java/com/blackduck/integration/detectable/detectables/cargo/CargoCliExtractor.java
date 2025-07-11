@@ -38,6 +38,8 @@ public class CargoCliExtractor {
     public Extraction extract(File directory, ExecutableTarget cargoExe, File cargoTomlFile, CargoDetectableOptions cargoDetectableOptions) throws ExecutableFailedException, IOException {
         List<String> cargoTreeCommand = new ArrayList<>(CARGO_TREE_COMMAND);
 
+        // Adding the --edges exclusion option based on the CargoDetectableOptions to the cargo tree command
+        // This excludes build, dev or both type of dependencies if specified
         addEdgeExclusions(cargoTreeCommand, cargoDetectableOptions);
 
         ExecutableOutput cargoOutput = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(directory, cargoExe, cargoTreeCommand));
@@ -61,10 +63,8 @@ public class CargoCliExtractor {
 
     private void addEdgeExclusions(List<String> cargoTreeCommand, CargoDetectableOptions options) {
         Map<CargoDependencyType, String> exclusionMap = new EnumMap<>(CargoDependencyType.class);
-        exclusionMap.put(CargoDependencyType.NORMAL, "no-normal");
         exclusionMap.put(CargoDependencyType.BUILD, "no-build");
         exclusionMap.put(CargoDependencyType.DEV, "no-dev");
-        exclusionMap.put(CargoDependencyType.PROC_MACRO, "no-proc-macro");
 
         List<String> exclusions = new ArrayList<>();
         for (Map.Entry<CargoDependencyType, String> entry : exclusionMap.entrySet()) {

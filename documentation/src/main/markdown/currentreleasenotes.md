@@ -32,6 +32,8 @@
 
 * Support for SBT is now extended to 1.11.3.
 
+* A new property, `detect.cargo.dependency.types.excluded` has been added to allow exclusion of specific Cargo dependency types (`DEV`, `BUILD`) from scans. By default, all dependency types are included (`NONE`). This provides finer control over the dependencies reported in the BOM.
+
 ### Changed features
 
 * To improve processing time when both PNPM and NPM detectors apply to a directory, only PNPM detector will execute, producing the same quality of results.
