@@ -39,18 +39,10 @@ public class CargoCliExtractor {
         List<String> fullTreeCommand = new ArrayList<>(CARGO_TREE_COMMAND);
 
         // Adding the --edges exclusion option based on the CargoDetectableOptions to the cargo tree command
-        // This excludes build, dev, and proc-macro dependencies if specified
-        // Normal dependencies are handled separately later as a special case
+        // This excludes build, dev or both type of dependencies if specified
         addEdgeExclusions(fullTreeCommand, cargoDetectableOptions);
 
         List<String> fullTreeOutput = runCargoTreeCommand(directory, cargoExe, fullTreeCommand);
-
-        // Checking whether normal dependencies are to be excluded
-        // if so, collect normal dependencies and subtract from the above tree
-        boolean excludeNormal = cargoDetectableOptions.getDependencyTypeFilter().shouldExclude(CargoDependencyType.NORMAL);
-        if (excludeNormal) {
-            fullTreeOutput = handleNormalDependencyExclusion(directory, cargoExe, fullTreeOutput);
-        }
 
         DependencyGraph graph = cargoDependencyTransformer.transform(fullTreeOutput);
 
@@ -75,31 +67,10 @@ public class CargoCliExtractor {
         return output.getStandardOutputAsList();
     }
 
-    private List<String> handleNormalDependencyExclusion(File directory, ExecutableTarget cargoExe, List<String> fullTreeOutput) throws ExecutableFailedException {
-        List<String> normalOnlyCommand = new ArrayList<>(CARGO_TREE_COMMAND);
-        normalOnlyCommand.add("--edges");
-        normalOnlyCommand.add("normal");
-        List<String> normalTreeOutput = runCargoTreeCommand(directory, cargoExe, normalOnlyCommand);
-
-        return subtractNormalDependencies(fullTreeOutput, normalTreeOutput);
-    }
-
-    private List<String> subtractNormalDependencies(List<String> fullTreeOutput, List<String> normalTreeOutput) {
-        List<String> result = new ArrayList<>(fullTreeOutput);
-        for (String normalLine : normalTreeOutput) {
-            int index = result.indexOf(normalLine);
-            if (index != -1) {
-                result.remove(index);
-            }
-        }
-        return result;
-    }
-
     private void addEdgeExclusions(List<String> cargoTreeCommand, CargoDetectableOptions options) {
         Map<CargoDependencyType, String> exclusionMap = new EnumMap<>(CargoDependencyType.class);
         exclusionMap.put(CargoDependencyType.BUILD, "no-build");
         exclusionMap.put(CargoDependencyType.DEV, "no-dev");
-        exclusionMap.put(CargoDependencyType.PROC_MACRO, "no-proc-macro");
 
         List<String> exclusions = new ArrayList<>();
         for (Map.Entry<CargoDependencyType, String> entry : exclusionMap.entrySet()) {
