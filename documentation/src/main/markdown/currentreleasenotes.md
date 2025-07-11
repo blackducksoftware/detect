@@ -30,6 +30,8 @@
 
 * [detect_product_long] will now provide an option to generate [bd_product_long] risk report in a parseable (JSON) format. See [Risk Report Generation](results/reports.md) for more details.
 
+* Support for SBT is now extended to 1.11.3.
+
 ### Changed features
 
 * To improve processing time when both PNPM and NPM detectors apply to a directory, only PNPM detector will execute, producing the same quality of results.
@@ -41,4 +43,4 @@
 
 ### Dependency updates
 
-* Support for SBT is now extended to 1.11.3.
+* 
