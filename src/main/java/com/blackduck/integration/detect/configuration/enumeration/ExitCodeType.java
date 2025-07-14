@@ -14,16 +14,16 @@ public enum ExitCodeType {
     FAILURE_BLACKDUCK_VERSION_NOT_SUPPORTED(
         10,
         "Detect's configuration requires a Black Duck capability that is not supported by your version of Black Duck. Ensure that your Black Duck version is compatible with this version of Detect."
-            ),
+    ),
     FAILURE_BLACKDUCK_FEATURE_ERROR(
         11,
         "Detect encountered an error while attempting an operation on Black Duck. Ensure that your Black Duck version is compatible with this version of Detect, and that your Black Duck user account has the required roles."
-            ),
+    ),
     FAILURE_MINIMUM_INTERVAL_NOT_MET(13, "Detect did not wait the minimum required scan interval."),
     FAILURE_IAC(
         14,
         "Detect was unable to perform IaC Scan against your source. Please check your configuration, and see logs and IaC Scanner documentation for more information."
-            ),
+    ),
 
     FAILURE_ACCURACY_NOT_MET(15, "Detect was unable to meet the required accuracy."),
     FAILURE_OUT_OF_MEMORY(16, "Detect encountered an Out of Memory error. Please review memory settings and system resources.", 0.5),
