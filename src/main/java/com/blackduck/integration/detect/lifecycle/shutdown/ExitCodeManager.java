@@ -30,7 +30,7 @@ public class ExitCodeManager {
 
     public ExitCodeRequest getWinningExitCodeRequest() {
         ExitCodeType championExitCodeType = ExitCodeType.SUCCESS;
-        ExitCodeRequest championExitCodeRequest = null;
+        ExitCodeRequest championExitCodeRequest = new ExitCodeRequest(championExitCodeType);
 
         for (ExitCodeRequest exitCodeRequest : exitCodeRequests) {
             ExitCodeType thisRoundsWinner = ExitCodeType.getWinningExitCodeType(championExitCodeType, exitCodeRequest.getExitCodeType());
