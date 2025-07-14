@@ -28,24 +28,18 @@ public class ExitCodeManager {
         exitCodeRequests.add(request);
     }
 
-    public ExitCodeType getWinningExitCode() {
+    public ExitCodeRequest getWinningExitCodeRequest() {
         ExitCodeType championExitCodeType = ExitCodeType.SUCCESS;
-        // match exitcodetype with its corresponding exitcoderequest which has reason
-        ExitCodeRequest winningRequest = null;
-        for (ExitCodeRequest exitCodeRequest : exitCodeRequests) {
-            ExitCodeType nextContender = exitCodeRequest.getExitCodeType();
-            ExitCodeType thisRoundsWinner = ExitCodeType.getWinningExitCodeType(championExitCodeType, nextContender);
+        ExitCodeRequest championExitCodeRequest = null;
 
-            // dethrone
+        for (ExitCodeRequest exitCodeRequest : exitCodeRequests) {
+            ExitCodeType thisRoundsWinner = ExitCodeType.getWinningExitCodeType(championExitCodeType, exitCodeRequest.getExitCodeType());
+
             if (thisRoundsWinner != championExitCodeType) {
                 championExitCodeType = thisRoundsWinner;
-                winningRequest = exitCodeRequest;
+                championExitCodeRequest = exitCodeRequest;
             }
         }
-
-        if (winningRequest != null && winningRequest.getReason() != null) {
-            championExitCodeType.setDescription(winningRequest.getReason());
-        }
-        return championExitCodeType;
+        return championExitCodeRequest;
     }
 }

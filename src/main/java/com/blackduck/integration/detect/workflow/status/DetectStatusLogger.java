@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
 import com.blackduck.integration.detect.lifecycle.autonomous.AutonomousManager;
 import com.blackduck.integration.detect.lifecycle.autonomous.ScanSettingsSerializer;
+import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodeRequest;
 import com.blackduck.integration.detect.workflow.result.DetectResult;
 import com.blackduck.integration.log.IntLogger;
 
@@ -36,7 +37,7 @@ public class DetectStatusLogger {
         List<DetectResult> detectResults,
         List<DetectIssue> detectIssues,
         List<Operation> detectOperations,
-        ExitCodeType exitCodeType,
+        ExitCodeRequest exitCodeRequest,
         Optional<AutonomousManager> autonomousManagerOptional
     ) {
         logger.info("");
@@ -53,11 +54,11 @@ public class DetectStatusLogger {
         logDetectResults(logger, detectResults);
         logDetectStatus(logger, statusSummaries);
 
-        Optional<String> gettingSupportAdvice = getAdvice(exitCodeType);
+        Optional<String> gettingSupportAdvice = getAdvice(exitCodeRequest);
 
-        String exitMessage = String.format("Overall Status: %s - %s", exitCodeType.toString(), exitCodeType.getDescription());
+        String exitMessage = String.format("Overall Status: %s - %s", exitCodeRequest.getExitCodeType().toString(), exitCodeRequest.getReason());
         
-        if (exitCodeType.isSuccess()) {
+        if (exitCodeRequest.getExitCodeType().isSuccess()) {
             logger.info(exitMessage);
         } else {
             logger.error(exitMessage); 
@@ -182,8 +183,8 @@ public class DetectStatusLogger {
         }
     }
 
-    private Optional<String> getAdvice(ExitCodeType exitCode) {
-        if (!doNotRequireAdvice.contains(exitCode)) {
+    private Optional<String> getAdvice(ExitCodeRequest exitCodeRequest) {
+        if (!doNotRequireAdvice.contains(exitCodeRequest.getExitCodeType())) {
             return Optional.of(
                 "If you need help troubleshooting this problem, generate a diagnostic zip file by adding '-d' to the command line, and provide it to Black Duck Technical Support. See 'Diagnostic Mode' in the Detect documentation for more information.");
         }

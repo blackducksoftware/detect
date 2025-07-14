@@ -38,10 +38,11 @@ public class ExitManager {
         }
 
         //Find the final (as requested) exit code
-        ExitCodeType finalExitCode = exitCodeManager.getWinningExitCode();
+        ExitCodeRequest finalExitCodeRequest = exitCodeManager.getWinningExitCodeRequest();
+        ExitCodeType finalExitCodeType = finalExitCodeRequest.getExitCodeType();
 
         //Print detect's status
-        statusManager.logDetectResults(new Slf4jIntLogger(logger), finalExitCode, autonomousManagerOptional);
+        statusManager.logDetectResults(new Slf4jIntLogger(logger), finalExitCodeRequest, autonomousManagerOptional);
 
         //Print duration of run
         long endTime = System.currentTimeMillis();
@@ -49,16 +50,16 @@ public class ExitManager {
         logger.info("Detect duration: {}", duration);
 
         //Exit with formal exit code
-        if (finalExitCode != ExitCodeType.SUCCESS && forceSuccessExit) {
-            logger.warn("Forcing success: Exiting with exit code 0. Ignored exit code was {}.", finalExitCode.getExitCode());
-        } else if (finalExitCode != ExitCodeType.SUCCESS) {
-            logger.error("Exiting with code {} - {}", finalExitCode.getExitCode(), finalExitCode);
+        if (finalExitCodeType != ExitCodeType.SUCCESS && forceSuccessExit) {
+            logger.warn("Forcing success: Exiting with exit code 0. Ignored exit code was {}.", finalExitCodeType.getExitCode());
+        } else if (finalExitCodeType != ExitCodeType.SUCCESS) {
+            logger.error("Exiting with code {} - {}", finalExitCodeType.getExitCode(), finalExitCodeType);
         }
 
         if (!shouldExit) {
-            logger.info("Would normally exit({}) but it is overridden.", finalExitCode.getExitCode());
+            logger.info("Would normally exit({}) but it is overridden.", finalExitCodeType.getExitCode());
         }
 
-        return new ExitResult(finalExitCode, forceSuccessExit, shouldExit);
+        return new ExitResult(finalExitCodeType, forceSuccessExit, shouldExit);
     }
 }

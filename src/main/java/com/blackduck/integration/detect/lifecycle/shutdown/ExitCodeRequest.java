@@ -20,6 +20,9 @@ public class ExitCodeRequest {
     }
 
     public String getReason() {
-        return reason;
+        if (reason != null) {
+            return reason;
+        }
+        return exitCodeType.getDescription();
     }
 }
