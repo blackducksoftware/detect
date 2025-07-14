@@ -46,8 +46,13 @@ public class CargoTomlParser {
             NameVersion nameVersion = entry.getKey();
             EnumSet<CargoDependencyType> types = entry.getValue();
 
-            boolean shouldBeIncluded = types.stream()
-                    .anyMatch(type -> !dependencyTypeFilter.shouldExclude(type));
+            boolean shouldBeIncluded;
+            if (dependencyTypeFilter == null) {
+                shouldBeIncluded = true; // No filter, include all
+            } else {
+                shouldBeIncluded = types.stream()
+                        .anyMatch(type -> !dependencyTypeFilter.shouldExclude(type));
+            }
 
             if (shouldBeIncluded) {
                 dependenciesToInclude.add(nameVersion);
