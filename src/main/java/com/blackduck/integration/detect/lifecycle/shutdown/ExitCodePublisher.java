@@ -12,7 +12,7 @@ public class ExitCodePublisher {
     }
 
     public void publishExitCode(ExitCodeType exitCodeType, String reason) {
-        eventSystem.publishEvent(Event.ExitCode, new ExitCodeRequest(exitCodeType, reason)); // exitcoderequest that extends whatever
+        eventSystem.publishEvent(Event.ExitCode, new ExitCodeRequest(exitCodeType, reason));
     }
 
     public void publishExitCode(ExitCodeType exitCodeType) {
