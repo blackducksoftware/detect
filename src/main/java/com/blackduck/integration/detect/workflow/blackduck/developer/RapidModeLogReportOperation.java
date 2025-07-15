@@ -36,22 +36,8 @@ public class RapidModeLogReportOperation {
         aggregateResult.logResult(new Slf4jIntLogger(logger));
         RapidScanResultSummary summary = aggregateResult.getSummary();
         if (summary.hasErrors()) {
-            exitCodePublisher.publishExitCode(new ExitCodeRequestWithCustomDescription(ExitCodeType.FAILURE_POLICY_VIOLATION, createViolationMessage(summary.getPolicyViolationNames())));
+            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_POLICY_VIOLATION);
         }
         return summary;
-    }
-
-    private String createViolationMessage(Set<String> violatedPolicyNames) {
-        StringBuilder stringBuilder = new StringBuilder(200);
-        stringBuilder.append("Black Duck found:");
-        stringBuilder.append(fixComponentPlural(" %d %s in violation", violatedPolicyNames.size()));
-        return stringBuilder.toString();
-    }
-
-    private String fixComponentPlural(String formatString, int count) {
-        String label = "components";
-        if (count == 1)
-            label = "component";
-        return String.format(formatString, count, label);
     }
 }

@@ -11,12 +11,8 @@ public class ExitCodePublisher {
         this.eventSystem = eventSystem;
     }
 
-    public void publishExitCode(ExitCodeType exitCodeType, String reason) {
-        eventSystem.publishEvent(Event.ExitCode, new ExitCodeRequest(exitCodeType, reason));
-    }
-
     public void publishExitCode(ExitCodeType exitCodeType) {
-        publishExitCode(exitCodeType, null);
+        eventSystem.publishEvent(Event.ExitCode, new ExitCodeRequest(exitCodeType, null));
     }
 
     public void publishExitCode(ExitCodeRequestWithCustomDescription exitCodeRequest) {
