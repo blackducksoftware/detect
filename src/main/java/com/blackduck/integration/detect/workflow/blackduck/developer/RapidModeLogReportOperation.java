@@ -3,6 +3,7 @@ package com.blackduck.integration.detect.workflow.blackduck.developer;
 import java.util.List;
 import java.util.Set;
 
+import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodeRequestWithCustomDescription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +36,7 @@ public class RapidModeLogReportOperation {
         aggregateResult.logResult(new Slf4jIntLogger(logger));
         RapidScanResultSummary summary = aggregateResult.getSummary();
         if (summary.hasErrors()) {
-            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_POLICY_VIOLATION, createViolationMessage(summary.getPolicyViolationNames()));
+            exitCodePublisher.publishExitCode(new ExitCodeRequestWithCustomDescription(ExitCodeType.FAILURE_POLICY_VIOLATION, createViolationMessage(summary.getPolicyViolationNames())));
         }
         return summary;
     }

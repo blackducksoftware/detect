@@ -8,6 +8,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodeRequestWithCustomDescription;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -61,8 +62,8 @@ public class PolicyChecker {
                 logFatalViolationMessages(allComponentsWithViolations.fatalViolations);
                 logNonFatalViolationMessages(allComponentsWithViolations.otherViolations);
                 if (!allComponentsWithViolations.fatalViolations.isEmpty()) {
-                    String violationReason = StringUtils.join(fatalViolatedPolicyNames, ", ");
-                    exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_POLICY_VIOLATION, "Detect found policy violations by name. The following policies were violated: " + violationReason);
+                    String violatedPolicyNames = StringUtils.join(fatalViolatedPolicyNames, ", ");
+                    exitCodePublisher.publishExitCode(new ExitCodeRequestWithCustomDescription(ExitCodeType.FAILURE_POLICY_VIOLATION, "Detect found policy violations by name. The following policies were violated: " + violatedPolicyNames));
                 }
             }
         } else {

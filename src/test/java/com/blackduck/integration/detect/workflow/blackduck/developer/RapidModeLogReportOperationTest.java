@@ -9,6 +9,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodeRequestWithCustomDescription;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -53,7 +54,14 @@ public class RapidModeLogReportOperationTest {
         RapidScanResultSummary returnedSummary = op.perform(results, violatingPoicies);
 
         assertEquals(summary, returnedSummary);
-        Mockito.verify(exitCodePublisher, Mockito.times(1))
-            .publishExitCode(Mockito.eq(ExitCodeType.FAILURE_POLICY_VIOLATION), org.mockito.AdditionalMatchers.find(".* 2.*violation.*"));
+
+        Mockito.verify(exitCodePublisher).publishExitCode(Mockito.<ExitCodeRequestWithCustomDescription>argThat(arg -> {
+            if (arg == null) return false;
+            return arg.getExitCodeType() == ExitCodeType.FAILURE_POLICY_VIOLATION &&
+                    arg.getReason().matches(".*2.*violation.*");
+        }));
+
+
+
     }
 }

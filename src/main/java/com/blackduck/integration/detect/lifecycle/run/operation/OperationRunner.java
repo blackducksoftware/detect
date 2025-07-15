@@ -1373,7 +1373,7 @@ public class OperationRunner {
     public void publishSignatureFailure(String message) {
         logger.error("Signature scan failure: {}", message);
         statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.SIGNATURE_SCAN, StatusType.FAILURE));
-        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR, "SIGNATURE_SCAN");
+        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR);
     }
     
     public void publishBinarySuccess() {
