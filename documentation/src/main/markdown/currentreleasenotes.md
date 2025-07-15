@@ -22,8 +22,9 @@
 
 ### New features
 
-* SCA Scan Service (SCASS) has been extended to work with package manager and signature scans. For further information see [About SCASS](https://documentation.blackduck.com/bundle/bd-hub/page/ComponentDiscovery/aboutScaScanService.html)
-
+* SCA Scan Service (SCASS) is a scalable solution for performing software composition analysis scans outside of the traditional [bd_product_long] environment. This [detect_product_short] release provides support for SCA Scan Service (SCASS) package manager and signature scans when deployed with [bd_product_short] version 2025.7.0 or later. For further information see [About SCASS](https://documentation.blackduck.com/bundle/bd-hub/page/ComponentDiscovery/aboutScaScanService.html).    
+	* See IP address notice above for details on related IP configuration requirements for your deployments.
+ 
 * A new property, [detect.stateless.policy.check.fail.on.severities](properties/basic-properties.html#ariaid-title34) has been added, which will trigger [detect_product_short] to fail the scan and notify the user if a policy violation matches the configured value. This property overrides the default "Blocker" and "Critical" severity settings that cause [detect_product_short] scans to exit. This property applies to both [Rapid](runningdetect/rapidscan.md) and [Stateless](runningdetect/statelessscan.md) scans. Intelligent persistent scans, (when scan mode is not set to RAPID, STATELESS, or [--detect.blackduck.scan.mode](properties/all-properties.html#ariaid-title5) is explicitly set to INTELLIGENT and scan data is persisted), should continue using the [detect.policy.check.fail.on.severities](properties/basic-properties.html#ariaid-title34), property.
 
 * To provide greater control over Cargo dependencies reported in the BOM, a new property, `detect.cargo.dependency.types.excluded` has been added to allow exclusion of specific Cargo dependency types (`DEV`, `BUILD`) from scans. The default behavior (`NONE`) will include all dependency types.
