@@ -62,7 +62,7 @@ public class PolicyChecker {
                 logNonFatalViolationMessages(allComponentsWithViolations.otherViolations);
                 if (!allComponentsWithViolations.fatalViolations.isEmpty()) {
                     String violationReason = StringUtils.join(fatalViolatedPolicyNames, ", ");
-                    exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_POLICY_NAME_VIOLATION, "Detect found policy violations by name. The following policies were violated: " + violationReason);
+                    exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_POLICY_VIOLATION, "Detect found policy violations by name. The following policies were violated: " + violationReason);
                 }
             }
         } else {

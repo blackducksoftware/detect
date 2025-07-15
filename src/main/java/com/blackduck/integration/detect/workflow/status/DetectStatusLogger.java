@@ -21,7 +21,6 @@ public class DetectStatusLogger {
     private static final List<ExitCodeType> doNotRequireAdvice = Arrays.asList(
         ExitCodeType.SUCCESS,
         ExitCodeType.FAILURE_POLICY_VIOLATION,
-        ExitCodeType.FAILURE_POLICY_NAME_VIOLATION,
         ExitCodeType.FAILURE_BLACKDUCK_CONNECTIVITY,
         ExitCodeType.FAILURE_PROXY_CONNECTIVITY,
         ExitCodeType.FAILURE_DETECTOR_REQUIRED,
