@@ -73,9 +73,9 @@ public class NpmLockfileGraphTransformerTest {
         // as normally the requires would be in one area of the structure and the dependencies
         // in another but this is a unit test and we are only concerned about workspace dependencies becoming
         // direct dependencies in the final graph.
-        NpmDependency workspaceDependency = new NpmDependency("packages/a", "1.0.0", false, false);
-        NpmDependency simpleDependency1 = new NpmDependency("abbrev", "^2.0.0", false, false);
-        NpmDependency simpleDependency2 = new NpmDependency("send", "0.17.2", false, false);
+        NpmDependency workspaceDependency = new NpmDependency("packages/a", "1.0.0", false, false, false);
+        NpmDependency simpleDependency1 = new NpmDependency("abbrev", "^2.0.0", false, false, false);
+        NpmDependency simpleDependency2 = new NpmDependency("send", "0.17.2", false, false, false);
         NpmRequires workspaceRequires1 = new NpmRequires("abbrev", "^2.0.0");
         NpmRequires workspaceRequires2 = new NpmRequires("send", "0.17.2");
         requires.add(workspaceRequires1);
@@ -89,6 +89,7 @@ public class NpmLockfileGraphTransformerTest {
         NpmProject npmProject = new NpmProject(
             StringUtils.EMPTY,
             StringUtils.EMPTY,
+            Collections.emptyList(),
             Collections.emptyList(),
             Collections.emptyList(),
             Collections.emptyList(),

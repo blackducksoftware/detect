@@ -1,4 +1,4 @@
-# Current Release notes
+# Current [detect_product_short] release notes
 
 **Notices**   
 
@@ -18,19 +18,32 @@
 	* eu.store.scass.blackduck.com - 34.54.213.11
 	* eu.scass.blackduck.com - 34.54.38.252
 
-## Version 10.5.0
+## Version 10.6.0
 
 ### New features
 
-* Support for UV Package Manager has been added under [UV Detector](packagemgrs/python.md#uv-package-manager)
-* With the `detect.clone.project.version.name` parameter specified and `detect.project.version.update` set to true, [detect_product_short] will now clone, scan, and update the cloned project via parameters such as `detect.project.version.phase`.
+* SCA Scan Service (SCASS) has been extended to work with package manager and signature scans. For further information see [About SCASS](https://documentation.blackduck.com/bundle/bd-hub/page/ComponentDiscovery/aboutScaScanService.html)
+
+* A new property, [detect.stateless.policy.check.fail.on.severities](properties/basic-properties.html#ariaid-title34) has been added, which will trigger [detect_product_short] to fail the scan and notify the user if a policy violation matches the configured value. This property overrides the default "Blocker" and "Critical" severity settings that cause [detect_product_short] scans to exit. This property applies to both [Rapid](runningdetect/rapidscan.md) and [Stateless](runningdetect/statelessscan.md) scans. Intelligent persistent scans, (when scan mode is not set to RAPID, STATELESS, or [--detect.blackduck.scan.mode](properties/all-properties.html#ariaid-title5) is explicitly set to INTELLIGENT and scan data is persisted), should continue using the [detect.policy.check.fail.on.severities](properties/basic-properties.html#ariaid-title34), property.
+
+* To provide greater control over Cargo dependencies reported in the BOM, a new property, `detect.cargo.dependency.types.excluded` has been added to allow exclusion of specific Cargo dependency types (`DEV`, `BUILD`) from scans. The default behavior (`NONE`) will include all dependency types.
+
+* Node Package Manager (npm) scans now report optional dependencies. The `detect.npm.dependency.types.excluded` property has been extended to exclude optional dependencies if OPTIONAL is specified in the list of arguments.
+
+* [detect_product_long] will now provide an option to generate [bd_product_long] risk report in a parseable (JSON) format. See [Risk Report Generation](results/reports.md) for more details.
+
+* Support for SBT is now extended to 1.11.3.
+
+### Changed features
+
+* To improve processing time when both PNPM and NPM detectors apply to a directory, only PNPM detector will execute, producing the same quality of results.
 
 ### Resolved issues
 
-* (IDETECT-4177) - [detect_product_short] no longer requires that the X-Artifactory-Filename header is set when specifying an internally hosted version in [bd_product_long].
-* (IDETECT-3512) - To prevent issues when [bd_product_long] and [detect_product_short] disagree on the full list of categories, [detect_product_short] now sends an indicator specifying "all categories" when detect.project.clone.categories is set to ALL.
-* (IDETECT-4606) - Support for the exclusion of dependency types in [detect_product_short] Nuget Inspector now includes `project.assets.json` and `project.lock.json` files.
+* (IDETECT-4657) - Additional logging has been added for occurances of [detect_product_short] erroring out when loading a malformed Spring Boot config file. 
+<note type="hint">A valid Spring Boot config file can be specified via the `--spring.config.location=""` parameter.</note>
+* (IDETECT-4700) – Fixed Rapid Scans reporting policy violations from previous full scans when run in BOM_COMPARE or BOM_COMPARE_STRICT mode.
 
 ### Dependency updates
 
-* Upgraded and released Nuget Inspector version 2.2.0.
+* Upgraded and released Detect Docker Inspector version 11.4.0.

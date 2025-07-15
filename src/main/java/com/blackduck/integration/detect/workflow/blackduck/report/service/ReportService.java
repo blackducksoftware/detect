@@ -15,13 +15,15 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.pdfbox.pdmodel.font.PDType1Font;
-
+import com.blackduck.integration.detect.workflow.blackduck.report.json.RiskReportJsonWriter;
+import com.blackduck.integration.detect.workflow.blackduck.report.util.ReportFileUtil;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+
 import com.blackduck.integration.blackduck.api.core.response.UrlMultipleResponses;
 import com.blackduck.integration.blackduck.api.generated.deprecated.view.PolicyStatusView;
 import com.blackduck.integration.blackduck.api.generated.discovery.ApiDiscovery;
@@ -96,15 +98,7 @@ public class ReportService extends DataService {
         if (noticesReportContent == null) {
             return null;
         }
-        String escapedProjectName = escapeUtil.replaceWithUnderscore(projectName);
-        String escapedProjectVersionName = escapeUtil.replaceWithUnderscore(projectVersionName);
-        File noticesReportFile = new File(outputDirectory, escapedProjectName + "_" + escapedProjectVersionName + "_Black_Duck_Notices_Report.txt");
-        if (noticesReportFile.exists()) {
-            boolean deleted = noticesReportFile.delete();
-            if (!deleted) {
-                logger.warn(String.format("Unable to delete existing file %s before re-creating it", noticesReportFile.getAbsolutePath()));
-            }
-        }
+        File noticesReportFile = ReportFileUtil.createReportFile(outputDirectory, projectName, projectVersionName, "txt","_Black_Duck_Notices_Report");
         try (FileWriter writer = new FileWriter(noticesReportFile)) {
             logger.trace("Creating Notices Report in : " + outputDirectory.getCanonicalPath());
             writer.write(noticesReportContent);
@@ -188,12 +182,12 @@ public class ReportService extends DataService {
     }
 
     public File createReportPdfFile(File outputDirectory, ProjectView project, ProjectVersionView version) throws IntegrationException {
-        return createReportPdfFile(outputDirectory, project, version, document -> PDType1Font.HELVETICA, document -> PDType1Font.HELVETICA_BOLD);
+        ReportData reportData = getRiskReportData(project, version);
+        return createReportPdfFile(outputDirectory, document -> PDType1Font.HELVETICA, document -> PDType1Font.HELVETICA_BOLD, reportData);
     }
 
-    public File createReportPdfFile(File outputDirectory, ProjectView project, ProjectVersionView version, FontLoader fontLoader, FontLoader boldFontLoader)
+    public File createReportPdfFile(File outputDirectory, FontLoader fontLoader, FontLoader boldFontLoader, ReportData reportData)
         throws IntegrationException {
-        ReportData reportData = getRiskReportData(project, version);
         return createReportPdfFile(outputDirectory, reportData, fontLoader, boldFontLoader);
     }
 
@@ -211,6 +205,19 @@ public class ReportService extends DataService {
         } catch (RiskReportException | IOException e) {
             throw new BlackDuckIntegrationException(e.getMessage(), e);
         }
+    }
+
+    public File createReportJsonFile(File outputDirectory, ProjectView project, ProjectVersionView version) throws IntegrationException, IOException {
+        ReportData reportData = getRiskReportData(project, version);
+        return createReportJsonFile(outputDirectory, reportData);
+    }
+
+    public File createReportJsonFile(File outputDirectory, ReportData reportData) throws IOException {
+        logger.trace("Creating Risk Report json in : " + outputDirectory.getCanonicalPath());
+        File jsonFile = RiskReportJsonWriter.createRiskReportJsonFile(outputDirectory, reportData);
+        logger.trace("Created Risk Report Json : " + jsonFile.getCanonicalPath());
+
+        return jsonFile;
     }
 
     private HttpUrl getComponentPolicyURL(HttpUrl versionURL, String componentURL) throws IntegrationException {

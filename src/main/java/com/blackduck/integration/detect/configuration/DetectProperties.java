@@ -55,6 +55,7 @@ import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedRedu
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedSnippetMode;
 import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDependencyType;
+import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
 import com.blackduck.integration.detectable.detectables.conan.cli.config.ConanDependencyType;
 import com.blackduck.integration.detectable.detectables.dart.pubdep.DartPubDependencyType;
 import com.blackduck.integration.detectable.detectables.go.gomod.GoModDependencyType;
@@ -607,6 +608,17 @@ public class DetectProperties {
             .setInfo("flutter Executable", DetectPropertyFromVersion.VERSION_7_5_0)
             .setHelp("The path to the flutter executable.")
             .setGroups(DetectGroup.DART, DetectGroup.GLOBAL)
+            .build();
+
+    public static final NoneEnumListProperty<CargoDependencyType> DETECT_CARGO_DEPENDENCY_TYPES_EXCLUDED =
+        NoneEnumListProperty.newBuilder("detect.cargo.dependency.types.excluded", NoneEnum.NONE, CargoDependencyType.class)
+            .setInfo("Cargo Dependency Types Excluded", DetectPropertyFromVersion.VERSION_10_6_0)
+            .setHelp(
+                "A comma-separated list of dependency types that will be excluded.",
+                "The Cargo CLI Detector uses cargo tree flags to exclude the specified types, while the Cargo Lockfile Detector filters dependencies by reading Cargo.toml. For example, passing `detect.cargo.dependency.types.excluded=DEV` will skip [dev-dependencies] from detection."
+            )
+            .setExample(CargoDependencyType.DEV.name())
+            .setGroups(DetectGroup.CARGO, DetectGroup.DETECTOR, DetectGroup.GLOBAL)
             .build();
 
     public static final NoneEnumListProperty<PipenvDependencyType> DETECT_PIPFILE_DEPENDENCY_TYPES_EXCLUDED =
@@ -1220,7 +1232,7 @@ public class DetectProperties {
     public static final NoneEnumListProperty<NugetDependencyType> DETECT_NUGET_DEPENDENCY_TYPES_EXCLUDED =
         NoneEnumListProperty.newBuilder("detect.nuget.dependency.types.excluded", NoneEnum.NONE, NugetDependencyType.class)
             .setInfo("Nuget Dependency Types Excluded", DetectPropertyFromVersion.VERSION_9_4_0)
-            .setHelp(createTypeFilterHelpText("Nuget dependency types"), "This property supports exclusion of dependencies in projects that use PackageReference or packages.config. This property does not apply to scans that analyze project.json, project.lock.json or project.assets.json.")
+            .setHelp(createTypeFilterHelpText("Nuget dependency types"), "This property supports exclusion of dependencies in projects that use PackageReference, packages.config, project.lock.json or project.assets.json. This property does not apply to scans that analyze project.json.")
             .setExample(String.format("%s", NugetDependencyType.DEV.name()))
             .setGroups(DetectGroup.NUGET, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
@@ -1396,9 +1408,9 @@ public class DetectProperties {
     
     public static final AllNoneEnumListProperty<PolicyRuleSeverityType> DETECT_STATELESS_POLICY_CHECK_FAIL_ON_SEVERITIES =
         AllNoneEnumListProperty.newBuilder("detect.stateless.policy.check.fail.on.severities", Arrays.asList(PolicyRuleSeverityType.BLOCKER, PolicyRuleSeverityType.CRITICAL), PolicyRuleSeverityType.class)
-            .setInfo("Fail on Stateless Policy Violation Severities", DetectPropertyFromVersion.VERSION_10_5_0)
+            .setInfo("Fail on Stateless Policy Violation Severities", DetectPropertyFromVersion.VERSION_10_6_0)
             .setHelp(
-                "A comma-separated list of policy violation severities that will fail Detect. If this is set to NONE, Detect will not fail due to policy violations. A value of ALL is equivalent to all of the other possible values except NONE.")
+                "A comma-separated list of policy violation severities that will fail Detect. If this is set to NONE, Detect will not fail due to policy violations. A value of ALL is equivalent to all of the other possible values except NONE. This property works for both stateless and rapid scans.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.GLOBAL, DetectGroup.PROJECT_SETTING, DetectGroup.POLICY)
             .build();
 
@@ -1639,12 +1651,26 @@ public class DetectProperties {
             .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL, DetectGroup.REPORT_SETTING)
             .build();
 
+    public static final BooleanProperty DETECT_RISK_REPORT_JSON =
+            BooleanProperty.newBuilder("detect.risk.report.json", false)
+                    .setInfo("Generate Risk Report (JSON)", DetectPropertyFromVersion.VERSION_10_6_0)
+                    .setHelp("When set to true, a Black Duck risk report in JSON form will be created.")
+                    .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL, DetectGroup.REPORT_SETTING)
+                    .build();
+
     public static final NullablePathProperty DETECT_RISK_REPORT_PDF_PATH =
         NullablePathProperty.newBuilder("detect.risk.report.pdf.path")
-            .setInfo("Risk Report Output Path", DetectPropertyFromVersion.VERSION_3_0_0)
+            .setInfo("Risk Report (PDF) Output Path", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp("The output directory for risk report in PDF. Default is the source directory.")
             .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL)
             .build();
+
+    public static final NullablePathProperty DETECT_RISK_REPORT_JSON_PATH =
+            NullablePathProperty.newBuilder("detect.risk.report.json.path")
+                    .setInfo("Risk Report (JSON) Output Path", DetectPropertyFromVersion.VERSION_10_6_0)
+                    .setHelp("The output directory for risk report in JSON. Default is the source directory.")
+                    .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL)
+                    .build();
 
     public static final NoneEnumListProperty<GemspecDependencyType> DETECT_RUBY_DEPENDENCY_TYPES_EXCLUDED =
         NoneEnumListProperty.newBuilder("detect.ruby.dependency.types.excluded", NoneEnum.NONE, GemspecDependencyType.class)

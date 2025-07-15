@@ -241,10 +241,14 @@ public class DetectConfigurationFactory {
     public RapidScanOptions createRapidScanOptions() {
         RapidCompareMode rapidCompareMode = detectConfiguration.getValue(DetectProperties.DETECT_BLACKDUCK_RAPID_COMPARE_MODE);
         BlackduckScanMode scanMode= detectConfiguration.getValue(DetectProperties.DETECT_BLACKDUCK_SCAN_MODE);
-        List<PolicyRuleSeverityType> severitiesToFailPolicyCheck = detectConfiguration.getValue(DetectProperties.DETECT_STATELESS_POLICY_CHECK_FAIL_ON_SEVERITIES).representedValues();
+        List<PolicyRuleSeverityType> severitiesToFailPolicyCheck = getPoliciesToFailOn();
         
         long detectTimeout = findTimeoutInSeconds();
         return new RapidScanOptions(rapidCompareMode, scanMode, detectTimeout, severitiesToFailPolicyCheck);
+    }
+
+    public List<PolicyRuleSeverityType> getPoliciesToFailOn() {
+        return detectConfiguration.getValue(DetectProperties.DETECT_STATELESS_POLICY_CHECK_FAIL_ON_SEVERITIES).representedValues();
     }
 
     public BlackduckScanMode createScanMode() {
@@ -445,9 +449,11 @@ public class DetectConfigurationFactory {
 
     public BlackDuckPostOptions createBlackDuckPostOptions() {
         Boolean waitForResults = detectConfiguration.getValue(DetectProperties.DETECT_WAIT_FOR_RESULTS);
-        Boolean runRiskReport = detectConfiguration.getValue(DetectProperties.DETECT_RISK_REPORT_PDF);
+        Boolean runRiskReportPdf = detectConfiguration.getValue(DetectProperties.DETECT_RISK_REPORT_PDF);
+        Boolean runRiskReportJson = detectConfiguration.getValue(DetectProperties.DETECT_RISK_REPORT_JSON);
         Boolean runNoticesReport = detectConfiguration.getValue(DetectProperties.DETECT_NOTICES_REPORT);
         Path riskReportPdfPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_RISK_REPORT_PDF_PATH);
+        Path riskReportJsonPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_RISK_REPORT_JSON_PATH);
         Path noticesReportPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NOTICES_REPORT_PATH);
         List<PolicyRuleSeverityType> severitiesToFailPolicyCheck = detectConfiguration.getValue(DetectProperties.DETECT_POLICY_CHECK_FAIL_ON_SEVERITIES).representedValues();
         List<String> policyNamesToFailPolicyCheck = detectConfiguration.getValue(DetectProperties.DETECT_POLICY_CHECK_FAIL_ON_NAMES);
@@ -455,13 +461,15 @@ public class DetectConfigurationFactory {
 
         return new BlackDuckPostOptions(
             waitForResults,
-            runRiskReport,
+            runRiskReportPdf,
             runNoticesReport,
             riskReportPdfPath,
             noticesReportPath,
             severitiesToFailPolicyCheck,
             policyNamesToFailPolicyCheck,
-            correlatedScanningEnabled
+            correlatedScanningEnabled,
+            runRiskReportJson,
+            riskReportJsonPath
         );
     }
 

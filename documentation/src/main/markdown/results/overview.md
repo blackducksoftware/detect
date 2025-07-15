@@ -1,4 +1,4 @@
-# Viewing and Managing Scan Results
+# Viewing and managing [detect_product_short] scan results
 
 ## Online mode
 
