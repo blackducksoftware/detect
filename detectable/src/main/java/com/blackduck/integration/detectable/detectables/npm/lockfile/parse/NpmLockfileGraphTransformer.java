@@ -111,9 +111,11 @@ public class NpmLockfileGraphTransformer {
                 NpmDependency resolved = lookupDependency(required.getName(), npmDependency, npmProject, externalDependencies);
                 if (resolved == null) {
                     logger.debug("No resolved dependency found for required package: {}", required.getName());
-                } else if (shouldIncludeDependency(resolved)) {
+                } else {
                     logger.trace(String.format("Found package: %s with version: %s", resolved.getName(), resolved.getVersion()));
-                    dependencyGraph.addChildWithParent(resolved, npmDependency);
+                    if (shouldIncludeDependency(resolved)) {
+                        dependencyGraph.addChildWithParent(resolved, npmDependency);
+                    }
                 }
             });
         }
