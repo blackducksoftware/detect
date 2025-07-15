@@ -125,8 +125,8 @@ public class PublishSignatureScanReportsTest {
         }
 
         @Override
-        public void publishExitCode(ExitCodeRequest exitCodeRequest) {
-            exitCodeRequests.add(exitCodeRequest);
+        public void publishExitCode(ExitCodeType exitCodeType) {
+            exitCodeRequests.add(new ExitCodeRequest(exitCodeType));
         }
     }
 
