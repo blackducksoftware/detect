@@ -11,11 +11,11 @@ public class ExitCodePublisher {
         this.eventSystem = eventSystem;
     }
 
-    public void publishExitCode(ExitCodeRequest exitCodeRequest) {
-        eventSystem.publishEvent(Event.ExitCode, exitCodeRequest);
+    public void publishExitCode(ExitCodeType exitCodeType, String reason) {
+        eventSystem.publishEvent(Event.ExitCode, new ExitCodeRequest(exitCodeType, reason));
     }
 
-    public void publishExitCode(ExitCodeType exitCodeType, String reason) {
-        publishExitCode(new ExitCodeRequest(exitCodeType, reason));
+    public void publishExitCode(ExitCodeType exitCodeType) {
+        publishExitCode(exitCodeType, null);
     }
 }

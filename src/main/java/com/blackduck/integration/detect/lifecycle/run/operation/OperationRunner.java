@@ -1293,19 +1293,19 @@ public class OperationRunner {
     public void publishBinaryFailure(String message) {
         logger.error("Binary scan failure: {}", message);
         statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.BINARY_SCAN, StatusType.FAILURE));
-        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR, "BINARY_SCAN");
+        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR);
     }
     
     public void publishContainerTimeout(Exception e) {
         logger.error("Container scan timeout: {}", e.getMessage());
         statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.CONTAINER_SCAN, StatusType.FAILURE));
-        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_TIMEOUT, "CONTAINER_SCAN");
+        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_TIMEOUT);
     }
 
     public void publishContainerFailure(Exception e) {
         logger.error("Container scan failure: {}", e.getMessage());
         statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.CONTAINER_SCAN, StatusType.FAILURE));
-        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR, "CONTAINER_SCAN");
+        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR);
     }
     
     public void publishBinarySuccess() {
@@ -1319,7 +1319,7 @@ public class OperationRunner {
     public void publishImpactFailure(Exception e) {
         logger.error("Impact analysis failure: {}", e.getMessage());
         statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.IMPACT_ANALYSIS, StatusType.FAILURE));
-        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR, "IMPACT_ANALYSIS");
+        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR);
     }
 
     public void publishImpactSuccess() {
@@ -1586,7 +1586,7 @@ public class OperationRunner {
         if (bomStatusScanView.getStatus() == BomStatusScanStatusType.FAILURE) {
             String message = "Black Duck failed to prepare BOM for the scan";
             logger.error("BOM Scan Status: {} - {}.", BomStatusScanStatusType.FAILURE, message);
-            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BOM_PREPARATION, message);
+            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BOM_PREPARATION);
         }
     }
 

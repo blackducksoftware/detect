@@ -39,7 +39,7 @@ public class PublishSignatureScanReports {
                     "The Signature Scanner reported an error%s. The Signature Scanner log may contain relevant information.",
                     report.getExitCode().map(code -> " (" + code + ")").orElse(".")
                 ));
-                exitCodePublisher.publishExitCode(new ExitCodeRequest(ExitCodeType.FAILURE_SCAN));
+                exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_SCAN);
             });
 
         if (!treatSkippedScanAsSuccess) {
@@ -49,7 +49,7 @@ public class PublishSignatureScanReports {
                 .ifPresent(report -> {
                     logger.error(
                         "The Signature Scanner skipped a scan because the minimum scan interval was not met.");
-                    exitCodePublisher.publishExitCode(new ExitCodeRequest(ExitCodeType.FAILURE_MINIMUM_INTERVAL_NOT_MET));
+                    exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_MINIMUM_INTERVAL_NOT_MET);
                 });
         }
     }

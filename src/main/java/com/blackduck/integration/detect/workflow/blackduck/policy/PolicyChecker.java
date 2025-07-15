@@ -93,7 +93,7 @@ public class PolicyChecker {
                 // or we have noticed violations while examining components in the BOM (fatalRulesViolated),
                 // fail the scan.
                 if (!allComponentsWithViolations.fatalViolations.isEmpty()) {
-                    exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_POLICY_VIOLATION, policyStatusDescription.getPolicyStatusMessage());
+                    exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_POLICY_VIOLATION);
                 }
             }
         } else {
