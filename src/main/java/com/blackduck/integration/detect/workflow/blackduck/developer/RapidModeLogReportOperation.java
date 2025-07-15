@@ -1,9 +1,7 @@
 package com.blackduck.integration.detect.workflow.blackduck.developer;
 
 import java.util.List;
-import java.util.Set;
 
-import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodeRequestWithCustomDescription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

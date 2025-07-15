@@ -1554,7 +1554,8 @@ public class OperationRunner {
     }
 
     public void publishDetectorFailure() {
-        eventSystem.publishEvent(Event.ExitCode, new ExitCodeRequest(ExitCodeType.FAILURE_DETECTOR, "A detector failed."));
+        ExitCodePublisher publisher = new ExitCodePublisher(eventSystem);
+        publisher.publishExitCode(ExitCodeType.FAILURE_DETECTOR);
     }
 
     public Optional<File> findRapidScanConfig() throws OperationException {

@@ -6,6 +6,7 @@ import java.util.List;
 import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
 import com.blackduck.integration.detect.workflow.event.Event;
 import com.blackduck.integration.detect.workflow.event.EventSystem;
+import org.jetbrains.annotations.TestOnly;
 
 public class ExitCodeManager {
     private final List<ExitCodeRequest> exitCodeRequests = new ArrayList<>();
@@ -24,6 +25,7 @@ public class ExitCodeManager {
         exitCodeRequests.add(new ExitCodeRequest(exitCodeType));
     }
 
+    @TestOnly
     public void addExitCodeRequest(ExitCodeRequest request) {
         exitCodeRequests.add(request);
     }

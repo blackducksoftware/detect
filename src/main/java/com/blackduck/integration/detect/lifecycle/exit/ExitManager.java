@@ -2,6 +2,7 @@ package com.blackduck.integration.detect.lifecycle.exit;
 
 import java.util.Optional;
 
+import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodePublisher;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +35,8 @@ public class ExitManager {
 
         //Generally, when requesting a failure status, an exit code is also requested, but if it is not, we default to an unknown error.
         if (statusManager.hasAnyFailure()) {
-            eventSystem.publishEvent(Event.ExitCode, new ExitCodeRequest(ExitCodeType.FAILURE_UNKNOWN_ERROR, "A failure status was requested by one or more of Detect's tools."));
+            ExitCodePublisher publisher = new ExitCodePublisher(eventSystem);
+            publisher.publishExitCode(ExitCodeType.FAILURE_UNKNOWN_ERROR);
         }
 
         //Find the final (as requested) exit code
