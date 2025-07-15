@@ -29,14 +29,12 @@ public class ExitCodeManager {
     }
 
     public ExitCodeRequest getWinningExitCodeRequest() {
-        ExitCodeType championExitCodeType = ExitCodeType.SUCCESS;
-        ExitCodeRequest championExitCodeRequest = new ExitCodeRequest(championExitCodeType);
+        ExitCodeRequest championExitCodeRequest = new ExitCodeRequest(ExitCodeType.SUCCESS);
 
         for (ExitCodeRequest exitCodeRequest : exitCodeRequests) {
-            ExitCodeType thisRoundsWinner = ExitCodeType.getWinningExitCodeType(championExitCodeType, exitCodeRequest.getExitCodeType());
+            ExitCodeType thisRoundsWinner = ExitCodeType.getWinningExitCodeType(championExitCodeRequest.getExitCodeType(), exitCodeRequest.getExitCodeType());
 
-            if (thisRoundsWinner != championExitCodeType) {
-                championExitCodeType = thisRoundsWinner;
+            if (thisRoundsWinner != championExitCodeRequest.getExitCodeType()) {
                 championExitCodeRequest = exitCodeRequest;
             }
         }
