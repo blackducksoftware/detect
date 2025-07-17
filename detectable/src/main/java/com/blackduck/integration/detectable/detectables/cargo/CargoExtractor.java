@@ -66,8 +66,13 @@ public class CargoExtractor {
 
         if (cargoTomlFile != null) {
             cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
-            dependenciesToInclude = cargoTomlParser.parseDependenciesToInclude(
-                    cargoTomlContents, cargoDetectableOptions.getDependencyTypeFilter());
+
+            EnumListFilter<CargoDependencyType> filter = null;
+            if (cargoDetectableOptions != null) {
+                filter = cargoDetectableOptions.getDependencyTypeFilter();
+            }
+
+            dependenciesToInclude = cargoTomlParser.parseDependenciesToInclude(cargoTomlContents, filter);
             filteredPackages = includeDependencies(cargoLockPackageDataList, dependenciesToInclude, resolvedRootDependencies);
         }
 
