@@ -61,7 +61,7 @@ public class PolicyChecker {
                 AllPolicyViolations allComponentsWithViolations = collectComponentsWithPolicyViolations(projectVersionView, ComponentPolicyRulesView::getName, fatalViolatedPolicyNames::contains);
                 logFatalViolationMessages(allComponentsWithViolations.fatalViolations);
                 logNonFatalViolationMessages(allComponentsWithViolations.otherViolations);
-                if (!allComponentsWithViolations.fatalViolations.isEmpty()) {
+                if (!fatalViolatedPolicyNames.isEmpty()) {
                     String violatedPolicyNames = StringUtils.join(fatalViolatedPolicyNames, ", ");
                     exitCodePublisher.publishExitCode(new ExitCodeRequestWithCustomDescription(ExitCodeType.FAILURE_POLICY_VIOLATION, "Detect found policy violations by name. The following policies were violated: " + violatedPolicyNames));
                 }
@@ -93,7 +93,7 @@ public class PolicyChecker {
                 // If Black Duck has reported policy violations in status description (fatalPolicySeveritiesAreViolated),
                 // or we have noticed violations while examining components in the BOM (fatalRulesViolated),
                 // fail the scan.
-                if (!allComponentsWithViolations.fatalViolations.isEmpty()) {
+                if (!allComponentsWithViolations.fatalViolations.isEmpty() || areFatalPolicySeveritiesViolated(policyStatusDescription, severitiesToFailPolicyCheck)) {
                     exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_POLICY_VIOLATION);
                 }
             }
@@ -142,7 +142,7 @@ public class PolicyChecker {
 
     private void logFatalViolationMessages(List<PolicyViolationInfo> fatalRulesViolated) {
         if (fatalRulesViolated.isEmpty()) {
-            logger.info("No fatal policy rule violations found.");
+            logger.info("No BOM components in violation of fatal policy rules found.");
             return;
         }
         logger.info("Fatal:");
@@ -203,6 +203,13 @@ public class PolicyChecker {
      return Arrays.stream(PolicyRuleSeverityType.values())
          .map(policyStatusDescription::getCountOfSeverity)
          .anyMatch(count -> count > 0);
+    }
+
+    // OLD METHOD
+    private boolean areFatalPolicySeveritiesViolated(PolicyStatusDescription policyStatusDescription, List<PolicyRuleSeverityType> fatalPolicySeverities) {
+        return fatalPolicySeverities.stream()
+                .map(policyStatusDescription::getCountOfSeverity)
+                .anyMatch(severityCount -> severityCount > 0);
     }
 
 
