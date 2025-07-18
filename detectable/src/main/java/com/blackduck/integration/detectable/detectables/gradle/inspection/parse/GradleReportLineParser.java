@@ -69,7 +69,7 @@ public class GradleReportLineParser {
             } else {
                 String group = gav.get(0);
                 String name = gav.get(1);
-                String version = gav.get(2).split("\\s")[0];
+                String version = StringUtils.substringBefore(gav.get(2), " ");
                 return GradleTreeNode.newGav(level, group, name, version);
             }
         }
