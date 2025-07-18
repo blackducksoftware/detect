@@ -205,7 +205,7 @@ public class PolicyChecker {
          .anyMatch(count -> count > 0);
     }
 
-    // OLD METHOD
+    // Checking policy violations at the component level will miss violations by unconfirmed snippet matches so we check the project version's policy status to decide whether to fail the scan.
     private boolean areFatalPolicySeveritiesViolated(PolicyStatusDescription policyStatusDescription, List<PolicyRuleSeverityType> fatalPolicySeverities) {
         return fatalPolicySeverities.stream()
                 .map(policyStatusDescription::getCountOfSeverity)
