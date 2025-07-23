@@ -105,15 +105,18 @@ public class CommonScanStepRunner {
             }
         }
 
-        return executeFallBack(scanType, operationRunner, blackDuckRunData, scanFile, scanId, projectNameVersion);
+        return executeFallBack(scanType, operationRunner, blackDuckRunData, scanFile, scanId, projectNameVersion, scanCreationResponse);
     }
 
-    private UUID executeFallBack(String scanType, OperationRunner operationRunner, BlackDuckRunData blackDuckRunData, Optional<File> scanFile, UUID scanId, NameVersion projectNameVersion) throws IntegrationException, OperationException {
+    private UUID executeFallBack(String scanType, OperationRunner operationRunner, BlackDuckRunData blackDuckRunData, Optional<File> scanFile, UUID scanId, NameVersion projectNameVersion, ScanCreationResponse scanCreationResponse) throws IntegrationException, OperationException {
         // This is a SCASS capable server but SCASS is not enabled or the GCP URL is inaccessible. If PACKAGE_MANGER scan, we use the same scanId
         if(!scanType.equals(PACKAGE_MANAGER)) {
             BdbaScanStepRunner bdbaScanStepRunner = createBdbaScanStepRunner(operationRunner);
             bdbaScanStepRunner.runBdbaScan(projectNameVersion, blackDuckRunData, scanFile, scanId.toString(), scanType);
         } else {
+            if(scanCreationResponse.getUploadUrl() != null) {
+                scanId = null;
+            }
             isPackageManagerScassPossible = false;
         }
 
