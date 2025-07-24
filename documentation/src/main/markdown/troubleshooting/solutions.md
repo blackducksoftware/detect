@@ -11,8 +11,11 @@ When running [detect_product_short] version 10.6.0 and [bd_product_short] server
 
 Rerun the scan after adding or updating the IP addresses listed below in your network firewalls or allow lists.
 
+* scass.blackduck.com - 35.244.200.22
+* na.scass.blackduck.com - 35.244.200.22
 * na.store.scass.blackduck.com - 34.54.95.139
 * eu.store.scass.blackduck.com - 34.54.213.11
+* eu.scass.blackduck.com - 34.54.38.252
 
 ## DETECT_SOURCE was not set or computed correctly
 
