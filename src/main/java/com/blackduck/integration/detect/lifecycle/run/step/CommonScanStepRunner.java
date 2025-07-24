@@ -114,6 +114,7 @@ public class CommonScanStepRunner {
             BdbaScanStepRunner bdbaScanStepRunner = createBdbaScanStepRunner(operationRunner);
             bdbaScanStepRunner.runBdbaScan(projectNameVersion, blackDuckRunData, scanFile, scanId.toString(), scanType);
         } else {
+            // When HUB generated GCP upload url and returned it to Detect, it does not expect anything except /scans/{scanId}/scass-scan-processing call after that, so we reset the scan Id to try the full fallback approach
             if(scanCreationResponse.getUploadUrl() != null) {
                 scanId = null;
             }
