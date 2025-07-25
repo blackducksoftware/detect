@@ -1651,10 +1651,11 @@ public class OperationRunner {
         });
     }
 
-    private void checkBomStatusAndHandleFailure(BomStatusScanView bomStatusScanView) {
-        if (bomStatusScanView.getStatus() == BomStatusScanStatusType.FAILURE) {
+    void checkBomStatusAndHandleFailure(BomStatusScanView bomStatusScanView) {
+        BomStatusScanStatusType status = bomStatusScanView.getStatus();
+        if (status != BomStatusScanStatusType.SUCCESS) {
             String message = "Black Duck failed to prepare BOM for the scan";
-            logger.error("BOM Scan Status: {} - {}.", BomStatusScanStatusType.FAILURE, message);
+            logger.error("BOM Scan Status: {} - {}.", status, message);
             exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BOM_PREPARATION);
         }
     }

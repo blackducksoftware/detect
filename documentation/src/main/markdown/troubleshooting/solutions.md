@@ -1,5 +1,22 @@
 # Common [detect_product_short] troubleshooting solutions
 
+## SCA Scan Service (SCASS) Store endpoint is not whitelisted for Signature Scans
+
+### Symptom
+
+When running [detect_product_short] version 10.6.0 and [bd_product_short] server 2025.7.0, [detect_product_short] fails with ```Signature scan failure: Connect to na.store.scass.blackduck.com:443 [na.store.scass.blackduck.com/6.6.6.1] failed: Operation timed out (Connection timed out)``` or,
+```Signature scan failure: Connect to eu.store.scass.blackduck.com:443 [eu.store.scass.blackduck.com/6.6.6.1] failed: Operation timed out (Connection timed out)```
+
+### Solution
+
+Rerun the scan after adding or updating the IP addresses listed below in your network firewalls or allow lists.
+
+* scass.blackduck.com - 35.244.200.22
+* na.scass.blackduck.com - 35.244.200.22
+* na.store.scass.blackduck.com - 34.54.95.139
+* eu.store.scass.blackduck.com - 34.54.213.11
+* eu.scass.blackduck.com - 34.54.38.252
+
 ## DETECT_SOURCE was not set or computed correctly
 
 ### Symptom
