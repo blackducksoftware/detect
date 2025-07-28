@@ -1,5 +1,5 @@
 <!-- Check the support matrix to determine supported, non-current major version releases -->
-# Release notes for previous supported versions
+# Release notes for previous [detect_product_short] versions
 
 ## Version 10.5.0
 

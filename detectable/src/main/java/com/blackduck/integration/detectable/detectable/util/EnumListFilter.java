@@ -87,4 +87,7 @@ public class EnumListFilter<T extends Enum<T>> {
         return excludedSet.contains(enumValue);
     }
 
+    public boolean shouldIncludeAll() {
+        return excludedSet.isEmpty();
+    }
 }

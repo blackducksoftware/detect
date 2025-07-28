@@ -1,4 +1,4 @@
-# Quickstart guide
+# [detect_product_short] Quickstart guide
 
 The following is a simple example to help you get started using [detect_product_long].
 

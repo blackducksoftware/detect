@@ -294,6 +294,14 @@ public class DockerAssertions {
         }
     }
 
+    public void resultNotPresentAtLocation(String location) {
+        try {
+            Assertions.assertFalse(locateStatusJson().results.stream().anyMatch(result -> result.location.equals(location)), "Found file at: " + location);
+        } catch (Throwable t) {
+            wrapAndThrowWithDetectLogs(t);
+        }
+    }
+
     private void checkBdioDirectory() {
         try {
             Assertions.assertNotNull(bdioDirectory, "Bdio directory did not exist!");

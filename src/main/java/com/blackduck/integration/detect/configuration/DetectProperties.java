@@ -55,6 +55,7 @@ import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedRedu
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedSnippetMode;
 import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDependencyType;
+import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
 import com.blackduck.integration.detectable.detectables.conan.cli.config.ConanDependencyType;
 import com.blackduck.integration.detectable.detectables.dart.pubdep.DartPubDependencyType;
 import com.blackduck.integration.detectable.detectables.go.gomod.GoModDependencyType;
@@ -609,6 +610,17 @@ public class DetectProperties {
             .setGroups(DetectGroup.DART, DetectGroup.GLOBAL)
             .build();
 
+    public static final NoneEnumListProperty<CargoDependencyType> DETECT_CARGO_DEPENDENCY_TYPES_EXCLUDED =
+        NoneEnumListProperty.newBuilder("detect.cargo.dependency.types.excluded", NoneEnum.NONE, CargoDependencyType.class)
+            .setInfo("Cargo Dependency Types Excluded", DetectPropertyFromVersion.VERSION_10_6_0)
+            .setHelp(
+                "A comma-separated list of dependency types that will be excluded.",
+                "The Cargo CLI Detector uses cargo tree flags to exclude the specified types, while the Cargo Lockfile Detector filters dependencies by reading Cargo.toml. For example, passing `detect.cargo.dependency.types.excluded=DEV` will skip [dev-dependencies] from detection."
+            )
+            .setExample(CargoDependencyType.DEV.name())
+            .setGroups(DetectGroup.CARGO, DetectGroup.DETECTOR, DetectGroup.GLOBAL)
+            .build();
+
     public static final NoneEnumListProperty<PipenvDependencyType> DETECT_PIPFILE_DEPENDENCY_TYPES_EXCLUDED =
         NoneEnumListProperty.newBuilder("detect.pipfile.dependency.types.excluded", NoneEnum.NONE, PipenvDependencyType.class)
             .setInfo("Pipfile Dependency Types Excluded", DetectPropertyFromVersion.VERSION_7_13_0)
@@ -659,7 +671,7 @@ public class DetectProperties {
             .setInfo("Diagnostic Mode", DetectPropertyFromVersion.VERSION_6_5_0)
             .setHelp(
                 "When enabled, diagnostic mode collects files valuable for troubleshooting (logs, BDIO file, extraction files, reports, etc.), writes them to a zip file, and logs the path to the zip file.",
-                "See the following for more <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/integrations%2Ddetect/page/troubleshooting/diagnosticmode%2Ehtml\" scope=\"external\" format=\"html\" target=\"_blank\">Diagnostic Mode information.</xref>")
+                "See the following for more <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/troubleshooting/diagnosticmode%2Ehtml\" scope=\"external\" format=\"html\" target=\"_blank\">Diagnostic Mode information.</xref>")
             .setGroups(DetectGroup.DEBUG, DetectGroup.GLOBAL)
             .build(); 
 
@@ -1639,12 +1651,26 @@ public class DetectProperties {
             .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL, DetectGroup.REPORT_SETTING)
             .build();
 
+    public static final BooleanProperty DETECT_RISK_REPORT_JSON =
+            BooleanProperty.newBuilder("detect.risk.report.json", false)
+                    .setInfo("Generate Risk Report (JSON)", DetectPropertyFromVersion.VERSION_10_6_0)
+                    .setHelp("When set to true, a Black Duck risk report in JSON form will be created.")
+                    .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL, DetectGroup.REPORT_SETTING)
+                    .build();
+
     public static final NullablePathProperty DETECT_RISK_REPORT_PDF_PATH =
         NullablePathProperty.newBuilder("detect.risk.report.pdf.path")
-            .setInfo("Risk Report Output Path", DetectPropertyFromVersion.VERSION_3_0_0)
+            .setInfo("Risk Report (PDF) Output Path", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp("The output directory for risk report in PDF. Default is the source directory.")
             .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL)
             .build();
+
+    public static final NullablePathProperty DETECT_RISK_REPORT_JSON_PATH =
+            NullablePathProperty.newBuilder("detect.risk.report.json.path")
+                    .setInfo("Risk Report (JSON) Output Path", DetectPropertyFromVersion.VERSION_10_6_0)
+                    .setHelp("The output directory for risk report in JSON. Default is the source directory.")
+                    .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL)
+                    .build();
 
     public static final NoneEnumListProperty<GemspecDependencyType> DETECT_RUBY_DEPENDENCY_TYPES_EXCLUDED =
         NoneEnumListProperty.newBuilder("detect.ruby.dependency.types.excluded", NoneEnum.NONE, GemspecDependencyType.class)
@@ -1911,8 +1937,8 @@ public class DetectProperties {
         EnumProperty.newBuilder("detect.blackduck.rapid.compare.mode", RapidCompareMode.ALL, RapidCompareMode.class)
             .setInfo("Rapid Compare Mode", DetectPropertyFromVersion.VERSION_7_12_0)
             .setHelp(
-                "Controls how rapid scan evaluates policy rules",
-                "Set the compare mode of rapid scan. ALL evaluates all RAPID or FULL policies. BOM_COMPARE_STRICT will only show policy violations not present in an existing project version BOM. BOM_COMPARE depends on the type of policy rule modes and behaves like ALL if the policy rule is only RAPID but like BOM_COMPARE_STRICT when the policy rule is RAPID and FULL. See the Black Duck documentation for complete details."
+                "Controls how Rapid Scan evaluates policy rules.",
+                "Sets the compare mode of Rapid Scan. A setting of ALL evaluates all RAPID or FULL policies. BOM_COMPARE_STRICT shows policy violations not present in a project version BOM that exists in Black Duck SCA. BOM_COMPARE depends on the type of policy rule modes and behaves like ALL if the policy rule is only RAPID and like BOM_COMPARE_STRICT when the policy rule is RAPID and FULL. For further explanation, please refer to <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/runningdetect/rapidscan%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Rapid Scan.</xref>"
             )
             .setGroups(DetectGroup.RAPID_SCAN, DetectGroup.BLACKDUCK_SERVER, DetectGroup.BLACKDUCK, DetectGroup.GLOBAL)
             .setCategory(DetectCategory.Advanced)

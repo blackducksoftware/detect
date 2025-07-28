@@ -74,7 +74,7 @@ public class RapidModeStepRunner {
         stepHelper.runToolIfIncluded(DetectTool.SIGNATURE_SCAN, "Signature Scanner", () -> {
             logger.debug("Stateless scan signature scan detected.");
 
-            SignatureScanStepRunner signatureScanStepRunner = new SignatureScanStepRunner(operationRunner);
+            SignatureScanStepRunner signatureScanStepRunner = new SignatureScanStepRunner(operationRunner, blackDuckRunData);
             SignatureScanOuputResult signatureScanOutputResult = signatureScanStepRunner
                     .runRapidSignatureScannerOnline(detectRunUuid, blackDuckRunData, projectVersion, dockerTargetData);
 

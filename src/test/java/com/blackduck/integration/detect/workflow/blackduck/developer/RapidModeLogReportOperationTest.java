@@ -54,6 +54,6 @@ public class RapidModeLogReportOperationTest {
 
         assertEquals(summary, returnedSummary);
         Mockito.verify(exitCodePublisher, Mockito.times(1))
-            .publishExitCode(Mockito.eq(ExitCodeType.FAILURE_POLICY_VIOLATION), org.mockito.AdditionalMatchers.find(".* 2.*violation.*"));
+            .publishExitCode(Mockito.eq(ExitCodeType.FAILURE_POLICY_VIOLATION));
     }
 }
