@@ -23,7 +23,7 @@ labels:
   ## License(s) under which contained software is distributed
   org.opencontainers.image.licenses: "Black Duck proprietary License"
   ## URL to find more information on the image
-  org.opencontainers.image.url: "https://github.com/bd-calvinl/detect/blob/master/platform-1/README.md"
+  org.opencontainers.image.url: "https://github.com/blackducksoftware/detect/blob/master/platform-1/README.md"
   ## Name of the distributing entity, organization or individual
   org.opencontainers.image.vendor: "BLACK DUCK SOFTWARE, INC."
   org.opencontainers.image.version: "TARGET_IMAGE_TAG"
