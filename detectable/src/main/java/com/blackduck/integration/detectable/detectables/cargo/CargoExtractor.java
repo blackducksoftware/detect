@@ -77,8 +77,8 @@ public class CargoExtractor {
         }
 
         List<CargoLockPackage> packages = filteredPackages.stream()
-                .map(cargoLockPackageDataTransformer::transform)
-                .collect(Collectors.toList());
+            .map(cargoLockPackageDataTransformer::transform)
+            .collect(Collectors.toList());
         List<CargoLockPackage> resolvedPackages = resolveDependencyVersions(packages, packageLookupMap);
 
         DependencyGraph graph = cargoLockPackageTransformer.transformToGraph(resolvedPackages, resolvedRootDependencies);
