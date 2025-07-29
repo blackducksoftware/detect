@@ -71,7 +71,6 @@ import com.blackduck.integration.common.util.finder.FileFinder;
 import com.blackduck.integration.componentlocator.beans.Component;
 import com.blackduck.integration.detect.configuration.DetectConfigurationFactory;
 import com.blackduck.integration.detect.configuration.DetectInfo;
-import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detect.configuration.DetectUserFriendlyException;
 import com.blackduck.integration.detect.configuration.DetectorToolOptions;
 import com.blackduck.integration.detect.configuration.connection.ConnectionFactory;
@@ -92,7 +91,6 @@ import com.blackduck.integration.detect.lifecycle.run.singleton.UtilitySingleton
 import com.blackduck.integration.detect.lifecycle.run.step.utility.OperationAuditLog;
 import com.blackduck.integration.detect.lifecycle.run.step.utility.OperationWrapper;
 import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodePublisher;
-import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodeRequest;
 import com.blackduck.integration.detect.tool.DetectableTool;
 import com.blackduck.integration.detect.tool.DetectableToolResult;
 import com.blackduck.integration.detect.tool.binaryscanner.BinaryScanFindMultipleTargetsOperation;
@@ -185,7 +183,6 @@ import com.blackduck.integration.detect.workflow.codelocation.DetectCodeLocation
 import com.blackduck.integration.detect.workflow.componentlocationanalysis.BdioToComponentListTransformer;
 import com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation;
 import com.blackduck.integration.detect.workflow.componentlocationanalysis.ScanResultToComponentListTransformer;
-import com.blackduck.integration.detect.workflow.event.Event;
 import com.blackduck.integration.detect.workflow.event.EventSystem;
 import com.blackduck.integration.detect.workflow.file.DirectoryManager;
 import com.blackduck.integration.detect.workflow.phonehome.PhoneHomeManager;
