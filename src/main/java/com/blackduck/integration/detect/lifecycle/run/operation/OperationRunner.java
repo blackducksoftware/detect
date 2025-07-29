@@ -757,20 +757,6 @@ public class OperationRunner {
                 "Consider running a full scan first if the version hasn't been uploaded yet.";
     }
 
-    public static boolean shouldSkipResolvedPolicies(DeveloperScansScanView resultView, RapidCompareMode rapidCompareMode) {
-        if (resultView.getPolicyStatuses() == null || resultView.getPolicyStatuses().isEmpty()) {
-            return false;
-        }
-        return (RapidCompareMode.BOM_COMPARE.equals(rapidCompareMode) || RapidCompareMode.BOM_COMPARE_STRICT.equals(rapidCompareMode))
-                && resultView.getPolicyStatuses().stream().allMatch(POLICY_STATUS_RESOLVED::equalsIgnoreCase);
-    }
-
-    public static List<DeveloperScansScanView> filterUnresolvedPolicyResults(List<DeveloperScansScanView> scanResults, RapidCompareMode rapidCompareMode) {
-        return scanResults.stream()
-                .filter(resultView -> !shouldSkipResolvedPolicies(resultView, rapidCompareMode))
-                .collect(Collectors.toList());
-    }
-
     public final RapidScanResultSummary logRapidReport(List<DeveloperScansScanView> scanResults, BlackduckScanMode mode) throws OperationException {
         List<PolicyRuleSeverityType> severitiesToFailPolicyCheck = detectConfigurationFactory.createRapidScanOptions().getSeveritiesToFailPolicyCheck();
         return auditLog.namedInternal("Print Rapid Mode Results", () -> 
