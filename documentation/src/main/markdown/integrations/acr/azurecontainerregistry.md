@@ -1,4 +1,4 @@
-# Azure Container Registry Scanning
+# Azure Container Registry scanning with [detect_product_short]
 
 [detect_product_long] supports scanning images stored in the Azure Container Registry (ACR). Image scan results are sent to your dedicated [bd_product_short] instance providing vulnerability, license, and operational risk results on the open source software components identified in the ECR image.
 

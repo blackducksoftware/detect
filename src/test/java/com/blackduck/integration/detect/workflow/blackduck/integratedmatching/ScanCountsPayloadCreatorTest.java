@@ -3,8 +3,10 @@ package com.blackduck.integration.detect.workflow.blackduck.integratedmatching;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
@@ -12,7 +14,6 @@ import org.mockito.Mockito;
 
 import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
 import com.blackduck.integration.detect.workflow.blackduck.codelocation.WaitableCodeLocationData;
-import com.blackduck.integration.detect.workflow.blackduck.integratedmatching.ScanCountsPayloadCreator;
 import com.blackduck.integration.detect.workflow.blackduck.integratedmatching.model.ScanCountsPayload;
 
 class ScanCountsPayloadCreatorTest {
@@ -39,9 +40,13 @@ class ScanCountsPayloadCreatorTest {
             binaryWaitableCodeLocationData);
 
         ScanCountsPayloadCreator creator = new ScanCountsPayloadCreator();
-        ScanCountsPayload payload = creator.create(waitableCodeLocationDataList);
 
-        assertEquals(0, payload.getScanCounts().getPackageManager());
+        Map<DetectTool, Integer> additionalCounts = new HashMap<>();
+        additionalCounts.put(DetectTool.DETECTOR, 17);
+
+        ScanCountsPayload payload = creator.create(waitableCodeLocationDataList, additionalCounts);
+
+        assertEquals(17, payload.getScanCounts().getPackageManager());
         assertEquals(2, payload.getScanCounts().getSignature());
         assertEquals(3, payload.getScanCounts().getBinary());
     }
@@ -84,7 +89,7 @@ class ScanCountsPayloadCreatorTest {
             iacWaitableCodeLocationData);
 
         ScanCountsPayloadCreator creator = new ScanCountsPayloadCreator();
-        ScanCountsPayload payload = creator.create(waitableCodeLocationDataList);
+        ScanCountsPayload payload = creator.create(waitableCodeLocationDataList, new HashMap<>());
 
         assertEquals(6, payload.getScanCounts().getPackageManager());
         assertEquals(0, payload.getScanCounts().getSignature());

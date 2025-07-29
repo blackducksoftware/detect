@@ -13,8 +13,8 @@ import com.blackduck.integration.detect.workflow.blackduck.integratedmatching.mo
 
 public class ScanCountsPayloadCreator {
 
-    public ScanCountsPayload create(List<WaitableCodeLocationData> createdCodelocations) {
-        Map<DetectTool, Integer> countsByTool = collectCountsByTool(createdCodelocations);
+    public ScanCountsPayload create(List<WaitableCodeLocationData> createdCodelocations, Map<DetectTool, Integer> additionalCounts) {
+        Map<DetectTool, Integer> countsByTool = collectCountsByTool(createdCodelocations, additionalCounts);
         return createPayloadFromCountsByTool(countsByTool);
     }
 
@@ -30,8 +30,8 @@ public class ScanCountsPayloadCreator {
     }
 
     @NotNull
-    private Map<DetectTool, Integer> collectCountsByTool(final List<WaitableCodeLocationData> createdCodelocations) {
-        Map<DetectTool, Integer> countsByTool = new HashMap<>();
+    private Map<DetectTool, Integer> collectCountsByTool(final List<WaitableCodeLocationData> createdCodelocations, Map<DetectTool, Integer> additionalCounts) {
+        Map<DetectTool, Integer> countsByTool = new HashMap<>(additionalCounts);
         for (WaitableCodeLocationData waitableCodeLocationData : createdCodelocations) {
             int oldCount = countsByTool.getOrDefault(waitableCodeLocationData.getDetectTool(), 0);
             int newCount = oldCount + waitableCodeLocationData.getSuccessfulCodeLocationNames().size();

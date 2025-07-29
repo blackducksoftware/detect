@@ -1,4 +1,4 @@
-# Getting information
+# Collecting [detect_product_short] log information
 
 ## Simple issues
 
