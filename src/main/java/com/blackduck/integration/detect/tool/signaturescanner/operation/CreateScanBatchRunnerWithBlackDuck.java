@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.ScanBatchRunner;
 import com.blackduck.integration.blackduck.configuration.BlackDuckServerConfig;
+import com.blackduck.integration.blackduck.exception.BlackDuckIntegrationException;
 import com.blackduck.integration.blackduck.http.client.BlackDuckHttpClient;
 import com.blackduck.integration.blackduck.http.client.SignatureScannerClient;
 import com.blackduck.integration.blackduck.keystore.KeyStoreHelper;
@@ -35,7 +36,7 @@ public class CreateScanBatchRunnerWithBlackDuck {
         this.executorService = executorService;
     }
 
-    public ScanBatchRunner createScanBatchRunner(BlackDuckServerConfig blackDuckServerConfig, File installDirectory, Optional<BlackDuckVersion> blackDuckVersion) {
+    public ScanBatchRunner createScanBatchRunner(BlackDuckServerConfig blackDuckServerConfig, File installDirectory, Optional<BlackDuckVersion> blackDuckVersion) throws BlackDuckIntegrationException {
         logger.debug("Signature scanner will use the Black Duck server to download/update the scanner - this is the most likely situation.");
         SignatureScannerLogger slf4jIntLogger = new SignatureScannerLogger(logger);
         ScanPathsUtility scanPathsUtility = new ScanPathsUtility(slf4jIntLogger, intEnvironmentVariables, operatingSystemType);
@@ -75,11 +76,12 @@ public class CreateScanBatchRunnerWithBlackDuck {
             );
         }
 
-        return ScanBatchRunner.createComplete(intEnvironmentVariables, scanPathsUtility, scanCommandRunner, scannerInstallerVariant);
+        File installedDir = scannerInstallerVariant.installOrUpdateScanner();
+
+        return ScanBatchRunner.createWithNoInstaller(intEnvironmentVariables, scanPathsUtility, scanCommandRunner, installedDir);
     }
 
     private boolean shouldUseToolsApiScannerInstaller(Optional<BlackDuckVersion> blackDuckVersion) {
         return blackDuckVersion.isPresent() && blackDuckVersion.get().isAtLeast(MIN_BLACK_DUCK_VERSION);
     }
-
 }

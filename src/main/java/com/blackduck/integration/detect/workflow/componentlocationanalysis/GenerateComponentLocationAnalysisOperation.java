@@ -107,7 +107,7 @@ public class GenerateComponentLocationAnalysisOperation {
     private void publishComponentLocatorFailureIfEnabled() {
         if (detectConfigurationFactory.doesComponentLocatorAffectStatus()) {
             statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.COMPONENT_LOCATION_ANALYSIS, StatusType.FAILURE));
-            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_COMPONENT_LOCATION_ANALYSIS, "Component Location Analysis failed.");
+            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_COMPONENT_LOCATION_ANALYSIS);
         }
     }
 

@@ -206,19 +206,21 @@ public class IntelligentModeStepRunner {
     }
 
     private void invokePackageManagerScanningWorkflow(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData, Set<String> scanIdsToWaitFor, BdioResult bdioResult, CodeLocationAccumulator codeLocationAccumulator) throws OperationException {
-        if (CommonScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion())) {
+        if (PackageManagerStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion())) {
             PackageManagerStepRunner packageManagerScanStepRunner = new PackageManagerStepRunner(operationRunner);
 
             CommonScanResult commonScanResult = packageManagerScanStepRunner.invokePackageManagerScanningWorkflow(projectNameVersion, blackDuckRunData, bdioResult);
             String scanId = null;
-            if(commonScanResult != null && commonScanResult.isPackageManagerScassPossible()) {
+            if(commonScanResult != null) {
                 scanId = commonScanResult.getScanId() == null ? null : commonScanResult.getScanId().toString();
-                scanIdsToWaitFor.add(scanId);
-                codeLocationAccumulator.addNonWaitableCodeLocation(commonScanResult.getCodeLocationName());
-                codeLocationAccumulator.incrementAdditionalCounts(DetectTool.DETECTOR, 1);
-            } else {
-                invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId);
+                if(commonScanResult.isPackageManagerScassPossible()) {
+                    scanIdsToWaitFor.add(scanId);
+                    codeLocationAccumulator.addNonWaitableCodeLocation(commonScanResult.getCodeLocationName());
+                    codeLocationAccumulator.incrementAdditionalCounts(DetectTool.DETECTOR, 1);
+                    return;
+                }
             }
+            invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId);
         } else {
             String scanId = null;
             invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId);

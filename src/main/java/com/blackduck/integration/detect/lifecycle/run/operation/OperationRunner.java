@@ -26,6 +26,7 @@ import java.util.concurrent.Executors;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import com.blackduck.integration.blackduck.bdio2.model.BdioFileContent;
 import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
@@ -259,6 +260,7 @@ public class OperationRunner {
     private static final String INTELLIGENT_SCAN_SCASS_CONTENT_TYPE = "application/vnd.blackducksoftware.intelligent-persistence-scan-4+protobuf-jsonld";
     public static final ImmutableList<Integer> RETRYABLE_AFTER_WAIT_HTTP_EXCEPTIONS = ImmutableList.of(408, 429, 502, 503, 504);
     public static final ImmutableList<Integer> RETRYABLE_WITH_BACKOFF_HTTP_EXCEPTIONS = ImmutableList.of(425, 500);
+    private static final String POLICY_STATUS_RESOLVED = "RESOLVED";
     private List<File> binaryUserTargets = new ArrayList<>();
     BinaryScanFindMultipleTargetsOperation binaryScanFindMultipleTargetsOperation;
 
@@ -447,6 +449,7 @@ public class OperationRunner {
     public List<File> getMultiBinaryTargets() {
         return binaryScanFindMultipleTargetsOperation.getMultipleBinaryTargets();
     }
+
     public void updateBinaryUserTargets(File file) {
         binaryUserTargets.add(file);
     }
@@ -598,23 +601,23 @@ public class OperationRunner {
         } else {
             initResult.setFileToUpload(scanFile);
         }
-        
+
         String operationName = "Upload BDIO Header to Initiate Scan";
-        
-        ScanCreationResponse scanCreationResponse 
+
+        ScanCreationResponse scanCreationResponse
             = uploadBdioHeaderToInitiateScassScan(blackDuckRunData, bdioHeaderFile, operationName, gson, initResult.getMd5Hash(), jsonldHeader);
 
         initResult.setScanCreationResponse(scanCreationResponse);
 
         String scanId = scanCreationResponse.getScanId();
-        
+
         if (scanId == null) {
             logger.warn("Scan ID was not found in the response from the server.");
             throw new IntegrationException("Scan ID was not found in the response from the server.");
         }
 
         logger.debug("Scan initiated with scan service. Scan ID received: {}", scanId);
-        
+
         return initResult;
     }
 
@@ -757,6 +760,20 @@ public class OperationRunner {
                 "Consider running a full scan first if the version hasn't been uploaded yet.";
     }
 
+    public static boolean shouldSkipResolvedPolicies(DeveloperScansScanView resultView, RapidCompareMode rapidCompareMode) {
+        if (resultView.getPolicyStatuses() == null || resultView.getPolicyStatuses().isEmpty()) {
+            return false;
+        }
+        return (RapidCompareMode.BOM_COMPARE.equals(rapidCompareMode) || RapidCompareMode.BOM_COMPARE_STRICT.equals(rapidCompareMode))
+                && resultView.getPolicyStatuses().stream().allMatch(POLICY_STATUS_RESOLVED::equalsIgnoreCase);
+    }
+
+    public static List<DeveloperScansScanView> filterUnresolvedPolicyResults(List<DeveloperScansScanView> scanResults, RapidCompareMode rapidCompareMode) {
+        return scanResults.stream()
+                .filter(resultView -> !shouldSkipResolvedPolicies(resultView, rapidCompareMode))
+                .collect(Collectors.toList());
+    }
+
     public final RapidScanResultSummary logRapidReport(List<DeveloperScansScanView> scanResults, BlackduckScanMode mode) throws OperationException {
         List<PolicyRuleSeverityType> severitiesToFailPolicyCheck = detectConfigurationFactory.createRapidScanOptions().getSeveritiesToFailPolicyCheck();
         return auditLog.namedInternal("Print Rapid Mode Results", () -> 
@@ -771,7 +788,7 @@ public class OperationRunner {
         );
     }
 
-    public final void publishRapidResults(File jsonFile, RapidScanResultSummary summary, BlackduckScanMode mode) throws OperationException {        
+    public final void publishRapidResults(File jsonFile, RapidScanResultSummary summary, BlackduckScanMode mode) throws OperationException {
         auditLog.namedInternal("Publish Rapid Results", () -> statusEventPublisher.publishDetectResult(new RapidScanDetectResult(jsonFile.getCanonicalPath(), summary, mode, detectConfigurationFactory.getPoliciesToFailOn())));
     }
     //End Rapid
@@ -1368,25 +1385,25 @@ public class OperationRunner {
     public void publishBinaryFailure(String message) {
         logger.error("Binary scan failure: {}", message);
         statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.BINARY_SCAN, StatusType.FAILURE));
-        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR, "BINARY_SCAN");
+        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR);
     }
     
     public void publishContainerTimeout(Exception e) {
         logger.error("Container scan timeout: {}", e.getMessage());
         statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.CONTAINER_SCAN, StatusType.FAILURE));
-        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_TIMEOUT, "CONTAINER_SCAN");
+        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_TIMEOUT);
     }
 
     public void publishContainerFailure(Exception e) {
         logger.error("Container scan failure: {}", e.getMessage());
         statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.CONTAINER_SCAN, StatusType.FAILURE));
-        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR, "CONTAINER_SCAN");
+        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR);
     }
 
     public void publishSignatureFailure(String message) {
         logger.error("Signature scan failure: {}", message);
         statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.SIGNATURE_SCAN, StatusType.FAILURE));
-        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR, "SIGNATURE_SCAN");
+        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR);
     }
     
     public void publishBinarySuccess() {
@@ -1400,7 +1417,7 @@ public class OperationRunner {
     public void publishImpactFailure(Exception e) {
         logger.error("Impact analysis failure: {}", e.getMessage());
         statusEventPublisher.publishStatusSummary(Status.forTool(DetectTool.IMPACT_ANALYSIS, StatusType.FAILURE));
-        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR, "IMPACT_ANALYSIS");
+        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BLACKDUCK_FEATURE_ERROR);
     }
 
     public void publishImpactSuccess() {
@@ -1567,7 +1584,8 @@ public class OperationRunner {
     }
 
     public void publishDetectorFailure() {
-        eventSystem.publishEvent(Event.ExitCode, new ExitCodeRequest(ExitCodeType.FAILURE_DETECTOR, "A detector failed."));
+        ExitCodePublisher publisher = new ExitCodePublisher(eventSystem);
+        publisher.publishExitCode(ExitCodeType.FAILURE_DETECTOR);
     }
 
     public Optional<File> findRapidScanConfig() throws OperationException {
@@ -1663,11 +1681,12 @@ public class OperationRunner {
         });
     }
 
-    private void checkBomStatusAndHandleFailure(BomStatusScanView bomStatusScanView) {
-        if (bomStatusScanView.getStatus() == BomStatusScanStatusType.FAILURE) {
+    void checkBomStatusAndHandleFailure(BomStatusScanView bomStatusScanView) {
+        BomStatusScanStatusType status = bomStatusScanView.getStatus();
+        if (status != BomStatusScanStatusType.SUCCESS) {
             String message = "Black Duck failed to prepare BOM for the scan";
-            logger.error("BOM Scan Status: {} - {}.", BomStatusScanStatusType.FAILURE, message);
-            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BOM_PREPARATION, message);
+            logger.error("BOM Scan Status: {} - {}.", status, message);
+            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BOM_PREPARATION);
         }
     }
 

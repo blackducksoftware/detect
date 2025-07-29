@@ -20,6 +20,8 @@ import com.blackduck.integration.detectable.detectables.npm.lockfile.parse.NpmLo
 import com.blackduck.integration.detectable.detectables.npm.lockfile.parse.NpmLockfilePackager;
 import com.blackduck.integration.detectable.util.FunctionalTestFiles;
 import com.blackduck.integration.detectable.util.graph.GraphAssert;
+import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
+import com.blackduck.integration.detectable.detectables.npm.NpmDependencyType;
 
 public class NpmLockfileGraphTransformerTest {
     
@@ -104,5 +106,128 @@ public class NpmLockfileGraphTransformerTest {
         GraphAssert graphAssert = new GraphAssert(Forge.NPMJS, graph);
         graphAssert.hasRootDependency(externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "abbrev", "^2.0.0"));
         graphAssert.hasRootDependency(externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "send", "0.17.2"));
+    }
+    
+    @Test
+    void testOptionalDependenciesExcludedFromRequires() {
+        // Create a parent dependency with requires that include optional dependencies
+        NpmDependency parentDependency = new NpmDependency("parent-package", "1.0.0", false, false, false);
+        
+        // Create child dependencies - one regular, one optional
+        NpmDependency regularChildDependency = new NpmDependency("regular-child", "1.0.0", false, false, false);
+        NpmDependency optionalChildDependency = new NpmDependency("optional-child", "1.0.0", false, false, true);
+        
+        // Create requires for both dependencies
+        NpmRequires regularRequires = new NpmRequires("regular-child", "1.0.0");
+        NpmRequires optionalRequires = new NpmRequires("optional-child", "1.0.0");
+        
+        // Set up parent dependency with requires
+        List<NpmRequires> requires = new ArrayList<>();
+        requires.add(regularRequires);
+        requires.add(optionalRequires);
+        parentDependency.addAllRequires(requires);
+        
+        // Set up child dependencies under parent
+        List<NpmDependency> childDependencies = new ArrayList<>();
+        childDependencies.add(regularChildDependency);
+        childDependencies.add(optionalChildDependency);
+        parentDependency.addAllDependencies(childDependencies);
+        
+        // Create resolved dependencies list
+        List<NpmDependency> resolvedDependencies = new ArrayList<>();
+        resolvedDependencies.add(parentDependency);
+        resolvedDependencies.add(regularChildDependency);
+        resolvedDependencies.add(optionalChildDependency);
+        
+        // Create npm project
+        NpmProject npmProject = new NpmProject(
+            StringUtils.EMPTY,
+            StringUtils.EMPTY,
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Collections.emptyList(),
+            resolvedDependencies
+        );
+        
+        // Create a filter that excludes optional dependencies
+        EnumListFilter<NpmDependencyType> filter = EnumListFilter.fromExcluded(NpmDependencyType.OPTIONAL);
+        
+        // Transform the graph
+        NpmLockfileGraphTransformer graphTransformer = new NpmLockfileGraphTransformer(filter);
+        PackageLock packageLock = new PackageLock();
+        packageLock.packages = Collections.emptyMap();
+        DependencyGraph graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), Collections.emptyList());
+        
+        // Verify that the regular child dependency is included but optional child dependency is excluded
+        GraphAssert graphAssert = new GraphAssert(Forge.NPMJS, graph);
+        graphAssert.hasParentChildRelationship(
+            externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "parent-package", "1.0.0"),
+            externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "regular-child", "1.0.0")
+        );
+        graphAssert.hasNoDependency(externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "optional-child", "1.0.0"));
+    }
+    
+    @Test
+    void testOptionalDependenciesIncludedWhenAllowed() {
+        // Create a parent dependency with requires that include optional dependencies
+        NpmDependency parentDependency = new NpmDependency("parent-package", "1.0.0", false, false, false);
+        
+        // Create child dependencies - one regular, one optional
+        NpmDependency regularChildDependency = new NpmDependency("regular-child", "1.0.0", false, false, false);
+        NpmDependency optionalChildDependency = new NpmDependency("optional-child", "1.0.0", false, false, true);
+        
+        // Create requires for both dependencies
+        NpmRequires regularRequires = new NpmRequires("regular-child", "1.0.0");
+        NpmRequires optionalRequires = new NpmRequires("optional-child", "1.0.0");
+        
+        // Set up parent dependency with requires
+        List<NpmRequires> requires = new ArrayList<>();
+        requires.add(regularRequires);
+        requires.add(optionalRequires);
+        parentDependency.addAllRequires(requires);
+        
+        // Set up child dependencies under parent
+        List<NpmDependency> childDependencies = new ArrayList<>();
+        childDependencies.add(regularChildDependency);
+        childDependencies.add(optionalChildDependency);
+        parentDependency.addAllDependencies(childDependencies);
+        
+        // Create resolved dependencies list
+        List<NpmDependency> resolvedDependencies = new ArrayList<>();
+        resolvedDependencies.add(parentDependency);
+        resolvedDependencies.add(regularChildDependency);
+        resolvedDependencies.add(optionalChildDependency);
+        
+        // Create npm project
+        NpmProject npmProject = new NpmProject(
+            StringUtils.EMPTY,
+            StringUtils.EMPTY,
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Collections.emptyList(),
+            resolvedDependencies
+        );
+        
+        // Create a filter that includes optional dependencies (excludes none)
+        EnumListFilter<NpmDependencyType> filter = EnumListFilter.excludeNone();
+        
+        // Transform the graph
+        NpmLockfileGraphTransformer graphTransformer = new NpmLockfileGraphTransformer(filter);
+        PackageLock packageLock = new PackageLock();
+        packageLock.packages = Collections.emptyMap();
+        DependencyGraph graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), Collections.emptyList());
+        
+        // Verify that both regular and optional child dependencies are included
+        GraphAssert graphAssert = new GraphAssert(Forge.NPMJS, graph);
+        graphAssert.hasParentChildRelationship(
+            externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "parent-package", "1.0.0"),
+            externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "regular-child", "1.0.0")
+        );
+        graphAssert.hasParentChildRelationship(
+            externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "parent-package", "1.0.0"),
+            externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "optional-child", "1.0.0")
+        );
     }
 }

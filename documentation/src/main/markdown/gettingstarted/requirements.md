@@ -1,4 +1,4 @@
-# Requirements and release information
+# [detect_product_short] requirements and release information
 
 ## General requirements
 

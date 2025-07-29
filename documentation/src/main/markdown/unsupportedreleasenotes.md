@@ -1,5 +1,5 @@
 <!-- Check the support matrix to determine unsupported releases -->
-# Release notes for older versions
+# Release notes for older [detect_product_short] versions
 
 ## Version 8.11.2
 

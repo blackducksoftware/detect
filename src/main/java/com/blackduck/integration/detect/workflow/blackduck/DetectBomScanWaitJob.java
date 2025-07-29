@@ -1,6 +1,10 @@
 package com.blackduck.integration.detect.workflow.blackduck;
 
 import com.blackduck.integration.blackduck.api.generated.view.BomStatusScanView;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.blackduck.integration.blackduck.api.generated.enumeration.BomStatusScanStatusType;
 import com.blackduck.integration.blackduck.service.BlackDuckApiClient;
 import com.blackduck.integration.exception.IntegrationException;
@@ -9,6 +13,8 @@ import com.blackduck.integration.rest.HttpUrl;
 import com.blackduck.integration.wait.ResilientJob;
 
 public class DetectBomScanWaitJob implements ResilientJob<BomStatusScanView> {
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
     private final BlackDuckApiClient blackDuckApiClient;
     private final HttpUrl scanUrl;
     private BomStatusScanView scanResponse;
@@ -27,7 +33,11 @@ public class DetectBomScanWaitJob implements ResilientJob<BomStatusScanView> {
         BomStatusScanView initialResponse = 
                 blackDuckApiClient.getResponse(scanUrl, BomStatusScanView.class);
         
-        if (initialResponse.getStatus() != BomStatusScanStatusType.BUILDING && initialResponse.getStatus() != BomStatusScanStatusType.NOT_INCLUDED) {
+        BomStatusScanStatusType status = initialResponse.getStatus();
+        if (status != BomStatusScanStatusType.BUILDING) {
+            if (status == BomStatusScanStatusType.NOT_INCLUDED) {
+                logger.warn("Encountered unexpected scan status: {}", status);
+            }
             complete = true;
             scanResponse = initialResponse;
         }
