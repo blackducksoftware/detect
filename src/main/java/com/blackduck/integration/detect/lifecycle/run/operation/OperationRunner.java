@@ -1074,12 +1074,13 @@ public class OperationRunner {
         List<SignatureScanPath> scanPaths,
         NameVersion projectNameVersion,
         DockerTargetData dockerTargetData,
-        BlackDuckRunData blackDuckRunData
+        BlackDuckRunData blackDuckRunData, 
+        boolean isScassFallback
     )
         throws OperationException {
         return auditLog.namedPublic("Create Online Signature Scan Batch", "OnlineSigScan",
             () -> new CreateScanBatchOperation(detectConfigurationFactory.createBlackDuckSignatureScannerOptions(), directoryManager, codeLocationNameManager)
-                .createScanBatchWithBlackDuck(detectRunUuid, projectNameVersion, scanPaths, blackDuckRunData, dockerTargetData)
+                .createScanBatchWithBlackDuck(detectRunUuid, projectNameVersion, scanPaths, blackDuckRunData, dockerTargetData, isScassFallback)
         );
     }
 
