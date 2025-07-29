@@ -1,4 +1,4 @@
-# Usage metrics collection
+# [detect_product_short] usage metrics collection
 
 [detect_product_long] uses Google Analytics to collect anonymized usage metrics through a mechanism called *phone home*.
 [var_company_name] uses this data to help set engineering priorities.

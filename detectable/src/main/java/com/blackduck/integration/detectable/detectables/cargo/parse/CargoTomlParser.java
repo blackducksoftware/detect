@@ -36,16 +36,19 @@ public class CargoTomlParser {
     public Set<NameVersion> parseDependenciesToInclude(String tomlFileContents, EnumListFilter<CargoDependencyType> dependencyTypeFilter) {
         TomlParseResult toml = Toml.parse(tomlFileContents);
         Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap = new HashMap<>();
+        Set<NameVersion> alwaysIncluded = new HashSet<>();
 
-        parseDependenciesFromTomlTable(toml, NORMAL_DEPENDENCIES_KEY, CargoDependencyType.NORMAL, dependencyTypeMap);
-        parseDependenciesFromTomlTable(toml, BUILD_DEPENDENCIES_KEY, CargoDependencyType.BUILD, dependencyTypeMap);
-        parseDependenciesFromTomlTable(toml, DEV_DEPENDENCIES_KEY, CargoDependencyType.DEV, dependencyTypeMap);
+        // Parse dependencies from each section. If the type is null, it indicates a normal dependency (from [dependencies]).
+        parseDependenciesFromTomlTable(toml, NORMAL_DEPENDENCIES_KEY, null, dependencyTypeMap, alwaysIncluded);
+        parseDependenciesFromTomlTable(toml, BUILD_DEPENDENCIES_KEY, CargoDependencyType.BUILD, dependencyTypeMap, alwaysIncluded);
+        parseDependenciesFromTomlTable(toml, DEV_DEPENDENCIES_KEY, CargoDependencyType.DEV, dependencyTypeMap, alwaysIncluded);
 
-        Set<NameVersion> dependenciesToInclude = new HashSet<>();
+        Set<NameVersion> dependenciesToInclude = new HashSet<>(alwaysIncluded);
         for (Map.Entry<NameVersion, EnumSet<CargoDependencyType>> entry : dependencyTypeMap.entrySet()) {
             NameVersion nameVersion = entry.getKey();
             EnumSet<CargoDependencyType> types = entry.getValue();
 
+            // Include the dependency only if at least one of its types is not excluded by the filter
             boolean shouldBeIncluded = types.stream()
                     .anyMatch(type -> !dependencyTypeFilter.shouldExclude(type));
 
@@ -56,7 +59,13 @@ public class CargoTomlParser {
         return dependenciesToInclude;
     }
 
-    private void parseDependenciesFromTomlTable(TomlParseResult toml, String sectionKey, CargoDependencyType type, Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap) {
+    private void parseDependenciesFromTomlTable(
+            TomlParseResult toml,
+            String sectionKey,
+            CargoDependencyType cargoDependencyType,
+            Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap,
+            Set<NameVersion> alwaysIncluded
+    ) {
         TomlTable table = toml.getTable(sectionKey);
         if (table == null) {
             return;
@@ -73,7 +82,12 @@ public class CargoTomlParser {
             }
 
             NameVersion nv = new NameVersion(key, version);
-            dependencyTypeMap.computeIfAbsent(nv, k -> EnumSet.noneOf(CargoDependencyType.class)).add(type);
+            EnumSet<CargoDependencyType> types = dependencyTypeMap.computeIfAbsent(nv, k -> EnumSet.noneOf(CargoDependencyType.class));
+            if (cargoDependencyType != null) {
+                types.add(cargoDependencyType);
+            } else {
+                alwaysIncluded.add(nv);
+            }
         }
     }
 }

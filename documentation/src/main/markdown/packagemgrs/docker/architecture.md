@@ -1,4 +1,4 @@
-# Architecture overview
+# [detect_product_short] architecture overview
 
 [docker_inspector_name] uses up to three container-based image inspector services; 
 one for each of the supported Linux package manager database formats.

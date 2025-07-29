@@ -47,6 +47,7 @@ import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodeManager;
 import com.blackduck.integration.detect.lifecycle.shutdown.ShutdownDecider;
 import com.blackduck.integration.detect.lifecycle.shutdown.ShutdownDecision;
 import com.blackduck.integration.detect.lifecycle.shutdown.ShutdownManager;
+import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodeRequest;
 import com.blackduck.integration.detect.tool.cache.InstalledToolData;
 import com.blackduck.integration.detect.tool.cache.InstalledToolManager;
 import com.blackduck.integration.detect.workflow.DetectRunId;
@@ -183,10 +184,10 @@ public class Application implements ApplicationRunner {
             // system must now know or be able to compute the winning exit
             // code.  We'll pass this to FormattedOutput.createFormattedOutput
             // via Application.createStatusOutputFile.
-            ExitCodeType exitCodeType = exitCodeManager.getWinningExitCode();
+            ExitCodeRequest exitCodeRequest = exitCodeManager.getWinningExitCodeRequest();
             logger.info("");
             detectBootResult.getDirectoryManager()
-                .ifPresent(directoryManager -> createStatusOutputFile(formattedOutputManager, detectInfo, directoryManager, exitCodeType, autonomousManagerOptional));
+                .ifPresent(directoryManager -> createStatusOutputFile(formattedOutputManager, detectInfo, directoryManager, exitCodeRequest, autonomousManagerOptional));
 
             //Create installed tool data file.
             detectBootResult.getDirectoryManager().ifPresent(directoryManager -> createOrUpdateInstalledToolsFile(installedToolManager, directoryManager.getPermanentDirectory()));
@@ -253,14 +254,14 @@ public class Application implements ApplicationRunner {
         }
     }
 
-    private void createStatusOutputFile(FormattedOutputManager formattedOutputManager, DetectInfo detectInfo, DirectoryManager directoryManager, ExitCodeType exitCodeType, Optional<AutonomousManager> autonomousManagerOptional) {
+    private void createStatusOutputFile(FormattedOutputManager formattedOutputManager, DetectInfo detectInfo, DirectoryManager directoryManager, ExitCodeRequest exitCodeRequest, Optional<AutonomousManager> autonomousManagerOptional) {
         logger.info("");
         try {
             File statusFile = new File(directoryManager.getStatusOutputDirectory(), STATUS_JSON_FILE_NAME);
             logger.info("Creating status file: {}", statusFile);
 
             Gson formattedGson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-            String json = formattedGson.toJson(formattedOutputManager.createFormattedOutput(detectInfo, exitCodeType, autonomousManagerOptional));
+            String json = formattedGson.toJson(formattedOutputManager.createFormattedOutput(detectInfo, exitCodeRequest, autonomousManagerOptional));
             FileUtils.writeStringToFile(statusFile, json, Charset.defaultCharset());
             
             if (directoryManager.getJsonStatusOutputDirectory() != null) {

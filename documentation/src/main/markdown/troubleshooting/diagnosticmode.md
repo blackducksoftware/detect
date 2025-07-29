@@ -1,4 +1,4 @@
-# Diagnostic mode
+# [detect_product_short] Diagnostic mode
 
 [detect_product_short]'s diagnostic mode produces a diagnostic zip containing files needed for troubleshooting. 
 If you contact [var_company_support] for help troubleshooting an issue, you will need to

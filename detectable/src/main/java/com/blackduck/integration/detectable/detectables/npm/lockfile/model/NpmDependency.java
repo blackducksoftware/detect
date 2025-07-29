@@ -13,17 +13,20 @@ import com.blackduck.integration.detectable.util.ExternalIdCreator;
 public class NpmDependency extends Dependency {
     private final boolean devDependency;
     private final boolean peerDependency;
-
-    public NpmDependency(String name, String version, ExternalId externalId, boolean devDependency, boolean peerDependency) {
+    private final boolean optionalDependency;
+    
+    public NpmDependency(String name, String version, ExternalId externalId, boolean devDependency, boolean peerDependency, boolean optionalDependency) {
         super(name, version, externalId);
         this.devDependency = devDependency;
         this.peerDependency = peerDependency;
+        this.optionalDependency = optionalDependency;
     }
 
-    public NpmDependency(String name, String version, boolean devDependency, boolean peerDependency) {
+    public NpmDependency(String name, String version, boolean devDependency, boolean peerDependency, boolean optionalDependency) {
         super(name, version, ExternalIdCreator.nameVersion(Forge.NPMJS, name, version));
         this.devDependency = devDependency;
         this.peerDependency = peerDependency;
+        this.optionalDependency = optionalDependency;
     }
 
     private NpmDependency parent;
@@ -60,5 +63,9 @@ public class NpmDependency extends Dependency {
 
     public boolean isPeerDependency() {
         return peerDependency;
+    }
+    
+    public boolean isOptionalDependency() {
+        return optionalDependency;
     }
 }

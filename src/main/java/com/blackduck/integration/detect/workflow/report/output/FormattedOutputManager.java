@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.stream.Collectors;
 
+import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodeRequest;
 import org.apache.commons.lang3.StringUtils;
 
 import com.blackduck.integration.common.util.Bds;
@@ -42,7 +43,7 @@ public class FormattedOutputManager {
     private final List<Status> statusSummaries = new ArrayList<>();
     private final List<DetectResult> detectResults = new ArrayList<>();
     private final List<DetectIssue> detectIssues = new ArrayList<>();
-    private final List<ExitCodeType> overallStatus = new ArrayList<>();
+    private final List<ExitCodeRequest> overallStatus = new ArrayList<>();
     private final Map<String, List<File>> unrecognizedPaths = new HashMap<>();
     private final List<Operation> detectOperations = new LinkedList<>();
     private DetectorToolResult detectorToolResult = null;
@@ -61,7 +62,7 @@ public class FormattedOutputManager {
         eventSystem.registerListener(Event.DetectOperationsComplete, detectOperations::addAll);
     }
 
-    public FormattedOutput createFormattedOutput(DetectInfo detectInfo, ExitCodeType exitCodeType, Optional<AutonomousManager> autonomousManagerOptional) {
+    public FormattedOutput createFormattedOutput(DetectInfo detectInfo, ExitCodeRequest exitCodeRequest, Optional<AutonomousManager> autonomousManagerOptional) {
         FormattedOutput formattedOutput = new FormattedOutput();
         formattedOutput.formatVersion = "0.5.0";
         formattedOutput.detectVersion = detectInfo.getDetectVersion();
@@ -91,9 +92,9 @@ public class FormattedOutputManager {
         // The exit status is known prior to this method being called and is passed in...
         // we will construct a reasonable facsimile to the other status, issues etc. for outputting the 
         // detect exit status.
-        overallStatus.add(exitCodeType);
+        overallStatus.add(exitCodeRequest);
         formattedOutput.overallStatus = Bds.of(overallStatus)
-                .map(overallStatus -> new FormattedStatusOutput(overallStatus.toString(), overallStatus.getDescription()))
+                .map(overallStatus -> new FormattedStatusOutput(overallStatus.getExitCodeType().toString(), overallStatus.getReason()))
                 .toList();
 
         if (detectorToolResult != null) { //TODO (Detector): Add formatted output results...

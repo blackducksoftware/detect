@@ -1,7 +1,6 @@
 package com.blackduck.integration.detect.workflow.blackduck.developer;
 
 import java.util.List;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,22 +34,8 @@ public class RapidModeLogReportOperation {
         aggregateResult.logResult(new Slf4jIntLogger(logger));
         RapidScanResultSummary summary = aggregateResult.getSummary();
         if (summary.hasErrors()) {
-            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_POLICY_VIOLATION, createViolationMessage(summary.getPolicyViolationNames()));
+            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_POLICY_VIOLATION);
         }
         return summary;
-    }
-
-    private String createViolationMessage(Set<String> violatedPolicyNames) {
-        StringBuilder stringBuilder = new StringBuilder(200);
-        stringBuilder.append("Black Duck found:");
-        stringBuilder.append(fixComponentPlural(" %d %s in violation", violatedPolicyNames.size()));
-        return stringBuilder.toString();
-    }
-
-    private String fixComponentPlural(String formatString, int count) {
-        String label = "components";
-        if (count == 1)
-            label = "component";
-        return String.format(formatString, count, label);
     }
 }

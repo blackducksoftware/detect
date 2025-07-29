@@ -97,7 +97,7 @@ public class DetectorTool {
         if (!findResultOptional.isPresent()) {
             logger.error("The source directory could not be searched for detectors - detector tool failed.");
             logger.error("Please ensure the provided source path is a directory and detect has access.");
-            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_CONFIGURATION, "Detector tool failed to run on the configured source path.");
+            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_CONFIGURATION);
             return new DetectorToolResult();
         }
 
@@ -121,7 +121,7 @@ public class DetectorTool {
     private void checkAndHandleOutOfMemoryIssue(List<DetectorDirectoryReport> reports) {
         if (detectorIssuePublisher.hasOutOfMemoryIssue(reports)) {
             logger.error("Detected an issue. " + DetectorStatusCode.EXECUTABLE_TERMINATED_LIKELY_OUT_OF_MEMORY.getDescription());
-            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_OUT_OF_MEMORY, "Executable terminated likely due to out of memory.");
+            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_OUT_OF_MEMORY);
         }
     }
 
@@ -247,7 +247,7 @@ public class DetectorTool {
         statusMap.forEach((detectorType, statusType) ->
             statusEventPublisher.publishStatusSummary(new DetectorStatus(detectorType, statusType)));
         if (statusMap.containsValue(StatusType.FAILURE)) {
-            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_DETECTOR, "One or more detectors were not successful.");
+            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_DETECTOR);
         }
     }
 
@@ -280,7 +280,7 @@ public class DetectorTool {
                     DetectableDefinition extractedDetectable = extracted.getExtractedDetectable().getDetectable();
                     if (extractedDetectable.getAccuracyType() != DetectableAccuracyType.HIGH) {
                         accuracyMet.set(false);
-                        exitCodePublisher.publishExitCode(new ExitCodeRequest(ExitCodeType.FAILURE_ACCURACY_NOT_MET));
+                        exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_ACCURACY_NOT_MET);
                         List<String> messages = new ArrayList<>();
 
                         messages.add("Accuracy Not Met: " + extracted.getRule().getDetectorType());
@@ -301,7 +301,7 @@ public class DetectorTool {
         if (!missingDetectors.isEmpty()) {
             String missingDetectorDisplay = missingDetectors.stream().map(Enum::toString).collect(Collectors.joining(","));
             logger.error("One or more required detector types were not found: {}", missingDetectorDisplay);
-            exitCodePublisher.publishExitCode(new ExitCodeRequest(ExitCodeType.FAILURE_DETECTOR_REQUIRED));
+            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_DETECTOR_REQUIRED);
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.blackduck.integration.detect.workflow.blackduck.report.json;
 
 import com.blackduck.integration.detect.workflow.blackduck.report.ReportData;
+import com.blackduck.integration.detect.workflow.blackduck.report.util.ReportFileUtil;
 import com.blackduck.integration.util.IntegrationEscapeUtil;
 import com.google.gson.GsonBuilder;
 import com.google.gson.Gson;
@@ -23,18 +24,7 @@ public class RiskReportJsonWriter {
     private static final Logger logger = LoggerFactory.getLogger(RiskReportJsonWriter.class);
 
     public static File createRiskReportJsonFile(File outputDirectory, ReportData reportData) throws IOException {
-        IntegrationEscapeUtil escapeUtil = new IntegrationEscapeUtil();
-
-        String escapedProjectName = escapeUtil.replaceWithUnderscore(reportData.getProjectName());
-        String escapedProjectVersionName = escapeUtil.replaceWithUnderscore(reportData.getProjectVersion());
-        File jsonFile = new File(outputDirectory, escapedProjectName + "_" + escapedProjectVersionName + "_BlackDuck_RiskReport.json");
-        if (jsonFile.exists()) {
-            boolean deleted = jsonFile.delete();
-            if (!deleted) {
-                logger.warn(String.format("Unable to delete existing file %s before re-creating it", jsonFile.getAbsolutePath()));
-            }
-        }
-
+        File jsonFile = ReportFileUtil.createReportFile(outputDirectory, reportData.getProjectName(), reportData.getProjectVersion(), "json", "_BlackDuck_RiskReport");
         String serializedReportData = serializeRiskReport(reportData);
 
         try (FileWriter fw = new FileWriter(jsonFile)) {
