@@ -22,16 +22,19 @@ public class UploadIacScanResultsOperation {
     public UploadIacScanResultsOperation(IacScanUploadService iacScanUploadService) {this.iacScanUploadService = iacScanUploadService;}
 
     public void uploadResults(File resultsFile, String scanId) throws IntegrationException {
-        String resultsFileContent;
+        String resultsFileContent, normalizedNFDFileContent;
         try {
             printJavaSystemEncodingProperty();
 //            File pablosFile = new File("/Users/shanty/Desktop/vs-compare/pablos.json");
-            File seansFile = new File("/Users/shanty/Desktop/vs-compare/sigma-results-sean.json");
+//            File seansFile = new File("/Users/shanty/Desktop/vs-compare/sigma-results-sean.json");
 
-//            resultsFile = seansFile;
+//            resultsFile = pablosFile;
 
-            resultsFileContent = readFileToStringWin1252(resultsFile);
+            resultsFileContent = readFileToStringUTF8(resultsFile);
             checkPrecomposedOrDecomposed(resultsFileContent);
+
+            normalizedNFDFileContent = normalizeFileContent(resultsFileContent);
+            checkPrecomposedOrDecomposed(normalizedNFDFileContent);
         } catch (IOException e) {
             throw new IntegrationException("Unable to parse Iac Scan results file: " + resultsFile.getAbsolutePath(), e);
         }
@@ -55,16 +58,20 @@ public class UploadIacScanResultsOperation {
 
     private void printJavaSystemEncodingProperty() {
         String encoding = System.getProperty("file.encoding");
-        logger.debug("Default file encoding: " + encoding);
+        logger.debug("System default file encoding: " + encoding);
 
     }
 
     private void  checkPrecomposedOrDecomposed(String resultsFileContentAsString) {
-        boolean isNFC = Normalizer.isNormalized(resultsFileContentAsString, Normalizer.Form.NFC); // Canonical decomposition, followed by canonical composition.
-        boolean isNFD = Normalizer.isNormalized(resultsFileContentAsString, Normalizer.Form.NFD); // Canonical decomposition.
+        boolean isNFC = Normalizer.isNormalized(resultsFileContentAsString, Normalizer.Form.NFC); // Canonical decomposition, followed by canonical composition.U+00F6
+        boolean isNFD = Normalizer.isNormalized(resultsFileContentAsString, Normalizer.Form.NFD); // Canonical decomposition. U+006F
 
-        logger.debug("Is precomposed? " + isNFC);
-        logger.debug("Is decomposed? " + isNFD);
+        if (isNFC) { logger.debug("Results File content is precomposed."); }
+        else if (isNFD) { logger.debug("Results file content is decomposed."); }
+    }
 
+    private String normalizeFileContent(String originalResultsFileContentAsString) {
+        logger.debug("Normalizing to NFD before sending to hub...");
+        return Normalizer.normalize(originalResultsFileContentAsString, Normalizer.Form.NFD); // server seems to accept this and reject NFC
     }
 }
