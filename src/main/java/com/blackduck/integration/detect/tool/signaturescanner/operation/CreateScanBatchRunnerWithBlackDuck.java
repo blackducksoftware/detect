@@ -56,6 +56,8 @@ public class CreateScanBatchRunnerWithBlackDuck {
             operatingSystemType = OperatingSystemType.ALPINE_LINUX;
         }
 
+        logger.info("System architecture value: {}", SystemUtils.OS_ARCH);
+
         if (shouldUseToolsApiScannerInstaller(blackDuckVersion)) {
             logger.debug("Using Tools Scan CLI download API (new).");
             scannerInstallerVariant = new ToolsApiScannerInstaller(
