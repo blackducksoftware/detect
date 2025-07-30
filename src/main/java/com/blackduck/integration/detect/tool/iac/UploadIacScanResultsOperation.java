@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
 
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -23,10 +24,14 @@ public class UploadIacScanResultsOperation {
     public void uploadResults(File resultsFile, String scanId) throws IntegrationException {
         String resultsFileContent;
         try {
+            printJavaSystemEncodingProperty();
 //            File pablosFile = new File("/Users/shanty/Desktop/vs-compare/pablos.json");
-//            File seansFile = new File("/Users/shanty/Desktop/vs-compare/sigma-results-sean.json");
+            File seansFile = new File("/Users/shanty/Desktop/vs-compare/sigma-results-sean.json");
+
+//            resultsFile = seansFile;
 
             resultsFileContent = readFileToStringUTF8(resultsFile);
+            checkPrecomposedOrDecomposed(resultsFileContent);
         } catch (IOException e) {
             throw new IntegrationException("Unable to parse Iac Scan results file: " + resultsFile.getAbsolutePath(), e);
         }
@@ -46,5 +51,20 @@ public class UploadIacScanResultsOperation {
     private String readFileToStringWin1252(File resultsFile) throws IOException {
         logger.debug("Reading {} using character encoding {}", resultsFile.getAbsolutePath(), Charset.forName("windows-1252"));
         return FileUtils.readFileToString(resultsFile, Charset.forName("windows-1252"));
+    }
+
+    private void printJavaSystemEncodingProperty() {
+        String encoding = System.getProperty("file.encoding");
+        logger.debug("Default file encoding: " + encoding);
+
+    }
+
+    private void  checkPrecomposedOrDecomposed(String resultsFileContentAsString) {
+        boolean isNFC = Normalizer.isNormalized(resultsFileContentAsString, Normalizer.Form.NFC); // Canonical decomposition, followed by canonical composition.
+        boolean isNFD = Normalizer.isNormalized(resultsFileContentAsString, Normalizer.Form.NFD); // Canonical decomposition.
+
+        logger.debug("Is precomposed? " + isNFC);
+        logger.debug("Is decomposed? " + isNFD);
+
     }
 }
