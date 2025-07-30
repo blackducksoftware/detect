@@ -30,7 +30,7 @@ public class UploadIacScanResultsOperation {
 
 //            resultsFile = seansFile;
 
-            resultsFileContent = readFileToStringUTF8(resultsFile);
+            resultsFileContent = readFileToStringWin1252(resultsFile);
             checkPrecomposedOrDecomposed(resultsFileContent);
         } catch (IOException e) {
             throw new IntegrationException("Unable to parse Iac Scan results file: " + resultsFile.getAbsolutePath(), e);
