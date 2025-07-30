@@ -6,7 +6,6 @@ import java.util.concurrent.ExecutorService;
 
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.*;
 import com.blackduck.integration.blackduck.version.BlackDuckVersion;
-import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
