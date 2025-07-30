@@ -23,10 +23,10 @@ public class UploadIacScanResultsOperation {
     public void uploadResults(File resultsFile, String scanId) throws IntegrationException {
         String resultsFileContent;
         try {
-            File pablosFile = new File("/Users/shanty/Desktop/vs-compare/pablos.json");
-            File seansFile = new File("/Users/shanty/Desktop/vs-compare/sigma-results-sean.json");
+//            File pablosFile = new File("/Users/shanty/Desktop/vs-compare/pablos.json");
+//            File seansFile = new File("/Users/shanty/Desktop/vs-compare/sigma-results-sean.json");
 
-            resultsFileContent = readFileToStringWin1252(pablosFile);
+            resultsFileContent = readFileToStringUTF8(resultsFile);
         } catch (IOException e) {
             throw new IntegrationException("Unable to parse Iac Scan results file: " + resultsFile.getAbsolutePath(), e);
         }
