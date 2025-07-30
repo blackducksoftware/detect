@@ -6,6 +6,7 @@ import java.util.concurrent.ExecutorService;
 
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.*;
 import com.blackduck.integration.blackduck.version.BlackDuckVersion;
+import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +28,7 @@ public class CreateScanBatchRunnerWithBlackDuck {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private final IntEnvironmentVariables intEnvironmentVariables;
-    private final OperatingSystemType operatingSystemType;
+    private OperatingSystemType operatingSystemType;
     private final ExecutorService executorService;
 
     public CreateScanBatchRunnerWithBlackDuck(IntEnvironmentVariables intEnvironmentVariables, OperatingSystemType operatingSystemType, ExecutorService executorService) {
@@ -48,6 +49,12 @@ public class CreateScanBatchRunnerWithBlackDuck {
         KeyStoreHelper keyStoreHelper = new KeyStoreHelper(slf4jIntLogger);
 
         ScannerInstaller scannerInstallerVariant;
+
+        String operatingSystemEnv = System.getenv("SCAN_CLI_OS");
+
+        if (operatingSystemEnv != null && operatingSystemEnv.equals("ALPINE_LINUX")) {
+            operatingSystemType = OperatingSystemType.ALPINE_LINUX;
+        }
 
         if (shouldUseToolsApiScannerInstaller(blackDuckVersion)) {
             logger.debug("Using Tools Scan CLI download API (new).");
