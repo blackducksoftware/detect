@@ -54,7 +54,7 @@ public class CargoExtractor {
         List<CargoLockPackageData> filteredPackages = cargoLockPackageDataList;
         boolean exclusionEnabled = isDependencyExclusionEnabled(cargoDetectableOptions);
         String cargoTomlContents = null;
-        Set<NameVersion> dependenciesToInclude;
+
         Set<NameVersion> resolvedRootDependencies = new HashSet<>();
         Map<String, List<CargoLockPackageData>> packageLookupMap = indexPackagesByName(filteredPackages);
 
@@ -68,12 +68,12 @@ public class CargoExtractor {
             cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
 
             EnumListFilter<CargoDependencyType> filter = null;
-            if (cargoDetectableOptions != null) {
+            if (exclusionEnabled) {
                 filter = cargoDetectableOptions.getDependencyTypeFilter();
             }
 
-            dependenciesToInclude = cargoTomlParser.parseDependenciesToInclude(cargoTomlContents, filter);
-            filteredPackages = includeDependencies(cargoLockPackageDataList, dependenciesToInclude, resolvedRootDependencies);
+            Set<NameVersion> dependenciesToInclude = cargoTomlParser.parseDependenciesToInclude(cargoTomlContents, filter);
+            filteredPackages = includeDependencies(cargoLockPackageDataList, dependenciesToInclude, resolvedRootDependencies, packageLookupMap);
         }
 
         List<CargoLockPackage> packages = filteredPackages.stream()
@@ -107,10 +107,9 @@ public class CargoExtractor {
     private List<CargoLockPackageData> includeDependencies(
             List<CargoLockPackageData> packages,
             Set<NameVersion> dependenciesToInclude,
-            Set<NameVersion> resolvedRootDependencies
+            Set<NameVersion> resolvedRootDependencies,
+            Map<String, List<CargoLockPackageData>> packageLookupMap
     ) {
-
-        Map<String, List<CargoLockPackageData>> packageLookupMap = indexPackagesByName(packages); // Create lookup map (multi-map) for each name
         processTransitiveDependenciesForInclusion(dependenciesToInclude, packageLookupMap, resolvedRootDependencies); // Collect all transitive dependencies to include
         return filterPackagesByInclusion(packages, dependenciesToInclude); // Only keep direct and transitive dependencies
     }
