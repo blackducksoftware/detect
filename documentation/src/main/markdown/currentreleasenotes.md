@@ -30,7 +30,7 @@
 
 ### Resolved issues
 
-* 
+* (IDETECT-4746) – Fixed incorrect labeling of transitive dependencies as direct in the Cargo Lockfile Detector.
 
 ### Dependency updates
 
