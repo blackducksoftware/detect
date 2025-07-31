@@ -32,8 +32,10 @@ import com.blackduck.integration.blackduck.bdio2.model.BdioFileContent;
 import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
 import com.blackduck.integration.detect.lifecycle.run.step.CommonScanStepRunner;
 import com.blackduck.integration.detect.workflow.blackduck.report.ReportData;
+import com.blackduck.integration.rest.exception.IntegrationRestException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpStatus;
 import org.apache.http.entity.ContentType;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -69,7 +71,6 @@ import com.blackduck.integration.common.util.finder.FileFinder;
 import com.blackduck.integration.componentlocator.beans.Component;
 import com.blackduck.integration.detect.configuration.DetectConfigurationFactory;
 import com.blackduck.integration.detect.configuration.DetectInfo;
-import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detect.configuration.DetectUserFriendlyException;
 import com.blackduck.integration.detect.configuration.DetectorToolOptions;
 import com.blackduck.integration.detect.configuration.connection.ConnectionFactory;
@@ -90,7 +91,6 @@ import com.blackduck.integration.detect.lifecycle.run.singleton.UtilitySingleton
 import com.blackduck.integration.detect.lifecycle.run.step.utility.OperationAuditLog;
 import com.blackduck.integration.detect.lifecycle.run.step.utility.OperationWrapper;
 import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodePublisher;
-import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodeRequest;
 import com.blackduck.integration.detect.tool.DetectableTool;
 import com.blackduck.integration.detect.tool.DetectableToolResult;
 import com.blackduck.integration.detect.tool.binaryscanner.BinaryScanFindMultipleTargetsOperation;
@@ -183,7 +183,6 @@ import com.blackduck.integration.detect.workflow.codelocation.DetectCodeLocation
 import com.blackduck.integration.detect.workflow.componentlocationanalysis.BdioToComponentListTransformer;
 import com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation;
 import com.blackduck.integration.detect.workflow.componentlocationanalysis.ScanResultToComponentListTransformer;
-import com.blackduck.integration.detect.workflow.event.Event;
 import com.blackduck.integration.detect.workflow.event.EventSystem;
 import com.blackduck.integration.detect.workflow.file.DirectoryManager;
 import com.blackduck.integration.detect.workflow.phonehome.PhoneHomeManager;
@@ -713,38 +712,55 @@ public class OperationRunner {
         return auditLog.namedInternal("Rapid Wait", () -> {
             BlackDuckServicesFactory blackDuckServicesFactory = blackDuckRunData.getBlackDuckServicesFactory();
             int fibonacciSequenceIndex = getFibonacciSequenceIndex();
-            return new RapidModeWaitOperation(blackDuckServicesFactory.getBlackDuckApiClient()).waitForScans(
-                rapidScans,
-                detectConfigurationFactory.findTimeoutInSeconds(),
-                RapidModeWaitOperation.DEFAULT_WAIT_INTERVAL_IN_SECONDS,
-                mode,
-                calculateMaxWaitInSeconds(fibonacciSequenceIndex)
-            );
+
+            try {
+                return new RapidModeWaitOperation(blackDuckServicesFactory.getBlackDuckApiClient()).waitForScans(
+                        rapidScans,
+                        detectConfigurationFactory.findTimeoutInSeconds(),
+                        RapidModeWaitOperation.DEFAULT_WAIT_INTERVAL_IN_SECONDS,
+                        mode,
+                        calculateMaxWaitInSeconds(fibonacciSequenceIndex)
+                );
+            } catch (IntegrationRestException e) {
+                throw handleRapidScanException(e);
+            } catch (Exception e) {
+                logger.error("Exception while waiting for rapid results: {}", e.getMessage(), e);
+                throw new OperationException(e);
+            }
         });
     }
 
-    public static boolean shouldSkipResolvedPolicies(DeveloperScansScanView resultView, RapidCompareMode rapidCompareMode) {
-        if (resultView.getPolicyStatuses() == null || resultView.getPolicyStatuses().isEmpty()) {
-            return false;
+    private OperationException handleRapidScanException(IntegrationRestException e) {
+        RapidCompareMode rapidCompareMode = detectConfigurationFactory.createRapidScanOptions().getCompareMode();
+
+        if (isBomCompareError(e, rapidCompareMode)) {
+            String enhancedMessage = createBomCompareErrorMessage(e.getMessage());
+            logger.error("Rapid scan failed. {}", enhancedMessage);
+            return new OperationException(new IntegrationRestException(
+                    e.getHttpMethod(), e.getHttpUrl(), e.getHttpStatusCode(),
+                    e.getHttpStatusMessage(), e.getHttpResponseContent(), enhancedMessage));
         }
-        return (RapidCompareMode.BOM_COMPARE.equals(rapidCompareMode) || RapidCompareMode.BOM_COMPARE_STRICT.equals(rapidCompareMode))
-                && resultView.getPolicyStatuses().stream().allMatch(POLICY_STATUS_RESOLVED::equalsIgnoreCase);
+
+        logger.error("Rapid scan failed. {}", e.getMessage());
+        return new OperationException(e);
     }
 
-    public static List<DeveloperScansScanView> filterUnresolvedPolicyResults(List<DeveloperScansScanView> scanResults, RapidCompareMode rapidCompareMode) {
-        return scanResults.stream()
-                .filter(resultView -> !shouldSkipResolvedPolicies(resultView, rapidCompareMode))
-                .collect(Collectors.toList());
+    private boolean isBomCompareError(IntegrationRestException e, RapidCompareMode rapidCompareMode) {
+        return HttpStatus.SC_BAD_REQUEST == e.getHttpStatusCode() &&
+                (RapidCompareMode.BOM_COMPARE.equals(rapidCompareMode) ||
+                        RapidCompareMode.BOM_COMPARE_STRICT.equals(rapidCompareMode));
+    }
+
+    private String createBomCompareErrorMessage(String originalMessage) {
+        return originalMessage + " BOM_COMPARE mode requires the target project version to exist in Black Duck Hub. " +
+                "Please ensure 'detect.project.version.name' matches an existing project version. " +
+                "Consider running a full scan first if the version hasn't been uploaded yet.";
     }
 
     public final RapidScanResultSummary logRapidReport(List<DeveloperScansScanView> scanResults, BlackduckScanMode mode) throws OperationException {
-        RapidScanOptions rapidScanOptions = detectConfigurationFactory.createRapidScanOptions();
-        List<PolicyRuleSeverityType> severitiesToFailPolicyCheck = rapidScanOptions.getSeveritiesToFailPolicyCheck();
-        RapidCompareMode rapidCompareMode = rapidScanOptions.getCompareMode();
-        List<DeveloperScansScanView> filteredResults = filterUnresolvedPolicyResults(scanResults, rapidCompareMode);
-
-        return auditLog.namedInternal("Print Rapid Mode Results", () ->
-            new RapidModeLogReportOperation(exitCodePublisher, rapidScanResultAggregator, mode).perform(filteredResults, severitiesToFailPolicyCheck));
+        List<PolicyRuleSeverityType> severitiesToFailPolicyCheck = detectConfigurationFactory.createRapidScanOptions().getSeveritiesToFailPolicyCheck();
+        return auditLog.namedInternal("Print Rapid Mode Results", () -> 
+            new RapidModeLogReportOperation(exitCodePublisher, rapidScanResultAggregator, mode).perform(scanResults, severitiesToFailPolicyCheck));
     }
 
     public final File generateRapidJsonFile(NameVersion projectNameVersion, List<DeveloperScansScanView> scanResults) throws OperationException {
@@ -776,7 +792,6 @@ public class OperationRunner {
     /**
      * Given a BDIO, creates a JSON file called {@value GenerateComponentLocationAnalysisOperation#DETECT_OUTPUT_FILE_NAME} containing
      * every detected component's {@link ExternalId} along with its declaration location when applicable.
-     *
      * @param bdio
      * @throws OperationException
      */
@@ -808,7 +823,6 @@ public class OperationRunner {
     /**
      * Given a Rapid/Stateless Detector Scan result, creates a JSON file called {@value GenerateComponentLocationAnalysisOperation#DETECT_OUTPUT_FILE_NAME} containing
      * every reported component's {@link ExternalId} along with its declaration location and upgrade guidance information when applicable.
-     *
      * @param rapidResults
      * @param bdio
      * @throws OperationException
@@ -859,7 +873,6 @@ public class OperationRunner {
     /**
      * Since component location analysis is not supported for online Intelligent scans in 8.11, an appropriate console
      * msg is logged and status=FAILURE is recorded in the status.json file
-     *
      * @throws OperationException
      */
     public void attemptToGenerateComponentLocationAnalysisIfEnabled() throws OperationException {
