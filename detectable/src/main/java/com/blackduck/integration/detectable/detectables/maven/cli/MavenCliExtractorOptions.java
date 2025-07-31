@@ -3,7 +3,6 @@ package com.blackduck.integration.detectable.detectables.maven.cli;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.io.File;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,7 +81,6 @@ public class MavenCliExtractorOptions {
         // Force maven to use a single thread to ensure the tree output is in the correct order.
         // When multiple threads are enabled the tree output is often unparseable.
         arguments.add("-T1");
-
         return arguments;
     }
 
