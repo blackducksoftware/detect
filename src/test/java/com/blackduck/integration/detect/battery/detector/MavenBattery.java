@@ -46,5 +46,17 @@ public class MavenBattery {
         test.expectBdioResources();
         test.run();
     }
+
+    @Test
+    void mavenCustomPomName() {
+        DetectorBatteryTestRunner test = new DetectorBatteryTestRunner("maven-wrapper", "maven-cli/simple");
+        test.executableSourceFileFromResourceFiles("mvnw.cmd", "mvnw", MAVEN_OUTPUT_RESOURCE);
+        test.sourceDirectoryNamed("linux-maven");
+        test.sourceFileNamed("custom-pom.xml");
+//        test.property("detect.maven.build.command", "-f custom-pom.xml");
+        test.git("https://github.com/BlackDuckCoPilot/example-maven-travis", "master");
+        test.expectBdioResources();
+        test.run();
+    }
 }
 
