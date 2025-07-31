@@ -23,6 +23,7 @@
 ### New features
 
 * Signature Scan now supports ARM architecture with correctly packaged ARM JREs for Windows, MAC, Linux and Alpine Operating Systems.
+<note type="hint">To ensure [detect_product_short] correctly identifies the system architecture on ARM-based systems, please install an ARM-specific Java runtime. This is necessary for accurate detection and proper functionality on ARM platforms.</note>
 
 ### Changed features
 
