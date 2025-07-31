@@ -26,7 +26,6 @@ import java.util.concurrent.Executors;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import com.blackduck.integration.blackduck.bdio2.model.BdioFileContent;
 import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
@@ -257,7 +256,6 @@ public class OperationRunner {
     private static final String INTELLIGENT_SCAN_SCASS_CONTENT_TYPE = "application/vnd.blackducksoftware.intelligent-persistence-scan-4+protobuf-jsonld";
     public static final ImmutableList<Integer> RETRYABLE_AFTER_WAIT_HTTP_EXCEPTIONS = ImmutableList.of(408, 429, 502, 503, 504);
     public static final ImmutableList<Integer> RETRYABLE_WITH_BACKOFF_HTTP_EXCEPTIONS = ImmutableList.of(425, 500);
-    private static final String POLICY_STATUS_RESOLVED = "RESOLVED";
     private List<File> binaryUserTargets = new ArrayList<>();
     BinaryScanFindMultipleTargetsOperation binaryScanFindMultipleTargetsOperation;
 
@@ -721,10 +719,11 @@ public class OperationRunner {
                         mode,
                         calculateMaxWaitInSeconds(fibonacciSequenceIndex)
                 );
+            } catch (InterruptedException e) {
+                throw new InterruptedException(e.getMessage());
             } catch (IntegrationRestException e) {
                 throw handleRapidScanException(e);
             } catch (Exception e) {
-                logger.error("Exception while waiting for rapid results: {}", e.getMessage(), e);
                 throw new OperationException(e);
             }
         });
