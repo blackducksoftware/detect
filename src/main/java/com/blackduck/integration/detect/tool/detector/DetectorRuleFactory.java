@@ -2,6 +2,7 @@ package com.blackduck.integration.detect.tool.detector;
 
 import com.blackduck.integration.detect.tool.detector.factory.DetectDetectableFactory;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectable;
+import com.blackduck.integration.detectable.detectables.cargo.CargoCliDetectable;
 import com.blackduck.integration.detectable.detectables.cargo.CargoLockDetectable;
 import com.blackduck.integration.detectable.detectables.carthage.CarthageLockDetectable;
 import com.blackduck.integration.detectable.detectables.clang.ClangDetectable;
@@ -53,6 +54,8 @@ import com.blackduck.integration.detectable.detectables.setuptools.tbuild.SetupT
 import com.blackduck.integration.detectable.detectables.setuptools.buildless.SetupToolsBuildlessDetectable;
 import com.blackduck.integration.detectable.detectables.swift.cli.SwiftCliDetectable;
 import com.blackduck.integration.detectable.detectables.swift.lock.SwiftPackageResolvedDetectable;
+import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildDetectable;
+import com.blackduck.integration.detectable.detectables.uv.lockfile.UVLockFileDetectable;
 import com.blackduck.integration.detectable.detectables.xcode.XcodeProjectDetectable;
 import com.blackduck.integration.detectable.detectables.xcode.XcodeWorkspaceDetectable;
 import com.blackduck.integration.detectable.detectables.yarn.YarnLockDetectable;
@@ -67,9 +70,11 @@ public class DetectorRuleFactory {
         DetectorRuleSetBuilder rules = new DetectorRuleSetBuilder(detectableFactory);
 
         rules.addDetector(DetectorType.CARGO, detector -> {
+            detector.entryPoint(CargoCliDetectable.class)
+                .search().defaults();
             detector.entryPoint(CargoLockDetectable.class)
                 .search().defaults();
-        });
+        }).allEntryPointsFallbackToNext();
 
         rules.addDetector(DetectorType.CARTHAGE, detector -> {
             detector.entryPoint(CarthageLockDetectable.class)
@@ -201,6 +206,11 @@ public class DetectorRuleFactory {
                 .search().defaultLock();
         }).yieldsTo(DetectorType.LERNA);
 
+        rules.addDetector(DetectorType.PNPM, detector -> {
+            detector.entryPoint(PnpmLockDetectable.class)
+                .search().defaultLock();
+        }).yieldsTo(DetectorType.LERNA);
+
         rules.addDetector(DetectorType.NPM, detector -> {
                 detector.entryPoint(NpmShrinkwrapDetectable.class)
                     .search().defaultLock();
@@ -212,11 +222,6 @@ public class DetectorRuleFactory {
                     .search().defaults(); //maybe this one should be defaultLock?
             }).allEntryPointsFallbackToNext()
             .yieldsTo(DetectorType.LERNA, DetectorType.YARN, DetectorType.PNPM);
-
-        rules.addDetector(DetectorType.PNPM, detector -> {
-            detector.entryPoint(PnpmLockDetectable.class)
-                .search().defaultLock();
-        }).yieldsTo(DetectorType.LERNA);
 
         rules.addDetector(DetectorType.NUGET, detector -> {
             //four different detectables, last one will be the project inspector
@@ -241,6 +246,13 @@ public class DetectorRuleFactory {
                 .search().defaults();
         });
 
+        rules.addDetector(DetectorType.UV, detector -> {
+            detector.entryPoint(UVBuildDetectable.class)
+                    .search().defaults();
+            detector.entryPoint(UVLockFileDetectable.class)
+                    .search().defaults();
+        }).allEntryPointsFallbackToNext();
+
         rules.addDetector(DetectorType.PIP, detector -> {
                 detector.entryPoint(PipenvDetectable.class)
                     .search().defaults();
@@ -252,7 +264,8 @@ public class DetectorRuleFactory {
                     .search().defaults();
             })
             .allEntryPointsFallbackToNext()
-            .yieldsTo(DetectorType.POETRY);
+            .yieldsTo(DetectorType.POETRY)
+            .yieldsTo(DetectorType.UV);
 
         rules.addDetector(DetectorType.RUBYGEMS, detector -> {
             detector.entryPoint(GemlockDetectable.class)

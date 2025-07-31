@@ -1,12 +1,10 @@
 package com.blackduck.integration.detectable.detectables.go.gomod.process;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.blackduck.integration.util.NameVersion;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,18 +23,31 @@ public class GoModDependencyManager {
     private static final Pattern SHORT_SHA1_VERSION_PATTERN = Pattern.compile(String.format(GIT_VERSION_FORMAT, SHORT_SHA1_REGEX));
 
     private final ExternalIdFactory externalIdFactory;
-
     private final Map<String, Dependency> modulesAsDependencies;
+    private final Map<String, NameVersion> originalRequiredNameAndVersion;
 
-    public GoModDependencyManager(List<GoListAllData> allModules, ExternalIdFactory externalIdFactory) {
+    public GoModDependencyManager(List<GoListAllData> allRequiredModules, ExternalIdFactory externalIdFactory) {
         this.externalIdFactory = externalIdFactory;
-        modulesAsDependencies = convertModulesToDependencies(allModules);
+        originalRequiredNameAndVersion = new HashMap<>();
+        modulesAsDependencies = convertModulesToDependencies(allRequiredModules);
+
     }
 
+    /**
+     * A Go Module consists of a path (aka its name) and its version. Before converting to a Dependency, we apply any
+     * replace directives and commit hash version truncation when applicable.
+     * @param allModules
+     * @return
+     */
     private Map<String, Dependency> convertModulesToDependencies(List<GoListAllData> allModules) {
         Map<String, Dependency> dependencies = new HashMap<>();
 
         for (GoListAllData module : allModules) {
+            // Keep track of original module path and version (without replacements, without truncating commit hash version)
+            NameVersion originalNameVersion = new NameVersion(module.getPath(), module.getVersion());
+            originalRequiredNameAndVersion.putIfAbsent(module.getPath(), originalNameVersion);
+
+            // Apply replacements and version truncation if applicable
             String name = Optional.ofNullable(module.getReplace())
                 .map(ReplaceData::getPath)
                 .orElse(module.getPath());
@@ -44,17 +55,37 @@ public class GoModDependencyManager {
                 .map(ReplaceData::getVersion)
                 .orElse(module.getVersion());
             if (version != null) {
-                version = handleGitHash(version);
-                version = removeIncompatibleSuffix(version);
+                String kbCompatibleVersion = getKbCompatibleVersion(version);
+                if (!version.equals(kbCompatibleVersion)) {
+                    version = kbCompatibleVersion;
+                }
             }
+
+            //  Add dependency (will have replaced name/version + truncated commit hash if applicable)
             dependencies.put(module.getPath(), convertToDependency(name, version));
         }
 
         return dependencies;
     }
 
-    private Dependency convertToDependency(String moduleName, @Nullable String moduleVersion) {
-        return new Dependency(moduleName, moduleVersion, externalIdFactory.createNameVersionExternalId(Forge.GOLANG, moduleName, moduleVersion));
+    private String getKbCompatibleVersion(String version) {
+        String kbCompatibleVersion;
+        kbCompatibleVersion = handleGitHash(version);
+        kbCompatibleVersion = removeIncompatibleSuffix(kbCompatibleVersion);
+        return kbCompatibleVersion;
+    }
+
+    /**
+     * @param moduleName The module name used for storing relationships that are used for graph building.
+     * @return The module name and version before any replace directives were applied. If version was modified
+     * for KB compatibility, this will return the version before any commit hash truncation was applied.
+     */
+    public NameVersion getOriginalRequiredNameAndVersion(String moduleName) {
+           return originalRequiredNameAndVersion.getOrDefault(moduleName, new NameVersion("", ""));
+    }
+
+    public Collection<Dependency> getRequiredDependencies() {
+        return modulesAsDependencies.values();
     }
 
     public Dependency getDependencyForModule(String moduleName) {
@@ -68,6 +99,10 @@ public class GoModDependencyManager {
                 getVersionFromPattern(version, SHORT_SHA1_VERSION_PATTERN)
                     .orElse(version)
             );
+    }
+
+    private Dependency convertToDependency(String moduleName, @Nullable String moduleVersion) {
+        return new Dependency(moduleName, moduleVersion, externalIdFactory.createNameVersionExternalId(Forge.GOLANG, moduleName, moduleVersion));
     }
 
     private Optional<String> getVersionFromPattern(String version, Pattern versionPattern) {

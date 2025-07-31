@@ -1,6 +1,7 @@
 package com.blackduck.integration.detect.workflow.blackduck.developer;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -12,6 +13,7 @@ import com.blackduck.integration.blackduck.api.generated.component.DeveloperScan
 import com.blackduck.integration.blackduck.api.generated.component.DeveloperScansScanItemsPolicyViolationVulnerabilitiesView;
 import com.blackduck.integration.blackduck.api.generated.component.DeveloperScansScanItemsPolicyViolationVulnerabilitiesViolatingPoliciesView;
 import com.blackduck.integration.blackduck.api.generated.component.DeveloperScansScanItemsViolatingPoliciesView;
+import com.blackduck.integration.blackduck.api.generated.enumeration.PolicyRuleSeverityType;
 import com.blackduck.integration.blackduck.api.generated.view.DeveloperScansScanView;
 import com.blackduck.integration.detect.workflow.blackduck.developer.aggregate.RapidScanAggregateResult;
 import com.blackduck.integration.detect.workflow.blackduck.developer.aggregate.RapidScanResultAggregator;
@@ -26,7 +28,7 @@ public class RapidScanResultAggregatorTest {
     public void testEmptyResults() {
         List<DeveloperScansScanView> results = Collections.emptyList();
         RapidScanResultAggregator aggregator = new RapidScanResultAggregator();
-        RapidScanAggregateResult aggregateResult = aggregator.aggregateData(results);
+        RapidScanAggregateResult aggregateResult = aggregator.aggregateData(results, null);
         BufferedIntLogger logger = new BufferedIntLogger();
         aggregateResult.logResult(logger);
         RapidScanResultSummary summary = aggregateResult.getSummary();
@@ -43,12 +45,14 @@ public class RapidScanResultAggregatorTest {
     public void testResults() {
         List<DeveloperScansScanView> results = createResultList();
         RapidScanResultAggregator aggregator = new RapidScanResultAggregator();
-        RapidScanAggregateResult aggregateResult = aggregator.aggregateData(results);
+        List<PolicyRuleSeverityType> violatingPoicies = 
+                new ArrayList<>(Arrays.asList(PolicyRuleSeverityType.BLOCKER, PolicyRuleSeverityType.CRITICAL));
+        RapidScanAggregateResult aggregateResult = aggregator.aggregateData(results, violatingPoicies);
         BufferedIntLogger logger = new BufferedIntLogger();
         aggregateResult.logResult(logger);
         RapidScanResultSummary summary = aggregateResult.getSummary();
         assertEquals(1, summary.getPolicyErrorCount());
-        assertEquals(1, summary.getPolicyWarningCount());
+        assertEquals(2, summary.getPolicyWarningCount());
         assertEquals(1, summary.getSecurityErrorCount());
         assertEquals(1, summary.getSecurityWarningCount());
         assertEquals(1, summary.getLicenseErrorCount());
@@ -56,8 +60,29 @@ public class RapidScanResultAggregatorTest {
         assertEquals(1, summary.getAllOtherPolicyErrorCount());
         assertEquals(1, summary.getAllOtherPolicyWarningCount());
         assertTrue(summary.getPolicyViolationNames().contains("other_policy"));
-        assertEquals(7, summary.getPolicyViolationNames().size());
+        assertEquals(8, summary.getPolicyViolationNames().size());
         assertFalse(logger.getOutputList(LogLevel.INFO).isEmpty());
+    }
+    
+    @Test
+    public void testFlexibleResults() {
+        List<DeveloperScansScanView> results = createResultList();
+        RapidScanResultAggregator aggregator = new RapidScanResultAggregator();
+        List<PolicyRuleSeverityType> violatingPoicies = 
+                new ArrayList<>(Arrays.asList(PolicyRuleSeverityType.MINOR));
+
+        RapidScanAggregateResult aggregateResult = aggregator.aggregateData(results, violatingPoicies);
+        RapidScanResultSummary summary = aggregateResult.getSummary();
+
+        assertEquals(2, summary.getPolicyErrorCount());
+        assertEquals(1, summary.getPolicyWarningCount());
+        assertEquals(1, summary.getSecurityErrorCount());
+        assertEquals(1, summary.getSecurityWarningCount());
+        assertEquals(1, summary.getLicenseErrorCount());
+        assertEquals(1, summary.getLicenseWarningCount());
+        assertEquals(1, summary.getAllOtherPolicyErrorCount());
+        assertEquals(1, summary.getAllOtherPolicyWarningCount());
+        assertEquals(8, summary.getPolicyViolationNames().size());
     }
 
     private List<DeveloperScansScanView> createResultList() {
@@ -96,8 +121,13 @@ public class RapidScanResultAggregatorTest {
                 componentViolatingPolicy2.setPolicyName("component_policy_warning");
                 componentViolatingPolicy2.setPolicySeverity("MINOR");
                 
+                DeveloperScansScanItemsComponentViolatingPoliciesView componentViolatingPolicy3 = new DeveloperScansScanItemsComponentViolatingPoliciesView();
+                componentViolatingPolicy3.setPolicyName("component_policy_warning2");
+                componentViolatingPolicy3.setPolicySeverity("MINOR");
+                
                 componentViolatingPolicies.add(componentViolatingPolicy);
                 componentViolatingPolicies.add(componentViolatingPolicy2);
+                componentViolatingPolicies.add(componentViolatingPolicy3);
                 return componentViolatingPolicies;
             }
 

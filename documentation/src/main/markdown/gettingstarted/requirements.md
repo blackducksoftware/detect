@@ -1,11 +1,11 @@
-# Requirements and release information
+# [detect_product_short] requirements and release information
 
 ## General requirements
 
 * Typically, access to the internet is required to download and run [detect_product_short] and components from GitHub and other locations. For running without internet access,
 refer to [Air Gap Mode](../downloadingandinstalling/airgap.md).
 * Minimum 8GB RAM.
-* Java: OpenJDK 64-bit version 8, 11, 13, 14, 15, 16, or 17. If using Java 11: 11.0.5 or higher is required.
+* Java: OpenJDK 64-bit version 8, 11, 13, 14, 15, 16, 17, or 21. If using Java 11: 11.0.5 or higher is required.
 * Minimum curl version 7.34.0, recommended 8.4.0 or later.
 * Bash.
 * If using [powershell_script_name]: PowerShell versions 4.0 or higher.
@@ -20,7 +20,7 @@ Visit the [Black Duck release page](https://github.com/blackducksoftware/hub/rel
 * The [bd_product_short] notifications module must be enabled.
 * A [bd_product_short] user with the [required roles](usersandroles.md).
 * On Alpine Linux you will also need to override the Java installation used by the [blackduck_signature_scanner_name] as
-described [here](../troubleshooting/solutions.md#black-duck-signature-scanner-fails-on-alpine-linux).
+described [here](../troubleshooting/solutions.md#ariaid-title29).
 
 ## Project type-specific requirements
 

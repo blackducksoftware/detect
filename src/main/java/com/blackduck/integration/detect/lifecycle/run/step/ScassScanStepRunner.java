@@ -36,7 +36,7 @@ public class ScassScanStepRunner {
     }
     
     public void runScassScan(Optional<File> scanFileOptional, ScanCreationResponse scanCreationResponse) throws IntegrationException {
-        File scanFile = scanFileOptional.orElseThrow(() -> new IntegrationException("File to scan is not provided."));
+        File scanFile = scanFileOptional.orElseThrow(() -> new IntegrationException("File to upload is not provided."));
         if (scanCreationResponse == null) {
             throw new IntegrationException("Scan creation response is not provided.");
         }
@@ -102,7 +102,7 @@ public class ScassScanStepRunner {
         try (Response response = blackDuckApiClient.execute(buildBlackDuckResponseRequest)) {
             return response;
         } catch (IntegrationException e) {
-            logger.trace("Could not execute JSON upload request to storage service.");
+            logger.trace("Could not notify scan container that scan upload is complete.");
             throw new IntegrationException("Could not execute SCASS notification request.", e);
         } catch (IOException e) {
             logger.trace("I/O error occurred during SCASS notification request.");

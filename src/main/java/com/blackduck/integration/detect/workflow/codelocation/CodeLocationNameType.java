@@ -6,8 +6,7 @@ public enum CodeLocationNameType {
     SIGNATURE("signature"),
     BINARY("binary"),
     CONTAINER("container"),
-    IAC("iac"),
-    THREAT_INTEL("ThreatIntel");
+    IAC("iac");
 
     private final String name;
 

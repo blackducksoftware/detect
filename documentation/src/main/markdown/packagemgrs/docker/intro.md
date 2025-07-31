@@ -1,4 +1,4 @@
-# Docker image support
+# [detect_product_short] Docker image support
 
 ## Related properties
 

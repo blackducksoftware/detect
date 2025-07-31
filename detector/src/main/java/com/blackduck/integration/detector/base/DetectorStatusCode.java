@@ -34,7 +34,8 @@ public enum DetectorStatusCode {
     SBT_PLUGIN_MISSING("A dependency graph plugin must be installed for the SBT detector to run."),
     UNKNOWN_DETECTOR_RESULT("There was an unknown result."),
     WRONG_OPERATING_SYSTEM_RESULT("Cannot run on the used operating system."),
-    YIELDED("Yielded to other detectors.");
+    YIELDED("Yielded to other detectors."),
+    UV_LOCKFILE_NOT_FOUND("A pyproject.toml was found in the root directory, but a uv.lock file or requirements.txt were NOT found.");
 
     private final String description;
 

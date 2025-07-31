@@ -118,6 +118,12 @@ public class ArtifactResolver {
         }
     }
 
+    public File parseFileNameAndDownloadArtifact(File targetDir, String source) throws IntegrationException, IOException {
+        String fileName = parseFileName(source);
+        File target = new File(targetDir, fileName);
+        return downloadArtifact(target, source);
+    }
+
     public File downloadArtifact(File target, String source) throws IntegrationException, IOException {
         logger.debug(String.format("Downloading for artifact to '%s' from '%s'.", target.getAbsolutePath(), source));
         Request request = new Request.Builder().url(new HttpUrl(source)).build();
@@ -137,5 +143,4 @@ public class ArtifactResolver {
             }
         }
     }
-
 }

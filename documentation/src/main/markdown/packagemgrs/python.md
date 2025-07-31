@@ -16,12 +16,13 @@
 	* Pip Native Inspector
 	* Pip Requirements File Parse
 * Poetry detector
+* UV detector
 
 ## Setuptools detector
 
 Setuptools detector attempts to run on your project if a pyproject.toml file containing a build section with `requires = ["setuptools"]` or equivalent line is located, and a pip installation is found. (Setuptools scans can be run in both build, if a pip installation is available, and buildless mode, if not.)
 
-<note type="note">Setuptools build detector should be run in a virtual environment, or environment with a clean global pip cache, where a pip install has only been performed for the project being scanned. If you are on Python v3.12 or later, run `pip install setuptools` (before executing [detect_product_short]) to ensure required tools are installed.</note>
+<note type="note">Setuptools build detector should be run in a virtual environment, or environment with a clean global pip cache, where a pip install has only been performed for the project being scanned.</note>
 
 [detect_product_short] parses the pyproject.toml file determining if the `[build-system]` section has been configured for Setuptools Pip via the `requries= ["setuptools"]` setting. If the setting is located and pip is installed in the environment, either in the default location or specified via the `--detect.pip.path` property, the detector will execute in a virtual environment, if configured as suggested, and analyze the pyproject.toml, setup.cfg, or setup.py files for dependencies. If the detector discovers a configured pyproject.toml file but not a pip executible, it will execute in buildless mode where it will parse dependencies from the pyproject.toml, setup.cfg, or setup.py files but may not be able to specify exact package versions. If no dependencies are located in the pyproject.toml, setup.cfg, or setup.py files, or if the detector fails, the BDIO file output will not be generated in build or buildless mode. [detect_product_short] will also attempt to run additional detectors if their execution requirements are met.
 
@@ -69,22 +70,22 @@ Pip Native Inspector requires Python and pip executables.
 
 Pip Native Inspector runs the [pip-inspector.py script](https://github.com/blackducksoftware/detect/blob/master/src/main/resources/pip-inspector.py), which uses Python/pip libraries to query the pip cache for the project, which may or may not be a virtual environment, for dependency information:
 
-1. pip-inspector.py queries for the project dependencies by project name which can be discovered using setup.py, or provided using the detect.pip.project.name property, using the [pkg_resources library](https://setuptools.readthedocs.io/en/latest/pkg_resources.html). If your project is installed into the pip cache, this discovers dependencies specified in setup.py.
-1. If one or more requirements files are found or provided, pip-inspector.py uses the Python API called parse_requirements to query each requirements file for possible additional dependencies, and uses the pkg_resources library to query for the details of each.
+1. pip-inspector.py queries for the project dependencies by project name which can be discovered using setup.py, or provided using the detect.pip.project.name property. If your project is installed into the pip cache, this discovers dependencies specified in setup.py.
+1. If one or more requirements files are found or provided, pip-inspector.py queries each requirements file for possible additional dependencies and details of each.
 
-<note type="tip">pip-inspector.py uses the pkg_resources library to discover dependencies, only those packages which have been installed; using, for example, `pip install`, into the pip cache and appearing in the output of `pip list`, are included in the output. There must be a match between the package version on which your project depends and the package version installed in the pip cache. Additional details are available in the [pkg_resources library documentation](https://setuptools.readthedocs.io/en/latest/pkg_resources.html).</note>   
+<note type="tip">Only those packages which have been installed; using, for example, `pip install`, into the pip cache and appearing in the output of `pip list`, are included in the output of pip-inspector.py. There must be a match between the package version on which your project depends and the package version installed in the pip cache.</note>
 <note type="note">If the packages are installed into a virtual environment for your project, you must run [detect_product_short] from within that virtual environment.</note>
 
 ### Recommendations for Pip Detector
 
-* Be sure that [detect_product_short] is locating the correct verion of the Python executable; this can be done by running the logging level at DEBUG and then reading the log. This is a particular concern if your system has multiple versions of Python installed.
+* Be sure that [detect_product_short] is locating the correct version of the Python executable; this can be done by running the logging level at DEBUG and then reading the log. This is a particular concern if your system has multiple versions of Python installed.
 * Create a setup.py file for your project.
 * Install your project and dependencies into the pip cache:
 ````
 python setup.py install
 pip install -r requirements.txt
 ````
-* Pip detector derives your project name using your setup.py file if you have one. If you do not have a setup.py file, you must provide the correct project name using the propety --detect.pip.project.name.
+* Pip detector attempts to derive the project name using your setup.py file if you have one. If you do not have a setup.py file, you can provide the correct project name using the propety `--detect.pip.project.name`.
 * If there are any dependencies specified in requirements.txt that are not specified in setup.py, then provide the requirements.txt file using the [detect_product_short] property.   
 <note type="tip">If you are using a virtual environment, be sure to switch to that virtual environment when you run [detect_product_short]. This also applies when you are using a tool such as Poetry that sets up a Python virtual environment.</note>
 
@@ -116,3 +117,29 @@ The Poetry detector parses poetry.lock for dependency information. If the detect
 The Poetry detector extracts the project's name and version from the pyproject.toml file.  If it does not find a pyproject.toml file, it will defer to values derived by git, from the project's directory, or defaults.
 
 When the `--detect.poetry.dependency.groups.excluded` property is specified, presence of both poetry.lock and pyproject.toml files is required for this detector to run successfully.
+
+## UV Package Manager
+
+One of the UV detectors will run on your project if a pyproject.toml file containing section `[tool.uv] managed = true` is found. 
+
+The UV detector extracts the project's name and version from the pyproject.toml file. If it does not find that in a pyproject.toml file, it will defer to default values.
+
+UV has two detectors:
+
+### UV CLI detector
+
+UV CLI will run if the uv executable is found along with a pyproject.toml file. It will run uv tree commands to find dependencies for the project.
+
+### UV Lock detector
+
+If the uv executable is not found, the UV Lock detector will run if either uv.lock or requirements.txt file is found in the source directory of the project.
+
+UV Lock detector will parse uv.lock, requirements.txt, or both to find project dependencies.
+
+<note type="note">UV Lock detector will run if there is no uv.lock file in the source; however, an uv.lock file is recommended for the highest result accuracy. Parsing only requirements.txt is considered LOW accuracy as there is no dependency source information.</note>
+
+### Dependency and Workspace Inclusions/Exclusions
+
+[UV Properties](../properties/detectors/uv.md) supports exclusion of all the dependency groups specified. Since uv has a concept of workspaces, they can be included and excluded using the properties provided.
+The workspace member provided in the property should be identical to the key name under tool.uv.sources since dependencies are created under the same key name in the tree and uv.lock file.
+For excluding dependency groups and workspaces, presence of uv.lock or uv executable is required.

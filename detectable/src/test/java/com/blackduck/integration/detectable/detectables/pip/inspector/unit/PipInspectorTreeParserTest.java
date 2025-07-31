@@ -50,6 +50,45 @@ public class PipInspectorTreeParserTest {
     }
 
     @Test
+    void projectNotFoundWhenNameNotGivenTest() {
+        List<String> pipInspectorOutput = Arrays.asList(
+            "n?==v?",
+            "   with-dashes==1.0.0",
+            "   Uppercase==2.0.0",
+            "      child==3.0.0",
+            "   test==4.0.0"
+        );
+
+        Optional<NameVersionCodeLocation> validParse = parser.parse(pipInspectorOutput, "src/path");
+        Assertions.assertTrue(validParse.isPresent());
+        Assertions.assertEquals("", validParse.get().getProjectName());
+        Assertions.assertEquals("", validParse.get().getProjectVersion());
+
+        NameVersionGraphAssert graphAssert = new NameVersionGraphAssert(Forge.PYPI, validParse.get().getCodeLocation().getDependencyGraph());
+        graphAssert.hasRootDependency("with-dashes", "1.0.0");
+        graphAssert.hasRootDependency("Uppercase", "2.0.0");
+        graphAssert.hasRootDependency("test", "4.0.0");
+        graphAssert.hasParentChildRelationship("Uppercase", "2.0.0", "child", "3.0.0");
+
+        graphAssert.hasRootSize(3);
+    }
+
+    @Test
+    public void packageNotFoundTest() {
+        List<String> pipInspectorOutput = Arrays.asList(
+            "--scikit-learn",
+            "projectName==projectVersionName",
+            "   with-dashes==1.0.0",
+            "   Uppercase==2.0.0",
+            "      child==3.0.0",
+            "   test==4.0.0"
+        );
+
+        Optional<NameVersionCodeLocation> result = parser.parse(pipInspectorOutput, "src/path");
+        Assertions.assertFalse(result.isPresent());
+    }
+
+    @Test
     public void invalidParseTest() {
         List<String> invalidText = new ArrayList<>();
         invalidText.add("i am not a valid file");

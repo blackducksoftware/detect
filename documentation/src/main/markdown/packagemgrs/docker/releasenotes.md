@@ -1,5 +1,27 @@
 # [docker_inspector_name] Release notes
 
+## Version 11.4.0
+
+### Resolved issues
+
+* (IDETECT-4679) Updated forge name for PhotonOS namespace to resolve unmatched components. 
+
+## Version 11.3.0
+
+### Resolved issues
+
+* (IDETECT-4714) Resolved an issue where symbolic links to directories were copied as clones rather than as symbolic links.
+
+## Version 11.2.0
+
+### Changed features
+
+* Improved error logging and added support for OCI Image Index descriptor.
+
+### Dependency update
+
+* Updated internal build dependencies for Image Inspector Library to 15.0.2 and Image Inspector Web Service to 6.1.0
+
 ## Version 11.1.0
 
 ### Changed features
@@ -42,7 +64,7 @@
 
 ### Dependency update
 
-* Updated internal build dependencies for Image inspector library to 14.2.0 and Image Inspector Web Service to 5.1.0
+* Updated internal build dependencies for Image Inspector Library to 14.2.0 and Image Inspector Web Service to 5.1.0
 * Upgraded Spring Boot to version 2.7.12 to resolve high severity [CVE-2023-20883](https://nvd.nist.gov/vuln/detail/CVE-2023-20883)
 * Upgraded SnakeYAML to version 2.0 to resolve critical severity [CVE-2022-1471](https://nvd.nist.gov/vuln/detail/CVE-2022-1471)
 
@@ -50,7 +72,7 @@
 
 ### Dependency update
 
-* Updated internal build dependencies for Image inspector library to 14.1.4, Integration rest library to 10.3.6 and Image Inspector Web Service to 5.0.15
+* Updated internal build dependencies for Image Inspector Library to 14.1.4, Integration Rest Library to 10.3.6 and Image Inspector Web Service to 5.0.15
 
 ## Version 10.0.0
 

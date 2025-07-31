@@ -2,6 +2,8 @@ package com.blackduck.integration.detectable.detectables.pnpm.functional;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -15,6 +17,7 @@ import com.google.gson.Gson;
 import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
+import com.blackduck.integration.detectable.detectables.pnpm.lockfile.PnpmLockOptions;
 import com.blackduck.integration.detectable.detectables.pnpm.lockfile.model.PnpmDependencyType;
 import com.blackduck.integration.detectable.detectables.pnpm.lockfile.process.PnpmLinkedPackageResolver;
 import com.blackduck.integration.detectable.detectables.pnpm.lockfile.process.PnpmLockYamlParserInitial;
@@ -37,6 +40,67 @@ public class PnpmLockYamlParserTest {
         File pnpmLockYaml = FunctionalTestFiles.asFile("/pnpm/v6/pnpm-lock.yaml");
         evaluatePnpmLockYamlParsing(pnpmLockYaml);
     }
+    
+    @Test
+    public void testIncludeFiltering() throws IOException, IntegrationException {
+        String includePackage = "components/component-a";
+        
+        File pnpmLockYaml = FunctionalTestFiles.asFile("/pnpm/v9/pnpm-workspace-lock.yaml");
+        
+        EnumListFilter<PnpmDependencyType> dependencyTypeFilter = EnumListFilter.excludeNone();
+        List<String> includeList = new ArrayList<>();
+        includeList.add(includePackage);
+        PnpmLockOptions pnpmLockOptions = new PnpmLockOptions(dependencyTypeFilter, Collections.emptyList(), includeList);
+        
+        PnpmLockYamlParserInitial pnpmLockYamlParser = new PnpmLockYamlParserInitial(pnpmLockOptions);
+        
+        PnpmLinkedPackageResolver pnpmLinkedPackageResolver = new PnpmLinkedPackageResolver(
+                FunctionalTestFiles.asFile("/pnpm"),
+                new PackageJsonFiles(new PackageJsonReader(new Gson()))
+            );
+
+        List<CodeLocation> codeLocations = pnpmLockYamlParser.parse(pnpmLockYaml, new NameVersion("project", "version"), pnpmLinkedPackageResolver);
+      
+        Assertions.assertEquals(1, codeLocations.size());
+        
+        CodeLocation codeLocation = codeLocations.get(0);
+        Optional<ExternalId> externalIdOptional = codeLocation.getExternalId();
+        Assertions.assertTrue(externalIdOptional.isPresent());
+        
+        ExternalId externalId = externalIdOptional.get();
+        Assertions.assertEquals(includePackage, externalId.getName());
+    }
+    
+    @Test
+    public void testExcludeFiltering() throws IOException, IntegrationException {
+        String excludePackage = "components/component-a";
+        String includePackage = "packages/package-a";
+        
+        File pnpmLockYaml = FunctionalTestFiles.asFile("/pnpm/v9/pnpm-workspace-lock.yaml");
+        
+        EnumListFilter<PnpmDependencyType> dependencyTypeFilter = EnumListFilter.excludeNone();
+        List<String> excludeList = new ArrayList<>();
+        excludeList.add(excludePackage);
+        PnpmLockOptions pnpmLockOptions = new PnpmLockOptions(dependencyTypeFilter, excludeList, Collections.emptyList());
+        
+        PnpmLockYamlParserInitial pnpmLockYamlParser = new PnpmLockYamlParserInitial(pnpmLockOptions);
+      
+        PnpmLinkedPackageResolver pnpmLinkedPackageResolver = new PnpmLinkedPackageResolver(
+                FunctionalTestFiles.asFile("/pnpm"),
+                new PackageJsonFiles(new PackageJsonReader(new Gson()))
+            );
+
+        List<CodeLocation> codeLocations = pnpmLockYamlParser.parse(pnpmLockYaml, new NameVersion("project", "version"), pnpmLinkedPackageResolver);
+      
+        Assertions.assertEquals(1, codeLocations.size());
+        
+        CodeLocation codeLocation = codeLocations.get(0);
+        Optional<ExternalId> externalIdOptional = codeLocation.getExternalId();
+        Assertions.assertTrue(externalIdOptional.isPresent());
+        
+        ExternalId externalId = externalIdOptional.get();
+        Assertions.assertEquals(includePackage, externalId.getName()); 
+    }
 
     /**
      * At a high level the v5 and v6 yaml files contain the same information just in different
@@ -46,7 +110,9 @@ public class PnpmLockYamlParserTest {
     private void evaluatePnpmLockYamlParsing(File pnpmLockYaml)
             throws IOException, IntegrationException, MultipleFailuresError {
         EnumListFilter<PnpmDependencyType> dependencyTypeFilter = EnumListFilter.excludeNone();
-        PnpmLockYamlParserInitial pnpmLockYamlParser = new PnpmLockYamlParserInitial(dependencyTypeFilter);
+        PnpmLockOptions pnpmLockOptions = new PnpmLockOptions(dependencyTypeFilter, Collections.emptyList(), Collections.emptyList());
+        
+        PnpmLockYamlParserInitial pnpmLockYamlParser = new PnpmLockYamlParserInitial(pnpmLockOptions);
         PnpmLinkedPackageResolver pnpmLinkedPackageResolver = new PnpmLinkedPackageResolver(
             FunctionalTestFiles.asFile("/pnpm"),
             new PackageJsonFiles(new PackageJsonReader(new Gson()))
