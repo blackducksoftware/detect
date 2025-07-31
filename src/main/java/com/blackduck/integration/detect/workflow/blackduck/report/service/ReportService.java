@@ -165,7 +165,6 @@ public class ReportService extends DataService {
             // FIXME if we could check if Black Duck has the policy module we could remove a lot of the mess
             PolicyStatusView bomPolicyStatus = blackDuckApiClient.getResponse(componentPolicyStatusURL, PolicyStatusView.class);
             policyStatus = bomPolicyStatus.getApprovalStatus().toString();
-            return policyStatus;
         }
         return policyStatus;
     }
