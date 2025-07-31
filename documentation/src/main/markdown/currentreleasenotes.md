@@ -22,7 +22,7 @@
 
 ### New features
 
-* 
+* Signature Scan now supports ARM architecture with correctly packaged ARM JREs for Windows, MAC, Linux and Alpine Operating Systems.
 
 ### Changed features
 
@@ -30,7 +30,7 @@
 
 ### Resolved issues
 
-* 
+* (IDETECT-3456) BOM components marked as "ignored" will no longer appear in [detect_product_short] risk reports
 
 ### Dependency updates
 
