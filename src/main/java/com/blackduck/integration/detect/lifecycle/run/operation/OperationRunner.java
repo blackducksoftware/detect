@@ -1123,7 +1123,20 @@ public class OperationRunner {
         return auditLog.namedInternal("Create Scan Batch Runner with Black Duck", () -> {
             ExecutorService executorService = Executors.newFixedThreadPool(detectConfigurationFactory.createBlackDuckSignatureScannerOptions().getParallelProcessors());
             IntEnvironmentVariables intEnvironmentVariables = IntEnvironmentVariables.includeSystemEnv();
-            return new CreateScanBatchRunnerWithBlackDuck(intEnvironmentVariables, OperatingSystemType.determineFromSystem(), executorService).createScanBatchRunner(
+
+            String operatingSystemEnv = intEnvironmentVariables.getValue("SCAN_CLI_OS");
+            OperatingSystemType operatingSystemType;
+
+            if (operatingSystemEnv != null && operatingSystemEnv.equals("ALPINE_LINUX")) {
+                operatingSystemType = OperatingSystemType.ALPINE_LINUX;
+            } else {
+                if (operatingSystemEnv != null) {
+                    logger.warn("Please set the env variable value only for ALPINE_LINUX operating system");
+                }
+                operatingSystemType = OperatingSystemType.determineFromSystem();
+            }
+
+            return new CreateScanBatchRunnerWithBlackDuck(intEnvironmentVariables, operatingSystemType, executorService).createScanBatchRunner(
                 blackDuckRunData.getBlackDuckServerConfig(),
                 installDirectory,
                 blackDuckRunData.getBlackDuckServerVersion()
