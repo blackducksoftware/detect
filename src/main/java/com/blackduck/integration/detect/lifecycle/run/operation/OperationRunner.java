@@ -720,7 +720,7 @@ public class OperationRunner {
                         calculateMaxWaitInSeconds(fibonacciSequenceIndex)
                 );
             } catch (InterruptedException e) {
-                throw new InterruptedException(e.getMessage());
+                throw e;
             } catch (IntegrationRestException e) {
                 throw handleRapidScanException(e);
             } catch (Exception e) {
