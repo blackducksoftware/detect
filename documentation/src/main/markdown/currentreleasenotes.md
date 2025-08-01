@@ -32,6 +32,7 @@
 ### Resolved issues
 
 * (IDETECT-3456) BOM components marked as "ignored" will no longer appear in [detect_product_short] risk reports.
+* (IDETECT-4781) Signature scans will no longer fail if SCASS IPs are blocked. A performance warning will be printed and a non-SCASS signature scan will be performed.
 
 ### Dependency updates
 
