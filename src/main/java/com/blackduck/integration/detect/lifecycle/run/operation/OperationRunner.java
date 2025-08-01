@@ -1124,7 +1124,7 @@ public class OperationRunner {
             ExecutorService executorService = Executors.newFixedThreadPool(detectConfigurationFactory.createBlackDuckSignatureScannerOptions().getParallelProcessors());
             IntEnvironmentVariables intEnvironmentVariables = IntEnvironmentVariables.includeSystemEnv();
 
-            String operatingSystemEnv = System.getenv("SCAN_CLI_OS");
+            String operatingSystemEnv = intEnvironmentVariables.getValue("SCAN_CLI_OS");
             OperatingSystemType operatingSystemType;
 
             if (operatingSystemEnv != null && operatingSystemEnv.equals("ALPINE_LINUX")) {
