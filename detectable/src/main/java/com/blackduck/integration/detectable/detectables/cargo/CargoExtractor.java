@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.detectable.detectables.cargo.data.CargoLockPackageData;
+import com.blackduck.integration.detectable.util.NameOptionalVersion;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.Nullable;
 
@@ -54,6 +55,9 @@ public class CargoExtractor {
         boolean exclusionEnabled = isDependencyExclusionEnabled(cargoDetectableOptions);
         String cargoTomlContents = null;
 
+        Set<NameVersion> resolvedRootDependencies = new HashSet<>();
+        Map<String, List<CargoLockPackageData>> packageLookupMap = indexPackagesByName(filteredPackages);
+
         if(cargoTomlFile == null && exclusionEnabled) {
             return new Extraction.Builder()
                 .failure("Cargo.toml file is required to exclude dependencies, but was not provided.")
@@ -62,19 +66,22 @@ public class CargoExtractor {
 
         if (cargoTomlFile != null) {
             cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
-        }
 
-        if (cargoTomlFile != null && exclusionEnabled) {
-            Set<NameVersion> dependenciesToInclude = cargoTomlParser.parseDependenciesToInclude(
-                    cargoTomlContents, cargoDetectableOptions.getDependencyTypeFilter());
-            filteredPackages = includeDependencies(cargoLockPackageDataList, dependenciesToInclude);
+            EnumListFilter<CargoDependencyType> filter = null;
+            if (exclusionEnabled) {
+                filter = cargoDetectableOptions.getDependencyTypeFilter();
+            }
+
+            Set<NameVersion> dependenciesToInclude = cargoTomlParser.parseDependenciesToInclude(cargoTomlContents, filter);
+            filteredPackages = includeDependencies(cargoLockPackageDataList, dependenciesToInclude, resolvedRootDependencies, packageLookupMap);
         }
 
         List<CargoLockPackage> packages = filteredPackages.stream()
             .map(cargoLockPackageDataTransformer::transform)
             .collect(Collectors.toList());
+        List<CargoLockPackage> resolvedPackages = resolveDependencyVersions(packages, packageLookupMap);
 
-        DependencyGraph graph = cargoLockPackageTransformer.transformToGraph(packages);
+        DependencyGraph graph = cargoLockPackageTransformer.transformToGraph(resolvedPackages, resolvedRootDependencies);
 
         Optional<NameVersion> projectNameVersion = Optional.empty();
         if (cargoTomlFile != null) {
@@ -97,14 +104,13 @@ public class CargoExtractor {
         return filter != null && !filter.shouldIncludeAll();
     }
 
-
     private List<CargoLockPackageData> includeDependencies(
             List<CargoLockPackageData> packages,
-            Set<NameVersion> dependenciesToInclude
+            Set<NameVersion> dependenciesToInclude,
+            Set<NameVersion> resolvedRootDependencies,
+            Map<String, List<CargoLockPackageData>> packageLookupMap
     ) {
-
-        Map<String, List<CargoLockPackageData>> packageLookupMap = indexPackagesByName(packages); // Create lookup map (multi-map) for each name
-        processTransitiveDependenciesForInclusion(dependenciesToInclude, packageLookupMap); // Collect all transitive dependencies to include
+        processTransitiveDependenciesForInclusion(dependenciesToInclude, packageLookupMap, resolvedRootDependencies); // Collect all transitive dependencies to include
         return filterPackagesByInclusion(packages, dependenciesToInclude); // Only keep direct and transitive dependencies
     }
 
@@ -116,14 +122,19 @@ public class CargoExtractor {
 
     private void processTransitiveDependenciesForInclusion(
         Set<NameVersion> dependenciesToInclude,
-        Map<String, List<CargoLockPackageData>> packageLookupMap
+        Map<String, List<CargoLockPackageData>> packageLookupMap,
+        Set<NameVersion> resolvedRootDependenciesOut
     ) {
 
         Set<NameVersion> resolvedRootDependencies = resolveRootDependencies(dependenciesToInclude, packageLookupMap);
-        dependenciesToInclude.clear();
-        dependenciesToInclude.addAll(resolvedRootDependencies);
 
-        Deque<NameVersion> queue = new ArrayDeque<>(dependenciesToInclude);
+        // Preserve resolved root dependencies
+        resolvedRootDependenciesOut.addAll(resolvedRootDependencies);
+
+        // Copy to avoid modifying the original root dependencies
+        Set<NameVersion> allDependenciesToInclude = new HashSet<>(resolvedRootDependencies);
+        Deque<NameVersion> queue = new ArrayDeque<>(resolvedRootDependencies);
+
         while (!queue.isEmpty()) {
             NameVersion current = queue.pop();
             CargoLockPackageData currentPkg = findPackageByNameVersion(current, packageLookupMap);
@@ -131,13 +142,17 @@ public class CargoExtractor {
                 currentPkg.getDependencies().ifPresent(dependencies -> {
                     for (String depStr : dependencies) {
                         NameVersion nameVersion = extractPackageNameVersion(depStr, packageLookupMap);
-                        if (nameVersion != null && dependenciesToInclude.add(nameVersion)) {
+                        if (nameVersion != null && allDependenciesToInclude.add(nameVersion)) {
                             queue.add(nameVersion);
                         }
                     }
                 });
             }
         }
+
+        // Mutate dependenciesToInclude so the rest of your pipeline still works
+        dependenciesToInclude.clear();
+        dependenciesToInclude.addAll(allDependenciesToInclude);
     }
 
     private Set<NameVersion> resolveRootDependencies(
@@ -156,6 +171,30 @@ public class CargoExtractor {
             }
         }
         return resolvedRootDependencies;
+    }
+
+    private List<CargoLockPackage> resolveDependencyVersions(
+            List<CargoLockPackage> packages,
+            Map<String, List<CargoLockPackageData>> packageLookupMap
+    ) {
+        List<CargoLockPackage> resolvedPackages = new ArrayList<>();
+        for (CargoLockPackage pkg : packages) {
+            List<NameOptionalVersion> resolvedDependencies = new ArrayList<>();
+            for (NameOptionalVersion dep : pkg.getDependencies()) {
+                if (!dep.getVersion().isPresent()) {
+                    NameVersion resolved = extractPackageNameVersion(dep.getName(), packageLookupMap);
+                    if (resolved != null) {
+                        resolvedDependencies.add(new NameOptionalVersion(resolved.getName(), resolved.getVersion()));
+                    } else {
+                        resolvedDependencies.add(dep);
+                    }
+                } else {
+                    resolvedDependencies.add(dep);
+                }
+            }
+            resolvedPackages.add(new CargoLockPackage(pkg.getPackageNameVersion(), resolvedDependencies));
+        }
+        return resolvedPackages;
     }
 
     private List<CargoLockPackageData> filterPackagesByInclusion(
