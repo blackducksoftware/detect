@@ -2,12 +2,7 @@ package com.blackduck.integration.detect.lifecycle.run.step;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.net.ConnectException;
 import java.util.Collections;
@@ -33,6 +28,10 @@ import com.google.gson.Gson;
 
 public class SignatureScanStepRunnerTest {
 
+    private static final String TEST_UUID = "test-uuid";
+    private static final String PROJECT_NAME = "TestProject";
+    private static final String PROJECT_VERSION = "1.0.0";
+
     @Mock
     private OperationRunner operationRunner;
 
@@ -43,43 +42,68 @@ public class SignatureScanStepRunnerTest {
     private BlackDuckRunData blackDuckRunData;
 
     private SignatureScanStepRunner signatureScanStepRunner;
+    private NameVersion projectNameVersion;
+    private Gson gson;
 
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
         signatureScanStepRunner = new SignatureScanStepRunner(operationRunner, blackDuckRunData);
+        projectNameVersion = new NameVersion(PROJECT_NAME, PROJECT_VERSION);
+        gson = new Gson();
     }
 
     @Test
     public void testRunSignatureScannerOnlineRetriesOnHttpHostConnectException() throws Exception {
-        String detectRunUuid = "test-uuid";
-        NameVersion projectNameVersion = new NameVersion("TestProject", "1.0.0");
         DockerTargetData dockerTargetData = mock(DockerTargetData.class);
         Set<String> scanIdsToWaitFor = new HashSet<>();
-        Gson gson = new Gson();
-
         List<SignatureScanPath> scanPaths = Collections.singletonList(mock(SignatureScanPath.class));
         ScanBatch scanBatch = mock(ScanBatch.class);
 
         when(operationRunner.createScanPaths(projectNameVersion, dockerTargetData)).thenReturn(scanPaths);
-        when(operationRunner.createScanBatchOnline(detectRunUuid, scanPaths, projectNameVersion, dockerTargetData,
+        when(operationRunner.createScanBatchOnline(TEST_UUID, scanPaths, projectNameVersion, dockerTargetData,
                 blackDuckRunData, false)).thenReturn(scanBatch);
-        when(operationRunner.createScanBatchOnline(detectRunUuid, scanPaths, projectNameVersion, dockerTargetData,
+        when(operationRunner.createScanBatchOnline(TEST_UUID, scanPaths, projectNameVersion, dockerTargetData,
                 blackDuckRunData, true)).thenReturn(scanBatch);
         when(blackDuckRunData.shouldWaitAtScanLevel()).thenReturn(true);
 
         SignatureScanStepRunner spyRunner = spy(signatureScanStepRunner);
 
-        ConnectException connectException = new ConnectException("Connection failed");
-        HttpHost httpHost = new HttpHost("scass.blackduck.com", 443, "https");
-        HttpHostConnectException httpException = new HttpHostConnectException(httpHost, connectException);
+        HttpHostConnectException httpException = createHttpHostConnectException();
 
         doThrow(httpException).doReturn(Collections.emptyList()).when(spyRunner).executeScan(any(), any(), any(), any(),
                 any(), anyBoolean(), anyBoolean());
 
-        spyRunner.runSignatureScannerOnline(detectRunUuid, projectNameVersion, dockerTargetData, scanIdsToWaitFor,
-                gson);
+        spyRunner.runSignatureScannerOnline(TEST_UUID, projectNameVersion, dockerTargetData, scanIdsToWaitFor, gson);
 
         verify(spyRunner, times(2)).executeScan(any(), any(), any(), any(), any(), anyBoolean(), anyBoolean());
+    }
+
+    @Test
+    public void testRunSignatureScannerOnlineExecutesOnceWithoutException() throws Exception {
+        DockerTargetData dockerTargetData = mock(DockerTargetData.class);
+        Set<String> scanIdsToWaitFor = new HashSet<>();
+        List<SignatureScanPath> scanPaths = Collections.singletonList(mock(SignatureScanPath.class));
+        ScanBatch scanBatch = mock(ScanBatch.class);
+
+        when(operationRunner.createScanPaths(projectNameVersion, dockerTargetData)).thenReturn(scanPaths);
+        when(operationRunner.createScanBatchOnline(TEST_UUID, scanPaths, projectNameVersion, dockerTargetData,
+                blackDuckRunData, false)).thenReturn(scanBatch);
+        when(blackDuckRunData.shouldWaitAtScanLevel()).thenReturn(true);
+
+        SignatureScanStepRunner spyRunner = spy(signatureScanStepRunner);
+
+        doReturn(Collections.emptyList()).when(spyRunner).executeScan(any(), any(), any(), any(), any(), anyBoolean(),
+                anyBoolean());
+
+        spyRunner.runSignatureScannerOnline(TEST_UUID, projectNameVersion, dockerTargetData, scanIdsToWaitFor, gson);
+
+        verify(spyRunner, times(1)).executeScan(any(), any(), any(), any(), any(), anyBoolean(), anyBoolean());
+    }
+
+    private HttpHostConnectException createHttpHostConnectException() {
+        ConnectException connectException = new ConnectException("Connection failed");
+        HttpHost httpHost = new HttpHost("scass.blackduck.com", 443, "https");
+        return new HttpHostConnectException(httpHost, connectException);
     }
 }
