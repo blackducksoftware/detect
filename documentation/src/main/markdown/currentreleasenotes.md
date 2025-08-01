@@ -22,7 +22,8 @@
 
 ### New features
 
-* 
+* Signature Scan now supports ARM architecture with correctly packaged ARM JRE for Windows, Mac, Linux, and Alpine operating systems.
+<note type="hint">To ensure [detect_product_short] correctly identifies the system architecture on ARM-based systems, please install an ARM-specific Java runtime. This is necessary for accurate detection and proper functionality on ARM platforms.</note>
 
 ### Changed features
 
@@ -30,7 +31,9 @@
 
 ### Resolved issues
 
-* (IDETECT-4746) – Fixed incorrect labeling of transitive dependencies as direct by the Cargo Lockfile Detector.
+* (IDETECT-3456) BOM components marked as "ignored" will no longer appear in [detect_product_short] risk reports.
+* (IDETECT-4781) Signature Scans will no longer fail if SCA Scan Service (SCASS) related IPs are blocked. A performance warning will be printed and a non-SCASS Signature Scan will be performed.
+* (IDETECT-4746) – Fixed Cargo Lockfile Detector incorrectly labeling transitive dependencies as direct dependencies.
 
 ### Dependency updates
 
