@@ -61,7 +61,7 @@ public class UVTomlParser {
             if (uvToolTable.contains(MANAGED_KEY)) {
                 return uvToolTable.getBoolean(MANAGED_KEY);
             }
-            return true;
+            return false;
         }
         return false;
     }
