@@ -22,7 +22,7 @@
 
 ### New features
 
-* Signature Scan now supports ARM architecture with correctly packaged ARM JRE for Windows, Mac, Linux, and Alpine operating systems.
+* Signature Scan now supports ARM architecture with correctly packaged ARM JRE for Windows, Mac, Linux, and Alpine operating systems for [bd_product_long] version 2025.7.0 or later.
 <note type="hint">To ensure [detect_product_short] correctly identifies the system architecture on ARM-based systems, please install an ARM-specific Java runtime. This is necessary for accurate detection and proper functionality on ARM platforms.</note>
 
 ### Changed features
