@@ -257,6 +257,9 @@ public class OperationRunner {
     private static final String INTELLIGENT_SCAN_ENDPOINT = ApiDiscovery.INTELLIGENT_PERSISTENCE_SCANS_PATH.getPath();
     private static final String INTELLIGENT_SCAN_CONTENT_TYPE = "application/vnd.blackducksoftware.intelligent-persistence-scan-3+protobuf";
     private static final String INTELLIGENT_SCAN_SCASS_CONTENT_TYPE = "application/vnd.blackducksoftware.intelligent-persistence-scan-4+protobuf-jsonld";
+    private static final String ALPINE_LINUX_OS = "ALPINE_LINUX";
+    private static final String ALPINE_LINUX_ENV_VARIABLE = "SCAN_CLI_OS";
+    private static final String OS_ARCHITECTURE_CONSTANT = "x64";
     public static final ImmutableList<Integer> RETRYABLE_AFTER_WAIT_HTTP_EXCEPTIONS = ImmutableList.of(408, 429, 502, 503, 504);
     public static final ImmutableList<Integer> RETRYABLE_WITH_BACKOFF_HTTP_EXCEPTIONS = ImmutableList.of(425, 500);
     private List<File> binaryUserTargets = new ArrayList<>();
@@ -1128,10 +1131,10 @@ public class OperationRunner {
             IntEnvironmentVariables intEnvironmentVariables = IntEnvironmentVariables.includeSystemEnv();
             Optional<BlackDuckVersion> blackDuckVersion = blackDuckRunData.getBlackDuckServerVersion();
 
-            String operatingSystemEnv = intEnvironmentVariables.getValue("SCAN_CLI_OS");
+            String operatingSystemEnv = intEnvironmentVariables.getValue(ALPINE_LINUX_ENV_VARIABLE);
             OperatingSystemType operatingSystemType;
 
-            if (operatingSystemEnv != null && shouldCheckforARMArchitecture(blackDuckVersion) && operatingSystemEnv.equals("ALPINE_LINUX")) {
+            if (operatingSystemEnv != null && shouldCheckforARMArchitecture(blackDuckVersion) && operatingSystemEnv.equals(ALPINE_LINUX_OS)) {
                 operatingSystemType = OperatingSystemType.ALPINE_LINUX;
             } else {
                 if (operatingSystemEnv != null) {
@@ -1140,7 +1143,7 @@ public class OperationRunner {
                 operatingSystemType = OperatingSystemType.determineFromSystem();
             }
 
-            String osArchitecture = "x64";
+            String osArchitecture = OS_ARCHITECTURE_CONSTANT;
 
             if(shouldCheckforARMArchitecture(blackDuckVersion)) {
                 osArchitecture = SystemUtils.OS_ARCH;
