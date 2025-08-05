@@ -33,7 +33,7 @@
 
 * (IDETECT-3456) BOM components marked as "ignored" will no longer appear in [detect_product_short] risk reports.
 * (IDETECT-4781) Signature Scans will no longer fail if SCA Scan Service (SCASS) related IPs are blocked. A performance warning will be printed and a non-SCASS Signature Scan will be performed.
-* (IDETECT-4759) Updated [detect_product_short] UV Detector to ensure it does not execute when `[tool.uv]` is absent, and avoids returning a success status unless a BDIO file is generated.
+* (IDETECT-4759) Updated [detect_product_short] UV Detector to prevent execution when the `toml` file does not have a `[tool.uv]` section, and to not return a success status unless a BDIO file is generated.
 
 ### Dependency updates
 
