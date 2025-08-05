@@ -4,7 +4,9 @@ import static org.mockito.Mockito.*;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
+import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
 import com.blackduck.integration.detect.workflow.blackduck.codelocation.CodeLocationAccumulator;
@@ -38,5 +40,20 @@ public class IntelligentModeStepRunnerTest {
         intelligentModeStepRunner.uploadCorrelatedScanCounts(blackDuckRunData, codeLocationAccumulator, "test-run-uuid");
 
         verify(operationRunner, never()).uploadCorrelatedScanCounts(any(), any(), any());
+    }
+    
+    @Test
+    public void testUploadCorrelatedScanCountsWhenScanCounts() throws OperationException {
+        BlackDuckRunData blackDuckRunData = mock(BlackDuckRunData.class);
+        CodeLocationAccumulator codeLocationAccumulator = mock(CodeLocationAccumulator.class);
+        
+        ScanCounts scanCounts = new ScanCounts(1, 0, 0);
+        ScanCountsPayload scanCountsPayload = new ScanCountsPayload(scanCounts);
+
+        when(scanCountsPayloadCreator.create(any(), any())).thenReturn(scanCountsPayload);
+
+        intelligentModeStepRunner.uploadCorrelatedScanCounts(blackDuckRunData, codeLocationAccumulator, "test-run-uuid");
+
+        verify(operationRunner, atMostOnce()).uploadCorrelatedScanCounts(any(), any(), any()); 
     }
 }
