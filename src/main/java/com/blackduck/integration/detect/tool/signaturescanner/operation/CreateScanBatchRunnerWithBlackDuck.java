@@ -36,7 +36,7 @@ public class CreateScanBatchRunnerWithBlackDuck {
         this.executorService = executorService;
     }
 
-    public ScanBatchRunner createScanBatchRunner(BlackDuckServerConfig blackDuckServerConfig, File installDirectory, Optional<BlackDuckVersion> blackDuckVersion) throws BlackDuckIntegrationException {
+    public ScanBatchRunner createScanBatchRunner(BlackDuckServerConfig blackDuckServerConfig, File installDirectory, Optional<BlackDuckVersion> blackDuckVersion, String osArchitecture) throws BlackDuckIntegrationException {
         logger.debug("Signature scanner will use the Black Duck server to download/update the scanner - this is the most likely situation.");
         SignatureScannerLogger slf4jIntLogger = new SignatureScannerLogger(logger);
         ScanPathsUtility scanPathsUtility = new ScanPathsUtility(slf4jIntLogger, intEnvironmentVariables, operatingSystemType);
@@ -59,7 +59,8 @@ public class CreateScanBatchRunnerWithBlackDuck {
                     keyStoreHelper,
                     blackDuckServerConfig.getBlackDuckUrl(),
                     operatingSystemType,
-                    installDirectory
+                    installDirectory,
+                    osArchitecture
             );
         } else {
             logger.debug("Using Zip Scan CLI download API (old).");
