@@ -1,10 +1,14 @@
 package com.blackduck.integration.detect.lifecycle.run.step;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
@@ -54,6 +58,6 @@ public class IntelligentModeStepRunnerTest {
 
         intelligentModeStepRunner.uploadCorrelatedScanCounts(blackDuckRunData, codeLocationAccumulator, "test-run-uuid");
 
-        verify(operationRunner, atMostOnce()).uploadCorrelatedScanCounts(any(), any(), any()); 
+        verify(operationRunner, times(1)).uploadCorrelatedScanCounts(any(), any(), any()); 
     }
 }
