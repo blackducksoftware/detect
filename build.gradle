@@ -145,7 +145,10 @@ test {
         exceptionFormat = 'full'
     }
 
-    maxParallelForks = 3//Runtime.runtime.availableProcessors()
+    maxParallelForks = System.getenv("MAX_PARALLEL_TEST_FORKS")
+    if (!maxParallelForks)
+        maxParallelForks = Runtime.runtime.availableProcessors()
+
     println "maxParallelForks has been set to ${maxParallelForks}"
 }
 
