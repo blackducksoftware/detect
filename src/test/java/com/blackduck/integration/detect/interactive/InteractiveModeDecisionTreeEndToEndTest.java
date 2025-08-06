@@ -26,6 +26,7 @@ import static com.blackduck.integration.detect.interactive.SignatureScannerDecis
 import static com.blackduck.integration.detect.interactive.SignatureScannerDecisionBranch.SHOULD_USE_CUSTOM_SCANNER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -40,6 +41,7 @@ import com.blackduck.integration.configuration.property.Property;
 import com.blackduck.integration.configuration.source.MapPropertySource;
 import com.blackduck.integration.detect.configuration.DetectInfo;
 import com.blackduck.integration.detect.configuration.DetectProperties;
+import com.blackduck.integration.detect.configuration.DetectUserFriendlyException;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
 import com.blackduck.integration.detect.interactive.InteractiveModeDecisionTree;
 import com.blackduck.integration.detect.interactive.InteractivePropertySourceBuilder;
@@ -268,8 +270,8 @@ public class InteractiveModeDecisionTreeEndToEndTest {
         BlackDuckConnectivityResult mockConnectivityResult = Mockito.mock(BlackDuckConnectivityResult.class);
         try {
             Mockito.when(mockConnectivityChecker.determineConnectivity(Mockito.any())).thenReturn(mockConnectivityResult);
-        } catch (Exception e) {
-            // This should not happen in a test scenario with mocked objects
+        } catch (DetectUserFriendlyException e) {
+            fail("This should not happen in a test scenario with mocked objects");
         }
         InteractiveModeDecisionTree decisionTree = new InteractiveModeDecisionTree(detectInfo, mockConnectivityChecker, new ArrayList<>(), new Gson());
 
