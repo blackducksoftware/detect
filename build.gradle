@@ -145,7 +145,7 @@ test {
         exceptionFormat = 'full'
     }
 
-    maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
+    maxParallelForks = Runtime.runtime.availableProcessors()
     println "maxParallelForks has been set to ${maxParallelForks}"
 }
 
