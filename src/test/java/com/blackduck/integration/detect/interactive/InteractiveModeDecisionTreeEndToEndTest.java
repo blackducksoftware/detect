@@ -45,6 +45,7 @@ import com.blackduck.integration.detect.interactive.InteractiveModeDecisionTree;
 import com.blackduck.integration.detect.interactive.InteractivePropertySourceBuilder;
 import com.blackduck.integration.detect.interactive.InteractiveWriter;
 import com.blackduck.integration.detect.lifecycle.boot.product.BlackDuckConnectivityChecker;
+import com.blackduck.integration.detect.lifecycle.boot.product.BlackDuckConnectivityResult;
 import com.blackduck.integration.util.OperatingSystemType;
 
 public class InteractiveModeDecisionTreeEndToEndTest {
@@ -263,7 +264,14 @@ public class InteractiveModeDecisionTreeEndToEndTest {
 
     public void testTraverse(Map<String, String> callToResponse, Map<Property, String> expectedProperties) {
         DetectInfo detectInfo = new DetectInfo("detect", OperatingSystemType.LINUX, "unknown");
-        InteractiveModeDecisionTree decisionTree = new InteractiveModeDecisionTree(detectInfo, new BlackDuckConnectivityChecker(), new ArrayList<>(), new Gson());
+        BlackDuckConnectivityChecker mockConnectivityChecker = Mockito.mock(BlackDuckConnectivityChecker.class);
+        BlackDuckConnectivityResult mockConnectivityResult = Mockito.mock(BlackDuckConnectivityResult.class);
+        try {
+            Mockito.when(mockConnectivityChecker.determineConnectivity(Mockito.any())).thenReturn(mockConnectivityResult);
+        } catch (Exception e) {
+            // This should not happen in a test scenario with mocked objects
+        }
+        InteractiveModeDecisionTree decisionTree = new InteractiveModeDecisionTree(detectInfo, mockConnectivityChecker, new ArrayList<>(), new Gson());
 
         InteractiveWriter mockWriter = mockWriter(callToResponse);
         InteractivePropertySourceBuilder propertySourceBuilder = new InteractivePropertySourceBuilder(mockWriter);
