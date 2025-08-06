@@ -145,10 +145,12 @@ test {
         exceptionFormat = 'full'
     }
 
-    maxParallelForks = System.getenv("MAX_PARALLEL_TEST_FORKS")
-    if (!maxParallelForks)
-        maxParallelForks = Runtime.runtime.availableProcessors()
-
+    def maxParallelForksEnvVar = System.getenv('MAX_PARALLEL_TEST_FORKS')
+    if (maxParallelForksEnvVar) {
+        maxParallelForks = maxParallelForksEnvVar as int
+    } else {
+        maxParallelForks = 4
+    }
     println "maxParallelForks has been set to ${maxParallelForks}"
 }
 
