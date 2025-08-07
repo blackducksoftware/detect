@@ -46,11 +46,16 @@ public class ToolPoetrySectionParser {
     }
 
     public TomlTable parseProjectSection(File pyprojectTomlFile) {
-        try {
-            return TomlFileUtils.parseFile(pyprojectTomlFile).getTable("project");
-        } catch (IOException e) {
+        if (pyprojectTomlFile == null)
             return null;
+
+        TomlParseResult parseResult;
+        try {
+            parseResult = TomlFileUtils.parseFile(pyprojectTomlFile);
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to read pyproject.toml file");
         }
+        return parseResult.getTable("project");
     }
 
     public Set<String> parseRootPackages(File pyprojectToml, PoetryOptions options) {
