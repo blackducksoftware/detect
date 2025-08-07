@@ -22,7 +22,7 @@
 
 ### New features
 
-* 
+* Maven CLI Detector now accepts a custom pom.xml file name when provided via `detect.maven.build.command`.  
 
 ### Changed features
 
