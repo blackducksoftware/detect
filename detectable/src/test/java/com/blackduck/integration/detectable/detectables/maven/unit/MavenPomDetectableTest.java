@@ -10,59 +10,36 @@ import com.blackduck.integration.detectable.detectables.maven.parsing.MavenProje
 import com.blackduck.integration.detectable.util.MockDetectableEnvironment;
 import com.blackduck.integration.detectable.util.MockFileFinder;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mockito;
 
 import java.io.File;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class MavenPomDetectableTest {
 
-    @Test
-    public void testApplicable_defaultPomXMLName() {
+    @ParameterizedTest
+    @CsvSource({
+            "pom.xml, true",
+            "custom-pom.xml, true",
+            "invalid-pom-name.xml, false"
+    })
+    void testApplicable_withVariousPomNames(String fileName, boolean expectedResult) {
         DetectableEnvironment environment = MockDetectableEnvironment.empty();
-        FileFinder fileFinder = MockFileFinder.withFileNamed("pom.xml");
+        FileFinder fileFinder = MockFileFinder.withFileNamed(fileName);
         MavenResolver mavenResolver = null;
         MavenCliExtractor mavenCliExtractor = null;
         MavenCliExtractorOptions mavenCliExtractorOptions = null;
         MavenProjectInspectorDetectable mavenProjectInspectorDetectable = null;
-        File pomFile = Mockito.mock(File.class);
 
+        MavenPomDetectable detectable = new MavenPomDetectable(
+                environment, fileFinder, mavenResolver, mavenCliExtractor,
+                mavenCliExtractorOptions, mavenProjectInspectorDetectable
+        );
 
-        MavenPomDetectable detectable = new MavenPomDetectable(environment, fileFinder, mavenResolver, mavenCliExtractor, mavenCliExtractorOptions, mavenProjectInspectorDetectable);
-        assertTrue(detectable.applicable().getPassed());
+        assertEquals(expectedResult, detectable.applicable().getPassed());
     }
-
-    @Test
-    public void testApplicable_nondefaultPomXMLName() {
-        DetectableEnvironment environment = MockDetectableEnvironment.empty();
-        FileFinder fileFinder = MockFileFinder.withFileNamed("custom-pom.xml");
-        MavenResolver mavenResolver = null;
-        MavenCliExtractor mavenCliExtractor = null;
-        MavenCliExtractorOptions mavenCliExtractorOptions = null;
-        MavenProjectInspectorDetectable mavenProjectInspectorDetectable = null;
-        File pomFile = Mockito.mock(File.class);
-
-
-        MavenPomDetectable detectable = new MavenPomDetectable(environment, fileFinder, mavenResolver, mavenCliExtractor, mavenCliExtractorOptions, mavenProjectInspectorDetectable);
-        assertTrue(detectable.applicable().getPassed());
-    }
-
-    @Test
-    public void testApplicable_invalidPomXMLName() {
-        DetectableEnvironment environment = MockDetectableEnvironment.empty();
-        FileFinder fileFinder = MockFileFinder.withFileNamed("invalid-pom-name.xml");
-        MavenResolver mavenResolver = null;
-        MavenCliExtractor mavenCliExtractor = null;
-        MavenCliExtractorOptions mavenCliExtractorOptions = null;
-        MavenProjectInspectorDetectable mavenProjectInspectorDetectable = null;
-        File pomFile = Mockito.mock(File.class);
-
-
-        MavenPomDetectable detectable = new MavenPomDetectable(environment, fileFinder, mavenResolver, mavenCliExtractor, mavenCliExtractorOptions, mavenProjectInspectorDetectable);
-        assertFalse(detectable.applicable().getPassed());
-    }
-
 
 }
