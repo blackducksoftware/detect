@@ -63,7 +63,7 @@ public class PoetryDetectableTest extends DetectableFunctionalTest {
 
     @Override
     public void assertExtraction(@NotNull Extraction extraction) {
-        Assertions.assertEquals("my-proj", extraction.getProjectName());;
+        Assertions.assertEquals("my-proj", extraction.getProjectName());
         Assertions.assertEquals("1.45", extraction.getProjectVersion());
 
         Assertions.assertEquals(1, extraction.getCodeLocations().size());
