@@ -63,7 +63,6 @@ public class PoetryDetectable extends Detectable {
         if (poetryLock == null && pyprojectToml != null) {
             return new PoetryLockfileNotFoundDetectableResult(environment.getDirectory().getAbsolutePath());
         }
-
         
         if (!poetryOptions.getExcludedGroups().isEmpty() && pyprojectToml == null) {
             return new FileNotFoundDetectableResult(PYPROJECT_TOML_FILE_NAME);
