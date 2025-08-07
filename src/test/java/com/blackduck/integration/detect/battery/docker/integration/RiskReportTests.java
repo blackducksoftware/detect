@@ -99,7 +99,7 @@ public class RiskReportTests {
 
         String riskReportFileNameNoExt = reportDir + "risk_reports_directory_does_not_exist_BlackDuck_RiskReport";
 
-        dockerAssertions.resultProducedAtLocation(riskReportFileNameNoExt + ".json");
+        dockerAssertions.resultProducedAtLocation(riskReportFileNameNoExt + ".pdf");
         dockerAssertions.resultProducedAtLocation(riskReportFileNameNoExt + ".json");
     }
 }
