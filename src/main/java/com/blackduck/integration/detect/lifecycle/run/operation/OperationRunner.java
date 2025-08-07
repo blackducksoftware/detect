@@ -1,5 +1,6 @@
 package com.blackduck.integration.detect.lifecycle.run.operation;
 
+import static com.blackduck.integration.blackduck.codelocation.signaturescanner.command.ToolsApiScannerInstaller.MIN_ARM_BLACK_DUCK_VERSION;
 import static com.blackduck.integration.componentlocator.ComponentLocator.SUPPORTED_DETECTORS;
 import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.OPERATION_NAME;
 import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.SUPPORTED_DETECTORS_LOG_MSG;
@@ -26,15 +27,16 @@ import java.util.concurrent.Executors;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import com.blackduck.integration.blackduck.bdio2.model.BdioFileContent;
+import com.blackduck.integration.blackduck.version.BlackDuckVersion;
 import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
 import com.blackduck.integration.detect.lifecycle.run.step.CommonScanStepRunner;
 import com.blackduck.integration.detect.workflow.blackduck.report.ReportData;
 import com.blackduck.integration.rest.exception.IntegrationRestException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.apache.http.HttpStatus;
 import org.apache.http.entity.ContentType;
 import org.jetbrains.annotations.Nullable;
@@ -255,9 +257,11 @@ public class OperationRunner {
     private static final String INTELLIGENT_SCAN_ENDPOINT = ApiDiscovery.INTELLIGENT_PERSISTENCE_SCANS_PATH.getPath();
     private static final String INTELLIGENT_SCAN_CONTENT_TYPE = "application/vnd.blackducksoftware.intelligent-persistence-scan-3+protobuf";
     private static final String INTELLIGENT_SCAN_SCASS_CONTENT_TYPE = "application/vnd.blackducksoftware.intelligent-persistence-scan-4+protobuf-jsonld";
+    private static final String ALPINE_LINUX_OS = "ALPINE_LINUX";
+    private static final String ALPINE_LINUX_ENV_VARIABLE = "SCAN_CLI_OS";
+    private static final String OS_ARCHITECTURE_CONSTANT = "x64";
     public static final ImmutableList<Integer> RETRYABLE_AFTER_WAIT_HTTP_EXCEPTIONS = ImmutableList.of(408, 429, 502, 503, 504);
     public static final ImmutableList<Integer> RETRYABLE_WITH_BACKOFF_HTTP_EXCEPTIONS = ImmutableList.of(425, 500);
-    private static final String POLICY_STATUS_RESOLVED = "RESOLVED";
     private List<File> binaryUserTargets = new ArrayList<>();
     BinaryScanFindMultipleTargetsOperation binaryScanFindMultipleTargetsOperation;
 
@@ -721,10 +725,11 @@ public class OperationRunner {
                         mode,
                         calculateMaxWaitInSeconds(fibonacciSequenceIndex)
                 );
+            } catch (InterruptedException e) {
+                throw e;
             } catch (IntegrationRestException e) {
                 throw handleRapidScanException(e);
             } catch (Exception e) {
-                logger.error("Exception while waiting for rapid results: {}", e.getMessage(), e);
                 throw new OperationException(e);
             }
         });
@@ -1087,12 +1092,13 @@ public class OperationRunner {
         List<SignatureScanPath> scanPaths,
         NameVersion projectNameVersion,
         DockerTargetData dockerTargetData,
-        BlackDuckRunData blackDuckRunData
+        BlackDuckRunData blackDuckRunData, 
+        boolean isScassFallback
     )
         throws OperationException {
         return auditLog.namedPublic("Create Online Signature Scan Batch", "OnlineSigScan",
             () -> new CreateScanBatchOperation(detectConfigurationFactory.createBlackDuckSignatureScannerOptions(), directoryManager, codeLocationNameManager)
-                .createScanBatchWithBlackDuck(detectRunUuid, projectNameVersion, scanPaths, blackDuckRunData, dockerTargetData)
+                .createScanBatchWithBlackDuck(detectRunUuid, projectNameVersion, scanPaths, blackDuckRunData, dockerTargetData, isScassFallback)
         );
     }
 
@@ -1123,12 +1129,37 @@ public class OperationRunner {
         return auditLog.namedInternal("Create Scan Batch Runner with Black Duck", () -> {
             ExecutorService executorService = Executors.newFixedThreadPool(detectConfigurationFactory.createBlackDuckSignatureScannerOptions().getParallelProcessors());
             IntEnvironmentVariables intEnvironmentVariables = IntEnvironmentVariables.includeSystemEnv();
-            return new CreateScanBatchRunnerWithBlackDuck(intEnvironmentVariables, OperatingSystemType.determineFromSystem(), executorService).createScanBatchRunner(
+            Optional<BlackDuckVersion> blackDuckVersion = blackDuckRunData.getBlackDuckServerVersion();
+
+            String operatingSystemEnv = intEnvironmentVariables.getValue(ALPINE_LINUX_ENV_VARIABLE);
+            OperatingSystemType operatingSystemType;
+
+            if (operatingSystemEnv != null && shouldCheckforARMArchitecture(blackDuckVersion) && operatingSystemEnv.equals(ALPINE_LINUX_OS)) {
+                operatingSystemType = OperatingSystemType.ALPINE_LINUX;
+            } else {
+                if (operatingSystemEnv != null) {
+                    logger.warn("Please set the env variable value only for ALPINE_LINUX operating system");
+                }
+                operatingSystemType = OperatingSystemType.determineFromSystem();
+            }
+
+            String osArchitecture = OS_ARCHITECTURE_CONSTANT;
+
+            if(shouldCheckforARMArchitecture(blackDuckVersion)) {
+                osArchitecture = SystemUtils.OS_ARCH;
+            }
+
+            return new CreateScanBatchRunnerWithBlackDuck(intEnvironmentVariables, operatingSystemType, executorService).createScanBatchRunner(
                 blackDuckRunData.getBlackDuckServerConfig(),
                 installDirectory,
-                blackDuckRunData.getBlackDuckServerVersion()
+                blackDuckVersion,
+                osArchitecture
             );
         });
+    }
+
+    private boolean shouldCheckforARMArchitecture(Optional<BlackDuckVersion> blackDuckVersion) {
+        return blackDuckVersion.isPresent() && blackDuckVersion.get().isAtLeast(MIN_ARM_BLACK_DUCK_VERSION);
     }
 
     public ScanBatchRunner createScanBatchRunnerFromLocalInstall(File installDirectory) throws OperationException {
