@@ -25,7 +25,9 @@ public class PoetryDetectableTest extends DetectableFunctionalTest {
     protected void setup() throws IOException {
         addFile(
             Paths.get("pyproject.toml"),
-            "[tool.poetry]"
+            "[tool.poetry]",
+            "name=\"my-proj\"",
+            "version=\"1.45\""
         );
 
         addFile(
@@ -61,6 +63,9 @@ public class PoetryDetectableTest extends DetectableFunctionalTest {
 
     @Override
     public void assertExtraction(@NotNull Extraction extraction) {
+        Assertions.assertEquals("my-proj", extraction.getProjectName());;
+        Assertions.assertEquals("1.45", extraction.getProjectVersion());
+
         Assertions.assertEquals(1, extraction.getCodeLocations().size());
 
         NameVersionGraphAssert graphAssert = new NameVersionGraphAssert(Forge.PYPI, extraction.getCodeLocations().get(0).getDependencyGraph());
