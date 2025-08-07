@@ -1,8 +1,5 @@
 package com.blackduck.integration.detectable.detectables.maven.cli;
 
-import java.io.File;
-import java.util.List;
-
 import com.blackduck.integration.common.util.finder.FileFinder;
 import com.blackduck.integration.detectable.Detectable;
 import com.blackduck.integration.detectable.DetectableEnvironment;
