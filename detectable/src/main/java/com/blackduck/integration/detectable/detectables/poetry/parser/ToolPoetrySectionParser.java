@@ -53,7 +53,7 @@ public class ToolPoetrySectionParser {
         try {
             parseResult = TomlFileUtils.parseFile(pyprojectTomlFile);
         } catch (IOException e) {
-            throw new RuntimeException("Unable to read pyproject.toml file");
+            throw new RuntimeException("Unable to read pyproject.toml file: " + pyprojectTomlFile.getAbsolutePath(), e);
         }
         return parseResult.getTable("project");
     }
