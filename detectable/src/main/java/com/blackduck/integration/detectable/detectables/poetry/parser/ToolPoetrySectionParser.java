@@ -27,6 +27,9 @@ public class ToolPoetrySectionParser {
 
     public static final String PYTHON_COMPONENT_NAME = "python";
     
+    // Poetry 2.x support: PEP 621 compliant [project] section
+    public static final String PROJECT_DEPENDENCIES_KEY = "project.dependencies";
+
     public ToolPoetrySectionResult parseToolPoetrySection(@Nullable File pyprojectToml) {
         if (pyprojectToml != null) {
             try {
@@ -68,6 +71,9 @@ public class ToolPoetrySectionParser {
             processKeyForRootPackages(parseResult, options, result, key);
         }
 
+        // Poetry 2.x support: Parse dependencies from [project] section (PEP 621 compliant)
+        processProjectDependencies(parseResult, result);
+
         return result;
     }
 
@@ -102,5 +108,34 @@ public class ToolPoetrySectionParser {
 
             set.add(packageName);
         }
+    }
+
+    // Poetry 2.x support: Process dependencies from [project] section (PEP 621 compliant)
+    private void processProjectDependencies(TomlParseResult parseResult, Set<String> result) {
+        if (parseResult.isArray(PROJECT_DEPENDENCIES_KEY)) {
+            parseResult.getArray(PROJECT_DEPENDENCIES_KEY).toList().forEach(dependency -> {
+                if (dependency instanceof String) {
+                    String packageName = extractPackageNameFromDependencyString((String) dependency);
+                    if (packageName != null && !packageName.equalsIgnoreCase(PYTHON_COMPONENT_NAME)) {
+                        result.add(packageName);
+                    }
+                }
+            });
+        }
+    }
+
+    // Poetry 2.x support: Extract package name from dependency string
+    // Handles: "requests>=2.25.1", "requests[security]>=2.25.1", "requests (>=2.25.1)", etc.
+    private String extractPackageNameFromDependencyString(String dependencyString) {
+        if (dependencyString == null) {
+            return null;
+        }
+
+        // Extract the first sequence of valid package name characters
+        // Python package names can contain letters, numbers, hyphens, underscores, and dots
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("^([a-zA-Z][a-zA-Z0-9._-]+)");
+        java.util.regex.Matcher matcher = pattern.matcher(dependencyString.trim());
+
+        return matcher.find() ? matcher.group(1) : null;
     }
 }
