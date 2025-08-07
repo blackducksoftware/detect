@@ -1,7 +1,6 @@
 package com.blackduck.integration.detectable.detectables.poetry.functional;
 
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.Collections;
 
 import org.jetbrains.annotations.NotNull;
@@ -23,38 +22,7 @@ public class Poetry2DetectableWithoutTomlFileTest extends DetectableFunctionalTe
 
     @Override
     protected void setup() throws IOException {
-        addFile(
-            Paths.get("poetry.lock"),
-            "[[package]]",
-            "name = \"requests\"",
-            "python-versions = \"*\"",
-            "version = \"2.28.1\"",
-            "",
-            "[[package]]",
-            "name = \"click\"",
-            "python-versions = \">=3.7\"",
-            "version = \"8.1.3\"",
-            "",
-            "[[package]]",
-            "name = \"django\"",
-            "python-versions = \">=3.8\"",
-            "version = \"4.1.0\"",
-            "",
-            "[[package]]",
-            "name = \"pytest-cov\"",
-            "python-versions = \">=3.6\"",
-            "version = \"3.0.0\"",
-            "",
-            "[[package]]",
-            "name = \"python-dotenv\"",
-            "python-versions = \">=3.5\"",
-            "version = \"0.20.0\"",
-            "",
-            "[[package]]",
-            "name = \"numpy\"",
-            "python-versions = \">=3.8\"",
-            "version = \"1.23.2\""
-        );
+        Poetry2TestHelper.addPoetryLockFile(this);
     }
 
     @NotNull
