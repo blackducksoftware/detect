@@ -42,6 +42,14 @@ public class ToolPoetrySectionParser {
         return ToolPoetrySectionResult.NOT_FOUND();
     }
 
+    public TomlTable parseProjectSection(File pyprojectTomlFile) {
+        try {
+            return TomlFileUtils.parseFile(pyprojectTomlFile).getTable("project");
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
     public Set<String> parseRootPackages(File pyprojectToml, PoetryOptions options) {
         if (options.getExcludedGroups().isEmpty() || pyprojectToml == null) {
             return null;
