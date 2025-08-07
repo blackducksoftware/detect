@@ -23,7 +23,7 @@ import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 
 @DetectableInfo(name = "Maven Project Inspector", language = "various", forge = "Maven Central", accuracy = DetectableAccuracyType.LOW, requirementsMarkdown = "File: pom.xml.")
 public class MavenProjectInspectorDetectable extends Detectable {
-    private static final String POM_XML_FILENAME = "*pom.xml";
+    private static final String POM_XML_FILENAME = "pom.xml";
     private static final String INCLUDE_SHADED_DEPENDENCIES = "include_shaded_dependencies";
     private final FileFinder fileFinder;
     private final ProjectInspectorResolver projectInspectorResolver;
