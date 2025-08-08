@@ -12,4 +12,11 @@ public class ScanCountsPayload extends Stringable {
     public ScanCounts getScanCounts() {
         return scanCounts;
     }
+    
+    public boolean isValid() {
+        if (scanCounts.getBinary() > 0 || scanCounts.getPackageManager() > 0 || scanCounts.getSignature() > 0) {
+            return true;
+        }
+        return false;
+    }
 }
