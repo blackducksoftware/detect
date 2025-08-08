@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '10.7.0-SIGQA6-SNAPSHOT'
+version = '10.7.0-SIGQA8-SNAPSHOT'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
@@ -144,6 +144,14 @@ test {
     testLogging {
         exceptionFormat = 'full'
     }
+
+    def maxParallelForksEnvVar = System.getenv('MAX_PARALLEL_TEST_FORKS')
+    if (maxParallelForksEnvVar) {
+        maxParallelForks = maxParallelForksEnvVar as int
+    } else {
+        maxParallelForks = 4
+    }
+    println "maxParallelForks has been set to ${maxParallelForks}"
 }
 
 dependencies {
