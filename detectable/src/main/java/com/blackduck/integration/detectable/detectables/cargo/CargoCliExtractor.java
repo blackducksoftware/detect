@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Optional;
@@ -65,8 +66,9 @@ public class CargoCliExtractor {
         Map<CargoDependencyType, String> exclusionMap = new EnumMap<>(CargoDependencyType.class);
         exclusionMap.put(CargoDependencyType.BUILD, "no-build");
         exclusionMap.put(CargoDependencyType.DEV, "no-dev");
+        exclusionMap.put(CargoDependencyType.PROC_MACRO, "no-proc-macro");
 
-        List<String> exclusions = new ArrayList<>();
+        List<String> exclusions = new LinkedList<>();
         for (Map.Entry<CargoDependencyType, String> entry : exclusionMap.entrySet()) {
             if (options.getDependencyTypeFilter().shouldExclude(entry.getKey())) {
                 exclusions.add(entry.getValue());
