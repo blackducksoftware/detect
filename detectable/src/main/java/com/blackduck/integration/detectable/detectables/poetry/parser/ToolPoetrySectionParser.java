@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.jetbrains.annotations.Nullable;
 import org.tomlj.TomlParseResult;
@@ -138,8 +140,8 @@ public class ToolPoetrySectionParser {
 
         // Extract the first sequence of valid package name characters
         // Python package names can contain letters, numbers, hyphens, underscores, and dots
-        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("^([a-zA-Z][a-zA-Z0-9._-]+)");
-        java.util.regex.Matcher matcher = pattern.matcher(dependencyString.trim());
+        Pattern pattern = java.util.regex.Pattern.compile("^([a-zA-Z][a-zA-Z0-9._-]+)");
+        Matcher matcher = pattern.matcher(dependencyString.trim());
 
         return matcher.find() ? matcher.group(1) : null;
     }
