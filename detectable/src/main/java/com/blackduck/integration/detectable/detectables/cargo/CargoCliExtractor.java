@@ -38,7 +38,7 @@ public class CargoCliExtractor {
     }
 
     public Extraction extract(File directory, ExecutableTarget cargoExe, File cargoTomlFile, CargoDetectableOptions cargoDetectableOptions) throws ExecutableFailedException, IOException {
-        List<String> fullTreeCommand = new ArrayList<>(CARGO_TREE_COMMAND);
+        List<String> fullTreeCommand = new LinkedList<>(CARGO_TREE_COMMAND);
         addEdgeExclusions(fullTreeCommand, cargoDetectableOptions);
 
         List<String> fullTreeOutput = runCargoTreeCommand(directory, cargoExe, fullTreeCommand);
@@ -75,7 +75,7 @@ public class CargoCliExtractor {
     }
 
     private List<String> handleNormalDependencyExclusion(File directory, ExecutableTarget cargoExe, List<String> fullTreeOutput) throws ExecutableFailedException {
-        List<String> normalOnlyCommand = new ArrayList<>(CARGO_TREE_COMMAND);
+        List<String> normalOnlyCommand = new LinkedList<>(CARGO_TREE_COMMAND);
         normalOnlyCommand.add("--edges");
         normalOnlyCommand.add("normal");
 
@@ -84,10 +84,9 @@ public class CargoCliExtractor {
         return diffExcludeNormal(fullTreeOutput, normalTreeOutput);
     }
 
-    /**
-     * Performs an sdiff-like merge: skips lines from fullTreeOutput that also appear
-     * in the same position in normalTreeOutput.
-     */
+
+     // Performs a sdiff-like merge (or a set difference like merge)
+     // skips lines from fullTreeOutput that also appear in the same position in normalTreeOutput.
     private List<String> diffExcludeNormal(List<String> fullTreeOutput, List<String> normalTreeOutput) {
         List<String> result = new ArrayList<>();
         int i = 0;
