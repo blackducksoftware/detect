@@ -167,4 +167,62 @@ public class CodeLocationNameGeneratorTest {
 
         assertEquals("prefix/project/version/suffix " + CodeLocationNameType.BOM.getName(), codeLocationName);
     }
+
+    @Test
+    public void testResetNameOverrideCounterWithOverride() {
+        CodeLocationNameGenerator codeLocationNameGenerator = CodeLocationNameGenerator.withOverride("myscanname");
+        
+        // Generate names to increment the counter
+        assertEquals("myscanname signature", codeLocationNameGenerator.getNextCodeLocationOverrideNameUnSourced(CodeLocationNameType.SIGNATURE));
+        assertEquals("myscanname signature 2", codeLocationNameGenerator.getNextCodeLocationOverrideNameUnSourced(CodeLocationNameType.SIGNATURE));
+        assertEquals("myscanname signature 3", codeLocationNameGenerator.getNextCodeLocationOverrideNameUnSourced(CodeLocationNameType.SIGNATURE));
+        
+        // Reset the counter
+        codeLocationNameGenerator.resetNameOverrideCounter(CodeLocationNameType.SIGNATURE);
+        
+        // Next name should be back to the base name (index 1)
+        assertEquals("myscanname signature", codeLocationNameGenerator.getNextCodeLocationOverrideNameUnSourced(CodeLocationNameType.SIGNATURE));
+        assertEquals("myscanname signature 2", codeLocationNameGenerator.getNextCodeLocationOverrideNameUnSourced(CodeLocationNameType.SIGNATURE));
+    }
+
+    @Test
+    public void testResetNameOverrideCounterWithoutOverride() {
+        CodeLocationNameGenerator codeLocationNameGenerator = CodeLocationNameGenerator.noChanges();
+        
+        // Should not do anything when no override is set
+        codeLocationNameGenerator.resetNameOverrideCounter(CodeLocationNameType.SIGNATURE);
+        
+        // This should not affect anything since no override is used
+        assertTrue(true); // Test passes if no exception is thrown
+    }
+
+    @Test
+    public void testResetNameOverrideCounterNonExistentCounter() {
+        CodeLocationNameGenerator codeLocationNameGenerator = CodeLocationNameGenerator.withOverride("myscanname");
+        
+        // Reset a counter that hasn't been used yet - should not affect anything
+        codeLocationNameGenerator.resetNameOverrideCounter(CodeLocationNameType.BINARY);
+        
+        // First call should still return the base name
+        assertEquals("myscanname binary", codeLocationNameGenerator.getNextCodeLocationOverrideNameUnSourced(CodeLocationNameType.BINARY));
+        assertEquals("myscanname binary 2", codeLocationNameGenerator.getNextCodeLocationOverrideNameUnSourced(CodeLocationNameType.BINARY));
+    }
+
+    @Test
+    public void testResetNameOverrideCounterDifferentTypes() {
+        CodeLocationNameGenerator codeLocationNameGenerator = CodeLocationNameGenerator.withOverride("myscanname");
+        
+        // Generate names for different types
+        assertEquals("myscanname signature", codeLocationNameGenerator.getNextCodeLocationOverrideNameUnSourced(CodeLocationNameType.SIGNATURE));
+        assertEquals("myscanname signature 2", codeLocationNameGenerator.getNextCodeLocationOverrideNameUnSourced(CodeLocationNameType.SIGNATURE));
+        assertEquals("myscanname binary", codeLocationNameGenerator.getNextCodeLocationOverrideNameUnSourced(CodeLocationNameType.BINARY));
+        assertEquals("myscanname binary 2", codeLocationNameGenerator.getNextCodeLocationOverrideNameUnSourced(CodeLocationNameType.BINARY));
+        
+        // Reset only signature counter
+        codeLocationNameGenerator.resetNameOverrideCounter(CodeLocationNameType.SIGNATURE);
+        
+        // Signature should reset, binary should continue from where it left off
+        assertEquals("myscanname signature", codeLocationNameGenerator.getNextCodeLocationOverrideNameUnSourced(CodeLocationNameType.SIGNATURE));
+        assertEquals("myscanname binary 3", codeLocationNameGenerator.getNextCodeLocationOverrideNameUnSourced(CodeLocationNameType.BINARY));
+    }
 }
