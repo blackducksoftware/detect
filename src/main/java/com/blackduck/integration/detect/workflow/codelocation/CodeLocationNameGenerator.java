@@ -221,12 +221,10 @@ public class CodeLocationNameGenerator {
     }
 
     public void resetNameOverrideCounter(CodeLocationNameType codeLocationNameType) {
-        if (useCodeLocationOverride()) {
-            String baseName = codeLocationNameOverride + " " + codeLocationNameType.getName();
+        String baseName = codeLocationNameOverride + " " + codeLocationNameType.getName();
             
-            if (nameCounters.containsKey(baseName)) {
-                nameCounters.put(baseName, 0);
-            }
+        if (nameCounters.containsKey(baseName)) {
+            nameCounters.put(baseName, 0);
         }
     }
 
