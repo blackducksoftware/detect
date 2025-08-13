@@ -2,8 +2,10 @@ package com.blackduck.integration.detectable.detectables.poetry.parser;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -32,10 +34,12 @@ public class ToolPoetrySectionParser {
     // Poetry 2.x support: PEP 621 compliant [project] section
     public static final String PROJECT_DEPENDENCIES_KEY = "project.dependencies";
 
+    private Map<File, TomlParseResult> fileParseResults = new HashMap<>();
+
     public ToolPoetrySectionResult parseToolPoetrySection(@Nullable File pyprojectToml) {
         if (pyprojectToml != null) {
             try {
-                TomlParseResult parseResult = TomlFileUtils.parseFile(pyprojectToml);
+                TomlParseResult parseResult = memoizedTomlParseResult(pyprojectToml);
                 if (parseResult.get(TOOL_POETRY_KEY) != null) {
                     TomlTable poetrySection = parseResult.getTable(TOOL_POETRY_KEY);
                     return ToolPoetrySectionResult.FOUND(poetrySection);
@@ -53,7 +57,7 @@ public class ToolPoetrySectionParser {
 
         TomlParseResult parseResult;
         try {
-            parseResult = TomlFileUtils.parseFile(pyprojectTomlFile);
+            parseResult = memoizedTomlParseResult(pyprojectTomlFile);
         } catch (IOException e) {
             throw new RuntimeException("Unable to read pyproject.toml file: " + pyprojectTomlFile.getAbsolutePath(), e);
         }
@@ -69,7 +73,7 @@ public class ToolPoetrySectionParser {
 
         TomlParseResult parseResult;
         try {
-            parseResult = TomlFileUtils.parseFile(pyprojectToml);
+            parseResult = memoizedTomlParseResult(pyprojectToml);
         } catch (IOException e) {
             throw new RuntimeException("Unable to read pyproject.toml file");
         }
@@ -82,6 +86,13 @@ public class ToolPoetrySectionParser {
         processProjectDependencies(parseResult, result);
 
         return result;
+    }
+
+    private TomlParseResult memoizedTomlParseResult(File tomlFile) throws IOException {
+        if (!fileParseResults.containsKey(tomlFile)) {
+            fileParseResults.put(tomlFile, TomlFileUtils.parseFile(tomlFile));
+        }
+        return fileParseResults.get(tomlFile);
     }
 
     private void processKeyForRootPackages(TomlParseResult parseResult, PoetryOptions options, Set<String> result, String key) {
@@ -140,7 +151,7 @@ public class ToolPoetrySectionParser {
 
         // Extract the first sequence of valid package name characters
         // Python package names can contain letters, numbers, hyphens, underscores, and dots
-        Pattern pattern = java.util.regex.Pattern.compile("^([a-zA-Z][a-zA-Z0-9._-]+)");
+        Pattern pattern = Pattern.compile("^([a-zA-Z][a-zA-Z0-9._-]+)");
         Matcher matcher = pattern.matcher(dependencyString.trim());
 
         return matcher.find() ? matcher.group(1) : null;
