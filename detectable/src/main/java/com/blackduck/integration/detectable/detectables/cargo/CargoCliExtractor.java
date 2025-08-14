@@ -39,15 +39,17 @@ public class CargoCliExtractor {
 
     public Extraction extract(File directory, ExecutableTarget cargoExe, File cargoTomlFile, CargoDetectableOptions cargoDetectableOptions) throws ExecutableFailedException, IOException {
         List<String> fullTreeCommand = new LinkedList<>(CARGO_TREE_COMMAND);
-        addEdgeExclusions(fullTreeCommand, cargoDetectableOptions);
+
+        EnumListFilter<CargoDependencyType> dependencyTypeFilter = Optional.ofNullable(cargoDetectableOptions.getDependencyTypeFilter())
+            .orElse(EnumListFilter.excludeNone());
+
+        if(!dependencyTypeFilter.shouldIncludeAll()) {
+            addEdgeExclusions(fullTreeCommand, cargoDetectableOptions);
+        }
 
         List<String> fullTreeOutput = runCargoTreeCommand(directory, cargoExe, fullTreeCommand);
 
-        boolean excludeNormal = Optional.ofNullable(cargoDetectableOptions.getDependencyTypeFilter())
-            .orElse(EnumListFilter.excludeNone())
-            .shouldExclude(CargoDependencyType.NORMAL);
-
-        if (excludeNormal) {
+        if (dependencyTypeFilter.shouldExclude(CargoDependencyType.NORMAL)) {
             fullTreeOutput = handleNormalDependencyExclusion(directory, cargoExe, fullTreeOutput);
         }
 
@@ -84,33 +86,37 @@ public class CargoCliExtractor {
         return diffExcludeNormal(fullTreeOutput, normalTreeOutput);
     }
 
-
-     // Performs a sdiff-like merge (or a set difference like merge)
-     // skips lines from fullTreeOutput that also appear in the same position in normalTreeOutput.
     private List<String> diffExcludeNormal(List<String> fullTreeOutput, List<String> normalTreeOutput) {
         List<String> result = new ArrayList<>();
         int i = 0;
         int j = 0;
+        int fullSize = fullTreeOutput.size();
+        int normalSize = normalTreeOutput.size();
 
-        while (i < fullTreeOutput.size() && j < normalTreeOutput.size()) {
-            String fullLine = fullTreeOutput.get(i);
-            String normalLine = normalTreeOutput.get(j);
+        // Loop until both lists are fully consumed
+        while (i < fullSize || j < normalSize) {
+            String fullLine = (i < fullSize) ? fullTreeOutput.get(i) : null;
+            String normalLine = (j < normalSize) ? normalTreeOutput.get(j) : null;
 
-            if (fullLine.equals(normalLine)) {
-                // This is a normal dependency line; skip it
-                i++;
-                j++;
-            } else {
-                // Keep from full tree; advance only full tree index
+            if (fullLine != null && normalLine != null) {
+                if (fullLine.equals(normalLine)) {
+                    // matched normal line -> skip both
+                    i++;
+                    j++;
+                } else {
+                    // keep full line, advance full pointer only
+                    result.add(fullLine);
+                    i++;
+                }
+            } else if (fullLine != null) {
+                // normal exhausted, keep remaining full lines
                 result.add(fullLine);
                 i++;
+            } else {
+                // full exhausted but normal has remaining lines -> advance normal pointer
+                // (we traverse normal fully but there's nothing to remove in full)
+                j++;
             }
-        }
-
-        // Add any remaining lines from the full tree
-        while (i < fullTreeOutput.size()) {
-            result.add(fullTreeOutput.get(i));
-            i++;
         }
 
         return result;
