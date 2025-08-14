@@ -38,8 +38,7 @@ public class CargoTomlParser {
         Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap = new HashMap<>();
         Set<NameVersion> alwaysIncluded = new HashSet<>();
 
-        // Parse dependencies from each section. If the type is null, it indicates a normal dependency (from [dependencies]).
-        parseDependenciesFromTomlTable(toml, NORMAL_DEPENDENCIES_KEY, null, dependencyTypeMap, alwaysIncluded);
+        parseDependenciesFromTomlTable(toml, NORMAL_DEPENDENCIES_KEY, CargoDependencyType.NORMAL, dependencyTypeMap, alwaysIncluded);
         parseDependenciesFromTomlTable(toml, BUILD_DEPENDENCIES_KEY, CargoDependencyType.BUILD, dependencyTypeMap, alwaysIncluded);
         parseDependenciesFromTomlTable(toml, DEV_DEPENDENCIES_KEY, CargoDependencyType.DEV, dependencyTypeMap, alwaysIncluded);
 

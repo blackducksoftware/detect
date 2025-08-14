@@ -33,12 +33,12 @@ import com.blackduck.integration.detectable.detectables.cargo.transform.CargoLoc
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.util.NameVersion;
 
-public class CargoExtractor {
+public class CargoLockfileExtractor {
     private final CargoTomlParser cargoTomlParser;
     private final CargoLockPackageDataTransformer cargoLockPackageDataTransformer;
     private final CargoLockPackageTransformer cargoLockPackageTransformer;
 
-    public CargoExtractor(
+    public CargoLockfileExtractor(
         CargoTomlParser cargoTomlParser,
         CargoLockPackageDataTransformer cargoLockPackageDataTransformer,
         CargoLockPackageTransformer cargoLockPackageTransformer

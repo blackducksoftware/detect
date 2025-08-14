@@ -14,7 +14,6 @@ import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildDetec
 import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildExtractor;
 import com.blackduck.integration.detectable.detectables.uv.lockfile.UVLockFileDetectable;
 import com.blackduck.integration.detectable.detectables.uv.lockfile.UVLockfileExtractor;
-import com.blackduck.integration.detectable.detectables.uv.parse.UVTomlParser;
 import com.blackduck.integration.detectable.detectables.uv.transform.UVLockParser;
 import com.blackduck.integration.detectable.detectables.uv.transform.UVTreeDependencyGraphTransformer;
 import org.xml.sax.SAXException;
@@ -347,17 +346,17 @@ public class DetectableFactory {
         return new BitbakeDetectable(environment, fileFinder, bitbakeDetectableOptions, bitbakeExtractor, bashResolver);
     }
 
-    public CargoLockDetectable createCargoDetectable(DetectableEnvironment environment) {
-        return createCargoDetectable(environment, null);
+    public CargoLockDetectable createCargoLockfileDetectable(DetectableEnvironment environment) {
+        return createCargoLockfileDetectable(environment, null);
     }
 
-    public CargoLockDetectable createCargoDetectable(DetectableEnvironment environment, CargoDetectableOptions cargoDetectableOptions) {
+    public CargoLockDetectable createCargoLockfileDetectable(DetectableEnvironment environment, CargoDetectableOptions cargoDetectableOptions) {
         CargoTomlParser cargoTomlParser = new CargoTomlParser();
         CargoDependencyLineParser cargoDependencyLineParser = new CargoDependencyLineParser();
         CargoLockPackageDataTransformer cargoLockPackageDataTransformer = new CargoLockPackageDataTransformer(cargoDependencyLineParser);
         CargoLockPackageTransformer cargoLockPackageTransformer = new CargoLockPackageTransformer();
-        CargoExtractor cargoExtractor = new CargoExtractor(cargoTomlParser, cargoLockPackageDataTransformer, cargoLockPackageTransformer);
-        return new CargoLockDetectable(environment, fileFinder, cargoExtractor, cargoDetectableOptions);
+        CargoLockfileExtractor cargoLockfileExtractor = new CargoLockfileExtractor(cargoTomlParser, cargoLockPackageDataTransformer, cargoLockPackageTransformer);
+        return new CargoLockDetectable(environment, fileFinder, cargoLockfileExtractor, cargoDetectableOptions);
     }
 
     public CargoCliDetectable createCargoCliDetectable(DetectableEnvironment environment, CargoResolver cargoResolver, CargoDetectableOptions cargoDetectableOptions) {
