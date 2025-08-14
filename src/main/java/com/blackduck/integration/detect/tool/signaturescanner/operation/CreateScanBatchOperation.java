@@ -118,12 +118,14 @@ public class CreateScanBatchOperation {
             if (dockerTargetData != null) {
                 dockerTarget = dockerTargetData.getSquashedImage().orElse(dockerTargetData.getProvidedImageTar().orElse(null));
             }
+            
             String codeLocationName = codeLocationNameManager.createScanCodeLocationName(
                 sourcePath,
                 scanPath.getTargetPath(),
                 dockerTarget,
                 projectName,
-                projectVersionName
+                projectVersionName,
+                isScassFallback
             );
             scanJobBuilder.addTarget(ScanTarget.createBasicTarget(scanPath.getTargetCanonicalPath(), scanPath.getExclusions(), codeLocationName));
         }
