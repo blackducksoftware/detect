@@ -86,6 +86,7 @@ public class PolicyChecker {
             boolean atLeastOneViolationFound = areAnyPolicySeveritiesViolated(policyStatusDescription);
 
             if (atLeastOneViolationFound) {
+                logger.info("At least one violation by severity found.");
                 AllPolicyViolations allComponentsWithViolations = collectComponentsWithPolicyViolations(projectVersionView, ComponentPolicyRulesView::getSeverity, severitiesToFailPolicyCheck::contains);
                 logFatalViolationMessages(allComponentsWithViolations.fatalViolations);
                 logNonFatalViolationMessages(allComponentsWithViolations.otherViolations);
@@ -122,11 +123,14 @@ public class PolicyChecker {
         List<ProjectVersionComponentVersionView> bomComponents = projectBomService.getComponentsForProjectVersion(projectVersionView);
         for (ProjectVersionComponentVersionView component : bomComponents) {
             if (!component.getPolicyStatus().equals(ProjectVersionComponentPolicyStatusType.IN_VIOLATION)) {
-                continue;
+                logger.info("This component: " + component.getComponent() + " is not in violation.");
+//                continue;
             }
 
             for (ComponentPolicyRulesView policyRule : blackDuckApiClient.getAllResponses(component.metaPolicyRulesLink())) {
                 if (policyRule.getPolicyApprovalStatus().equals(ProjectVersionComponentPolicyStatusType.IN_VIOLATION)) {
+                    String componentName = component.getComponent();
+                    logger.info("This component " + componentName + " is in violation apparently.");
                     PolicyViolationInfo violationInfo = new PolicyViolationInfo(component, policyRule);
                     if (fatalPolicyCondition.test(policyNameOrSeverityExtractor.apply(policyRule))) {
                         fatalRulesViolated.add(violationInfo);
