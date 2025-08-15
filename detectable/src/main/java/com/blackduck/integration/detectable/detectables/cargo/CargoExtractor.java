@@ -56,7 +56,7 @@ public class CargoExtractor {
         String cargoTomlContents = null;
 
         Set<NameVersion> resolvedRootDependencies = new HashSet<>();
-        Map<String, List<CargoLockPackageData>> packageLookupMap = indexPackagesByName(filteredPackages);
+        Map<NameVersion, List<CargoLockPackageData>> packageLookupMap = indexPackagesByNameVersion(filteredPackages);
 
         if(cargoTomlFile == null && exclusionEnabled) {
             return new Extraction.Builder()
@@ -108,24 +108,26 @@ public class CargoExtractor {
             List<CargoLockPackageData> packages,
             Set<NameVersion> dependenciesToInclude,
             Set<NameVersion> resolvedRootDependencies,
-            Map<String, List<CargoLockPackageData>> packageLookupMap
+            Map<NameVersion, List<CargoLockPackageData>> packageLookupMap
     ) {
         processTransitiveDependenciesForInclusion(dependenciesToInclude, packageLookupMap, resolvedRootDependencies); // Collect all transitive dependencies to include
         return filterPackagesByInclusion(packages, dependenciesToInclude); // Only keep direct and transitive dependencies
     }
 
-    private Map<String, List<CargoLockPackageData>> indexPackagesByName(List<CargoLockPackageData> packages) {
+    private Map<NameVersion, List<CargoLockPackageData>> indexPackagesByNameVersion(List<CargoLockPackageData> packages) {
         return packages.stream()
-            .filter(pkg -> pkg.getName().isPresent())
-            .collect(Collectors.groupingBy(pkg -> pkg.getName().get()));
+            .filter(pkg -> pkg.getName().isPresent() && pkg.getVersion().isPresent())
+            .collect(Collectors.groupingBy(pkg -> new NameVersion(
+                pkg.getName().get(),
+                VersionUtils.stripBuildMetadata(pkg.getVersion().get())
+            )));
     }
 
     private void processTransitiveDependenciesForInclusion(
         Set<NameVersion> dependenciesToInclude,
-        Map<String, List<CargoLockPackageData>> packageLookupMap,
+        Map<NameVersion, List<CargoLockPackageData>> packageLookupMap,
         Set<NameVersion> resolvedRootDependenciesOut
     ) {
-
         Set<NameVersion> resolvedRootDependencies = resolveRootDependencies(dependenciesToInclude, packageLookupMap);
 
         // Preserve resolved root dependencies
@@ -157,7 +159,7 @@ public class CargoExtractor {
 
     private Set<NameVersion> resolveRootDependencies(
         Set<NameVersion> dependenciesToInclude,
-        Map<String, List<CargoLockPackageData>> packageLookupMap
+        Map<NameVersion, List<CargoLockPackageData>> packageLookupMap
     ) {
         Set<NameVersion> resolvedRootDependencies = new HashSet<>();
         for (NameVersion nv : dependenciesToInclude) {
@@ -175,7 +177,7 @@ public class CargoExtractor {
 
     private List<CargoLockPackage> resolveDependencyVersions(
             List<CargoLockPackage> packages,
-            Map<String, List<CargoLockPackageData>> packageLookupMap
+            Map<NameVersion, List<CargoLockPackageData>> packageLookupMap
     ) {
         List<CargoLockPackage> resolvedPackages = new ArrayList<>();
         for (CargoLockPackage pkg : packages) {
@@ -184,7 +186,7 @@ public class CargoExtractor {
                 if (!dep.getVersion().isPresent()) {
                     NameVersion resolved = extractPackageNameVersion(dep.getName(), packageLookupMap);
                     if (resolved != null) {
-                        resolvedDependencies.add(new NameOptionalVersion(resolved.getName(), resolved.getVersion()));
+                        resolvedDependencies.add(new NameOptionalVersion(resolved.getName(), VersionUtils.stripBuildMetadata(resolved.getVersion())));
                     } else {
                         resolvedDependencies.add(dep);
                     }
@@ -192,7 +194,9 @@ public class CargoExtractor {
                     resolvedDependencies.add(dep);
                 }
             }
-            resolvedPackages.add(new CargoLockPackage(pkg.getPackageNameVersion(), resolvedDependencies));
+            String name = pkg.getPackageNameVersion().getName();
+            String version = VersionUtils.stripBuildMetadata(pkg.getPackageNameVersion().getVersion());
+            resolvedPackages.add(new CargoLockPackage(new NameVersion(name, version), resolvedDependencies));
         }
         return resolvedPackages;
     }
@@ -219,7 +223,7 @@ public class CargoExtractor {
 
     private NameVersion extractPackageNameVersion(
         String dependencyString,
-        Map<String, List<CargoLockPackageData>> packageLookupMap
+        Map<NameVersion, List<CargoLockPackageData>> packageLookupMap
     ) {
         if (dependencyString == null || dependencyString.isEmpty()) {
             return null;
@@ -231,19 +235,15 @@ public class CargoExtractor {
 
         // If version is specified, return as-is (original behavior)
         if (depVersion != null && !depVersion.isEmpty()) {
-            return new NameVersion(depName, depVersion);
+            return new NameVersion(depName, VersionUtils.stripBuildMetadata(depVersion));
         }
 
         // If depVersion is null or empty, find by name only.
         // Otherwise, find by name and version.
         // Original name-only lookup behavior replicated exactly
-        List<CargoLockPackageData> possiblePackages = packageLookupMap.get(depName);
-        if (possiblePackages != null) {
-            for (CargoLockPackageData pkg : possiblePackages) {
-                String name = pkg.getName().orElse(null);
-                if (depName.equals(name)) {
-                    return new NameVersion(name, pkg.getVersion().orElse(null));
-                }
+        for (NameVersion key : packageLookupMap.keySet()) {
+            if (key.getName().equals(depName)) {
+                return key;
             }
         }
 
@@ -252,10 +252,12 @@ public class CargoExtractor {
 
     private CargoLockPackageData findPackageByNameVersion(
         NameVersion nv,
-        Map<String, List<CargoLockPackageData>> packageLookupMap
+        Map<NameVersion, List<CargoLockPackageData>> packageLookupMap
     ) {
-        List<CargoLockPackageData> possiblePackages = packageLookupMap.get(nv.getName());
-        if (possiblePackages == null) return null;
+        List<CargoLockPackageData> possiblePackages = packageLookupMap.get(nv);
+        if (possiblePackages == null) {
+            possiblePackages = findPackagesByName(nv.getName(), packageLookupMap);
+        }
 
         for (CargoLockPackageData pkg : possiblePackages) {
             String version = pkg.getVersion().orElse(null);
@@ -266,5 +268,18 @@ public class CargoExtractor {
             }
         }
         return null;
+    }
+
+    private List<CargoLockPackageData> findPackagesByName(
+        String name,
+        Map<NameVersion, List<CargoLockPackageData>> packageLookupMap
+    ) {
+        List<CargoLockPackageData> out = new ArrayList<>();
+        for (Map.Entry<NameVersion, List<CargoLockPackageData>> e : packageLookupMap.entrySet()) {
+            if (Objects.equals(name, e.getKey().getName())) {
+                out.addAll(e.getValue());
+            }
+        }
+        return out;
     }
 }
