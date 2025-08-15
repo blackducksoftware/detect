@@ -56,7 +56,7 @@ public class CargoExtractor {
         String cargoTomlContents = null;
 
         Set<NameVersion> resolvedRootDependencies = new HashSet<>();
-        Map<NameVersion, List<CargoLockPackageData>> packageLookupMap = indexPackagesByNameVersion(filteredPackages);
+        Map<NameVersion, List<CargoLockPackageData>> packageLookupMap = indexPackagesByNameVersion(filteredPackages); // Lookup map for quick access by NameVersion
 
         if(cargoTomlFile == null && exclusionEnabled) {
             return new Extraction.Builder()
@@ -72,7 +72,7 @@ public class CargoExtractor {
                 filter = cargoDetectableOptions.getDependencyTypeFilter();
             }
 
-            Set<NameVersion> dependenciesToInclude = cargoTomlParser.parseDependenciesToInclude(cargoTomlContents, filter);
+            Set<NameVersion> dependenciesToInclude = cargoTomlParser.parseDependenciesToInclude(cargoTomlContents, filter); // Parse direct dependencies to include from Cargo.toml
             filteredPackages = includeDependencies(cargoLockPackageDataList, dependenciesToInclude, resolvedRootDependencies, packageLookupMap);
         }
 
@@ -152,7 +152,7 @@ public class CargoExtractor {
             }
         }
 
-        // Mutate dependenciesToInclude so the rest of your pipeline still works
+        // Mutate dependenciesToInclude to include all resolved dependencies
         dependenciesToInclude.clear();
         dependenciesToInclude.addAll(allDependenciesToInclude);
     }
@@ -186,7 +186,7 @@ public class CargoExtractor {
                 if (!dep.getVersion().isPresent()) {
                     NameVersion resolved = extractPackageNameVersion(dep.getName(), packageLookupMap);
                     if (resolved != null) {
-                        resolvedDependencies.add(new NameOptionalVersion(resolved.getName(), VersionUtils.stripBuildMetadata(resolved.getVersion())));
+                        resolvedDependencies.add(new NameOptionalVersion(resolved.getName(), resolved.getVersion()));
                     } else {
                         resolvedDependencies.add(dep);
                     }
@@ -195,7 +195,7 @@ public class CargoExtractor {
                 }
             }
             String name = pkg.getPackageNameVersion().getName();
-            String version = VersionUtils.stripBuildMetadata(pkg.getPackageNameVersion().getVersion());
+            String version = pkg.getPackageNameVersion().getVersion();
             resolvedPackages.add(new CargoLockPackage(new NameVersion(name, version), resolvedDependencies));
         }
         return resolvedPackages;
@@ -235,15 +235,19 @@ public class CargoExtractor {
 
         // If version is specified, return as-is (original behavior)
         if (depVersion != null && !depVersion.isEmpty()) {
-            return new NameVersion(depName, VersionUtils.stripBuildMetadata(depVersion));
+            return new NameVersion(depName, depVersion);
         }
 
         // If depVersion is null or empty, find by name only.
         // Otherwise, find by name and version.
         // Original name-only lookup behavior replicated exactly
-        for (NameVersion key : packageLookupMap.keySet()) {
-            if (key.getName().equals(depName)) {
-                return key;
+        List<CargoLockPackageData> possiblePackages = findPackagesByName(depName, packageLookupMap);
+        if (possiblePackages != null) {
+            for (CargoLockPackageData pkg : possiblePackages) {
+                String name = pkg.getName().orElse(null);
+                if (depName.equals(name)) {
+                    return new NameVersion(name, pkg.getVersion().orElse(null));
+                }
             }
         }
 
