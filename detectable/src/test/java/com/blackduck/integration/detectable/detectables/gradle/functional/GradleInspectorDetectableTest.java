@@ -61,6 +61,7 @@ public class GradleInspectorDetectableTest extends DetectableFunctionalTest {
             "gatherDependencies",
             "--init-script=gradle-inspector",
             "-DGRADLEEXTRACTIONDIR=" + getOutputDirectory().toFile().getCanonicalPath(),
+            "--no-configuration-cache",
             "--info"
         );
 
