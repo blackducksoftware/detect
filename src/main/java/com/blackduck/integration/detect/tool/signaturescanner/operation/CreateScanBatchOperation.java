@@ -42,10 +42,11 @@ public class CreateScanBatchOperation {
         NameVersion projectNameVersion,
         List<SignatureScanPath> signatureScanPaths,
         BlackDuckRunData blackDuckRunData,
-        @Nullable DockerTargetData dockerTargetData
+        @Nullable DockerTargetData dockerTargetData, 
+        boolean isScassFallback
     )
         throws DetectUserFriendlyException {
-        return createScanBatch(detectRunUuid, projectNameVersion, signatureScanPaths, blackDuckRunData, dockerTargetData);
+        return createScanBatch(detectRunUuid, projectNameVersion, signatureScanPaths, blackDuckRunData, dockerTargetData, isScassFallback);
     }
 
     public ScanBatch createScanBatchWithoutBlackDuck(
@@ -56,7 +57,7 @@ public class CreateScanBatchOperation {
     )
         throws DetectUserFriendlyException {
         //when offline, we must still call this with 'null' as a workaround for library issues, so offline scanner must be created with this set to null.
-        return createScanBatch(detectRunUuid, projectNameVersion, signatureScanPaths, null, dockerTargetData);
+        return createScanBatch(detectRunUuid, projectNameVersion, signatureScanPaths, null, dockerTargetData, false);
     }
 
     private ScanBatch createScanBatch(
@@ -64,7 +65,8 @@ public class CreateScanBatchOperation {
         NameVersion projectNameVersion,
         List<SignatureScanPath> signatureScanPaths,
         @Nullable BlackDuckRunData blackDuckRunData,
-        @Nullable DockerTargetData dockerTargetData
+        @Nullable DockerTargetData dockerTargetData, 
+        boolean isScassFallback
     )
         throws DetectUserFriendlyException {
         ScanBatchBuilder scanJobBuilder = new ScanBatchBuilder();
@@ -91,7 +93,7 @@ public class CreateScanBatchOperation {
         
         attemptToSetCsvArchive(scanJobBuilder, blackDuckRunData);
         
-        attemptToSetScassScan(scanJobBuilder, blackDuckRunData);
+        attemptToSetScassScan(scanJobBuilder, blackDuckRunData, isScassFallback);
 
         String projectName = projectNameVersion.getName();
         String projectVersionName = projectNameVersion.getVersion();
@@ -116,12 +118,14 @@ public class CreateScanBatchOperation {
             if (dockerTargetData != null) {
                 dockerTarget = dockerTargetData.getSquashedImage().orElse(dockerTargetData.getProvidedImageTar().orElse(null));
             }
+            
             String codeLocationName = codeLocationNameManager.createScanCodeLocationName(
                 sourcePath,
                 scanPath.getTargetPath(),
                 dockerTarget,
                 projectName,
-                projectVersionName
+                projectVersionName,
+                isScassFallback
             );
             scanJobBuilder.addTarget(ScanTarget.createBasicTarget(scanPath.getTargetCanonicalPath(), scanPath.getExclusions(), codeLocationName));
         }
@@ -150,12 +154,14 @@ public class CreateScanBatchOperation {
         }
     }
 
-    private void attemptToSetScassScan(ScanBatchBuilder scanJobBuilder, BlackDuckRunData blackDuckRunData) {
+    private void attemptToSetScassScan(ScanBatchBuilder scanJobBuilder, BlackDuckRunData blackDuckRunData, boolean isScassFallback) {
         try {
             SignatureScannerVersion signatureScannerVersion = 
                     SignatureScanVersionChecker.getSignatureScannerVersion(logger, signatureScannerOptions.getLocalScannerInstallPath(), directoryManager.getPermanentDirectory());
 
-            if (signatureScannerVersion != null && signatureScannerVersion.isAtLeast(MIN_SCASS_VERSION)) {
+            if (signatureScannerVersion != null 
+                    && signatureScannerVersion.isAtLeast(MIN_SCASS_VERSION)
+                    && !isScassFallback) {
                 scanJobBuilder.scassScan(true);
             }
         } catch (IOException e) {

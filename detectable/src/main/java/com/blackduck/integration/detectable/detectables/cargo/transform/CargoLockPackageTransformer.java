@@ -1,6 +1,8 @@
 package com.blackduck.integration.detectable.detectables.cargo.transform;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.graph.builder.LazyExternalIdDependencyGraphBuilder;
@@ -13,36 +15,40 @@ import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.exception.DetectableException;
 import com.blackduck.integration.detectable.detectables.cargo.model.CargoLockPackage;
 import com.blackduck.integration.detectable.util.NameOptionalVersion;
+import com.blackduck.integration.util.NameVersion;
 
 public class CargoLockPackageTransformer {
     private final ExternalIdFactory externalIdFactory = new ExternalIdFactory();
     private final DependencyFactory dependencyFactory = new DependencyFactory(externalIdFactory);
 
-    public DependencyGraph transformToGraph(List<CargoLockPackage> lockPackages) throws MissingExternalIdException, DetectableException {
+    public DependencyGraph transformToGraph(
+            List<CargoLockPackage> lockPackages,
+            Set<NameVersion> rootDependencies) throws MissingExternalIdException, DetectableException {
         verifyNoDuplicatePackages(lockPackages);
 
         LazyExternalIdDependencyGraphBuilder graph = new LazyExternalIdDependencyGraphBuilder();
-        lockPackages.forEach(lockPackage -> {
-            String parentName = lockPackage.getPackageNameVersion().getName();
-            String parentVersion = lockPackage.getPackageNameVersion().getVersion();
-            LazyId parentId = LazyId.fromNameAndVersion(parentName, parentVersion);
-            Dependency parentDependency = dependencyFactory.createNameVersionDependency(Forge.CRATES, parentName, parentVersion);
+        for (CargoLockPackage lockPackage : lockPackages) {
+            String name = lockPackage.getPackageNameVersion().getName();
+            String version = lockPackage.getPackageNameVersion().getVersion();
+            LazyId id = LazyId.fromNameAndVersion(name, version);
+            Dependency dependency = dependencyFactory.createNameVersionDependency(Forge.CRATES, name, version);
 
-            graph.addChildToRoot(parentId);
-            graph.setDependencyInfo(parentId, parentDependency.getName(), parentDependency.getVersion(), parentDependency.getExternalId());
-            graph.setDependencyAsAlias(parentId, LazyId.fromName(parentName));
+            // Root dependencies empty means that Cargo.toml was not used, so we add all packages as root.
+            // If rootDependencies is not empty, we only add the package if it is in the set.
+            if (rootDependencies.isEmpty() || rootDependencies.contains(new NameVersion(name, version))) {
+                graph.addChildToRoot(id);
+            }
 
-            lockPackage.getDependencies().forEach(childPackage -> {
-                if (childPackage.getVersion().isPresent()) {
-                    LazyId childId = LazyId.fromNameAndVersion(childPackage.getName(), childPackage.getVersion().get());
-                    graph.addChildWithParent(childId, parentId);
-                } else {
-                    LazyId childId = LazyId.fromName(childPackage.getName());
-                    graph.addChildWithParent(childId, parentId);
-                }
-            });
-        });
+            graph.setDependencyInfo(id, dependency.getName(), dependency.getVersion(), dependency.getExternalId());
+            graph.setDependencyAsAlias(id, LazyId.fromName(name));
 
+            for (NameOptionalVersion child : lockPackage.getDependencies()) {
+                Optional<String> optionalVersion = child.getVersion();
+                LazyId childId = optionalVersion.map(s -> LazyId.fromNameAndVersion(child.getName(), s))
+                        .orElseGet(() -> LazyId.fromName(child.getName()));
+                graph.addChildWithParent(childId, id);
+            }
+        }
         return graph.build();
     }
 
@@ -60,5 +66,4 @@ public class CargoLockPackageTransformer {
             }
         }
     }
-
 }

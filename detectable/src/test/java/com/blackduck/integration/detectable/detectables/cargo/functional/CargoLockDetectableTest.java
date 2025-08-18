@@ -25,7 +25,10 @@ public class CargoLockDetectableTest extends DetectableFunctionalTest {
             Paths.get("Cargo.toml"),
             "[package]",
             "name        = \"cargo-audit\"",
-            "version     = \"0.12.0\""
+            "version     = \"0.12.0\"",
+            "",
+            "[dependencies]",
+            "abscissa_core = \"0.5.2\""
         );
 
         addFile(
@@ -74,10 +77,6 @@ public class CargoLockDetectableTest extends DetectableFunctionalTest {
         graphAssert.hasParentChildRelationship("abscissa_core", "0.5.2", "backtrace", "0.3.46");
         graphAssert.hasParentChildRelationship("abscissa_derive", "0.5.0", "darling", "0.10.2");
 
-        graphAssert.hasRootDependency("abscissa_derive", "0.5.0");
-        graphAssert.hasRootDependency("backtrace", "0.3.46");
-        graphAssert.hasRootDependency("darling", "0.10.2");
-
-        graphAssert.hasRootSize(4);
+        graphAssert.hasRootSize(1);
     }
 }

@@ -63,7 +63,7 @@ public class PoetryDetectable extends Detectable {
         if (poetryLock == null && pyprojectToml != null) {
             return new PoetryLockfileNotFoundDetectableResult(environment.getDirectory().getAbsolutePath());
         }
-
+        
         if (!poetryOptions.getExcludedGroups().isEmpty() && pyprojectToml == null) {
             return new FileNotFoundDetectableResult(PYPROJECT_TOML_FILE_NAME);
         }
@@ -74,6 +74,11 @@ public class PoetryDetectable extends Detectable {
     @Override
     public Extraction extract(ExtractionEnvironment extractionEnvironment) {
         Set<String> rootPackages = poetrySectionParser.parseRootPackages(pyprojectToml, poetryOptions);
-        return poetryExtractor.extract(poetryLock, toolPoetrySectionResult.getToolPoetrySection().orElse(null), rootPackages);
+        return poetryExtractor.extract(
+            poetryLock,
+            toolPoetrySectionResult.getToolPoetrySection().orElse(null),
+            poetrySectionParser.parseProjectSection(pyprojectToml),
+            rootPackages
+        );
     }
 }
