@@ -22,7 +22,7 @@ public class MavenShadedDependenciesTest {
 
     @Test
     void mavenShadedDependencyTest() throws IOException,IntegrationException {
-        try(DetectDockerTestRunner test = new DetectDockerTestRunner("detect-maven-shaded-dependency", "detect-maven:3.9.9")) {
+        try(DetectDockerTestRunner test = new DetectDockerTestRunner("detect-maven-shaded-dependency", "detect-maven:3.9.11")) {
             test.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("MavenShadedDependencies.dockerfile"));
 
             String projectVersion = PROJECT_NAME + "-PI";
