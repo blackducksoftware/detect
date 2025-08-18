@@ -34,6 +34,13 @@ public class CargoTomlParser {
         return Optional.empty();
     }
 
+    public boolean hasDependencySections(String tomlFileContents) {
+        TomlParseResult toml = Toml.parse(tomlFileContents);
+        return toml.contains(NORMAL_DEPENDENCIES_KEY)
+            || toml.contains(BUILD_DEPENDENCIES_KEY)
+            || toml.contains(DEV_DEPENDENCIES_KEY);
+    }
+
     public Set<NameVersion> parseDependenciesToInclude(String tomlFileContents, EnumListFilter<CargoDependencyType> dependencyTypeFilter) {
         TomlParseResult toml = Toml.parse(tomlFileContents);
         Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap = new HashMap<>();

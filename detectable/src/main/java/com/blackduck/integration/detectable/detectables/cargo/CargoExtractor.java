@@ -72,8 +72,12 @@ public class CargoExtractor {
                 filter = cargoDetectableOptions.getDependencyTypeFilter();
             }
 
-            Set<NameVersion> dependenciesToInclude = cargoTomlParser.parseDependenciesToInclude(cargoTomlContents, filter); // Parse direct dependencies to include from Cargo.toml
-            filteredPackages = includeDependencies(cargoLockPackageDataList, dependenciesToInclude, resolvedRootDependencies, packageLookupMap);
+            // Only filter if Cargo.toml defines dependency sections.
+            // Workspace root Cargo.toml files usually don’t, so skip filtering in that case.
+            if (cargoTomlParser.hasDependencySections(cargoTomlContents)) {
+                Set<NameVersion> dependenciesToInclude = cargoTomlParser.parseDependenciesToInclude(cargoTomlContents, filter); // Parse direct dependencies to include from Cargo.toml
+                filteredPackages = includeDependencies(cargoLockPackageDataList, dependenciesToInclude, resolvedRootDependencies, packageLookupMap);
+            }
         }
 
         List<CargoLockPackage> packages = filteredPackages.stream()
