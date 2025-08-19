@@ -29,10 +29,14 @@ public class CodeLocationNameManager {
         File scanTargetPath,
         @Nullable File dockerTar,
         String projectName,
-        String projectVersionName
+        String projectVersionName,
+        boolean isScassFallback
     ) {
         String scanCodeLocationName;
         if (codeLocationNameGenerator.useCodeLocationOverride()) {
+            if (isScassFallback) {
+                codeLocationNameGenerator.resetNameOverrideCounter(CodeLocationNameType.SIGNATURE);
+            }
             scanCodeLocationName = codeLocationNameGenerator.getNextCodeLocationOverrideNameUnSourced(CodeLocationNameType.SIGNATURE);
         } else if (dockerTar != null) {
             scanCodeLocationName = codeLocationNameGenerator.createDockerScanCodeLocationName(dockerTar, projectName, projectVersionName);
