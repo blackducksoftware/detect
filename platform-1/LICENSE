@@ -1,1573 +1,1238 @@
-END USER SOFTWARE LICENSE AND MAINTENANCE AGREEMENT VERSION 2019.2 (AMERICAS AFRICA ISRAEL)
+END USER SOFTWARE LICENSE AND MAINTENANCE AGREEMENT
 
-IMPORTANT INFORMATION - READ CAREFULLY
+Agreement No: ___________________ 
+Effective Date: __________________ 
 
-UNLESS YOU (THE “CUSTOMER”) HAVE OBTAINED PERMISSION TO USE THE LICENSED
-PRODUCT UNDER A SEPARATE, DULY SIGNED LICENSE AGREEMENT OR AN EVALUATION
-LICENSE WITH SYNOPSYS OR AN AUTHORIZED DISTRIBUTOR, THE ACCOMPANYING
-LICENSED PRODUCT IS PROVIDED UNDER THE FOLLOWING TERMS AND CONDITIONS
-AND ANY SUPPLEMENTAL TERMS REFERENCED BELOW AND YOUR RIGHT TO USE THE
-LICENSED PRODUCT IS CONDITIONED UPON YOUR ACCEPTANCE OF THIS AGREEMENT
-(THE “EULM”).
-DEPENDING ON WHICH COUNTRY YOU TRANSACT BUSINESS WITH SYNOPSYS FROM,
-OTHER VERSIONS OF THIS EULM MAY BE APPLICABLE. FOR PRODUCTS USED OR
-SERVICES PROVIDED IN A COUNTRY IN THE AMERICAS, ISRAEL OR AFRICA OR FOR
-UNITED STATES DOLLAR TRANSACTIONS IN RUSSIA, THE MOST CURRENT VERSION
-IDENTIFIED FOR “AMERICAS AFRICA ISRAEL” SHALL APPLY. FOR PRODUCTS USED
-OR SERVICES PROVIDED IN TAIWAN, THE MOST CURRENT VERSION IDENTIFIED FOR
-“TAIWAN” SHALL APPLY. FOR PRODUCTS USED OR SERVICES PROVIDED IN JAPAN,
-THE MOST CURRENT VERSION IDENTIFIED FOR “JAPAN” SHALL APPLY. FOR
-PRODUCTS USED OR SERVICES PROVIDED IN THE REPUBLIC OF KOREA, THE MOST
-CURRENT VERSION IDENTIFIED FOR “KOREA” SHALL APPLY. FOR PRODUCTS USED OR
-SERVICES PROVIDED IN CHINA IN RENMINBI, THE MOST CURRENT VERSION
-IDENTIFIED AS “CHINA” SHALL APPLY. FOR PRODUCTS USED OR SERVICES
-PROVIDED IN ANY COUNTRY OTHER THAN THOSE IDENTIFIED ABOVE, THE MOST
-CURRENT VERSION IDENTIFIED FOR “GLOBAL SIL” SHALL APPLY. PLEASE REFER TO
-SECTION 8.14 BELOW FOR MORE INFORMATION.
-IF YOU DO NOT ACCEPT THESE TERMS AND CONDITIONS AND YOU DO NOT HAVE A
-SEPARATE LICENSE AGREEMENT AS REFERENCED ABOVE, YOU MAY NOT USE OR COPY
-THE LICENSED PRODUCT AND YOU MUST DELETE ANY COPIES OF IT FROM YOUR
-SYSTEMS.
+This Agreement covers the Licensed Products, Maintenance Services, and Services
+that your company ("You" or "Customer") license (or purchase from Black Duck),
+unless and until we enter into a new agreement that expressly replaces this
+one.
+
+The effective date of this Agreement is the effective date stated in the upper
+right corner of this signature page which is the date last signed below (the
+"Effective Date").
+
+
+
+BLACK DUCK SOFTWARE, INC.  
+800 District Avenue, 
+Suite 201 
+Burlington, MA 01803
+United States
+
+
 
 TERMS AND CONDITIONS
 
-1. SCOPE AND KEY TERMS. The Licensed Product is the proprietary
-information of Synopsys or its suppliers who retain exclusive title to
-their intellectual property rights in the Licensed Product. Customer’s
-rights to the Licensed Product are limited to those expressly granted
-below and Synopsys reserves all rights not expressly granted in this
-Agreement.
 
-1.1 Purchasing Agreements. The terms and conditions set forth in this
-End User Software License and Maintenance Agreement and the Purchasing
-Agreement(s) accepted by both Customer and Synopsys contain all terms
-and conditions applicable to Customer’s use of the Licensed Product
-(collectively, the “Agreement”). A “Purchasing Agreement” is a document
-that references this Agreement and identifies the specific Licensed
-Product and rights being licensed hereunder, including the applicable
-License Type, quantity, license term, Territory, Code Base, Team Name or
-other license constraint, and the fees and payment terms for the
-Licensed Product licenses (the “License Transaction”). An Affiliate of
-Customer may purchase licenses to the Licensed Product by executing a
-Purchasing Agreement referencing this Agreement provided that this
-Agreement governs all such licenses and such Affiliate complies with all
-Customer obligations referenced in this Agreement and the Purchasing
-Agreement. Customer agrees that it shall be responsible for the acts and
-omissions of its Affiliates with respect to any Licensed Product
-licensed under an applicable Purchasing Agreement. Customer must refer
-to a copy of the applicable Purchasing Agreement to determine these
-conditions of the Agreement. If Customer does not receive any other
-document executed by Synopsys referencing the License Transaction, a
-Synopsys invoice referencing this Agreement, issued in response to a
-correct Customer purchase order, shall be Synopsys’ acceptance of the
-License Transaction. Additionally, the license term and/or maintenance
-and support term for the specific Licensed Product identified in a
-Purchasing Agreement may be renewed by issuance of a Synopsys invoice
-referencing this Agreement and the applicable Purchasing Agreement in
-response to a correct Customer purchase order for such renewal. Customer
-agrees that Customer purchases under this Agreement and any Purchasing
-Agreement incorporated herein by reference are neither contingent on the
-delivery of any future functionality or features nor dependent on any
-oral or written public comments made by Synopsys regarding future
-functionality or features.
+1. SCOPE AND KEY TERMS.
 
-1.2 “Affiliate” of a party to this Agreement means another person or
-entity that, directly or indirectly, controls, is controlled by or is
-under common control with such party. For the purposes of this
-definition, "control" means owning a beneficial interest (either
-directly or indirectly) in more than 50% of the outstanding shares or
-securities or other ownership interest entitled to vote for the election
-of directors or similar managing authority. An entity shall be deemed to
-be an Affiliate under this Agreement for only so long as such requisite
-conditions are maintained.
+The Licensed Product is the proprietary information of Black Duck or its
+suppliers who retain exclusive title to their intellectual property rights in
+the Licensed Product.  Customer's rights to the Licensed Product are limited to
+those expressly granted below and Black Duck reserves all rights not expressly
+granted in this Agreement.
 
-1.3 “Authorized User” means a party’s, and its whollyowned subsidiaries’
-or Affiliate’s employees or authorized contractors: (a) whose duties
-require access to or use of the Licensed Product or Confidential
-Information for the benefit of that party; and (b) whose legal
-obligations to protect confidential and proprietary information require
-protection of the Licensed Product and Confidential Information to at
-least the same extent as set out in this Agreement. For clarity,
-Customer shall not appoint any third party as an Authorized User that
-licensed all or any portions of the Code Base identified in an
-applicable Purchasing Agreement to Customer.
+1.1 Purchasing Agreements.
 
-1.4 “Code Base” means those portions of Customer’s software identified
-in an applicable Purchasing Agreement by reference to the name of the
-product, project or package and a number of lines of code, if
-applicable.
+The terms and conditions in this End User Software License and Maintenance
+Agreement and the Purchasing Agreement(s) accepted by both Customer and Black
+Duck contain all terms and conditions applicable to Customer's use of the
+Licensed Product (collectively, the "Agreement").  A "Purchasing Agreement" is
+a document that references this Agreement and identifies the specific Licensed
+Product and rights being licensed hereunder, including the applicable License
+Type, quantity, license term, Territory, Code Base, or other license
+constraint, and the fees and payment terms for the Licensed Product licenses
+(the "License Transaction").  An Affiliate of Customer may purchase licenses to
+the Licensed Product by executing a Purchasing Agreement referencing this
+Agreement; provided that this Agreement governs all such licenses and such
+Affiliate complies with all Customer obligations referenced in this Agreement
+and the Purchasing Agreement. Customer agrees that it shall be responsible for
+the acts and omissions of its Affiliates with respect to any Licensed Product
+licensed under an applicable Purchasing Agreement.  Customer agrees that
+Customer purchases under this Agreement and any Purchasing Agreement
+incorporated herein by reference are neither contingent on the delivery of any
+future functionality or features nor dependent on any oral or written public
+comments made by Black Duck regarding future functionality or features.
 
-1.5 “Documentation” means the user documentation, in written, electronic
-or other format, which describes the Licensed Product and its operation
-and which Synopsys makes generally available to its licensed customers
-for use with the Licensed Product.
+1.2 "Affiliate" of a party to this Agreement means another person or entity
+that, directly or indirectly, controls, is controlled by or is under common
+control with such party.  For the purposes of this definition, "control" means
+owning a beneficial interest (either directly or indirectly) in more than 50%
+of the outstanding shares or securities or other ownership interest entitled to
+vote for the election of directors or similar managing authority.  An entity
+shall be deemed to be an Affiliate under this Agreement for only so long as
+such requisite conditions are maintained.
 
-1.6 “License Type” means the usage rights purchased under the applicable
-Purchasing Agreement. License Types offered by Synopsys from time to
-time can be found at:
-https://www.synopsys.com/company/legal/softwareintegrity/license-types-v2015-2.html. 
-For clarification, where the License Type listed is “5
-User Pack” in a Purchasing Agreement, the License Type is a Team
-License; all Team Licenses are sold in 5 User Packs and the Quantity
-specified above denotes the total number of 5 User Packs.
+1.3 "Authorized User" means a Party's and its Affiliate's employees and
+authorized contractors: (a) whose duties require access to or use of the
+Licensed Product or Confidential Information for the benefit of that party; and
+(b) whose legal obligations to protect confidential and proprietary information
+require protection of the Licensed Product and Confidential Information to at
+least the same extent as set out in this Agreement. 
 
-1.7 “Licensed Product” means the specific products provided by Synopsys
-and listed in a Purchasing Agreement and (a) all related Documentation,
-and (b) all updates (including Licensed Product Updates), modifications
-and maintenance services provided to Customer. An overview of the
-product packages included in the Licensed Product identified in the
-applicable Purchase Agreement are posted at:
-https://www.synopsys.com/company/legal/softwareintegrity/product-package-overview.html.
+1.4 "Code Base" means those portions of Customer's software identified in an
+applicable Purchasing Agreement by reference to the name of the product,
+project or package. 
 
-1.8 “Licensed Product Updates” means features and functionalities of
-Licensed Products which may be updated from time to time, including but
-not limited to updated protocols for Defensics; updated checkers for
-Coverity; updated definitions of, and metadata from open source and
-vulnerabilities related to Open Source Software for applicable Black
-Duck labeled products; and updated vulnerability definitions for Seeker.
+1.5 "Documentation" means the user documentation, in written, electronic or
+other format, which describes the Licensed Product and its operation and which
+Black Duck makes generally available to its licensed customers for use with the
+Licensed Product.
 
-1.9 “Plug-In” means additional functionality or features available to an
-end user through a standalone component used in conjunction with a
-Licensed Product subject to the terms and conditions set forth in this
-Agreement.
+1.6 "License Type" means the usage rights purchased under the applicable
+Purchasing Agreement. License Types offered by Black Duck from time to time can
+be found at: https://www.blackduck.com/company/legal/license-types.html.
 
-1.10 “Team Name” means the named development team that is licensed to
-use and operate the Licensed Product pursuant to a Team License granted
-in an applicable Purchasing Agreement.
+1.7 "Licensed Product" means the specific products (including hosted products
+designated as "Subscription Services" in the Purchasing Agreement) provided by
+Black Duck and listed in a Purchasing Agreement and (a)�all related
+Documentation, and (b) all updates (including Licensed Product Updates),
+modifications and maintenance services provided to Customer. 
 
-1.11 “Territory” means the specific country(ies) or geographical areas
-identified in the applicable Purchasing Agreement to which the
-Customer’s usage of the Licensed Product is limited. 
+1.8 "Licensed Product Updates" means features and functionalities of Licensed
+Products which may be updated from time to time, including but not limited to
+updated protocols for Defensics; updated checkers for Coverity; updated
+definitions of, and metadata from open source and vulnerabilities related to
+Open Source Software for applicable Black Duck labeled products; and updated
+vulnerability definitions for Seeker. 
 
-For Black Duck labeled products only:
+1.9 "Plug-In" means additional functionality or features available to an end
+user through a standalone component used in conjunction with a Licensed
+Product.
 
-1.12 “Application” means the software code associated with a single
-software build, including multiple versions thereof.
+1.10 "Territory" means the specific country(ies) or geographical areas
+identified in the applicable Purchasing Agreement to which Customer's usage of
+the Licensed Product is limited.
 
-1.13 “Code Contributor” means the individuals within or contracted by
-the Customer’s organization who contribute or work with code for an
-Application that will be scanned or analyzed by the Licensed Product.
-The number of Code Contributors includes all developers, engineers,
-analysts, architects, testers and managers who have written, modified or
-reviewed code for any scanned or analyzed Application during the License
-Term, as well as any individuals who interact with the Licensed Product
-via UI, email/text alerts, API, or third-party integration. Code
-Contributors do not include, however, those individuals within the
-Customer’s organization who perform only software related documentation
-or project management tasks.
-
-1.14 “Hosting Services” shall have the meaning set forth in the Hosting
+1.11 "Hosting Services" shall have the meaning set forth in the Hosting
 Services Addendum.
 
-1.15 “Hosted Software” shall have the meaning set forth in the Hosting
-Services Addendum.
 
 2. LICENSE.
 
-2.1 License Grant and Applicable Fees and Delivery. Subject to
-Customer’s compliance with the terms and conditions of this Agreement,
-Synopsys grants Customer a nonexclusive, non-transferable license,
-solely during the license term and in the Territory set out in the
-applicable Purchasing Agreement, to (a) use and operate the Licensed
-Product to the extent permitted by Customer’s payment of applicable fees
-for the License Type purchased, solely for the purpose of developing,
-analyzing, building or testing the Code Base, Team Name, or other
-license constraint identified in such Purchasing Agreement, and (b) copy
-the Licensed Product as reasonably necessary to exercise the license
-rights granted in subsection (a), including making a reasonable number
-of copies for backup and archival purposes. All applicable fees are owed
-upon the effective date of the applicable Purchasing Agreement, are
-non-refundable upon such date, and are payable in accordance with the
-payment schedule set out in the applicable Purchasing Agreement. All
-past due amounts will incur interest at a rate of 1.5% per month or the
-maximum rate permitted by law, whichever is less. If Customer does not
-pay an amount by the scheduled due date, Synopsys will have the right to
-withhold the delivery of the license keys and / or terminate the
-applicable Purchase Agreement and accelerate the due date of all
-remaining payments. In the foregoing event, Customer will owe the entire
-outstanding balance as soon as Customer receives written notice from
-Synopsys that payment is overdue. Fees payable are net amounts, without
-deduction for taxes or duties. Customer will pay taxes and duties
-(including but not limited to sales, use and withholding taxes)
-associated with its purchases under this Purchasing Agreement, except
-for Synopsys’ net income taxes; taxes and duties are based on where the
-Licensed Product is electronically delivered and where Services are
-delivered. Applicable sales tax will be included on invoices for
-Licensed Products and / or Services. Invoices for Licensed Products and
-/ or Services are issued upon Customer execution of the applicable
-Purchasing Agreement. Where practical, Synopsys will deliver the
-Licensed Product electronically and delivery will be deemed to occur
-upon the Licensed Product being available for electronic download.
-Delivery of any tangible media will be made F.O.B. point of shipment.
+2.1 License Grant.
 
-2.2 Conditions. The rights granted to Customer above are conditional
-upon Customer’s compliance with the following obligations:
+Subject to Customer's compliance with this Agreement, Black Duck grants
+Customer a nonexclusive, non-transferable license, solely during the license
+term and in the Territory set out in the applicable Purchasing Agreement, to
+(a) use and operate the Licensed Product to the extent permitted by Customer's
+payment of applicable fees, solely for the purpose of developing, analyzing,
+building or testing the Code Base, or other license constraint identified in
+such Purchasing Agreement, and (b)�copy the Licensed Product as reasonably
+necessary to exercise the license rights granted in subsection�(a), including
+making a reasonable number of copies for backup and archival purposes.
 
-a. Customer will not copy Synopsys’ Licensed Products or Documentation,
-in whole or in part, except as expressly authorized in this Agreement.
+2.2 Conditions.
 
-b. Customer will not transfer, assign, lease, lend or rent Synopsys’
+The rights granted to Customer above are conditional upon Customer's compliance
+with the following obligations:
+
+a. Customer will not copy Black Duck's Licensed Products or Documentation, in
+whole or in part, except as expressly authorized in this Agreement.
+
+b. Customer will not transfer, assign, lease, lend or rent Black Duck's
 Licensed Products or Documentation, use them to provide service bureau,
-time-sharing or other services, or otherwise provide or make the
-functionality thereof available to third parties except as expressly
-authorized in this Agreement.
+time-sharing or other services, or otherwise provide or make the functionality
+thereof available to third parties, except as expressly authorized in this
+Agreement.
 
-c. Customer will not disassemble, decompile, reverse engineer, modify or
-create derivative works of Synopsys’ Licensed Products or Documentation
-nor permit any third party to do so, except to the extent such
-restrictions are prohibited by applicable mandatory local law.
+c. Customer will not disassemble, decompile, reverse engineer, modify or create
+derivative works of the Licensed Products or Documentation nor permit any third
+party to do so, except to the extent such restrictions are prohibited by
+applicable mandatory local law.
 
-d. Customer will not allow access or use of the Licensed Product by, and
-will not display the Licensed Product’s user interfaces to anyone other
-than the Authorized Users without Synopsys’s prior express written
-consent.
+d. Customer will not allow access or use of the Licensed Products by, and will
+not display the Licensed Products' user interfaces to anyone other than the
+Authorized Users without Black Duck's prior written consent.
 
-e. Customer will not disclose to any third party any comparison of the
-results of operation of Synopsys’ Licensed Products with other products.
+e. Customer will not disclose to any third party any comparison of the results
+of operation of the Licensed Products with other products.
 
-f. Customer will not delete or in any manner alter the copyright,
-trademark or other proprietary rights notices appearing on the Licensed
-Product as delivered by Synopsys. Customer will reproduce such notices
-on all copies Customer is authorized to make of the Licensed Product.
+f. Customer will not delete or in any manner alter the copyright, trademark or
+other proprietary rights notices appearing on the Licensed Products as
+delivered by Black Duck.  Customer will reproduce such notices on all copies
+Customer is authorized to make of the Licensed Products.
 
-g. Customer’s use of the Licensed Product is timelimited to the licensed
-term set out in the applicable Purchasing Agreement, and such use and
-access may be monitored and regulated through a license management tool
-(the “License Manager”) and a Licensed Product Updatestool. The License
-Manager will report such data (collectively, “Use and Compliance Data”)
-to Synopsys. Customer will not install or use the Licensed Product in a
-manner that circumvents or interferes with the operation of the License
-Manager, the Licensed Product Updates tool or any other technological
-measure that controls access to the Licensed Product. Some
-configurations may require the License Manager or the Licensed Product
-Updates tool to be installed only on designated servers. For those
-configurations, Synopsys will support two changes to the designated
+g. Customer's use of the Licensed Products is time-limited to the licensed term
+set out in the applicable Purchasing Agreement, and such use and access may be
+monitored and regulated through a license management tool (the "License
+Manager") and a Licensed Product Updates tool.  The License Manager will report
+such data (collectively, "License Manager Data") to Black Duck.  Customer will
+not install or use the Licensed Products in a manner that circumvents or
+interferes with the operation of the License Manager, the Licensed Product
+Updates tool or any other technological measure that controls access to the
+Licensed Products. Some configurations may require the License Manager or the
+Licensed Product Updates tool to be installed only on designated servers. For
+those configurations, Black Duck will support two changes to the designated
 servers during any twelve-month period upon prior written notice.
 
-2.3. Offsite Contractors. Customer may allow Authorized Users that are
-offsite contractors to access and use the Licensed Product solely for
-Customer’s benefit in accordance with this Agreement provided that: (a)
-Customer is responsible for the acts and omissions of its offsite
-contractors with respect to any Licensed Product licensed under this
-Agreement; (b) Customer ensures that the Licensed Product is completely
-and irretrievably uninstalled from any offsite contractor’s equipment
-and premises (except for those modules necessary to view results and
-other data generated from using the Licensed Product) immediately upon
-completion of the offsite contractor’s services requiring use of the
-Licensed Product; and (c) Customer has a written agreement in place with
-the offsite contractor requiring that the offsite contractor protect
-Synopsys’ Licensed Product, Confidential Information and intellectual
-property at least to the same extent as set forth in this Agreement.
-Customer acknowledges that Synopsys has no warranty or other obligations
-to Customer’s offsite contractors.
+h. For telemetry data, Black Duck's Use and Compliance Data Policy is posted
+at:
+https://www.blackduck.com/company/legal/software-integrity/use-compliance-data-policy.html.
 
-2.4. Licensed Product Updates. Customers with licenses to Licensed
-Products are granted the right to use, as part of the Licensed Products,
-such Licensed Product Updates as and when they are made generally
-available to Synopsys’ end user customers who have purchased such
-maintenance/support offering and for such period of time as indicated in
-the applicable Purchasing Agreement. This Agreement does not otherwise
-permit Customer to obtain and use Licensed Product Updates.
+2.3. Applicable Fees, Taxes and Delivery.
 
-2.5. Special Terms for Third Party Software. The Licensed Product may
-contain open source or community source software (“Open Source
-Software”) provided under separate license terms (the “Open Source
-License Terms”). The applicable Open Source License Terms are identified
-in a directory named “Licenses” provided with the delivery of the
-Licensed Product. Customer’s use of the Open Source Software in
-conjunction with the Licensed Product in a manner consistent with the
-terms of this Agreement is permitted, however, Customer may have broader
-rights under the applicable Open Source License Terms and nothing in
-this Agreement is intended to impose further restrictions on Customer’s
-use of the Open Source Software. Open Source Software is provided
-“AS-IS”, WITHOUT ANY WARRANTY OF ANY KIND, AND SYNOPSYS FURTHER
-DISCLAIMS ALL OTHER WARRANTIES, EXPRESS, IMPLIED OR STATUTORY, WITH
-RESPECT TO OPEN SOURCE SOFTWARE, INCLUDING BUT NOT LIMITED TO THE
-IMPLIED WARRANTIES OF NONINFRINGEMENT, MERCHANTABILITY, AND FITNESS FOR
-A PARTICULAR PURPOSE. NEITHER SYNOPSYS NOR THE LICENSORS OF OPEN SOURCE
+All applicable fees are owed upon the effective date of the Purchasing
+Agreement, are non-refundable upon such date, and are payable in accordance
+with the payment schedule set out in the Purchasing Agreement.  All past due
+amounts will incur interest at a rate of 1.5% per month or the maximum rate
+permitted by law, whichever is less. If Customer does not pay an amount by the
+scheduled due date, Black Duck will have the right to withhold the delivery of
+the license keys and / or terminate the Purchase Agreement and accelerate the
+due date of all remaining payments. In the foregoing event, Customer will owe
+the entire outstanding balance as soon as Customer receives written notice from
+Black Duck that payment is overdue. Fees payable are net amounts, without
+deduction for taxes or duties. Customer will pay taxes and duties (including
+but not limited to sales, use and withholding taxes) associated with its
+purchases under the Purchasing Agreement, except for Black Duck's net income
+taxes.  Taxes and duties are based on where the Licensed Products are
+electronically delivered and where Services are delivered. Applicable sales tax
+will be included on invoices for Licensed Products and / or Services.  Invoices
+for Licensed Products and /or Services are issued upon Customer's execution of
+the Purchasing Agreement.  Where practical, Black Duck will deliver the
+Licensed Products electronically and delivery will be deemed to occur upon the
+Licensed Products being available for electronic download.  Delivery of any
+tangible media will be made F.O.B. point of shipment.
+
+2.4. Offsite Contractors.
+
+Customer may allow Authorized Users that are offsite contractors to access and
+use the Licensed Products solely for Customer's benefit in accordance with this
+Agreement provided that: (a) Customer is responsible for the acts and omissions
+of its offsite contractors with respect to any Licensed Products licensed under
+this Agreement; (b) Customer ensures that the Licensed Products are completely
+and irretrievably uninstalled from any offsite contractor's equipment and
+premises (except for those modules necessary to view results and other data
+generated from using the Licensed Products) immediately upon completion of the
+offsite contractor's services requiring use of the Licensed Products; and (c)
+Customer has a written agreement in place with the offsite contractor requiring
+that the offsite contractor protect the Licensed Products, Confidential
+Information and intellectual property at least to the same extent as set forth
+in this Agreement.  Customer acknowledges that Black Duck has no warranty or
+other obligations to Customer's offsite contractors.
+
+2.5. Licensed Product Updates.
+
+Customers with licenses to Licensed Products are granted the right to use, as
+part of the Licensed Products, such Licensed Product Updates as and when they
+are made generally available to Black Duck's end user customers who have
+purchased such maintenance/support offering and for such term as indicated in
+the applicable Purchasing Agreement.  This Agreement does not otherwise permit
+Customer to obtain and use Licensed Product Updates.
+
+2.6. Special Terms for Third Party Software.
+
+The Licensed Product may contain open source or community source software
+("Open Source Software") provided under separate license terms (the "Open
+Source License Terms").  The applicable Open Source License Terms are
+identified in a directory named "Licenses" provided with the delivery of the
+Licensed Product.  Customer's use of the Open Source Software in conjunction
+with the Licensed Product in a manner consistent with the terms of this
+Agreement is permitted, however, Customer may have broader rights under the
+applicable Open Source License Terms and nothing in this Agreement is intended
+to impose further restrictions on Customer's use of the Open Source Software.
+Open Source Software is provided "AS-IS", WITHOUT ANY WARRANTY OF ANY KIND, AND
+BLACK DUCK FURTHER DISCLAIMS ALL OTHER WARRANTIES, EXPRESS, IMPLIED OR
+STATUTORY, WITH RESPECT TO OPEN SOURCE SOFTWARE, INCLUDING BUT NOT LIMITED TO
+THE IMPLIED WARRANTIES OF NONINFRINGEMENT, MERCHANTABILITY, AND FITNESS FOR A
+PARTICULAR PURPOSE.  NEITHER BLACK DUCK NOR THE LICENSORS OF OPEN SOURCE
 SOFTWARE SHALL HAVE ANY LIABILITY FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING WITHOUT
-LIMITATION LOST PROFITS), HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
-OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OR DISTRIBUTION OF THE OPEN
-SOURCE SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
-Copyrights to Open Source Software are held by the copyright holders
-indicated in the copyright notices in the corresponding source files.
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING WITHOUT LIMITATION LOST
+PROFITS), HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+WAY OUT OF THE USE OR DISTRIBUTION OF THE OPEN SOURCE SOFTWARE, EVEN IF ADVISED
+OF THE POSSIBILITY OF SUCH DAMAGES. Copyrights to Open Source Software are held
+by the copyright holders indicated in the copyright notices in the
+corresponding source files. 
 
-2.6. Feedback and Analytics. Customer may choose to, but is not required
-to, provide suggestions, data, feedback and other information to
-Synopsys, its subcontractors or authorized distributors regarding
-possible improvements in the operation, functionality or use of
-Synopsys’ Licensed Products (“Feedback”). Customer hereby grants to
-Synopsys, its subcontractors and authorized distributors, a
-nonexclusive, perpetual, irrevocable, royalty-free and fully paid up
-license to use, copy, display, modify, create derivative works of and
-distribute any Feedback, and to make, have made, use, lease, sell, offer
-for sale, import, export or otherwise transfer any Synopsys product
-offering covered by any intellectual property rights in such Feedback
-solely for the purpose of (i) improving the operation, functionality or
-use of its existing and future product offerings and commercializing
-such offerings; and (ii) publishing aggregated statistics about software
-quality, provided that no data in any such publication can be used to
+2.7. Feedback and Analytics.
+
+Customer may choose to, but is not required to, provide suggestions, data,
+feedback and other information to Black Duck, its subcontractors or authorized
+distributors regarding possible improvements in the operation, functionality or
+use of Black Duck's Licensed Products ("Feedback").  Customer hereby grants to
+Black Duck, its subcontractors and authorized distributors, a non-exclusive,
+perpetual, irrevocable, royalty-free and fully paid up license to use, copy,
+display, modify, create derivative works of and distribute any Feedback, and to
+make, have made, use, lease, sell, offer for sale, import, export or otherwise
+transfer any Black Duck product offering covered by any intellectual property
+rights in such Feedback solely for the purpose of (i) improving the operation,
+functionality or use of its existing and future product offerings and
+commercializing such offerings; and (ii) publishing aggregated statistics about
+software quality, provided that no data in any such publication can be used to
 specifically identify Customer or Customer's software code.
 
-2.7. Keys and Access. Synopsys agrees to provide Customer those
-authorization keys and/or passwords, which are necessary to permit
-Customer to gain access to the Licensed Product made available to
-Customer for the Licensed Product which has been properly licensed to
-Customer in accordance with this Agreement. Notwithstanding anything to
-the contrary in this Agreement, Customer hereby acknowledges that
-Customer shall have no right or license to any software made available
-to Customer which has not been properly licensed to Customer pursuant to
-this Agreement or the applicable Purchasing Agreement, or that has been
-included therein solely as a matter of convenience, and that Customer
-agrees not to attempt to gain access to, or permit any third party to
-attempt to gain access to, such software.
+2.8. Keys and Access.
 
-2.8. Plug-Ins. For Customers with valid licenses to the Licensed
-Products, including Seeker, Customer is hereby granted the right to use,
-in conjunction with the Licensed Products licensed to Customer, Plug-Ins
-made available for use with the Licensed Products by Synopsys from time
-to time. No additional Purchasing Agreements are required in connection
-with the use of such Plug-Ins. Customer’s right to use such Plug-Ins are
-provided under the terms of this Agreement, including the license grant
-set forth in Section 2.1 of this Agreement. Notwithstanding the
-foregoing, a Plug-In is not “Software” for purposes of this Agreement.
-ALL PLUGINS ARE PROVIDED AS-IS”, WITHOUT ANY WARRANTY OF ANY KIND.
-SYNOPSYS AND ITS PARTNERS, SUPPLIERS AND DISTRIBUTORS DISCLAIM ALL OTHER
-WARRANTIES, EXPRESS, IMPLIED OR STATUTORY, WITH RESPECT TO SUCH PLUG-IN,
-INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF NONINFRINGEMENT,
-MERCHANTABILITY, AND FITNESS FOR A PARTICULAR PURPOSE. SYNOPSYS AND ITS
-PARTNERS, SUPPLIERS AND DISTRIBUTORS DISCLAIM ALL LIABILITY UNDER THIS
-AGREEMENT WITH RESPECT TO ANY PLUG-IN. The indemnification provisions of
-Section 5 of this Agreement shall not apply to Plug-Ins.
+Black Duck agrees to provide Customer those authorization keys and/or
+passwords, which are necessary to permit Customer to gain access to the
+Licensed Product made available to Customer for the Licensed Product which has
+been properly licensed to Customer in accordance with this Agreement.
+Notwithstanding anything to the contrary in this Agreement, Customer hereby
+acknowledges that Customer shall have no right or license to any software made
+available to Customer which has not been properly licensed to Customer pursuant
+to this Agreement or the applicable Purchasing Agreement, or that has been
+included therein solely as a matter of convenience, and that Customer agrees
+not to attempt to gain access to, or permit any third party to attempt to gain
+access to, such software.
+
+2.9. Plug-Ins.
+
+For Customers with valid licenses to the Licensed Products, Customer is hereby
+granted the right to use, in conjunction with the Licensed Products, Plug-Ins
+made available for use with the Licensed Products. No additional Purchasing
+Agreements are required in connection with the use of such Plug-Ins.
+Customer's right to use such Plug-Ins is provided under the terms of this
+Agreement, including the license grant set forth in Section 2.1 of this
+Agreement.  Any obligation of Black Duck under Sections 4.1 and 5.1 hereof, and
+its obligations to provide Maintenance Services regarding Plug-Ins, shall apply
+only to the extent that such Plug-In has been developed by Black Duck or
+implemented for Customer by Black Duck and shall not extend to any conditions
+arising from Customer's environment or changes made by any third party programs
+that such Plug-In is used in conjunction with ("Modified Plug-Ins").  ALL
+MODIFIED PLUG-INS ARE PROVIDED AS-IS", WITHOUT ANY WARRANTY OF ANY KIND.  BLACK
+DUCK AND ITS PARTNERS, SUPPLIERS AND DISTRIBUTORS DISCLAIM ALL OTHER
+WARRANTIES, EXPRESS, IMPLIED OR STATUTORY, WITH RESPECT TO SUCH MODIFIED
+PLUG-IN, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF
+NONINFRINGEMENT, MERCHANTABILITY, AND FITNESS FOR A PARTICULAR PURPOSE.  BLACK
+DUCK AND ITS PARTNERS, SUPPLIERS AND DISTRIBUTORS DISCLAIM ALL LIABILITY UNDER
+THIS AGREEMENT WITH RESPECT TO ANY MODIFIED PLUG-INS. 
 
 3. CONFIDENTIALITY.
 
-3.1. Confidential Information. “Confidential Information” means: (a)
-each party’s software products, in byte code or source code form; (b)
-any authorization keys and passwords delivered in order to operate such
-products; (c) Documentation, product road maps and development plans,
-and product pricing information; (d) any business, technical or training
-information of a party that, if disclosed in writing, is marked
-“confidential” or “proprietary” at the time of disclosure, or, if
-disclosed orally, is identified as “confidential” or “proprietary” at
-the time of disclosure, and is summarized in a writing sent by the
-disclosing party to the other party within thirty (30) days of such
-disclosure or, without a marking requirement where the receiving party
-knows or reasonably should understand the disclosure to be confidential
-or trade secret information; and (e) Customer specific terms and pricing
-set forth in any quotation, Purchasing Agreement or this Agreement.
+3.1. Confidential Information.
 
-3.2. Exclusions. Confidential Information does not include information
-that: (a) is or becomes generally known or available to the public
-through no act or omission of the party receiving Confidential
-Information (“Receiving Party”); (b) is rightfully known by the
-Receiving Party prior to receiving such information from the other party
-(“Disclosing Party”) and without restriction as to use or disclosure;
-(c) is independently developed by the Receiving Party without use of the
-Disclosing Party’s Confidential Information and without breach of this
-Agreement; or (d) is rightfully received by the Receiving Party from a
-third party without restriction on use or disclosure. The existence of
-this Agreement and the nature of the business relationship between the
-parties are not considered Confidential Information.
+"Confidential Information" means: (a) each party's software products, in byte
+code or source code form; (b) any authorization keys and passwords delivered in
+order to operate such products; (c) Documentation, product road maps and
+development plans, and product pricing information; (d) any business, technical
+or training information of a party that, if disclosed in writing, is marked
+"confidential" or "proprietary" at the time of disclosure, or, if disclosed
+orally, is identified as "confidential" or "proprietary" at the time of
+disclosure, and is summarized in a writing sent by the disclosing party to the
+other party within thirty (30) days of such disclosure or, without a marking
+requirement where the receiving party knows or reasonably should understand the
+disclosure to be confidential or trade secret information; and (e)�Customer
+specific terms and pricing set forth in any quotation, Purchasing Agreement or
+this Agreement.
 
-3.3. Use and Disclosure Restrictions. Receiving Party will not use the
-Disclosing Party’s Confidential Information except as necessary to
-exercise the rights granted under this Agreement or to evaluate
-opportunities to license additional Licensed Products pursuant to this
-Agreement, and will not disclose such Confidential Information to any
-person or entity except to its Authorized Users. Without limiting the
-generality of the foregoing, Customer agrees that it will not post the
-Licensed Product, the Documentation, or any screenshots of the Licensed
-Product or results generated by the Licensed Product, on any network
-that is accessible by anyone other than the Authorized Users. The
-foregoing obligations will not restrict either party from disclosing
-Confidential Information of the other party: (a) pursuant to the order
-or requirement of a court, administrative agency, or other governmental
-body, provided that the party required to make such a disclosure gives
-reasonable notice to the other party to contest such order or
-requirement; and (b) on a confidential basis to its legal or financial
-advisors that need to know in order to provide business advice to such
-party. In addition, each party may disclose the terms and conditions of
-this Agreement:
+3.2. Exclusions.
 
-(i) as required under applicable securities regulations; and
+Confidential Information does not include information that: (a) is or becomes
+generally known or available to the public through no act or omission of the
+party receiving Confidential Information ("Receiving Party"); (b) is rightfully
+known by the Receiving Party prior to receiving such information from the other
+party ("Disclosing Party") and without restriction as to use or disclosure; (c)
+is independently developed by the Receiving Party without use of the Disclosing
+Party's Confidential Information and without breach of this Agreement; or (d)
+is rightfully received by the Receiving Party from a third party without
+restriction on use or disclosure.  The existence of this Agreement and the
+nature of the business relationship between the parties are not considered
+Confidential Information.
 
-(ii) on a confidential basis to present or future providers of venture
-capital and potential private investors in or acquirers of such party.
+3.3. Use and Disclosure Restrictions.
 
-3.4. Right of Equitable Relief. The parties acknowledge that violations
-of the covenants and obligations of this Agreement may cause the
-non-breaching party irreparable injury for which an adequate remedy at
-law may not be available. Therefore, the non-breaching party shall be
-entitled to seek all remedies that may be available under equity,
-including immediate injunctive relief, in addition to whatever remedies
-may be available at law.
+Receiving Party will not use the Disclosing Party's Confidential Information
+except as necessary to exercise the rights granted under this Agreement or to
+evaluate opportunities to license additional Licensed Products pursuant to this
+Agreement, and will not disclose such Confidential Information to any person or
+entity except to its Authorized Users.  Without limiting the generality of the
+foregoing, Customer agrees that it will not post the Licensed Product, the
+Documentation, or any screenshots of the Licensed Product or results generated
+by the Licensed Product, on any network that is accessible by anyone other than
+the Authorized Users.  The foregoing obligations will not restrict either party
+from disclosing Confidential Information of the other party: (a) pursuant to
+the order or requirement of a court, administrative agency, or other
+governmental body, provided that the party required to make such a disclosure
+gives reasonable notice to the other party to contest such order or
+requirement; and (b) on a confidential basis to its legal or financial advisors
+that need to know in order to provide business advice to such party.  In
+addition, each party may disclose the terms and conditions of this Agreement:
+(i) as required under applicable securities regulations; and (ii) on a
+confidential basis to present or future providers of venture capital and
+potential private investors in or acquirers of such party.
+
+3.4. Right of Equitable Relief. 
+
+The parties acknowledge that violations of the obligations of this Agreement
+may cause the non-breaching party irreparable injury for which an adequate
+remedy at law may not be available.  Therefore, the non-breaching party shall
+be entitled to seek all remedies that may be available under equity, including
+immediate injunctive relief, in addition to whatever remedies may be available
+at law.
+
 
 4. WARRANTY.
 
-4.1. Limited Licensed Product Warranty. Subject to the remainder of this
-Section 4, for a period of forty five (45) days from earlier of the date
-that the Licensed Product is first made available to Customer for
-download or Customer’sfirst receipt of the Licensed Product pursuant to
-an Purchasing Agreement, Synopsys represents and warrants that, (a) the
-media on which the Licensed Product is delivered will be free of defects
-in material and workmanship, (b) the Licensed Product will substantially
-conform to the functional specifications set forth in the applicable
-Documentation, and (c) it has used commercially available
-virus-detection software to scan the Licensed Product, and it has not
-knowingly introduced into the Licensed Product any virus, Trojan horse,
-trap door, or other code that is intended to cause harm to the Code Base
-or other systems.
+4.1. Limited Licensed Product Warranty.
 
-4.2. Sole Remedy. If, during the warranty period set forth in Section
-4.1, Synopsys receives written notice from Customer of non-conformity of
-the Licensed Product with the warranty set forth in Section 4.1,
-Synopsys will, as Customer’s sole and exclusive remedy and Synopsys’
-entire liability for such nonconformity: (a) deliver a correction or
-workaround for the non-conformity; or (b) if Synopsys is unable to
-deliver such a correction or workaround, provide written notice to
-Customer and, upon Customer’s return or confirmed destruction of all
-copies of the non-conforming Licensed Product to Synopsys, refund the
-license fees paid by Customer for such nonconforming Licensed Product.
-THE FOREGOING STATES CUSTOMER’S SOLE AND EXCLUSIVE REMEDY FOR WARRANTY
-CLAIMS RELATED TO THE LICENSED PRODUCT.
+Subject to the remainder of this Section 4, for a period of ninety (90) days
+from earlier of the date that the Licensed Product is first made available to
+Customer for download or Customer's first receipt of the Licensed Product
+pursuant to an Purchasing Agreement, Black Duck represents and warrants that,
+(a) the media on which the Licensed Product is delivered will be free of
+defects in material and workmanship, (b) the Licensed Product will
+substantially conform to the functional specifications set forth in the
+applicable Documentation, and (c) it has used commercially available
+virus-detection software to scan the Licensed Product, and it has not knowingly
+introduced into the Licensed Product any virus, Trojan horse, trap door, or
+other code that is intended to cause harm to the Code Base or other systems.
 
-4.3. Disclaimer. Synopsys does not warrant that the Licensed Product
-will meet Customer’s requirements, that the Licensed Product will
-operate in combinations with equipment, devices, software or systems
-provided by persons other than Synopsys, that the operation of the
-Licensed Product will be error-free or uninterrupted, or that the
-Licensed Product will discover all open source or third-party code,
-potential license conflicts, errors and vulnerabilities that may reside
-in the Code Base. EXCEPT AS EXPRESSLY SET FORTH IN THIS AGREEMENT,
-SYNOPSYS AND ITS SUPPLIERS DISCLAIM ALL OTHER WARRANTIES, CONDITIONS AND
-REPRESENTATIONS, EXPRESS, IMPLIED OR STATUTORY, INCLUDING THOSE RELATED
-TO MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, SATISFACTORY
-QUALITY, ACCURACY OR COMPLETENESS OF RESULTS, CONFORMANCE WITH
-DESCRIPTION, AND NON-INFRINGEMENT. SYNOPSYS AND ITS SUPPLIERS
-SPECIFICALLY DISCLAIM ALL IMPLIED WARRANTIES, CONDITIONS AND
-REPRESENTATIONS ARISING OUT OF COURSE OF DEALING, USAGE OR TRADE.
+4.2. Sole Remedy.
+
+If, during the warranty period set forth in Section 4.1, Black Duck receives
+written notice from Customer of non-conformity of the Licensed Product with the
+warranty set forth in Section 4.1, Black Duck will, as Customer's sole and
+exclusive remedy and Black Duck's entire liability for such non-conformity:
+(a)� deliver a correction or workaround for the non-conformity; or (b)�if Black
+Duck is unable to deliver such a correction or workaround, provide written
+notice to Customer and, upon Customer's return or confirmed destruction of all
+copies of the non-conforming Licensed Product to Black Duck, refund the license
+fees paid by Customer for such non-conforming Licensed Product.  THE FOREGOING
+STATES CUSTOMER'S SOLE AND EXCLUSIVE REMEDY FOR WARRANTY CLAIMS RELATED TO THE
+LICENSED PRODUCT.
+
+4.3. Disclaimer.
+
+Black Duck does not warrant that the Licensed Product will meet Customer's
+requirements, that the Licensed Product will operate in combinations with
+equipment, devices, software or systems provided by persons other than Black
+Duck, that the operation of the Licensed Product will be error-free or
+uninterrupted, or that the Licensed Product will discover all open source or
+third-party code, potential license conflicts, errors and vulnerabilities that
+may reside in the Code Base.  EXCEPT AS EXPRESSLY SET FORTH IN THIS AGREEMENT,
+BLACK DUCK AND ITS SUPPLIERS DISCLAIM ALL OTHER WARRANTIES, CONDITIONS AND
+REPRESENTATIONS, EXPRESS, IMPLIED OR STATUTORY, INCLUDING THOSE RELATED TO
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, SATISFACTORY QUALITY,
+ACCURACY OR COMPLETENESS OF RESULTS, CONFORMANCE WITH DESCRIPTION, AND
+NON-INFRINGEMENT.  BLACK DUCK AND ITS SUPPLIERS SPECIFICALLY DISCLAIM ALL
+IMPLIED WARRANTIES, CONDITIONS AND REPRESENTATIONS ARISING OUT OF COURSE OF
+DEALING, USAGE OR TRADE.
+
 
 5. INDEMNIFICATION.
 
-5.1. Infringement Indemnity. Synopsys will defend or settle any action
-brought against Customer by paying all costs, damages and reasonable
-attorneys’ fees that are finally awarded against Customer to the extent
-those amounts are based upon a third party claim that the Licensed
-Product, as provided by Synopsys to Customer under this Agreement and
-used in accordance with this Agreement, directly infringes any U.S.
-patent, or copyright or misappropriates any U.S. trade secret. However,
-Synopsys’ obligations under this Section 5 are subject to the following
-conditions:
+5.1. Infringement Indemnity.
 
-(a) Customer must promptly notify Synopsys in writing of the action;
+Black Duck will defend or settle any action brought against Customer by paying
+all costs, damages and reasonable attorneys' fees that are finally awarded
+against Customer to the extent those amounts are based upon a third party claim
+that the Licensed Product, as provided by Black Duck to Customer under this
+Agreement and used in accordance with this Agreement, directly infringes any
+U.S. patent, or copyright or misappropriates any U.S. trade secret.  However,
+Black Duck's obligations under this Section 5 are subject to the following
+conditions: (a) Customer must promptly notify Black Duck in writing of the
+action; (b) Customer grants Black Duck sole control of the defense and
+settlement of the action; and (c) Customer must provide Black Duck, with all
+assistance, information and authority reasonably requested for the defense and
+settlement of the action.  Black Duck will not be responsible for any
+compromise made or expense incurred without its consent.  If use of any of the
+Licensed Product is, or in Black Duck's reasonable opinion is likely to be, the
+subject of an action specified in this Section 5.1, Black Duck may, at its sole
+option and at no additional charge: (i) procure for Customer the right to
+continue using such Licensed Product; (ii) replace or modify such Licensed
+Product so that it is non-infringing and substantially equivalent in function
+to the original Licensed Product; or (iii) if options (i) and (ii) above are
+not accomplished despite Black Duck's reasonable efforts, terminate Customer's
+rights and Black Duck's obligations hereunder with respect to such Licensed
+Product and refund the unamortized portion of the license fees paid for such
+Licensed Product, based upon a straight-line depreciation over the term of the
+license commencing as of the date Customer received such Licensed Product.
 
-(b) Customer grants Synopsys sole control of the defense and settlement
-of the action; and
+5.2. Exclusions.
 
-(c) Customer must provide Synopsys, at Synopsys’ expense, with all
-assistance, information and authority reasonably requested for the
-defense and settlement of the action.
+Notwithstanding the terms of Section 5.1, Black Duck will have no liability for
+any infringement or misappropriation action or claim of any kind to the extent
+that it results from: (a) modifications to the Licensed Product made by a party
+other than Black Duck, if the infringement or misappropriation would not have
+occurred but for such modifications; (b) the combination, operation or use of
+the Licensed Product with equipment, devices, software, systems or data not
+supplied by Black Duck, if the infringement or misappropriation would not have
+occurred but for such combination, operation or use; (c) Customer's failure to
+use the updated or modified Licensed Product provided by Black Duck to avoid
+infringement or misappropriation; (d) Black Duck's compliance with any designs
+or specifications provided by Customer; and/or (e) Customer's use of the
+Licensed Product other than as authorized by this Agreement.
 
-Synopsys will not be responsible for any compromise made or expense
-incurred without its consent. If use of any of the Licensed Product is,
-or in Synopsys’ reasonable opinion is likely to be, the subject of an
-action specified in this Section 5.1, Synopsys may, at its sole option
-and at no additional charge: 
+5.3. Sole Remedy.
 
-(i) procure for Customer the right to continue using such Licensed
-Product;
+THE PROVISIONS OF THIS SECTION 5 SET FORTH BLACK DUCK'S SOLE AND EXCLUSIVE
+OBLIGATIONS, AND CUSTOMER'S SOLE AND EXCLUSIVE REMEDIES, WITH RESPECT TO
+INFRINGEMENT OR MISAPPROPRIATION OF INTELLECTUAL PROPERTY RIGHTS OF ANY KIND.
+EXCEPT AS SET FORTH ABOVE, BLACK DUCK AND ITS SUPPLIERS DISCLAIM ALL IMPLIED
+OBLIGATIONS WITH RESPECT TO INTELLECTUAL PROPERTY INDEMNIFICATION.
 
-(ii) replace or modify such Licensed Product so that it is noninfringing
-and substantially equivalent in function to the original Licensed
-Product; or
-
-(iii) if options (i) and (ii) above are not accomplished despite
-Synopsys’ reasonable efforts, terminate Customer’s rights and Synopsys’
-obligations hereunder with respect to such Licensed Product and refund
-the unamortized portion of the license fees paid for such Licensed
-Product, based upon a straight-line depreciation over the term of the
-license commencing as of the date Customer received such Licensed
-Product.
-
-5.2. Exclusions. Notwithstanding the terms of Section 5.1, Synopsys will
-have no liability for any infringement or misappropriation action or
-claim of any kind to the extent that it results from: 
-
-(a) modifications to the Licensed Product made by a party other than
-Synopsys, if the infringement or misappropriation would not have
-occurred but for such modifications;
-
-(b) the combination, operation or use of the Licensed Product with
-equipment, devices, software, systems or data not supplied by Synopsys,
-if the infringement or misappropriation would not have occurred but for
-such combination, operation or use;
-
-(c) Customer’s failure to use the updated or modified Licensed Product
-provided by Synopsys to avoid infringement or misappropriation;
-
-(d) Synopsys’ compliance with any designs or specifications provided by
-Customer; and/or (e) Customer’s use of the Licensed Product other than
-as authorized by this Agreement.
-
-5.3. Sole Remedy. THE PROVISIONS OF THIS SECTION 5 SET FORTH SYNOPSYS’
-SOLE AND EXCLUSIVE OBLIGATIONS, AND CUSTOMER’S SOLE AND EXCLUSIVE
-REMEDIES, WITH RESPECT TO INFRINGEMENT OR MISAPPROPRIATION OF
-INTELLECTUAL PROPERTY RIGHTS OF ANY KIND. EXCEPT AS SET FORTH ABOVE,
-SYNOPSYS AND ITS SUPPLIERS DISCLAIM ALL IMPLIED OBLIGATIONS WITH RESPECT
-TO INTELLECTUAL PROPERTY INDEMNIFICATION.
 
 6. LIMITATION OF LIABILITY.
 
-6.1. Exclusion of Damages. Notwithstanding anything to the contrary,
-this Agreement does not limit liability due to death or personal injury
-caused by gross negligence, or liability due to fraudulent
-misrepresentations or willful misconduct, or liability arising from
-breaches of confidentiality obligations or license grants or conditions
-hereunder. SUBJECT TO THE FOREGOING SENTENCE, IN NO EVENT WILL EITHER
-PARTY, OR ITS SUPPLIERS, BE LIABLE TO THE OTHER FOR ANY SPECIAL,
-INCIDENTAL, PUNITIVE, INDIRECT OR CONSEQUENTIAL DAMAGES (INCLUDING LOSS
-OF USE, DATA, BUSINESS OR PROFITS, REVENUE, GOODWILL, ANTICIPATED
-SAVINGS) OR FOR THE COST OF PROCURING SUBSTITUTE PRODUCTS OR SERVICES
-ARISING OUT OF THIS AGREEMENT, WHETHER BASED UPON CONTRACT, WARRANTY,
-TORT (INCLUDING NEGLIGENCE), FAILURE OF A REMEDY TO ACCOMPLISH ITS
-PURPOSE, STRICT LIABILITY OR OTHERWISE, AND EVEN IF ADVISED OF THE
-POSSIBILITY OF SUCH DAMAGES. Customer acknowledges that Synopsys would
-not be able to provide the Licensed Product without the limitations set
-forth in this Section 6. Customer may have other rights under applicable
-mandatory local laws. This Agreement does not change Customer’s rights
-under applicable mandatory local laws if such laws do not permit it to
-do so.
+6.1. Exclusion of Damages.  Notwithstanding anything to the contrary, this
+Agreement does not limit liability due to death or personal injury caused by
+gross negligence, or liability due to fraudulent misrepresentations or willful
+misconduct, or liability arising from breaches of confidentiality obligations
+or license grants or conditions hereunder.  SUBJECT TO THE FOREGOING SENTENCE,
+IN NO EVENT WILL EITHER PARTY, OR ITS SUPPLIERS, BE LIABLE TO THE OTHER FOR ANY
+SPECIAL, INCIDENTAL, PUNITIVE, INDIRECT OR CONSEQUENTIAL DAMAGES (INCLUDING
+LOSS OF USE, DATA, BUSINESS OR PROFITS, REVENUE, GOODWILL, ANTICIPATED SAVINGS)
+OR FOR THE COST OF PROCURING SUBSTITUTE PRODUCTS OR SERVICES ARISING OUT OF
+THIS AGREEMENT, WHETHER BASED UPON CONTRACT, WARRANTY, TORT (INCLUDING
+NEGLIGENCE), FAILURE OF A REMEDY TO ACCOMPLISH ITS PURPOSE, STRICT LIABILITY OR
+OTHERWISE, AND EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.  Customer
+acknowledges that Black Duck would not be able to provide the Licensed Product
+without the limitations set forth in this Section 6.  Customer may have other
+rights under applicable mandatory local laws. This Agreement does not change
+Customer's rights under applicable mandatory local laws if such laws do not
+permit it to do so. 
 
-6.2. Cap on Liability. IN NO EVENT WILL SYNOPSYS, ITS AFFILIATES OR ITS
-SUBSIDIAIRIES, OR ITS SUPPLIERS’ AGGREGATE LIABILITY UNDER THIS
-AGREEMENT, OR RELATING TO ITS SUBJECT MATTER, EXCEED WITH RESPECT TO ANY
-LICENSED PRODUCT, THE AMOUNT PAID BY CUSTOMER FOR THE LICENSED PRODUCT
-GIVING RISE TO THE CLAIM, AND WITH RESPECT TO SERVICES, THE AMOUNT PAID
-BY CUSTOMER FOR THE SERVICES GIVING RISE TO THE CLAIM.
+6.2. Cap on Liability.
+
+IN NO EVENT WILL BLACK DUCK, ITS AFFILIATES OR ITS SUBSIDIAIRIES, OR ITS
+SUPPLIERS' AGGREGATE LIABILITY UNDER THIS AGREEMENT, OR RELATING TO ITS SUBJECT
+MATTER, EXCEED WITH RESPECT TO ANY LICENSED PRODUCT, THE AMOUNT PAID BY
+CUSTOMER FOR THE LICENSED PRODUCT GIVING RISE TO THE CLAIM, AND WITH RESPECT TO
+SERVICES, THE AMOUNT PAID BY CUSTOMER FOR THE SERVICES GIVING RISE TO THE
+CLAIM. 
+
 
 7. EXPIRATION AND TERMINATION.
 
-7.1. Term of Agreement. The term of this Agreement shall begin on the
-Effective Date of this Agreement and will end when this Agreement is
-terminated by either party in accordance with this Section 7.
+7.1. Term of Agreement.
 
-7.2. Term of Purchasing Agreement. Each Purchasing Agreement will have
-its own term, as indicated by the License Term applicable to the
-Licensed Product licensed under such Purchasing Agreement.
+The term of this Agreement shall begin on the Effective Date of this Agreement
+and will end when this Agreement is terminated by either party in accordance
+with this Section 7. 
 
-7.3. Termination for Breach. Either party will have the right to
-terminate this Agreement or any Purchasing Agreement if the other party
-breaches any material term of the Agreement or Purchasing Agreement, as
-the case may be, and if such breach is capable of cure, the breaching
-party fails to cure such breach within thirty (30) days after receiving
-written notice thereof. Either party will have the right to terminate
-this Agreement if the other becomes insolvent or makes an assignment for
-the benefit of creditors, or a trustee or receiver is appointed for such
+7.2. Term of Purchasing Agreement.
+
+Each Purchasing Agreement will have its own term, as indicated by the license
+term applicable to the Licensed Product licensed under such Purchasing
+Agreement.
+
+7.3. Termination for Breach.
+
+Either party will have the right to terminate this Agreement or any Purchasing
+Agreement if the other party breaches any material term of the Agreement or
+Purchasing Agreement, as the case may be, and if such breach is capable of
+cure, the breaching party fails to cure such breach within thirty (30) days
+after receiving written notice thereof.  Either party will have the right to
+terminate this Agreement if the other becomes insolvent or makes an assignment
+for the benefit of creditors, or a trustee or receiver is appointed for such
 other party or for a substantial part of its assets, or bankruptcy,
-reorganization or insolvency proceedings shall be instituted by or
-against such other party. Termination of this Agreement under this
-Section 7 terminates all Purchasing Agreements and Licensed Product
-licenses granted hereunder.
+reorganization or insolvency proceedings shall be instituted by or against such
+other party.  Termination of this Agreement under this Section 7 terminates all
+Purchasing Agreements and Licensed Product licenses granted hereunder.
 
-7.4. Effect of Termination or Expiration. Upon termination or expiration
-of this Agreement or a Purchasing Agreement, all Licensed Product
-licenses and rights to use Confidential Information that are granted
-thereunder shall terminate. Upon termination of this Agreement or
-expiration of the license term in any Purchasing Agreement, Customer
-will: (a) promptly return to Synopsys or destroy the applicable Licensed
-Product and Confidential Information and all copies and portions
-thereof, in all forms and types of media; and (b) promptly pay all fees
-owing up to the date of termination.
+7.4. Effect of Termination or Expiration.
 
-7.5. Survival. Sections 1, 2.2, 2.4, 2.5, 3, 4.3, 5.3, 6, 7.2, 7.3 and 8
-of the Agreement, Section 6 of the SDK Addendum, and the Special Terms
-Addendum and the Hosting Services Addendum, will survive the termination
-or expiration of this Agreement or of any Purchasing Agreement.
+Upon termination or expiration of this Agreement or a Purchasing Agreement, all
+Licensed Product licenses and rights to use Confidential Information that are
+granted thereunder shall terminate.  Upon termination of this Agreement or
+expiration of the license term in any Purchasing Agreement, Customer will: (a)
+promptly return to Black Duck or destroy the applicable Licensed Product and
+Confidential Information and all copies and portions thereof, in all forms and
+types of media; and (b) promptly pay all fees owing up to the date of
+termination.
+
+7.5. Survival.
+
+Sections 1, 2.2, 2.4, 2.5, 3, 4.3, 5.3, 6, 7.2, 7.3 and 8 of the Agreement,
+Section 6 of the SDK Addendum, and the Special Terms Addendum and the Hosting
+Services Addendum, will survive the termination or expiration of this Agreement
+or of any Purchasing Agreement.
+
 
 8. GENERAL.
 
-8.1. Promotion. Unless otherwise provided in the Purchasing Agreement,
-Customer agrees that Synopsys may use Customer’s name and logo (in a
-form approved by Customer) to identify Customer as a customer on
-Synopsys’ website or in marketing or publicity materials or in any
-filings made in connection with state or federal securities laws.
-Additionally, upon execution of this Agreement, the parties will use
-commercially reasonable efforts to issue mutually agreed upon joint
-press releases or other public communications announcing Customer’s
-entry into this Agreement.
+8.1. Ownership of IP Rights.
 
-8.2. “Maintenance Services” means any standard Synopsys maintenance and
-support services (excluding onsite support or consulting services
-referenced in Section 8.3 below) related to the Licensed Product
-licensed hereunder pursuant to a Purchasing Agreement, where such
-services shall be governed by the applicable Synopsys Maintenance
-Services terms attached to this Agreement. Except as indicated on an
-applicable Purchasing Agreement, fees for Licensed Products include
-Synopsys Standard Maintenance Services for the duration of the license
-term applicable to such Licensed Products. In the event that the
-Synopsys Maintenance Services Terms are not included herein (as an
-addendum hereto or otherwise), the terms for Synopsys Maintenance
-Services are hereby incorporated herein by references, and are available
-at: 
+Black Duck and its licensors own all patent rights, copyrights, trade secret
+rights, mask works, and trademark rights (including service marks and trade
+names), and any applications for these rights, in all countries ("Intellectual
+Property Rights") in the Licensed Products and the Documentation.  Customer's
+only rights in the Licensed Products and the Documentation are the rights
+expressly granted in this Agreement; all other rights are reserved by Black
+Duck.  Black Duck's licensors are third-party beneficiaries of, and thus may
+enforce against Customer, the license restrictions and confidentiality
+obligations in this Agreement with respect to their intellectual property and
+proprietary information.
 
-for (a) Black Duck labeled products at
-https://www.blackducksoftware.com/support/support-plans
+8.2. "Maintenance Services" means any standard Black Duck maintenance and
+support services (excluding onsite support or consulting services referenced in
+Section 8.3 below) related to the Licensed Product, where such services shall
+be governed by the applicable Black Duck Maintenance Services terms attached to
+this Agreement.  Except as indicated on an applicable Purchasing Agreement,
+fees for Licensed Products include Black Duck Standard Maintenance Services for
+the duration of the license term applicable to such Licensed Products. In the
+event that the Black Duck Maintenance Services Terms are not included herein
+(as an addendum hereto or otherwise), the terms for Black Duck Maintenance
+Services are hereby incorporated herein by references, and are available at:
+https://www.blackduck.com/company/legal/end-user-licenses.html.
 
-and (b) for all other Licensed Products at:
-https://www.synopsys.com/company/legal/softwareintegrity/maintenance-
-service-terms-v2015-1.html, or as otherwise indicated in the Purchasing
-Agreement.
+8.3. Onsite Support Services; Customer Success; Hosting Services.
 
-8.3. Onsite Support Services; Customer Success; Training; Hosting
-Services. If Synopsys provides any Services (as defined in the attached
-Onsite Support Services Terms Addendum, and excluding Maintenance
-Services referenced in Section 8.2 above) to Customer, the Services
-shall be governed by the attached Synopsys Onsite Support Services
-Terms. In the event that the Synopsys Onsite Support Services Terms are
-not attached to this Agreement (as an addendum or otherwise), the terms
-for Onsite Support Services, are hereby incorporated herein by
-reference, and are available at:
-https://www.synopsys.com/company/legal/softwareintegrity/onsite-support-
-services-terms-v2015- 1.htmlindex.html,or as otherwise indicated in the
-Purchasing Agreement. Synopsys shall not be obligated to perform any
-On-Site Support Services, excluding Training, until the parties enter
-into a written Statement of Work describing the scope of such Services
-to be performed and such Statement of Work shall be governed by the
-terms of this Agreement and the applicable Purchasing Agreement. Where
-described in the applicable Purchasing Agreement or the Statement of
-Work, as applicable, actual travel and related expenses will be charged
-to Customer as incurred, provided that such expenses shall be capped at
-$3,000 per each five (5) consecutive consulting days. For clarity,
-payment for Onsite Support Services or Maintenance Services does not
-entitle Customer to Customer Success program services or training
-services. Onsite Support Services, Customer Success program services or
-training services that remain unused at the end of the license term
-referenced in the applicable Purchasing Agreement will be forfeited and
-Customer will not be entitled to any refund for unused portions. If
-Synopsys provides any Hosting Services (as defined in the attached
-Hosting Services Addendum) to Customer, the Hosting Services will be
+If Black Duck provides any Services (as defined in the attached Onsite Support
+Services Terms Addendum, and excluding Maintenance Services referenced in
+Section 8.1 above) to Customer, the Services shall be governed by the attached
+Black Duck Onsite Support Services Terms.  In the event that the Black Duck
+Onsite Support Services Terms are not attached to this Agreement, the terms for
+Onsite Support Services, are hereby incorporated herein by reference, and are
+available at:
+https://www.blackduck.com/content/dam/black-duck/en-us/legal/onsite-services/blackduck-standard-onsite-support-services-terms.pdf.
+Onsite Support Services or Customer Success program services that remain unused
+at the end of the license term referenced in the applicable Purchasing
+Agreement will be forfeited and Customer will not be entitled to any refund for
+unused portions. If Black Duck provides any Hosting Services (as defined in the
+attached Hosting Services Addendum) to Customer, the Hosting Services shall be
 governed by the attached Hosting Services Addendum.
 
-8.4. Software Development Kit. For some Licensed Products, Synopsys
-provides a software development kit (“SDK”) to Customer with the
-Licensed Product. Use of the SDK shall be governed by the Synopsys SDK
-terms included in the addendum attached to this Agreement. In the event
-that the Synopsys SDK terms are not included herein (as an addendum
-hereto or otherwise), the SDK terms are available at:
-https://www.synopsys.com/company/legal/softwareintegrity/software-
-development-kit.html.
+8.4. Software Development Kit.
 
-8.5. Export Control. Customer agrees that the Licensed Product, Services
-and Technical Support subject to this Agreement are subject to the
-export control laws and regulations of the United States, including but
-not limited to the Export Administration Regulations (“EAR”), and
-sanctions regulations of the U.S. Department of the Treasury, Office of
-Foreign Assets Control and that Customer will comply with these laws and
-regulations. Without limiting the foregoing, if any of the Licensed
-Products, Services and Technical Support governed by this Agreement, or
-the direct product of any such Licensed Product, Services and Technical
-Support (each, a “Controlled Product”), is subject to the national
-security controls as identified on the Commerce Control List (the
-“Controlled Products”), Customer will not, without a U.S. Bureau of
-Industry and Security license or license exception, export, re-export,
-or transfer a Controlled Product, either directly or indirectly, to any
-national of any country identified in Country Groups D:1 or E:1 as
-defined in the EARs. In addition, the Licensed Product, Services and
-Technical Support subject to this Agreement may not be exported,
-reexported, or transferred to (a) any person or entity listed on the
-“Entity List”, “Denied Persons List” or the list of “Specifically
-Designated Nationals and Blocked Persons" as such lists are maintained
-by the U.S. Government, or (b) an end-user engaged in activities related
-to weapons of mass destruction. Such activities include but are not
-necessarily limited to activities related to: (i) the design,
-development, production, or use of nuclear materials, nuclear
-facilities, or nuclear weapons; (ii) the design, development,
-production, or use of missiles or support of missiles projects; and
-(iii) the design, development, production, or use of chemical or
-biological weapons. Customer will, at Synopsys’ request, demonstrate
-compliance with all such applicable export laws, restrictions, and
-regulations.
+For some Licensed Products, Black Duck provides a software development kit
+("SDK") to Customer with the Licensed Product. Use of the SDK shall be governed
+by the Black Duck SDK terms available at:
+https://www.blackduck.com/company/legal/software-development-kit.html.
 
-8.6. Assignment. Customer may not assign this Agreement, or any licenses
-granted hereunder, in whole or in part, by operation of law or
-otherwise. Any attempt to so assign without such consent will be void
-and of no effect. Subject to the foregoing, this Agreement will bind and
-inure to the benefit of each party’s permitted successors and assigns.
+8.5. Export Control.
 
-8.7. Governing Law and Jurisdiction. This Agreement will be governed by
-and construed in accordance with the laws of the State of California
-excluding that body of laws known as conflicts of law. The parties
-expressly agree that the United Nations Convention on Contracts for the
-International Sale of Goods will not apply. Any legal action or
-proceeding arising under this Agreement will be brought exclusively in
-the federal or state courts located in the Northern District of
-California and the parties irrevocably consent to the personal
-jurisdiction and venue therein. Customer agrees that the Uniform
-Computer Information Transactions Act or any version thereof, adopted by
-any state, in any form ("UCITA"), shall not apply to this Agreement. To
-the extent that UCITA is applicable, the parties agree to opt out of the
-applicability of UCITA pursuant to the opt-out provision(s) contained
-therein.
+Customer agrees that it shall remain familiar and fully compliant with its
+obligations under any and all laws, statutes, regulations, ordinances of any
+local, state, federal, national, or other jurisdictional locality, as
+applicable to the export, import, and/or end-use of the Licensed Product,
+Services and Maintenance Services.  Licensed Products, Services and Maintenance
+Services sold under this Agreement may be subject to various Export Control
+Laws and Regulations including but not limited to, U.S. Export Administration
+Regulations (EAR), the U.S. Office of Foreign Asset Control (OFAC), the
+European Union (EU) Export Control Regime Regulation (EC) No. 428/2009, and/or
+the EU Consolidated Sanctions List.  Where the Licensed Products or technology
+is identified as export controlled from a country(ies) of export to (1) the
+destination country(ies), (2) a restricted/proscribed end use, and/or (3) a
+restricted end user, a government-issued export license must be obtained prior
+to fulfillment under this Agreement and in accordance with applicable laws.
+Customer agrees that Black Duck shall not be required to complete delivery of
+export controlled products or technology unless and until all required export
+licenses have been obtained.
+ 
+8.6. Assignment.
 
-8.8. Verification and Audit. In addition to the Use and Compliance Data
-collected by the License Manager, Customer will monitor and track access
-to and use of the Licensed Product. At Synopsys’ written request,
-Customer will furnish Synopsys with (a) a certification signed by an
-authorized representative of Customer providing user or access
-information that identifies whether the Licensed Product is being used
-in accordance with the terms of this Agreement, and (b) log files from
-any License Manager that regulates access to the Licensed Product. Upon
-at least thirty (30) days prior written notice, Synopsys may engage, at
-its expense, an independent auditor to audit Customer’s use of the
-Licensed Product to ensure that Customer is in compliance with the terms
-of this Agreement and the applicable Purchasing Agreements. Any such
-audit will be conducted during regular business hours at Customer’s
-facilities and will not unreasonably interfere with Customer’s business
-activities. Customer will provide the auditor with access to the
-relevant records and facilities. If an audit reveals that Customer has
-underpaid fees to Synopsys during the period audited, then Synopsys will
-invoice Customer, and Customer will promptly pay Synopsys for such
-underpaid fees based on Synopsys’s price list in effect at the time the
-audit is completed. If the underpaid fees exceed five percent (5%) of
-the license fees paid by Customerfor the Licensed Product, then Customer
-will also pay Synopsys’ costs of conducting the audit.
+Customer may not assign this Agreement, or any licenses granted hereunder, in
+whole or in part, by operation of law or otherwise. Any attempt to so assign
+without such consent will be void and of no effect.  Subject to the foregoing,
+this Agreement will bind and inure to the benefit of each party's permitted
+successors and assigns.
 
-8.9. Nonexclusive Remedy. Except as expressly set forth in this
-Agreement, the exercise by either party of any of its remedies under
-this Agreement will be without prejudice to its other remedies under
-this Agreement or otherwise.
+8.7. Governing Law and Jurisdiction.
 
-8.10. Force Majeure. Neither party will be responsible for any failure
-or delay in its performance under this Agreement (except for any payment
-obligations) due to causes beyond its reasonable control, including, but
-not limited to, labor disputes, strikes, lockouts, shortages of or
-inability to obtain labor, energy, raw materials or supplies, war,
-terrorism, riot, natural disasters or governmental action.
+This Agreement will be governed by and construed in accordance with the laws of
+the State of California excluding that body of laws known as conflicts of law.
+The parties expressly agree that the United Nations Convention on Contracts for
+the International Sale of Goods will not apply.  Any legal action or proceeding
+arising under this Agreement will be brought exclusively in the federal or
+state courts located in the Northern District of California and the parties
+irrevocably consent to the personal jurisdiction and venue therein.  Customer
+agrees that the Uniform Computer Information Transactions Act or any version
+thereof, adopted by any state, in any form ("UCITA"), shall not apply to this
+Agreement.  To the extent that UCITA is applicable, the parties agree to opt
+out of the applicability of UCITA pursuant to the opt-out provision(s)
+contained therein.
 
-8.11. Notices. All notices required or permitted under this Agreement
-will be in writing. Notices will be effective upon delivery if delivered
-in person and upon mailing if delivered by courier service, overnight
-delivery services or by a form of certified or express mail. Notices
-affecting this Agreement as a whole will be sent to the address set
-forth above, if any, or to such other address of a party as such party
-may identify in writing; notices related to a particular transaction
-will be sent to the primary corporate addresses set forth in the
-Purchasing Agreement or to such other address as Customer or Synopsys
-may notify the other party in writing.
+8.8. Verification and Audit.
 
-8.12. Entire Agreement; Modification; Interpretation. This Agreement,
-including any Addenda hereto and any Statements of Work attached
-thereto, and all accepted Purchasing Agreements referencing this
-Agreement, constitute the complete and exclusive understanding and
-agreement between the parties regarding its subject matter and
-supersedes all prior or contemporaneous agreements or understandings,
-written or oral, relating to its subject matter. Customer agrees that
-additional or different terms on Customer’s purchase order shall not
-apply. Failure to enforce any provision of this Agreement will not
-constitute a waiver of future enforcement of that or any other
-provision. Any waiver, modification or amendment of this Agreement will
-be effective only if in writing and signed by Customer and an authorized
-representative of Synopsys. If for any reason a court of competent
-jurisdiction finds any provision of this Agreement invalid or
-unenforceable, that provision will be enforced to the maximum extent
-permissible and the other provisions of this Agreement will remain in
-full force and effect. The word “including” when used in this Agreement
-will mean including without limitation of the generality of any
-description, definition, term or phrase preceding that word.
+In addition to the License Manager Data collected by the License Manager,
+Customer will monitor and track access to and use of the Licensed Product. At
+Black Duck's written request, Customer will furnish Black Duck with (a) a
+certification signed by an authorized representative of Customer providing user
+or access information that identifies whether the Licensed Product is being
+used in accordance with the terms of this Agreement, and (b) log files from any
+License Manager that regulates access to the Licensed Product.  Upon at least
+thirty (30) days' prior written notice, Black Duck may engage, at its expense,
+an independent auditor to audit Customer's use of the Licensed Product to
+ensure that Customer is in compliance with the terms of this Agreement and the
+applicable Purchasing Agreements.  Any such audit will be conducted during
+regular business hours at Customer's facilities and will not unreasonably
+interfere with Customer's business activities.  Customer will provide the
+auditor with access to the relevant records and facilities.  If an audit
+reveals that Customer has underpaid fees to Black Duck during the period
+audited, then Black Duck will invoice Customer, and Customer will promptly pay
+Black Duck for such underpaid fees based on Black Duck's price list in effect
+at the time the audit is completed.  If the underpaid fees exceed five percent
+(5%) of the license fees paid by Customer for the Licensed Product, then
+Customer will also pay Black Duck's costs of conducting the audit.
 
-8.13. U.S. Government Restricted Rights. All Licensed Products are
-“Commercial Computer Software” as defined under FAR 252.227-7014. For
-customers subject to the Defense Federal Acquisition Resolutions (DFAR),
-the Commercial Computer Software and associated documentation are sold
-pursuant to Synopsys' standard commercial license pursuant to DFARS
-227.7202- 1.Commercial Products. For all other government customers,
-use, duplication, or disclosure by the U.S. Government is subject to
-restrictions set forth in subparagraph (b)(2) of Commercial Computer
-Software License 48 CFR 52.227-19, as applicable.
+8.9. Nonexclusive Remedy.
 
-8.14. Synopsys Entities. Synopsys, Inc. and its whollyowned
-subsidiaries, including, but not limited to, Synopsys International
-Limited, Synopsys International Limited Taiwan Branch, Nihon Synopsys,
-G.K., Synopsys Korea, Inc. and Synopsys Technologies Company Limited,
+Except as expressly set forth in this Agreement, the exercise by either party
+of any of its remedies under this Agreement will be without prejudice to its
+other remedies under this Agreement or otherwise.
+
+8.10. Force Majeure.
+
+Neither party will be responsible for any failure or delay in its performance
+under this Agreement (except for any payment obligations) due to causes beyond
+its reasonable control, including, but not limited to, labor disputes, strikes,
+lockouts, shortages of or inability to obtain labor, energy, raw materials or
+supplies, war, terrorism, riot, natural disasters or governmental action.
+
+8.11. Notices.
+
+All notices required or permitted under this Agreement will be in writing.
+Notices will be effective upon delivery if delivered in person and upon mailing
+if delivered by courier service, overnight delivery services or by a form of
+certified or express mail.  Notices affecting this Agreement as a whole will be
+sent to the address set forth above, if any, or to such other address of a
+party as such party may identify in writing; notices related to a particular
+transaction will be sent to the primary corporate addresses set forth in the
+Purchasing Agreement or to such other address as Customer or Black Duck may
+notify the other party in writing.
+
+8.12. Entire Agreement; Modification; Interpretation.
+
+This Agreement, including any Addenda hereto and any Statements of Work
+attached thereto, and all accepted Purchasing Agreements referencing this
+Agreement, constitute the complete and exclusive understanding and agreement
+between the parties regarding its subject matter and supersedes all prior or
+contemporaneous agreements or understandings, written or oral, relating to its
+subject matter.  Customer agrees that additional or different terms on
+Customer's purchase order shall not apply.  Failure to enforce any provision of
+this Agreement will not constitute a waiver of future enforcement of that or
+any other provision.  Any waiver, modification or amendment of this Agreement
+will be effective only if in writing and signed by Customer and an authorized
+representative of Black Duck.  If for any reason a court of competent
+jurisdiction finds any provision of this Agreement invalid or unenforceable,
+that provision will be enforced to the maximum extent permissible and the other
+provisions of this Agreement will remain in full force and effect.  The word
+"including" when used in this Agreement will mean including without limitation
+of the generality of any description, definition, term or phrase preceding that
+word.
+
+8.13. Government Users. 
+
+If Customer is a branch or agency of the United States Government, or is
+acquiring any Licensed Product on behalf of any branch or agency of the United
+States Government, then the following provision applies.  The Licensed Products
+and Documentation are comprised of "commercial computer software" and
+"commercial computer software documentation," as such terms are used in 48
+C.F.R. 12.212, and are provided to the Government (a) for acquisition by or on
+behalf of civilian agencies, consistent with the policy set forth in 48 C.F.R.
+12.212; or (b) for acquisition by or on behalf of units of the Department of
+Defense, consistent with the policies set forth in 48 C.F.R. 227.7202-1 and
+227.7202-3
+
+8.14. Black Duck Entities.
+
+Black Duck Software, Inc. and its wholly-owned subsidiaries, including, but not
+limited to, Black Duck Software Limited, Black Duck Software Limited Taiwan
+Branch, Black Duck Software G.K., and Black Duck Software Shanghai Limited.,
 have agreed to their respective rights and obligations regarding the
 distribution of the Licensed Products and the performance of obligations
-related to the Licensed Products. You acknowledge that: (a) Synopsys
-Inc. or any directly or indirectly wholly-owned subsidiary or branch of
-Synopsys, Inc. may treat a purchase order addressed to that entity,
-representative office or branch as having been addressed to the
-appropriate entity or entities or branch with distribution rights for
-the geographic region in which the Licensed Products will be used; and
-(b) delivery will be completed by the Synopsys entity or branch with
-distribution rights for the geographic region in which the Licensed
-Products will be used or service will be provided. For products used or
-services provided in a country in the Americas, Israel or Africa or US
-dollar transactions in Russia, the distributing Synopsys entity is
-Synopsys, Inc., based in California, USA. For products used or services
-provided in Taiwan, the distributing Synopsys entity is Synopsys
-International Limited Taiwan Branch, based in Taiwan. For products used
-or services provided in Japan, the distributing Synopsys entity is Nihon
-Synopsys G. K., based in Japan. For products used or services provided
-in the Republic of Korea, the distributing Synopsys entity is Synopsys
-Korea, Inc., based in Korea. For products used or services provided in
-China in Renminbi, the distributing Synopsys entity is Synopsys
-Technologies Company Limited, based in China. For products used or
-services provided in any country other than those identified above, the
-distributing Synopsys entity is Synopsys International Limited, based in
-Ireland.
+related to the Licensed Products.  You acknowledge that: (a) Black Duck
+Software, Inc. or any directly or indirectly wholly-owned subsidiary or branch
+of Black Duck Software, Inc. may treat a purchase order addressed to that
+entity, representative office or branch as having been addressed to the
+appropriate entity or entities or branch with distribution rights for the
+geographic region in which the Licensed Products will be used; and (b) delivery
+will be completed by the Black Duck entity or branch with distribution rights
+for the geographic region in which the Licensed Products will be used or
+service will be provided. For products used or services provided in a country
+in the Americas, Israel or Africa or US dollar transactions in Russia or China
+Mainland, the distributing Black Duck entity is Black Duck Software, Inc.,
+based in California, USA.  For products used or services provided in Taiwan,
+the distributing Black Duck entity is Black Duck Software Limited Taiwan
+Branch, based in Taiwan. For products used or services provided in Japan, the
+distributing Black Duck entity is Black Duck Software G. K., based in Japan.
+For products used or services provided in China Mainland in Renminbi, the
+distributing Black Duck entity is Black Duck Software Shanghai Limited, based
+in China Mainland.  For products used or services provided in any country other
+than those identified above, the distributing Black Duck entity is Black Duck
+Software Limited based in Ireland.
 
-8.15. Counterparts and Execution. This Agreement may be executed in
-counterparts, each of which will be deemed an original, but all of which
-together will constitute one and the same instrument. An originally
-executed version of this Agreement or any Exhibit, attachment and
-subsequent Purchasing Agreement (including, where applicable, a Customer
-purchase order issued in response to a Purchasing Agreement where such
-issuance constitutes execution), that is delivered by one party to the
-other party, as evidence of signature, by facsimile, or by electronic
-mail after having been scanned as an image file (including, Adobe PDF,
-TIF, etc.) shall, for all purposes hereof, be deemed an original
-signature and neither party shall have the right to object to the manner
-in which the Agreement was executed as a defense to the enforcement of
-the Agreement.
+8.15. Counterparts and Execution.
 
-8.16. Controlling Language. This Agreement has been prepared, negotiated
-and signed in English, and English is the controlling language of this
-Agreement. Even if any other language version is prepared, including the
-Japanese version of this document, such version is for convenience
-purposes only and the English version shall prevail if there is any
-difference between such version and English version.
+This Agreement may be executed in counterparts, each of which will be deemed an
+original, but all of which together will constitute one and the same
+instrument.  An originally executed version of this Agreement or any Exhibit,
+attachment and subsequent Purchasing Agreement (including, where applicable, a
+Customer purchase order issued in response to a Purchasing Agreement where such
+issuance constitutes execution), that is delivered by one party to the other
+party, as evidence of signature, by facsimile, or by electronic mail after
+having been scanned as an image file (including, Adobe PDF, TIF, etc.) shall,
+for all purposes hereof, be deemed an original signature and neither party
+shall have the right to object to the manner in which the Agreement was
+executed as a defense to the enforcement of the Agreement. 
+
+8.16. Controlling Language. 
+
+This Agreement has been prepared, negotiated and signed in English, and English
+is the controlling language of this Agreement.  Even if any other language
+version is prepared, including the Japanese version of this document, such
+version is for convenience purposes only and the English version shall prevail
+if there is any difference between such version and English version.
+
 
 END OF TERMS AND CONDITIONS
 
+
 MAINTENANCE SERVICES TERMS ADDENDUM
 
-1. MAINTENANCE SERVICES. “Maintenance Services” means the standard
-Maintenance and Support provided by Synopsys to Customer as further
-described below. Subject to Customer’s payment of applicable fees,
-Synopsys will provide the following standard Maintenance Services to
-Customer for the period agreed by the parties in the order
-documentation:
 
-1.1 Maintenance and Support.
+1. MAINTENANCE SERVICES.
 
-(a) Maintenance. “Maintenance” means the provision by Synopsys to
-Customer of any Releases or Workarounds that are made generally
-available by Synopsys to customers who subscribe for Synopsys’
-Maintenance Services offering.
+"Maintenance Services" means the standard Maintenance and Support provided by
+Black Duck to Customer as further described below.  Subject to Customer's
+payment of applicable fees, Black Duck will provide the following standard
+Maintenance Services to Customer for the period agreed by the parties in the
+order documentation:
 
-(i) A Release will be one of the following: A “Major Release” means a
-specific edition of the Licensed Product that contains major
-functionality changes. The content and timing of all Major Releases will
-be determined by Synopsys in its sole discretion. Major Releases are
-signified by version changes to the left of the decimal point (e.g. 2.0
--> 3.0) following the product name. A “Minor Release” means a specific
-edition of the Licensed Product that contains minor, but significant
-functionality changes and could include Licensed Product Updates. The
-content and timing of all Minor Releases will be determined by Synopsys
-in its sole discretion. Minor Releases are signified by version changes
-to the right of the decimal point (e.g. 2.5 -> 2.6) following the
-product name.
+1.1	Maintenance and Support.
 
-(ii) “Workaround” means a Licensed Product patch, error correction, or
-feasible change in operating procedures whereby the Licensed Product is
-made sufficiently functional so that Customer can continue to use the
-Licensed Product. Synopsys may provide Workarounds for a release to
-resolve a Service Issue for up to twelve (12) months after the earlier
-of (i) the date the subsequent Release is first made commercially
-available, and (ii) the date the current Release is no longer made
-available as a commercial offering by Synopsys. After such twelve (12)
-month period, Synopsys is not obligated to provide Workarounds but will
-support Customer’s update of the Licensed Product to the latest Release.
-Where Workarounds are to be delivered to resolve a Service Issue,
-Synopsys will provide Customer with a single copy of a Workaround on
-suitable media or shall make available the applicable Workaround for
-download by Customer from Synopsys’ web site.
+(a)	Maintenance. 
 
-(b) Support. “Support” means the e-mail and telephone technical services
-that Synopsys offers regarding the use and function of the Licensed
-Product. Synopsys will provide Support and respond to Service Issues as
-further described below. A “Service Issue” is a Customer inquiry
-regarding the functionality or use of the Licensed Product. Customer
-agrees that Synopsys’ Support obligations concerning the Licensed
-Product’s use with third party products, including compilers, operating
-systems and other Licensed Product, shall be limited to those items set
-forth in the Documentation. Service Issues are assigned a classification
-at the time of Customer’s initial contact with Synopsys, and are
-classified according to the severity levels set forth below. Synopsys
-will initially respond in accordance with the response times applicable
-to Service Issues reported by telephone or e-mail during Synopsys’
-regular service hours for the applicable region as set forth below.
-Failure to contact Customer within the response time period because
-Customer is unavailable (e.g., phone busy, no answer, in a meeting, or
-out of the office) does not constitute Synopsys’ noncompliance with the
-response commitment. Customer shall cooperate with Synopsys to provide
-reproducible results for any errors reported. Synopsys’ ability to
-provide Support will depend, in some cases, on the ability of Customer’s
-representatives to provide accurate and detailed information and to aid
-Synopsys in handling a Service Issue. Customer shall provide Synopsys
-with reasonable access to Customer systems, premises and staff as needed
-to provide Support. Synopsys will provide Support for each Release for
-at least eighteen (18) months after the subsequent Release is first made
-commercially available. After such period, Synopsys will provide
-Support, as needed, to Customer to update its use of the Licensed
-Product to the latest Release of the Licensed Product.
+"Maintenance" means the provision by Black Duck to Customer of any Releases or
+Workarounds that are made generally available by Black Duck to customers who
+subscribe for Black Duck's Maintenance Services offering.  
+(i) A Release will be one of the following: 
+A "Major Release" means a specific edition of the Licensed Product that contains 
+major functionality changes. The content and timing of all Major Releases will 
+be determined by Black Duck in its sole discretion.
+Major Releases are signified by version changes to the left of the decimal 
+point (e.g. 2.0 -> 3.0) following the product name.  
+A "Minor Release" means a specific edition of the Licensed Product that contains 
+minor, but significant functionality changes and could include Licensed Product 
+Updates. The content and timing of all Minor Releases will be determined by 
+Black Duck in its sole discretion.  
+Minor Releases are signified by version changes to the right of the decimal 
+point (e.g. 2.5 -> 2.6) following the product name.  
+(ii) "Workaround" means a Licensed Product patch, error correction, or feasible
+change in operating procedures whereby the Licensed Product is made sufficiently 
+functional so that Customer can continue to use the Licensed Product.  
+Black Duck may provide Workarounds for a release to resolve a Service Issue 
+for up to twelve (12) months after the earlier of 
+(i) the date the subsequent Release is first made commercially available, and 
+(ii) the date the current Release is no longer made available as a commercial 
+offering by Black Duck.  
+After such twelve (12) month period, Black Duck is not obligated to
+provide Workarounds but will support Customer's update of the Licensed Product
+to the latest Release.  Where Workarounds are to be delivered to resolve a
+Service Issue, Black Duck will provide Customer with a single copy of a
+Workaround on suitable media or shall make available the applicable Workaround
+for download by Customer from Black Duck's web site.
 
-Service Issue Classification      
+(b)	Support.
 
-Response Time               
+"Support" means the e-mail and telephone technical services that Black Duck
+offers regarding the use and function of the Licensed Product.  Black Duck will
+provide Support and respond to Service Issues as further described below.  A
+"Service Issue" is a Customer inquiry regarding the functionality or use of the
+Licensed Product. Customer agrees that Black Duck's Support obligations
+concerning the Licensed Product's use with third party products, including
+compilers, operating systems and other Licensed Product, shall be limited to
+those items set forth in the Documentation.  Service Issues are assigned a
+classification at the time of Customer's initial contact with Black Duck, and
+are classified according to the severity levels set forth below.  Black Duck
+will initially respond in accordance with the response times applicable to
+Service Issues reported by telephone or e-mail during Black Duck's regular
+service hours for the applicable region as set forth below.  Failure to contact
+Customer within the response time period because Customer is unavailable (e.g.,
+phone busy, no answer, in a meeting, or out of the office) does not constitute
+Black Duck's noncompliance with the response commitment.  Customer shall
+cooperate with Black Duck to provide reproducible results for any errors
+reported.  Black Duck's ability to provide Support will depend, in some cases,
+on the ability of Customer's representatives to provide accurate and detailed
+information and to aid Black Duck in handling a Service Issue. Customer shall
+provide Black Duck with reasonable access to Customer systems, premises and
+staff as needed to provide Support.
 
-Next Steps
+Black Duck will provide Support for each Release for at least eighteen (18)
+months after the subsequent Release is first made commercially available. After
+such period, Black Duck will provide Support, as needed, to Customer to update
+its use of the Licensed Product to the latest Release of the Licensed Product.
 
-Severity P1—Critical Business Impact: Licensed Product is not
-functioning or is stopped or severely impacted so that Customer cannot
-reasonably continue use of Licensed Product and no Workaround is
-available.
+
+Service Issue Classification Response Time
+
+Next Steps 
+
+Severity P1 - Critical
+Business Impact: Licensed Product is not functioning or is stopped or severely
+impacted so that Customer cannot reasonably continue use of Licensed Product
+and no Workaround is available.  
 
 One business day 
+Once the Service Issue is verified, Black Duck will engage 
+development staff during Black Duck's business hours (but in no event later 
+than 12 hours after the Service Issue is verified) until a Workaround is achieved.
 
-Once the Service Issue is verified, Synopsys will engage development
-staff during Synopsys’ business hours (but in no event later than 12
-hours after the Service Issue is verified) until a Workaround is
-achieved.
+Severity P2 - Major Business Impact: Licensed Product is functioning 
+inconsistently causing significantly impaired Customer usage and productivity, 
+such as periodic work stoppages and feature crashes.
 
-Severity P2—Major Business Impact: Licensed Product is functioning
-inconsistently causing significantly impaired Customer usage and
-productivity, such as periodic work stoppages and feature crashes.
+One business day 
+Once the Service Issue is verified, Black Duck will engage development staff
+during Black Duck's business hours (but in no event later than 24 hours after
+the Service Issue is verified) until a Workaround is achieved.  
 
-One business day
+Severity P3 - Minor Business Impact: Licensed Product is functioning 
+inconsistently causing slightly impaired Customer usage and productivity but 
+Customer can work around such inconsistency or impairment.  
 
-Once the Service Issue is verified, Synopsys will engage development
-staff during Synopsys’ business hours (but in no event later than 24
-hours after the Service Issue is verified) until a Workaround is
-achieved.
+Two business days 
+Once the Service Issue is verified, Black Duck will consider a Workaround, 
+if appropriate in Black Duck's sole discretion, and Licensed Product enhancements 
+for such Service Issue for inclusion in a subsequent Release.  
 
-Severity P3—Minor Business Impact: Licensed Product is functioning
-inconsistently causing slightly impaired Customer usage and productivity
-but Customer can work around such inconsistency or impairment.
+Severity P4 - No Business Impact: Licensed Product is functioning consistently 
+but Customer requests minor changes in Licensed Product such as Documentation 
+updates, cosmetic defects or enhancements.  
 
-Two business days
+Three business days 
 
-Once the Service Issue is verified, Synopsys will consider a Workaround,
-if appropriate in Synopsys’ sole discretion, and Licensed Product
-enhancements for such Service Issue for inclusion in a subsequent
-Release.
+Once contact has been made with Customer, Black Duck will consider Licensed Product 
+enhancements for inclusion in a subsequent Release.
 
-Severity P4—No Business Impact: Licensed Product is functioning
-consistently but Customer requests minor changes in Licensed Product
-such as Documentation updates, cosmetic defects or enhancements.
+(c)	Customer Point of Contact.
 
-Three business days
+Customer will designate a specific individual to be the primary point of
+contact for Maintenance Service communications with Black Duck and will deliver
+contact information for such individual to Black Duck's support team.
 
-Once contact has been made with Customer, Synopsys will consider
-Licensed Product enhancements for inclusion in a subsequent Release.
+1.2 Exclusions to Maintenance Services.
 
-(c) Customer Point of Contact. Customer will designate a specific
-individual to be the primary point of contact for Maintenance Service
-communications with Synopsys and will deliver contact information for
-such individual to Synopsys’ support team.
+Maintenance Services do not include the right to access new or bundled product
+offerings made available by Black Duck, unless licenses for such offerings are
+separately purchased.  Black Duck will not have any obligation to provide
+Maintenance Services for problems in the operation or performance of the
+Licensed Product to the extent caused by any of the following: 
+(a) modifications to the Licensed Product made by a party other than Black Duck;
+(b) Customer's use of the Licensed Product other than as authorized by the
+applicable agreement licensing the Licensed Product to Customer or as provided
+in the Documentation; or 
+(c) Customer's use of releases other than those releases of the Licensed Product 
+covered by Maintenance Services, 
+(d) Customer's failure to use any error corrections or updates thereto provided by
+Black Duck to address such problem, or 
+(e) use of scripts or other deliverables provided to Customer under On-Site 
+Support services.  
+If, in its sole discretion, Black Duck determines that a problem in the operation 
+or performance of the Licensed Product is caused by the foregoing, then Black Duck
+will notify Customer promptly and have no further Maintenance Service
+obligations related to such problem. If Customer requests services beyond
+standard Maintenance Services, Black Duck will have the right to invoice
+Customer at Black Duck's then-current published time and materials rates for
+the provision of such services.
 
-1.2 On-Site Support. Customer may elect to purchase specific on-site
-support packages, details of which can be found on Synopsys’ website:
-https://www.synopsys.com/company/legal/softwareintegrity/onsite-support-
-services-terms-v2015.1-1.html. The purpose of on-site support is to help
-customers optimize deployment of the Licensed Product, including
-installation, setup, configuration, and additional support offerings.
 
-1.3 Exclusions to Maintenance Services. Maintenance Services do not
-include the right to access new or bundled product offerings made
-available by Synopsys, unless licenses for such offerings are separately
-purchased. Synopsys will not have any obligation to provide Maintenance
-Services for problems in the operation or performance of the Licensed
-Product to the extent caused by any of the following: (a) modifications
-to the Licensed Product made by a party other than Synopsys;
+2.	HOURS OF SERVICE AND CONTACT INFORMATION.
 
-(b) Customer’s use of the Licensed Product other than as authorized by
-the applicable agreement licensing the Licensed Product to Customer or
-as provided in the Documentation; or (c) Customer’s use of releases
-other than those releases of the Licensed Product covered by Maintenance
-Services, (d) Customer’s failure to use any error corrections or updates
-thereto provided by Synopsys to address such problem, or (e) use of
-scripts or other deliverables provided to Customer under On-Site Support
-services (as described in Section 1.2 above). If, in its sole
-discretion, Synopsys determines that a problem in the operation or
-performance of the Licensed Product is caused by the foregoing, then
-Synopsys will notify Customer promptly and have no further Maintenance
-Service obligations related to such problem. If Customer requests
-services beyond standard Maintenance Services, Synopsys will have the
-right to invoice Customer at Synopsys’ thencurrent published time and
-materials rates for the provision of such services.
+For Customers located in Europe: Contact us by: At During Email Phone
 
-2. HOURS OF SERVICE AND CONTACT INFORMATION.
+tech-support@blackduck.com +44 (0) 1276 400352 9:00 - 17:00 UK time 9:00 -
+17:00 UK time
 
-For Customers located in Europe:
+For Japanese-language support: Contact us by: At During Email Phone
 
-Contact by:  At                                            During
------------  --------------------------------------------  --------------------
-Email        software-integritysupport@synopsys.com        9:00 – 17:00 UK time
-Phone        +44 (0) 1276 400352                           9:00 – 17:00 UK time
+tech-support-japan@blackduck.com +81-03-6746-3666 9am - 5pm JST 9am - 5pm JST
 
-For Japanese-language support:
+For Korean-language support: Contact us by: At During Email Phone
 
-Contact by:  At                                            During
------------  --------------------------------------------  --------------------
-Email        software-integrity-supportjapan@synopsys.com  9am – 5pm JST
-Phone        +81-03-6746-3666                              9am – 5pm JST
+tech-support-korea@blackduck.com +82-2-3404-9332 9am - 5pm KST 9am - 5pm KST
 
-For Korean-language support:
+For Mandarin-language support: Contact us by: At During Email Phone
 
-Contact by:  At                                            During
------------  --------------------------------------------  --------------------
-Email        software-integrity-supportkorea@synopsys.com  9am – 5pm KST
-Phone        +82-2-3404-9332                               9am – 5pm KST
+tech-support-china@blackduck.com +86-4006-966-606 9am - 5pm CST 9am - 5pm CST
 
-For Mandarin-language support:
+For Customers located in India: Contact us by: At During Phone
 
-Contact by:  At                                            During
------------  --------------------------------------------  --------------------
-Email        software-integrity-supportchina@synopsys.com  9am – 5pm CST
-Phone        +86-4006-966-606                              9am – 5pm CST
++91.80.4018.5502 9:00 - 17:00 IST
 
-For Customers located in India:
+For all other Customers: Contact us by: At During Web Email Phone Submit a
+Support Case
 
-Contact by:  At                                            During
------------  --------------------------------------------  --------------------
-Email        software-integritysupport@synopsys.com        9:00 – 17:00 IST
-Phone        +91-(0)80 6751 1888 or 1(800) 419-4311        9:00 – 17:00 IST
+tech-support@blackduck.com +1 415.321.5239 7am - 6pm Pacific Time 7am - 6pm
+Pacific Time 7am - 6pm Pacific Time
 
-For all other Customers:
-
-Contact by:  At                                            During
------------  --------------------------------------------  --------------------
-Email        software-integritysupport@synopsys.com        7am – 6pm Pacific Time
-Phone        +1 800-873-7793 or +1 415.321.5239            7am – 6pm Pacific Time
-
-All contact information is subject to change upon notice from Synopsys.
+All contact information is subject to change upon notice from Black Duck.
 Closed on public holidays.
 
-3. GENERAL. These terms and conditions contain the parties’ entire
-agreement concerning Maintenance Services. Customer agrees that
-additional or different terms on Customer’s purchase order shall not
-apply. Any waiver, modification or amendment of these terms and
-conditions will be effective only if in writing and signed by an
-authorized representative of Customer and Synopsys.
 
-END OF MAINTENANCE SERVICES TERMS ADDENDUM
+3.	GENERAL. 
+
+These terms and conditions contain the parties' entire agreement concerning
+Maintenance Services. Customer agrees that additional or different terms on
+Customer's purchase order shall not apply. Any waiver, modification or
+amendment of these terms and conditions will be effective only if in writing
+and signed by an authorized representative of Customer and Black Duck.
+
+END OF MAINTENANCE SERVICES TERMS ADDENDUM 
+
 
 ONSITE SUPPORT SERVICES TERMS ADDENDUM
 
+
 1. SERVICES
 
-1.1. Services. Customer has entered into an Agreement for a license to
-the Licensed Product as set forth therein. In connection with Customer’s
-use of the Licensed Product, Customer may contract to retain Synopsys to
-provide Customer with the services set out in the applicable Addendum,
+1.1. Services.
+
+In connection with Customer's use of the Licensed Product, Customer may retain
+Black Duck to provide Customer with the services set out in the applicable
 Purchasing Agreement, Customer Success Package and/or Statement of Work
-to the Agreement (collectively the “Services”). The delivery of the
-Services is expressly conditioned on Customer’s acceptance of the terms
-and conditions of this Addendum.
+(collectively the "Services"). 
 
-1.2. Purchasing Agreements; Statements of Work. Customer will order
-Services by executing one or more written Statements of Work or
-Purchasing Agreements as applicable. Synopsys shall not be obligated to
-deliver such Services until Customer and Synopsys enter into one or more
-(a) written statements of work (each a “Statement of Work”) specifically
-identifying the Services to be delivered by Synopsys in connection with
-the applicable Purchasing Agreement, unless otherwise agreed to by the
-parties in the applicable Addendum or (b) Purchasing Agreements
-identifying the applicable Services to be performed. If applicable, a
-Statement of Work shall identify the Services that Customer requests
-Synopsys to provide, the duration of the Services, the fees payable by
-Customer for the Services, and the payment structure. To be effective,
-each Addendum, Purchasing Agreement and/or Statement of Work (as
-applicable) must reference this Addendum, and be agreed to in writing by
-an authorized representative of Synopsys and Customer, and once so
-agreed upon will be incorporated herein by reference. If no Purchasing
-Agreement or Statement of Work is executed in connection with the
-performance of the Services, a Synopsys invoice referencing this
-Addendum in response to Customer’s correct purchase order shall be
-Synopsys’ acceptance of the services transaction. Additional or
-different terms of Customer’s purchase order shall not apply.
+1.2. Purchasing Agreements; Statements of Work. 
 
-1.3. Performance of Services. Synopsys will perform the Services using
-such resources as Synopsys deems necessary in accordance with the terms
-and conditions of this Addendum and of each applicable Purchasing
-Agreement and Statement of Work. The Services shall be performed solely
-in relation to the licenses to the Licensed Product granted by Synopsys
-to Customer under the Agreement. All terms of the Agreement and
-Purchasing Agreement that are not specifically amended herein will
-remain in full effect. Nothing in this Agreement grants Customer any
-rights to the Licensed Product other than as explicitly stated herein.
-If Synopsys personnel are working on Customer’s premises:
+To order Services, Customer shall enter into 
+(a) written statements of work (each a "Statement of Work") identifying 
+the Services or 
+(b) Purchasing Agreements identifying the Services to be performed.  
 
-(a) Customer will provide a safe and secure working environment for such
-personnel; and
+Each Purchasing Agreement and/or Statement of Work must reference this Agreement.
 
-(b) Synopsys will comply with all reasonable workplace safety and
-security standards and policies that are applicable to Customer’s
-employees and of which Customer notifies Synopsys in writing and in
-advance of the commencement of any Services.
+1.3. Performance of Services..
 
-1.4. Customer Responsibilities. Customer will provide Synopsys with
-access to Customer’s sites and facilities during Customer’s normal
-business hours as reasonably required by Synopsys to perform the
-Services. Customer will also make available to Synopsys any data,
-information and any other materials reasonably required by Synopsys to
-perform the Services, including, but not limited to, any data,
-information or materials specifically identified in the Statement of
-Work (collectively, “Customer Materials”).
+The Services shall be performed solely in relation to the licenses to the
+Licensed Product granted by Black Duck to Customer under the Agreement.
+Nothing in this Addendum grants Customer any rights to the Licensed Product
+other than as explicitly stated herein. 
+If Black Duck personnel are working on Customer's premises: 
+(a) Customer will provide a safe and secure working environment for such 
+personnel; and 
+(b) Black Duck will comply with all reasonable workplace safety and security 
+standards and policies that are applicable to Customer's employees and of which 
+Customer notifies Black Duck in writing and in advance of the commencement 
+of any Services.
 
-1.5. Relationship of the Parties. Synopsys is performing the Services as
-an independent contractor, not as an employee, agent, joint venturer or
-partner of Customer. Synopsys acknowledges and agrees that its personnel
-are not eligible for or entitled to receive any compensation, benefits
-or other incidents of employment that Customer makes available to its
-employees. Accordingly, for a period of twelve (12) months following the
-completion of the Services, Customer agrees not to directly or
-indirectly solicit for employment any Synopsys employees or contractors,
-provided that a job posting available to the general public shall not be
-deemed such a solicitation.
+1.4. Customer Responsibilities. 
 
-2. FEES AND EXPENSES. As consideration for the Services, Customer will
-pay Synopsys fees in accordance with the terms set forth in the
-applicable Purchasing Agreement. Unless otherwise stated in the
-applicable Purchasing Agreement, Customer Success Package or Statement
-of Work, all Services are provided on a time and materials basis. In
-addition, Customer will reimburse Synopsys for all reasonable and
-customary travel, lodging and other related expenses incurred by
-Synopsys or its personnel in connection with the performance of the
-Services in accordance with the terms set forth in the applicable
-Purchasing Agreement, Customer Success Package, or Statement of Work
-upon being provided with receipts and other documentation for all such
-expenses.
+Customer will provide Black Duck with access to Customer's sites and facilities
+during Customer's normal business hours as reasonably required by Black Duck to
+perform the Services.  Customer will also make available to Black Duck any
+data, information and any other materials reasonably required by Black Duck to
+perform the Services, including, but not limited to, any data, information or
+materials specifically identified in the Statement of Work (collectively,
+"Customer Materials").
 
-3. OWNERSHIP. Material and associated intellectual property rights
-developed by a party prior to or outside of the scope of a Customer
-Success Package or Statement of Work (“Pre-Existing Material”) shall be,
-as between the parties, owned by the developing party. Synopsys shall
-own all rights, title and interest in all scripts, methodologies,
-processes, and documentation, and all intellectual property rights
-therein, developed during the provision of the Services involving (i)
-implementation or installation of Licensed Products into Customer’s
-environment, (ii) configuration of workflow or reporting capabilities of
-the Licensed Product, and (iii) optimization of the use of the Licensed
-Product in Customer’s environment (collectively, the “Synopsys-Owned
-Work Product”). Synopsys hereby grants to Customer, for the license term
-applicable to the Licensed Product licensed to Customer under the
-applicable Purchasing Agreement, a nonexclusive, worldwide, right to
-use, reproduce and create derivative works of any PreExisting Material
-owned by Synopsys and incorporated into deliverables of the Services,
-and the Synopsys-Owned Work Product, for Customer’s internal business
-purposes to aid in Customer’s use of Licensed Product licensed by it.
+1.5. Relationship of the Parties. 
 
-4. SERVICES WARRANTY. Synopsys warrants that, for a period of ninety
-(90) days from the completion of the Services (the “Services Warranty
-Period”) the Services will be performed in a professional and
-workmanlike manner consistent with applicable industry standards. If
-during the Services Warranty Period, Synopsys receives from Customer a
-written notice of the Service’s nonconformance with the provisions set
-forth in this Section 4, Synopsys will, as Customer’s sole and exclusive
-remedy and Synopsys’ entire liability for any breach of the foregoing
-warranty, at Synopsys’ sole option and expense, promptly re-perform the
-non-conforming Services or refund to Customer the fees paid for the
-non-conforming Services. THE FOREGOING STATES CUSTOMER’S SOLE AND
-EXCLUSIVE REMEDY FOR WARRANTY CLAIMS RELATED TO THE SERVICES.
+Black Duck is performing the Services as an independent contractor, not as an
+employee, agent, joint venturer or partner of Customer.  Black Duck
+acknowledges and agrees that its personnel are not eligible for or entitled to
+receive any compensation, benefits or other incidents of employment that
+Customer makes available to its employees. Accordingly, for a period of twelve
+(12) months following the completion of the Services, Customer agrees not to
+directly or indirectly solicit for employment any Black Duck employees or
+contractors engaged in the performance of the Services, provided that a job
+posting available to the general public shall not be deemed such a solicitation.
 
-5. ENTIRE ADDENDUM. The parties acknowledge that they have had previous
-discussions related to Synopsys’ performance of the Services for
-Customer. This Addendum, together with any Statements of Work or
-Customer Success Packages incorporated into the Agreement by reference
-and the Agreement, constitutes the complete and exclusive understanding
-and agreement between the parties on the subject matter and supersedes
-all prior or contemporaneous agreements or understandings, written or
-oral, relating to the Agreement, this Addendum, any Customer Success
-Packages or any Statements of Work.
 
-END OF ONSITE SUPPORT SERVICES ADDENDUM
+2. FEES AND EXPENSES. 
 
-SOFTWARE DEVELOPMENT KIT ADDENDUM
+Customer will pay Black Duck fees in accordance with the terms set forth in the
+applicable Purchasing Agreement or Statement of Work.  In addition, Customer
+will reimburse Black Duck for all reasonable and customary travel, lodging and
+other related expenses incurred by Black Duck or its personnel in connection
+with the performance of the Services upon being provided with receipts and
+other documentation for all such expenses.
 
-IMPORTANT INFORMATION – READ CAREFULLY UNLESS YOU HAVE OBTAINED
-PERMISSION TO USE THE LICENSED PRODUCT UNDER A SEPARATE, DULY SIGNED
-LICENSE AGREEMENT OR AN EVALUATION LICENSE WITH SYNOPSYS OR AN
-AUTHORIZED DISTRIBUTOR, THE ACCOMPANYING SOFTWARE IS PROVIDED UNDER THE
-FOLLOWING TERMS AND CONDITIONS AND ANY SUPPLEMENTAL TERMS REFERENCED
-BELOW AND YOUR RIGHT TO USE THE SOFTWARE IS CONDITIONED UPON YOUR
-ACCEPTANCE OF THIS AGREEMENT. IF YOU DO NOT ACCEPT THESE TERMS AND
-CONDITIONS AND YOU DO NOT HAVE A SEPARATE LICENSE AGREEMENT AS
-REFERENCED ABOVE, YOU MAY NOT USE OR COPY THE SOFTWARE AND YOU MUST
-DELETE ANY COPIES OF IT FROM YOUR SYSTEMS.
 
-1. SCOPE AND KEY TERMS. This is an addendum (this “SDK Addendum”) to the
-Agreement concerning Customer’s use of the Licensed Product described
-below. The rights granted to the Licensed Product are expressly
-conditioned upon acceptance of the additional terms and conditions
-stated in this SDK Addendum by Customer. If an Authorized User of
-Customer is using the Licensed Product, Customer is the licensee of the
-Licensed Product. Customer may have already accepted a version of the
-terms and conditions of this SDK Addendum by signing a Purchasing
-Agreement referencing them. In all other circumstances, use by an
-Authorized User binds such user and Customer to these Terms and
-Conditions by using the Licensed Product. The Licensed Product is the
-proprietary information of Synopsys or its suppliers who retain
-exclusive title to their intellectual property rights in the Software.
-Customer’s rights to the Licensed Product are limited to those expressly
-granted below, and Synopsys reserves all rights not expressly granted in
-this SDK Addendum.
+3. OWNERSHIP.
 
-2. Definitions. Capitalized terms in this Addendum have the meanings
-given them in the Agreement and/or applicable Purchasing Agreement.
-Whenever capitalized in this SDK Addendum:
+Material and associated intellectual property rights developed by a party prior
+to or outside of the scope of a Customer Success Package, Statement of Work or
+Purchasing Agreement ("Pre-Existing Material") shall be, as between the
+parties, owned by the developing party. Black Duck shall own all rights, title
+and interest in all scripts, methodologies, processes, and documentation, and
+all intellectual property rights therein, developed during the provision of the
+Services involving (i) implementation or installation of Licensed Products into
+Customer's environment, (ii) configuration of workflow or reporting
+capabilities of the Licensed Product, and (iii) optimization of the use of the
+Licensed Product in Customer's environment (collectively, the "Black Duck-Owned
+Work Product"). Black Duck hereby grants to Customer, for the license term
+applicable to the Licensed Product licensed to Customer under the applicable
+Purchasing Agreement, a nonexclusive, worldwide, right to use, reproduce and
+create derivative works of any Pre-Existing Material owned by Black Duck and
+incorporated into deliverables of the Services, and the Black Duck-Owned Work
+Product, for Customer's internal business purposes to aid in Customer's use of
+Licensed Product licensed by it.
 
-2.1 “SDK Addendum” means this Synopsys SDK Addendum.
 
-2.2 “Agreement” means the applicable Synopsys End User Software License
-and Maintenance Agreement pursuant to which a license to the Licensed
-Product was granted to Customer in accordance with the terms and
-conditions therein. This SDK Addendum is hereby incorporated by
-reference into the Agreement.
+4. SERVICES WARRANTY. 
 
-2.3 “Checker” means one or more bug checkers developed by Customer or
-its Authorized Users in compliance with the Documentation for specific
-use with the Licensed Product.
+Black Duck warrants that the Services will be performed in a professional and
+workmanlike manner consistent with applicable industry standards.  Ift Black
+Duck receives from Customer a written notice of the Service's non-conformance
+with the provisions set forth in this Section 4, Black Duck will, as Customer's
+sole and exclusive remedy and Black Duck' entire liability for any breach of
+the foregoing warranty, at Black Duck's sole option and expense, promptly
+re-perform the Services or refund to Customer the fees paid for the Services.
+THE FOREGOING STATES CUSTOMER'S SOLE AND EXCLUSIVE REMEDY FOR WARRANTY CLAIMS
+RELATED TO THE SERVICES.
 
-2.4 “Documentation” means, for purposes of this SDK Addendum, the
-Documentation (as defined in the Agreement) that is specific to the
-Licensed Product licensed pursuant to this SDK Addendum.
 
-2.5 “SDK” or “Software Development Kit” means the Documentation and the
-Licensed Product (source code and object code) provided or made
-available by Synopsys for use by Customer in connection with Customer’s
-use of the Licensed Product in accordance with the terms of the
-Agreement.
+END OF ONSITE SUPPORT SERVICES TERM ADDENDUM
 
-2.6 “Licensed Product” means, for purposes of this SDK Addendum, the
-Synopsys Analysis Integration Toolkit (including without limitation any
-applications, sample code, simulator, tools, libraries, APIs, data,
-files, and materials).
-
-2.7 “Licensed Term” means the period described in the applicable
-Purchasing Agreement for the Licensed Product.
-
-3. SDK INTERNAL USE LICENSE AND RESTRICTIONS.
-
-3.1 Permitted Uses and Restrictions. Subject to Customer’s compliance
-with the terms and conditions of the Agreement and this SDK Addendum,
-Synopsys hereby grants Customer during the Licensed Term, a limited,
-nonexclusive, personal, revocable, non-sub-licensable and
-nontransferable license to:
-
-3.1.1 Install up to the licensed number of copies of the SDK on
-computers owned or controlled by Customer, to be used internally by
-Customer or Customer’s Authorized Users for the sole purpose of
-developing or testing Checkers; and
-
-3.1.2 Make and distribute a reasonable number of copies of the
-Documentation to Authorized Users for Customer’s internal use only and
-for the sole purpose of developing or testing Checkers. Customer
-understands that Checkers developed using the SDK can only be installed
-or used in conjunction with the Licensed Product. Synopsys shall not be
-responsible for any costs, expenses or other liabilities Customer may
-incur as a result of Customer’s Checker development or use of this SDK.
-
-3.2 Copies. Customer agrees to retain and reproduce in full the Synopsys
-copyright, disclaimers and other proprietary notices (as they appear in
-the SDK and Documentation provided) in any Checker created by Customer
-and/or its Authorized Users and in all copies of the SDK and
-Documentation that Customer is permitted to make under this Addendum.
-
-4. OWNERSHIP.
-
-4.1 Synopsys retains all rights, title, and interest in and to the SDK
-it may make available to Customer under this Addendum. Customer agrees
-to cooperate with Synopsys to maintain Synopsys’ ownership of the SDK
-(including all Synopsys SDK materials incorporated into the Checkers
-that are created in connection therewith), and Customer agrees to
-promptly provide notice of any claims relating to the SDK (and any SDK
-materials incorporated into such Checkers).
-
-4.2 Except with respect to the SDK materials that are permitted to be
-incorporated into a Checker pursuant to the terms of this Addendum,
-Customer shall retain all rights, title and interest in and to the
-Checkers, subject to the use limitations stated herein.
-
-4.3 Customer hereby grants to Synopsys, its subcontractors and
-authorized distributors, without charge, the right to use, copy, modify
-and create derivative works of any such Checkers solely for the purpose
-of (i) improving the operation, functionality or use of Synopsys’
-existing and future product offerings and commercializing such
-offerings; and (ii) publishing aggregated statistics about software
-quality, provided that no data in any such publication can be used to
-specifically identify Customer or Customer’s Checkers or software code.
-
-4.4 No Other Permitted Uses. Customer agrees not to rent, lease, lend,
-upload to or host on any website or server, sell, redistribute, or
-sublicense the SDK or any Checker, in whole or in part, or to enable
-others to do so. Customer shall not use the SDK or any Checker for any
-purpose not expressly permitted by this Addendum. Customer may not and
-Customer agrees not to, or to enable others to, copy (except as
-expressly permitted under this Addendum), decompile, reverse engineer,
-disassemble, attempt to derive the source code of, modify, decrypt, or
-create derivative works of the SDK or any services provided by the SDK,
-or any part thereof (except as and only to the extent any foregoing
-restriction is prohibited by applicable law, or to the extent as may be
-permitted by licensing terms governing use of open-sourced components or
-sample code included with the SDK). Customer agrees not to exploit any
-services provided by the SDK in any unauthorized way whatsoever. Any
-attempt to do so is a violation of the rights of Synopsys and its
-licensors of the SDK. If Customer breaches any of the foregoing
-restrictions, Customer may be subject to prosecution and damages. All
-licenses not expressly granted in this Agreement are reserved and no
-other licenses, immunity or rights, express or implied are granted by
-Synopsys, by implication, estoppel, or otherwise. This Addendum does not
-grant Customer any rights to use any trademarks, logos or service marks
-belonging to Synopsys.
-
-4.5 Releases and Workarounds; No Support or Maintenance. Synopsys may
-extend, enhance, or otherwise modify the SDK at any time without notice,
-but Synopsys shall not be obligated to provide Customer with any
-Releases or Workarounds to the SDK. If Releases or Workarounds are made
-available by Synopsys, the terms of this Addendum will govern such
-Releases and Workarounds. Synopsys is not obligated to provide any
-Maintenance or other support for the SDK. Customer acknowledges that
-Synopsys has no express or implied obligation to announce or make
-available any Releases or Workarounds of the SDK to anyone in the
-future. Should a Release or Workaround be made available, it may have
-APIs, features, services or functionality that are different from those
-found in the SDK licensed hereunder.
-
-5. CUSTOMER OBLIGATIONS.
-
-5.1 Use of the SDK. As a condition to using the SDK, Customer agrees
-that:
-
-5.1.1 Customer will only use the SDK for the purposes and in the manner
-expressly permitted by this Addendum and in accordance with all
-applicable laws and regulations;
-
-5.1.2 Customer will not use the SDK for any unlawful or illegal
-activity, nor to develop any Checker which would commit or facilitate
-the commission of a crime, or other tortious, unlawful, or illegal act;
-
-5.1.3 To the best of Customer’s knowledge and belief, Customer Checkers
-do not and will not violate, misappropriate, or infringe any copyright,
-patent, trademark, trade secret, rights of privacy and publicity, or
-other proprietary or legal right of any third party or of Synopsys.
-
-5.2 Requirements for Checkers. Any Checker developed using this SDK must
-comply with these criteria and requirements, as they may be modified by
-Synopsys from time to time:
-
-5.2.1 Checkers may only use SDK materials in the manner prescribed by
-Synopsys and must not use or call any materials not published or
-authorized by Synopsys.
-
-5.2.2 A Checker may not itself install or launch other executable code
-by any means, including without limitation through the use of a plug-in
-architecture, calling other frameworks, other APIs or otherwise. No
-interpreted code may be downloaded and used in a Checker except for code
-that is interpreted and run by the Licensed Product.
-
-5.2.3 Checkers must comply with the Documentation provided by Synopsys.
-
-5.2.4 If Customer’s Checker includes any Open Source Licensed Product,
-Customer agrees to comply with all applicable Open Source Licensed
-Product licensing terms. Customer also agrees not to use any Open Source
-Licensed Product in the development of Customer’s Checker in such a way
-that would cause the non-Open Source Licensed Product portions of the
-SDK to be subject to any Open Source Licensed Product licensing terms or
-obligations, including, without limitation, any condition of use,
-copying, modification or redistribution, which would require such
-Checker or the Licensed Product and derivative works thereof to be
-disclosed or distributed in source code form, to be licensed for the
-purpose of making derivative works, or to be redistributed free of
-charge (including without limitation as software distributed under the
-GNU General Public License or GNU Lesser/Library GPL).
-
-6. INDEMNIFICATION. Customer agrees to indemnify, defend and hold
-harmless Synopsys (including without limitation its directors, officers,
-employees, independent contractors and agents) from any and all claims,
-losses, liabilities, damages, expenses and costs (including without
-limitation attorney’s fees and court costs) (collectively “Losses“)
-incurred by Synopsys as a result of Customer’s breach of this Addendum,
-a breach of any certification, covenant, representation or warranty made
-by Customer in this Addendum, any claims that Customer’s Checkers
-violate or infringe any third party intellectual property or proprietary
-rights, or otherwise related to or arising from Customer’s use of the
-SDK, Customer’s Checker(s) or Customer’s development of Checkers,
-including any Losses as a result of a claim for death, personal injury
-or property damage. In no event may Customer enter into any settlement
-or like agreement with a third party that affects Synopsys’srights or
-binds Synopsys in any way, without the prior written consent of
-Synopsys.
-
-7. NO WARRANTIES. CUSTOMER EXPRESSLY ACKNOWLEDGES AND AGREES THAT USE OF
-THE SDK IS AT CUSTOMER’S SOLE RISK AND THAT THE ENTIRE RISK AS TO
-SATISFACTORY QUALITY, PERFORMANCE, ACCURACY AND EFFORT IS WITH CUSTOMER.
-THE SDK IS PROVIDED “AS IS”, WITH ALL FAULTS AND WITHOUT WARRANTY OF ANY
-KIND, AND SYNOPSYS AND SYNOPSYS’ LICENSORS HEREBY DISCLAIM ALL
-WARRANTIES AND CONDITIONS WITH RESPECT TO THE SDK, EITHER EXPRESS,
-IMPLIED OR STATUTORY, INCLUDING WITHOUT LIMITATION THE IMPLIED
-WARRANTIES AND CONDITIONS OF MERCHANTABILITY, SATISFACTORY QUALITY,
-FITNESS FOR A PARTICULAR PURPOSE, ACCURACY, TIMELINESS, AND
-NON-INFRINGEMENT OF THIRD PARTY RIGHTS. SYNOPSYS DOES NOT WARRANT
-AGAINST INTERFERENCE WITH CUSTOMER’S ENJOYMENT OF THE SDK, THAT THE SDK
-WILL MEET CUSTOMER’S REQUIREMENTS, THAT THE OPERATION OF THE SDK WILL BE
-UNINTERRUPTED OR ERROR-FREE, THAT DEFECTS IN THE SDK WILL BE CORRECTED,
-OR THAT THE SDK WILL BE COMPATIBLE WITH FUTURE SYNOPSYS PRODUCTS OR
-SOFTWARE.
-
-8. ENTIRE ADDENDUM. This Addendum constitutes the complete and exclusive
-understanding and agreement between the parties on the subject matter
-and supersedes all prior or contemporaneous agreements or
-understandings, written or oral, relating to this Addendum. Parties
-specifically agree that Sections 1.5 (Documentation), 1.7 (Licensed
-Product), 2 (License), 4 (Warranty) and 5 (Indemnity) of the Agreement
-are not applicable to the SDK and that the SDK shall not be eligible for
-maintenance services.
-
-END OF SOFTWARE DEVELOPMENT KIT ADDENDUM
 
 SPECIAL TERMS AND CONDITIONS ADDENDUM
 
-1. SEEKER; DEFENSICS. If Customer has purchased a license to the
-Licensed Products known as either Seeker (“Seeker”) or Defensics
-(“Defensics”), the following additional terms apply:
+
+1. SEEKER; DEFENSICS.
+
+If Customer has purchased a license to the Licensed Products known as either
+Seeker ("Seeker") or Defensics ("Defensics"), the following additional terms
+apply: 
 
 1.1. Seeker
 
-1.1.1. Use in Test Environment Only. SEEKER IS AN AUTOMATED TESTING
-SOLUTION DESIGNED TO BE USED IN NON-PRODUCTION ENVIRONMENTS ONLY. As
-part of the processes completed by Seeker, Seeker will automatically
-generate requests to the applicable Customer website, thus activating
-various website and associated database operations. Such processes may
-add to, modify, tamper with, and /or delete any persistent data
-contained in such site or in such database. CUSTOMER IS HEREBY ADVISED
-TO EXCLUDE ALL WEBSITES FOR WHICH CUSTOMER DOES NOT WANT SEEKER TO
-PERFORM SUCH OPERATIONS. SUCH OPERATIONS MAY ALSO BE DISABLED FROM THE
-SETTINGS-
->TEST/GENERAL SCREEN.
->
-1.1.2. Purpose; Data Modification; Data Collection. Customer understands
-that Seeker is software that conducts certain tests by (i) gathering
-data and information from the environments, websites, software products,
-databases, and servers in which it operates and potentially saving such
-data and information in the database of Seeker, and (ii) potentially
-changing, deleting, or otherwise altering such data and information.
-Customer further understands that Seeker is designed to be used solely
-as part of a development and test environments, which are not production
-environments.
+1.1.1. Use in Test Environment Only. 
 
-1.1.3. Use of Customer End User Information. Seeker uses sample end user
-data (including names, passwords, addresses, account numbers, credit
-card numbers and other data) that has been created for use in the
-operations performed by Seeker (“Test/Form Data”). Customer end user
-data used in Customer’s production website, database and server
-environment may contain Personally Identifiable Information (as defined
-under U.S. law), Personal Data (as defined under European Union law and
-the implementing regulations of its member states) and other data
-regulated by U.S. and international law (collectively, “Regulated
-Data”). In the event that Customer provides Synopsys access to such
-Regulated Data for purposes of the performance of Synopsys Maintenance
-Services or otherwise, as between Synopsys and Customer, Synopsys shall
-be deemed a data processor and Customer shall be deemed the data
-controller with respect to such Regulated Data. CUSTOMER IS HEREBY
-ADVISED TO USE THE SUPPLIED TEST/FORM DATA ONLY IN THE OPERATION OF
-SEEKER. CUSTOMER IS HEREBY FURTHER ADVISED THAT THE USE OF REGULATED
-DATA IN SEEKER OPERATIONS IS A VIOLATION OF THE TERMS AND CONDITIONS OF
-THIS AGREEMENT. IN THE EVENT THAT CUSTOMER USES REGULATED DATA IN SEEKER
-OPERATIONS, CUSTOMER SHALL HOLD SYNOPSYS HARMLESS FROM ANY LIABLITY
-RESULTING FROM SUCH USE.
+SEEKER IS AN AUTOMATED TESTING SOLUTION DESIGNED TO BE USED IN NON-PRODUCTION
+ENVIRONMENTS ONLY.  As part of the processes completed by Seeker, Seeker will
+automatically generate requests to the applicable Customer website, thus
+activating various website and associated database operations.  Such processes
+may add to, modify, tamper with, and /or delete any persistent data contained
+in such site or in such database.  CUSTOMER IS HEREBY ADVISED TO EXCLUDE ALL
+WEBSITES FOR WHICH CUSTOMER DOES NOT WANT SEEKER TO PERFORM SUCH OPERATIONS.
+SUCH OPERATIONS MAY ALSO BE DISABLED FROM THE SETTINGS->TEST/GENERAL SCREEN. 
 
-1.1.4. Credit Card Usage. As part of Seeker’s operations, Seeker will
-automatically test credit card forms, creating credit card transactions
-using such credit card forms using Test/Form Data. CUSTOMER SHALL BE
-SOLELY RESONSIBLE TO ENSURE THAT ANY ALL TESTED ENVIRONMENTS,
-APPLICATIONS, DATABASES, AND SERVERS CONTAIN TEST/FORM DATA ONLY.
-CUSTOMER IS HEREBY ADVISED TO USE TEST CREDIT CARD FORMS ONLY, AND TO
-DISCONNECT TESTED WEBSITES FROM PRODUCTION TRANSACTION SERVERS PRIOR TO
-TESTING. SUCH OPERATIONS MAY ALSO BE DISABLED FROM THE
-SETTINGS->TEST/GENERAL SCREEN. SYNOPSYS SHALL BEAR NO LIABILITY FOR AND
-CUSTOMER SHALL BE SOLELY RESPONSIBLE FOR AND SHALL HOLD SYNOPSYS
-HARMLESS IN CONNECTION WITH ANY CUSTOMER-INITIATED CREDIT CARD
-TRANSACTIONS RESULTING FROM THE USE OF ANY DATA OTHER THAN TEST/FORM
-DATA IN THE OPERATION OF SEEKER.
+1.1.2. Purpose; Data Modification; Data Collection.
 
-1.2. Defensics
+Customer understands that Seeker is software that conducts certain tests by (i)
+gathering data and information from the environments, websites, software
+products, databases, and servers in which it operates and potentially saving
+such data and information in the database of Seeker, and (ii) potentially
+changing, deleting, or otherwise altering such data and information.  Customer
+further understands that Seeker is designed to be used solely as part of a
+development and test environments, which are not production environments.
 
-1.2.1. Use in Test Environment Only. DEFENSICS IS AN automated TESTING
-SOLUTION DESIGNED TO BE USED IN NON-PRODUCTION ENVIRONMENTS ONLY. As
-part of the processes completed by Defensics, Defensics will
-automatically test specific protocols of Customer software identified by
-Customer. Such protocols may add to, modify, tamper with, and /or delete
-portions of the software under test, and may disable software
-functionality in production environments. CUSTOMER IS HEREBY ADVISED NOT
-TO USE DEFENSICS IN ANY PRODUCTION ENVIRONMENT.
+1.1.3. Use of Customer End User Information.
 
-2. DISCLAIMER. CUSTOMER IS NOT LICENSED TO USE SEEKER OR DEFENSICS IN
-PRODUCTION ENVIRONMENTS; IN THE EVENT THAT CUSTOMER USES EITHER SEEKER
-OR DEFENSICS IN PRODUCTION ENVIRONMENTS, SYNOPSYS SHALL BEAR NO
-RESPONSIBILITY FOR SUCH USES AND CUSTOMER SHALL BEAR ALL LIABILITY FOR
-SUCH USES AND SHALL HOLD SYNOPSYS HARMLESS IN CONNECTION WITH ANY
-LIABILITY RESULTING FROM SUCH CUSTOMER USES.
+Seeker uses sample end user data (including names, passwords, addresses,
+account numbers, credit card numbers and other data) that has been created for
+use in the operations performed by Seeker ("Test/Form Data").  Customer end
+user data used in Customer's production website, database and server
+environment may contain Personally Identifiable Information (as defined under
+U.S. law), Personal Data (as defined under European Union law and the
+implementing regulations of its member states) and other data regulated by U.S.
+and international law (collectively, "Regulated Data").  In the event that
+Customer provides Black Duck access to such Regulated Data for purposes of the
+performance of Black Duck Maintenance Services or otherwise, as between Black
+Duck and Customer, Black Duck shall be deemed a data processor and Customer
+shall be deemed the data controller with respect to such Regulated Data.
+CUSTOMER IS HEREBY ADVISED TO USE THE SUPPLIED TEST/FORM DATA ONLY IN THE
+OPERATION OF SEEKER. CUSTOMER IS HEREBY FURTHER ADVISED THAT THE USE OF
+REGULATED DATA IN SEEKER OPERATIONS IS A VIOLATION OF THE TERMS AND CONDITIONS
+OF THIS AGREEMENT. IN THE EVENT THAT CUSTOMER USES REGULATED DATA IN SEEKER
+OPERATIONS, CUSTOMER SHALL HOLD BLACK DUCK HARMLESS FROM ANY LIABLITY RESULTING
+FROM SUCH USE. 
+
+1.1.4. Credit Card Usage.
+
+As part of Seeker's operations, Seeker will automatically test credit card
+forms, creating credit card transactions using such credit card forms using
+Test/Form Data.  CUSTOMER SHALL BE SOLELY RESONSIBLE TO ENSURE THAT ANY ALL
+TESTED ENVIRONMENTS, APPLICATIONS, DATABASES, AND SERVERS CONTAIN TEST/FORM
+DATA ONLY.  CUSTOMER IS HEREBY ADVISED TO USE TEST CREDIT CARD FORMS ONLY, AND
+TO DISCONNECT TESTED WEBSITES FROM PRODUCTION TRANSACTION SERVERS PRIOR TO
+TESTING.  SUCH OPERATIONS MAY ALSO BE DISABLED FROM THE SETTINGS->TEST/GENERAL
+SCREEN.  BLACK DUCK SHALL BEAR NO LIABILITY FOR AND CUSTOMER SHALL BE SOLELY
+RESPONSIBLE FOR AND SHALL HOLD BLACK DUCK HARMLESS IN CONNECTION WITH ANY
+CUSTOMER-INITIATED CREDIT CARD TRANSACTIONS RESULTING FROM THE USE OF ANY DATA
+OTHER THAN TEST/FORM DATA IN THE OPERATION OF SEEKER.
+
+1.2. Defensics 
+
+1.2.1. Use in Test Environment Only. 
+
+DEFENSICS IS AN automated TESTING SOLUTION DESIGNED TO BE USED IN
+NON-PRODUCTION ENVIRONMENTS ONLY.  As part of the processes completed by
+Defensics, Defensics will automatically test specific protocols of Customer
+software identified by Customer.  Such protocols may add to, modify, tamper
+with, and /or delete portions of the software under test, and may disable
+software functionality in production environments.  CUSTOMER IS HEREBY ADVISED
+NOT TO USE DEFENSICS IN ANY PRODUCTION ENVIRONMENT. 
+
+
+2. DISCLAIMER. 
+
+CUSTOMER IS NOT LICENSED TO USE SEEKER OR DEFENSICS IN PRODUCTION ENVIRONMENTS;
+IN THE EVENT THAT CUSTOMER USES EITHER SEEKER OR DEFENSICS IN PRODUCTION
+ENVIRONMENTS, BLACK DUCK SHALL BEAR NO RESPONSIBILITY FOR SUCH USES AND
+CUSTOMER SHALL BEAR ALL LIABILITY FOR SUCH USES AND SHALL HOLD BLACK DUCK
+HARMLESS IN CONNECTION WITH ANY LIABILITY RESULTING FROM SUCH CUSTOMER USES.
+
 
 END OF SPECIAL TERMS AND CONDITIONS ADDENDUM
 
+
 HOSTING SERVICES ADDENDUM
 
-1. DEFINITIONS.
 
-1.1 “Hosted Software” means the software described in the applicable
-Purchasing Agreement that Synopsys will provision hosting services for
-on behalf of Customer under the terms of this Hosting Services Addendum.
+1.	DEFINITIONS.
 
-1.2 “Hosting Services” means the services related to the Hosted Software
+1.1	"Hosted Software" means the software described in the applicable
+Purchasing Agreement that Black Duck will provision hosting services for on
+behalf of Customer under the terms of this Hosting Services Addendum.
+
+1.2	"Hosting Services" means the services related to the Hosted Software
 described in this Hosting Services Addendum.
 
-2. Hosting Services Description. During the term set forth in the
-applicable Purchasing Agreement, Synopsys shall provision Hosting
-Services on behalf of Customer as follows: Synopsys will be responsible
-for managing the set-up, configuration and hosting of the Hosted
+2.	Hosting Services Description. 
+
+During the term set forth in Section 3 below, Black Duck shall provision
+Hosting Services on behalf of Customer as follows: Black Duck will be
+responsible for managing the set-up, configuration and hosting of the Hosted
 Software including, but not limited to, managing the installation of all
-revisions, new versions, and updates to the Hosted Software.
+revisions, new versions, and updates to the Hosted Software. 
 
-3. POST-TERMINATION HOSTING. Synopsys will permit Customer to access the
-Hosted Software for a maximum of thirty (30) days post termination of
-the Agreement or the applicable Purchasing Agreement, as applicable, for
-the limited purpose of accessing and downloading any Customer data
-retained therein.
 
-4. HOSTING SERVICES PERFORMANCE WARRANTY.
+3.	POST-TERMINATION HOSTING.
 
-4.1 Uptime. Synopsys will (a) have at least 99.5% uptime (“Service
-Availability”), as measured monthly, excluding planned downtime and any
-time necessary to implement updates, upgrades or modification to the
-Hosted Software, and (b) not experience more than two (2) instances of
-unscheduled downtime of more than one (1) hour each in any rolling
-thirty (30) day period. Routine updates to the Hosted Software are
-scheduled once per month on a Sunday, typically between the hours of 4
-am and 8 am (Eastern US time zone).
+Black Duck will permit Customer to access the Hosted Software for a maximum of
+thirty (30) days post termination of the Agreement or the applicable Purchasing
+Agreement, as applicable, for the limited purpose of accessing and downloading
+any Customer data retained therein. 
 
-4.2 Exclusions. This Service Availability warranty shall not apply in
-the event of any interruption or failure of telecommunication or digital
-transmission links outside of Synopsys’ network, Internet network
-congestion outside of Synopsys’ network or other failures outside of
-Synopsys’ network.
 
-5. Limitation of Liability. EXCEPT FOR THE EXPRESS SERVICE AVAILABILITY
-WARRANTY STATED IN SECTION 4, THIS HOSTING SERVICES ADDENDUM DOES NOT
-CREATE ANY OTHER REPRESENTATION OR WARRANTY RELATED TO THE AVAILABILITY,
-ACCESSIBILITY, OR USEABILITY OF THE HOSTED SOFTWARE. THE REMEDIES STATED
-IN THE AGREEMENT ARE CUSTOMER’S SOLE AND EXCLUSIVE REMEDY FOR SYNOPSYS’
-FAILURE TO MEET THE WARRANTIES SET FORTH HEREIN.
+4.	HOSTING SERVICES PERFORMANCE WARRANTY. 
 
-6. ENTIRE ADDENDUM. The parties acknowledge that they have had previous
-discussions related to Synopsys’ performance of the Hosting Services for
-Customer. This Addendum constitutes the complete and exclusive
-understanding and agreement between the parties on the subject matter
-and supersedes all prior or contemporaneous agreements or
-understandings, written or oral, relating to the Agreement or this
-Addendum.
+4.1	Uptime.
+
+Black Duck will (a) have at least 99.5% uptime ("Service Availability"), as
+measured monthly, excluding planned downtime and any time necessary to
+implement updates, upgrades or modification to the Hosted Software, and (b) not
+experience more than two (2) instances of unscheduled downtime of more than one
+(1) hour each in any rolling thirty (30) day period. Routine updates to the
+Hosted Software are scheduled once per month on a Sunday, typically between the
+hours of 4 am and 8 am (Eastern US time zone).
+
+4.2	Exclusions.
+
+This Service Availability warranty shall not apply in the event of any
+interruption or failure of telecommunication or digital transmission links
+outside of Black Duck's network, Internet network congestion outside of Black
+Duck's network or other failures outside of Black Duck's network.
+
+
+5.	Limitation of Liability. 
+
+EXCEPT FOR THE EXPRESS SERVICE AVAILABILITY WARRANTY STATED IN SECTION 4, THIS
+HOSTING SERVICES ADDENDUM DOES NOT CREATE ANY OTHER REPRESENTATION OR WARRANTY
+RELATED TO THE AVAILABILITY, ACCESSIBILITY, OR USEABILITY OF THE HOSTED
+SOFTWARE.  THE REMEDIES STATED IN THE AGREEMENT ARE CUSTOMER'S SOLE AND
+EXCLUSIVE REMEDY FOR BLACK DUCK'S FAILURE TO MEET THE WARRANTIES SET FORTH
+HEREIN. 
+
+
+6.	ENTIRE ADDENDUM. 
+
+The parties acknowledge that they have had previous discussions related to
+Black Duck's performance of the Hosting Services for Customer.  This Addendum
+constitutes the complete and exclusive understanding and agreement between the
+parties on the subject matter and supersedes all prior or contemporaneous
+agreements or understandings, written or oral, relating to the Agreement or
+this Addendum.
 
 END OF HOSTING SERVICES ADDENDUM
+
+
+EXECUTION COPY
+
+End User Software License and Maintenance Agreement (EULM) v2024.2 (Americas
+Israel Africa) 

@@ -11,7 +11,7 @@
 * yarn.lock
 * package.json
 
-The Yarn detector reads both `yard.lock`, and `package.json` files, (see *Yarn workspace support* below for information on other files the Yarn detector might read) to derive project and dependency information.   
+The Yarn detector reads both `yarn.lock`, and `package.json` files, (see *Yarn workspace support* below for information on other files the Yarn detector might read) to derive project and dependency information.   
 * The yarn.lock file must be up-to-date before [detect_product_short] runs.   
 * The package.json file specifies the direct dependencies for the project. [detect_product_short] adds these
 dependencies to the top level of the dependency graph that it builds.   

@@ -4,10 +4,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import com.blackduck.integration.detectable.util.JsonSanitizer;
+import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
 import com.blackduck.integration.detectable.detectables.npm.packagejson.model.YarnPackageJson;
 
 public class PackageJsonReader {
@@ -20,12 +21,12 @@ public class PackageJsonReader {
     }
 
     public NullSafePackageJson read(String packageJsonText) {
-        YarnPackageJson rawPackageJson = gson.fromJson(packageJsonText, YarnPackageJson.class);
+        YarnPackageJson rawPackageJson = gson.fromJson(JsonSanitizer.sanitize(packageJsonText), YarnPackageJson.class);
         return new NullSafePackageJson(rawPackageJson);
     }
 
     public List<String> extractWorkspaceDirPatterns(String packageJsonText) {
-        Map<String, Object> packageJsonMap = gson.fromJson(packageJsonText, Map.class);
+        Map<String, Object> packageJsonMap = gson.fromJson(JsonSanitizer.sanitize(packageJsonText), Map.class);
         // Possible alt. approach: pass it a TypeAdapter
         Object workspacesObject = packageJsonMap.get(WORKSPACES_OBJECT_KEY);
         List<String> workspaceSubdirPatterns = new LinkedList<>();
@@ -33,11 +34,11 @@ public class PackageJsonReader {
             logger.trace("workspacesObject type: {}", workspacesObject.getClass().getName());
             if (workspacesObject instanceof Map) {
                 logger.trace("workspacesObject is a Map");
-                YarnPackageJsonWorkspacesAsObject rootPackageJsonNewSyntax = gson.fromJson(packageJsonText, YarnPackageJsonWorkspacesAsObject.class);
+                YarnPackageJsonWorkspacesAsObject rootPackageJsonNewSyntax = gson.fromJson(JsonSanitizer.sanitize(packageJsonText), YarnPackageJsonWorkspacesAsObject.class);
                 workspaceSubdirPatterns.addAll(rootPackageJsonNewSyntax.workspaces.workspaceSubdirPatterns);
             } else if (workspacesObject instanceof List) {
                 logger.trace("workspacesObject is a List");
-                YarnPackageJsonWorkspacesAsList rootPackageJsonOldSyntax = gson.fromJson(packageJsonText, YarnPackageJsonWorkspacesAsList.class);
+                YarnPackageJsonWorkspacesAsList rootPackageJsonOldSyntax = gson.fromJson(JsonSanitizer.sanitize(packageJsonText), YarnPackageJsonWorkspacesAsList.class);
                 workspaceSubdirPatterns.addAll(rootPackageJsonOldSyntax.workspaceSubdirPatterns);
             } else {
                 logger.warn("package.json 'workspaces' object is an unrecognized format; workspace declarations will be ignored");

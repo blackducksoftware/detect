@@ -4,26 +4,54 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import com.google.gson.annotations.SerializedName;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 
 public class ReportData {
+    @SerializedName("projectName")
     private String projectName;
+
+    @SerializedName("projectURL")
     private String projectURL;
+
+    @SerializedName("projectVersion")
     private String projectVersion;
+
+    @SerializedName("projectVersionURL")
     private String projectVersionURL;
+
+    @SerializedName("phase")
     private String phase;
+
+    @SerializedName("distribution")
     private String distribution;
+
+    @SerializedName("components")
     private List<BomComponent> components;
+
+    @SerializedName("totalComponents")
     private int totalComponents;
+
+    @SerializedName("dateTimeOfLatestScan")
     private LocalDateTime dateTimeOfLatestScan;
 
+    @SerializedName("securityRiskCounts")
     private final BomRiskCounts securityRiskCounts = new BomRiskCounts();
+
+    @SerializedName("licenseRiskCounts")
     private final BomRiskCounts licenseRiskCounts = new BomRiskCounts();
+
+    @SerializedName("operationalRiskCounts")
     private final BomRiskCounts operationalRiskCounts = new BomRiskCounts();
 
+    @SerializedName("vulnerabilityRiskNoneCount")
     private int vulnerabilityRiskNoneCount;
+
+    @SerializedName("licenseRiskNoneCount")
     private int licenseRiskNoneCount;
+
+    @SerializedName("operationalRiskNoneCount")
     private int operationalRiskNoneCount;
 
     public String htmlEscape(String valueToEscape) {

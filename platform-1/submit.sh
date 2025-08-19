@@ -4,7 +4,7 @@
 set -e
 source config.env
 
-INTERNAL_DOCKER_REGISTRY="artifactory.internal.synopsys.com:5002"
+INTERNAL_DOCKER_REGISTRY="artifactory.tools.duckutil.net:5002"
 COMMIT_MESSAGE=$(git log -1 --pretty=%B)
 GIT_USER_EMAIL=$(git config user.email)
 GIT_USER_NAME=$(git config user.name)

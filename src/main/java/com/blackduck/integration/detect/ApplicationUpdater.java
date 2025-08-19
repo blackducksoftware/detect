@@ -1,8 +1,11 @@
 package com.blackduck.integration.detect;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -27,39 +30,20 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 
-import java.util.Set;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.blackduck.integration.blackduck.service.BlackDuckServicesFactory;
-import com.blackduck.integration.detect.configuration.DetectInfo;
-import com.blackduck.integration.detect.configuration.DetectInfoUtility;
-import com.blackduck.integration.exception.IntegrationException;
-import com.blackduck.integration.log.LogLevel;
-import com.blackduck.integration.log.SilentIntLogger;
-import com.blackduck.integration.rest.HttpMethod;
-import com.blackduck.integration.rest.HttpUrl;
-import com.blackduck.integration.rest.client.IntHttpClient;
-import com.blackduck.integration.rest.credentials.Credentials;
-import com.blackduck.integration.rest.credentials.CredentialsBuilder;
-import com.blackduck.integration.rest.proxy.ProxyInfo;
-import com.blackduck.integration.rest.proxy.ProxyInfoBuilder;
-import com.blackduck.integration.rest.request.Request;
-import com.blackduck.integration.rest.response.Response;
-
-import freemarker.template.Version;
-import java.util.Locale;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpStatus;
@@ -77,8 +61,29 @@ import org.apache.http.ssl.SSLContexts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.blackduck.integration.blackduck.service.BlackDuckServicesFactory;
+import com.blackduck.integration.detect.configuration.DetectInfo;
+import com.blackduck.integration.detect.configuration.DetectInfoUtility;
+import com.blackduck.integration.exception.IntegrationException;
+import com.blackduck.integration.log.LogLevel;
+import com.blackduck.integration.log.SilentIntLogger;
+import com.blackduck.integration.rest.HttpMethod;
+import com.blackduck.integration.rest.HttpUrl;
+import com.blackduck.integration.rest.client.IntHttpClient;
+import com.blackduck.integration.rest.credentials.Credentials;
+import com.blackduck.integration.rest.credentials.CredentialsBuilder;
+import com.blackduck.integration.rest.proxy.ProxyInfo;
+import com.blackduck.integration.rest.proxy.ProxyInfoBuilder;
+import com.blackduck.integration.rest.request.Request;
+import com.blackduck.integration.rest.response.Response;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import freemarker.template.Version;
+
 public class ApplicationUpdater extends URLClassLoader {
-    
+
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     
     protected static final String DOWNLOAD_VERSION_HEADER = "Version";
@@ -86,8 +91,10 @@ public class ApplicationUpdater extends URLClassLoader {
     private static final String DOWNLOAD_URL = "api/tools/detect";
     private static final String DOWNLOADED_FILE_NAME = "X-Artifactory-Filename";
     private static final String JAR_SUFFIX = ".jar";
+    private static final String VERSION_FILE_PATH = "BOOT-INF/classes/version.txt";
     private static final String JAR_SUFFIX_UPPER = JAR_SUFFIX.toUpperCase();
     private static final Version MINIMUM_DETECT_VERSION = new Version(8, 9, 0);
+    private static final String SEMVER_PATTERN = "^(\\d+)\\.(\\d+)\\.(\\d+)$";
 
     private String blackduckHost = null;
     private String offlineMode = null;
@@ -221,7 +228,14 @@ public class ApplicationUpdater extends URLClassLoader {
                 versionBuilder.append(".");
             }
         }
-        return versionBuilder.toString();
+        
+        String possibleNewVersion = versionBuilder.toString();
+        
+        if (isValidSemVer(possibleNewVersion)) {
+          return possibleNewVersion;
+        } else {
+            return null;
+        }
     }
     
     private String removeFileExtensionIfExists(String input) {
@@ -654,46 +668,125 @@ public class ApplicationUpdater extends URLClassLoader {
     }
     
     private File handleResponse(Response response, String currentInstalledVersion, File installDirectory, HttpUrl downloadUrl) throws IOException, IntegrationException {
-        String newVersionString = response.getHeaderValue(DOWNLOAD_VERSION_HEADER);
-        String newFileName;
-        if (newVersionString == null && (newFileName = response.getHeaderValue(DOWNLOADED_FILE_NAME)) != null) {
-            newVersionString = getVersionFromDetectFileName(newFileName);
-        }
-        currentInstalledVersion = getVersionFromDetectFileName(currentInstalledVersion);
-        if (response.isStatusCodeSuccess() && newVersionString != null) {
-            logger.debug("{} Old version: {}, New Version: {}", LOG_PREFIX, currentInstalledVersion, newVersionString);
-            if (StringUtils.isNotBlank(newVersionString)
-                && !newVersionString.equals(currentInstalledVersion)
-                && !isDownloadVersionTooOld(currentInstalledVersion, newVersionString)) {
-                return handleSuccessResponse(response, installDirectory.getAbsolutePath(), newVersionString);
-            }
+        if (response.isStatusCodeSuccess()) {
+            return handleSuccess(response, currentInstalledVersion, installDirectory, downloadUrl);
         } else if (response.getStatusCode() == HttpStatus.SC_NOT_MODIFIED) {
             logger.info("{} Present Detect installation is up to date - skipping download.", LOG_PREFIX);
         } else {
-            String problemUrl = captureProblemDetectUrl(downloadUrl);
-            String message = StringUtils.isNotBlank(response.getStatusMessage()) ? response.getStatusMessage() : EnglishReasonPhraseCatalog.INSTANCE.getReason(response.getStatusCode(), Locale.ENGLISH);
-            logger.warn("{} Unable to download artifact from {}.", LOG_PREFIX, problemUrl);
-            logger.warn("{} Response code from {} was: {} {}", LOG_PREFIX, problemUrl, response.getStatusCode(), message);
+            handleFailure(response, downloadUrl);
         }
         return null;
     }
+
+    private File handleSuccess(Response response, String currentInstalledVersion, File installDirectory, HttpUrl downloadUrl) throws IOException, IntegrationException {
+        String newFileName = response.getHeaderValue(DOWNLOADED_FILE_NAME);
+
+        if (newFileName == null) {
+            newFileName = extractFileNameFromUrl(downloadUrl);
+            
+            if (newFileName == null){
+                logger.warn("Unable to determine Detect jar filename. Detect update will not occur.");
+                return null;
+            }
+        }
+
+        String newVersionString = getVersionFromDetectFileName(newFileName);
+
+        File potentialNewJar = null;
+        
+        if (newVersionString == null) {
+            potentialNewJar = downloadNewJar(response, installDirectory, newFileName);
+            
+            if (potentialNewJar != null) {
+                newVersionString = getVersionFromJar(potentialNewJar);
+            }
+            
+            if (newVersionString == null) {
+                logger.warn("Unable to determine Detect jar version. Detect update will not occur.");
+                return null;
+            }
+        }
+
+        currentInstalledVersion = getVersionFromDetectFileName(currentInstalledVersion);
+        if (shouldUpdate(currentInstalledVersion, newVersionString)) {
+            if (potentialNewJar == null) {
+                potentialNewJar = downloadNewJar(response, installDirectory, newFileName); 
+                
+                if (potentialNewJar == null) {
+                    logger.warn("Failed to download the new Detect JAR.");
+                    return null;
+                }
+            }
+            
+            return validateDownloadedJar(potentialNewJar);
+        } else {
+            logger.info("New version {} is not applicable for update. Using existing version {} instead.", newVersionString, currentInstalledVersion);
+        }
+        return null;
+    }
+
+    public boolean isValidSemVer(String version) {
+        Pattern pattern = Pattern.compile(SEMVER_PATTERN);
+        Matcher matcher = pattern.matcher(version);
+        return matcher.matches();
+    }
+
+    private void handleFailure(Response response, HttpUrl downloadUrl) throws IOException {
+        String problemUrl = getTrueDetectDownloadUrl(downloadUrl);
+        String message = StringUtils.isNotBlank(response.getStatusMessage()) ? response.getStatusMessage() : EnglishReasonPhraseCatalog.INSTANCE.getReason(response.getStatusCode(), Locale.ENGLISH);
+        logger.warn("{} Unable to download jar from {}.", LOG_PREFIX, problemUrl);
+        logger.warn("{} Response code from {} was: {} {}", LOG_PREFIX, problemUrl, response.getStatusCode(), message);
+    }
+
+    private String extractFileNameFromUrl(HttpUrl downloadUrl) throws IOException {
+        String trueDownloadUrl = getTrueDetectDownloadUrl(downloadUrl);
+        URL url = new URL(trueDownloadUrl);
+        String path = url.getPath();
+        return path.substring(path.lastIndexOf('/') + 1);
+    }
+
+    private boolean shouldUpdate(String currentInstalledVersion, String newVersionString) {
+        return !newVersionString.equals(currentInstalledVersion) && !isDownloadVersionTooOld(currentInstalledVersion, newVersionString);
+    }
     
+    private String getVersionFromJar(File potentialNewJar) throws IOException {
+        if (potentialNewJar != null) {
+            try (JarFile jarFile = new JarFile(potentialNewJar.getAbsolutePath())) {
+                JarEntry entry = jarFile.getJarEntry(VERSION_FILE_PATH);
+                if (entry != null) {
+                    try (InputStream inputStream = jarFile.getInputStream(entry);
+                            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            if (line.startsWith("version=")) {
+                                return line.substring("version=".length());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
     /**
      * This method attempts to determine the true URL that is hosting Detect as we
      * are often redirected from the BlackDuck hosted URL.
      * 
      * @param downloadUrl the BlackDuck hosted URL to download detect from, ie:
      *                    https://localhost/api/tools/detect
-     * @return the true URL that is hosting the Detect jar after following the 302
+     * @return the true URL that is hosting the Detect jar, updated if redirect location header was supplied
      *         redirect from /api/tools/detect
      * @throws IOException
      */
-    private String captureProblemDetectUrl(HttpUrl downloadUrl) throws IOException {
-        String problemUrl = downloadUrl.toString();
+    private String getTrueDetectDownloadUrl(HttpUrl downloadUrl) throws IOException {
+        String trueDownloadUrl = downloadUrl.toString();
 
         // We need to build a new client to communicate with BlackDuck. This is because
-        // the main client we use to talk to BlackDuck will follow 302 redirects and we will be unable to
-        // determine and report on where the download actually failed from.
+        // the main client we use to talk to BlackDuck will follow redirects and we will be unable to
+        // determine and report on where the download actually came from. If a location header is not
+        // returned we will not update the URL.
         try {
             HostnameVerifier hostnameVerifier;
             SSLContext sslContext;
@@ -717,7 +810,7 @@ public class ApplicationUpdater extends URLClassLoader {
                     Header locationHeader = response.getFirstHeader("location");
 
                     if (locationHeader != null) {
-                        problemUrl = locationHeader.getValue();
+                        trueDownloadUrl = locationHeader.getValue();
                     }
                 }
             }
@@ -728,27 +821,22 @@ public class ApplicationUpdater extends URLClassLoader {
             logger.debug(e.getMessage(), e);
         }
 
-        return problemUrl;
+        return trueDownloadUrl;
     }
 
-    private File handleSuccessResponse(Response response, String installDirAbsolutePath, String newVersionString) throws IOException, IntegrationException {
-        final Path targetFilePath = Paths.get(installDirAbsolutePath, "/", response.getHeaderValue(DOWNLOADED_FILE_NAME));
+    private File downloadNewJar(Response response, File installDirectory, String fileName) throws IOException, IntegrationException {
+        final Path targetFilePath = Paths.get(installDirectory.getAbsolutePath(), "/", fileName);
         if (targetFilePath != null) {
             if (!targetFilePath.toFile().exists()) {
                 logger.debug("{} Writing to file {}.", LOG_PREFIX, targetFilePath.toAbsolutePath());
                 try(final ReadableByteChannel readableByteChannel = Channels.newChannel(response.getContent())) {
                     try(final FileOutputStream fileOutputStream = new FileOutputStream(targetFilePath.toFile())) {
                         fileOutputStream.getChannel().transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
-                        logger.debug("{} Successfully downloaded new Detect version to {}.", LOG_PREFIX, targetFilePath.toAbsolutePath());
+                        logger.debug("{} Successfully downloaded potential new Detect version to {}.", LOG_PREFIX, targetFilePath.toAbsolutePath());
                     }
                 }
             }
-            final File newJarFile = targetFilePath.toFile();
-            String newFileName = targetFilePath.getFileName().toString();
-            if (isValidDetectFileName(newFileName)) {
-                logger.debug("{} New File Name: {}, New Version String: {}", LOG_PREFIX, newFileName, newVersionString);
-                return validateDownloadedJar(newJarFile);
-            }
+            return targetFilePath.toFile();
         }
         return null;
     }

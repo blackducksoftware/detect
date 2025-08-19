@@ -193,6 +193,7 @@ public class PnpmYamlTransformer {
 
     private String convertRawEntryToPackageId(String name, String version, PnpmLinkedPackageResolver linkedPackageResolver, @Nullable String reportingProjectPackagePath) {
         name = StringUtils.strip(name, "'");
+        
         if (version.startsWith(LINKED_PACKAGE_PREFIX)) {
             // a linked project package's version will be referenced in the format: <linkPrefix><pathToLinkedPackageRelativeToReportingProjectPackage>
             version = linkedPackageResolver.resolveVersionOfLinkedPackage(reportingProjectPackagePath, version.replace(LINKED_PACKAGE_PREFIX, ""));
@@ -205,16 +206,20 @@ public class PnpmYamlTransformer {
             packageFormat = "/%s@%s";
         }
 
+        version = removeExtraVersionInformation(version);
+
         return String.format(packageFormat, name, version);
     }
 
     private Optional<NameVersion> parseNameVersionFromId(String id) {
+        if (id == null) {
+            logger.debug("The provided id is null.");
+            return Optional.empty();
+        }
+
         // ids follow format: /name@version in v6, name@version in v9
         try {
-            // It seems critical not to send this extra information in () or the kb will fail matching it.
-            if (id.contains("(")) {
-                id = id.split("\\(")[0];
-            }
+            id = removeExtraVersionInformation(id);
 
             int indexOfLastSlash = id.lastIndexOf("@");
             // v9 lockfile does not have names starting with /, v 6 does
@@ -273,4 +278,13 @@ public class PnpmYamlTransformer {
                 .anyMatch(id::equals); // for file dependencies, they are declared as <name> : <fileIdAsReportedInPackagesSection>
     }
  
+    private String removeExtraVersionInformation(String version) {
+        // Need to remove extra information from version or we will not appropriately
+        // perform KB matches later.
+        if (version != null && version.contains("(")) {
+            version = version.split("\\(")[0];
+        }
+        
+        return version;
+    }
 }

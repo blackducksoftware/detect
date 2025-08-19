@@ -55,6 +55,9 @@ public class PipInspectorTreeParser {
                 }
                 continue;
             }
+            if (trimmedLine.startsWith(UNKNOWN_PROJECT_NAME)) {
+                logger.info("Pip inspector did not find a package matching project name");
+            }
             Dependency currentDependency = parseDependencyFromLine(trimmedLine, sourcePath);
             adjustForIndentLevel(history, line);
             project = addDependencyToGraph(graph, history, project, currentDependency);
@@ -63,7 +66,7 @@ public class PipInspectorTreeParser {
 
         adviseIfUnresolvedPackages(unResolvedPackageCount);
 
-        if (project != null) {
+        if (project != null && unResolvedPackageCount == 0) {
             CodeLocation codeLocation = new CodeLocation(graph, project.getExternalId());
             parseResult = new NameVersionCodeLocation(project.getName(), project.getVersion(), codeLocation);
         }
@@ -116,6 +119,7 @@ public class PipInspectorTreeParser {
             logger.error(String.format("Pip inspector could not resolve the package: %s", trimmedLine.substring(UNKNOWN_PACKAGE_PREFIX.length())));
             unResolvedPackage = true;
         }
+
         return unResolvedPackage;
     }
 

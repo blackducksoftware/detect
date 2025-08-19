@@ -1,0 +1,7 @@
+{
+	"Path": "example.com/my-main-module",
+	"Main": true,
+	"Dir": "/Users/shanty/blackduck/example-source/go/my-main-module",
+	"GoMod": "/Users/shanty/blackduck/example-source/go/my-main-module/go.mod",
+	"GoVersion": "1.23.4"
+}

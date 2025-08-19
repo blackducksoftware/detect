@@ -3,6 +3,7 @@ package com.blackduck.integration.detect.configuration;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +17,6 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import com.google.gson.Gson;
 import com.blackduck.integration.blackduck.api.generated.enumeration.PolicyRuleSeverityType;
 import com.blackduck.integration.blackduck.api.generated.enumeration.ProjectCloneCategoriesType;
 import com.blackduck.integration.blackduck.api.generated.enumeration.ProjectVersionDistributionType;
@@ -25,6 +25,7 @@ import com.blackduck.integration.blackduck.codelocation.signaturescanner.command
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.ReducedPersistence;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.SnippetMatching;
 import com.blackduck.integration.blackduck.configuration.BlackDuckServerConfig;
+import com.blackduck.integration.blackduck.version.BlackDuckVersion;
 import com.blackduck.integration.configuration.property.types.enumallnone.list.AllEnumList;
 import com.blackduck.integration.configuration.property.types.enumallnone.list.AllNoneEnumCollection;
 import com.blackduck.integration.configuration.property.types.enumallnone.list.AllNoneEnumList;
@@ -71,10 +72,14 @@ import com.blackduck.integration.rest.credentials.Credentials;
 import com.blackduck.integration.rest.credentials.CredentialsBuilder;
 import com.blackduck.integration.rest.proxy.ProxyInfo;
 import com.blackduck.integration.rest.proxy.ProxyInfoBuilder;
+import com.google.gson.Gson;
 
 public class DetectConfigurationFactory {
     private final DetectPropertyConfiguration detectConfiguration;
     private final Gson gson;
+    
+    private static final String POLICY_SEVERITY_BLOCKER = "BLOCKER";
+    private static final String POLICY_SEVERITY_CRITICAL = "CRITICAL";
 
     public DetectConfigurationFactory(DetectPropertyConfiguration detectConfiguration, Gson gson) {
         this.detectConfiguration = detectConfiguration;
@@ -236,8 +241,14 @@ public class DetectConfigurationFactory {
     public RapidScanOptions createRapidScanOptions() {
         RapidCompareMode rapidCompareMode = detectConfiguration.getValue(DetectProperties.DETECT_BLACKDUCK_RAPID_COMPARE_MODE);
         BlackduckScanMode scanMode= detectConfiguration.getValue(DetectProperties.DETECT_BLACKDUCK_SCAN_MODE);
+        List<PolicyRuleSeverityType> severitiesToFailPolicyCheck = getPoliciesToFailOn();
+        
         long detectTimeout = findTimeoutInSeconds();
-        return new RapidScanOptions(rapidCompareMode, scanMode, detectTimeout);
+        return new RapidScanOptions(rapidCompareMode, scanMode, detectTimeout, severitiesToFailPolicyCheck);
+    }
+
+    public List<PolicyRuleSeverityType> getPoliciesToFailOn() {
+        return detectConfiguration.getValue(DetectProperties.DETECT_STATELESS_POLICY_CHECK_FAIL_ON_SEVERITIES).representedValues();
     }
 
     public BlackduckScanMode createScanMode() {
@@ -324,16 +335,24 @@ public class DetectConfigurationFactory {
         return parser.parseCustomFieldDocument(detectConfiguration.getRaw());
     }
 
-    public ProjectSyncOptions createDetectProjectServiceOptions() {
+    public ProjectSyncOptions createDetectProjectServiceOptions(Optional<BlackDuckVersion> blackDuckServerVersion) {
         ProjectVersionPhaseType projectVersionPhase = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_VERSION_PHASE);
         ProjectVersionDistributionType projectVersionDistribution = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_VERSION_DISTRIBUTION);
         Integer projectTier = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_TIER);
         String projectDescription = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_DESCRIPTION);
         String projectVersionNotes = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_VERSION_NOTES);
-        List<ProjectCloneCategoriesType> cloneCategories = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_CLONE_CATEGORIES).representedValues();
         Boolean projectLevelAdjustments = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_LEVEL_ADJUSTMENTS);
         Boolean forceProjectVersionUpdate = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_VERSION_UPDATE);
         String projectVersionNickname = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_VERSION_NICKNAME);
+        
+        List<ProjectCloneCategoriesType> cloneCategories;
+        AllNoneEnumList<ProjectCloneCategoriesType> categoriesEnum = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_CLONE_CATEGORIES);
+
+        if (canSendSummaryData(blackDuckServerVersion)) {
+            cloneCategories = categoriesEnum.representedValuesStreamlined();
+        } else {
+            cloneCategories = categoriesEnum.representedValues();
+        }
 
         return new ProjectSyncOptions(
             projectVersionPhase,
@@ -430,9 +449,11 @@ public class DetectConfigurationFactory {
 
     public BlackDuckPostOptions createBlackDuckPostOptions() {
         Boolean waitForResults = detectConfiguration.getValue(DetectProperties.DETECT_WAIT_FOR_RESULTS);
-        Boolean runRiskReport = detectConfiguration.getValue(DetectProperties.DETECT_RISK_REPORT_PDF);
+        Boolean runRiskReportPdf = detectConfiguration.getValue(DetectProperties.DETECT_RISK_REPORT_PDF);
+        Boolean runRiskReportJson = detectConfiguration.getValue(DetectProperties.DETECT_RISK_REPORT_JSON);
         Boolean runNoticesReport = detectConfiguration.getValue(DetectProperties.DETECT_NOTICES_REPORT);
         Path riskReportPdfPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_RISK_REPORT_PDF_PATH);
+        Path riskReportJsonPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_RISK_REPORT_JSON_PATH);
         Path noticesReportPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NOTICES_REPORT_PATH);
         List<PolicyRuleSeverityType> severitiesToFailPolicyCheck = detectConfiguration.getValue(DetectProperties.DETECT_POLICY_CHECK_FAIL_ON_SEVERITIES).representedValues();
         List<String> policyNamesToFailPolicyCheck = detectConfiguration.getValue(DetectProperties.DETECT_POLICY_CHECK_FAIL_ON_NAMES);
@@ -440,13 +461,15 @@ public class DetectConfigurationFactory {
 
         return new BlackDuckPostOptions(
             waitForResults,
-            runRiskReport,
+            runRiskReportPdf,
             runNoticesReport,
             riskReportPdfPath,
             noticesReportPath,
             severitiesToFailPolicyCheck,
             policyNamesToFailPolicyCheck,
-            correlatedScanningEnabled
+            correlatedScanningEnabled,
+            runRiskReportJson,
+            riskReportJsonPath
         );
     }
 
@@ -495,7 +518,9 @@ public class DetectConfigurationFactory {
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_SWIFT_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_SBT_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_LERNA_PATH),
-            detectConfiguration.getPathOrNull(DetectProperties.DETECT_OPAM_PATH)
+            detectConfiguration.getPathOrNull(DetectProperties.DETECT_OPAM_PATH),
+            detectConfiguration.getPathOrNull(DetectProperties.DETECT_CARGO_PATH),
+            detectConfiguration.getPathOrNull(DetectProperties.DETECT_UV_PATH)
         );
     }
 
@@ -540,12 +565,29 @@ public class DetectConfigurationFactory {
 
         return directoryExclusionPatterns;
     }
+    
+    /**
+     * Newer BlackDuck servers allow us to send ALL and null values for project categories. BlackDuck will then 
+     * determine the appropriate values to display in the UI. For older servers we have to send all the values that we know
+     * about, for all, which can cause problems if we send a value Detect knows about but an older BlackDuck server does not.
+     * Eventually we can pull this code once all servers we support are 2023.10.0 or higher.
+     * 
+     * @param blackDuckServerVersion the version of the BlackDuck server specified in blackduck.url
+     * @return true if we can optimize the categories argument, false otherwise
+     */
+    private boolean canSendSummaryData(Optional<BlackDuckVersion> blackDuckServerVersion) {
+        boolean canSendSummaryData = false;
+
+        BlackDuckVersion minVersion = new BlackDuckVersion(2023, 10, 0);
+
+        if (blackDuckServerVersion.isPresent() && blackDuckServerVersion.get().isAtLeast(minVersion)) {
+            canSendSummaryData = true;
+        }
+
+        return canSendSummaryData;
+    }
 
     public Optional<String> getContainerScanFilePath() {
         return Optional.ofNullable(detectConfiguration.getNullableValue(DetectProperties.DETECT_CONTAINER_SCAN_FILE));
-    }
-    
-    public Optional<String> getThreatIntelScanFilePath() {
-        return Optional.ofNullable(detectConfiguration.getNullableValue(DetectProperties.DETECT_THREAT_INTEL_SCAN_FILE));
     }
 }

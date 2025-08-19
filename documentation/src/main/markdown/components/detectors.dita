@@ -69,6 +69,17 @@
 						</row>
 						<row>
 							<entry> </entry>
+							<entry>Cargo CLI</entry>
+							<entry>Rust</entry>
+							<entry>crates</entry>
+							<entry>
+								<p>Files: Cargo.toml</p>
+								<p>Executible: Cargo version 1.44.0+</p>
+							</entry>
+							<entry>HIGH</entry>
+						</row>
+						<row>
+							<entry> </entry>
 							<entry>Cargo Lock</entry>
 							<entry>Rust</entry>
 							<entry>crates</entry>
@@ -917,6 +928,37 @@
 							</entry>
 							<entry>HIGH</entry>
 						</row>
+						<row>
+                            <entry>
+                                <b>UV</b>
+                            </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                        </row>
+                        <row>
+                            <entry> </entry>
+                            <entry>UV CLI</entry>
+                            <entry>Python</entry>
+                            <entry>PyPI</entry>
+                            <entry>
+                                <p>Files: pyproject.toml</p>
+                                <p>Executable: uv</p>
+                            </entry>
+                            <entry>HIGH</entry>
+                        </row>
+                        <row>
+                            <entry> </entry>
+                            <entry>UV Lock</entry>
+                            <entry>Python</entry>
+                            <entry>PyPI</entry>
+                            <entry>
+                                <p>Files: pyproject.toml, uv.lock or requirements.txt file </p>
+                            </entry>
+                            <entry>HIGH</entry>
+                        </row>
 						<row>
 							<entry>
 								<b>XCODE</b>

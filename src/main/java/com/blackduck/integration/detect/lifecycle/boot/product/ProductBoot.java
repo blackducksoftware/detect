@@ -134,7 +134,7 @@ public class ProductBoot {
         if (shouldUsePhoneHome(analyticsConfigurationService, blackDuckServicesFactory.getApiDiscovery(), blackDuckServicesFactory.getBlackDuckApiClient())) {
             try {
                 PhoneHomeManager phoneHomeManager = productBootFactory.createPhoneHomeManager(blackDuckServicesFactory,
-                    new PhoneHomeCredentialsFactory().getGa4Credentials());
+                    new PhoneHomeCredentialsFactory().getGa4Credentials(), blackDuckConnectivityResult.isAdminOperationAllowed());
                 return BlackDuckRunData.online(
                     blackDuckDecision.scanMode(),
                     blackDuckServicesFactory,

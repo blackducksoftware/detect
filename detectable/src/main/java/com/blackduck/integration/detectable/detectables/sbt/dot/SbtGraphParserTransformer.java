@@ -1,66 +1,80 @@
 package com.blackduck.integration.detectable.detectables.sbt.dot;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import guru.nidi.graphviz.model.Link;
+import guru.nidi.graphviz.model.MutableGraph;
+import guru.nidi.graphviz.model.MutableNode;
 
-import com.paypal.digraph.parser.GraphEdge;
-import com.paypal.digraph.parser.GraphElement;
-import com.paypal.digraph.parser.GraphParser;
 import com.blackduck.integration.bdio.graph.BasicDependencyGraph;
 import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.dependency.Dependency;
 
 public class SbtGraphParserTransformer {
-    private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final SbtDotGraphNodeParser sbtDotGraphNodeParser;
 
     public SbtGraphParserTransformer(SbtDotGraphNodeParser sbtDotGraphNodeParser) {
         this.sbtDotGraphNodeParser = sbtDotGraphNodeParser;
     }
 
-    public DependencyGraph transformDotToGraph(GraphParser graphParser, String projectNodeId) {
+    public DependencyGraph transformDotToGraph(Set<String> projectIds, MutableGraph mutableGraph) {
         DependencyGraph graph = new BasicDependencyGraph();
+        String projectNodeId = projectIds.stream().findFirst().get();
+        boolean isOneRoot = projectIds.size() == 1;
+        Set<String> evictedIds = getEvictedIds(mutableGraph);
 
-        Set<String> evictedIds = graphParser.getEdges().values().stream()
-        .filter(
-            edge -> edge.getAttribute("label") != null
-            && edge.getAttribute("label").toString().toLowerCase().contains("evicted")
-            )
-            .map(GraphEdge::getNode1)
-            .map(GraphElement::getId)
-            .collect(Collectors.toSet());
+        List<Link> links = mutableGraph.nodes().stream().map(MutableNode::links).flatMap(List::stream).collect(Collectors.toList());
+        for (Link link : links) {
+            String parentNode = normalizeDependency(link.asLinkTarget().name().toString());
+            String childNode = normalizeDependency(link.asLinkSource().name().toString());
 
-        for (GraphEdge graphEdge : graphParser.getEdges().values()) {
-            Dependency parent = sbtDotGraphNodeParser.nodeToDependency(graphEdge.getNode1().getId());
-            Dependency child = sbtDotGraphNodeParser.nodeToDependency(graphEdge.getNode2().getId());
-           
-            if (projectNodeId.equals(graphEdge.getNode1().getId())) {
-                graph.addChildToRoot(child);
-            } else {
-                if (!evictedIds.contains(graphEdge.getNode2().getId())) {
-                    graph.addChildWithParent(child, parent);
+            Dependency parent = sbtDotGraphNodeParser.nodeToDependency(parentNode);
+            Dependency child = sbtDotGraphNodeParser.nodeToDependency(childNode);
+
+            if(isOneRoot) {
+                if (projectNodeId.equals(parentNode)) {
+                    graph.addDirectDependency(child);
+                } else {
+                    if (!evictedIds.contains(childNode)) {
+                        graph.addChildWithParent(child, parent);
+                    }
                 }
+            } else {
+                if (projectIds.contains(parentNode)) {
+                    graph.addDirectDependency(parent);
+                }
+
+                graph.addChildWithParent(child, parent);
             }
         }
 
         return graph;
     }
 
-    public DependencyGraph transformDotToGraph(GraphParser graphParser, Set<String> projectNodeIds) {
-        DependencyGraph graph = new BasicDependencyGraph();
+    private Set<String> getEvictedIds(MutableGraph mutableGraph) {
+        Set<String> evictedIds = new HashSet<>();
+        mutableGraph.nodes().forEach(node -> {
+            node.attrs().forEach(attr -> addEvictedEntry(attr, node, evictedIds));
+            node.links().forEach(link -> link.attrs().forEach(attr -> addEvictedEntry(attr, node, evictedIds)));
+        });
 
-        for (GraphEdge graphEdge : graphParser.getEdges().values()) {
-            Dependency parent = sbtDotGraphNodeParser.nodeToDependency(graphEdge.getNode1().getId());
-            Dependency child = sbtDotGraphNodeParser.nodeToDependency(graphEdge.getNode2().getId());
-            if (projectNodeIds.contains(graphEdge.getNode1().getId())) {
-                graph.addChildToRoot(parent);
-            }
-            graph.addChildWithParent(child, parent);
+        return evictedIds;
+    }
+
+    private void addEvictedEntry(Map.Entry<String, Object> attr, MutableNode node, Set<String> evictedIds) {
+        if(attr.getKey().equals("label") && attr.getValue().toString().toLowerCase().contains("evicted")) {
+            evictedIds.add(node.name().toString());
         }
+    }
 
-        return graph;
+    private String normalizeDependency(String dependency) {
+        if(dependency.startsWith("--")) {
+            return dependency.substring(2);
+        }
+        return dependency;
     }
 }

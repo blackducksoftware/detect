@@ -1,0 +1,6 @@
+example.com/my-main-module golang.org/x/moduleB@v0.3.2
+example.com/my-main-module rsc.io/moduleA@v3.1.0
+example.com/my-main-module rsc.io/moduleC@v1.3.0
+golang.org/x/moduleB@v0.3.2 golang.org/x/tools@v0.0.0-20180917221912-90fa682c2a6e
+rsc.io/moduleA@v3.1.0 rsc.io/moduleC@v1.3.0
+rsc.io/moduleC@v1.3.0 golang.org/x/moduleB@v0.0.0-20170915032832-14c0d48ead0c

@@ -1,5 +1,6 @@
 package com.blackduck.integration.detect.workflow.blackduck.bdio;
 
+import com.blackduck.integration.rest.HttpUrl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,8 +19,8 @@ import com.blackduck.integration.exception.IntegrationException;
 public abstract class BdioUploadOperation { //TODO: Could use Functional Interface.
     private final Logger logger = LoggerFactory.getLogger(BdioUploadOperation.class);
 
-    public BdioUploadResult uploadBdioFiles(BdioResult bdioResult) throws DetectUserFriendlyException {
-        UploadBatch uploadBatch = createBatch(bdioResult);
+    public BdioUploadResult uploadBdioFiles(BdioResult bdioResult, String scassScanId, HttpUrl blackDuckUrl) throws DetectUserFriendlyException {
+        UploadBatch uploadBatch = createBatch(bdioResult, scassScanId, blackDuckUrl);
         CodeLocationCreationData<UploadBatchOutput> response;
         try {
             response = executeUpload(uploadBatch);
@@ -33,10 +34,12 @@ public abstract class BdioUploadOperation { //TODO: Could use Functional Interfa
 
     protected abstract CodeLocationCreationData<UploadBatchOutput> executeUpload(UploadBatch uploadBatch) throws IntegrationException;
 
-    private UploadBatch createBatch(BdioResult bdioResult) {
+    private UploadBatch createBatch(BdioResult bdioResult, String scassScanId, HttpUrl blackDuckUrl) {
         UploadBatch uploadBatch = new UploadBatch();
         for (UploadTarget uploadTarget : bdioResult.getUploadTargets()) {
             logger.debug(String.format("Uploading %s", uploadTarget.getUploadFile().getName()));
+            uploadTarget.setScanId(scassScanId);
+            uploadTarget.setBlackDuckUrl(blackDuckUrl);
             uploadBatch.addUploadTarget(uploadTarget);
         }
         return uploadBatch;

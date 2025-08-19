@@ -1,21 +1,20 @@
-# Component Location Analysis LCA
+# Component Location Analysis
 
-Enable this feature by adding --detect.component.location.analysis.enabled=TRUE to a run of [detect_product_long].
+Enable this feature by adding `--detect.component.location.analysis.enabled=TRUE` to a run of [detect_product_long].
 
-When enabled, [detect_product_short] creates an output file in the scan subdirectory of the output directory with the name 'components-with-locations.json' which identifies the declaration locations (filepath, line number and column position) of the version of open source components found in the scanned project.
+When enabled, [detect_product_short] creates an output file in the scan subdirectory of the output directory with the name `components-with-locations.json` which identifies the declaration locations (file path, line number, and column position) of open source component versions found in the scanned project.
 
 <note type="note">By default, when [detect_product_short] shuts down, it performs cleanup operations which include deleting the component location analysis file. You can disable clean up by setting `--detect.cleanup=false`.</note>
 
 ## Requirements and Limitations
 
-* Component Location Analysis is available under [detect_product_short] “Limited Customer Availability (LCA)”.
 * A limited subset of Detector Types support this feature.
     * Supported Detectors: NPM, MAVEN, GRADLE, NUGET, GO_MOD, GO_DEP, GO_GRADLE, GO_VENDOR, GO_VNDR, PIP, POETRY, CONDA, and YARN.
 * Supported scan modes: Offline and Rapid/Stateless.
     * Offline mode
       * When enabled for a scan without [bd_product_short] connectivity, all detected open source components will be included in the location analysis results.
     * Rapid/Stateless Scan mode requires [bd_product_short] policies.
-        * Only components that violate policies will be included in the analysis. If no policies are violated or there are no defined policies, then component location analysis is skipped.
+        * Only components that violate policies will be included in the analysis. If no policies are violated or there are no defined policies, component location analysis is skipped.
 
 ## Offline Mode Results
 

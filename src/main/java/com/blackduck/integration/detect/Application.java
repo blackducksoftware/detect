@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.ApplicationListener;
 import org.springframework.core.env.ConfigurableEnvironment;
 
 import com.google.gson.Gson;
@@ -45,6 +47,7 @@ import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodeManager;
 import com.blackduck.integration.detect.lifecycle.shutdown.ShutdownDecider;
 import com.blackduck.integration.detect.lifecycle.shutdown.ShutdownDecision;
 import com.blackduck.integration.detect.lifecycle.shutdown.ShutdownManager;
+import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodeRequest;
 import com.blackduck.integration.detect.tool.cache.InstalledToolData;
 import com.blackduck.integration.detect.tool.cache.InstalledToolManager;
 import com.blackduck.integration.detect.workflow.DetectRunId;
@@ -58,13 +61,16 @@ import com.blackduck.integration.detect.workflow.status.DetectIssueType;
 import com.blackduck.integration.detect.workflow.status.DetectStatusManager;
 
 public class Application implements ApplicationRunner {
-    private final Logger logger = LoggerFactory.getLogger(Application.class);
+    private static final Logger logger = LoggerFactory.getLogger(Application.class);
 
     private static boolean SHOULD_EXIT = true;
     
     private static final String STATUS_JSON_FILE_NAME = "status.json";
     public static final Long START_TIME = System.currentTimeMillis();
-
+    private static final String SPRING_CONFIG_LOCATION_ENV = "SPRING_CONFIG_LOCATION";
+    private static final String SPRING_CONFIG_LOCATION_PROPERTY = "spring.config.location";
+    private static final String LOGGING_GROUP_DETECT = "logging.group.detect";
+    private static final String DEFAULT_LOGGING_GROUP = "com.blackduck.integration";
     private final ConfigurableEnvironment environment;
 
     @Autowired
@@ -82,17 +88,19 @@ public class Application implements ApplicationRunner {
     }
 
     public static void main(String[] args) {
+        configureLoggingGroupIfNeeded(args);
         SpringApplicationBuilder builder = new SpringApplicationBuilder(Application.class);
         builder.logStartupInfo(false);
+        builder.listeners(new SpringConfigErrorListener());
+
         boolean selfUpdated = false;
         ApplicationUpdaterUtility utility = new ApplicationUpdaterUtility();
         try(ApplicationUpdater updater = new ApplicationUpdater(utility, args)) {
             selfUpdated = updater.selfUpdate();
             updater.closeUpdater();
         } catch (IOException ex) {
-            Logger staticLogger = LoggerFactory.getLogger(Application.class);
-            staticLogger.warn("There was a problem running the Self-Update feature.");
-            staticLogger.debug("Reason: ", ex);
+            logger.warn("There was a problem running the Self-Update feature.");
+            logger.debug("Reason: ", ex);
         }
         if (!selfUpdated) {
             try {
@@ -102,6 +110,17 @@ public class Application implements ApplicationRunner {
                 System.exit(ExitCodeType.FAILURE_UNKNOWN_ERROR.getExitCode());
             }
         }
+    }
+
+    private static void configureLoggingGroupIfNeeded(String[] args) {
+        if (System.getenv(SPRING_CONFIG_LOCATION_ENV) != null || containsSpringConfigLocation(args)) {
+            System.setProperty(LOGGING_GROUP_DETECT, DEFAULT_LOGGING_GROUP);
+        }
+    }
+
+    private static boolean containsSpringConfigLocation(String[] args) {
+        return Arrays.stream(args)
+            .anyMatch(arg -> arg.contains(SPRING_CONFIG_LOCATION_PROPERTY));
     }
 
     @Override
@@ -165,10 +184,10 @@ public class Application implements ApplicationRunner {
             // system must now know or be able to compute the winning exit
             // code.  We'll pass this to FormattedOutput.createFormattedOutput
             // via Application.createStatusOutputFile.
-            ExitCodeType exitCodeType = exitCodeManager.getWinningExitCode();
+            ExitCodeRequest exitCodeRequest = exitCodeManager.getWinningExitCodeRequest();
             logger.info("");
             detectBootResult.getDirectoryManager()
-                .ifPresent(directoryManager -> createStatusOutputFile(formattedOutputManager, detectInfo, directoryManager, exitCodeType, autonomousManagerOptional));
+                .ifPresent(directoryManager -> createStatusOutputFile(formattedOutputManager, detectInfo, directoryManager, exitCodeRequest, autonomousManagerOptional));
 
             //Create installed tool data file.
             detectBootResult.getDirectoryManager().ifPresent(directoryManager -> createOrUpdateInstalledToolsFile(installedToolManager, directoryManager.getPermanentDirectory()));
@@ -235,14 +254,14 @@ public class Application implements ApplicationRunner {
         }
     }
 
-    private void createStatusOutputFile(FormattedOutputManager formattedOutputManager, DetectInfo detectInfo, DirectoryManager directoryManager, ExitCodeType exitCodeType, Optional<AutonomousManager> autonomousManagerOptional) {
+    private void createStatusOutputFile(FormattedOutputManager formattedOutputManager, DetectInfo detectInfo, DirectoryManager directoryManager, ExitCodeRequest exitCodeRequest, Optional<AutonomousManager> autonomousManagerOptional) {
         logger.info("");
         try {
             File statusFile = new File(directoryManager.getStatusOutputDirectory(), STATUS_JSON_FILE_NAME);
             logger.info("Creating status file: {}", statusFile);
 
             Gson formattedGson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-            String json = formattedGson.toJson(formattedOutputManager.createFormattedOutput(detectInfo, exitCodeType, autonomousManagerOptional));
+            String json = formattedGson.toJson(formattedOutputManager.createFormattedOutput(detectInfo, exitCodeRequest, autonomousManagerOptional));
             FileUtils.writeStringToFile(statusFile, json, Charset.defaultCharset());
             
             if (directoryManager.getJsonStatusOutputDirectory() != null) {

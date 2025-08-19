@@ -9,6 +9,7 @@ import com.blackduck.integration.detectable.detectable.inspector.ProjectInspecto
 import com.blackduck.integration.detectable.detectable.inspector.nuget.NugetInspectorResolver;
 import com.blackduck.integration.detectable.detectables.bazel.BazelDetectable;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectable;
+import com.blackduck.integration.detectable.detectables.cargo.CargoCliDetectable;
 import com.blackduck.integration.detectable.detectables.cargo.CargoLockDetectable;
 import com.blackduck.integration.detectable.detectables.carthage.CarthageLockDetectable;
 import com.blackduck.integration.detectable.detectables.clang.ClangDetectable;
@@ -62,6 +63,8 @@ import com.blackduck.integration.detectable.detectables.setuptools.tbuild.SetupT
 import com.blackduck.integration.detectable.detectables.setuptools.buildless.SetupToolsBuildlessDetectable;
 import com.blackduck.integration.detectable.detectables.swift.cli.SwiftCliDetectable;
 import com.blackduck.integration.detectable.detectables.swift.lock.SwiftPackageResolvedDetectable;
+import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildDetectable;
+import com.blackduck.integration.detectable.detectables.uv.lockfile.UVLockFileDetectable;
 import com.blackduck.integration.detectable.detectables.xcode.XcodeProjectDetectable;
 import com.blackduck.integration.detectable.detectables.xcode.XcodeWorkspaceDetectable;
 import com.blackduck.integration.detectable.detectables.yarn.YarnLockDetectable;
@@ -117,7 +120,11 @@ public class DetectDetectableFactory {
     }
 
     public CargoLockDetectable createCargoDetectable(DetectableEnvironment environment) {
-        return detectableFactory.createCargoDetectable(environment);
+        return detectableFactory.createCargoDetectable(environment, detectableOptionFactory.createCargoDetectableOptions());
+    }
+
+    public CargoCliDetectable createCargoCliDetectable(DetectableEnvironment environment) {
+        return detectableFactory.createCargoCliDetectable(environment, detectExecutableResolver, detectableOptionFactory.createCargoDetectableOptions());
     }
 
     public CarthageLockDetectable createCarthageDetectable(DetectableEnvironment environment) {
@@ -355,5 +362,13 @@ public class DetectDetectableFactory {
 
     public OpamLockFileDetectable createOpamLockFileDetectable(DetectableEnvironment environment) {
         return detectableFactory.createOpamLockFileDetectable(environment, detectExecutableResolver);
+    }
+
+    public UVBuildDetectable createUVBuildDetectable(DetectableEnvironment environment) {
+        return detectableFactory.createUVBuildDetectable(environment, detectExecutableResolver, detectableOptionFactory.createUVDetectorOptions());
+    }
+
+    public UVLockFileDetectable createUVLockfileDetectable(DetectableEnvironment environment) {
+        return detectableFactory.createUVLockFileDetectable(environment, detectableOptionFactory.createUVDetectorOptions());
     }
 }

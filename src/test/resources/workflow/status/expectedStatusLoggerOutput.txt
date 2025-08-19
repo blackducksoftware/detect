@@ -36,6 +36,15 @@ DEPRECATIONS:
 		Junit Test Issue Set 2 primary message: DEPRECATION
 		Junit Test Issue Set 2 secondary message: DEPRECATION
 
+PROPERTY KEYS:
+	Junit Test Issue Set 1 Detect Issue
+		Junit Test Issue Set 1 primary message: PROPERTY_KEY
+		Junit Test Issue Set 1 secondary message: PROPERTY_KEY
+
+	Junit Test Issue Set 2 Detect Issue
+		Junit Test Issue Set 2 primary message: PROPERTY_KEY
+		Junit Test Issue Set 2 secondary message: PROPERTY_KEY
+
 ======== Detect Result ========
 
 Black Duck Project BOM: https://example.com/api/projects/project_1
