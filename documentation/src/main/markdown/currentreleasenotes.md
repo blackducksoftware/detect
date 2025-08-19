@@ -37,7 +37,7 @@
 * (IDETECT-4781) Signature Scans will no longer fail if SCA Scan Service (SCASS) related IPs are blocked. A performance warning will be printed and a non-SCASS Signature Scan will be performed.
 * (IDETECT-4759) Updated [detect_product_short] UV Detector to prevent execution when the `toml` file does not have a `[tool.uv]` section, and to not return a success status unless a BDIO file is generated.
 * (IDETECT-4746) Fixed Cargo Lockfile Detector incorrectly labeling transitive dependencies as direct dependencies.
-* (IDETECT-4770) Expanded Cargo dependency type exclusion to include `NORMAL` dependencies for both Cargo Lockfile and Cargo CLI detectors, and added `PROC_MACRO` exclusion support for the Cargo CLI Detector, noting that `PROC_MACRO` dependencies are not explicitly listed in Cargo.toml or Cargo.lock.
+* (IDETECT-4770) The Cargo Dependency Type Exclusion has been expanded to include `NORMAL` dependencies for both the Cargo Lockfile and Cargo CLI detectors. Additionally, the Cargo CLI Detector now supports excluding `PROC_MACRO` dependencies, though this exclusion is limited to the CLI detector due to the absence of explicit `PROC_MACRO` entries in `Cargo.toml` or `Cargo.lock`.
 
 ### Dependency updates
 
