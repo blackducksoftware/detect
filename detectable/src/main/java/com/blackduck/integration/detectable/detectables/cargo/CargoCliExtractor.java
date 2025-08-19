@@ -20,7 +20,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.Optional;
 import java.util.Map;
 import java.util.EnumMap;
@@ -49,10 +48,6 @@ public class CargoCliExtractor {
 
         List<String> fullTreeOutput = runCargoTreeCommand(directory, cargoExe, fullTreeCommand);
 
-        if (dependencyTypeFilter.shouldExclude(CargoDependencyType.NORMAL)) {
-            fullTreeOutput = handleNormalDependencyExclusion(directory, cargoExe, fullTreeOutput);
-        }
-
         DependencyGraph graph = cargoDependencyTransformer.transform(fullTreeOutput);
 
         Optional<NameVersion> projectNameVersion = Optional.empty();
@@ -76,54 +71,9 @@ public class CargoCliExtractor {
         return output.getStandardOutputAsList();
     }
 
-    private List<String> handleNormalDependencyExclusion(File directory, ExecutableTarget cargoExe, List<String> fullTreeOutput) throws ExecutableFailedException {
-        List<String> normalOnlyCommand = new LinkedList<>(CARGO_TREE_COMMAND);
-        normalOnlyCommand.add("--edges");
-        normalOnlyCommand.add("normal");
-
-        List<String> normalTreeOutput = runCargoTreeCommand(directory, cargoExe, normalOnlyCommand);
-
-        return diffExcludeNormal(fullTreeOutput, normalTreeOutput);
-    }
-
-    private List<String> diffExcludeNormal(List<String> fullTreeOutput, List<String> normalTreeOutput) {
-        List<String> result = new ArrayList<>();
-        int i = 0;
-        int j = 0;
-        int fullSize = fullTreeOutput.size();
-        int normalSize = normalTreeOutput.size();
-
-        // Loop until both lists are fully consumed
-        while (i < fullSize || j < normalSize) {
-            String fullLine = (i < fullSize) ? fullTreeOutput.get(i) : null;
-            String normalLine = (j < normalSize) ? normalTreeOutput.get(j) : null;
-
-            if (fullLine != null && normalLine != null) {
-                if (fullLine.equals(normalLine)) {
-                    // matched normal line -> skip both
-                    i++;
-                    j++;
-                } else {
-                    // keep full line, advance full pointer only
-                    result.add(fullLine);
-                    i++;
-                }
-            } else if (fullLine != null) {
-                // normal exhausted, keep remaining full lines
-                result.add(fullLine);
-                i++;
-            } else {
-                // full exhausted but normal has remaining lines -> advance normal pointer
-                // (we traverse normal fully but there's nothing to remove in full)
-                j++;
-            }
-        }
-
-        return result;
-    }
-
     private void addEdgeExclusions(List<String> cargoTreeCommand, CargoDetectableOptions options) {
         Map<CargoDependencyType, String> exclusionMap = new EnumMap<>(CargoDependencyType.class);
+        exclusionMap.put(CargoDependencyType.NORMAL, "no-normal");
         exclusionMap.put(CargoDependencyType.BUILD, "no-build");
         exclusionMap.put(CargoDependencyType.DEV, "no-dev");
         exclusionMap.put(CargoDependencyType.PROC_MACRO, "no-proc-macro");
