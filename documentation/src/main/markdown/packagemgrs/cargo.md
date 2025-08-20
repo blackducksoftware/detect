@@ -30,3 +30,11 @@ If `cargo tree` is unavailable, [detect_product_short] will default to the Cargo
 * If both `Cargo.toml` and `Cargo.lock` are present, the detector uses `Cargo.lock` for dependency information.  
 * If `Cargo.lock` is missing, the detector prompts the user to generate it using `cargo generate-lockfile`.  
 * Extracts the project’s name and version from `Cargo.toml`. If missing, it derives values from Git or the project directory.
+
+## Orphan Dependencies in Cargo Lockfile Detector
+
+In Cargo projects, it is possible for `Cargo.lock` to contain packages that are not explicitly declared in `Cargo.toml`. These are referred to as **orphan dependencies**.
+
+Since orphan dependencies cannot be mapped to a specific dependency path in the graph, the **Cargo Lockfile Detector** does not discard them. Instead, they are grouped under a placeholder component named **`Additional_Components`**, which appears as a direct dependency in the graph.
+
+This approach ensures that all components listed in `Cargo.lock` are included in the BOM, even if their exact relationship within the dependency tree cannot be determined.
