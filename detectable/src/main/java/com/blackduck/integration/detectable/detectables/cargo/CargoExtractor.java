@@ -83,9 +83,16 @@ public class CargoExtractor {
         List<CargoLockPackage> packages = filteredPackages.stream()
             .map(cargoLockPackageDataTransformer::transform)
             .collect(Collectors.toList());
+
         List<CargoLockPackage> resolvedPackages = resolveDependencyVersions(packages, packageLookupMap);
 
-        DependencyGraph graph = cargoLockPackageTransformer.transformToGraph(resolvedPackages, resolvedRootDependencies);
+        List<CargoLockPackage> orphanedResolvedPackages = collectOrphanPackages(
+            cargoLockPackageDataList,
+            resolvedPackages,
+            packageLookupMap
+        );
+
+        DependencyGraph graph = cargoLockPackageTransformer.transformToGraph(resolvedPackages, orphanedResolvedPackages, resolvedRootDependencies);
 
         Optional<NameVersion> projectNameVersion = Optional.empty();
         if (cargoTomlFile != null) {
@@ -203,6 +210,26 @@ public class CargoExtractor {
             resolvedPackages.add(new CargoLockPackage(new NameVersion(name, version), resolvedDependencies));
         }
         return resolvedPackages;
+    }
+
+    private List<CargoLockPackage> collectOrphanPackages(
+        List<CargoLockPackageData> allPackages,
+        List<CargoLockPackage> resolvedPackages,
+        Map<NameVersion, List<CargoLockPackageData>> packageLookupMap
+    ) {
+
+        // Collect all NameVersions already resolved
+        Set<NameVersion> resolvedSet = resolvedPackages.stream()
+            .map(CargoLockPackage::getPackageNameVersion)
+            .collect(Collectors.toSet());
+
+        // Orphaned = in lockfile but not in resolvedPackages
+        List<CargoLockPackage> orphanedPackages = allPackages.stream()
+            .map(cargoLockPackageDataTransformer::transform)
+            .filter(pkg -> !resolvedSet.contains(pkg.getPackageNameVersion()))
+            .collect(Collectors.toList());
+
+        return resolveDependencyVersions(orphanedPackages, packageLookupMap);
     }
 
     private List<CargoLockPackageData> filterPackagesByInclusion(
