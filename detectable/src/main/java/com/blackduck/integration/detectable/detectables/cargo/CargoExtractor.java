@@ -273,7 +273,7 @@ public class CargoExtractor {
         // Otherwise, find by name and version.
         // Original name-only lookup behavior replicated exactly
         List<CargoLockPackageData> possiblePackages = findPackagesByName(depName, packageLookupMap);
-        if (possiblePackages != null) {
+        if (!possiblePackages.isEmpty()) {
             for (CargoLockPackageData pkg : possiblePackages) {
                 String name = pkg.getName().orElse(null);
                 if (depName.equals(name)) {
