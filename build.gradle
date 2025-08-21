@@ -162,7 +162,7 @@ dependencies {
 
     implementation 'ch.qos.logback:logback-classic:1.2.13'
 
-    implementation 'com.blackducksoftware.bdio:bdio-protobuf:3.2.10'
+    implementation 'com.blackducksoftware.bdio:bdio-protobuf:3.2.12'
     implementation "com.blackduck.integration:blackduck-common:${blackDuckCommonVersion}"
     implementation 'com.blackduck.integration:blackduck-upload-common:4.1.2'
     implementation 'com.blackducksoftware:method-analyzer-core:1.0.1'
