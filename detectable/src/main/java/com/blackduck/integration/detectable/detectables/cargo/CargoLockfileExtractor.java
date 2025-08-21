@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
@@ -51,10 +52,12 @@ public class CargoLockfileExtractor {
     public Extraction extract(File cargoLockFile, @Nullable File cargoTomlFile, CargoDetectableOptions cargoDetectableOptions) throws IOException, DetectableException, MissingExternalIdException {
         CargoLockData cargoLockData = new Toml().read(cargoLockFile).to(CargoLockData.class);
         List<CargoLockPackageData> cargoLockPackageDataList = cargoLockData.getPackages().orElse(new ArrayList<>());
-        List<CargoLockPackageData> filteredPackages = cargoLockPackageDataList;
+        List<CargoLockPackageData> filteredPackages = new ArrayList<>(cargoLockPackageDataList);
+        List<CargoLockPackageData> unfilteredPackages = new ArrayList<>(cargoLockPackageDataList);
         boolean exclusionEnabled = isDependencyExclusionEnabled(cargoDetectableOptions);
         String cargoTomlContents = null;
 
+        Set<NameVersion> allRootDependencies = new HashSet<>();
         Set<NameVersion> resolvedRootDependencies = new HashSet<>();
         Map<NameVersion, List<CargoLockPackageData>> packageLookupMap = indexPackagesByNameVersion(filteredPackages); // Lookup map for quick access by NameVersion
 
@@ -75,21 +78,33 @@ public class CargoLockfileExtractor {
             // Only filter if Cargo.toml defines dependency sections.
             // Workspace root Cargo.toml files usually don’t, so skip filtering in that case.
             if (cargoTomlParser.hasDependencySections(cargoTomlContents)) {
-                Set<NameVersion> dependenciesToInclude = cargoTomlParser.parseDependenciesToInclude(cargoTomlContents, filter); // Parse direct dependencies to include from Cargo.toml
-                filteredPackages = includeDependencies(cargoLockPackageDataList, dependenciesToInclude, resolvedRootDependencies, packageLookupMap);
+                // Parses direct dependencies to include from Cargo.toml applying filter if provided
+                Set<NameVersion> includedDependencies = cargoTomlParser.parseDependenciesToInclude(cargoTomlContents, filter);
+                filteredPackages = resolveDirectAndTransitiveDependencies(cargoLockPackageDataList, includedDependencies, resolvedRootDependencies, packageLookupMap);
+
+                // Collect all direct dependencies from Cargo.toml and their transitive dependencies
+                // from Cargo.lock file to identify and collect orphan dependencies correctly
+                Set<NameVersion> allDependencies = cargoTomlParser.parseDependenciesToInclude(cargoTomlContents, null);
+                unfilteredPackages = resolveDirectAndTransitiveDependencies(cargoLockPackageDataList, allDependencies, allRootDependencies, packageLookupMap);
             }
         }
 
-        List<CargoLockPackage> packages = filteredPackages.stream()
+        // Packages that will be included in the dependency graph ultimately after filtering out NORMAL/BUILD/DEV
+        List<CargoLockPackage> resolvedPackages = filteredPackages.stream()
             .map(cargoLockPackageDataTransformer::transform)
             .collect(Collectors.toList());
+        resolvedPackages = resolveDependencyVersions(resolvedPackages, packageLookupMap);
 
-        List<CargoLockPackage> resolvedPackages = resolveDependencyVersions(packages, packageLookupMap);
+        // All linked Packages via direct + transitive dependencies so as to isolate orphan dependencies
+        List<CargoLockPackage> allConnectedPackages = unfilteredPackages.stream()
+            .map(cargoLockPackageDataTransformer::transform)
+            .collect(Collectors.toList());
+        allConnectedPackages = resolveDependencyVersions(allConnectedPackages, packageLookupMap);
 
         List<CargoLockPackage> orphanedResolvedPackages = collectOrphanPackages(
             cargoLockPackageDataList,
             resolvedPackages,
-            packageLookupMap
+            allConnectedPackages
         );
 
         DependencyGraph graph = cargoLockPackageTransformer.transformToGraph(resolvedPackages, orphanedResolvedPackages, resolvedRootDependencies);
@@ -115,7 +130,7 @@ public class CargoLockfileExtractor {
         return filter != null && !filter.shouldIncludeAll();
     }
 
-    private List<CargoLockPackageData> includeDependencies(
+    private List<CargoLockPackageData> resolveDirectAndTransitiveDependencies(
             List<CargoLockPackageData> packages,
             Set<NameVersion> dependenciesToInclude,
             Set<NameVersion> resolvedRootDependencies,
@@ -215,21 +230,24 @@ public class CargoLockfileExtractor {
     private List<CargoLockPackage> collectOrphanPackages(
         List<CargoLockPackageData> allPackages,
         List<CargoLockPackage> resolvedPackages,
-        Map<NameVersion, List<CargoLockPackageData>> packageLookupMap
+        List<CargoLockPackage> allConnectedPackages
     ) {
 
-        // Collect all NameVersions already resolved
         Set<NameVersion> resolvedSet = resolvedPackages.stream()
             .map(CargoLockPackage::getPackageNameVersion)
             .collect(Collectors.toSet());
 
-        // Orphaned = in lockfile but not in resolvedPackages
-        List<CargoLockPackage> orphanedPackages = allPackages.stream()
-            .map(cargoLockPackageDataTransformer::transform)
-            .filter(pkg -> !resolvedSet.contains(pkg.getPackageNameVersion()))
-            .collect(Collectors.toList());
+        Set<NameVersion> allConnectedSet = allConnectedPackages.stream()
+            .map(CargoLockPackage::getPackageNameVersion)
+            .collect(Collectors.toSet());
 
-        return resolveDependencyVersions(orphanedPackages, packageLookupMap);
+        // Orphaned = in lockfile but not in resolvedPackages and allConnectedSet
+        return allPackages.stream()
+            .map(cargoLockPackageDataTransformer::transform)
+            .filter(pkg -> !allConnectedSet.contains(pkg.getPackageNameVersion()) &&
+                !resolvedSet.contains(pkg.getPackageNameVersion()))
+            .map(pkg -> new CargoLockPackage(pkg.getPackageNameVersion(), Collections.emptyList())) // clear dependencies
+            .collect(Collectors.toList());
     }
 
     private List<CargoLockPackageData> filterPackagesByInclusion(

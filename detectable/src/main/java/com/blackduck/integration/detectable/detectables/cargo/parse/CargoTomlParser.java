@@ -44,13 +44,12 @@ public class CargoTomlParser {
     public Set<NameVersion> parseDependenciesToInclude(String tomlFileContents, EnumListFilter<CargoDependencyType> dependencyTypeFilter) {
         TomlParseResult toml = Toml.parse(tomlFileContents);
         Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap = new HashMap<>();
-        Set<NameVersion> alwaysIncluded = new HashSet<>();
 
-        parseDependenciesFromTomlTable(toml, NORMAL_DEPENDENCIES_KEY, CargoDependencyType.NORMAL, dependencyTypeMap, alwaysIncluded);
-        parseDependenciesFromTomlTable(toml, BUILD_DEPENDENCIES_KEY, CargoDependencyType.BUILD, dependencyTypeMap, alwaysIncluded);
-        parseDependenciesFromTomlTable(toml, DEV_DEPENDENCIES_KEY, CargoDependencyType.DEV, dependencyTypeMap, alwaysIncluded);
+        parseDependenciesFromTomlTable(toml, NORMAL_DEPENDENCIES_KEY, CargoDependencyType.NORMAL, dependencyTypeMap);
+        parseDependenciesFromTomlTable(toml, BUILD_DEPENDENCIES_KEY, CargoDependencyType.BUILD, dependencyTypeMap);
+        parseDependenciesFromTomlTable(toml, DEV_DEPENDENCIES_KEY, CargoDependencyType.DEV, dependencyTypeMap);
 
-        Set<NameVersion> dependenciesToInclude = new HashSet<>(alwaysIncluded);
+        Set<NameVersion> dependenciesToInclude = new HashSet<>();
         for (Map.Entry<NameVersion, EnumSet<CargoDependencyType>> entry : dependencyTypeMap.entrySet()) {
             NameVersion nameVersion = entry.getKey();
             EnumSet<CargoDependencyType> types = entry.getValue();
@@ -74,8 +73,7 @@ public class CargoTomlParser {
         TomlParseResult toml,
         String sectionKey,
         CargoDependencyType cargoDependencyType,
-        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap,
-        Set<NameVersion> alwaysIncluded
+        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap
     ) {
         // Sanitize the section key before fetching table
         String sanitizedSectionKey = sanitizeKey(sectionKey);
@@ -92,13 +90,9 @@ public class CargoTomlParser {
                 }
 
                 NameVersion nv = new NameVersion(key, version);
-                EnumSet<CargoDependencyType> types =
-                    dependencyTypeMap.computeIfAbsent(nv, k -> EnumSet.noneOf(CargoDependencyType.class));
-                if (cargoDependencyType != null) {
-                    types.add(cargoDependencyType);
-                } else {
-                    alwaysIncluded.add(nv);
-                }
+                dependencyTypeMap
+                    .computeIfAbsent(nv, k -> EnumSet.noneOf(CargoDependencyType.class))
+                    .add(cargoDependencyType);
             }
         }
 
@@ -107,8 +101,7 @@ public class CargoTomlParser {
             toml,
             sectionKey, // keep original for matching
             cargoDependencyType,
-            dependencyTypeMap,
-            alwaysIncluded
+            dependencyTypeMap
         );
     }
 
@@ -116,17 +109,16 @@ public class CargoTomlParser {
         Object node,
         String sectionKey,
         CargoDependencyType cargoDependencyType,
-        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap,
-        Set<NameVersion> alwaysIncluded
+        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap
     ) {
         if (node == null) return;
 
         if (node instanceof TomlTable) {
-            parseTomlTableNode((TomlTable) node, sectionKey, cargoDependencyType, dependencyTypeMap, alwaysIncluded);
+            parseTomlTableNode((TomlTable) node, sectionKey, cargoDependencyType, dependencyTypeMap);
         } else if (node instanceof Map) {
-            parseMapNode((Map<?, ?>) node, sectionKey, cargoDependencyType, dependencyTypeMap, alwaysIncluded);
+            parseMapNode((Map<?, ?>) node, sectionKey, cargoDependencyType, dependencyTypeMap);
         } else if (node instanceof List) {
-            parseListNode((List<?>) node, sectionKey, cargoDependencyType, dependencyTypeMap, alwaysIncluded);
+            parseListNode((List<?>) node, sectionKey, cargoDependencyType, dependencyTypeMap);
         }
     }
 
@@ -134,18 +126,17 @@ public class CargoTomlParser {
         TomlTable tableNode,
         String sectionKey,
         CargoDependencyType cargoDependencyType,
-        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap,
-        Set<NameVersion> alwaysIncluded
+        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap
     ) {
         for (String key : tableNode.keySet()) {
             Object value = tableNode.get(sanitizeKey(key));
 
             if (key.equals(sectionKey)) {
-                parseDependenciesFromSection(value, cargoDependencyType, dependencyTypeMap, alwaysIncluded);
+                parseDependenciesFromSection(value, cargoDependencyType, dependencyTypeMap);
             }
 
             if (value instanceof TomlTable || value instanceof Map || value instanceof List) {
-                parseNestedDependencies(value, sectionKey, cargoDependencyType, dependencyTypeMap, alwaysIncluded);
+                parseNestedDependencies(value, sectionKey, cargoDependencyType, dependencyTypeMap);
             }
         }
     }
@@ -154,18 +145,17 @@ public class CargoTomlParser {
         Map<?, ?> mapNode,
         String sectionKey,
         CargoDependencyType cargoDependencyType,
-        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap,
-        Set<NameVersion> alwaysIncluded
+        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap
     ) {
         for (Map.Entry<?, ?> entry : mapNode.entrySet()) {
             Object value = entry.getValue();
 
             if (entry.getKey().toString().equals(sectionKey)) {
-                parseDependenciesFromSection(value, cargoDependencyType, dependencyTypeMap, alwaysIncluded);
+                parseDependenciesFromSection(value, cargoDependencyType, dependencyTypeMap);
             }
 
             if (value instanceof TomlTable || value instanceof Map || value instanceof List) {
-                parseNestedDependencies(value, sectionKey, cargoDependencyType, dependencyTypeMap, alwaysIncluded);
+                parseNestedDependencies(value, sectionKey, cargoDependencyType, dependencyTypeMap);
             }
         }
     }
@@ -174,32 +164,30 @@ public class CargoTomlParser {
         List<?> listNode,
         String sectionKey,
         CargoDependencyType cargoDependencyType,
-        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap,
-        Set<NameVersion> alwaysIncluded
+        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap
     ) {
         for (Object elem : listNode) {
-            parseNestedDependencies(elem, sectionKey, cargoDependencyType, dependencyTypeMap, alwaysIncluded);
+            parseNestedDependencies(elem, sectionKey, cargoDependencyType, dependencyTypeMap);
         }
     }
 
     private void parseDependenciesFromSection(
         Object value,
         CargoDependencyType cargoDependencyType,
-        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap,
-        Set<NameVersion> alwaysIncluded
+        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap
     ) {
         if (value instanceof TomlTable) {
             TomlTable depsTable = (TomlTable) value;
             for (String depName : depsTable.keySet()) {
                 String version = extractVersion(depsTable.get(depName));
-                addDependency(depName, version, cargoDependencyType, dependencyTypeMap, alwaysIncluded);
+                addDependency(depName, version, cargoDependencyType, dependencyTypeMap);
             }
         } else if (value instanceof Map) {
             Map<?, ?> depsMap = (Map<?, ?>) value;
             for (Map.Entry<?, ?> depEntry : depsMap.entrySet()) {
                 String depName = depEntry.getKey().toString();
                 String version = extractVersion(depEntry.getValue());
-                addDependency(depName, version, cargoDependencyType, dependencyTypeMap, alwaysIncluded);
+                addDependency(depName, version, cargoDependencyType, dependencyTypeMap);
             }
         }
     }
@@ -208,16 +196,12 @@ public class CargoTomlParser {
         String depName,
         String version,
         CargoDependencyType cargoDependencyType,
-        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap,
-        Set<NameVersion> alwaysIncluded
+        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap
     ) {
         NameVersion nv = new NameVersion(depName, version);
-        EnumSet<CargoDependencyType> types = dependencyTypeMap.computeIfAbsent(nv, k -> EnumSet.noneOf(CargoDependencyType.class));
-        if (cargoDependencyType != null) {
-            types.add(cargoDependencyType);
-        } else {
-            alwaysIncluded.add(nv);
-        }
+        dependencyTypeMap
+            .computeIfAbsent(nv, k -> EnumSet.noneOf(CargoDependencyType.class))
+            .add(cargoDependencyType);
     }
 
     private String extractVersion(Object depValue) {
