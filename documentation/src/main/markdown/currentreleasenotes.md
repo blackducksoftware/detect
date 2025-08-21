@@ -40,4 +40,4 @@
 
 ### Dependency updates
 
-* 
+* Updated the Black Duck Software BDIO2 protobuf library to version 3.2.12 to resolve a security vulnerability in its Google Protobuf Java library. 
