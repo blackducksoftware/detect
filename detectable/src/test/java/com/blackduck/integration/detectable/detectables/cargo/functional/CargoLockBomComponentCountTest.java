@@ -13,9 +13,9 @@ import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.functional.DetectableFunctionalTest;
 import com.blackduck.integration.detectable.util.graph.NameVersionGraphAssert;
 
-public class CargoLockDependencyFunctionalTest extends DetectableFunctionalTest {
+public class CargoLockBomComponentCountTest extends DetectableFunctionalTest {
 
-    public CargoLockDependencyFunctionalTest() throws IOException {
+    public CargoLockBomComponentCountTest() throws IOException {
         super("cargo-workspace-orphans");
     }
 
