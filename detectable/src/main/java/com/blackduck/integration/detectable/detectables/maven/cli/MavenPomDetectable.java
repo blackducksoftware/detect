@@ -15,7 +15,7 @@ import com.blackduck.integration.detectable.detectables.maven.parsing.MavenProje
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 
-@DetectableInfo(name = "Maven CLI", language = "various", forge = "Maven Central", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: pom.xml. Executable: mvnw or mvn.")
+@DetectableInfo(name = "Maven CLI", language = "various", forge = "Maven Central", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: *pom.xml. Executable: mvnw or mvn.")
 public class MavenPomDetectable extends Detectable {
     public static final String POM_FILENAME = "*pom.xml";
 
