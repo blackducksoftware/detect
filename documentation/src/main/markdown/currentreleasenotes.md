@@ -44,3 +44,4 @@
 
 * Upgraded and released Docker Inspector version 11.5.0.
 * Upgraded and released Nuget Inspector version 2.3.0.
+* Updated the Black Duck Software BDIO2 protobuf library to version 3.2.12 to resolve a security vulnerability in its Google Protobuf Java library. 
