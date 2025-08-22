@@ -31,7 +31,7 @@
 
 ### Changed features
 
-* 
+* Yarn workspace identification and processing has been made more efficient, resulting in some scans being faster.
 
 ### Resolved issues
 
