@@ -34,6 +34,8 @@ public class GoVendorModulesTxtParser {
                 Dependency dependency = new Dependency(moduleName, moduleVersion, externalId);
                 logger.trace(String.format("Parsed dependency: %s %s", moduleName, moduleVersion));
                 graph.addDirectDependency(dependency);
+            } else if (!line.trim().isEmpty()) {
+                logger.warn("Malformed line in modules.txt: " + line);
             }
         }
         return graph;
