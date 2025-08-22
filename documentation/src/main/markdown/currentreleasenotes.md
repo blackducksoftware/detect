@@ -24,8 +24,10 @@
 
 * Maven CLI Detector now accepts a custom pom.xml file name (matching the pattern *pom.xml) when provided via `detect.maven.build.command`.  
 * Signature Scan now supports ARM architecture with correctly packaged ARM JRE for Windows, Mac, Linux, and Alpine operating systems for [bd_product_long] version 2025.7.0 or later.
-<note type="hint">To ensure [detect_product_short] correctly identifies the system architecture on ARM-based systems, please install an ARM-specific Java runtime. This is necessary for accurate detection and proper functionality on ARM platforms.</note>
+  <note type="hint">To ensure [detect_product_short] correctly identifies the system architecture on ARM-based systems, please install an ARM-specific Java runtime. This is necessary for accurate detection and proper functionality on ARM platforms.</note>
 * Support for Poetry is now extended to 2.1.4.
+* [detect_product_short] Docker Inspector air gap distribution JAR files are now digitally signed with Black Duck Software, Inc authority.
+* [detect_product_short] Nuget Inspector binaries for macOS and Windows binaries are now digitally signed with Black Duck Software, Inc authority.
 
 ### Changed features
 
@@ -37,8 +39,12 @@
 * (IDETECT-4781) Signature Scans will no longer fail if SCA Scan Service (SCASS) related IPs are blocked. A performance warning will be printed and a non-SCASS Signature Scan will be performed.
 * (IDETECT-4759) Updated [detect_product_short] UV Detector to prevent execution when the `toml` file does not have a `[tool.uv]` section, and to not return a success status unless a BDIO file is generated.
 * (IDETECT-4746) Fixed Cargo Lockfile Detector incorrectly labeling transitive dependencies as direct dependencies.
+* (IDETECT-4728) Rapid Scans using `BOM_COMPARE_STRICT` now show a clear message if the project version doesn’t exist, guiding users to run a full scan to create it.
+* (IDETECT-4736) Gradle Native Inspector no longer appends `+FAILED` suffix to unresolved dependency versions in BDIO output.
 * (IDETECT-4770) The Cargo Dependency Type Exclusion has been expanded to include `NORMAL` dependencies for both the Cargo Lockfile and Cargo CLI detectors. Additionally, the Cargo CLI Detector now supports excluding `PROC_MACRO` dependencies, though this exclusion is limited to the CLI detector due to the absence of explicit `PROC_MACRO` entries in `Cargo.toml` or `Cargo.lock`.
 
 ### Dependency updates
 
-* 
+* Upgraded and released Docker Inspector version 11.5.0.
+* Upgraded and released Nuget Inspector version 2.3.0.
+* Updated the Black Duck Software BDIO2 protobuf library to version 3.2.12 to resolve a security vulnerability in its Google Protobuf Java library. 
