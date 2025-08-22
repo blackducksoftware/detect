@@ -24,8 +24,10 @@
 
 * Maven CLI Detector now accepts a custom pom.xml file name (matching the pattern *pom.xml) when provided via `detect.maven.build.command`.  
 * Signature Scan now supports ARM architecture with correctly packaged ARM JRE for Windows, Mac, Linux, and Alpine operating systems for [bd_product_long] version 2025.7.0 or later.
-<note type="hint">To ensure [detect_product_short] correctly identifies the system architecture on ARM-based systems, please install an ARM-specific Java runtime. This is necessary for accurate detection and proper functionality on ARM platforms.</note>
+  <note type="hint">To ensure [detect_product_short] correctly identifies the system architecture on ARM-based systems, please install an ARM-specific Java runtime. This is necessary for accurate detection and proper functionality on ARM platforms.</note>
 * Support for Poetry is now extended to 2.1.4.
+* [detect_product_short] Docker Inspector air gap distribution JAR files are now digitally signed with Black Duck Software, Inc authority.
+* [detect_product_short] Nuget Inspector binaries for macOS and Windows binaries are now digitally signed with Black Duck Software, Inc authority.
 
 ### Changed features
 
@@ -40,4 +42,5 @@
 
 ### Dependency updates
 
-* 
+* Upgraded and released Docker Inspector version 11.5.0.
+* Upgraded and released Nuget Inspector version 2.3.0.
