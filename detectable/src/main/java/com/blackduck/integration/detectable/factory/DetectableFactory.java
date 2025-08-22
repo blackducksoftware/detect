@@ -9,6 +9,8 @@ import javax.xml.parsers.SAXParserFactory;
 import com.blackduck.integration.detectable.detectable.executable.resolver.*;
 import com.blackduck.integration.detectable.detectables.cargo.*;
 import com.blackduck.integration.detectable.detectables.cargo.transform.CargoDependencyGraphTransformer;
+import com.blackduck.integration.detectable.detectables.go.vendor.GoVendorV2Detectable;
+import com.blackduck.integration.detectable.detectables.go.vendor.GoVendorV2Extractor;
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildDetectable;
 import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildExtractor;
@@ -451,6 +453,10 @@ public class DetectableFactory {
         return new GoVendorDetectable(environment, fileFinder, goVendorExtractor());
     }
 
+    public GoVendorV2Detectable createGoVendorV2Detectable(DetectableEnvironment environment) {
+        return new GoVendorV2Detectable(environment, fileFinder, goVendorV2Extractor());
+    }
+
     public GoGradleDetectable createGoGradleDetectable(DetectableEnvironment environment) {
         return new GoGradleDetectable(environment, fileFinder, goGradleExtractor());
     }
@@ -882,6 +888,10 @@ public class DetectableFactory {
 
     private GoVendorExtractor goVendorExtractor() {
         return new GoVendorExtractor(gson, externalIdFactory);
+    }
+
+    private GoVendorV2Extractor goVendorV2Extractor() {
+        return new GoVendorV2Extractor(externalIdFactory);
     }
 
     private GradleReportParser gradleReportParser() {

@@ -21,6 +21,7 @@ public enum DetectorType { // TODO: 8.0.0 Rename DetectorTypes
     GO_VNDR,
     GO_VENDOR,
     GO_GRADLE,
+    GO_VENDOR_V2,
     GRADLE,
     HEX, // REBAR
     IVY,
@@ -42,6 +43,8 @@ public enum DetectorType { // TODO: 8.0.0 Rename DetectorTypes
     XCODE, // Remove this
     OPAM,
     UV;
+
+
     protected static final List<String> POSSIBLE_NAMES = Arrays.stream(DetectorType.values()).map(DetectorType::name).collect(Collectors.toList());
 
     public static List<String> getPossibleNames() {

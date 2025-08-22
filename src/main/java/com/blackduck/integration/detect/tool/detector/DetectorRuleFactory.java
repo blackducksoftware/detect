@@ -21,6 +21,7 @@ import com.blackduck.integration.detectable.detectables.go.godep.GoDepLockDetect
 import com.blackduck.integration.detectable.detectables.go.gogradle.GoGradleDetectable;
 import com.blackduck.integration.detectable.detectables.go.gomod.GoModCliDetectable;
 import com.blackduck.integration.detectable.detectables.go.vendor.GoVendorDetectable;
+import com.blackduck.integration.detectable.detectables.go.vendor.GoVendorV2Detectable;
 import com.blackduck.integration.detectable.detectables.go.vendr.GoVndrDetectable;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.GradleInspectorDetectable;
 import com.blackduck.integration.detectable.detectables.gradle.parsing.GradleProjectInspectorDetectable;
@@ -163,6 +164,11 @@ public class DetectorRuleFactory {
         rules.addDetector(DetectorType.GO_VENDOR, detector -> {
             detector.entryPoint(GoVendorDetectable.class)
                 .search().defaults();
+        });
+
+        rules.addDetector(DetectorType.GO_VENDOR_V2, detector -> {
+            detector.entryPoint(GoVendorV2Detectable.class)
+                    .search().defaults();
         });
 
         rules.addDetector(DetectorType.GO_GRADLE, detector -> {
