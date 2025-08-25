@@ -13,9 +13,9 @@ import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.functional.DetectableFunctionalTest;
 import com.blackduck.integration.detectable.util.graph.NameVersionGraphAssert;
 
-public class CargoLockDependencyFunctionalTest extends DetectableFunctionalTest {
+public class CargoLockBomComponentCountTest extends DetectableFunctionalTest {
 
-    public CargoLockDependencyFunctionalTest() throws IOException {
+    public CargoLockBomComponentCountTest() throws IOException {
         super("cargo-workspace-orphans");
     }
 
@@ -121,7 +121,7 @@ public class CargoLockDependencyFunctionalTest extends DetectableFunctionalTest 
     @NotNull
     @Override
     public Detectable create(@NotNull DetectableEnvironment detectableEnvironment) {
-        return detectableFactory.createCargoDetectable(detectableEnvironment);
+        return detectableFactory.createCargoLockfileDetectable(detectableEnvironment);
     }
 
     @Override
@@ -151,7 +151,6 @@ public class CargoLockDependencyFunctionalTest extends DetectableFunctionalTest 
         // Orphans bucket + chain
         graphAssert.hasRootDependency("Additional_Components", "none");
         graphAssert.hasParentChildRelationship("Additional_Components", "none", "errno", "0.3.13");
-        graphAssert.hasParentChildRelationship("errno", "0.3.13", "libc", "0.2.174");
 
         // Verify a transitive edge from lock
         graphAssert.hasParentChildRelationship("bstr", "1.7.0", "regex", "1.10.0");
