@@ -41,7 +41,6 @@
 * (IDETECT-4746) Fixed Cargo Lockfile Detector incorrectly labeling transitive dependencies as direct dependencies.
 * (IDETECT-4728) Rapid Scans using `BOM_COMPARE_STRICT` now show a clear message if the project version doesn’t exist, guiding users to run a full scan to create it.
 * (IDETECT-4736) Gradle Native Inspector no longer appends `+FAILED` suffix to unresolved dependency versions in BDIO output.
-* (IDETECT-4770) The Cargo Dependency Type Exclusion has been expanded to include `NORMAL` dependencies for both the Cargo Lockfile and Cargo CLI detectors. Additionally, the Cargo CLI Detector now supports excluding `PROC_MACRO` dependencies, though this exclusion is limited to the CLI detector due to the absence of explicit `PROC_MACRO` entries in `Cargo.toml` or `Cargo.lock`.
 
 ### Dependency updates
 
