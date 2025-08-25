@@ -526,7 +526,7 @@
 							<entry>various</entry>
 							<entry>Maven Central</entry>
 							<entry>
-								<p>File: pom.xml</p>
+								<p>File: *pom.xml</p>
 								<p>Executable: mvnw or mvn</p>
 							</entry>
 							<entry>HIGH</entry>
