@@ -3,7 +3,6 @@ package com.blackduck.integration.detect.configuration;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -344,6 +343,7 @@ public class DetectConfigurationFactory {
         Boolean projectLevelAdjustments = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_LEVEL_ADJUSTMENTS);
         Boolean forceProjectVersionUpdate = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_VERSION_UPDATE);
         String projectVersionNickname = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_VERSION_NICKNAME);
+        Boolean deepLicenseEnabled = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_DEEP_LICENSE);
         
         List<ProjectCloneCategoriesType> cloneCategories;
         AllNoneEnumList<ProjectCloneCategoriesType> categoriesEnum = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_CLONE_CATEGORIES);
@@ -363,7 +363,8 @@ public class DetectConfigurationFactory {
             cloneCategories,
             forceProjectVersionUpdate,
             projectVersionNickname,
-            projectLevelAdjustments
+            projectLevelAdjustments,
+            deepLicenseEnabled
         );
     }
 

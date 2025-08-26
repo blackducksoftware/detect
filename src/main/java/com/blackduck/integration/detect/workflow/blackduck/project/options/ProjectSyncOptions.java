@@ -16,6 +16,7 @@ public class ProjectSyncOptions {
     private final Boolean forceProjectVersionUpdate;
     private final String projectVersionNickname;
     private final Boolean projectLevelAdjustments;
+    private final Boolean deepLicenseEnabled;
 
     public ProjectSyncOptions(
         ProjectVersionPhaseType projectVersionPhase,
@@ -26,7 +27,8 @@ public class ProjectSyncOptions {
         List<ProjectCloneCategoriesType> cloneCategories,
         Boolean forceProjectVersionUpdate,
         String projectVersionNickname,
-        Boolean projectLevelAdjustments
+        Boolean projectLevelAdjustments,
+        Boolean deepLicenseEnabled
     ) {
         this.projectVersionPhase = projectVersionPhase;
         this.projectVersionDistribution = projectVersionDistribution;
@@ -37,6 +39,7 @@ public class ProjectSyncOptions {
         this.forceProjectVersionUpdate = forceProjectVersionUpdate;
         this.projectVersionNickname = projectVersionNickname;
         this.projectLevelAdjustments = projectLevelAdjustments;
+        this.deepLicenseEnabled = deepLicenseEnabled;
     }
 
     public ProjectVersionPhaseType getProjectVersionPhase() {
@@ -73,5 +76,9 @@ public class ProjectSyncOptions {
 
     public Boolean getProjectLevelAdjustments() {
         return projectLevelAdjustments;
+    }
+
+    public Boolean isDeepLicenseEnabled() {
+        return deepLicenseEnabled;
     }
 }

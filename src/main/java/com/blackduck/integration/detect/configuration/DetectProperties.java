@@ -8,9 +8,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import com.blackduck.integration.blackduck.api.generated.enumeration.PolicyRuleSeverityType;
 import com.blackduck.integration.blackduck.api.generated.enumeration.ProjectCloneCategoriesType;
@@ -1623,6 +1623,13 @@ public class DetectProperties {
             .setInfo("Project Version License", DetectPropertyFromVersion.VERSION_7_11_0)
             .setHelp("If project version license is specified, your project version will be created with this license. For updates, see detect.project.version.update.")
             .setExample("Apache License 2.0")
+            .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
+            .build();
+
+    public static final BooleanProperty DETECT_PROJECT_DEEP_LICENSE =
+        BooleanProperty.newBuilder("detect.project.deep.license", false)
+            .setInfo("Deep License Analysis", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setHelp("If set to true, enables deep license analysis for the project including detailed license data and snippet analysis.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
             .build();
 
