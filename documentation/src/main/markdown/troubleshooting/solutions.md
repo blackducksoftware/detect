@@ -153,11 +153,11 @@ you will get this (or a similar) error if you run with --detect.tools.BINARY_SCA
 
 Set --detect.project.name and --detect.project.version.name.
 
-## [blackduck_signature_scanner_name] fails on Alpine Linux or ARM64
+## [blackduck_signature_scanner_name] fails on Alpine Linux (non ARM64 architecture)
 
 ### Symptom
 
-The [blackduck_signature_scanner_name] fails on Alpine Linux or ARM64 with an error similar to:
+The [blackduck_signature_scanner_name] fails on Alpine Linux systems with non arm64 architecture with an error similar to:
 
 ````
 There was a problem scanning target '/opt/projects/myproject': Cannot run program "/home/me/blackduck/tools/Black_Duck_Scan_Installation/scan.cli-2025.4.0/jre/bin/java": error=2, No such file or directory
@@ -165,7 +165,7 @@ There was a problem scanning target '/opt/projects/myproject': Cannot run progra
 
 ### Possible cause
 
-The Java bundled with the [blackduck_signature_scanner_name] does not work on Alpine Linux or ARM64 (it relies on libraries not usually present on an Alpine or ARM64 system).
+The Java bundled with the [blackduck_signature_scanner_name] does not work on Alpine Linux systems with non arm64 architecture (it relies on libraries not usually present on an Alpine system).
 
 ### Solution
 

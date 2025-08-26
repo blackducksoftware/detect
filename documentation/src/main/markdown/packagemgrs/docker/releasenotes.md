@@ -1,5 +1,11 @@
 # [docker_inspector_name] Release notes
 
+## Version 11.5.0
+
+### New features
+
+* [detect_product_short] Docker Inspector air gap distribution JAR files are now digitally signed with Black Duck Software, Inc authority.
+
 ## Version 11.4.0
 
 ### Resolved issues

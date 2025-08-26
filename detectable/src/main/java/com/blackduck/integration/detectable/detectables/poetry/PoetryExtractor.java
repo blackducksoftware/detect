@@ -37,7 +37,7 @@ public class PoetryExtractor {
             Extraction.Builder extractionBuilder = new Extraction.Builder().success(codeLocation);
 
             Optional<NameVersion> poetryNameVersion = extractNameVersionFromSection(toolDotPoetrySection);
-            if (poetryNameVersion.isEmpty()) {
+            if (!poetryNameVersion.isPresent()) {
                 // Poetry 2.x support
                 poetryNameVersion = extractNameVersionFromSection(projectSection);
             }
