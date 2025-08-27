@@ -2,6 +2,7 @@ package com.blackduck.integration.detector.accuracy.directory;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -29,6 +30,18 @@ public class DirectoryEvaluator {
     private final DetectorRuleEvaluator detectorRuleEvaluator;
     private final Function<DetectorType, ExtractionEnvironment> extractionEnvironmentSupplier;
 
+    // THIS LIST IS NOT COMPLETE AND IS JUST A POC
+    //      If we want to make this POC a reality we should probably expand Detectable design to be able to register "interesting" files for use here.
+    //      We would also need to take into account the fact that some detectables look for files with wildcards and sometimes lookups are property-based.
+    Set<String> filesOfInterest = new HashSet<>(Set.of(
+        "Cargo.toml", "Cargo.lock", "Cartfile", "Cartfile.resolved", "compile_commands.json", "Podfile.lock",
+        "conanfile.txt", "conanfile.py", "conan.lock", "environment.yml", "Makefile.PL", "packrat.lock", "pubspec.yaml",
+        "pubspec.lock", ".git", "Gopkg.lock", "gogradle.lock", "go.mod", "vendor", "vendor.conf", "build.gradle", "build.gradle.kts",
+        "rebar.config", "ivy.xml", "build.xml", "lerna.json", "package.json", "package-lock.json", "npm-shrinkwrap.json", "yarn.lock",
+        "pom.xml", "pom.groovy", "node_modules", "composer.lock", "composer.json", "package.xml", "Pipfile", "Pipfile.lock", "setup.py",
+        "requirements.txt", "pnpm-lock.yaml", "Poetry.lock", "pyproject.toml", "Gemfile.lock", "build.sbt", "Package.swift", "Package.resolved"
+    ));
+
     public DirectoryEvaluator(
         DetectorRuleEvaluator detectorRuleEvaluator,
         Function<DetectorType, ExtractionEnvironment> extractionEnvironmentSupplier
@@ -51,29 +64,37 @@ public class DirectoryEvaluator {
         logger.debug("Determining applicable detectors on the directory: {}", findResult.getDirectory());
 
         File directory = findResult.getDirectory();
+
+        // Check if the directory contains any files of interest
+        boolean containsFilesOfInterest = Arrays.stream(directory.listFiles())
+            .map(File::getName)
+            .anyMatch(filesOfInterest::contains);
+
         Set<DetectorType> appliedSoFar = new HashSet<>();
         Set<DetectableDefinition> extractedSoFar = new HashSet<>();
         List<DetectorRuleEvaluation> evaluations = new LinkedList<>();
 
-        for (DetectorRule rule : rules.getDetectorRules()) {
-            SearchEnvironment searchEnvironment = new SearchEnvironment(findResult.getDepthFromRoot(), appliedSoFar, appliedInParent, extractedInParentDetectables);
-            DetectorRuleEvaluation detectorRuleEvaluation = detectorRuleEvaluator.evaluate(
-                directory,
-                searchEnvironment,
-                rule,
-                () -> extractionEnvironmentSupplier.apply(rule.getDetectorType())
-            );
-            if (detectorRuleEvaluation.wasFound() && detectorRuleEvaluation.getFoundEntryPoint().isPresent()) { //should this capture only success?
-                appliedSoFar.add(rule.getDetectorType());
+        if (containsFilesOfInterest) {
+            for (DetectorRule rule : rules.getDetectorRules()) {
+                SearchEnvironment searchEnvironment = new SearchEnvironment(findResult.getDepthFromRoot(), appliedSoFar, appliedInParent, extractedInParentDetectables);
+                DetectorRuleEvaluation detectorRuleEvaluation = detectorRuleEvaluator.evaluate(
+                    directory,
+                    searchEnvironment,
+                    rule,
+                    () -> extractionEnvironmentSupplier.apply(rule.getDetectorType())
+                );
+                if (detectorRuleEvaluation.wasFound() && detectorRuleEvaluation.getFoundEntryPoint().isPresent()) { //should this capture only success?
+                    appliedSoFar.add(rule.getDetectorType());
 
-                EntryPointFoundResult foundEntryPoint = detectorRuleEvaluation.getFoundEntryPoint().get();
-                logCascadeResults(rule, foundEntryPoint);
-                foundEntryPoint.getEntryPointEvaluation().getEvaluatedDetectables().stream()
-                    .filter(DetectableEvaluationResult::wasExtractionSuccessful)
-                    .map(DetectableEvaluationResult::getDetectableDefinition)
-                    .forEach(extractedSoFar::add);
+                    EntryPointFoundResult foundEntryPoint = detectorRuleEvaluation.getFoundEntryPoint().get();
+                    logCascadeResults(rule, foundEntryPoint);
+                    foundEntryPoint.getEntryPointEvaluation().getEvaluatedDetectables().stream()
+                        .filter(DetectableEvaluationResult::wasExtractionSuccessful)
+                        .map(DetectableEvaluationResult::getDetectableDefinition)
+                        .forEach(extractedSoFar::add);
+                }
+                evaluations.add(detectorRuleEvaluation);
             }
-            evaluations.add(detectorRuleEvaluation);
         }
 
         if (!appliedSoFar.isEmpty()) {
