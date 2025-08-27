@@ -15,11 +15,13 @@ There are three NuGet detectors:
 
 The detectors run a platform dependent self-contained executable that is currently supported on Windows, Linux, and Mac platforms.
 
-<note type="note">
-
-*  To retrieve project build information, NuGet Project Inspector relies on a Microsoft API which is dependant upon the installation of .NET 6.0 on the build machine. To ensure the most accurate results available, .NET 6.0 should be installed. The inspector will fall back to parsing the XML files if .NET 6.0 is not present. 
-* NuGet Project Inspector does not accept NuGet specific configuration properties.
-* The NuGet Detectors do not work with mono.
+<note type="tip">
+<p>To retrieve project build information, NuGet Project Inspector relies on a Microsoft API which is dependant upon the installation of .NET 6.0 on the build machine.</p>
+  <ul>
+    <li>To ensure the most accurate results available, .NET 6.0 should be installed. The inspector will fall back to parsing the XML files if .NET 6.0 is not present.</li>
+    <li>NuGet Project Inspector does not accept NuGet specific configuration properties.</li>
+    <li>The NuGet Detectors do not work with mono.</li>
+  </ul>
 </note>
 
 ## Excluding dependency types
