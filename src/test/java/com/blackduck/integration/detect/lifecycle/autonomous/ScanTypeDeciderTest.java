@@ -4,6 +4,7 @@ import com.blackduck.integration.configuration.property.types.enumallnone.list.A
 import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detect.configuration.DetectPropertyConfiguration;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
+import com.blackduck.integration.detect.lifecycle.autonomous.ScanTypeDecider;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
