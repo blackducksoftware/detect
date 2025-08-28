@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class PythonDependencyTransformer {
 
@@ -15,6 +17,9 @@ public class PythonDependencyTransformer {
     private static final List<String> IGNORE_AFTER_CHARS = Arrays.asList("#", ";");
     private static final List<String> TOKEN_CLEANUP_CHARS = Arrays.asList("\"", "'");
     private static final List<String> TOKEN_IGNORE_AFTER_CHARS = Arrays.asList(",", "[", "==", ">=", "~=", "<=", ">", "<");
+    private static final Pattern URI_VERSION_PATTERN = Pattern.compile(".*/([A-Za-z0-9_.-]+)-([0-9]+(?:\\.[0-9A-Za-z_-]+)*)");
+    private static final Pattern VCS_VERSION_PATTERN = Pattern.compile(".*@(\\d+\\.\\d+(?:\\.\\d+)*)");
+
 
     public List<PythonDependency> transform(File requirementsFile) throws IOException {
 
@@ -39,6 +44,22 @@ public class PythonDependencyTransformer {
             return null;
         }
 
+        // Case 1: Handle PEP 508 direct references (name @ url)
+        if (formattedLine.contains("@")) {
+            String[] parts = formattedLine.split("@", 2);
+            String dependency = parts[0].trim();
+            String uri = parts[1].trim();
+
+            String version = extractVersionFromUri(uri);
+
+            if (!dependency.isEmpty()) {
+                return new PythonDependency(dependency, version);
+            } else {
+                return null;
+            }
+        }
+
+        // Case 2: Normal operator-based dependency (==, >=, etc.)
         // Extract tokens before and after the operator that was found in the line
         List<List<String>> extractedTokens = extractTokens(formattedLine);
         List<String> tokensBeforeOperator = extractedTokens.get(0);
@@ -64,6 +85,23 @@ public class PythonDependencyTransformer {
         } else {
             return null;
         }
+    }
+
+    private String extractVersionFromUri(String uri) {
+        // Case 1: wheel/archive style: .../package-1.2.3.whl or .../package-1.2.3.zip
+        Matcher matcher = URI_VERSION_PATTERN.matcher(uri);
+        if (matcher.find()) {
+            return matcher.group(2); // version part
+        }
+
+        // Case 2: VCS reference with @<version> (tag/commit/semver)
+        Matcher vcsMatcher = VCS_VERSION_PATTERN.matcher(uri);
+        if (vcsMatcher.matches()) {
+            return vcsMatcher.group(1);
+        }
+
+        // Case 3: no version found
+        return "";
     }
 
     public List<List<String>> extractTokens(String formattedLine) {
