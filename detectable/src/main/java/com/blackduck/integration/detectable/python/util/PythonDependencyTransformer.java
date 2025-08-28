@@ -17,9 +17,9 @@ public class PythonDependencyTransformer {
     private static final List<String> IGNORE_AFTER_CHARS = Arrays.asList("#", ";");
     private static final List<String> TOKEN_CLEANUP_CHARS = Arrays.asList("\"", "'");
     private static final List<String> TOKEN_IGNORE_AFTER_CHARS = Arrays.asList(",", "[", "==", ">=", "~=", "<=", ">", "<");
-    private static final Pattern URI_VERSION_PATTERN = Pattern.compile(".*/([A-Za-z0-9_.-]+)-([0-9]+(?:\\.[0-9A-Za-z_-]+)*)");
-    private static final Pattern VCS_VERSION_PATTERN = Pattern.compile(".*@(\\d+\\.\\d+(?:\\.\\d+)*)");
-
+    private static final Pattern URI_VERSION_PATTERN = Pattern.compile(".*/([A-Za-z0-9_.-]+)-([0-9]+(?:\\.[0-9A-Za-z_-]+)*).*\\.(whl|zip|tar\\.gz|tar\\.bz2|tar)$");
+    private static final Pattern VCS_VERSION_PATTERN = Pattern.compile(".*@([0-9]+(?:\\.[0-9]+)*(?:[A-Za-z0-9._-]*)?).*");
+    private static final Pattern ARCHIVE_VERSION_PATTERN = Pattern.compile(".*/(?:archive|releases)/([0-9]+(?:\\.[0-9]+)+).*\\.(zip|tar\\.gz|tar\\.bz2|tar).*");
 
     public List<PythonDependency> transform(File requirementsFile) throws IOException {
 
@@ -88,21 +88,32 @@ public class PythonDependencyTransformer {
     }
 
     private String extractVersionFromUri(String uri) {
-        // Case 1: wheel/archive style: .../package-1.2.3.whl or .../package-1.2.3.zip
-        Matcher matcher = URI_VERSION_PATTERN.matcher(uri);
-        if (matcher.find()) {
-            return matcher.group(2); // version part
+        if (uri == null || uri.isEmpty()) {
+            return "";
         }
 
-        // Case 2: VCS reference with @<version> (tag/commit/semver)
+        // Case 1: wheel/archive style
+        Matcher matcher = URI_VERSION_PATTERN.matcher(uri);
+        if (matcher.find()) {
+            return matcher.group(2);
+        }
+
+        // Case 2: VCS reference with @<version/tag>
         Matcher vcsMatcher = VCS_VERSION_PATTERN.matcher(uri);
-        if (vcsMatcher.matches()) {
+        if (vcsMatcher.find()) {
             return vcsMatcher.group(1);
         }
 
-        // Case 3: no version found
+        // Case 3: Generic archive URL with version in path (like pip archive)
+        Matcher archiveMatcher = ARCHIVE_VERSION_PATTERN.matcher(uri);
+        if (archiveMatcher.find()) {
+            return archiveMatcher.group(1);
+        }
+
+        // Case 4: fallback – no version found
         return "";
     }
+
 
     public List<List<String>> extractTokens(String formattedLine) {
         // Note: The line is always a valid line to extract from at this point since it has passed all the checks
