@@ -59,7 +59,7 @@ NuGet Solution Native Inspector runs if one or more solution (.sln) files are fo
 
 NuGet Project Native Inspector runs if no solution (.sln) files are found, and one or more project files are found. NuGet Project Native Inspector derives packages (dependencies) from project (.csproj, .fsproj, etc.) file content.
 
-NuGet inspectors look for files to derive dependency information from in this order (only the first available in the list will be analyzed):
+NuGet Native Project inspectors look for files to derive dependency information from in this order (only the first available in the list will be analyzed):
 1. Directory.Packages.props
 2. packages.config
 3. project.lock.json
