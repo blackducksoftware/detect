@@ -14,15 +14,17 @@ Set<String> projectPathExcludeFilter = convertStringToSet('${excludedProjectPath
 Set<String> projectPathIncludeFilter = convertStringToSet('${includedProjectPaths}')
 Boolean rootOnly = Boolean.parseBoolean("${rootOnlyOption}")
 gradle.allprojects {
-    // add a new task to each project to start the process of getting the dependencies
+    // Add a new task to each project to start the process of getting the dependencies
     task gatherDependencies(type: DefaultTask) {
         doLast {
             println "Gathering dependencies for " + project.name
         }
     }
-    afterEvaluate { project ->
-        // after a project has been evaluated modify the dependencies task for that project to output to a specific file.
-        project.tasks.getByName('dependencies') {
+
+    // Create a custom task to configure and modify the dependencies task for each project
+    task configureDependencies {
+        doLast {
+            // Set up the necessary properties for the dependencies task
             ext {
                 excludedProjectNames = '${excludedProjectNames}'
                 includedProjectNames = '${includedProjectNames}'
@@ -30,46 +32,55 @@ gradle.allprojects {
                 includedConfigurationNames = '${includedConfigurationNames}'
                 outputDirectoryPath = System.getProperty('GRADLEEXTRACTIONDIR')
             }
-            doFirst {
-                generateRootProjectMetaData(project, outputDirectoryPath)
 
-                if((rootOnly && isRoot(project)) || (!rootOnly && shouldInclude(projectNameExcludeFilter, projectNameIncludeFilter, project.name) && shouldInclude(projectPathExcludeFilter, projectPathIncludeFilter, project.path)) ) {
-                    def dependencyTask = project.tasks.getByName('dependencies')
-                    File projectOutputFile = findProjectOutputFile(project, outputDirectoryPath)
-                    File projectFile = createProjectOutputFile(projectOutputFile)
+            generateRootProjectMetaData(project, outputDirectoryPath)
 
-                    if(dependencyTask.metaClass.respondsTo(dependencyTask, "setConfigurations")) {
-                        println "Updating configurations for task"
-                        // modify the configurations for the dependency task
-                        setConfigurations(filterConfigurations(project, excludedConfigurationNames, includedConfigurationNames))
+            // Check if the dependencies task exists in the project
+            def dependenciesTask = project.tasks.findByName('dependencies')
+            if (dependenciesTask) {
+                // Modify the dependencies task as needed
+                dependenciesTask.doFirst {
+                    if ((rootOnly && isRoot(project)) ||
+                        (!rootOnly && shouldInclude(projectNameExcludeFilter, projectNameIncludeFilter, project.name) &&
+                         shouldInclude(projectPathExcludeFilter, projectPathIncludeFilter, project.path))) {
 
+                        File projectOutputFile = findProjectOutputFile(project, outputDirectoryPath)
+                        File projectFile = createProjectOutputFile(projectOutputFile)
+
+                        if (dependenciesTask.metaClass.respondsTo(dependenciesTask, "setConfigurations")) {
+                            println "Updating configurations for task"
+                            dependenciesTask.setConfigurations(filterConfigurations(project, excludedConfigurationNames, includedConfigurationNames))
+                        } else {
+                            println "Could not find method 'setConfigurations'"
+                        }
+
+                        if (dependenciesTask.metaClass.respondsTo(dependenciesTask, "setOutputFile")) {
+                            println "Updating output file for task to " + projectFile.getAbsolutePath()
+                            dependenciesTask.setOutputFile(projectFile)
+                        } else {
+                            println "Could not find method 'setOutputFile'"
+                        }
                     } else {
-                        println "Could not find method 'setConfigurations'"
+                        println "Excluding from results subproject: " + project.path
                     }
+                }
 
-                    if(dependencyTask.metaClass.respondsTo(dependencyTask,"setOutputFile")) {
-                        println "Updating output file for task to "+projectFile.getAbsolutePath()
-                        // modify the output file
-                        setOutputFile(projectFile)
-                    } else {
-                        println "Could not find method 'setOutputFile'"
+                dependenciesTask.doLast {
+                    if ((rootOnly && isRoot(project)) ||
+                        (!rootOnly && shouldInclude(projectNameExcludeFilter, projectNameIncludeFilter, project.name) &&
+                         shouldInclude(projectPathExcludeFilter, projectPathIncludeFilter, project.path))) {
+                        File projectFile = findProjectOutputFile(project, outputDirectoryPath)
+                        appendProjectMetadata(project, projectFile)
                     }
-                } else {
-                    println "Excluding from results subproject: " + project.path
                 }
-            }
-
-            doLast {
-                if((rootOnly && isRoot(project)) || (!rootOnly && shouldInclude(projectNameExcludeFilter, projectNameIncludeFilter, project.name) && shouldInclude(projectPathExcludeFilter, projectPathIncludeFilter, project.path))) {
-                    File projectFile = findProjectOutputFile(project, outputDirectoryPath)
-                    appendProjectMetadata(project, projectFile)
-                }
+            } else {
+                println "No 'dependencies' task found for project: " + project.name
             }
         }
-        // this forces the dependencies task to be run which will write the content to the modified output file
-        project.gatherDependencies.finalizedBy(project.tasks.getByName('dependencies'))
-        project.gatherDependencies
     }
+
+    // Finalize the gatherDependencies task to run before the configureDependencies task
+    project.gatherDependencies.finalizedBy(configureDependencies)
 }
 
 // ## START methods invoked by tasks above
