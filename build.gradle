@@ -162,11 +162,11 @@ dependencies {
 
     implementation 'ch.qos.logback:logback-classic:1.2.13'
 
-    implementation 'com.blackducksoftware.bdio:bdio-protobuf:3.2.10'
+    implementation 'com.blackducksoftware.bdio:bdio-protobuf:3.2.12'
     implementation "com.blackduck.integration:blackduck-common:${blackDuckCommonVersion}"
     implementation 'com.blackduck.integration:blackduck-upload-common:4.1.2'
     implementation 'com.blackducksoftware:method-analyzer-core:1.0.1'
-    implementation "${locatorGroup}:${locatorModule}:2.0.0"
+    implementation "${locatorGroup}:${locatorModule}:2.1.0"
 
     implementation 'org.apache.maven.shared:maven-invoker:3.0.0'
 

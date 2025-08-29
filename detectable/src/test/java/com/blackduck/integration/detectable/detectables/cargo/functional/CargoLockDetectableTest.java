@@ -61,7 +61,7 @@ public class CargoLockDetectableTest extends DetectableFunctionalTest {
     @NotNull
     @Override
     public Detectable create(@NotNull DetectableEnvironment detectableEnvironment) {
-        return detectableFactory.createCargoDetectable(detectableEnvironment);
+        return detectableFactory.createCargoLockfileDetectable(detectableEnvironment);
     }
 
     @Override
