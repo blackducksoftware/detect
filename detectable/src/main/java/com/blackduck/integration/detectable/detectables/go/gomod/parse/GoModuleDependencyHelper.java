@@ -44,7 +44,7 @@ public class GoModuleDependencyHelper {
                 continue;
             }
 
-            if(splitLine[1].startsWith("go@")) {
+            if(splitLine[1].startsWith("go@") || splitLine[1].startsWith("toolchain@go")) {
                 continue;
             }
 
