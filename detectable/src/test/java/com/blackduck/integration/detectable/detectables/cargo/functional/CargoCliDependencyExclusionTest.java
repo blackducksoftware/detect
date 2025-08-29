@@ -59,7 +59,7 @@ public class CargoCliDependencyExclusionTest extends DetectableFunctionalTest {
             "1openssl v0.10.73",
             "1regex-lite v0.1.6 (https://github.com/rust-lang/regex.git#1a069b92)"
         );
-        addExecutableOutput(cargoTreeOutput, "cargo", "tree", "--no-dedupe", "--prefix", "depth", "--edges", "no-normal");
+        addExecutableOutput(cargoTreeOutput, "cargo", "tree", "--prefix", "depth", "--edges", "no-normal");
     }
 
     @NotNull
