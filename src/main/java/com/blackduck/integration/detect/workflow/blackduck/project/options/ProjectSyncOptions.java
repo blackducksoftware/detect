@@ -18,7 +18,7 @@ public class ProjectSyncOptions {
     private final Boolean projectLevelAdjustments;
     private final Boolean deepLicenseEnabled;
 
-    public ProjectSyncOptions(
+    private ProjectSyncOptions(
         ProjectVersionPhaseType projectVersionPhase,
         ProjectVersionDistributionType projectVersionDistribution,
         Integer projectTier,
@@ -40,6 +40,88 @@ public class ProjectSyncOptions {
         this.projectVersionNickname = projectVersionNickname;
         this.projectLevelAdjustments = projectLevelAdjustments;
         this.deepLicenseEnabled = deepLicenseEnabled;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private ProjectVersionPhaseType projectVersionPhase;
+        private ProjectVersionDistributionType projectVersionDistribution;
+        private Integer projectTier;
+        private String projectDescription;
+        private String projectVersionNotes;
+        private List<ProjectCloneCategoriesType> cloneCategories;
+        private Boolean forceProjectVersionUpdate;
+        private String projectVersionNickname;
+        private Boolean projectLevelAdjustments;
+        private Boolean deepLicenseEnabled;
+
+        public Builder projectVersionPhase(ProjectVersionPhaseType projectVersionPhase) {
+            this.projectVersionPhase = projectVersionPhase;
+            return this;
+        }
+
+        public Builder projectVersionDistribution(ProjectVersionDistributionType projectVersionDistribution) {
+            this.projectVersionDistribution = projectVersionDistribution;
+            return this;
+        }
+
+        public Builder projectTier(Integer projectTier) {
+            this.projectTier = projectTier;
+            return this;
+        }
+
+        public Builder projectDescription(String projectDescription) {
+            this.projectDescription = projectDescription;
+            return this;
+        }
+
+        public Builder projectVersionNotes(String projectVersionNotes) {
+            this.projectVersionNotes = projectVersionNotes;
+            return this;
+        }
+
+        public Builder cloneCategories(List<ProjectCloneCategoriesType> cloneCategories) {
+            this.cloneCategories = cloneCategories;
+            return this;
+        }
+
+        public Builder forceProjectVersionUpdate(Boolean forceProjectVersionUpdate) {
+            this.forceProjectVersionUpdate = forceProjectVersionUpdate;
+            return this;
+        }
+
+        public Builder projectVersionNickname(String projectVersionNickname) {
+            this.projectVersionNickname = projectVersionNickname;
+            return this;
+        }
+
+        public Builder projectLevelAdjustments(Boolean projectLevelAdjustments) {
+            this.projectLevelAdjustments = projectLevelAdjustments;
+            return this;
+        }
+
+        public Builder deepLicenseEnabled(Boolean deepLicenseEnabled) {
+            this.deepLicenseEnabled = deepLicenseEnabled;
+            return this;
+        }
+
+        public ProjectSyncOptions build() {
+            return new ProjectSyncOptions(
+                projectVersionPhase,
+                projectVersionDistribution,
+                projectTier,
+                projectDescription,
+                projectVersionNotes,
+                cloneCategories,
+                forceProjectVersionUpdate,
+                projectVersionNickname,
+                projectLevelAdjustments,
+                deepLicenseEnabled
+            );
+        }
     }
 
     public ProjectVersionPhaseType getProjectVersionPhase() {
