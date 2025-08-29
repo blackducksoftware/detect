@@ -1,4 +1,4 @@
-FROM maven:3.9.9-eclipse-temurin-17
+FROM maven:3.9.11-eclipse-temurin-17
 
 # Do not change SRC_DIR, value is expected by tests
 ENV SRC_DIR=/opt/project/src

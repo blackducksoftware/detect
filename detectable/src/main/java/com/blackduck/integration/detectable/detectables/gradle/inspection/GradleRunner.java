@@ -40,6 +40,8 @@ public class GradleRunner {
         arguments.add("gatherDependencies");
         arguments.add(String.format("--init-script=%s", gradleInspector));
         arguments.add(String.format("-DGRADLEEXTRACTIONDIR=%s", outputDirectory.getCanonicalPath()));
+        // starting in Gradle 9 configuration cache is preferred; we want to disable it as some features used by inspector are incompatible with configuration cache
+        arguments.add("--no-configuration-cache");
         arguments.add("--info");
 
         if (proxyInfo.getHost().isPresent()) {
