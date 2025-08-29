@@ -350,18 +350,18 @@ public class DetectConfigurationFactory {
             cloneCategories = categoriesEnum.representedValues();
         }
 
-        return new ProjectSyncOptions(
-            projectVersionPhase,
-            projectVersionDistribution,
-            projectTier,
-            projectDescription,
-            projectVersionNotes,
-            cloneCategories,
-            forceProjectVersionUpdate,
-            projectVersionNickname,
-            projectLevelAdjustments,
-            deepLicenseEnabled
-        );
+        return ProjectSyncOptions.builder()
+            .projectVersionPhase(projectVersionPhase)
+            .projectVersionDistribution(projectVersionDistribution)
+            .projectTier(projectTier)
+            .projectDescription(projectDescription)
+            .projectVersionNotes(projectVersionNotes)
+            .cloneCategories(cloneCategories)
+            .forceProjectVersionUpdate(forceProjectVersionUpdate)
+            .projectVersionNickname(projectVersionNickname)
+            .projectLevelAdjustments(projectLevelAdjustments)
+            .deepLicenseEnabled(deepLicenseEnabled)
+            .build();
     }
 
     public ProjectVersionLicenseOptions createProjectVersionLicenseOptions() {
