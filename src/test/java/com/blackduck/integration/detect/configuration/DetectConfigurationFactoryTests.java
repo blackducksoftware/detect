@@ -204,4 +204,40 @@ public class DetectConfigurationFactoryTests {
         Assertions.assertTrue(cloneCategories.contains(ProjectCloneCategoriesType.CUSTOM_FIELD_DATA));
         Assertions.assertTrue(cloneCategories.contains(ProjectCloneCategoriesType.DEEP_LICENSE));
     }
+
+    @Test
+    public void testDeepLicenseEnabledTrue() {
+        DetectConfigurationFactory factory = factoryOf(Pair.of(DetectProperties.DETECT_PROJECT_DEEP_LICENSE, "true"));
+
+        BlackDuckVersion minVersion = new BlackDuckVersion(2023, 10, 0);
+        Optional<BlackDuckVersion> serverVersion = Optional.of(minVersion);
+
+        ProjectSyncOptions projectSyncOptions = factory.createDetectProjectServiceOptions(serverVersion);
+
+        Assertions.assertTrue(projectSyncOptions.isDeepLicenseEnabled());
+    }
+
+    @Test
+    public void testDeepLicenseEnabledFalse() {
+        DetectConfigurationFactory factory = factoryOf(Pair.of(DetectProperties.DETECT_PROJECT_DEEP_LICENSE, "false"));
+
+        BlackDuckVersion minVersion = new BlackDuckVersion(2023, 10, 0);
+        Optional<BlackDuckVersion> serverVersion = Optional.of(minVersion);
+
+        ProjectSyncOptions projectSyncOptions = factory.createDetectProjectServiceOptions(serverVersion);
+
+        Assertions.assertFalse(projectSyncOptions.isDeepLicenseEnabled());
+    }
+
+    @Test
+    public void testDeepLicenseDefaultValue() {
+        DetectConfigurationFactory factory = factoryOf();
+
+        BlackDuckVersion minVersion = new BlackDuckVersion(2023, 10, 0);
+        Optional<BlackDuckVersion> serverVersion = Optional.of(minVersion);
+
+        ProjectSyncOptions projectSyncOptions = factory.createDetectProjectServiceOptions(serverVersion);
+
+        Assertions.assertFalse(projectSyncOptions.isDeepLicenseEnabled());
+    }
 }
