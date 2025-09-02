@@ -22,7 +22,7 @@
 
 ### New features
 
-* The new `detect.project.deep.license` property allows for setting the Deep License Data and Deep License Data Snippet fields when creating a project. It can also be used to update projects when the `detect.project.version.update` project is set to true.
+* When enabled, the new `detect.project.deep.license` property sets the Deep License Data and Deep License Data Snippet fields when creating a project. This property can also be used to update existing projects when the `detect.project.version.update` property is set to true.
 
 ### Changed features
 
@@ -30,7 +30,7 @@
 
 ### Resolved issues
 
-* 
+* (IDETECT-4802) Fix UV Lockfile Detector not generating BDIOs for projects with non-normalized names per Python requirements.
 
 ### Dependency updates
 
