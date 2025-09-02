@@ -205,7 +205,12 @@ def computeProjectFilePath(String projectPath, String outputDirectoryPath) {
         }
         String depth = String.valueOf(depthCount)
 
+        // Replace all non-alphanumeric characters with underscores
         String nameForFile = name?.replaceAll(/[^\p{IsAlphabetic}\p{Digit}]/, "_")
+
+        // Prepend "project_" to match old behavior
+        nameForFile = "project_" + nameForFile
+
         return new File(outputDirectory, "${nameForFile}_depth${depth}_dependencyGraph.txt").getAbsolutePath()
     } catch (Exception e) {
         println "ERROR in computeProjectFilePath: " + e.message
