@@ -74,13 +74,6 @@ public class BlackDuckProjectVersionStepRunner {
             operationRunner.addTags(tags, projectVersion, blackDuckRunData);
         }
 
-        if (operationRunner.calculateShouldUnmap()) {
-            logger.debug("Unmapping code locations.");
-            operationRunner.unmapCodeLocations(projectVersion, blackDuckRunData);
-        } else {
-            logger.debug("Will not unmap code locations: Project view was not present, or should not unmap code locations.");
-        }
-
         return projectVersion;
     }
 

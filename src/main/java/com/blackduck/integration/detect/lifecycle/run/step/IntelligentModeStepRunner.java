@@ -166,10 +166,6 @@ public class IntelligentModeStepRunner {
             codeLocationAccumulator.addNonWaitableCodeLocation(iacScanCodeLocationData.getCodeLocationNames());
             mustWaitAtBomSummaryLevel.set(true);
         });
-        
-        stepHelper.runToolIfIncluded(DetectTool.THREAT_INTEL, "Threat Intel Scan", () -> {
-            logger.info("Threat Intel Scan has been deprecated and will not be run.");
-        });
 
         if (operationRunner.createBlackDuckPostOptions().isCorrelatedScanningEnabled()) {
             stepHelper.runAsGroup("Upload Correlated Scan Counts", OperationType.INTERNAL, () -> {

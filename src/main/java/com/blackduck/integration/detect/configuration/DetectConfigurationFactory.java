@@ -3,7 +3,6 @@ package com.blackduck.integration.detect.configuration;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -324,10 +323,6 @@ public class DetectConfigurationFactory {
         String overrideProjectName = StringUtils.trimToNull(detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_NAME));
         String overrideProjectVersionName = StringUtils.trimToNull(detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_VERSION_NAME));
         return new ProjectNameVersionOptions(sourceDirectoryName, overrideProjectName, overrideProjectVersionName);
-    }
-
-    public boolean createShouldUnmapCodeLocations() {
-        return detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_CODELOCATION_UNMAP);
     }
 
     public CustomFieldDocument createCustomFieldDocument() throws DetectUserFriendlyException {
