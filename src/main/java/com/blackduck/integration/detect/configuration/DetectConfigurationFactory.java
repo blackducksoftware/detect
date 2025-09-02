@@ -260,7 +260,7 @@ public class DetectConfigurationFactory {
     }
 
     public List<DetectTool> createPreferredProjectTools() {
-        return detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_TOOL);
+        return detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_TOOL);
     }
 
     public DirectoryOptions createDirectoryOptions() throws IOException {
@@ -314,15 +314,16 @@ public class DetectConfigurationFactory {
     }
 
     public BdioOptions createBdioOptions() {
-        String prefix = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_CODELOCATION_PREFIX);
-        String suffix = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_CODELOCATION_SUFFIX);
+        String prefix = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_CODELOCATION_PREFIX);
+        String suffix = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_CODELOCATION_SUFFIX);
         String bdioFileName = detectConfiguration.getNullableValue(DetectProperties.DETECT_BDIO_FILE_NAME);
         return new BdioOptions(prefix, suffix, bdioFileName);
     }
 
     public ProjectNameVersionOptions createProjectNameVersionOptions(String sourceDirectoryName) {
-        String overrideProjectName = StringUtils.trimToNull(detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_NAME));
-        String overrideProjectVersionName = StringUtils.trimToNull(detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_VERSION_NAME));
+        // CHANGE: Updated to use new JSON fallback methods for project properties
+        String overrideProjectName = StringUtils.trimToNull(detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_NAME));
+        String overrideProjectVersionName = StringUtils.trimToNull(detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_NAME));
         return new ProjectNameVersionOptions(sourceDirectoryName, overrideProjectName, overrideProjectVersionName);
     }
 
@@ -336,17 +337,17 @@ public class DetectConfigurationFactory {
     }
 
     public ProjectSyncOptions createDetectProjectServiceOptions(Optional<BlackDuckVersion> blackDuckServerVersion) {
-        ProjectVersionPhaseType projectVersionPhase = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_VERSION_PHASE);
-        ProjectVersionDistributionType projectVersionDistribution = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_VERSION_DISTRIBUTION);
-        Integer projectTier = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_TIER);
-        String projectDescription = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_DESCRIPTION);
-        String projectVersionNotes = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_VERSION_NOTES);
-        Boolean projectLevelAdjustments = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_LEVEL_ADJUSTMENTS);
-        Boolean forceProjectVersionUpdate = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_VERSION_UPDATE);
-        String projectVersionNickname = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_VERSION_NICKNAME);
+        ProjectVersionPhaseType projectVersionPhase = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_PHASE);
+        ProjectVersionDistributionType projectVersionDistribution = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_DISTRIBUTION);
+        Integer projectTier = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_TIER);
+        String projectDescription = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_DESCRIPTION);
+        String projectVersionNotes = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_NOTES);
+        Boolean projectLevelAdjustments = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_LEVEL_ADJUSTMENTS);
+        Boolean forceProjectVersionUpdate = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_UPDATE);
+        String projectVersionNickname = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_NICKNAME);
         
         List<ProjectCloneCategoriesType> cloneCategories;
-        AllNoneEnumList<ProjectCloneCategoriesType> categoriesEnum = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_CLONE_CATEGORIES);
+        AllNoneEnumList<ProjectCloneCategoriesType> categoriesEnum = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_CLONE_CATEGORIES);
 
         if (canSendSummaryData(blackDuckServerVersion)) {
             cloneCategories = categoriesEnum.representedValuesStreamlined();
@@ -368,7 +369,7 @@ public class DetectConfigurationFactory {
     }
 
     public ProjectVersionLicenseOptions createProjectVersionLicenseOptions() {
-        String licenseName = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_VERSION_LICENSE);
+        String licenseName = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_LICENSE);
         return new ProjectVersionLicenseOptions(licenseName);
     }
 
@@ -387,17 +388,17 @@ public class DetectConfigurationFactory {
 
     @Nullable
     public String createApplicationId() {
-        return detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_APPLICATION_ID);
+        return detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_APPLICATION_ID);
     }
 
     @Nullable
     public List<String> createTags() {
-        return detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_TAGS);
+        return detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_TAGS);
     }
 
     @Nullable
     public List<String> createGroups() {
-        return detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_USER_GROUPS);
+        return detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_USER_GROUPS);
     }
 
     public BlackDuckSignatureScannerOptions createBlackDuckSignatureScannerOptions() {
@@ -488,8 +489,8 @@ public class DetectConfigurationFactory {
         List<Path> iacScanPaths = detectConfiguration.getPaths(DetectProperties.DETECT_IAC_SCAN_PATHS);
         Path localIacScannerPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_IAC_SCANNER_LOCAL_PATH);
         String additionalArguments = detectConfiguration.getNullableValue(DetectProperties.DETECT_IAC_SCAN_ARGUMENTS);
-        String codeLocationPrefix = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_CODELOCATION_PREFIX);
-        String codeLocationSuffix = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_CODELOCATION_SUFFIX);
+        String codeLocationPrefix = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_CODELOCATION_PREFIX);
+        String codeLocationSuffix = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_CODELOCATION_SUFFIX);
         return new IacScanOptions(iacScanPaths, localIacScannerPath, additionalArguments, codeLocationPrefix, codeLocationSuffix);
     }
 
@@ -537,7 +538,7 @@ public class DetectConfigurationFactory {
     }
 
     public DetectorToolOptions createDetectorToolOptions() {
-        String projectBomTool = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_DETECTOR);
+        String projectBomTool = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_DETECTOR);
         List<DetectorType> requiredDetectors = detectConfiguration.getValue(DetectProperties.DETECT_REQUIRED_DETECTOR_TYPES);
         AllNoneEnumList<DetectorType> accuracyRequired = detectConfiguration.getValue(DetectProperties.DETECT_ACCURACY_REQUIRED);
         ExcludeIncludeEnumFilter<DetectorType> accuracyFilter = new ExcludeIncludeEnumFilter<>(
@@ -548,7 +549,7 @@ public class DetectConfigurationFactory {
     }
 
     public ProjectGroupOptions createProjectGroupOptions() {
-        String projectGroupName = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_GROUP_NAME);
+        String projectGroupName = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_GROUP_NAME);
         return new ProjectGroupOptions(projectGroupName);
     }
 
