@@ -50,11 +50,24 @@ gradle.allprojects {
         // Project metadata
         def projectGroup = currentProject.group.toString()
         def projectVersion = currentProject.version.toString()
-        def projectParent = currentProject.parent.toString()
+        def projectParent = currentProject.parent ? currentProject.parent.toString() : "none"
 
-        // Prepare configuration names instead of Configuration objects
+        // Prepare configuration names
         def configurationNames = getFilteredConfigurationNames(currentProject,
             '${excludedConfigurationNames}', '${includedConfigurationNames}')
+
+        // Pre-compute resolvable configurations
+        def resolvableConfigs = []
+        configurationNames.each { name ->
+            try {
+                def config = currentProject.configurations.findByName(name)
+                if (config && config.canBeResolved) {
+                    resolvableConfigs.add(config)
+                }
+            } catch (Exception e) {
+                println "Could not process configuration: " + name
+            }
+        }
 
         // Check if the project should be included in results
         def shouldIncludeProject = (rootOnly && isRootProject) ||
@@ -64,113 +77,100 @@ gradle.allprojects {
         // Capture output file path during configuration
         def projectFilePathConfig = computeProjectFilePath(projectPath, extractionDir)
 
-        // after a project has been evaluated modify the dependencies task for that project to output to a specific file.
-        currentProject.tasks.getByName('dependencies') {
-            doFirst {
-                try {
-                    if (extractionDir == null) {
-                        throw new IllegalStateException("GRADLEEXTRACTIONDIR system property is not set")
-                    }
+        // Configure the dependencies task during configuration time
+        def dependenciesTask = currentProject.tasks.getByName('dependencies')
 
-                    // Create metadata file for root project
-                    if (isRootProject) {
-                        try {
-                            File outputDirectory = new File(extractionDir)
-                            outputDirectory.mkdirs()
-                            File rootOutputFile = new File(outputDirectory, 'rootProjectMetadata.txt')
+        // Set the configurations at configuration time if possible
+        if (!resolvableConfigs.isEmpty()) {
+            dependenciesTask.configurations = resolvableConfigs
+        }
 
-                            def rootProjectMetadataPieces = []
-                            rootProjectMetadataPieces.add('DETECT META DATA START')
-                            rootProjectMetadataPieces.add("rootProjectDirectory:" + rootProjectDirPath)
-                            rootProjectMetadataPieces.add("rootProjectPath:" + rootProjectPath)
-                            rootProjectMetadataPieces.add("rootProjectGroup:" + rootProjectGroup)
-                            rootProjectMetadataPieces.add("rootProjectName:" + rootProjectName)
-                            rootProjectMetadataPieces.add("rootProjectVersion:" + rootProjectVersion)
-                            rootProjectMetadataPieces.add('DETECT META DATA END')
-
-                            rootOutputFile.text = rootProjectMetadataPieces.join('\n')
-                        } catch (Exception e) {
-                            println "ERROR while generating root project metadata: " + e.message
-                            e.printStackTrace()
-                        }
-                    }
-
-                    if (shouldIncludeProject) {
-                        // Create output file directly
-                        File projectFile = new File(projectFilePathConfig)
-                        if (projectFile.exists()) {
-                            projectFile.delete()
-                        }
-                        projectFile.createNewFile()
-
-                        // Modify dependencies task using the metaClass
-                        if (metaClass.respondsTo(delegate, "setConfigurations")) {
-                            println "Updating configurations for task"
-
-                            def configs = []
-                            configurationNames.each { name ->
-                                try {
-                                    def config = delegate.project.configurations.findByName(name)
-                                    if (config) configs.add(config)
-                                } catch (Exception e) {
-                                    println "Could not find configuration: " + name
-                                }
-                            }
-
-                            setConfigurations(configs)
-                        } else {
-                            println "Could not find method 'setConfigurations'"
-                        }
-
-                        if (metaClass.respondsTo(delegate, "setOutputFile")) {
-                            println "Updating output file for task to " + projectFile.getAbsolutePath()
-                            setOutputFile(projectFile)
-                        } else {
-                            println "Could not find method 'setOutputFile'"
-                        }
-                    } else {
-                        println "Excluding from results subproject: " + projectPath
-                    }
-                } catch (Exception e) {
-                    println "ERROR in dependencies doFirst: " + e.message
-                    e.printStackTrace()
+        dependenciesTask.doFirst {
+            try {
+                if (extractionDir == null) {
+                    throw new IllegalStateException("GRADLEEXTRACTIONDIR system property is not set")
                 }
-            }
 
-            doLast {
-                try {
-                    if(shouldIncludeProject) {
-                        File projectFile = new File(projectFilePathConfig)
+                // Create metadata file for root project
+                if (isRootProject) {
+                    try {
+                        File outputDirectory = new File(extractionDir)
+                        outputDirectory.mkdirs()
+                        File rootOutputFile = new File(outputDirectory, 'rootProjectMetadata.txt')
 
-                        // Add metadata at the end of the file
-                        def metaDataPieces = []
-                        metaDataPieces.add('')
-                        metaDataPieces.add('DETECT META DATA START')
-                        metaDataPieces.add("rootProjectDirectory:" + rootProjectDirPath)
-                        metaDataPieces.add("rootProjectGroup:" + rootProjectGroup)
-                        metaDataPieces.add("rootProjectPath:" + rootProjectPath)
-                        metaDataPieces.add("rootProjectName:" + rootProjectName)
-                        metaDataPieces.add("rootProjectVersion:" + rootProjectVersion)
-                        metaDataPieces.add("projectDirectory:" + projectDirPath)
-                        metaDataPieces.add("projectGroup:" + projectGroup)
-                        metaDataPieces.add("projectName:" + projectName)
-                        metaDataPieces.add("projectVersion:" + projectVersion)
-                        metaDataPieces.add("projectPath:" + projectPath)
-                        metaDataPieces.add("projectParent:" + projectParent)
-                        metaDataPieces.add('DETECT META DATA END')
-                        metaDataPieces.add('')
+                        def rootProjectMetadataPieces = []
+                        rootProjectMetadataPieces.add('DETECT META DATA START')
+                        rootProjectMetadataPieces.add("rootProjectDirectory:" + rootProjectDirPath)
+                        rootProjectMetadataPieces.add("rootProjectPath:" + rootProjectPath)
+                        rootProjectMetadataPieces.add("rootProjectGroup:" + rootProjectGroup)
+                        rootProjectMetadataPieces.add("rootProjectName:" + rootProjectName)
+                        rootProjectMetadataPieces.add("rootProjectVersion:" + rootProjectVersion)
+                        rootProjectMetadataPieces.add('DETECT META DATA END')
 
-                        // Append to file
-                        projectFile << metaDataPieces.join('\n')
+                        rootOutputFile.text = rootProjectMetadataPieces.join('\n')
+                    } catch (Exception e) {
+                        println "ERROR while generating root project metadata: " + e.message
+                        e.printStackTrace()
                     }
-                } catch (Exception e) {
-                    println "ERROR in dependencies doLast: " + e.message
-                    e.printStackTrace()
                 }
+
+                if (shouldIncludeProject) {
+                    // Create output file directly
+                    File projectFile = new File(projectFilePathConfig)
+                    if (projectFile.exists()) {
+                        projectFile.delete()
+                    }
+                    projectFile.createNewFile()
+
+                    try {
+                        println "Updating output file for task to " + projectFile.getAbsolutePath()
+                        delegate.setOutputFile(projectFile)
+                    } catch (MissingMethodException e) {
+                        println "Could not find method 'setOutputFile'"
+                        println "Error: " + e.message
+                    }
+                } else {
+                    println "Excluding from results subproject: " + projectPath
+                }
+            } catch (Exception e) {
+                println "ERROR in dependencies doFirst: " + e.message
+                e.printStackTrace()
             }
         }
 
-        // this forces the dependencies task to be run which will write the content to the modified output file
+        dependenciesTask.doLast {
+            try {
+                if(shouldIncludeProject) {
+                    File projectFile = new File(projectFilePathConfig)
+
+                    // Add metadata at the end of the file
+                    def metaDataPieces = []
+                    metaDataPieces.add('')
+                    metaDataPieces.add('DETECT META DATA START')
+                    metaDataPieces.add("rootProjectDirectory:" + rootProjectDirPath)
+                    metaDataPieces.add("rootProjectGroup:" + rootProjectGroup)
+                    metaDataPieces.add("rootProjectPath:" + rootProjectPath)
+                    metaDataPieces.add("rootProjectName:" + rootProjectName)
+                    metaDataPieces.add("rootProjectVersion:" + rootProjectVersion)
+                    metaDataPieces.add("projectDirectory:" + projectDirPath)
+                    metaDataPieces.add("projectGroup:" + projectGroup)
+                    metaDataPieces.add("projectName:" + projectName)
+                    metaDataPieces.add("projectVersion:" + projectVersion)
+                    metaDataPieces.add("projectPath:" + projectPath)
+                    metaDataPieces.add("projectParent:" + projectParent)
+                    metaDataPieces.add('DETECT META DATA END')
+                    metaDataPieces.add('')
+
+                    // Append to file
+                    projectFile << metaDataPieces.join('\n')
+                }
+            } catch (Exception e) {
+                println "ERROR in dependencies doLast: " + e.message
+                e.printStackTrace()
+            }
+        }
+
+        // This forces the dependencies task to be run
         currentProject.gatherDependencies.finalizedBy(currentProject.tasks.getByName('dependencies'))
         currentProject.gatherDependencies
     }
