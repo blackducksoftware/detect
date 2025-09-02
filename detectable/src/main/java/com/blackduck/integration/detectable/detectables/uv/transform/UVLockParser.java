@@ -51,6 +51,7 @@ public class UVLockParser {
         TomlParseResult uvLockObject = Toml.parse(lockFileContent);
 
         collectWorkspaceMembers(uvLockObject);
+        rootName = normalizePackageName(rootName);
         if(uvLockObject.get(PACKAGE_KEY) != null) {
             TomlArray dependencies = uvLockObject.getArray(PACKAGE_KEY);
             parseDependencies(dependencies, rootName, uvDetectorOptions);
