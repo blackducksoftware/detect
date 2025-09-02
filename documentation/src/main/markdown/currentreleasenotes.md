@@ -22,7 +22,7 @@
 
 ### New features
 
-* 
+* The new `detect.project.deep.license` property allows for setting the Deep License Data and Deep License Data Snippet fields when creating a project. It can also be used to update projects when the `detect.project.version.update` project is set to true.
 
 ### Changed features
 
