@@ -26,7 +26,9 @@
 
 ### Changed features
 
-*
+* ReversingLabs Scans (`detect.tools=THREAT_INTEL`) has been removed.
+* The `detect.threatintel.scan.file.path` property has been removed.
+* The `detect.project.codelocation.unmap` property has been removed.
 
 ### Resolved issues
 
