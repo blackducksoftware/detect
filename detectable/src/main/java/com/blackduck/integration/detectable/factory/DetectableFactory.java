@@ -141,6 +141,8 @@ import com.blackduck.integration.detectable.detectables.go.gomod.parse.GoListPar
 import com.blackduck.integration.detectable.detectables.go.gomod.parse.GoModWhyParser;
 import com.blackduck.integration.detectable.detectables.go.gomod.parse.GoVersionParser;
 import com.blackduck.integration.detectable.detectables.go.gomod.process.GoModGraphGenerator;
+import com.blackduck.integration.detectable.detectables.go.gomodbuildless.GoModBuildlessDetectable;
+import com.blackduck.integration.detectable.detectables.go.gomodbuildless.GoModBuildlessExtractor;
 import com.blackduck.integration.detectable.detectables.go.vendor.GoVendorDetectable;
 import com.blackduck.integration.detectable.detectables.go.vendor.GoVendorExtractor;
 import com.blackduck.integration.detectable.detectables.go.vendr.GoVndrDetectable;
@@ -434,6 +436,10 @@ public class DetectableFactory {
 
     public GoModCliDetectable createGoModCliDetectable(DetectableEnvironment environment, GoResolver goResolver, GoModCliDetectableOptions options) {
         return new GoModCliDetectable(environment, fileFinder, goResolver, goModCliExtractor(options));
+    }
+
+    public GoModBuildlessDetectable createGoModBuildlessDetectable(DetectableEnvironment environment) {
+        return new GoModBuildlessDetectable(environment, fileFinder, goModBuildlessExtractor());
     }
 
     public GoDepLockDetectable createGoLockDetectable(DetectableEnvironment environment) {
@@ -881,6 +887,10 @@ public class DetectableFactory {
 
     private GoVendorExtractor goVendorExtractor() {
         return new GoVendorExtractor(gson, externalIdFactory);
+    }
+
+    private GoModBuildlessExtractor goModBuildlessExtractor() {
+        return new GoModBuildlessExtractor(externalIdFactory);
     }
 
     private GradleReportParser gradleReportParser() {
