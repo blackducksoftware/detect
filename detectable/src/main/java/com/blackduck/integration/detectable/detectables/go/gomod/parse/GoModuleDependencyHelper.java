@@ -11,7 +11,10 @@ public class GoModuleDependencyHelper {
     
     private final WhyListStructureTransform whyListStructureTransform;
     private final Map<String, String> allRequiredModulesPathsAndVersions = new HashMap<>();
- 
+    // Go and Toolchain directives refer to build-time configuration settings
+    private final String GO_DIRECTIVE = "go@";
+    private final String TOOLCHAIN_DIRECTIVE = "toolchain@go";
+
     public GoModuleDependencyHelper(List<GoListAllData> allRequiredModulesData) {
         this.whyListStructureTransform = new WhyListStructureTransform();
         processRequiredModulesIntoPathAndPathWithVersionMap(allRequiredModulesData);
@@ -44,7 +47,7 @@ public class GoModuleDependencyHelper {
                 continue;
             }
 
-            if(splitLine[1].startsWith("go@") || splitLine[1].startsWith("toolchain@go")) {
+            if(splitLine[1].startsWith(GO_DIRECTIVE) || splitLine[1].startsWith(TOOLCHAIN_DIRECTIVE)) {
                 continue;
             }
 
