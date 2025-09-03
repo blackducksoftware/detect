@@ -56,13 +56,12 @@ gradle.allprojects {
         def configurationNames = getFilteredConfigurationNames(currentProject,
             '${excludedConfigurationNames}', '${includedConfigurationNames}')
 
-        // Pre-compute resolvable configurations
-        def allConfigs = []
+        def selectedConfigs = []
         configurationNames.each { name ->
             try {
                 def config = currentProject.configurations.findByName(name)
                 if (config) {
-                    allConfigs.add(config)
+                    selectedConfigs.add(config)
                 }
             } catch (Exception e) {
                 println "Could not process configuration: " + name
@@ -81,8 +80,8 @@ gradle.allprojects {
         def dependenciesTask = currentProject.tasks.getByName('dependencies')
 
         // Set the configurations at configuration time if possible
-        if (!allConfigs.isEmpty()) {
-            dependenciesTask.configurations = allConfigs
+        if (!selectedConfigs.isEmpty()) {
+            dependenciesTask.configurations = selectedConfigs
         }
 
         // Set the output file at configuration time if possible
