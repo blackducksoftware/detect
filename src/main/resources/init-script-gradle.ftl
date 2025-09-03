@@ -85,6 +85,25 @@ gradle.allprojects {
             dependenciesTask.configurations = allConfigs
         }
 
+        // Set the output file at configuration time if possible
+        if (shouldIncludeProject) {
+            // Create output file directly during configuration
+            File projectFile = new File(projectFilePathConfig)
+            if (projectFile.exists()) {
+                projectFile.delete()
+            }
+            projectFile.createNewFile()
+
+            // Set the output file during configuration phase
+            try {
+                dependenciesTask.outputFile = projectFile
+                println "Set output file during configuration to " + projectFile.getAbsolutePath()
+            } catch (Exception e) {
+                println "Could not set outputFile property during configuration: " + e.message
+                e.printStackTrace()
+            }
+        }
+
         dependenciesTask.doFirst {
             try {
                 if (extractionDir == null) {
@@ -112,25 +131,6 @@ gradle.allprojects {
                         println "ERROR while generating root project metadata: " + e.message
                         e.printStackTrace()
                     }
-                }
-
-                if (shouldIncludeProject) {
-                    // Create output file directly
-                    File projectFile = new File(projectFilePathConfig)
-                    if (projectFile.exists()) {
-                        projectFile.delete()
-                    }
-                    projectFile.createNewFile()
-
-                    try {
-                        println "Updating output file for task to " + projectFile.getAbsolutePath()
-                        delegate.setOutputFile(projectFile)
-                    } catch (MissingMethodException e) {
-                        println "Could not find method 'setOutputFile'"
-                        println "Error: " + e.message
-                    }
-                } else {
-                    println "Excluding from results subproject: " + projectPath
                 }
             } catch (Exception e) {
                 println "ERROR in dependencies doFirst: " + e.message
