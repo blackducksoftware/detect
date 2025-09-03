@@ -339,6 +339,7 @@ public class DetectConfigurationFactory {
         Boolean projectLevelAdjustments = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_LEVEL_ADJUSTMENTS);
         Boolean forceProjectVersionUpdate = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_VERSION_UPDATE);
         String projectVersionNickname = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_VERSION_NICKNAME);
+        Boolean deepLicenseEnabled = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_DEEP_LICENSE);
         
         List<ProjectCloneCategoriesType> cloneCategories;
         AllNoneEnumList<ProjectCloneCategoriesType> categoriesEnum = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_CLONE_CATEGORIES);
@@ -349,17 +350,18 @@ public class DetectConfigurationFactory {
             cloneCategories = categoriesEnum.representedValues();
         }
 
-        return new ProjectSyncOptions(
-            projectVersionPhase,
-            projectVersionDistribution,
-            projectTier,
-            projectDescription,
-            projectVersionNotes,
-            cloneCategories,
-            forceProjectVersionUpdate,
-            projectVersionNickname,
-            projectLevelAdjustments
-        );
+        return ProjectSyncOptions.builder()
+            .projectVersionPhase(projectVersionPhase)
+            .projectVersionDistribution(projectVersionDistribution)
+            .projectTier(projectTier)
+            .projectDescription(projectDescription)
+            .projectVersionNotes(projectVersionNotes)
+            .cloneCategories(cloneCategories)
+            .forceProjectVersionUpdate(forceProjectVersionUpdate)
+            .projectVersionNickname(projectVersionNickname)
+            .projectLevelAdjustments(projectLevelAdjustments)
+            .deepLicenseEnabled(deepLicenseEnabled)
+            .build();
     }
 
     public ProjectVersionLicenseOptions createProjectVersionLicenseOptions() {

@@ -1625,6 +1625,13 @@ public class DetectProperties {
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
             .build();
 
+    public static final BooleanProperty DETECT_PROJECT_DEEP_LICENSE =
+        BooleanProperty.newBuilder("detect.project.deep.license", false)
+            .setInfo("Deep License Analysis", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setHelp("If set to true, enables Deep License Analysis for the project, including detailed license data and snippet analysis.")
+            .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
+            .build();
+
     public static final NullablePathProperty DETECT_PYTHON_PATH =
         NullablePathProperty.newBuilder("detect.python.path")
             .setInfo("Python Executable", DetectPropertyFromVersion.VERSION_3_0_0)
