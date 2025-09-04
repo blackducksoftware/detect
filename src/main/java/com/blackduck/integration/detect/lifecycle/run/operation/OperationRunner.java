@@ -28,12 +28,6 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.blackduck.integration.blackduck.bdio2.model.BdioFileContent;
-import com.blackduck.integration.blackduck.version.BlackDuckVersion;
-import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
-import com.blackduck.integration.detect.lifecycle.run.step.CommonScanStepRunner;
-import com.blackduck.integration.detect.workflow.blackduck.report.ReportData;
-import com.blackduck.integration.rest.exception.IntegrationRestException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
@@ -51,6 +45,7 @@ import com.blackduck.integration.blackduck.api.generated.enumeration.PolicyRuleS
 import com.blackduck.integration.blackduck.api.generated.view.BomStatusScanView;
 import com.blackduck.integration.blackduck.api.generated.view.DeveloperScansScanView;
 import com.blackduck.integration.blackduck.api.generated.view.ProjectVersionView;
+import com.blackduck.integration.blackduck.bdio2.model.BdioFileContent;
 import com.blackduck.integration.blackduck.bdio2.model.GitInfo;
 import com.blackduck.integration.blackduck.bdio2.util.Bdio2ContentExtractor;
 import com.blackduck.integration.blackduck.bdio2.util.Bdio2Factory;
@@ -69,6 +64,7 @@ import com.blackduck.integration.blackduck.service.BlackDuckServicesFactory;
 import com.blackduck.integration.blackduck.service.model.NotificationTaskRange;
 import com.blackduck.integration.blackduck.service.model.ProjectVersionWrapper;
 import com.blackduck.integration.blackduck.service.request.BlackDuckResponseRequest;
+import com.blackduck.integration.blackduck.version.BlackDuckVersion;
 import com.blackduck.integration.common.util.finder.FileFinder;
 import com.blackduck.integration.componentlocator.beans.Component;
 import com.blackduck.integration.detect.configuration.DetectConfigurationFactory;
@@ -79,6 +75,7 @@ import com.blackduck.integration.detect.configuration.connection.ConnectionFacto
 import com.blackduck.integration.detect.configuration.enumeration.BlackduckScanMode;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
 import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
+import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
 import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.autonomous.AutonomousManager;
 import com.blackduck.integration.detect.lifecycle.run.DetectFontLoaderFactory;
@@ -90,6 +87,7 @@ import com.blackduck.integration.detect.lifecycle.run.operation.blackduck.ScassS
 import com.blackduck.integration.detect.lifecycle.run.singleton.BootSingletons;
 import com.blackduck.integration.detect.lifecycle.run.singleton.EventSingletons;
 import com.blackduck.integration.detect.lifecycle.run.singleton.UtilitySingletons;
+import com.blackduck.integration.detect.lifecycle.run.step.CommonScanStepRunner;
 import com.blackduck.integration.detect.lifecycle.run.step.utility.OperationAuditLog;
 import com.blackduck.integration.detect.lifecycle.run.step.utility.OperationWrapper;
 import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodePublisher;
@@ -168,7 +166,6 @@ import com.blackduck.integration.detect.workflow.blackduck.project.FindProjectGr
 import com.blackduck.integration.detect.workflow.blackduck.project.MapToParentOperation;
 import com.blackduck.integration.detect.workflow.blackduck.project.SetApplicationIdOperation;
 import com.blackduck.integration.detect.workflow.blackduck.project.SyncProjectOperation;
-import com.blackduck.integration.detect.workflow.blackduck.project.UnmapCodeLocationsOperation;
 import com.blackduck.integration.detect.workflow.blackduck.project.UpdateCustomFieldsOperation;
 import com.blackduck.integration.detect.workflow.blackduck.project.customfields.CustomFieldDocument;
 import com.blackduck.integration.detect.workflow.blackduck.project.options.CloneFindResult;
@@ -178,6 +175,7 @@ import com.blackduck.integration.detect.workflow.blackduck.project.options.Proje
 import com.blackduck.integration.detect.workflow.blackduck.project.options.ProjectGroupOptions;
 import com.blackduck.integration.detect.workflow.blackduck.project.options.ProjectVersionLicenseFindResult;
 import com.blackduck.integration.detect.workflow.blackduck.project.options.ProjectVersionLicenseOptions;
+import com.blackduck.integration.detect.workflow.blackduck.report.ReportData;
 import com.blackduck.integration.detect.workflow.blackduck.report.service.ReportService;
 import com.blackduck.integration.detect.workflow.codelocation.CodeLocationEventPublisher;
 import com.blackduck.integration.detect.workflow.codelocation.CodeLocationNameManager;
@@ -213,6 +211,7 @@ import com.blackduck.integration.log.IntLogger;
 import com.blackduck.integration.log.Slf4jIntLogger;
 import com.blackduck.integration.rest.HttpUrl;
 import com.blackduck.integration.rest.body.FileBodyContent;
+import com.blackduck.integration.rest.exception.IntegrationRestException;
 import com.blackduck.integration.rest.response.Response;
 import com.blackduck.integration.sca.upload.rest.status.BinaryUploadStatus;
 import com.blackduck.integration.util.IntEnvironmentVariables;
@@ -1538,17 +1537,6 @@ public class OperationRunner {
             () -> new AddTagsToProjectOperation(blackDuckRunData.getBlackDuckServicesFactory().createTagService())
                 .addTagsToProject(projectVersion, tags)
         );
-    }
-
-    public boolean calculateShouldUnmap() {
-        return detectConfigurationFactory.createShouldUnmapCodeLocations();
-    }
-
-    public void unmapCodeLocations(ProjectVersionWrapper projectVersion, BlackDuckRunData blackDuckRunData) throws OperationException {
-        auditLog.namedInternal("Unmap Code Locations", () -> new UnmapCodeLocationsOperation(
-            blackDuckRunData.getBlackDuckServicesFactory().getBlackDuckApiClient(),
-            blackDuckRunData.getBlackDuckServicesFactory().createCodeLocationService()
-        ).unmapCodeLocations(projectVersion.getProjectVersionView()));
     }
 
     public FindCloneOptions calculateCloneOptions() {
