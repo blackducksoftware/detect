@@ -25,11 +25,15 @@ import com.blackduck.integration.detectable.detectable.result.InspectorNotFoundD
 import com.blackduck.integration.detectable.detectable.result.PassedDetectableResult;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
+import com.blackduck.integration.detectable.detectables.gradle.inspection.parse.GradleSettingsParser;
+
 
 @DetectableInfo(name = "Gradle Native Inspector", language = "various", forge = "Maven Central", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: build.gradle or build.gradle.kts. Executable: gradlew or gradle.")
 public class GradleInspectorDetectable extends Detectable {
     public static final String BUILD_GRADLE_FILENAME = "build.gradle";
     public static final String KOTLIN_BUILD_GRADLE_FILENAME = "build.gradle.kts";
+    public static final String SETTINGS_GRADLE_FILENAME = "settings.gradle";
+    public static final String KOTLIN_SETTINGS_GRADLE_FILENAME = "settings.gradle.kts";
 
     private final FileFinder fileFinder;
     private final GradleResolver gradleResolver;
@@ -58,6 +62,7 @@ public class GradleInspectorDetectable extends Detectable {
 
     @Override
     public DetectableResult applicable() {
+        // Legacy check: Look for build files in current directory
         File buildGradle = fileFinder.findFile(environment.getDirectory(), BUILD_GRADLE_FILENAME);
         if (buildGradle != null) {
             return new PassedDetectableResult(new FoundFile(buildGradle));
@@ -68,7 +73,27 @@ public class GradleInspectorDetectable extends Detectable {
             return new PassedDetectableResult(new FoundFile(kotlinBuildGradle));
         }
 
-        return new FilesNotFoundDetectableResult(BUILD_GRADLE_FILENAME, KOTLIN_BUILD_GRADLE_FILENAME);
+        // Modern multi-project check: Look for settings files
+        File settingsGradle = fileFinder.findFile(environment.getDirectory(), SETTINGS_GRADLE_FILENAME);
+        File kotlinSettingsGradle = fileFinder.findFile(environment.getDirectory(), KOTLIN_SETTINGS_GRADLE_FILENAME);
+
+        File settingsFile = settingsGradle != null ? settingsGradle : kotlinSettingsGradle;
+        if (settingsFile != null) {
+            List<String> subprojectNames = GradleSettingsParser.parseIncludedSubprojects(settingsFile);
+            for (String subproject : subprojectNames) {
+                File subDir = new File(environment.getDirectory(), subproject);
+                File subBuildGradle = fileFinder.findFile(subDir, BUILD_GRADLE_FILENAME);
+                if (subBuildGradle != null) {
+                    return new PassedDetectableResult(new FoundFile(settingsFile));
+                }
+                File subKotlinBuildGradle = fileFinder.findFile(subDir, KOTLIN_BUILD_GRADLE_FILENAME);
+                if (subKotlinBuildGradle != null) {
+                    return new PassedDetectableResult(new FoundFile(settingsFile));
+                }
+            }
+        }
+
+        return new FilesNotFoundDetectableResult(BUILD_GRADLE_FILENAME, KOTLIN_BUILD_GRADLE_FILENAME, SETTINGS_GRADLE_FILENAME, KOTLIN_SETTINGS_GRADLE_FILENAME);
     }
 
     @Override
