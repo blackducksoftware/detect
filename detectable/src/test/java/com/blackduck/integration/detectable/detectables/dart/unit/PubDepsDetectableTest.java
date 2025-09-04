@@ -16,10 +16,14 @@ import com.blackduck.integration.detectable.detectables.dart.pubdep.DartPubDepDe
 public class PubDepsDetectableTest {
     @Test
     public void testThrowExceptionWhenLockFilePresentButNotYaml() throws DetectableException {
+        File mockDirectory = Mockito.mock(File.class);
+        DetectableEnvironment mockEnvironment = Mockito.mock(DetectableEnvironment.class);
+        Mockito.when(mockEnvironment.getDirectory()).thenReturn(mockDirectory);
+        
         FileFinder fileFinder = Mockito.mock(FileFinder.class);
-        Mockito.when(fileFinder.findFile(null, "pubspec.yaml")).thenReturn(null);
-        Mockito.when(fileFinder.findFile(null, "pubspec.lock")).thenReturn(new File(""));
-        DartPubDepDetectable dartPubDepDetectable = new DartPubDepDetectable(new DetectableEnvironment(null), fileFinder, null, null, null, null);
+        Mockito.when(fileFinder.findFile(mockDirectory, "pubspec.yaml")).thenReturn(null);
+        Mockito.when(fileFinder.findFile(mockDirectory, "pubspec.lock")).thenReturn(new File(""));
+        DartPubDepDetectable dartPubDepDetectable = new DartPubDepDetectable(mockEnvironment, fileFinder, null, null, null, null);
 
         DetectableResult applicable = dartPubDepDetectable.applicable();
         Assertions.assertTrue(applicable.getPassed());
