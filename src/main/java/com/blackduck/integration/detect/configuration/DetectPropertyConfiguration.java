@@ -131,7 +131,7 @@ public class DetectPropertyConfiguration {
     /**
      * Common implementation for getting property values with JSON fallback.
      * @param detectProperty the property to get the value for
-     * @param nullable whether to return null for empty Optional values
+     * @param nullable true to return null for empty Optional values
      */
     private <V, R> R getValueWithJsonFallback(TypedProperty<V, R> detectProperty, boolean nullable) {
         // First check if the individual property was provided
@@ -165,31 +165,23 @@ public class DetectPropertyConfiguration {
             return propertyConfiguration.getValue((ValuedProperty<V, R>) detectProperty);
         }
     }
-    
-    /**
-     * CHANGE: Added helper method to get property values from cached JSON project settings.
-     * Gets a property value from the cached JSON project settings.
-     */
+
     private String getJsonPropertyValue(String propertyKey) {
         if (cachedJsonProperties == null) {
             cachedJsonProperties = loadJsonProperties();
         }
         return cachedJsonProperties.get(propertyKey);
     }
-    
-    /**
-     * CHANGE: Added helper method to load and cache JSON project settings.
-     * Loads and caches the JSON project settings.
-     */
+
     private Map<String, String> loadJsonProperties() {
-        try {
-            Optional<JsonElement> jsonSettings = propertyConfiguration.getValue(DetectProperties.DETECT_PROJECT_SETTINGS);
-            if (jsonSettings.isPresent()) {
+        Optional<JsonElement> jsonSettings = propertyConfiguration.getValue(DetectProperties.DETECT_PROJECT_SETTINGS);
+        if (jsonSettings.isPresent()) {
+            try {
                 logger.debug("Loading project settings from JSON");
                 return jsonMerger.extractPropertiesFromJson(jsonSettings.get());
+            } catch (Exception e) {
+                logger.warn("Failed to parse JSON project settings: {}", e.getMessage());
             }
-        } catch (Exception e) {
-            logger.warn("Failed to load JSON project settings: {}", e.getMessage());
         }
         return new HashMap<>();
     }
