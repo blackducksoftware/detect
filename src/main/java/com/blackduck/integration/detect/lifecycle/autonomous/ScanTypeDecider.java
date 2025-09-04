@@ -48,7 +48,7 @@ public class ScanTypeDecider {
                 Set<String> rootPathMonoSet = new HashSet<>();
                 rootPathMonoSet.add(detectSourcePath.toAbsolutePath().toString());
                 final Map<DetectTool, Set<String>> scanTypeEvidenceMap = new HashMap<>();
-                if (fileInclusionPatterns.isEmpty()) {
+                if (fileInclusionPatterns.isEmpty()) { // should this not be negated?
                     decideBinary(scanTypeEvidenceMap, includedTools, excludedTools, detectSourcePath);
                 }
                 decideTool(scanTypeEvidenceMap, rootPathMonoSet, includedTools, excludedTools, DetectTool.DETECTOR);

@@ -14,7 +14,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import com.blackduck.integration.detect.util.finder.DetectDirectoryFileFilter;
+import com.blackduck.integration.detect.util.finder.DetectDirectoryFileFilterCaseInsensitive;
 
 public class DetectDirectoryFileFilterTest {
     private static File tempDir;
@@ -53,7 +53,7 @@ public class DetectDirectoryFileFilterTest {
 
         List<String> excludedDirs = Arrays.asList("excludeme");
         List<String> includedFiles = Arrays.asList("*.txt");
-        DetectDirectoryFileFilter filter = new DetectDirectoryFileFilter(excludedDirs, includedFiles);
+        DetectDirectoryFileFilterCaseInsensitive filter = new DetectDirectoryFileFilterCaseInsensitive(excludedDirs, includedFiles);
 
         assertTrue(filter.test(includedFile));
         assertTrue(filter.test(includedFileInIncludedDir));
@@ -66,7 +66,7 @@ public class DetectDirectoryFileFilterTest {
     void testDirExclusion() {
         List<String> excludedDirs = Arrays.asList("excludeme");
         List<String> includedFiles = Arrays.asList("*.txt");
-        DetectDirectoryFileFilter filter = new DetectDirectoryFileFilter(excludedDirs, includedFiles);
+        DetectDirectoryFileFilterCaseInsensitive filter = new DetectDirectoryFileFilterCaseInsensitive(excludedDirs, includedFiles);
 
         assertFalse(filter.test(includedDir));
         assertTrue(filter.test(excludedDir));

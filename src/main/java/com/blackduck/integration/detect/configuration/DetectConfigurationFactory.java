@@ -50,7 +50,7 @@ import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedIndi
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedReducedPersistanceMode;
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedSnippetMode;
 import com.blackduck.integration.detect.util.filter.DetectToolFilter;
-import com.blackduck.integration.detect.util.finder.DetectDirectoryFileFilter;
+import com.blackduck.integration.detect.util.finder.DetectDirectoryFileFilterCaseInsensitive;
 import com.blackduck.integration.detect.util.finder.DetectExcludedDirectoryFilter;
 import com.blackduck.integration.detect.workflow.bdio.BdioOptions;
 import com.blackduck.integration.detect.workflow.blackduck.BlackDuckPostOptions;
@@ -453,9 +453,9 @@ public class DetectConfigurationFactory {
     public BinaryScanOptions createBinaryScanOptions() {
         Path singleTarget = detectConfiguration.getPathOrNull(DetectProperties.DETECT_BINARY_SCAN_FILE);
         List<String> fileInclusionPatterns = detectConfiguration.getValue(DetectProperties.DETECT_BINARY_SCAN_FILE_NAME_PATTERNS);
-        DetectDirectoryFileFilter fileFilter = null;
+        DetectDirectoryFileFilterCaseInsensitive fileFilter = null;
         if (fileInclusionPatterns.stream().anyMatch(StringUtils::isNotBlank)) {
-            fileFilter = new DetectDirectoryFileFilter(collectDirectoryExclusions(), fileInclusionPatterns);
+            fileFilter = new DetectDirectoryFileFilterCaseInsensitive(collectDirectoryExclusions(), fileInclusionPatterns);
         }
         Integer searchDepth = detectConfiguration.getValue(DetectProperties.DETECT_BINARY_SCAN_SEARCH_DEPTH);
         return new BinaryScanOptions(singleTarget, fileFilter, searchDepth, getFollowSymLinks());
