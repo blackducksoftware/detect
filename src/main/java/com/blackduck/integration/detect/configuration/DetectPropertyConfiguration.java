@@ -113,43 +113,34 @@ public class DetectPropertyConfiguration {
     }
     
     /**
-     * CHANGE: Added new method to support JSON project settings fallback.
      * Gets the value of a nullable property, checking JSON project settings as fallback.
      * Individual detect.project.* properties take precedence over JSON values.
      */
     public <V, R> R getNullableValueWithJsonFallback(NullableProperty<V, R> detectProperty) {
-        // First check if the individual property was provided
-        if (propertyConfiguration.wasPropertyProvided(detectProperty)) {
-            return propertyConfiguration.getValue(detectProperty).orElse(null);
-        }
-        
-        // If it's a project property, check JSON fallback
-        if (detectProperty.getKey().startsWith("detect.project.")) {
-            String jsonValue = getJsonPropertyValue(detectProperty.getKey());
-            if (jsonValue != null) {
-                try {
-                    // Parse the JSON value using the property's parser
-                    V parsedValue = detectProperty.getValueParser().parse(jsonValue);
-                    return detectProperty.convertValue(parsedValue);
-                } catch (Exception e) {
-                    logger.warn("Failed to parse JSON value '{}' for property '{}': {}", 
-                        jsonValue, detectProperty.getKey(), e.getMessage());
-                }
-            }
-        }
-        
-        return propertyConfiguration.getValue(detectProperty).orElse(null);
+        return getValueWithJsonFallback(detectProperty, true);
     }
     
     /**
-     * CHANGE: Added new method to support JSON project settings fallback.
      * Gets the value of a valued property, checking JSON project settings as fallback.
      * Individual detect.project.* properties take precedence over JSON values.
      */
     public <V, R> R getValueWithJsonFallback(ValuedProperty<V, R> detectProperty) {
+        return getValueWithJsonFallback(detectProperty, false);
+    }
+    
+    /**
+     * Common implementation for getting property values with JSON fallback.
+     * @param detectProperty the property to get the value for
+     * @param nullable whether to return null for empty Optional values
+     */
+    private <V, R> R getValueWithJsonFallback(TypedProperty<V, R> detectProperty, boolean nullable) {
         // First check if the individual property was provided
         if (propertyConfiguration.wasPropertyProvided(detectProperty)) {
-            return propertyConfiguration.getValue(detectProperty);
+            if (nullable && detectProperty instanceof NullableProperty) {
+                return propertyConfiguration.getValue((NullableProperty<V, R>) detectProperty).orElse(null);
+            } else {
+                return propertyConfiguration.getValue((ValuedProperty<V, R>) detectProperty);
+            }
         }
         
         // If it's a project property, check JSON fallback
@@ -167,7 +158,12 @@ public class DetectPropertyConfiguration {
             }
         }
         
-        return propertyConfiguration.getValue(detectProperty);
+        // Return default behavior based on property type
+        if (nullable && detectProperty instanceof NullableProperty) {
+            return propertyConfiguration.getValue((NullableProperty<V, R>) detectProperty).orElse(null);
+        } else {
+            return propertyConfiguration.getValue((ValuedProperty<V, R>) detectProperty);
+        }
     }
     
     /**
