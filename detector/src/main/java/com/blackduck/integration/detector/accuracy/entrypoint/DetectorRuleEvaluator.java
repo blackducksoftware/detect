@@ -32,14 +32,13 @@ public class DetectorRuleEvaluator {
     }
 
     public DetectorRuleEvaluation evaluate(
-        File directory,
+        DetectableEnvironment environment,
         SearchEnvironment searchEnvironment,
         DetectorRule detectorRule,
         Supplier<ExtractionEnvironment> extractionEnvironmentSupplier
     ) {
         List<EntryPointNotFoundResult> notFoundEntryPoints = new ArrayList<>();
         EntryPointFoundResult foundEntryPoint = null;
-        DetectableEnvironment detectableEnvironment = new DetectableEnvironment(directory);
         for (EntryPoint entryPoint : detectorRule.getEntryPoints()) {
             DetectorResult searchResult = searchEvaluator.evaluateSearchable(
                 detectorRule.getDetectorType(),
@@ -51,18 +50,18 @@ public class DetectorRuleEvaluator {
                 continue;
             }
 
-            Detectable primaryDetectable = entryPoint.getPrimary().getDetectableCreatable().createDetectable(detectableEnvironment);
+            Detectable primaryDetectable = entryPoint.getPrimary().getDetectableCreatable().createDetectable(environment);
             DetectableResult applicable = primaryDetectable.applicable();
             if (!applicable.getPassed()) {
                 notFoundEntryPoints.add(EntryPointNotFoundResult.notApplicable(entryPoint, searchResult, applicable));
                 continue;
             }
 
-            EntryPointEvaluation entryPointEvaluation = extract(entryPoint, detectableEnvironment, extractionEnvironmentSupplier);
+            EntryPointEvaluation entryPointEvaluation = extract(entryPoint, environment, extractionEnvironmentSupplier);
             foundEntryPoint = EntryPointFoundResult.evaluated(entryPoint, searchResult, applicable, entryPointEvaluation);
             break; //Either way, we have found an entry point and extracted. We are done.
         }
-        return new DetectorRuleEvaluation(detectorRule, detectableEnvironment, notFoundEntryPoints, foundEntryPoint);
+        return new DetectorRuleEvaluation(detectorRule, environment, notFoundEntryPoints, foundEntryPoint);
     }
 
     public EntryPointEvaluation extract(EntryPoint entryPoint, DetectableEnvironment detectableEnvironment, Supplier<ExtractionEnvironment> extractionEnvironmentSupplier) {
