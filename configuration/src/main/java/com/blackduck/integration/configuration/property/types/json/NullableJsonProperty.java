@@ -6,11 +6,6 @@ import com.blackduck.integration.configuration.property.base.NullableAlikeProper
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * CHANGE: Added new NullableJsonProperty type to support detect.project.settings JSON property.
- * This property type can accept JSON objects as configuration values using Gson JsonElement.
- */
-
 public class NullableJsonProperty extends NullableAlikeProperty<JsonElement> {
     public NullableJsonProperty(@NotNull String key) {
         super(key, new JsonValueParser());

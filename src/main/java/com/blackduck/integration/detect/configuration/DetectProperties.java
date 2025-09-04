@@ -8,9 +8,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import com.blackduck.integration.blackduck.api.generated.enumeration.PolicyRuleSeverityType;
 import com.blackduck.integration.blackduck.api.generated.enumeration.ProjectCloneCategoriesType;
@@ -36,6 +36,7 @@ import com.blackduck.integration.configuration.property.types.enums.EnumListProp
 import com.blackduck.integration.configuration.property.types.enums.EnumProperty;
 import com.blackduck.integration.configuration.property.types.integer.IntegerProperty;
 import com.blackduck.integration.configuration.property.types.integer.NullableIntegerProperty;
+import com.blackduck.integration.configuration.property.types.json.NullableJsonProperty;
 import com.blackduck.integration.configuration.property.types.longs.LongProperty;
 import com.blackduck.integration.configuration.property.types.path.NullablePathProperty;
 import com.blackduck.integration.configuration.property.types.path.PathListProperty;
@@ -43,7 +44,6 @@ import com.blackduck.integration.configuration.property.types.string.CaseSensiti
 import com.blackduck.integration.configuration.property.types.string.NullableStringProperty;
 import com.blackduck.integration.configuration.property.types.string.StringListProperty;
 import com.blackduck.integration.configuration.property.types.string.StringProperty;
-import com.blackduck.integration.configuration.property.types.json.NullableJsonProperty;
 import com.blackduck.integration.detect.configuration.enumeration.BlackduckScanMode;
 import com.blackduck.integration.detect.configuration.enumeration.DetectCategory;
 import com.blackduck.integration.detect.configuration.enumeration.DetectGroup;
@@ -1627,15 +1627,12 @@ public class DetectProperties {
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
             .build();
 
-    // CHANGE: Added new detect.project.settings JSON property to consolidate project settings
-    // This allows users to specify multiple project properties in a single JSON object
-    // Individual detect.project.* properties take precedence over JSON values
     public static final NullableJsonProperty DETECT_PROJECT_SETTINGS =
         NullableJsonProperty.newBuilder("detect.project.settings")
-            .setInfo("Project Settings JSON", DetectPropertyFromVersion.VERSION_10_6_0)
+            .setInfo("Project Settings JSON", DetectPropertyFromVersion.VERSION_11_0_0)
             .setHelp(
                 "A JSON object that can contain any of the individual detect.project.* properties as key-value pairs. This provides a way to consolidate multiple project settings into a single property.",
-                "Individual detect.project.* properties take precedence over values specified in this JSON object. For example: {\"name\":\"MyProject\",\"version\":{\"name\":\"1.0.0\",\"phase\":\"DEVELOPMENT\"},\"description\":\"My project description\",\"tier\":3}"
+                "Individual detect.project.* properties take precedence over values specified in this JSON object."
             )
             .setExample("{\"name\":\"MyProject\",\"version\":{\"name\":\"1.0.0\"},\"description\":\"My project\"}")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
