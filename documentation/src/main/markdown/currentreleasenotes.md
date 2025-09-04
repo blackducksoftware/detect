@@ -33,6 +33,7 @@
 ### Resolved issues
 
 * (IDETECT-4802) Fix UV Lockfile Detector not generating BDIOs for projects with non-normalized names per Python requirements.
+* (IDETECT-4799) Ignore Go toolchain directive when constructing the BDIO as it is not a module dependency but rather a Go project's build-time configuration setting. 
 
 ### Dependency updates
 
