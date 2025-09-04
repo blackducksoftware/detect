@@ -33,6 +33,7 @@
 ### Resolved issues
 
 * (IDETECT-4802) Fix UV Lockfile Detector not generating BDIOs for projects with non-normalized names per Python requirements.
+* (IDETECT-4751) Fix server side parsing errors by first normalizing IAC Scan results.json before uploading to Black Duck SCA.
 
 ### Dependency updates
 
