@@ -1,4 +1,4 @@
-package com.blackduck.integration.detectable.detectables.go.gomodbuildless;
+package com.blackduck.integration.detectable.detectables.go.gomodfile;
 
 import java.io.File;
 
@@ -13,19 +13,19 @@ import com.blackduck.integration.detectable.detectable.result.PassedDetectableRe
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 
-@DetectableInfo(name = "Go Mod Buildless", language = "Golang", forge = "GitHub", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: go.mod.")
-public class GoModBuildlessDetectable extends Detectable {
+@DetectableInfo(name = "Go Mod File", language = "Golang", forge = "GitHub", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: go.mod.")
+public class GoModFileDetectable extends Detectable {
     public static final String GO_MOD_FILENAME = "go.mod";
 
     private final FileFinder fileFinder;
-    private final GoModBuildlessExtractor goModBuildlessExtractor;
+    private final GoModFileExtractor goModFileExtractor;
 
     private File goModFile;
 
-    public GoModBuildlessDetectable(DetectableEnvironment environment, FileFinder fileFinder, GoModBuildlessExtractor goModBuildlessExtractor) {
+    public GoModFileDetectable(DetectableEnvironment environment, FileFinder fileFinder, GoModFileExtractor goModFileExtractor) {
         super(environment);
         this.fileFinder = fileFinder;
-        this.goModBuildlessExtractor = goModBuildlessExtractor;
+        this.goModFileExtractor = goModFileExtractor;
     }
 
     @Override
@@ -42,7 +42,7 @@ public class GoModBuildlessDetectable extends Detectable {
 
     @Override
     public Extraction extract(ExtractionEnvironment extractionEnvironment) {
-        return goModBuildlessExtractor.extract(goModFile);
+        return goModFileExtractor.extract(goModFile);
     }
 
 }

@@ -1,4 +1,4 @@
-package com.blackduck.integration.detectable.detectables.go.gomodbuildless;
+package com.blackduck.integration.detectable.detectables.go.gomodfile;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -11,14 +11,14 @@ import org.slf4j.LoggerFactory;
 import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
-import com.blackduck.integration.detectable.detectables.go.gomodbuildless.parse.GoModParser;
+import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.GoModParser;
 import com.blackduck.integration.detectable.extraction.Extraction;
 
-public class GoModBuildlessExtractor {
+public class GoModFileExtractor {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final ExternalIdFactory externalIdFactory;
 
-    public GoModBuildlessExtractor(ExternalIdFactory externalIdFactory) {
+    public GoModFileExtractor(ExternalIdFactory externalIdFactory) {
         this.externalIdFactory = externalIdFactory;
     }
 
