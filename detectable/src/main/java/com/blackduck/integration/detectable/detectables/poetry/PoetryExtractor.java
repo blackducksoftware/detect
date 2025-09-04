@@ -26,7 +26,7 @@ public class PoetryExtractor {
         this.poetryLockParser = poetryLockParser;
     }
 
-    public Extraction extract(File poetryLock, @Nullable TomlTable toolDotPoetrySection, Set<String> rootPackages) {
+    public Extraction extract(File poetryLock, @Nullable TomlTable toolDotPoetrySection, @Nullable TomlTable projectSection, Set<String> rootPackages) {
         try {
             DependencyGraph graph = poetryLockParser.parseLockFile(
                 FileUtils.readFileToString(poetryLock, StandardCharsets.UTF_8),
@@ -34,24 +34,28 @@ public class PoetryExtractor {
             );
             CodeLocation codeLocation = new CodeLocation(graph);
 
-            Optional<NameVersion> poetryNameVersion = extractNameVersionFromToolDotPoetrySection(toolDotPoetrySection);
-            if (poetryNameVersion.isPresent()) {
-                return new Extraction.Builder()
-                    .success(codeLocation)
-                    .projectName(poetryNameVersion.get().getName())
-                    .projectVersion(poetryNameVersion.get().getVersion())
-                    .build();
+            Extraction.Builder extractionBuilder = new Extraction.Builder().success(codeLocation);
+
+            Optional<NameVersion> poetryNameVersion = extractNameVersionFromSection(toolDotPoetrySection);
+            if (!poetryNameVersion.isPresent()) {
+                // Poetry 2.x support
+                poetryNameVersion = extractNameVersionFromSection(projectSection);
             }
-            return new Extraction.Builder().success(codeLocation).build();
+
+            if (poetryNameVersion.isPresent()) {
+                extractionBuilder.projectName(poetryNameVersion.get().getName())
+                    .projectVersion(poetryNameVersion.get().getVersion());
+            }
+            return extractionBuilder.build();
         } catch (IOException e) {
             return new Extraction.Builder().exception(e).build();
         }
     }
 
-    private Optional<NameVersion> extractNameVersionFromToolDotPoetrySection(@Nullable TomlTable toolDotPoetry) {
-        if (toolDotPoetry != null) {
-            if (toolDotPoetry.get(NAME_KEY) != null && toolDotPoetry.get(VERSION_KEY) != null) {
-                return Optional.of(new NameVersion(toolDotPoetry.getString(NAME_KEY), toolDotPoetry.getString(VERSION_KEY)));
+    private Optional<NameVersion> extractNameVersionFromSection(@Nullable TomlTable toolDotPoetryOrProject) {
+        if (toolDotPoetryOrProject != null) {
+            if (toolDotPoetryOrProject.get(NAME_KEY) != null && toolDotPoetryOrProject.get(VERSION_KEY) != null) {
+                return Optional.of(new NameVersion(toolDotPoetryOrProject.getString(NAME_KEY), toolDotPoetryOrProject.getString(VERSION_KEY)));
             }
         }
         return Optional.empty();

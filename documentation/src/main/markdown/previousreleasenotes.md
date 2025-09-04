@@ -1,6 +1,69 @@
 <!-- Check the support matrix to determine supported, non-current major version releases -->
 # Release notes for previous [detect_product_short] versions
 
+## Version 10.7.0
+
+### New features
+
+* Maven CLI Detector now accepts a custom pom.xml file name (matching the pattern *pom.xml) when provided via `detect.maven.build.command`.  
+* Signature Scan now supports ARM architecture with correctly packaged ARM JRE for Windows, Mac, Linux, and Alpine operating systems for [bd_product_long] version 2025.7.0 or later.
+  <note type="hint">To ensure [detect_product_short] correctly identifies the system architecture on ARM-based systems, please install an ARM-specific Java runtime. This is necessary for accurate detection and proper functionality on ARM platforms.</note>
+* Support for Poetry is now extended to 2.1.4.
+* [detect_product_short] Docker Inspector air gap distribution JAR files are now digitally signed with Black Duck Software, Inc authority.
+* [detect_product_short] Nuget Inspector binaries for Windows are now digitally signed with Black Duck Software, Inc authority.
+
+### Changed features
+
+* Yarn workspace identification and processing has been made more efficient, resulting in some scans being faster.
+
+### Resolved issues
+
+* (IDETECT-3456) BOM components marked as "ignored" will no longer appear in [detect_product_short] risk reports.
+* (IDETECT-4781) Signature Scans will no longer fail if SCA Scan Service (SCASS) related IPs are blocked. A performance warning will be printed and a non-SCASS Signature Scan will be performed.
+* (IDETECT-4759) Updated [detect_product_short] UV Detector to prevent execution when the `toml` file does not have a `[tool.uv]` section with `managed = true` value, and to not return a success status unless a BDIO file is generated.
+* (IDETECT-4746) Fixed Cargo Lockfile Detector incorrectly labeling transitive dependencies as direct dependencies.
+* (IDETECT-4728) Rapid Scans using `BOM_COMPARE_STRICT` now show a clear message if the project version doesn’t exist, guiding users to run a full scan to create it.
+* (IDETECT-4736) Gradle Native Inspector no longer appends `+FAILED` suffix to unresolved dependency versions in BDIO output.
+
+### Dependency updates
+
+* Upgraded and released Docker Inspector version 11.5.0.
+* Upgraded and released Nuget Inspector version 2.3.1.
+* Updated the Black Duck Software BDIO2 protobuf library to version 3.2.12 to resolve a security vulnerability in its Google Protobuf Java library. 
+
+## Version 10.6.0
+
+### New features
+
+* SCA Scan Service (SCASS) is a scalable solution for performing software composition analysis scans outside of the traditional [bd_product_long] environment. This [detect_product_short] release provides support for SCA Scan Service (SCASS) package manager and signature scans when deployed with [bd_product_short] version 2025.7.0 or later. For further information see [About SCASS](https://documentation.blackduck.com/bundle/bd-hub/page/ComponentDiscovery/aboutScaScanService.html).    
+	* To learn more about the IP address configuration requirements for your deployments, refer to the IP notice above.
+ 
+* A new property, [detect.stateless.policy.check.fail.on.severities](properties/basic-properties.html#ariaid-title34) has been added, which will trigger [detect_product_short] to fail the scan and notify the user if a policy violation matches the configured value. This property overrides the default "Blocker" and "Critical" severity settings that cause [detect_product_short] scans to exit. This property applies to both [Rapid](runningdetect/rapidscan.md) and [Stateless](runningdetect/statelessscan.md) scans. Intelligent persistent scans, (when scan mode is not set to RAPID, STATELESS, or [--detect.blackduck.scan.mode](properties/all-properties.html#ariaid-title5) is explicitly set to INTELLIGENT and scan data is persisted), should continue using the [detect.policy.check.fail.on.severities](properties/basic-properties.html#ariaid-title34), property.
+
+* [detect_product_short] will now print the names of fatal policy violations at the [detect_product_short] status stage if [detect.policy.check.fail.on.names](properties/configuration/project.md#fail-on-policy-names-with-violations) is configured. 
+
+* To provide greater control over Cargo dependencies reported in the BOM, a new property, `detect.cargo.dependency.types.excluded` has been added to allow exclusion of specific Cargo dependency types (`DEV`, `BUILD`) from scans. The default behavior (`NONE`) will include all dependency types.
+
+* Node Package Manager (npm) scans now report optional dependencies. The `detect.npm.dependency.types.excluded` property has been extended to exclude optional dependencies if OPTIONAL is specified in the list of arguments.
+
+* [detect_product_long] will now provide an option to generate [bd_product_long] risk report in a parseable (JSON) format. See [Risk Report Generation](results/reports.md) for more details.
+
+* Support for SBT is now extended to 1.11.3.
+
+### Changed features
+
+* To improve processing time when both PNPM and NPM detectors apply to a directory, only PNPM detector will execute, producing the same quality of results.
+
+### Resolved issues
+
+* (IDETECT-4657) - Additional logging has been added for occurances of [detect_product_short] erroring out when loading a malformed Spring Boot config file. 
+<note type="hint">A valid Spring Boot config file can be specified via the `--spring.config.location=""` parameter.</note>
+* (IDETECT-4700) – Fixed Rapid Scans reporting policy violations from previous full scans when run in BOM_COMPARE or BOM_COMPARE_STRICT mode.
+
+### Dependency updates
+
+* Upgraded and released Detect Docker Inspector version 11.4.0.
+
 ## Version 10.5.0
 
 ### New features

@@ -7,7 +7,7 @@
 		<prodinfo>
 			<prodname>Black Duck Detect</prodname>
 			<vrmlist>
-				<vrm version="10.6.0"/>
+				<vrm version="11.0.0"/>
 			</vrmlist>
 		</prodinfo>
 		<!-- zoomin bundle name -->

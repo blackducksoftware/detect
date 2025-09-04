@@ -15,11 +15,13 @@ There are three NuGet detectors:
 
 The detectors run a platform dependent self-contained executable that is currently supported on Windows, Linux, and Mac platforms.
 
-<note type="note">
-
-*  To retrieve project build information, NuGet Project Inspector relies on a Microsoft API which is dependant upon the installation of .NET 6.0 on the build machine. To ensure the most accurate results available, .NET 6.0 should be installed. The inspector will fall back to parsing the XML files if .NET 6.0 is not present. 
-* NuGet Project Inspector does not accept NuGet specific configuration properties.
-* The NuGet Detectors do not work with mono.
+<note type="tip">
+<p>To retrieve project build information, NuGet Project Inspector relies on a Microsoft API which is dependant upon the installation of .NET 6.0 on the build machine.</p>
+  <ul>
+    <li>To ensure the most accurate results available, .NET 6.0 should be installed. The inspector will fall back to parsing the XML files if .NET 6.0 is not present.</li>
+    <li>NuGet Project Inspector does not accept NuGet specific configuration properties.</li>
+    <li>The NuGet Detectors do not work with mono.</li>
+  </ul>
 </note>
 
 ## Excluding dependency types
@@ -57,7 +59,7 @@ NuGet Solution Native Inspector runs if one or more solution (.sln) files are fo
 
 NuGet Project Native Inspector runs if no solution (.sln) files are found, and one or more project files are found. NuGet Project Native Inspector derives packages (dependencies) from project (.csproj, .fsproj, etc.) file content.
 
-NuGet inspectors look for files to derive dependency information from in this order (only the first available in the list will be analyzed):
+NuGet Native Project inspectors look for files to derive dependency information from in this order (only the first available in the list will be analyzed):
 1. Directory.Packages.props
 2. packages.config
 3. project.lock.json

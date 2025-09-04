@@ -1,6 +1,7 @@
 package com.blackduck.integration.detectable.detectables.maven.unit;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -14,7 +15,7 @@ import com.blackduck.integration.detectable.detectables.maven.cli.MavenCodeLocat
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenParseResult;
 import com.blackduck.integration.detectable.util.graph.NameVersionGraphAssert;
 
-public class MavenComplexOutputTest {
+class MavenComplexOutputTest {
     
     private ExternalIdFactory externalIdFactory;
     private MavenCodeLocationPackager packager;
@@ -28,7 +29,7 @@ public class MavenComplexOutputTest {
     }
     
     private List<String> getInputHeader() {
-        return new ArrayList<>(List.of(
+        return new ArrayList<>(Arrays.asList(
             "[INFO] Reactor Build Order:",
             "[INFO] ",
             "[INFO] generic-parent                                                     [pom]",
@@ -62,7 +63,7 @@ public class MavenComplexOutputTest {
         List<String> input = getInputHeader();
         switch(testCase) {
             case IDETECT3228CASE1:
-                input.addAll(List.of(
+                input.addAll(Arrays.asList(
                     "7450 [main] [INFO] com.blackducksoftware.integration:hub-teamcity-common:jar:3.2.0-SNAPSHOT:compile",
                     "7509 [main] [INFO] +- com.blackducksoftware.integration:hub-common:jar:13.1.2:compile",
                     "7560 [main] [INFO] |  +- com.blackducksoftware.integration:hub-common-rest:jar:2.1.3:compile",
@@ -70,7 +71,7 @@ public class MavenComplexOutputTest {
                 ));
                 break;
             case IDETECT3228CASE2:
-                input.addAll(List.of(
+                input.addAll(Arrays.asList(
                     "7450 [main] [INFO] com.blackducksoftware.integration:hub-teamcity-common:jar:3.2.0-SNAPSHOT |com.blackducksoftware.integration:hub-teamcity-common|",
                     "7509 [main] [INFO] +- com.blackducksoftware.integration:hub-common:jar:13.1.2:compile |com.blackducksoftware.integration:hub-teamcity-common|",
                     "7560 [main] [INFO] |  +- com.blackducksoftware.integration:hub-common-rest:jar:2.1.3:compile |com.blackducksoftware.integration:hub-teamcity-common|",
@@ -78,7 +79,7 @@ public class MavenComplexOutputTest {
                 ));
                 break;
             default:
-                input.addAll(List.of(
+                input.addAll(Arrays.asList(
                     "7450 [main] [INFO] com.blackducksoftware.integration:hub-teamcity-common:jar:3.2.0-SNAPSHOT",
                     "7509 [main] [INFO] +- com.blackducksoftware.integration:hub-common:jar:13.1.2:compile",
                     "7560 [main] [INFO] |  +- com.blackducksoftware.integration:hub-common-rest:jar:2.1.3:compile",

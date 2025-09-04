@@ -2,9 +2,13 @@ package com.blackduck.integration.detectable.detectables.poetry.parser;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.jetbrains.annotations.Nullable;
 import org.tomlj.TomlParseResult;
@@ -27,10 +31,15 @@ public class ToolPoetrySectionParser {
 
     public static final String PYTHON_COMPONENT_NAME = "python";
     
+    // Poetry 2.x support: PEP 621 compliant [project] section
+    public static final String PROJECT_DEPENDENCIES_KEY = "project.dependencies";
+
+    private Map<File, TomlParseResult> fileParseResults = new HashMap<>();
+
     public ToolPoetrySectionResult parseToolPoetrySection(@Nullable File pyprojectToml) {
         if (pyprojectToml != null) {
             try {
-                TomlParseResult parseResult = TomlFileUtils.parseFile(pyprojectToml);
+                TomlParseResult parseResult = memoizedTomlParseResult(pyprojectToml);
                 if (parseResult.get(TOOL_POETRY_KEY) != null) {
                     TomlTable poetrySection = parseResult.getTable(TOOL_POETRY_KEY);
                     return ToolPoetrySectionResult.FOUND(poetrySection);
@@ -42,6 +51,19 @@ public class ToolPoetrySectionParser {
         return ToolPoetrySectionResult.NOT_FOUND();
     }
 
+    public TomlTable parseProjectSection(File pyprojectTomlFile) {
+        if (pyprojectTomlFile == null)
+            return null;
+
+        TomlParseResult parseResult;
+        try {
+            parseResult = memoizedTomlParseResult(pyprojectTomlFile);
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to read pyproject.toml file: " + pyprojectTomlFile.getAbsolutePath(), e);
+        }
+        return parseResult.getTable("project");
+    }
+
     public Set<String> parseRootPackages(File pyprojectToml, PoetryOptions options) {
         if (options.getExcludedGroups().isEmpty() || pyprojectToml == null) {
             return null;
@@ -51,7 +73,7 @@ public class ToolPoetrySectionParser {
 
         TomlParseResult parseResult;
         try {
-            parseResult = TomlFileUtils.parseFile(pyprojectToml);
+            parseResult = memoizedTomlParseResult(pyprojectToml);
         } catch (IOException e) {
             throw new RuntimeException("Unable to read pyproject.toml file");
         }
@@ -60,7 +82,17 @@ public class ToolPoetrySectionParser {
             processKeyForRootPackages(parseResult, options, result, key);
         }
 
+        // Poetry 2.x support: Parse dependencies from [project] section (PEP 621 compliant)
+        processProjectDependencies(parseResult, result);
+
         return result;
+    }
+
+    private TomlParseResult memoizedTomlParseResult(File tomlFile) throws IOException {
+        if (!fileParseResults.containsKey(tomlFile)) {
+            fileParseResults.put(tomlFile, TomlFileUtils.parseFile(tomlFile));
+        }
+        return fileParseResults.get(tomlFile);
     }
 
     private void processKeyForRootPackages(TomlParseResult parseResult, PoetryOptions options, Set<String> result, String key) {
@@ -94,5 +126,34 @@ public class ToolPoetrySectionParser {
 
             set.add(packageName);
         }
+    }
+
+    // Poetry 2.x support: Process dependencies from [project] section (PEP 621 compliant)
+    private void processProjectDependencies(TomlParseResult parseResult, Set<String> result) {
+        if (parseResult.isArray(PROJECT_DEPENDENCIES_KEY)) {
+            parseResult.getArray(PROJECT_DEPENDENCIES_KEY).toList().forEach(dependency -> {
+                if (dependency instanceof String) {
+                    String packageName = extractPackageNameFromDependencyString((String) dependency);
+                    if (packageName != null && !packageName.equalsIgnoreCase(PYTHON_COMPONENT_NAME)) {
+                        result.add(packageName);
+                    }
+                }
+            });
+        }
+    }
+
+    // Poetry 2.x support: Extract package name from dependency string
+    // Handles: "requests>=2.25.1", "requests[security]>=2.25.1", "requests (>=2.25.1)", etc.
+    private String extractPackageNameFromDependencyString(String dependencyString) {
+        if (dependencyString == null) {
+            return null;
+        }
+
+        // Extract the first sequence of valid package name characters
+        // Python package names can contain letters, numbers, hyphens, underscores, and dots
+        Pattern pattern = Pattern.compile("^([a-zA-Z][a-zA-Z0-9._-]+)");
+        Matcher matcher = pattern.matcher(dependencyString.trim());
+
+        return matcher.find() ? matcher.group(1) : null;
     }
 }

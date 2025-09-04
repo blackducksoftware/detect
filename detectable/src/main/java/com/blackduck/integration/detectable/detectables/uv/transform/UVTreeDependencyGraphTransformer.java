@@ -81,10 +81,10 @@ public class UVTreeDependencyGraphTransformer {
         if(depth > 0 && dependency != null) {
             addDependencyToGraph(dependency, dependencyStack, previousDepth);
             dependencyStack.push(dependency);
-        } else if (dependency != null && depth == 0) {
+        } else if (depth == 0) {
             String[] parts = line.split(" "); // parse the project line
             if(parts.length < 2) {
-                logger.warn("Unable to parse workspace member from line: {}", line);
+                logger.warn("Unable to parse workspace member and version from line: {}", line);
                 initializeProject(parts[0] != null ? parts[0] : "uvProject", "defaultVersion"); // if version doesn't exist, then create a code location with just project name and default version
                 return;
             }
