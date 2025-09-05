@@ -32,6 +32,7 @@
 
 ### Resolved issues
 
+* (IDETECT-4738) Corrected behaviour of detect.binary.scan.file.name.patterns to be case-insensitive. 
 * (IDETECT-4802) Fix UV Lockfile Detector not generating BDIOs for projects with non-normalized names per Python requirements.
 * (IDETECT-4799) When constructing the BDIO, ignore the Go toolchain directive, as it is the Go project's build-time configuration setting and not a module dependency. 
 
