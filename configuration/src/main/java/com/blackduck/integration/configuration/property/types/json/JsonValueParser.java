@@ -24,9 +24,26 @@ public class JsonValueParser extends ValueParser<JsonElement> {
         }
 
         try {
+            // First try parsing as-is (handles properly quoted JSON)
             return gson.fromJson(value, JsonElement.class);
         } catch (JsonSyntaxException e) {
-            throw new ValueParseException(value, "JsonElement", "Failed to parse JSON: " + e.getMessage());
+            try {
+                // If that fails, try normalizing unquoted JSON (handles shell-processed input)
+                String normalizedJson = normalizeUnquotedJson(value.trim());
+                return gson.fromJson(normalizedJson, JsonElement.class);
+            } catch (JsonSyntaxException e2) {
+                throw new ValueParseException(value, "JsonElement", "Failed to parse JSON: " + e.getMessage());
+            }
         }
+    }
+
+    private String normalizeUnquotedJson(String value) {
+        // Handle unquoted JSON by adding quotes around keys and string values
+        // This is a simplified approach for common shell-processed JSON scenarios
+        return value
+            // Quote unquoted object keys
+            .replaceAll("([{,]\\s*)([a-zA-Z_][a-zA-Z0-9_]*)(\\s*:)", "$1\"$2\"$3")
+            // Quote unquoted string values (non-numeric, non-boolean, non-object/array)
+            .replaceAll("(:\\s*)([a-zA-Z][a-zA-Z0-9\\s]*?)(?=\\s*[,}])", "$1\"$2\"");
     }
 }

@@ -174,14 +174,14 @@ public class DetectPropertyConfiguration {
     }
 
     private Map<String, String> loadJsonProperties() {
-        Optional<JsonElement> jsonSettings = propertyConfiguration.getValue(DetectProperties.DETECT_PROJECT_SETTINGS);
-        if (jsonSettings.isPresent()) {
-            try {
+        try {
+            Optional<JsonElement> jsonSettings = propertyConfiguration.getValue(DetectProperties.DETECT_PROJECT_SETTINGS);
+            if (jsonSettings.isPresent()) {
                 logger.debug("Loading project settings from JSON");
                 return jsonMerger.extractPropertiesFromJson(jsonSettings.get());
-            } catch (Exception e) {
-                logger.warn("Failed to parse JSON project settings: {}", e.getMessage());
             }
+        } catch (Exception e) {
+            logger.warn("Failed to parse JSON project settings: {}", e.getMessage());
         }
         return new HashMap<>();
     }
