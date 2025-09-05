@@ -65,7 +65,7 @@ public class BinaryUploadOperationTest {
         Mockito.when(directoryManager.getBinaryOutputDirectory()).thenReturn(rootDirectory);
 
         BinaryScanFindMultipleTargetsOperation multipleTargets = new BinaryScanFindMultipleTargetsOperation(fileFinder, directoryManager);
-        DetectDirectoryFileFilterCaseSensitive fileFilter = new DetectDirectoryFileFilterCaseSensitive(Collections.emptyList(), targetPaths);
+        DetectDirectoryFileFilterCaseSensitive fileFilter = new DetectDirectoryFileFilterCaseSensitive(Collections.emptyList(), targetPaths, false);
         Optional<File> zip = multipleTargets.searchForMultipleTargets(fileFilter, false, 3);
         Assertions.assertTrue(zip.isPresent());
 
@@ -93,7 +93,7 @@ public class BinaryUploadOperationTest {
         Mockito.when(directoryManager.getBinaryOutputDirectory()).thenReturn(rootDirectory);
 
         BinaryScanFindMultipleTargetsOperation multipleTargets = new BinaryScanFindMultipleTargetsOperation(fileFinder, directoryManager);
-        DetectDirectoryFileFilterCaseSensitive fileFilter = new DetectDirectoryFileFilterCaseSensitive(Arrays.asList("excludedDir"), targetPaths);
+        DetectDirectoryFileFilterCaseSensitive fileFilter = new DetectDirectoryFileFilterCaseSensitive(Arrays.asList("excludedDir"), targetPaths, false);
         Optional<File> zip = multipleTargets.searchForMultipleTargets(fileFilter, false, 3);
         Assertions.assertTrue(zip.isPresent());
 
