@@ -44,6 +44,6 @@
 * (IDETECT-4594) - Resolved [detect_product_short] failing to handle duplicate keys in `package.json` files across npm, pnpm, Lerna, and Yarn projects.
 * (IDETECT-4467) - Resolved an issue where [detect_product_short] would exit with a 0 (zero) success code despite dependency requirements not being met for PIP Native Inspector.
 	* The PIP Native Inspector will yield to other detectors when it cannot resolve an expected dependency from the PIP cache.
-
+* (IDETECT-4738) Corrected behaviour of detect.binary.scan.file.name.patterns to be case-insensitive. 
 ### Dependency updates
 * Upgraded and released Detect Docker Inspector version 11.2.0.
