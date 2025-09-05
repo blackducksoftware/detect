@@ -455,7 +455,7 @@ public class DetectConfigurationFactory {
         List<String> fileInclusionPatterns = detectConfiguration.getValue(DetectProperties.DETECT_BINARY_SCAN_FILE_NAME_PATTERNS);
         DetectDirectoryFileFilterCaseSensitive fileFilter = null;
         if (fileInclusionPatterns.stream().anyMatch(StringUtils::isNotBlank)) {
-            fileFilter = new DetectDirectoryFileFilterCaseSensitive(collectDirectoryExclusions(), fileInclusionPatterns);
+            fileFilter = new DetectDirectoryFileFilterCaseSensitive(collectDirectoryExclusions(), fileInclusionPatterns, false);
         }
         Integer searchDepth = detectConfiguration.getValue(DetectProperties.DETECT_BINARY_SCAN_SEARCH_DEPTH);
         return new BinaryScanOptions(singleTarget, fileFilter, searchDepth, getFollowSymLinks());

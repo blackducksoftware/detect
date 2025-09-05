@@ -7,8 +7,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
+import com.blackduck.integration.detect.configuration.DetectProperties;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -23,6 +25,8 @@ public class DetectDirectoryFileFilterTest {
     private static File includedFileInIncludedDir;
     private static File nonMatchingFile;
     private static File excludedDir;
+    private static File upperCaseFileExtension;
+    private static File lowerCaseFileExtension;
 
     @BeforeAll
     static void setup() throws IOException {
@@ -39,6 +43,10 @@ public class DetectDirectoryFileFilterTest {
         excludedDir = new File(includedDir, "excludeme");
         excludedDir.mkdir();
 
+        upperCaseFileExtension = new File(tempDir, "uppercase.DLL");
+        upperCaseFileExtension.createNewFile();
+        lowerCaseFileExtension = new File(tempDir, "lowercase.dll");
+        lowerCaseFileExtension.createNewFile();
     }
 
     @AfterAll
@@ -73,7 +81,12 @@ public class DetectDirectoryFileFilterTest {
     }
 
     @Test
-    void testFileInclusionDifferentCase() {
-        List<String> excludedDirs = Arrays.asList("excludeme");
+    void testFileInclusionCaseInsensitive() {
+        List<String> fileInclusionPatterns = Arrays.asList("*.dll");
+        List<String> excludedDirs = Collections.emptyList();
+        DetectDirectoryFileFilterCaseSensitive filter = new DetectDirectoryFileFilterCaseSensitive(excludedDirs, fileInclusionPatterns, false);
+
+        assertTrue(filter.test(lowerCaseFileExtension));
+        assertTrue(filter.test(upperCaseFileExtension));
     }
 }
