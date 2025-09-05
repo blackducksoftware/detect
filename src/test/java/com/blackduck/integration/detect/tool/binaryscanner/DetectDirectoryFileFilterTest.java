@@ -14,7 +14,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import com.blackduck.integration.detect.util.finder.DetectDirectoryFileFilterCaseInsensitive;
+import com.blackduck.integration.detect.util.finder.DetectDirectoryFileFilterCaseSensitive;
 
 public class DetectDirectoryFileFilterTest {
     private static File tempDir;
@@ -53,7 +53,7 @@ public class DetectDirectoryFileFilterTest {
 
         List<String> excludedDirs = Arrays.asList("excludeme");
         List<String> includedFiles = Arrays.asList("*.txt");
-        DetectDirectoryFileFilterCaseInsensitive filter = new DetectDirectoryFileFilterCaseInsensitive(excludedDirs, includedFiles);
+        DetectDirectoryFileFilterCaseSensitive filter = new DetectDirectoryFileFilterCaseSensitive(excludedDirs, includedFiles);
 
         assertTrue(filter.test(includedFile));
         assertTrue(filter.test(includedFileInIncludedDir));
@@ -66,9 +66,14 @@ public class DetectDirectoryFileFilterTest {
     void testDirExclusion() {
         List<String> excludedDirs = Arrays.asList("excludeme");
         List<String> includedFiles = Arrays.asList("*.txt");
-        DetectDirectoryFileFilterCaseInsensitive filter = new DetectDirectoryFileFilterCaseInsensitive(excludedDirs, includedFiles);
+        DetectDirectoryFileFilterCaseSensitive filter = new DetectDirectoryFileFilterCaseSensitive(excludedDirs, includedFiles);
 
         assertFalse(filter.test(includedDir));
         assertTrue(filter.test(excludedDir));
+    }
+
+    @Test
+    void testFileInclusionDifferentCase() {
+        List<String> excludedDirs = Arrays.asList("excludeme");
     }
 }

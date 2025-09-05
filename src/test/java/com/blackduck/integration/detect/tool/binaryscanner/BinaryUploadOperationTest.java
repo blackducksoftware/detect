@@ -28,7 +28,7 @@ import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.run.data.DockerTargetData;
 import com.blackduck.integration.detect.lifecycle.run.operation.OperationRunner;
 import com.blackduck.integration.detect.lifecycle.run.step.binary.PreScassBinaryScanStepRunner;
-import com.blackduck.integration.detect.util.finder.DetectDirectoryFileFilterCaseInsensitive;
+import com.blackduck.integration.detect.util.finder.DetectDirectoryFileFilterCaseSensitive;
 import com.blackduck.integration.detect.workflow.file.DirectoryManager;
 import com.blackduck.integration.exception.IntegrationException;
 
@@ -65,7 +65,7 @@ public class BinaryUploadOperationTest {
         Mockito.when(directoryManager.getBinaryOutputDirectory()).thenReturn(rootDirectory);
 
         BinaryScanFindMultipleTargetsOperation multipleTargets = new BinaryScanFindMultipleTargetsOperation(fileFinder, directoryManager);
-        DetectDirectoryFileFilterCaseInsensitive fileFilter = new DetectDirectoryFileFilterCaseInsensitive(Collections.emptyList(), targetPaths);
+        DetectDirectoryFileFilterCaseSensitive fileFilter = new DetectDirectoryFileFilterCaseSensitive(Collections.emptyList(), targetPaths);
         Optional<File> zip = multipleTargets.searchForMultipleTargets(fileFilter, false, 3);
         Assertions.assertTrue(zip.isPresent());
 
@@ -93,7 +93,7 @@ public class BinaryUploadOperationTest {
         Mockito.when(directoryManager.getBinaryOutputDirectory()).thenReturn(rootDirectory);
 
         BinaryScanFindMultipleTargetsOperation multipleTargets = new BinaryScanFindMultipleTargetsOperation(fileFinder, directoryManager);
-        DetectDirectoryFileFilterCaseInsensitive fileFilter = new DetectDirectoryFileFilterCaseInsensitive(Arrays.asList("excludedDir"), targetPaths);
+        DetectDirectoryFileFilterCaseSensitive fileFilter = new DetectDirectoryFileFilterCaseSensitive(Arrays.asList("excludedDir"), targetPaths);
         Optional<File> zip = multipleTargets.searchForMultipleTargets(fileFilter, false, 3);
         Assertions.assertTrue(zip.isPresent());
 
