@@ -9,6 +9,13 @@ import javax.xml.parsers.SAXParserFactory;
 import com.blackduck.integration.detectable.detectable.executable.resolver.*;
 import com.blackduck.integration.detectable.detectables.cargo.*;
 import com.blackduck.integration.detectable.detectables.cargo.transform.CargoDependencyGraphTransformer;
+import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
+import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildDetectable;
+import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildExtractor;
+import com.blackduck.integration.detectable.detectables.uv.lockfile.UVLockFileDetectable;
+import com.blackduck.integration.detectable.detectables.uv.lockfile.UVLockfileExtractor;
+import com.blackduck.integration.detectable.detectables.uv.transform.UVLockParser;
+import com.blackduck.integration.detectable.detectables.uv.transform.UVTreeDependencyGraphTransformer;
 import org.xml.sax.SAXException;
 
 import com.google.gson.Gson;
@@ -339,20 +346,24 @@ public class DetectableFactory {
         return new BitbakeDetectable(environment, fileFinder, bitbakeDetectableOptions, bitbakeExtractor, bashResolver);
     }
 
-    public CargoLockDetectable createCargoDetectable(DetectableEnvironment environment) {
+    public CargoLockDetectable createCargoLockfileDetectable(DetectableEnvironment environment) {
+        return createCargoLockfileDetectable(environment, null);
+    }
+
+    public CargoLockDetectable createCargoLockfileDetectable(DetectableEnvironment environment, CargoDetectableOptions cargoDetectableOptions) {
         CargoTomlParser cargoTomlParser = new CargoTomlParser();
         CargoDependencyLineParser cargoDependencyLineParser = new CargoDependencyLineParser();
         CargoLockPackageDataTransformer cargoLockPackageDataTransformer = new CargoLockPackageDataTransformer(cargoDependencyLineParser);
         CargoLockPackageTransformer cargoLockPackageTransformer = new CargoLockPackageTransformer();
-        CargoExtractor cargoExtractor = new CargoExtractor(cargoTomlParser, cargoLockPackageDataTransformer, cargoLockPackageTransformer);
-        return new CargoLockDetectable(environment, fileFinder, cargoExtractor);
+        CargoLockfileExtractor cargoLockfileExtractor = new CargoLockfileExtractor(cargoTomlParser, cargoLockPackageDataTransformer, cargoLockPackageTransformer);
+        return new CargoLockDetectable(environment, fileFinder, cargoLockfileExtractor, cargoDetectableOptions);
     }
 
-    public CargoCliDetectable createCargoCliDetectable(DetectableEnvironment environment, CargoResolver cargoResolver) {
+    public CargoCliDetectable createCargoCliDetectable(DetectableEnvironment environment, CargoResolver cargoResolver, CargoDetectableOptions cargoDetectableOptions) {
         CargoDependencyGraphTransformer cargoDependencyTransformer= new CargoDependencyGraphTransformer(externalIdFactory);
         CargoTomlParser cargoTomlParser = new CargoTomlParser();
         CargoCliExtractor cargoCliExtractor = new CargoCliExtractor(executableRunner, cargoDependencyTransformer, cargoTomlParser);
-        return new CargoCliDetectable(environment, fileFinder, cargoResolver, cargoCliExtractor, executableRunner);
+        return new CargoCliDetectable(environment, fileFinder, cargoResolver, cargoCliExtractor, executableRunner, cargoDetectableOptions);
     }
 
 
@@ -702,6 +713,14 @@ public class DetectableFactory {
 
     public OpamLockFileDetectable createOpamLockFileDetectable(DetectableEnvironment environment, OpamResolver opamResolver) {
         return new OpamLockFileDetectable(environment, fileFinder, opamLockFileExtractor(environment.getDirectory()));
+    }
+
+    public UVBuildDetectable createUVBuildDetectable(DetectableEnvironment environment, UVResolver uvResolver, UVDetectorOptions uvDetectorOptions) {
+        return new UVBuildDetectable(environment, fileFinder, uvResolver, uvBuildExtractor(environment.getDirectory()), uvDetectorOptions);
+    }
+
+    public UVLockFileDetectable createUVLockFileDetectable(DetectableEnvironment environment, UVDetectorOptions uvDetectorOptions) {
+        return new UVLockFileDetectable(environment, fileFinder, uvDetectorOptions, uvLockfileExtractor(environment.getDirectory()));
     }
 
     // Used by three Detectables
@@ -1130,6 +1149,24 @@ public class DetectableFactory {
 
     private OpamLockFileExtractor opamLockFileExtractor(File sourceDirectory) {
         return new OpamLockFileExtractor(opamGraphTransformer(sourceDirectory));
+    }
+
+    private UVBuildExtractor uvBuildExtractor(File sourceDirectory) {
+        return new UVBuildExtractor(executableRunner, sourceDirectory, uvTreeDependencyGraphTransformer());
+    }
+
+    private UVTreeDependencyGraphTransformer uvTreeDependencyGraphTransformer() {
+        return new UVTreeDependencyGraphTransformer(externalIdFactory);
+    }
+
+    private UVLockfileExtractor uvLockfileExtractor(File sourceDirectory) {
+        PythonDependencyTransformer requirementsFileTransformer = new PythonDependencyTransformer();
+        RequirementsFileDependencyTransformer requirementsFileDependencyTransformer = new RequirementsFileDependencyTransformer();
+        return new UVLockfileExtractor(uvLockParser(), requirementsFileTransformer, requirementsFileDependencyTransformer);
+    }
+
+    private UVLockParser uvLockParser() {
+        return new UVLockParser(externalIdFactory);
     }
 
 

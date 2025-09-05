@@ -1,4 +1,4 @@
-# Bitbucket integration
+# [detect_product_short] Bitbucket integration
 [detect_product_long] consolidates several scanning utilities and tools and can be used to scan artifacts in a [Bitbucket pipeline](https://bitbucket.org/product/features/pipelines). The following procedures provide guidance on setting up [detect_product_short] with your Bitbucket continuous integration builds.
 
 ## Prerequisites

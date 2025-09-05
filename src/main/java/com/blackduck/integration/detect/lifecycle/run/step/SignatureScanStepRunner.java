@@ -8,15 +8,18 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import org.apache.http.conn.HttpHostConnectException;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
+import com.blackduck.integration.blackduck.codelocation.Result;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.ScanBatch;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.ScanBatchRunner;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.ScanCommandOutput;
@@ -32,27 +35,37 @@ import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerCo
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerReport;
 import com.blackduck.integration.detect.tool.signaturescanner.operation.SignatureScanOuputResult;
 import com.blackduck.integration.detect.tool.signaturescanner.operation.SignatureScanResult;
-import com.blackduck.integration.detect.workflow.blackduck.codelocation.CodeLocationAccumulator;
+import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.util.NameVersion;
+import com.google.gson.Gson;
 
 public class SignatureScanStepRunner {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
+    private final BlackDuckRunData blackDuckRunData;
     private final OperationRunner operationRunner;
 
-    public SignatureScanStepRunner(OperationRunner operationRunner) {
+    public SignatureScanStepRunner(OperationRunner operationRunner, BlackDuckRunData blackDuckRunData) {
         this.operationRunner = operationRunner;
+        this.blackDuckRunData = blackDuckRunData;
     }
 
-    public SignatureScannerCodeLocationResult runSignatureScannerOnline(String detectRunUuid, BlackDuckRunData blackDuckRunData, NameVersion projectNameVersion, DockerTargetData dockerTargetData, Set<String> scanIdsToWaitFor, Gson gson)
-        throws DetectUserFriendlyException, OperationException, IOException {
+    public SignatureScannerCodeLocationResult runSignatureScannerOnline(String detectRunUuid, NameVersion projectNameVersion, DockerTargetData dockerTargetData, Set<String> scanIdsToWaitFor, Gson gson)
+        throws DetectUserFriendlyException, OperationException, IOException {        
         ScanBatchRunner scanBatchRunner = resolveOnlineScanBatchRunner(blackDuckRunData);
 
         List<SignatureScanPath> scanPaths = operationRunner.createScanPaths(projectNameVersion, dockerTargetData);
-        ScanBatch scanBatch = operationRunner.createScanBatchOnline(detectRunUuid, scanPaths, projectNameVersion, dockerTargetData, blackDuckRunData);
+        ScanBatch scanBatch = operationRunner.createScanBatchOnline(detectRunUuid, scanPaths, projectNameVersion, dockerTargetData, blackDuckRunData, false);
 
         NotificationTaskRange notificationTaskRange = operationRunner.createCodeLocationRange(blackDuckRunData);
-        List<SignatureScannerReport> reports = executeScan(scanBatch, scanBatchRunner, scanPaths, scanIdsToWaitFor, gson, blackDuckRunData.shouldWaitAtScanLevel(), true);
+        List<SignatureScannerReport> reports;
+        try {
+            reports = executeScan(scanBatch, scanBatchRunner, scanPaths, scanIdsToWaitFor, gson, blackDuckRunData.shouldWaitAtScanLevel(), true);
+        } catch (HttpHostConnectException e) {
+            logger.warn("Initial Signature Scan failed due to connectivity issues. Retrying scan. Please allow the SCASS IPs to increase scanning performance.");
+            scanBatch = operationRunner.createScanBatchOnline(detectRunUuid, scanPaths, projectNameVersion, dockerTargetData, blackDuckRunData, true);
+            reports = executeScan(scanBatch, scanBatchRunner, scanPaths, scanIdsToWaitFor, gson, blackDuckRunData.shouldWaitAtScanLevel(), true);
+        }
 
         return operationRunner.calculateWaitableSignatureScannerCodeLocations(notificationTaskRange, reports);
     }
@@ -62,12 +75,12 @@ public class SignatureScanStepRunner {
             ScanBatchRunner scanBatchRunner = resolveOnlineScanBatchRunner(blackDuckRunData);
 
             List<SignatureScanPath> scanPaths = operationRunner.createScanPaths(projectNameVersion, dockerTargetData);
-            ScanBatch scanBatch = operationRunner.createScanBatchOnline(detectRunUuid, scanPaths, projectNameVersion, dockerTargetData, blackDuckRunData);
+            ScanBatch scanBatch = operationRunner.createScanBatchOnline(detectRunUuid, scanPaths, projectNameVersion, dockerTargetData, blackDuckRunData, false);
 
             SignatureScanOuputResult scanResult =  operationRunner.signatureScan(scanBatch, scanBatchRunner);
 
             // publish report/scan results to status file
-            List<SignatureScannerReport> reports = operationRunner.createSignatureScanReport(scanPaths, scanResult.getScanBatchOutput().getOutputs());
+            List<SignatureScannerReport> reports = operationRunner.createSignatureScanReport(scanPaths, scanResult.getScanBatchOutput().getOutputs(), Collections.emptySet());
             operationRunner.publishSignatureScanReport(reports);
 
             return scanResult;
@@ -82,27 +95,16 @@ public class SignatureScanStepRunner {
         executeScan(scanBatch, scanBatchRunner, scanPaths, null, null, false, false);
     }
 
-    private List<SignatureScannerReport> executeScan(ScanBatch scanBatch, ScanBatchRunner scanBatchRunner, List<SignatureScanPath> scanPaths, Set<String> scanIdsToWaitFor, Gson gson, boolean shouldWaitAtScanLevel, boolean isOnline) throws OperationException, IOException {
-        SignatureScanOuputResult scanOuputResult = operationRunner.signatureScan(scanBatch, scanBatchRunner);
-        
-        // Do not attempt to gather additional information, and parse files that are potentially not
-        // there, if we should not wait at the scan level
-        if (shouldWaitAtScanLevel && scanIdsToWaitFor != null) {
-            addScansToWaitFor(scanIdsToWaitFor, scanOuputResult, gson);
-        }
-        
-        // Check if we need to copy csv files. Only do this if the user asked for it and we are not
-        // connected to BlackDuck. If we are connected to BlackDuck the scanner is responsible for 
-        // sending the csv there.
-        if (scanBatch.isCsvArchive() && !isOnline) {
-            for (ScanCommandOutput output : scanOuputResult.getScanBatchOutput().getOutputs()) {
-                copyCsvFiles(output.getSpecificRunOutputDirectory(), operationRunner.getDirectoryManager().getCsvOutputDirectory());
-            }
-        }
+    protected List<SignatureScannerReport> executeScan(ScanBatch scanBatch, ScanBatchRunner scanBatchRunner, List<SignatureScanPath> scanPaths, Set<String> scanIdsToWaitFor, Gson gson, boolean shouldWaitAtScanLevel, boolean isOnline) throws OperationException, IOException {
+        // Step 1: Run Scan CLI
+        SignatureScanOuputResult scanOuputResult = operationRunner.signatureScan(scanBatch, scanBatchRunner);      
 
-        List<SignatureScannerReport> reports = operationRunner.createSignatureScanReport(scanPaths, scanOuputResult.getScanBatchOutput().getOutputs());
+        // Step 2: Check results and upload BDIO
+        Set<String> failedScans = processEachScan(scanIdsToWaitFor, scanOuputResult, gson, shouldWaitAtScanLevel, scanBatch.isScassScan(), isOnline, scanBatch.isCsvArchive()); 
+
+        // Step 3: Report on results
+        List<SignatureScannerReport> reports = operationRunner.createSignatureScanReport(scanPaths, scanOuputResult.getScanBatchOutput().getOutputs(), failedScans);
         operationRunner.publishSignatureScanReport(reports);
-
         return reports;
     }
 
@@ -149,27 +151,84 @@ public class SignatureScanStepRunner {
         }
         return ScanBatchRunnerUserResult.none();
     }
-    
-    private void addScansToWaitFor(Set<String> scanIdsToWaitFor, SignatureScanOuputResult signatureScanOutputResult, Gson gson) throws IOException {
+
+    private Set<String> processEachScan(Set<String> scanIdsToWaitFor, SignatureScanOuputResult signatureScanOutputResult, Gson gson, boolean shouldWaitAtScanLevel, boolean scassScan, boolean isOnline, boolean isCsvArchive) throws IOException {
         List<ScanCommandOutput> outputs = signatureScanOutputResult.getScanBatchOutput().getOutputs();
+        Set<String> failedScans = new HashSet<>();
 
         for (ScanCommandOutput output : outputs) {
-            File specificRunOutputDirectory = output.getSpecificRunOutputDirectory();
-            String scanOutputLocation = specificRunOutputDirectory.toString() + SignatureScanResult.OUTPUT_FILE_PATH;
+            if (output.getResult() != Result.SUCCESS) {
+                continue;
+            }
+            
+            // Check if we need to copy csv files. Only do this if the user asked for it and we are not
+            // connected to BlackDuck. If we are connected to BlackDuck the scanner is responsible for 
+            // sending the csv there.
+            if (isCsvArchive && !isOnline) {
+                copyCsvFiles(output.getSpecificRunOutputDirectory(), operationRunner.getDirectoryManager().getCsvOutputDirectory());
+            }
+            
+            if (isOnline) {
+                File specificRunOutputDirectory = output.getSpecificRunOutputDirectory();
+                String scanOutputLocation = specificRunOutputDirectory.toString()
+                        + SignatureScanResult.OUTPUT_FILE_PATH;
 
-            try {
-                Reader reader = Files.newBufferedReader(Paths.get(scanOutputLocation));
+                processOnlineScan(scanIdsToWaitFor, gson, shouldWaitAtScanLevel, scassScan, failedScans, output,
+                        specificRunOutputDirectory, scanOutputLocation);
+            }
+        }
+        
+        return failedScans;
+    }
 
-                SignatureScanResult result = gson.fromJson(reader, SignatureScanResult.class);
-                
+    private void processOnlineScan(Set<String> scanIdsToWaitFor, Gson gson, boolean shouldWaitAtScanLevel,
+            boolean scassScan, Set<String> failedScans, ScanCommandOutput output, File specificRunOutputDirectory,
+            String scanOutputLocation) throws IOException, HttpHostConnectException {
+        try {
+            Reader reader = Files.newBufferedReader(Paths.get(scanOutputLocation));
+
+            SignatureScanResult result = gson.fromJson(reader, SignatureScanResult.class);
+            
+            // This is a SCASS scan if we have an upload URL. We'll need to upload the BDIO.
+            // If it is not a SCASS scan skip this section as the signature scanner already uploaded
+            // the BDIO.
+            if (result.getUploadUrl() != null) {
+                ScassScanStepRunner scassScanStepRunner = new ScassScanStepRunner(blackDuckRunData);
+                String pathToBdio = specificRunOutputDirectory.toString() + "/bdio/" + result.getScanId() + ".bdio";
+                Optional<File> optionalBdio = Optional.of(new File(pathToBdio));
+
+                scassScanStepRunner.runScassScan(optionalBdio, result);
+            }
+            
+            if (shouldWaitAtScanLevel && scanIdsToWaitFor != null) {
                 scanIdsToWaitFor.addAll(result.parseScanIds());
-            } catch (NoSuchFileException e) {
-                logger.warn("Unable to find scanOutput.json file at location: " + scanOutputLocation
-                        + ". Will skip waiting for this signature scan.");
+            }
+        } catch (NoSuchFileException e) {
+            failedScans.add(output.getCodeLocationName());
+            handleNoScanStatusFile(scanIdsToWaitFor, shouldWaitAtScanLevel, scassScan, scanOutputLocation);
+        } catch (IntegrationException e) {
+            if (e.getCause() instanceof HttpHostConnectException) {
+                // The most likely cause of a failure like this is that the SCASS URLs are
+                // not accessible. Attempt a legacy scan.
+                throw (HttpHostConnectException) e.getCause();
+            } else {
+                failedScans.add(output.getCodeLocationName());
+                operationRunner.publishSignatureFailure(e.getMessage());
             }
         }
     }
-    
+
+    private void handleNoScanStatusFile(Set<String> scanIdsToWaitFor, boolean shouldWaitAtScanLevel, boolean scassScan,
+            String scanOutputLocation) {        
+        if (scassScan) {
+            String errorMessage = String.format("Unable to find scanOutput.json file at location: {}. Unable to upload BDIO to continue signature scan.", scanOutputLocation);
+            operationRunner.publishSignatureFailure(errorMessage);
+        } else if (shouldWaitAtScanLevel && scanIdsToWaitFor != null) {
+            logger.warn("Unable to find scanOutput.json file at location: " + scanOutputLocation
+                    + ". Will skip waiting for this signature scan.");
+        }
+    }
+
     private void copyCsvFiles(File sourceFolder, File destFolder) throws IOException {
         File[] files = sourceFolder.listFiles((dir, name) -> name.endsWith(".csv"));
         if (files != null) {

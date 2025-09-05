@@ -23,6 +23,9 @@ public class PackageJson {
     @SerializedName("peerDependencies")
     public Map<String, String> peerDependencies = new HashMap<>();
     
+    @SerializedName("optionalDependencies")
+    public Map<String, String> optionalDependencies = new HashMap<>();
+    
     @SerializedName("workspaces")
     public List<String> workspaces = new ArrayList<>();
 }

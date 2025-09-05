@@ -6,6 +6,7 @@ import com.blackduck.integration.detectable.ExecutableUtils;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import com.blackduck.integration.detectable.detectable.executable.DetectableExecutableRunner;
 import com.blackduck.integration.detectable.detectable.executable.ExecutableFailedException;
+import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.detectable.detectables.cargo.parse.CargoTomlParser;
 import com.blackduck.integration.detectable.detectables.cargo.transform.CargoDependencyGraphTransformer;
 import com.blackduck.integration.detectable.extraction.Extraction;
@@ -17,11 +18,14 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
+import java.util.EnumMap;
 
 public class CargoCliExtractor {
-    private static final List<String> CARGO_TREE_COMMAND = Arrays.asList("tree", "--no-dedupe", "--prefix", "depth");
+    private static final List<String> CARGO_TREE_COMMAND = Arrays.asList("tree", "--prefix", "depth");
     private final DetectableExecutableRunner executableRunner;
     private final CargoDependencyGraphTransformer cargoDependencyTransformer;
     private final CargoTomlParser cargoTomlParser;
@@ -32,11 +36,19 @@ public class CargoCliExtractor {
         this.cargoTomlParser = cargoTomlParser;
     }
 
-    public Extraction extract(File directory, ExecutableTarget cargoExe, File cargoTomlFile) throws ExecutableFailedException, IOException {
-        ExecutableOutput cargoOutput = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(directory, cargoExe, CARGO_TREE_COMMAND));
-        List<String> cargoTreeOutput = cargoOutput.getStandardOutputAsList();
+    public Extraction extract(File directory, ExecutableTarget cargoExe, File cargoTomlFile, CargoDetectableOptions cargoDetectableOptions) throws ExecutableFailedException, IOException {
+        List<String> fullTreeCommand = new LinkedList<>(CARGO_TREE_COMMAND);
 
-        DependencyGraph graph = cargoDependencyTransformer.transform(cargoTreeOutput);
+        EnumListFilter<CargoDependencyType> dependencyTypeFilter = Optional.ofNullable(cargoDetectableOptions.getDependencyTypeFilter())
+            .orElse(EnumListFilter.excludeNone());
+
+        if(!dependencyTypeFilter.shouldIncludeAll()) {
+            addEdgeExclusions(fullTreeCommand, cargoDetectableOptions);
+        }
+
+        List<String> fullTreeOutput = runCargoTreeCommand(directory, cargoExe, fullTreeCommand);
+
+        DependencyGraph graph = cargoDependencyTransformer.transform(fullTreeOutput);
 
         Optional<NameVersion> projectNameVersion = Optional.empty();
         if (cargoTomlFile != null) {
@@ -50,5 +62,32 @@ public class CargoCliExtractor {
             .success(codeLocation)
             .nameVersionIfPresent(projectNameVersion)
             .build();
+    }
+
+    private List<String> runCargoTreeCommand(File directory, ExecutableTarget cargoExe, List<String> commandArgs) throws ExecutableFailedException {
+        ExecutableOutput output = executableRunner.executeSuccessfully(
+            ExecutableUtils.createFromTarget(directory, cargoExe, commandArgs)
+        );
+        return output.getStandardOutputAsList();
+    }
+
+    private void addEdgeExclusions(List<String> cargoTreeCommand, CargoDetectableOptions options) {
+        Map<CargoDependencyType, String> exclusionMap = new EnumMap<>(CargoDependencyType.class);
+        exclusionMap.put(CargoDependencyType.NORMAL, "no-normal");
+        exclusionMap.put(CargoDependencyType.BUILD, "no-build");
+        exclusionMap.put(CargoDependencyType.DEV, "no-dev");
+        exclusionMap.put(CargoDependencyType.PROC_MACRO, "no-proc-macro");
+
+        List<String> exclusions = new LinkedList<>();
+        for (Map.Entry<CargoDependencyType, String> entry : exclusionMap.entrySet()) {
+            if (options.getDependencyTypeFilter().shouldExclude(entry.getKey())) {
+                exclusions.add(entry.getValue());
+            }
+        }
+
+        if (!exclusions.isEmpty()) {
+            cargoTreeCommand.add("--edges");
+            cargoTreeCommand.add(String.join(",", exclusions));
+        }
     }
 }

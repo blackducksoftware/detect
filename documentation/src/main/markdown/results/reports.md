@@ -1,10 +1,12 @@
-# Risk Report Generation
+# Risk Report generation via [detect_product_short]
 
-[detect_product_long] can generate a [bd_product_long] risk report in PDF format.
+[detect_product_long] can generate a [bd_product_long] risk report in PDF and JSON format.
 [detect_product_short] looks for risk report generation details in the properties whose names start with detect.risk.report, including:
 
-* detect.risk.report.pdf (enable report generation by setting to "true")
-* detect.risk.report.pdf.path (path where the generated report will be located)
+* detect.risk.report.pdf (enable report generation in pdf format by setting to "true")
+* detect.risk.report.pdf.path (path where the generated pdf report will be located)
+* detect.risk.report.json (enable report generation in json format by setting to "true")
+* detect.risk.report.json.path (path where the generated json report will be located)
 
 ## Fonts
 

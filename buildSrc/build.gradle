@@ -6,7 +6,7 @@ buildscript {
     }
 
     apply from: 'https://raw.githubusercontent.com/blackducksoftware/integration-resources/master/gradle_common/buildscript-repositories.gradle', to: buildscript
-    project.ext { managedCgpVersion = '2.1.1' }
+    apply from: 'https://raw.githubusercontent.com/blackducksoftware/integration-resources/master/gradle_common/buildscript-cgp-version.gradle'
 
     dependencies {
         classpath "com.blackduck.integration:common-gradle-plugin:${managedCgpVersion}"
@@ -31,6 +31,10 @@ final def internalRepoHost = System.getenv('SNPS_INTERNAL_ARTIFACTORY')
 
 repositories {
     maven { url "${internalRepoHost}/artifactory/jcenter" }
+
+    maven {
+        url "${internalRepoHost}/artifactory/bds-integrations-snapshot"
+    }
 }
 
 dependencies {

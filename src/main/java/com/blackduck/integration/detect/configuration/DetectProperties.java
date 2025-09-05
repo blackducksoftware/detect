@@ -8,9 +8,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import com.blackduck.integration.blackduck.api.generated.enumeration.PolicyRuleSeverityType;
 import com.blackduck.integration.blackduck.api.generated.enumeration.ProjectCloneCategoriesType;
@@ -46,7 +46,6 @@ import com.blackduck.integration.configuration.property.types.string.StringPrope
 import com.blackduck.integration.detect.configuration.enumeration.BlackduckScanMode;
 import com.blackduck.integration.detect.configuration.enumeration.DetectCategory;
 import com.blackduck.integration.detect.configuration.enumeration.DetectGroup;
-import com.blackduck.integration.detect.configuration.enumeration.DetectMajorVersion;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTargetType;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
 import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
@@ -55,6 +54,7 @@ import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedRedu
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedSnippetMode;
 import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDependencyType;
+import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
 import com.blackduck.integration.detectable.detectables.conan.cli.config.ConanDependencyType;
 import com.blackduck.integration.detectable.detectables.dart.pubdep.DartPubDependencyType;
 import com.blackduck.integration.detectable.detectables.go.gomod.GoModDependencyType;
@@ -609,6 +609,17 @@ public class DetectProperties {
             .setGroups(DetectGroup.DART, DetectGroup.GLOBAL)
             .build();
 
+    public static final NoneEnumListProperty<CargoDependencyType> DETECT_CARGO_DEPENDENCY_TYPES_EXCLUDED =
+        NoneEnumListProperty.newBuilder("detect.cargo.dependency.types.excluded", NoneEnum.NONE, CargoDependencyType.class)
+            .setInfo("Cargo Dependency Types Excluded", DetectPropertyFromVersion.VERSION_10_6_0)
+            .setHelp(
+                "A comma-separated list of dependency types that will be excluded.",
+                "The Cargo CLI Detector uses cargo tree flags to exclude the specified types, while the Cargo Lockfile Detector filters dependencies by reading Cargo.toml. For example, passing `detect.cargo.dependency.types.excluded=DEV` will skip [dev-dependencies] from detection."
+            )
+            .setExample(CargoDependencyType.DEV.name())
+            .setGroups(DetectGroup.CARGO, DetectGroup.DETECTOR, DetectGroup.GLOBAL)
+            .build();
+
     public static final NoneEnumListProperty<PipenvDependencyType> DETECT_PIPFILE_DEPENDENCY_TYPES_EXCLUDED =
         NoneEnumListProperty.newBuilder("detect.pipfile.dependency.types.excluded", NoneEnum.NONE, PipenvDependencyType.class)
             .setInfo("Pipfile Dependency Types Excluded", DetectPropertyFromVersion.VERSION_7_13_0)
@@ -659,7 +670,7 @@ public class DetectProperties {
             .setInfo("Diagnostic Mode", DetectPropertyFromVersion.VERSION_6_5_0)
             .setHelp(
                 "When enabled, diagnostic mode collects files valuable for troubleshooting (logs, BDIO file, extraction files, reports, etc.), writes them to a zip file, and logs the path to the zip file.",
-                "See the following for more <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/integrations%2Ddetect/page/troubleshooting/diagnosticmode%2Ehtml\" scope=\"external\" format=\"html\" target=\"_blank\">Diagnostic Mode information.</xref>")
+                "See the following for more <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/troubleshooting/diagnosticmode%2Ehtml\" scope=\"external\" format=\"html\" target=\"_blank\">Diagnostic Mode information.</xref>")
             .setGroups(DetectGroup.DEBUG, DetectGroup.GLOBAL)
             .build(); 
 
@@ -1220,7 +1231,7 @@ public class DetectProperties {
     public static final NoneEnumListProperty<NugetDependencyType> DETECT_NUGET_DEPENDENCY_TYPES_EXCLUDED =
         NoneEnumListProperty.newBuilder("detect.nuget.dependency.types.excluded", NoneEnum.NONE, NugetDependencyType.class)
             .setInfo("Nuget Dependency Types Excluded", DetectPropertyFromVersion.VERSION_9_4_0)
-            .setHelp(createTypeFilterHelpText("Nuget dependency types"), "This property supports exclusion of dependencies in projects that use PackageReference or packages.config. This property does not apply to scans that analyze project.json, project.lock.json or project.assets.json.")
+            .setHelp(createTypeFilterHelpText("Nuget dependency types"), "This property supports exclusion of dependencies in projects that use PackageReference, packages.config, project.lock.json or project.assets.json. This property does not apply to scans that analyze project.json.")
             .setExample(String.format("%s", NugetDependencyType.DEV.name()))
             .setGroups(DetectGroup.NUGET, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
@@ -1391,6 +1402,14 @@ public class DetectProperties {
                 "A comma-separated list of policy names with a non-zero number of violations that will fail Detect.",
                 "If left unset, Detect will not fail due to violated policies of a certain name. This property does not change the behavior of detect.policy.check.fail.on.severities."
             )
+            .setGroups(DetectGroup.PROJECT, DetectGroup.GLOBAL, DetectGroup.PROJECT_SETTING, DetectGroup.POLICY)
+            .build();
+    
+    public static final AllNoneEnumListProperty<PolicyRuleSeverityType> DETECT_STATELESS_POLICY_CHECK_FAIL_ON_SEVERITIES =
+        AllNoneEnumListProperty.newBuilder("detect.stateless.policy.check.fail.on.severities", Arrays.asList(PolicyRuleSeverityType.BLOCKER, PolicyRuleSeverityType.CRITICAL), PolicyRuleSeverityType.class)
+            .setInfo("Fail on Stateless Policy Violation Severities", DetectPropertyFromVersion.VERSION_10_6_0)
+            .setHelp(
+                "A comma-separated list of policy violation severities that will fail Detect. If this is set to NONE, Detect will not fail due to policy violations. A value of ALL is equivalent to all of the other possible values except NONE. This property works for both stateless and rapid scans.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.GLOBAL, DetectGroup.PROJECT_SETTING, DetectGroup.POLICY)
             .build();
 
@@ -1606,6 +1625,13 @@ public class DetectProperties {
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
             .build();
 
+    public static final BooleanProperty DETECT_PROJECT_DEEP_LICENSE =
+        BooleanProperty.newBuilder("detect.project.deep.license", false)
+            .setInfo("Deep License Analysis", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setHelp("If set to true, enables Deep License Analysis for the project, including detailed license data and snippet analysis.")
+            .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
+            .build();
+
     public static final NullablePathProperty DETECT_PYTHON_PATH =
         NullablePathProperty.newBuilder("detect.python.path")
             .setInfo("Python Executable", DetectPropertyFromVersion.VERSION_3_0_0)
@@ -1631,12 +1657,26 @@ public class DetectProperties {
             .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL, DetectGroup.REPORT_SETTING)
             .build();
 
+    public static final BooleanProperty DETECT_RISK_REPORT_JSON =
+            BooleanProperty.newBuilder("detect.risk.report.json", false)
+                    .setInfo("Generate Risk Report (JSON)", DetectPropertyFromVersion.VERSION_10_6_0)
+                    .setHelp("When set to true, a Black Duck risk report in JSON form will be created.")
+                    .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL, DetectGroup.REPORT_SETTING)
+                    .build();
+
     public static final NullablePathProperty DETECT_RISK_REPORT_PDF_PATH =
         NullablePathProperty.newBuilder("detect.risk.report.pdf.path")
-            .setInfo("Risk Report Output Path", DetectPropertyFromVersion.VERSION_3_0_0)
+            .setInfo("Risk Report (PDF) Output Path", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp("The output directory for risk report in PDF. Default is the source directory.")
             .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL)
             .build();
+
+    public static final NullablePathProperty DETECT_RISK_REPORT_JSON_PATH =
+            NullablePathProperty.newBuilder("detect.risk.report.json.path")
+                    .setInfo("Risk Report (JSON) Output Path", DetectPropertyFromVersion.VERSION_10_6_0)
+                    .setHelp("The output directory for risk report in JSON. Default is the source directory.")
+                    .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL)
+                    .build();
 
     public static final NoneEnumListProperty<GemspecDependencyType> DETECT_RUBY_DEPENDENCY_TYPES_EXCLUDED =
         NoneEnumListProperty.newBuilder("detect.ruby.dependency.types.excluded", NoneEnum.NONE, GemspecDependencyType.class)
@@ -1762,6 +1802,45 @@ public class DetectProperties {
             .setGroups(DetectGroup.PATHS, DetectGroup.GLOBAL)
             .build();
 
+    public static final NullablePathProperty DETECT_UV_PATH =
+            NullablePathProperty.newBuilder("detect.uv.path")
+                    .setInfo("uv Executable", DetectPropertyFromVersion.VERSION_10_5_0)
+                    .setHelp("The path to the uv executable.")
+                    .setGroups(DetectGroup.UV, DetectGroup.GLOBAL)
+                    .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_UV_DEPENDENCY_GROUPS_EXCLUDED =
+            CaseSensitiveStringListProperty.newBuilder("detect.uv.dependency.groups.excluded")
+                    .setInfo("uv dependency groups", DetectPropertyFromVersion.VERSION_10_5_0)
+                    .setHelp(
+                            createTypeFilterHelpText("UV dependency groups"),
+                            "When specified, a pyproject.toml file and uv executable are required, or pyproject.toml file and either uv.lock or requirements.txt file are required. Components and related dependencies that belong to excluded groups will not be in the BOM unless the component also belongs to a non-excluded group. For example, to recursively exclude all components under the `[dependency-groups]` section of `pyproject.toml`: `detect.uv.dependency.groups.excluded='dev,abc'`"
+                    )
+                    .setGroups(DetectGroup.UV, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
+                    .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_UV_EXCLUDED_WORKSPACE_MEMBERS =
+            CaseSensitiveStringListProperty.newBuilder("detect.uv.excluded.workspace.members")
+                    .setInfo("uv Exclude Workspace Members", DetectPropertyFromVersion.VERSION_10_5_0)
+                    .setHelp(
+                            "A comma-separated list of uv workspace members to exclude.",
+                            "If set, Detect will only exclude those project members specified via this property when examining the uv project for dependencies."
+                    )
+                    .setGroups(DetectGroup.UV, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_UV_INCLUDED_WORKSPACE_MEMBERS =
+            CaseSensitiveStringListProperty.newBuilder("detect.uv.included.workspace.members")
+                    .setInfo("uv Include Workspace Members", DetectPropertyFromVersion.VERSION_10_5_0)
+                    .setHelp(
+                            "A comma-separated list of uv workspace members to include.",
+                            "If set, Detect will only include those uv workspace members specified via this property when examining the uv project for dependencies, unless the member is set for exclusion. Exclusion rules take precedence over inclusion. Leaving this property unset implies 'include all'."
+                    )
+                    .setGroups(DetectGroup.UV, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
+
     public static final BooleanProperty DETECT_YARN_IGNORE_ALL_WORKSPACES_MODE =
         BooleanProperty.newBuilder("detect.yarn.ignore.all.workspaces", false)
             .setInfo("Ignore All Workspaces", DetectPropertyFromVersion.VERSION_9_4_0)
@@ -1864,8 +1943,8 @@ public class DetectProperties {
         EnumProperty.newBuilder("detect.blackduck.rapid.compare.mode", RapidCompareMode.ALL, RapidCompareMode.class)
             .setInfo("Rapid Compare Mode", DetectPropertyFromVersion.VERSION_7_12_0)
             .setHelp(
-                "Controls how rapid scan evaluates policy rules",
-                "Set the compare mode of rapid scan. ALL evaluates all RAPID or FULL policies. BOM_COMPARE_STRICT will only show policy violations not present in an existing project version BOM. BOM_COMPARE depends on the type of policy rule modes and behaves like ALL if the policy rule is only RAPID but like BOM_COMPARE_STRICT when the policy rule is RAPID and FULL. See the Black Duck documentation for complete details."
+                "Controls how Rapid Scan evaluates policy rules.",
+                "Sets the compare mode of Rapid Scan. A setting of ALL evaluates all RAPID or FULL policies. BOM_COMPARE_STRICT shows policy violations not present in a project version BOM that exists in Black Duck SCA. BOM_COMPARE depends on the type of policy rule modes and behaves like ALL if the policy rule is only RAPID and like BOM_COMPARE_STRICT when the policy rule is RAPID and FULL. For further explanation, please refer to <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/runningdetect/rapidscan%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Rapid Scan.</xref>"
             )
             .setGroups(DetectGroup.RAPID_SCAN, DetectGroup.BLACKDUCK_SERVER, DetectGroup.BLACKDUCK, DetectGroup.GLOBAL)
             .setCategory(DetectCategory.Advanced)
@@ -1902,29 +1981,6 @@ public class DetectProperties {
 
     //#region Deprecated Properties
 
-    public static final BooleanProperty DETECT_PROJECT_CODELOCATION_UNMAP =
-        BooleanProperty.newBuilder("detect.project.codelocation.unmap", false)
-            .setInfo("Unmap All Other Scans for Project", DetectPropertyFromVersion.VERSION_4_0_0)
-            .setHelp("If set to true, unmaps all other scans mapped to the project version produced by the current run of Detect.")
-            .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
-            .setCategory(DetectCategory.Advanced)
-            .setDeprecated(
-                "This property has been deprecated.",
-                DetectMajorVersion.ELEVEN
-            )
-            .build();
-
-    @Deprecated
-    public static final NullableStringProperty DETECT_THREAT_INTEL_SCAN_FILE =
-            NullableStringProperty.newBuilder("detect.threatintel.scan.file.path")
-                    .setInfo("Threat Intel Scan Target", DetectPropertyFromVersion.VERSION_9_6_0)
-                    .setHelp(
-                            "If specified, this file and this file only will be uploaded for Threat Intel analysis. The THREAT_INTEL tool does not provide project and version name defaults to Detect, so you need to set project and version names via properties when only the THREAT_INTEL tool is invoked.")
-                    .setGroups(DetectGroup.THREAT_INTEL, DetectGroup.SOURCE_PATH)
-                    .setDeprecated("This property has been deprecated.",
-                            DetectMajorVersion.ELEVEN)
-                    .build();
-
     // Can't take in the DetectProperty<?> due to an illegal forward reference :(
     private static String createTypeFilterHelpText(String exclusionTypePlural) {
         return String.format("Set this value to indicate which %s Detect should exclude from the BOM.", exclusionTypePlural);
@@ -1945,9 +2001,6 @@ public class DetectProperties {
                 }
             }
         }
-        DETECT_TOOLS.addDeprecatedValueInfo(DetectTool.THREAT_INTEL.name(), "This tool value has been deprecated.");
-        DETECT_TOOLS_EXCLUDED.addDeprecatedValueInfo(DetectTool.THREAT_INTEL.name(), "This tool value has been deprecated.");
-        DETECT_PROJECT_TOOL.addDeprecatedValueInfo(DetectTool.THREAT_INTEL.name(), "This tool value has been deprecated.");
 
         return new Properties(properties);
     }

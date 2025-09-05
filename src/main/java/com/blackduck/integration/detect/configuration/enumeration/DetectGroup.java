@@ -36,8 +36,6 @@ public enum DetectGroup implements Group {
     CONTAINER_SCANNER("container scanner"),
     IMPACT_ANALYSIS("impact analysis"),
     IAC_SCAN("iac scan"),
-    @Deprecated
-    THREAT_INTEL("threat intel"),
 
     //Detector Groups
     BAZEL("bazel", DETECTORS),
@@ -66,6 +64,7 @@ public enum DetectGroup implements Group {
     SWIFT("swift", DETECTORS),
     YARN("yarn", DETECTORS),
     OPAM("opam", DETECTORS),
+    UV("uv", DETECTORS),
 
     //Additional groups (should not be used as a primary group
     BLACKDUCK("blackduck"),

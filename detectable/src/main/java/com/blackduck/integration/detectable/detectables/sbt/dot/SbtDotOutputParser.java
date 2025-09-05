@@ -30,8 +30,8 @@ public class SbtDotOutputParser {
 
     @Nullable
     private String parseDotGraphFromLine(String line) {
-        final String DOT_PREFIX = "[info] Wrote dependency graph to '";
-        if (line.startsWith(DOT_PREFIX)) {
+        final String DOT_PREFIX = "Wrote dependency graph to '";
+        if (line.contains(DOT_PREFIX)) {
             final String DOT_SUFFIX = "'";
             return StringUtils.substringBetween(line, DOT_PREFIX, DOT_SUFFIX);
         } else {

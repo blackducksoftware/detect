@@ -1,4 +1,4 @@
-# Current Release notes
+# Current [detect_product_short] release notes
 
 **Notices**   
 
@@ -18,23 +18,17 @@
 	* eu.store.scass.blackduck.com - 34.54.213.11
 	* eu.scass.blackduck.com - 34.54.38.252
 
-## Version 10.4.0
+## Version 11.0.0
 
 ### New features
 
-* Support for Conda has been extended to 25.1.1.
-* Cargo CLI Detector, leveraging `cargo tree` to extract direct and transitive dependencies, improving accuracy over the previous flat lockfile detection. This build-based detector is triggered for Cargo projects with a `Cargo.toml` file and requires Cargo version **1.44.0+**. For further information, see [Cargo package manager support](packagemgrs/cargo.md).
-* Added property [detect.cargo.path](properties/detectors/cargo.md) to allow user specification of a custom Cargo executable path.   
-* New `detect.pnpm.included.packages` and `detect.pnpm.excluded.packages` properties for pnpm provide increased control over what directories [detect_product_short] scans under a pnpm project. See the [pnpm](properties/detectors/pnpm.html) property page for more information.
+* When enabled, the new `detect.project.deep.license` property sets the Deep License Data and Deep License Data Snippet fields when creating a project. This property can also be used to update existing projects when the `detect.project.version.update` property is set to true.
 
 ### Changed features
 
-* If the URL configured for SCA Scan Service (SCASS) is inaccessible when [detect_product_short] attempts a binary or container scan, [detect_product_short] will retry the scan without using SCASS.
-	* See [bd_product_long] SCA Scan Service (SCASS) notice above for information pertaining to IP addresses that require allow listing.
-* ReversingLabs Scans (`detect.tools=THREAT_INTEL`) has been deprecated.
-* The `detect.threatintel.scan.file.path` property has been deprecated. 
-* [detect_product_short] will now return a unique error code `code 16 - FAILURE_OUT_OF_MEMORY` when sub processes experience "Out of memory" issues.
-* PIP Native Inspector now supports Python 3.12+.
+* ReversingLabs Scans (`detect.tools=THREAT_INTEL`) has been removed.
+* The `detect.threatintel.scan.file.path` property has been removed.
+* The `detect.project.codelocation.unmap` property has been removed.
 
 ### Resolved issues
 
@@ -45,5 +39,8 @@
 * (IDETECT-4467) - Resolved an issue where [detect_product_short] would exit with a 0 (zero) success code despite dependency requirements not being met for PIP Native Inspector.
 	* The PIP Native Inspector will yield to other detectors when it cannot resolve an expected dependency from the PIP cache.
 * (IDETECT-4738) Corrected behaviour of detect.binary.scan.file.name.patterns to be case-insensitive. 
+* (IDETECT-4802) Fix UV Lockfile Detector not generating BDIOs for projects with non-normalized names per Python requirements.
+
 ### Dependency updates
-* Upgraded and released Detect Docker Inspector version 11.2.0.
+
+* 

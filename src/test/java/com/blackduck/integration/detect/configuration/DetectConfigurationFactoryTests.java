@@ -1,30 +1,30 @@
 package com.blackduck.integration.detect.configuration;
 
 import static com.blackduck.integration.detect.configuration.DetectConfigurationFactoryTestUtils.factoryOf;
-import static com.blackduck.integration.detect.configuration.DetectConfigurationFactoryTestUtils.spyFactoryOf;
 import static com.blackduck.integration.detect.configuration.DetectConfigurationFactoryTestUtils.scanSettingsFactoryOf;
+import static com.blackduck.integration.detect.configuration.DetectConfigurationFactoryTestUtils.spyFactoryOf;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.Collections;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-import com.blackduck.integration.detect.configuration.connection.BlackDuckConnectionDetails;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import com.blackduck.integration.blackduck.api.generated.enumeration.ProjectCloneCategoriesType;
+import com.blackduck.integration.blackduck.version.BlackDuckVersion;
 import com.blackduck.integration.common.util.Bdo;
-import com.blackduck.integration.detect.configuration.DetectConfigurationFactory;
-import com.blackduck.integration.detect.configuration.DetectProperties;
-import com.blackduck.integration.detect.configuration.DetectUserFriendlyException;
+import com.blackduck.integration.detect.configuration.connection.BlackDuckConnectionDetails;
 import com.blackduck.integration.detect.configuration.enumeration.BlackduckScanMode;
 import com.blackduck.integration.detect.configuration.enumeration.DefaultDetectorSearchExcludedDirectories;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
 import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
 import com.blackduck.integration.detect.tool.signaturescanner.BlackDuckSignatureScannerOptions;
+import com.blackduck.integration.detect.workflow.blackduck.project.options.ProjectSyncOptions;
 import com.blackduck.integration.rest.credentials.Credentials;
 
 public class DetectConfigurationFactoryTests {
@@ -155,5 +155,89 @@ public class DetectConfigurationFactoryTests {
 
         Assertions.assertTrue(blackduckUrlString.isPresent());
         blackduckUrlString.ifPresent(str -> Assertions.assertEquals(str, blackduckUserUrl));
+    }
+    
+    @Test
+    public void testAllCloneCategories() {
+        DetectConfigurationFactory factory = factoryOf(Pair.of(DetectProperties.DETECT_PROJECT_CLONE_CATEGORIES, "ALL"));
+
+        BlackDuckVersion minVersion = new BlackDuckVersion(2023, 10, 0);
+        Optional<BlackDuckVersion> serverVersion = Optional.of(minVersion);
+
+        ProjectSyncOptions projectSyncOptions = factory.createDetectProjectServiceOptions(serverVersion);
+
+        List<ProjectCloneCategoriesType> cloneCategories = projectSyncOptions.getCloneCategories();
+
+        Assertions.assertTrue(cloneCategories == null);
+    }
+
+    @Test
+    public void testNoCloneCategories() {
+        DetectConfigurationFactory factory = factoryOf(Pair.of(DetectProperties.DETECT_PROJECT_CLONE_CATEGORIES, "NONE"));
+
+        BlackDuckVersion minVersion = new BlackDuckVersion(2023, 10, 0);
+        Optional<BlackDuckVersion> serverVersion = Optional.of(minVersion);
+
+        ProjectSyncOptions projectSyncOptions = factory.createDetectProjectServiceOptions(serverVersion);
+
+        List<ProjectCloneCategoriesType> cloneCategories = projectSyncOptions.getCloneCategories();
+
+        Assertions.assertTrue(cloneCategories.isEmpty()); 
+    }
+
+    @Test
+    public void testSpecificCloneCategories() {
+        DetectConfigurationFactory factory = factoryOf(
+                Pair.of(DetectProperties.DETECT_PROJECT_CLONE_CATEGORIES, 
+                        ProjectCloneCategoriesType.CUSTOM_FIELD_DATA.toString() 
+                        + "," 
+                        + ProjectCloneCategoriesType.DEEP_LICENSE.toString()
+                ));
+
+        BlackDuckVersion minVersion = new BlackDuckVersion(2023, 10, 0);
+        Optional<BlackDuckVersion> serverVersion = Optional.of(minVersion);
+
+        ProjectSyncOptions projectSyncOptions = factory.createDetectProjectServiceOptions(serverVersion);
+
+        List<ProjectCloneCategoriesType> cloneCategories = projectSyncOptions.getCloneCategories();
+
+        Assertions.assertTrue(cloneCategories.contains(ProjectCloneCategoriesType.CUSTOM_FIELD_DATA));
+        Assertions.assertTrue(cloneCategories.contains(ProjectCloneCategoriesType.DEEP_LICENSE));
+    }
+
+    @Test
+    public void testDeepLicenseEnabledTrue() {
+        DetectConfigurationFactory factory = factoryOf(Pair.of(DetectProperties.DETECT_PROJECT_DEEP_LICENSE, "true"));
+
+        BlackDuckVersion minVersion = new BlackDuckVersion(2023, 10, 0);
+        Optional<BlackDuckVersion> serverVersion = Optional.of(minVersion);
+
+        ProjectSyncOptions projectSyncOptions = factory.createDetectProjectServiceOptions(serverVersion);
+
+        Assertions.assertTrue(projectSyncOptions.isDeepLicenseEnabled());
+    }
+
+    @Test
+    public void testDeepLicenseEnabledFalse() {
+        DetectConfigurationFactory factory = factoryOf(Pair.of(DetectProperties.DETECT_PROJECT_DEEP_LICENSE, "false"));
+
+        BlackDuckVersion minVersion = new BlackDuckVersion(2023, 10, 0);
+        Optional<BlackDuckVersion> serverVersion = Optional.of(minVersion);
+
+        ProjectSyncOptions projectSyncOptions = factory.createDetectProjectServiceOptions(serverVersion);
+
+        Assertions.assertFalse(projectSyncOptions.isDeepLicenseEnabled());
+    }
+
+    @Test
+    public void testDeepLicenseDefaultValue() {
+        DetectConfigurationFactory factory = factoryOf();
+
+        BlackDuckVersion minVersion = new BlackDuckVersion(2023, 10, 0);
+        Optional<BlackDuckVersion> serverVersion = Optional.of(minVersion);
+
+        ProjectSyncOptions projectSyncOptions = factory.createDetectProjectServiceOptions(serverVersion);
+
+        Assertions.assertFalse(projectSyncOptions.isDeepLicenseEnabled());
     }
 }

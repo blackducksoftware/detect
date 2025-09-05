@@ -21,7 +21,7 @@
 
 * Discovers dependencies of Maven projects by executing mvn commands.
 
-* Will run on your project if it finds a pom.xml file in the top level source directory and requires either `mvnw` or `mvn`.
+* Will run on your project if it finds any file matching the pattern *pom.xml in the top level source directory and requires either `mvnw` or `mvn`.
 
 1. [detect_product_short] looks for `mvnw` in the source directory (top level). You can override this by setting the Maven path property.  
 1.  If `mvnw` path is not overridden and `mvnw` is not found:[detect_product_short] looks for mvn on $PATH.

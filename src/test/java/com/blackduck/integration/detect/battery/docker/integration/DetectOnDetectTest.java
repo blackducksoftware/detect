@@ -7,25 +7,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
 
-import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junitpioneer.jupiter.TempDirectory;
 
-import com.blackduck.integration.blackduck.service.model.ProjectVersionWrapper;
 import com.blackduck.integration.detect.battery.docker.provider.BuildDockerImageProvider;
 import com.blackduck.integration.detect.battery.docker.util.DetectCommandBuilder;
 import com.blackduck.integration.detect.battery.docker.util.DetectDockerTestRunner;
 import com.blackduck.integration.detect.battery.docker.util.DockerAssertions;
 import com.blackduck.integration.detect.configuration.DetectProperties;
-import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
-import com.blackduck.integration.detect.workflow.blackduck.report.service.ReportService;
 import com.blackduck.integration.exception.IntegrationException;
 
 @Tag("integration")
@@ -82,64 +74,6 @@ public class DetectOnDetectTest {
         }
     }
 
-    @Test
-    //Simply verify a risk report is generated at the expected location.
-    public void riskReportResultProduced() throws Exception {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("detect-on-detect-riskreport-default", "detect-7.1.0:1.0.0")) {
-            test.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("Detect-7.1.0.dockerfile"));
-
-            BlackDuckTestConnection blackDuckTestConnection = BlackDuckTestConnection.fromEnvironment();
-            BlackDuckAssertions blackDuckAssertions = blackDuckTestConnection.projectVersionAssertions("detect-junit", "risk-report-default");
-            blackDuckAssertions.emptyOnBlackDuck();
-
-            DetectCommandBuilder commandBuilder = new DetectCommandBuilder().defaults().defaultDirectories(test);
-            commandBuilder.connectToBlackDuck(blackDuckTestConnection);
-            commandBuilder.projectNameVersion(blackDuckAssertions.getProjectNameVersion());
-            commandBuilder.property(DetectProperties.DETECT_RISK_REPORT_PDF, "true");
-            commandBuilder.property(DetectProperties.DETECT_TIMEOUT, "1200");
-            commandBuilder.tools(DetectTool.DETECTOR);
-
-            DockerAssertions dockerAssertions = test.run(commandBuilder);
-            dockerAssertions.resultProducedAtLocation("/opt/project/src/detect_junit_risk_report_default_BlackDuck_RiskReport.pdf");
-        }
-    }
-
-    @Test
-    //Tests that a new project has an empty report, run detect to fill it, tests the report is filled, in a custom location
-    public void riskReportPopulatedAtCustomPath() throws Exception {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("detect-on-detect-riskreport-custom", "detect-7.1.0:1.0.0")) {
-            test.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("Detect-7.1.0.dockerfile"));
-
-            BlackDuckTestConnection blackDuckTestConnection = BlackDuckTestConnection.fromEnvironment();
-            ReportService reportService = blackDuckTestConnection.createReportService();
-
-            BlackDuckAssertions blackDuckAssertions = blackDuckTestConnection.projectVersionAssertions("detect-junit", "risk-report-custom");
-            ProjectVersionWrapper projectVersionWrapper = blackDuckAssertions.emptyOnBlackDuck();
-
-            String reportDirectoryImagePath = "/opt/report";
-            File reportDirectory = test.directories().createResultDirectory("report");
-            test.directories().withBinding(reportDirectory, reportDirectoryImagePath);
-
-            long initialFileLength = assertEmptyRiskReport(reportDirectory, projectVersionWrapper, reportService);
-
-            DetectCommandBuilder commandBuilder = new DetectCommandBuilder().defaults().defaultDirectories(test);
-            commandBuilder.connectToBlackDuck(blackDuckTestConnection);
-            commandBuilder.projectNameVersion(blackDuckAssertions.getProjectNameVersion());
-            commandBuilder.property(DetectProperties.DETECT_RISK_REPORT_PDF, "true");
-            commandBuilder.property(DetectProperties.DETECT_TIMEOUT, "1200");
-            commandBuilder.property(DetectProperties.DETECT_RISK_REPORT_PDF_PATH, reportDirectoryImagePath);
-            commandBuilder.tools(DetectTool.DETECTOR);
-
-            DockerAssertions dockerAssertions = test.run(commandBuilder);
-            dockerAssertions.resultProducedAtLocation("/opt/report/detect_junit_risk_report_custom_BlackDuck_RiskReport.pdf");
-
-            List<File> pdfFiles = getPdfFiles(reportDirectory);
-            assertEquals(1, pdfFiles.size());
-            long postLength = pdfFiles.get(0).length();
-            assertTrue(postLength > initialFileLength);
-        }
-    }
-
 //    @Test
     public void testRunWithAutonomousEnabled() throws Exception {
         try (DetectDockerTestRunner test = new DetectDockerTestRunner("autonomous-scan-test", "detect-9.8.0:1.0.0")) {
@@ -161,32 +95,6 @@ public class DetectOnDetectTest {
             dockerAssertions.bdioFiles(1); //7 code locations, 6 bdio, 1 signature scanner
             dockerAssertions.locateScanSettingsFile();
             blackduckAssertions.hasComponents("jackson-core");
-        }
-    }
-
-    private long assertEmptyRiskReport(File reportDirectory, ProjectVersionWrapper projectVersionWrapper, ReportService reportService) throws IntegrationException {
-        List<File> pdfFiles = getPdfFiles(reportDirectory);
-        assertEquals(0, pdfFiles.size());
-        File riskReportPdf = reportService.createReportPdfFile(reportDirectory, projectVersionWrapper.getProjectView(), projectVersionWrapper.getProjectVersionView());
-        pdfFiles = getPdfFiles(reportDirectory);
-        assertEquals(1, pdfFiles.size());
-        long initialFileLength = pdfFiles.get(0).length();
-        assertTrue(initialFileLength > 0);
-        FileUtils.deleteQuietly(pdfFiles.get(0));
-        pdfFiles = getPdfFiles(reportDirectory);
-        assertEquals(0, pdfFiles.size());
-
-        return initialFileLength;
-    }
-
-    private List<File> getPdfFiles(File directory) {
-        File[] files = directory.listFiles();
-        if (files != null) {
-            return Arrays.stream(files)
-                .filter(file -> file.getName().endsWith(".pdf"))
-                .collect(Collectors.toList());
-        } else {
-            return Collections.emptyList();
         }
     }
 

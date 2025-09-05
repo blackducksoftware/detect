@@ -1,6 +1,7 @@
 package com.blackduck.integration.detect.tool.signaturescanner.operation;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 import org.jetbrains.annotations.Nullable;
@@ -11,19 +12,20 @@ import com.blackduck.integration.blackduck.codelocation.signaturescanner.ScanBat
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.ScanBatchBuilder;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.ScanTarget;
 import com.blackduck.integration.blackduck.configuration.BlackDuckServerConfig;
-import com.blackduck.integration.blackduck.version.BlackDuckVersion;
 import com.blackduck.integration.detect.configuration.DetectUserFriendlyException;
 import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.data.DockerTargetData;
 import com.blackduck.integration.detect.tool.signaturescanner.BlackDuckSignatureScannerOptions;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScanPath;
+import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerVersion;
 import com.blackduck.integration.detect.workflow.codelocation.CodeLocationNameManager;
 import com.blackduck.integration.detect.workflow.file.DirectoryManager;
 import com.blackduck.integration.util.NameVersion;
 
 public class CreateScanBatchOperation {
-    private static final BlackDuckVersion MIN_CSV_ARCHIVE_VERSION = new BlackDuckVersion(2025, 1, 0);
+    private static final SignatureScannerVersion MIN_CSV_ARCHIVE_VERSION = new SignatureScannerVersion(2025, 1, 0);
+    private static final SignatureScannerVersion MIN_SCASS_VERSION = new SignatureScannerVersion(1, 0, 1);
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final BlackDuckSignatureScannerOptions signatureScannerOptions;
     private final DirectoryManager directoryManager;
@@ -40,10 +42,11 @@ public class CreateScanBatchOperation {
         NameVersion projectNameVersion,
         List<SignatureScanPath> signatureScanPaths,
         BlackDuckRunData blackDuckRunData,
-        @Nullable DockerTargetData dockerTargetData
+        @Nullable DockerTargetData dockerTargetData, 
+        boolean isScassFallback
     )
         throws DetectUserFriendlyException {
-        return createScanBatch(detectRunUuid, projectNameVersion, signatureScanPaths, blackDuckRunData, dockerTargetData);
+        return createScanBatch(detectRunUuid, projectNameVersion, signatureScanPaths, blackDuckRunData, dockerTargetData, isScassFallback);
     }
 
     public ScanBatch createScanBatchWithoutBlackDuck(
@@ -54,7 +57,7 @@ public class CreateScanBatchOperation {
     )
         throws DetectUserFriendlyException {
         //when offline, we must still call this with 'null' as a workaround for library issues, so offline scanner must be created with this set to null.
-        return createScanBatch(detectRunUuid, projectNameVersion, signatureScanPaths, null, dockerTargetData);
+        return createScanBatch(detectRunUuid, projectNameVersion, signatureScanPaths, null, dockerTargetData, false);
     }
 
     private ScanBatch createScanBatch(
@@ -62,7 +65,8 @@ public class CreateScanBatchOperation {
         NameVersion projectNameVersion,
         List<SignatureScanPath> signatureScanPaths,
         @Nullable BlackDuckRunData blackDuckRunData,
-        @Nullable DockerTargetData dockerTargetData
+        @Nullable DockerTargetData dockerTargetData, 
+        boolean isScassFallback
     )
         throws DetectUserFriendlyException {
         ScanBatchBuilder scanJobBuilder = new ScanBatchBuilder();
@@ -88,6 +92,8 @@ public class CreateScanBatchOperation {
         scanJobBuilder.bomCompareMode(signatureScannerOptions.getBomCompareMode().toString());
         
         attemptToSetCsvArchive(scanJobBuilder, blackDuckRunData);
+        
+        attemptToSetScassScan(scanJobBuilder, blackDuckRunData, isScassFallback);
 
         String projectName = projectNameVersion.getName();
         String projectVersionName = projectNameVersion.getVersion();
@@ -112,12 +118,14 @@ public class CreateScanBatchOperation {
             if (dockerTargetData != null) {
                 dockerTarget = dockerTargetData.getSquashedImage().orElse(dockerTargetData.getProvidedImageTar().orElse(null));
             }
+            
             String codeLocationName = codeLocationNameManager.createScanCodeLocationName(
                 sourcePath,
                 scanPath.getTargetPath(),
                 dockerTarget,
                 projectName,
-                projectVersionName
+                projectVersionName,
+                isScassFallback
             );
             scanJobBuilder.addTarget(ScanTarget.createBasicTarget(scanPath.getTargetCanonicalPath(), scanPath.getExclusions(), codeLocationName));
         }
@@ -143,6 +151,23 @@ public class CreateScanBatchOperation {
                 logger.error("The associated Black Duck server version is not compatible with the CSV archive feature.");
             }
             scanJobBuilder.csvArchive(signatureScannerOptions.getCsvArchive());        
+        }
+    }
+
+    private void attemptToSetScassScan(ScanBatchBuilder scanJobBuilder, BlackDuckRunData blackDuckRunData, boolean isScassFallback) {
+        try {
+            SignatureScannerVersion signatureScannerVersion = 
+                    SignatureScanVersionChecker.getSignatureScannerVersion(logger, signatureScannerOptions.getLocalScannerInstallPath(), directoryManager.getPermanentDirectory());
+
+            if (signatureScannerVersion != null 
+                    && signatureScannerVersion.isAtLeast(MIN_SCASS_VERSION)
+                    && !isScassFallback) {
+                scanJobBuilder.scassScan(true);
+            }
+        } catch (IOException e) {
+            // Be cautious and do a non-SCASS scan if we can't obtain the signature scanner version.
+            logger.debug("Unable to determine the signature scanner version. {}. SCASS will not be performed.", e.getMessage());
+            scanJobBuilder.scassScan(false);
         }
     }
 

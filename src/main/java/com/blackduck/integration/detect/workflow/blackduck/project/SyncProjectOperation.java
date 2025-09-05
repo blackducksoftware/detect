@@ -60,6 +60,7 @@ public class SyncProjectOperation {
 
         Optional.ofNullable(projectSyncOptions.getProjectVersionPhase()).ifPresent(projectSyncModel::setPhase);
         Optional.ofNullable(projectSyncOptions.getProjectVersionDistribution()).ifPresent(projectSyncModel::setDistribution);
+        Optional.ofNullable(projectSyncOptions.isForceProjectVersionUpdate()).ifPresent(projectSyncModel::setUpdate);
 
         Integer projectTier = projectSyncOptions.getProjectTier();
         if (null != projectTier && projectTier >= 1 && projectTier <= 5) {
@@ -96,6 +97,10 @@ public class SyncProjectOperation {
 
         projectVersionLicensesFindResult.getLicenseUrl().ifPresent(projectSyncModel::setVersionLicenseUrl);
 
+        boolean deepLicenseEnabled = Boolean.TRUE.equals(projectSyncOptions.isDeepLicenseEnabled());
+        projectSyncModel.setDeepLicenseDataEnabled(deepLicenseEnabled);
+        projectSyncModel.setDeepLicenseDataSnippetEnabled(deepLicenseEnabled);
+        
         return projectSyncModel;
     }
 }

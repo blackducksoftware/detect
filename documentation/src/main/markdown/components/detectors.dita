@@ -526,7 +526,7 @@
 							<entry>various</entry>
 							<entry>Maven Central</entry>
 							<entry>
-								<p>File: pom.xml</p>
+								<p>File: *pom.xml</p>
 								<p>Executable: mvnw or mvn</p>
 							</entry>
 							<entry>HIGH</entry>
@@ -928,6 +928,37 @@
 							</entry>
 							<entry>HIGH</entry>
 						</row>
+						<row>
+                            <entry>
+                                <b>UV</b>
+                            </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                        </row>
+                        <row>
+                            <entry> </entry>
+                            <entry>UV CLI</entry>
+                            <entry>Python</entry>
+                            <entry>PyPI</entry>
+                            <entry>
+                                <p>Files: pyproject.toml</p>
+                                <p>Executable: uv</p>
+                            </entry>
+                            <entry>HIGH</entry>
+                        </row>
+                        <row>
+                            <entry> </entry>
+                            <entry>UV Lock</entry>
+                            <entry>Python</entry>
+                            <entry>PyPI</entry>
+                            <entry>
+                                <p>Files: pyproject.toml, uv.lock or requirements.txt file </p>
+                            </entry>
+                            <entry>HIGH</entry>
+                        </row>
 						<row>
 							<entry>
 								<b>XCODE</b>

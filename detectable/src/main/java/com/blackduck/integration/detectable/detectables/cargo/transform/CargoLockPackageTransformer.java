@@ -1,6 +1,8 @@
 package com.blackduck.integration.detectable.detectables.cargo.transform;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.graph.builder.LazyExternalIdDependencyGraphBuilder;
@@ -13,37 +15,80 @@ import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.exception.DetectableException;
 import com.blackduck.integration.detectable.detectables.cargo.model.CargoLockPackage;
 import com.blackduck.integration.detectable.util.NameOptionalVersion;
+import com.blackduck.integration.util.NameVersion;
 
 public class CargoLockPackageTransformer {
     private final ExternalIdFactory externalIdFactory = new ExternalIdFactory();
     private final DependencyFactory dependencyFactory = new DependencyFactory(externalIdFactory);
+    private static final String ORPHAN_PARENT_NAME = "Additional_Components";
+    private static final String ORPHAN_PARENT_VERSION = "none";
 
-    public DependencyGraph transformToGraph(List<CargoLockPackage> lockPackages) throws MissingExternalIdException, DetectableException {
-        verifyNoDuplicatePackages(lockPackages);
+    public DependencyGraph transformToGraph(
+            List<CargoLockPackage> resolvedPackages,
+            List<CargoLockPackage> orphanedPackages,
+            Set<NameVersion> rootDependencies
+    ) throws MissingExternalIdException, DetectableException {
+
+        verifyNoDuplicatePackages(resolvedPackages);
 
         LazyExternalIdDependencyGraphBuilder graph = new LazyExternalIdDependencyGraphBuilder();
-        lockPackages.forEach(lockPackage -> {
-            String parentName = lockPackage.getPackageNameVersion().getName();
-            String parentVersion = lockPackage.getPackageNameVersion().getVersion();
-            LazyId parentId = LazyId.fromNameAndVersion(parentName, parentVersion);
-            Dependency parentDependency = dependencyFactory.createNameVersionDependency(Forge.CRATES, parentName, parentVersion);
+        for (CargoLockPackage lockPackage : resolvedPackages) {
+            String name = lockPackage.getPackageNameVersion().getName();
+            String version = lockPackage.getPackageNameVersion().getVersion();
+            LazyId id = LazyId.fromNameAndVersion(name, version);
+            Dependency dependency = dependencyFactory.createNameVersionDependency(Forge.CRATES, name, version);
 
-            graph.addChildToRoot(parentId);
-            graph.setDependencyInfo(parentId, parentDependency.getName(), parentDependency.getVersion(), parentDependency.getExternalId());
-            graph.setDependencyAsAlias(parentId, LazyId.fromName(parentName));
+            // Root dependencies empty means that Cargo.toml was not used, so we add all packages as root.
+            // If rootDependencies is not empty, we only add the package if it is in the set.
+            if (rootDependencies.isEmpty() || rootDependencies.contains(new NameVersion(name, version))) {
+                graph.addChildToRoot(id);
+            }
 
-            lockPackage.getDependencies().forEach(childPackage -> {
-                if (childPackage.getVersion().isPresent()) {
-                    LazyId childId = LazyId.fromNameAndVersion(childPackage.getName(), childPackage.getVersion().get());
-                    graph.addChildWithParent(childId, parentId);
-                } else {
-                    LazyId childId = LazyId.fromName(childPackage.getName());
-                    graph.addChildWithParent(childId, parentId);
-                }
-            });
-        });
+            graph.setDependencyInfo(id, dependency.getName(), dependency.getVersion(), dependency.getExternalId());
+            graph.setDependencyAsAlias(id, LazyId.fromName(name));
+
+            for (NameOptionalVersion child : lockPackage.getDependencies()) {
+                Optional<String> optionalVersion = child.getVersion();
+                LazyId childId = optionalVersion.map(s -> LazyId.fromNameAndVersion(child.getName(), s))
+                        .orElseGet(() -> LazyId.fromName(child.getName()));
+                graph.addChildWithParent(childId, id);
+            }
+        }
+
+        // Handle orphaned packages explicitly
+        if (orphanedPackages != null && !orphanedPackages.isEmpty()) {
+            LazyId orphanParentId = LazyId.fromNameAndVersion(ORPHAN_PARENT_NAME, ORPHAN_PARENT_VERSION);
+            Dependency orphanParentDep = dependencyFactory.createNameVersionDependency(Forge.CRATES, ORPHAN_PARENT_NAME, ORPHAN_PARENT_VERSION);
+            graph.addChildToRoot(orphanParentId);
+            graph.setDependencyInfo(orphanParentId, orphanParentDep.getName(), orphanParentDep.getVersion(), orphanParentDep.getExternalId());
+
+            for (CargoLockPackage orphanPackage : orphanedPackages) {
+                LazyId id = LazyId.fromNameAndVersion(orphanPackage.getPackageNameVersion().getName(),
+                    orphanPackage.getPackageNameVersion().getVersion());
+                graph.addChildWithParent(id, orphanParentId);
+                addPackageToGraph(graph, orphanPackage);
+            }
+        }
 
         return graph.build();
+    }
+
+    private void addPackageToGraph(LazyExternalIdDependencyGraphBuilder graph, CargoLockPackage pkg) {
+        String name = pkg.getPackageNameVersion().getName();
+        String version = pkg.getPackageNameVersion().getVersion();
+        LazyId id = LazyId.fromNameAndVersion(name, version);
+        Dependency dependency = dependencyFactory.createNameVersionDependency(Forge.CRATES, name, version);
+
+        graph.setDependencyInfo(id, dependency.getName(), dependency.getVersion(), dependency.getExternalId());
+        graph.setDependencyAsAlias(id, LazyId.fromName(name));
+
+        for (NameOptionalVersion child : pkg.getDependencies()) {
+            Optional<String> optionalVersion = child.getVersion();
+            LazyId childId = optionalVersion
+                .map(s -> LazyId.fromNameAndVersion(child.getName(), s))
+                .orElseGet(() -> LazyId.fromName(child.getName()));
+            graph.addChildWithParent(childId, id);
+        }
     }
 
     private void verifyNoDuplicatePackages(List<CargoLockPackage> lockPackages) throws DetectableException {
@@ -60,5 +105,4 @@ public class CargoLockPackageTransformer {
             }
         }
     }
-
 }

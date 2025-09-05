@@ -44,7 +44,7 @@ public class ExitManagerTest {
         DetectStatusManager statusManager = new DetectStatusManager(eventSystem);
         ExceptionUtility exitCodeUtility = new ExceptionUtility();
         ExitCodeManager exitCodeManager = new ExitCodeManager(eventSystem, exitCodeUtility);
-        exitCodeManager.addExitCodeRequest(new ExitCodeRequest(ExitCodeType.FAILURE_CONFIGURATION, "JUnit failure code."));
+        exitCodeManager.addExitCodeRequest(new ExitCodeRequest(ExitCodeType.FAILURE_CONFIGURATION));
         ExitManager exitManager = new ExitManager(eventSystem, exitCodeManager, statusManager);
 
         ExitOptions exitOptions = new ExitOptions(startTime, true, true);
@@ -63,7 +63,7 @@ public class ExitManagerTest {
         DetectStatusManager statusManager = new DetectStatusManager(eventSystem);
         ExceptionUtility exitCodeUtility = new ExceptionUtility();
         ExitCodeManager exitCodeManager = new ExitCodeManager(eventSystem, exitCodeUtility);
-        exitCodeManager.addExitCodeRequest(new ExitCodeRequest(ExitCodeType.FAILURE_CONFIGURATION, "JUnit failure code."));
+        exitCodeManager.addExitCodeRequest(new ExitCodeRequest(ExitCodeType.FAILURE_CONFIGURATION));
         ExitManager exitManager = new ExitManager(eventSystem, exitCodeManager, statusManager);
 
         ExitOptions exitOptions = new ExitOptions(startTime, false, false);
