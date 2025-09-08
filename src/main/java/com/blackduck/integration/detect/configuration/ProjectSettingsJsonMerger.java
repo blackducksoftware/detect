@@ -30,12 +30,7 @@ public class ProjectSettingsJsonMerger {
      *   "levelAdjustments": true,
      *   "deepLicense": true,
      *   "detector": "GRADLE",
-     *   "tool": ["DOCKER", "DETECTOR"],
      *   "cloneCategories": "ALL",
-     *   "codelocation": {
-     *     "prefix": "prefix",
-     *     "suffix": "suffix"
-     *   },
      *   "version": {
      *     "name": "1.0.0",
      *     "nickname": "nickname", 
@@ -70,14 +65,7 @@ public class ProjectSettingsJsonMerger {
         // Array mappings (convert to comma-separated strings)
         addArrayIfPresent(properties, jsonObject, "tags", "detect.project.tags");
         addArrayIfPresent(properties, jsonObject, "userGroups", "detect.project.user.groups");
-        addArrayIfPresent(properties, jsonObject, "tool", "detect.project.tool");
         
-        // Nested codelocation object
-        if (jsonObject.has("codelocation") && jsonObject.get("codelocation").isJsonObject()) {
-            JsonObject codelocation = jsonObject.getAsJsonObject("codelocation");
-            addIfPresent(properties, codelocation, "prefix", "detect.project.codelocation.prefix");
-            addIfPresent(properties, codelocation, "suffix", "detect.project.codelocation.suffix");
-        }
         
         // Nested version object
         if (jsonObject.has("version") && jsonObject.get("version").isJsonObject()) {

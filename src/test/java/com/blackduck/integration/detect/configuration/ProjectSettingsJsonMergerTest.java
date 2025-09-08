@@ -1,5 +1,8 @@
 package com.blackduck.integration.detect.configuration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -7,15 +10,10 @@ import org.junit.jupiter.api.Test;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
- * CHANGE: Added test class to verify JSON project settings parsing functionality.
  * Tests the ProjectSettingsJsonMerger class which extracts individual detect.project.*
  * property values from a consolidated JSON object.
  */
-
 public class ProjectSettingsJsonMergerTest {
     private final ProjectSettingsJsonMerger merger = new ProjectSettingsJsonMerger();
     private final Gson gson = new Gson();
@@ -57,12 +55,8 @@ public class ProjectSettingsJsonMergerTest {
     }
 
     @Test
-    public void testNestedObjectExtraction() {
+    public void testNestedVersionObjectExtraction() {
         String json = "{\n" +
-                "  \"codelocation\": {\n" +
-                "    \"prefix\": \"test-prefix\",\n" +
-                "    \"suffix\": \"test-suffix\"\n" +
-                "  },\n" +
                 "  \"version\": {\n" +
                 "    \"nickname\": \"Release Candidate\",\n" +
                 "    \"notes\": \"Release candidate for version 1.0\",\n" +
@@ -73,8 +67,6 @@ public class ProjectSettingsJsonMergerTest {
         JsonElement jsonElement = gson.fromJson(json, JsonElement.class);
         Map<String, String> properties = merger.extractPropertiesFromJson(jsonElement);
 
-        assertEquals("test-prefix", properties.get("detect.project.codelocation.prefix"));
-        assertEquals("test-suffix", properties.get("detect.project.codelocation.suffix"));
         assertEquals("Release Candidate", properties.get("detect.project.version.nickname"));
         assertEquals("Release candidate for version 1.0", properties.get("detect.project.version.notes"));
         assertEquals("Apache License 2.0", properties.get("detect.project.version.license"));
@@ -122,12 +114,7 @@ public class ProjectSettingsJsonMergerTest {
                 "  \"levelAdjustments\": true,\n" +
                 "  \"deepLicense\": true,\n" +
                 "  \"detector\": \"GRADLE\",\n" +
-                "  \"tool\": [\"DOCKER\", \"DETECTOR\"],\n" +
                 "  \"cloneCategories\": \"ALL\",\n" +
-                "  \"codelocation\": {\n" +
-                "    \"prefix\": \"comprehensive-prefix\",\n" +
-                "    \"suffix\": \"comprehensive-suffix\"\n" +
-                "  },\n" +
                 "  \"version\": {\n" +
                 "    \"name\": \"2.0.0\",\n" +
                 "    \"nickname\": \"Major Release\",\n" +
@@ -153,10 +140,7 @@ public class ProjectSettingsJsonMergerTest {
         assertEquals("true", properties.get("detect.project.level.adjustments"));
         assertEquals("true", properties.get("detect.project.deep.license"));
         assertEquals("GRADLE", properties.get("detect.project.detector"));
-        assertEquals("DOCKER,DETECTOR", properties.get("detect.project.tool"));
         assertEquals("ALL", properties.get("detect.project.clone.categories"));
-        assertEquals("comprehensive-prefix", properties.get("detect.project.codelocation.prefix"));
-        assertEquals("comprehensive-suffix", properties.get("detect.project.codelocation.suffix"));
         assertEquals("2.0.0", properties.get("detect.project.version.name"));
         assertEquals("Major Release", properties.get("detect.project.version.nickname"));
         assertEquals("Major version update", properties.get("detect.project.version.notes"));
