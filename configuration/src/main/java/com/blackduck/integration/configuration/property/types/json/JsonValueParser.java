@@ -38,7 +38,10 @@ public class JsonValueParser extends ValueParser<JsonElement> {
         return value
             // Quote unquoted object keys
             .replaceAll("([{,]\\s*)([a-zA-Z_][a-zA-Z0-9_]*)(\\s*:)", "$1\"$2\"$3")
+            // Quote unquoted array elements (strings that aren't numbers, booleans, or nested structures)
+            .replaceAll("(\\[\\s*|,\\s*)([a-zA-Z][a-zA-Z0-9\\s._-]*?)(?=\\s*[,\\]])", "$1\"$2\"")
             // Quote unquoted string values (non-numeric, non-boolean, non-object/array)
-            .replaceAll("(:\\s*)([a-zA-Z][a-zA-Z0-9\\s]*?)(?=\\s*[,}])", "$1\"$2\"");
+            // This pattern matches more comprehensive string values including those with hyphens, dots, and spaces
+            .replaceAll("(:\\s*)([a-zA-Z][a-zA-Z0-9\\s._-]*?)(?=\\s*[,}])", "$1\"$2\"");
     }
 }
