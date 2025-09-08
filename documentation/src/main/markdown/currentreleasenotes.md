@@ -32,7 +32,7 @@
 
 ### Resolved issues
 
-* (IDETECT-4738) Corrected behaviour of detect.binary.scan.file.name.patterns to be case-insensitive. 
+* (IDETECT-4738) Corrected behavior of `detect.binary.scan.file.name.patterns` to be case-insensitive. 
 * (IDETECT-4802) Fix UV Lockfile Detector not generating BDIOs for projects with non-normalized names per Python requirements.
 
 ### Dependency updates
