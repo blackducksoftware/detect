@@ -29,7 +29,6 @@ public class ProjectSettingsJsonMerger {
      *   "userGroups": ["group1", "group2"],
      *   "levelAdjustments": true,
      *   "deepLicense": true,
-     *   "detector": "GRADLE",
      *   "cloneCategories": "ALL",
      *   "version": {
      *     "name": "1.0.0",
@@ -59,14 +58,12 @@ public class ProjectSettingsJsonMerger {
         addIfPresent(properties, jsonObject, "groupName", "detect.project.group.name");
         addIfPresent(properties, jsonObject, "levelAdjustments", "detect.project.level.adjustments");
         addIfPresent(properties, jsonObject, "deepLicense", "detect.project.deep.license");
-        addIfPresent(properties, jsonObject, "detector", "detect.project.detector");
         addIfPresent(properties, jsonObject, "cloneCategories", "detect.project.clone.categories");
         
         // Array mappings (convert to comma-separated strings)
         addArrayIfPresent(properties, jsonObject, "tags", "detect.project.tags");
         addArrayIfPresent(properties, jsonObject, "userGroups", "detect.project.user.groups");
-        
-        
+
         // Nested version object
         if (jsonObject.has("version") && jsonObject.get("version").isJsonObject()) {
             JsonObject version = jsonObject.getAsJsonObject("version");

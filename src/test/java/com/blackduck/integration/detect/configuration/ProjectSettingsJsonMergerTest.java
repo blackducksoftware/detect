@@ -113,7 +113,6 @@ public class ProjectSettingsJsonMergerTest {
                 "  \"userGroups\": [\"Admins\", \"Developers\"],\n" +
                 "  \"levelAdjustments\": true,\n" +
                 "  \"deepLicense\": true,\n" +
-                "  \"detector\": \"GRADLE\",\n" +
                 "  \"cloneCategories\": \"ALL\",\n" +
                 "  \"version\": {\n" +
                 "    \"name\": \"2.0.0\",\n" +
@@ -139,7 +138,6 @@ public class ProjectSettingsJsonMergerTest {
         assertEquals("Admins,Developers", properties.get("detect.project.user.groups"));
         assertEquals("true", properties.get("detect.project.level.adjustments"));
         assertEquals("true", properties.get("detect.project.deep.license"));
-        assertEquals("GRADLE", properties.get("detect.project.detector"));
         assertEquals("ALL", properties.get("detect.project.clone.categories"));
         assertEquals("2.0.0", properties.get("detect.project.version.name"));
         assertEquals("Major Release", properties.get("detect.project.version.nickname"));
