@@ -1,11 +1,11 @@
 package com.blackduck.integration.detect.configuration;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 
 /**
  * This class parses the detect.project.settings JSON and extracts individual property values.
@@ -16,30 +16,7 @@ public class ProjectSettingsJsonMerger {
     
     /**
      * Creates a map of property keys to values from the JSON project settings.
-     * The JSON structure maps to detect.project.* property keys.
-     * 
-     * Expected JSON structure:
-     * {
-     *   "name": "project-name",
-     *   "description": "project description",
-     *   "tier": 3,
-     *   "applicationId": "app-id",
-     *   "groupName": "group-name",
-     *   "tags": ["tag1", "tag2"],
-     *   "userGroups": ["group1", "group2"],
-     *   "levelAdjustments": true,
-     *   "deepLicense": true,
-     *   "cloneCategories": "ALL",
-     *   "version": {
-     *     "name": "1.0.0",
-     *     "nickname": "nickname", 
-     *     "notes": "notes",
-     *     "phase": "DEVELOPMENT",
-     *     "distribution": "EXTERNAL",
-     *     "update": false,
-     *     "license": "Apache License 2.0"
-     *   }
-     * }
+     * Uses POJO deserialization for type-safe parsing.
      */
     public Map<String, String> extractPropertiesFromJson(JsonElement jsonElement) {
         Map<String, String> properties = new HashMap<>();
@@ -48,62 +25,51 @@ public class ProjectSettingsJsonMerger {
             return properties;
         }
         
-        JsonObject jsonObject = jsonElement.getAsJsonObject();
-        
-        // Direct mappings
-        addIfPresent(properties, jsonObject, "name", "detect.project.name");
-        addIfPresent(properties, jsonObject, "description", "detect.project.description");
-        addIfPresent(properties, jsonObject, "tier", "detect.project.tier");
-        addIfPresent(properties, jsonObject, "applicationId", "detect.project.application.id");
-        addIfPresent(properties, jsonObject, "groupName", "detect.project.group.name");
-        addIfPresent(properties, jsonObject, "levelAdjustments", "detect.project.level.adjustments");
-        addIfPresent(properties, jsonObject, "deepLicense", "detect.project.deep.license");
-        addIfPresent(properties, jsonObject, "cloneCategories", "detect.project.clone.categories");
-        
-        // Array mappings (convert to comma-separated strings)
-        addArrayIfPresent(properties, jsonObject, "tags", "detect.project.tags");
-        addArrayIfPresent(properties, jsonObject, "userGroups", "detect.project.user.groups");
+        try {
+            ProjectSettings projectSettings = gson.fromJson(jsonElement, ProjectSettings.class);
+            
+            // Direct mappings
+            addIfNotNull(properties, projectSettings.getName(), DetectProperties.DETECT_PROJECT_NAME.getKey());
+            addIfNotNull(properties, projectSettings.getDescription(), DetectProperties.DETECT_PROJECT_DESCRIPTION.getKey());
+            addIfNotNull(properties, projectSettings.getTier(), DetectProperties.DETECT_PROJECT_TIER.getKey());
+            addIfNotNull(properties, projectSettings.getApplicationId(), DetectProperties.DETECT_PROJECT_APPLICATION_ID.getKey());
+            addIfNotNull(properties, projectSettings.getGroupName(), DetectProperties.DETECT_PROJECT_GROUP_NAME.getKey());
+            addIfNotNull(properties, projectSettings.getLevelAdjustments(), DetectProperties.DETECT_PROJECT_LEVEL_ADJUSTMENTS.getKey());
+            addIfNotNull(properties, projectSettings.getDeepLicense(), DetectProperties.DETECT_PROJECT_DEEP_LICENSE.getKey());
+            addIfNotNull(properties, projectSettings.getCloneCategories(), DetectProperties.DETECT_PROJECT_CLONE_CATEGORIES.getKey());
+            
+            // Array mappings (convert to comma-separated strings)
+            addListIfNotNull(properties, projectSettings.getTags(), DetectProperties.DETECT_PROJECT_TAGS.getKey());
+            addListIfNotNull(properties, projectSettings.getUserGroups(), DetectProperties.DETECT_PROJECT_USER_GROUPS.getKey());
 
-        // Nested version object
-        if (jsonObject.has("version") && jsonObject.get("version").isJsonObject()) {
-            JsonObject version = jsonObject.getAsJsonObject("version");
-            addIfPresent(properties, version, "name", "detect.project.version.name");
-            addIfPresent(properties, version, "nickname", "detect.project.version.nickname");
-            addIfPresent(properties, version, "notes", "detect.project.version.notes");
-            addIfPresent(properties, version, "phase", "detect.project.version.phase");
-            addIfPresent(properties, version, "distribution", "detect.project.version.distribution");
-            addIfPresent(properties, version, "update", "detect.project.version.update");
-            addIfPresent(properties, version, "license", "detect.project.version.license");
+            // Version object mappings
+            VersionSettings version = projectSettings.getVersion();
+            if (version != null) {
+                addIfNotNull(properties, version.getName(), DetectProperties.DETECT_PROJECT_VERSION_NAME.getKey());
+                addIfNotNull(properties, version.getNickname(), DetectProperties.DETECT_PROJECT_VERSION_NICKNAME.getKey());
+                addIfNotNull(properties, version.getNotes(), DetectProperties.DETECT_PROJECT_VERSION_NOTES.getKey());
+                addIfNotNull(properties, version.getPhase(), DetectProperties.DETECT_PROJECT_VERSION_PHASE.getKey());
+                addIfNotNull(properties, version.getDistribution(), DetectProperties.DETECT_PROJECT_VERSION_DISTRIBUTION.getKey());
+                addIfNotNull(properties, version.getUpdate(), DetectProperties.DETECT_PROJECT_VERSION_UPDATE.getKey());
+                addIfNotNull(properties, version.getLicense(), DetectProperties.DETECT_PROJECT_VERSION_LICENSE.getKey());
+            }
+            
+        } catch (Exception e) {
+            // If JSON parsing fails, return empty map
         }
         
         return properties;
     }
     
-    private void addIfPresent(Map<String, String> properties, JsonObject jsonObject, String jsonKey, String propertyKey) {
-        if (jsonObject.has(jsonKey)) {
-            JsonElement element = jsonObject.get(jsonKey);
-            if (!element.isJsonNull()) {
-                if (element.isJsonPrimitive()) {
-                    properties.put(propertyKey, element.getAsString());
-                } else {
-                    // For non-primitive types, convert to JSON string
-                    properties.put(propertyKey, gson.toJson(element));
-                }
-            }
+    private void addIfNotNull(Map<String, String> properties, Object value, String propertyKey) {
+        if (value != null) {
+            properties.put(propertyKey, value.toString());
         }
     }
     
-    private void addArrayIfPresent(Map<String, String> properties, JsonObject jsonObject, String jsonKey, String propertyKey) {
-        if (jsonObject.has(jsonKey)) {
-            JsonElement element = jsonObject.get(jsonKey);
-            if (!element.isJsonNull() && element.isJsonArray()) {
-                StringBuilder sb = new StringBuilder();
-                element.getAsJsonArray().forEach(item -> {
-                    if (sb.length() > 0) sb.append(",");
-                    sb.append(item.getAsString());
-                });
-                properties.put(propertyKey, sb.toString());
-            }
+    private void addListIfNotNull(Map<String, String> properties, List<String> list, String propertyKey) {
+        if (list != null && !list.isEmpty()) {
+            properties.put(propertyKey, String.join(",", list));
         }
     }
 }
