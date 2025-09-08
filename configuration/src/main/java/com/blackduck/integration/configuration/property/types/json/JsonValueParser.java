@@ -8,11 +8,6 @@ import com.blackduck.integration.configuration.parse.ValueParser;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * CHANGE: Added new JSON value parser to support detect.project.settings JSON property.
- * This parser uses Gson to parse JSON strings into JsonElement objects for property values.
- */
-
 public class JsonValueParser extends ValueParser<JsonElement> {
     private final Gson gson = new Gson();
 

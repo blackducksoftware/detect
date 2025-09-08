@@ -260,7 +260,7 @@ public class DetectConfigurationFactory {
     }
 
     public List<DetectTool> createPreferredProjectTools() {
-        return detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_TOOL);
+        return detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_TOOL);
     }
 
     public DirectoryOptions createDirectoryOptions() throws IOException {
@@ -314,14 +314,13 @@ public class DetectConfigurationFactory {
     }
 
     public BdioOptions createBdioOptions() {
-        String prefix = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_CODELOCATION_PREFIX);
-        String suffix = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_CODELOCATION_SUFFIX);
+        String prefix = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_CODELOCATION_PREFIX);
+        String suffix = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_CODELOCATION_SUFFIX);
         String bdioFileName = detectConfiguration.getNullableValue(DetectProperties.DETECT_BDIO_FILE_NAME);
         return new BdioOptions(prefix, suffix, bdioFileName);
     }
 
     public ProjectNameVersionOptions createProjectNameVersionOptions(String sourceDirectoryName) {
-        // CHANGE: Updated to use new JSON fallback methods for project properties
         String overrideProjectName = StringUtils.trimToNull(detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_NAME));
         String overrideProjectVersionName = StringUtils.trimToNull(detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_NAME));
         return new ProjectNameVersionOptions(sourceDirectoryName, overrideProjectName, overrideProjectVersionName);
