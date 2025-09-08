@@ -96,6 +96,20 @@ public class ProjectSettingsJsonMergerTest {
     }
 
     @Test
+    public void testDeepLicensePropertyExtraction() {
+        String json = "{\n" +
+                "  \"name\": \"TestProject\",\n" +
+                "  \"deepLicense\": false\n" +
+                "}";
+
+        JsonElement jsonElement = gson.fromJson(json, JsonElement.class);
+        Map<String, String> properties = merger.extractPropertiesFromJson(jsonElement);
+
+        assertEquals("TestProject", properties.get("detect.project.name"));
+        assertEquals("false", properties.get("detect.project.deep.license"));
+    }
+
+    @Test
     public void testAllProjectProperties() {
         String json = "{\n" +
                 "  \"name\": \"ComprehensiveProject\",\n" +
@@ -106,6 +120,7 @@ public class ProjectSettingsJsonMergerTest {
                 "  \"tags\": [\"Critical\", \"Production\"],\n" +
                 "  \"userGroups\": [\"Admins\", \"Developers\"],\n" +
                 "  \"levelAdjustments\": true,\n" +
+                "  \"deepLicense\": true,\n" +
                 "  \"detector\": \"GRADLE\",\n" +
                 "  \"tool\": [\"DOCKER\", \"DETECTOR\"],\n" +
                 "  \"cloneCategories\": \"ALL\",\n" +
@@ -136,6 +151,7 @@ public class ProjectSettingsJsonMergerTest {
         assertEquals("Critical,Production", properties.get("detect.project.tags"));
         assertEquals("Admins,Developers", properties.get("detect.project.user.groups"));
         assertEquals("true", properties.get("detect.project.level.adjustments"));
+        assertEquals("true", properties.get("detect.project.deep.license"));
         assertEquals("GRADLE", properties.get("detect.project.detector"));
         assertEquals("DOCKER,DETECTOR", properties.get("detect.project.tool"));
         assertEquals("ALL", properties.get("detect.project.clone.categories"));

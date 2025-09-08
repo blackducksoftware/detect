@@ -2,19 +2,12 @@ package com.blackduck.integration.detect.configuration;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.blackduck.integration.configuration.config.PropertyConfiguration;
-import com.blackduck.integration.configuration.property.base.NullableProperty;
-import com.blackduck.integration.configuration.property.base.ValuedProperty;
-import com.blackduck.integration.configuration.source.MapPropertySource;
-import com.blackduck.integration.configuration.source.PropertySource;
 
 /**
- * CHANGE: Added new utility class to merge JSON project settings with individual detect.project.* properties.
  * This class parses the detect.project.settings JSON and extracts individual property values.
  * Individual properties take precedence over JSON values.
  */
@@ -35,6 +28,7 @@ public class ProjectSettingsJsonMerger {
      *   "tags": ["tag1", "tag2"],
      *   "userGroups": ["group1", "group2"],
      *   "levelAdjustments": true,
+     *   "deepLicense": true,
      *   "detector": "GRADLE",
      *   "tool": ["DOCKER", "DETECTOR"],
      *   "cloneCategories": "ALL",
@@ -69,6 +63,7 @@ public class ProjectSettingsJsonMerger {
         addIfPresent(properties, jsonObject, "applicationId", "detect.project.application.id");
         addIfPresent(properties, jsonObject, "groupName", "detect.project.group.name");
         addIfPresent(properties, jsonObject, "levelAdjustments", "detect.project.level.adjustments");
+        addIfPresent(properties, jsonObject, "deepLicense", "detect.project.deep.license");
         addIfPresent(properties, jsonObject, "detector", "detect.project.detector");
         addIfPresent(properties, jsonObject, "cloneCategories", "detect.project.clone.categories");
         
