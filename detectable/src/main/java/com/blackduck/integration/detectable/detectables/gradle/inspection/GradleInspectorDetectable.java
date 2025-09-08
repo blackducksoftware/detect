@@ -75,22 +75,13 @@ public class GradleInspectorDetectable extends Detectable {
 
         // Modern multi-project check: Look for settings files
         File settingsGradle = fileFinder.findFile(environment.getDirectory(), SETTINGS_GRADLE_FILENAME);
-        File kotlinSettingsGradle = fileFinder.findFile(environment.getDirectory(), KOTLIN_SETTINGS_GRADLE_FILENAME);
+        if (settingsGradle != null) {
+            return new PassedDetectableResult(new FoundFile(settingsGradle));
+        }
 
-        File settingsFile = settingsGradle != null ? settingsGradle : kotlinSettingsGradle;
-        if (settingsFile != null) {
-            List<String> subprojectNames = GradleSettingsParser.parseIncludedSubprojects(settingsFile);
-            for (String subproject : subprojectNames) {
-                File subDir = new File(environment.getDirectory(), subproject);
-                File subBuildGradle = fileFinder.findFile(subDir, BUILD_GRADLE_FILENAME);
-                if (subBuildGradle != null) {
-                    return new PassedDetectableResult(new FoundFile(settingsFile));
-                }
-                File subKotlinBuildGradle = fileFinder.findFile(subDir, KOTLIN_BUILD_GRADLE_FILENAME);
-                if (subKotlinBuildGradle != null) {
-                    return new PassedDetectableResult(new FoundFile(settingsFile));
-                }
-            }
+        File kotlinSettingsGradle = fileFinder.findFile(environment.getDirectory(), KOTLIN_SETTINGS_GRADLE_FILENAME);
+        if (kotlinSettingsGradle != null) {
+            return new PassedDetectableResult(new FoundFile(kotlinSettingsGradle));
         }
 
         return new FilesNotFoundDetectableResult(BUILD_GRADLE_FILENAME, KOTLIN_BUILD_GRADLE_FILENAME, SETTINGS_GRADLE_FILENAME, KOTLIN_SETTINGS_GRADLE_FILENAME);
