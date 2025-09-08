@@ -16,7 +16,7 @@ import com.blackduck.integration.detector.base.DetectorType;
 @Tag("integration")
 public class PerformanceTest {
     @Test
-    void performanceTest() throws IOException {
+    void manyNonApplicableSubdirectoriesTest() throws IOException {
         // the source directory in the docker image contains thousands of non-applicable directories
         // this test ensures that there are no performance regressions around an optimization that was made for such cases
         try (DetectDockerTestRunner test = new DetectDockerTestRunner("detect-performance-smoke", "detect-performance-smoke:1.0.0")) {
