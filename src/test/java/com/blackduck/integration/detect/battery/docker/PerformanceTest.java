@@ -30,7 +30,7 @@ public class PerformanceTest {
             DockerAssertions dockerAssertions = test.run(commandBuilder);
 
             dockerAssertions.atLeastOneBdioFile();
-            dockerAssertions.successfulDetectorType(DetectorType.PIP.toString());
+            dockerAssertions.successfulThingLogged(DetectorType.PIP.toString());
             dockerAssertions.durationLessThan(1); // TODO: update this to pass once we have a benchmark
         }
     }
