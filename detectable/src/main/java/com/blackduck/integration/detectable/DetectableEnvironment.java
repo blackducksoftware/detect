@@ -34,18 +34,18 @@ public class DetectableEnvironment {
         }
 
         public File[] listFiles() {
-            if (!attemptedList) {
+            //if (!attemptedList) {
                 attemptedList = true;
                 files = originalDirectory.listFiles();
-            }
+            //}
             return files;
         }
 
         public boolean isDirectory() {
-            if (!attemptedIsDirectory) {
+            //if (!attemptedIsDirectory) {
                 attemptedIsDirectory = true;
                 isDirectory = originalDirectory.isDirectory();
-            }
+            //}
             return isDirectory;
         }
 
