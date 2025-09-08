@@ -20,15 +20,15 @@ public class UploadIacScanResultsOperation {
 
     public UploadIacScanResultsOperation(IacScanUploadService iacScanUploadService) {this.iacScanUploadService = iacScanUploadService;}
 
-    public void uploadResults(File resultsFile, String scanId) throws IntegrationException, IOException {
+    public void uploadResults(File resultsFile, String scanId) throws IntegrationException {
         String resultsFileContent, normalizedResultsFileContent;
         try {
             logger.trace("Reading {} using character encoding {}", resultsFile.getAbsolutePath(), StandardCharsets.UTF_8);
             resultsFileContent = FileUtils.readFileToString(resultsFile, StandardCharsets.UTF_8);
-            normalizedResultsFileContent = normalizeFileContentToNFD(resultsFileContent);
         } catch (IOException e) {
             throw new IntegrationException("Unable to parse Iac Scan results file: " + resultsFile.getAbsolutePath(), e);
         }
+        normalizedResultsFileContent = normalizeFileContentToNFD(resultsFileContent);
         Response response = iacScanUploadService.uploadIacScanResults(normalizedResultsFileContent, scanId);
         if (response.isStatusCodeSuccess()) {
             logger.info("Successfully uploaded Iac Scan results.");
