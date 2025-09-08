@@ -485,8 +485,8 @@ public class DetectConfigurationFactory {
         List<Path> iacScanPaths = detectConfiguration.getPaths(DetectProperties.DETECT_IAC_SCAN_PATHS);
         Path localIacScannerPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_IAC_SCANNER_LOCAL_PATH);
         String additionalArguments = detectConfiguration.getNullableValue(DetectProperties.DETECT_IAC_SCAN_ARGUMENTS);
-        String codeLocationPrefix = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_CODELOCATION_PREFIX);
-        String codeLocationSuffix = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_CODELOCATION_SUFFIX);
+        String codeLocationPrefix = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_CODELOCATION_PREFIX);
+        String codeLocationSuffix = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_CODELOCATION_SUFFIX);
         return new IacScanOptions(iacScanPaths, localIacScannerPath, additionalArguments, codeLocationPrefix, codeLocationSuffix);
     }
 
@@ -534,7 +534,7 @@ public class DetectConfigurationFactory {
     }
 
     public DetectorToolOptions createDetectorToolOptions() {
-        String projectBomTool = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_DETECTOR);
+        String projectBomTool = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_DETECTOR);
         List<DetectorType> requiredDetectors = detectConfiguration.getValue(DetectProperties.DETECT_REQUIRED_DETECTOR_TYPES);
         AllNoneEnumList<DetectorType> accuracyRequired = detectConfiguration.getValue(DetectProperties.DETECT_ACCURACY_REQUIRED);
         ExcludeIncludeEnumFilter<DetectorType> accuracyFilter = new ExcludeIncludeEnumFilter<>(
