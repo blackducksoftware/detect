@@ -25,8 +25,6 @@ import com.blackduck.integration.detectable.detectable.result.InspectorNotFoundD
 import com.blackduck.integration.detectable.detectable.result.PassedDetectableResult;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
-import com.blackduck.integration.detectable.detectables.gradle.inspection.parse.GradleSettingsParser;
-
 
 @DetectableInfo(name = "Gradle Native Inspector", language = "various", forge = "Maven Central", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: build.gradle or build.gradle.kts. Executable: gradlew or gradle.")
 public class GradleInspectorDetectable extends Detectable {
