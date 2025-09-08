@@ -31,7 +31,11 @@ public class PerformanceTest {
 
             dockerAssertions.atLeastOneBdioFile();
             dockerAssertions.successfulThingLogged(DetectorType.PIP.toString());
-            dockerAssertions.durationLessThan(1); // TODO: update this to pass once we have a benchmark
+
+            // under normal circumstances this test runs in about 70-75 seconds
+            // partially disabling optimizations in DetectableEnvironment caused this to go up to about 200 seconds
+            // the following number was chosen based on the normal test runs with some padding added
+            dockerAssertions.durationLessThan(95);
         }
     }
 }
