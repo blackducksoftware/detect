@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
@@ -33,11 +34,11 @@ public class ProjectSettingsJsonMergerTest {
         JsonElement jsonElement = gson.fromJson(json, JsonElement.class);
         Map<String, String> properties = merger.extractPropertiesFromJson(jsonElement);
 
-        assertEquals("MyProject", properties.get("detect.project.name"));
-        assertEquals("My test project", properties.get("detect.project.description"));
-        assertEquals("3", properties.get("detect.project.tier"));
-        assertEquals("1.0.0", properties.get("detect.project.version.name"));
-        assertEquals("DEVELOPMENT", properties.get("detect.project.version.phase"));
+        assertEquals("MyProject", properties.get(DetectProperties.DETECT_PROJECT_NAME.getKey()));
+        assertEquals("My test project", properties.get(DetectProperties.DETECT_PROJECT_DESCRIPTION.getKey()));
+        assertEquals("3", properties.get(DetectProperties.DETECT_PROJECT_TIER.getKey()));
+        assertEquals("1.0.0", properties.get(DetectProperties.DETECT_PROJECT_VERSION_NAME.getKey()));
+        assertEquals("DEVELOPMENT", properties.get(DetectProperties.DETECT_PROJECT_VERSION_PHASE.getKey()));
     }
 
     @Test
@@ -50,8 +51,8 @@ public class ProjectSettingsJsonMergerTest {
         JsonElement jsonElement = gson.fromJson(json, JsonElement.class);
         Map<String, String> properties = merger.extractPropertiesFromJson(jsonElement);
 
-        assertEquals("Critical,Backend", properties.get("detect.project.tags"));
-        assertEquals("ProjectManagers,TechLeads", properties.get("detect.project.user.groups"));
+        assertEquals("Critical,Backend", properties.get(DetectProperties.DETECT_PROJECT_TAGS.getKey()));
+        assertEquals("ProjectManagers,TechLeads", properties.get(DetectProperties.DETECT_PROJECT_USER_GROUPS.getKey()));
     }
 
     @Test
@@ -67,9 +68,9 @@ public class ProjectSettingsJsonMergerTest {
         JsonElement jsonElement = gson.fromJson(json, JsonElement.class);
         Map<String, String> properties = merger.extractPropertiesFromJson(jsonElement);
 
-        assertEquals("Release Candidate", properties.get("detect.project.version.nickname"));
-        assertEquals("Release candidate for version 1.0", properties.get("detect.project.version.notes"));
-        assertEquals("Apache License 2.0", properties.get("detect.project.version.license"));
+        assertEquals("Release Candidate", properties.get(DetectProperties.DETECT_PROJECT_VERSION_NICKNAME.getKey()));
+        assertEquals("Release candidate for version 1.0", properties.get(DetectProperties.DETECT_PROJECT_VERSION_NOTES.getKey()));
+        assertEquals("Apache License 2.0", properties.get(DetectProperties.DETECT_PROJECT_VERSION_LICENSE.getKey()));
     }
 
     @Test
@@ -97,8 +98,8 @@ public class ProjectSettingsJsonMergerTest {
         JsonElement jsonElement = gson.fromJson(json, JsonElement.class);
         Map<String, String> properties = merger.extractPropertiesFromJson(jsonElement);
 
-        assertEquals("TestProject", properties.get("detect.project.name"));
-        assertEquals("false", properties.get("detect.project.deep.license"));
+        assertEquals("TestProject", properties.get(DetectProperties.DETECT_PROJECT_NAME.getKey()));
+        assertEquals("false", properties.get(DetectProperties.DETECT_PROJECT_DEEP_LICENSE.getKey()));
     }
 
     @Test
@@ -129,22 +130,22 @@ public class ProjectSettingsJsonMergerTest {
         Map<String, String> properties = merger.extractPropertiesFromJson(jsonElement);
 
         // Validate all properties are extracted correctly
-        assertEquals("ComprehensiveProject", properties.get("detect.project.name"));
-        assertEquals("A comprehensive test project", properties.get("detect.project.description"));
-        assertEquals("5", properties.get("detect.project.tier"));
-        assertEquals("app-12345", properties.get("detect.project.application.id"));
-        assertEquals("MyGroup", properties.get("detect.project.group.name"));
-        assertEquals("Critical,Production", properties.get("detect.project.tags"));
-        assertEquals("Admins,Developers", properties.get("detect.project.user.groups"));
-        assertEquals("true", properties.get("detect.project.level.adjustments"));
-        assertEquals("true", properties.get("detect.project.deep.license"));
-        assertEquals("ALL", properties.get("detect.project.clone.categories"));
-        assertEquals("2.0.0", properties.get("detect.project.version.name"));
-        assertEquals("Major Release", properties.get("detect.project.version.nickname"));
-        assertEquals("Major version update", properties.get("detect.project.version.notes"));
-        assertEquals("RELEASED", properties.get("detect.project.version.phase"));
-        assertEquals("EXTERNAL", properties.get("detect.project.version.distribution"));
-        assertEquals("false", properties.get("detect.project.version.update"));
-        assertEquals("MIT License", properties.get("detect.project.version.license"));
+        assertEquals("ComprehensiveProject", properties.get(DetectProperties.DETECT_PROJECT_NAME.getKey()));
+        assertEquals("A comprehensive test project", properties.get(DetectProperties.DETECT_PROJECT_DESCRIPTION.getKey()));
+        assertEquals("5", properties.get(DetectProperties.DETECT_PROJECT_TIER.getKey()));
+        assertEquals("app-12345", properties.get(DetectProperties.DETECT_PROJECT_APPLICATION_ID.getKey()));
+        assertEquals("MyGroup", properties.get(DetectProperties.DETECT_PROJECT_GROUP_NAME.getKey()));
+        assertEquals("Critical,Production", properties.get(DetectProperties.DETECT_PROJECT_TAGS.getKey()));
+        assertEquals("Admins,Developers", properties.get(DetectProperties.DETECT_PROJECT_USER_GROUPS.getKey()));
+        assertEquals("true", properties.get(DetectProperties.DETECT_PROJECT_LEVEL_ADJUSTMENTS.getKey()));
+        assertEquals("true", properties.get(DetectProperties.DETECT_PROJECT_DEEP_LICENSE.getKey()));
+        assertEquals("ALL", properties.get(DetectProperties.DETECT_PROJECT_CLONE_CATEGORIES.getKey()));
+        assertEquals("2.0.0", properties.get(DetectProperties.DETECT_PROJECT_VERSION_NAME.getKey()));
+        assertEquals("Major Release", properties.get(DetectProperties.DETECT_PROJECT_VERSION_NICKNAME.getKey()));
+        assertEquals("Major version update", properties.get(DetectProperties.DETECT_PROJECT_VERSION_NOTES.getKey()));
+        assertEquals("RELEASED", properties.get(DetectProperties.DETECT_PROJECT_VERSION_PHASE.getKey()));
+        assertEquals("EXTERNAL", properties.get(DetectProperties.DETECT_PROJECT_VERSION_DISTRIBUTION.getKey()));
+        assertEquals("false", properties.get(DetectProperties.DETECT_PROJECT_VERSION_UPDATE.getKey()));
+        assertEquals("MIT License", properties.get(DetectProperties.DETECT_PROJECT_VERSION_LICENSE.getKey()));
     }
 }

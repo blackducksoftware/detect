@@ -2,6 +2,17 @@ package com.blackduck.integration.detect.configuration;
 
 /**
  * POJO representing version settings from the project settings JSON.
+ * 
+ * Expected JSON structure:
+ * {
+ *   "name": "1.0.0",
+ *   "nickname": "Release Candidate",
+ *   "notes": "Initial release candidate version",
+ *   "phase": "RELEASED",
+ *   "distribution": "EXTERNAL",
+ *   "update": true,
+ *   "license": "Apache-2.0"
+ * }
  */
 public class VersionSettings {
     private String name;
