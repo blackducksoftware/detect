@@ -47,7 +47,6 @@ import com.blackduck.integration.configuration.property.types.string.StringPrope
 import com.blackduck.integration.detect.configuration.enumeration.BlackduckScanMode;
 import com.blackduck.integration.detect.configuration.enumeration.DetectCategory;
 import com.blackduck.integration.detect.configuration.enumeration.DetectGroup;
-import com.blackduck.integration.detect.configuration.enumeration.DetectMajorVersion;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTargetType;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
 import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
@@ -1639,6 +1638,13 @@ public class DetectProperties {
             .setCategory(DetectCategory.Advanced)
             .build();
 
+    public static final BooleanProperty DETECT_PROJECT_DEEP_LICENSE =
+        BooleanProperty.newBuilder("detect.project.deep.license", false)
+            .setInfo("Deep License Analysis", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setHelp("If set to true, enables Deep License Analysis for the project, including detailed license data and snippet analysis.")
+            .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
+            .build();
+
     public static final NullablePathProperty DETECT_PYTHON_PATH =
         NullablePathProperty.newBuilder("detect.python.path")
             .setInfo("Python Executable", DetectPropertyFromVersion.VERSION_3_0_0)
@@ -1988,29 +1994,6 @@ public class DetectProperties {
 
     //#region Deprecated Properties
 
-    public static final BooleanProperty DETECT_PROJECT_CODELOCATION_UNMAP =
-        BooleanProperty.newBuilder("detect.project.codelocation.unmap", false)
-            .setInfo("Unmap All Other Scans for Project", DetectPropertyFromVersion.VERSION_4_0_0)
-            .setHelp("If set to true, unmaps all other scans mapped to the project version produced by the current run of Detect.")
-            .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
-            .setCategory(DetectCategory.Advanced)
-            .setDeprecated(
-                "This property has been deprecated.",
-                DetectMajorVersion.ELEVEN
-            )
-            .build();
-
-    @Deprecated
-    public static final NullableStringProperty DETECT_THREAT_INTEL_SCAN_FILE =
-            NullableStringProperty.newBuilder("detect.threatintel.scan.file.path")
-                    .setInfo("Threat Intel Scan Target", DetectPropertyFromVersion.VERSION_9_6_0)
-                    .setHelp(
-                            "If specified, this file and this file only will be uploaded for Threat Intel analysis. The THREAT_INTEL tool does not provide project and version name defaults to Detect, so you need to set project and version names via properties when only the THREAT_INTEL tool is invoked.")
-                    .setGroups(DetectGroup.THREAT_INTEL, DetectGroup.SOURCE_PATH)
-                    .setDeprecated("This property has been deprecated.",
-                            DetectMajorVersion.ELEVEN)
-                    .build();
-
     // Can't take in the DetectProperty<?> due to an illegal forward reference :(
     private static String createTypeFilterHelpText(String exclusionTypePlural) {
         return String.format("Set this value to indicate which %s Detect should exclude from the BOM.", exclusionTypePlural);
@@ -2031,9 +2014,6 @@ public class DetectProperties {
                 }
             }
         }
-        DETECT_TOOLS.addDeprecatedValueInfo(DetectTool.THREAT_INTEL.name(), "This tool value has been deprecated.");
-        DETECT_TOOLS_EXCLUDED.addDeprecatedValueInfo(DetectTool.THREAT_INTEL.name(), "This tool value has been deprecated.");
-        DETECT_PROJECT_TOOL.addDeprecatedValueInfo(DetectTool.THREAT_INTEL.name(), "This tool value has been deprecated.");
 
         return new Properties(properties);
     }

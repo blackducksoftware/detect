@@ -22,15 +22,18 @@
 
 ### New features
 
-* 
+* When enabled, the new `detect.project.deep.license` property sets the Deep License Data and Deep License Data Snippet fields when creating a project. This property can also be used to update existing projects when the `detect.project.version.update` property is set to true.
 
 ### Changed features
 
-*
+* ReversingLabs Scans (`detect.tools=THREAT_INTEL`) has been removed.
+* The `detect.threatintel.scan.file.path` property has been removed.
+* The `detect.project.codelocation.unmap` property has been removed.
 
 ### Resolved issues
 
-* 
+* (IDETECT-4802) Fix UV Lockfile Detector not generating BDIOs for projects with non-normalized names per Python requirements.
+* (IDETECT-4799) When constructing the BDIO, ignore the Go toolchain directive, as it is the Go project's build-time configuration setting and not a module dependency. 
 
 ### Dependency updates
 
