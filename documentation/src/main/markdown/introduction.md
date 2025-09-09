@@ -51,6 +51,3 @@ When looking at vulnerabilities in open source and third-party software, [detect
 * Uploads both sets of results (dependency details) to [bd_product_short] creating the project/version if it does not already exist. [bd_product_short] uses the uploaded dependency information to build the Bill Of Materials (BOM) for the project/version.
 
 * You can view the output and analysis results in [bd_product_short].    
-
-See our [Black Duck: Introduction to Scanning](https://blackduck.skilljar.com/black-duck-installing-synopsys-detect?utm_source=docsportal&utm_medium=banner&utm_campaign=detect_academypromo) course for a quick intro to installing the [detect_product_short] Command Line Interface (CLI) tool and running your first scans.
-
