@@ -158,6 +158,11 @@ public class UVTreeDependencyGraphTransformer {
             line = line.replace(parenthesis, "");
         }
 
+        if (line.contains("(")) {
+            String parenthesis = line.substring(line.indexOf("("), line.indexOf(")") + 1);
+            line = line.replace(parenthesis, "");
+        }
+
         // we keep the limit three to split it in three parts if we have extra information such as group or extra, as an example "pytest v8.3.4 (group: dev)"
         String[] parts = line.split(" ",3);
         String dependencyName = parts[0];
