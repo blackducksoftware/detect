@@ -26,7 +26,7 @@ import com.blackduck.integration.detectable.detectable.result.PassedDetectableRe
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 
-@DetectableInfo(name = "Gradle Native Inspector", language = "various", forge = "Maven Central", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: build.gradle or build.gradle.kts. Executable: gradlew or gradle.")
+@DetectableInfo(name = "Gradle Native Inspector", language = "various", forge = "Maven Central", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: build.gradle or build.gradle.kts or settings.gradle or settings.gradle.kts. Executable: gradlew or gradle.")
 public class GradleInspectorDetectable extends Detectable {
     public static final String BUILD_GRADLE_FILENAME = "build.gradle";
     public static final String KOTLIN_BUILD_GRADLE_FILENAME = "build.gradle.kts";
