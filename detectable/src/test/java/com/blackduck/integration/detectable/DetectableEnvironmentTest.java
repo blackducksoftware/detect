@@ -147,4 +147,65 @@ public class DetectableEnvironmentTest {
         assertEquals(isDir1, isDir2);
         assertTrue(isDir1);
     }
+    
+    @Test
+    public void testCachesAreSeparateForDifferentDirectories() {
+        // Create two different mock directories
+        File mockDirectory1 = Mockito.mock(File.class);
+        File mockDirectory2 = Mockito.mock(File.class);
+        
+        File[] files1 = new File[] { new File("dir1_file1.txt"), new File("dir1_file2.txt") };
+        File[] files2 = new File[] { new File("dir2_file1.txt"), new File("dir2_file2.txt"), new File("dir2_file3.txt") };
+        
+        // Setup different return values for each directory
+        when(mockDirectory1.listFiles()).thenReturn(files1);
+        when(mockDirectory1.isDirectory()).thenReturn(true);
+        when(mockDirectory1.getAbsolutePath()).thenReturn("/fake/path1");
+        
+        when(mockDirectory2.listFiles()).thenReturn(files2);
+        when(mockDirectory2.isDirectory()).thenReturn(false);
+        when(mockDirectory2.getAbsolutePath()).thenReturn("/fake/path2");
+        
+        // Create separate DetectableEnvironment instances
+        DetectableEnvironment env1 = new DetectableEnvironment(mockDirectory1);
+        DetectableEnvironment env2 = new DetectableEnvironment(mockDirectory2);
+        
+        File wrappedDir1 = env1.getDirectory();
+        File wrappedDir2 = env2.getDirectory();
+        
+        // Call methods on both wrapped directories multiple times
+        File[] result1a = wrappedDir1.listFiles();
+        File[] result1b = wrappedDir1.listFiles();
+        boolean isDir1a = wrappedDir1.isDirectory();
+        boolean isDir1b = wrappedDir1.isDirectory();
+        
+        File[] result2a = wrappedDir2.listFiles();
+        File[] result2b = wrappedDir2.listFiles();
+        boolean isDir2a = wrappedDir2.isDirectory();
+        boolean isDir2b = wrappedDir2.isDirectory();
+        
+        // Verify each underlying directory was called only once (caching works)
+        verify(mockDirectory1, times(1)).listFiles();
+        verify(mockDirectory1, times(1)).isDirectory();
+        verify(mockDirectory2, times(1)).listFiles();
+        verify(mockDirectory2, times(1)).isDirectory();
+        
+        // Verify that the caches return the correct results for each directory
+        assertSame(result1a, result1b);
+        assertArrayEquals(files1, result1a);
+        assertTrue(isDir1a);
+        assertTrue(isDir1b);
+        
+        assertSame(result2a, result2b);
+        assertArrayEquals(files2, result2a);
+        assertFalse(isDir2a);
+        assertFalse(isDir2b);
+        
+        // Most importantly: verify that the results are different between directories
+        assertFalse(result1a == result2a); // Different object references
+        assertEquals(2, result1a.length);
+        assertEquals(3, result2a.length);
+        assertTrue(isDir1a);
+        assertFalse(isDir2a);
+    }
 }
