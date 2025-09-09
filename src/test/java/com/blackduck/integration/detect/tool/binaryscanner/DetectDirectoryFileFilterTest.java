@@ -88,4 +88,14 @@ public class DetectDirectoryFileFilterTest {
         assertTrue(filter.test(lowerCaseFileExtension));
         assertTrue(filter.test(upperCaseFileExtension));
     }
+
+    @Test
+    void testFileInclusionCaseSensitive() {
+        List<String> fileInclusionPatterns = Arrays.asList("*.dll");
+        List<String> excludedDirs = Collections.emptyList();
+        DetectDirectoryFileFilterCaseSensitive filter = new DetectDirectoryFileFilterCaseSensitive(excludedDirs, fileInclusionPatterns);
+
+        assertTrue(filter.test(lowerCaseFileExtension));
+        assertFalse(filter.test(upperCaseFileExtension));
+    }
 }
