@@ -1,8 +1,7 @@
 # [detect_product_long] requirements and release information
 
 ## General requirements
-
-* Unless you are running [detect_product_short] in Air Gap mode, access to the internet is required to download and run [detect_product_short] and components from GitHub and other locations.     
+     
 * Minimum 8GB RAM.   
 * Java: OpenJDK 64-bit version 8, 11, 13, 14, 15, 16, 17, or 21. If using Java 11: 11.0.5 or higher is required.   
 * Minimum curl version 7.34.0, recommended 8.4.0 or later.   
@@ -11,6 +10,8 @@
 * The tools required to build your project source code.   
 
 ## Network requirements and information
+
+<note type="note">Unless you are running [detect_product_short] in Air Gap mode, access to the internet is required to download and run [detect_product_short] and related components from GitHub and other locations.</note>
 
 * [detect_product_short] script downloads should only be accessed via detect.blackduck.com.
 * [detect_product_short] 10.0.0 and later will only work when using repo.blackduck.com. 
@@ -31,14 +32,13 @@
 
 ## Running [detect_product_short] in an Air Gap environment
 
-To run [detect_product_short] without internet access, refer to [Air Gap Mode](../downloadingandinstalling/airgap.md).
+* To run [detect_product_short] without internet access, refer to [Air Gap Mode](../downloadingandinstalling/airgap.md).
 
 ## [bd_product_short] integration requirements
 
 * Licensed installation of the current version of [bd_product_short] with access credentials.
 Visit the [Black Duck release page](https://github.com/blackducksoftware/hub/releases) to determine the current version of [bd_product_short].
-* For information about additional compatible versions of [bd_product_short], consult the
-<xref href="Black-Duck-Release-Compatibility.dita" scope="peer"> [bd_product_short] Release Compatibility.<data name="facets" value="pubname=blackduck-compatibility"/>
+* For information regarding compatible versions of [bd_product_short], consult the [bd_product_short] [Release Compatibility page](https://documentation.blackduck.com/bundle/blackduck-compatibility/page/topics/Black-Duck-Release-Compatibility.html)
 * The [bd_product_short] notifications module must be enabled.
 * A [bd_product_short] user with the [required roles](usersandroles.md).
 * On Alpine Linux you will also need to override the Java installation used by the [blackduck_signature_scanner_name] as
