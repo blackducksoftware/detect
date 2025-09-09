@@ -59,7 +59,7 @@ Specify the following [detect_product_short] scan properties:
 * --detect.output.path= output directory to store files that [detect_product_short] downloads or creates
 * --detect.blackduck.signature.scanner.local.path= location to the signature scanner scan.cli-202x.xx.x
 
-<note type="note">If using detect-X.X.X-air-gap.zip archive files, [see Air Gap Mode](../../downloadingandinstalling/airgap.md) for additional information.</note>
+<note type="note">If using air gap zip archive files for [detect_product_short] scanning, [see Air Gap Mode](../../downloadingandinstalling/airgap.md) for additional information.</note>
 
 [detect_product_short] Scan Command example:
 ```
