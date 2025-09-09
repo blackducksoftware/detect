@@ -2,7 +2,7 @@
 
 ## General requirements
 
-* Typically, access to the internet is required to download and run [detect_product_short] and components from GitHub and other locations. For running without internet access,
+* Access to the internet is required to download and run [detect_product_short] and components from GitHub and other locations. For running without internet access,
 refer to [Air Gap Mode](../downloadingandinstalling/airgap.md).
 * Minimum 8GB RAM.
 * Java: OpenJDK 64-bit version 8, 11, 13, 14, 15, 16, 17, or 21. If using Java 11: 11.0.5 or higher is required.
@@ -11,7 +11,26 @@ refer to [Air Gap Mode](../downloadingandinstalling/airgap.md).
 * If using [powershell_script_name]: PowerShell versions 4.0 or higher.
 * The tools required to build your project source code.
 
-## [bd_product_long] integration requirements
+## Network requirements and information
+
+* [detect_product_short] script downloads should only be accessed via detect.blackduck.com.
+* [detect_product_short] 10.0.0 and later will only work when using repo.blackduck.com. 
+
+<note type="tip">Configure repo.blackduck.com on network allow lists to ensure connectivity for any scripts, services, or pipelines requiring access.</note>
+
+* [bd_product_long] [SCA Scan Service (SCASS)](https://community.blackduck.com/s/question/0D5Uh00000O2ZSYKA3/black-duck-sca-new-ip-address-requirements-for-2025) requires customers add or update IP addresses configured in their network firewalls or allow lists. This action is required to successfully route scan data for processing.
+
+	* scass.blackduck.com - 35.244.200.22
+	* na.scass.blackduck.com - 35.244.200.22
+	* na.store.scass.blackduck.com - 34.54.95.139
+	* eu.store.scass.blackduck.com - 34.54.213.11
+	* eu.scass.blackduck.com - 34.54.38.252
+	
+## Running [detect_product_short] in a container
+
+[var_company_long] publishes [detect_product_short] Docker images which can be used to run [detect_product_short] from within a Docker container. Refer to [Running Detect from within a Docker container](../runningdetect/runincontainer.md) for details.
+
+## [bd_product_short] integration requirements
 
 * Licensed installation of the current version of [bd_product_short] with access credentials.
 Visit the [Black Duck release page](https://github.com/blackducksoftware/hub/releases) to determine the current version of [bd_product_short].
