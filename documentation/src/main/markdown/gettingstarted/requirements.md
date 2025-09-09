@@ -2,13 +2,13 @@
 
 ## General requirements
 
-* Unless you are running [detect_product_short] in Air Gap mode, access to the internet is required to download and run [detect_product_short] and components from GitHub and other locations.   
-* Minimum 8GB RAM.
-* Java: OpenJDK 64-bit version 8, 11, 13, 14, 15, 16, 17, or 21. If using Java 11: 11.0.5 or higher is required.
-* Minimum curl version 7.34.0, recommended 8.4.0 or later.
-* Bash.
-* If using [powershell_script_name]: PowerShell versions 4.0 or higher.
-* The tools required to build your project source code.
+* Unless you are running [detect_product_short] in Air Gap mode, access to the internet is required to download and run [detect_product_short] and components from GitHub and other locations.     
+* Minimum 8GB RAM.   
+* Java: OpenJDK 64-bit version 8, 11, 13, 14, 15, 16, 17, or 21. If using Java 11: 11.0.5 or higher is required.   
+* Minimum curl version 7.34.0, recommended 8.4.0 or later.   
+* Bash.   
+* If using [powershell_script_name]: PowerShell versions 4.0 or higher.   
+* The tools required to build your project source code.   
 
 ## Network requirements and information
 
@@ -31,7 +31,7 @@
 
 ## Running [detect_product_short] in an Air Gap environment
 
-* To run [detect_product_short] without internet access, refer to [Air Gap Mode](../downloadingandinstalling/airgap.md).
+To run [detect_product_short] without internet access, refer to [Air Gap Mode](../downloadingandinstalling/airgap.md).
 
 ## [bd_product_short] integration requirements
 
@@ -63,5 +63,5 @@ The risk report requires that the following fonts are installed:
 
 ## Supported [detect_product_short] versions and Service duration
 
-* For information about support and service durations for [detect_product_short] versions, consult the
+For information about support and service durations for [detect_product_short] versions, consult the
 <xref href="Support-and-Service-Schedule.dita" scope="peer"> Support and Service Schedule.<data name="facets" value="pubname=blackduck-compatibility"/>
