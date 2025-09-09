@@ -1,9 +1,8 @@
-# [detect_product_short] requirements and release information
+# [detect_product_long] requirements and release information
 
 ## General requirements
 
-* Access to the internet is required to download and run [detect_product_short] and components from GitHub and other locations. For running without internet access,
-refer to [Air Gap Mode](../downloadingandinstalling/airgap.md).
+* Unless you are running [detect_product_short] in Air Gap mode, access to the internet is required to download and run [detect_product_short] and components from GitHub and other locations.   
 * Minimum 8GB RAM.
 * Java: OpenJDK 64-bit version 8, 11, 13, 14, 15, 16, 17, or 21. If using Java 11: 11.0.5 or higher is required.
 * Minimum curl version 7.34.0, recommended 8.4.0 or later.
@@ -29,6 +28,10 @@ refer to [Air Gap Mode](../downloadingandinstalling/airgap.md).
 ## Running [detect_product_short] in a container
 
 [var_company_long] publishes [detect_product_short] Docker images which can be used to run [detect_product_short] from within a Docker container. Refer to [Running Detect from within a Docker container](../runningdetect/runincontainer.md) for details.
+
+## Running [detect_product_short] in an Air Gap environment
+
+* To run [detect_product_short] without internet access, refer to [Air Gap Mode](../downloadingandinstalling/airgap.md).
 
 ## [bd_product_short] integration requirements
 
