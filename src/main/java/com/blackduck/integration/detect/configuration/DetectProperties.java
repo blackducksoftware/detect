@@ -501,7 +501,7 @@ public class DetectProperties {
             )
             .setInfo("Snippet Matching", DetectPropertyFromVersion.VERSION_5_5_0)
             .setHelp(
-                "Use this value to enable the various snippet scanning modes. For a full explanation, refer to <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/bd%2Dhub/page/ComponentDiscovery/CommandLine%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Running a component scan using the Signature Scanner command line.</xref> Corresponding Signature Scanner CLI Arguments: --snippet-matching, --snippet-matching-only, --full-snippet-scan."
+                "Use this value to enable the various snippet scanning modes. For a full explanation, refer to <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/bd%2Dhub/page/ComponentDiscovery/CommandLine%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Running a component scan using the Signature Scanner command line.</xref> Corresponding Signature Scanner CLI Arguments: --snippet-matching, --snippet-matching-only."
 				)
             .setGroups(DetectGroup.SIGNATURE_SCANNER, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
