@@ -658,8 +658,8 @@ public class DetectProperties {
         BooleanProperty.newBuilder("detect.detector.search.continue", false)
             .setInfo("Detector Search Continue", DetectPropertyFromVersion.VERSION_3_2_0)
             .setHelp(
-                "By default, nesting rules limit which detectors can run on a subdirectory based on which detectors applied on any parent directory. Setting this property to true disables nesting rules.",
-                "Refer to the 'Downloading and Running Black Duck Detect' > 'Detector search and accuracy' page for more information on nesting rules."
+                "By default, nesting rules limit which detectors can run on a subdirectory based on which detectors applied on any parent directory. Setting this property to true disables nesting rules.",	
+				"For further explanation on nesting rules, please refer to <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/runningdetect/detectorcascade%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Detector search and accuracy.</xref>"
             )
             .setGroups(DetectGroup.PATHS, DetectGroup.DETECTOR, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
@@ -775,7 +775,7 @@ public class DetectProperties {
                 "An image .tar file which is either a Docker image saved to a file using the 'docker save' command, or an Open Container Initiative (OCI) image .tar file. The file must be readable by all.",
                 "detect.docker.image, detect.docker.tar, and detect.docker.image.id are three alternative ways to specify an image (you should only set one of these properties). "
                     +
-                    "The .tar file must conform to either of the following image format specifications: 1. Docker Image Specification v1.2.0 (https://github.com/moby/moby/blob/master/image/spec/v1.2.md), which is the format produced by the \"docker save\" command, or 2. Open Container Initiative Image Format Specification (https://github.com/opencontainers/image-spec/blob/main/spec.md)."
+                    "The .tar file must conform to either of the following image format specifications: 1. Docker Image Specification v1.2.0 (https://github.com/moby/docker-image-spec/blob/main/v1.2.md), which is the format produced by the \"docker save\" command, or 2. Open Container Initiative Image Format Specification (https://github.com/opencontainers/image-spec/blob/main/spec.md)."
             )
             .setExample("./ubuntu21_04.tar")
             .setGroups(DetectGroup.DOCKER, DetectGroup.SOURCE_PATH)
