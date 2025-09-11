@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.Set;
 
@@ -66,7 +67,6 @@ public class DockerAssertions {
             wrapAndThrowWithDetectLogs(t);
         }
     }
-
 
     public void successfulOperationStatusJson(String operationKey) {
         try {
@@ -297,6 +297,28 @@ public class DockerAssertions {
     public void resultNotPresentAtLocation(String location) {
         try {
             Assertions.assertFalse(locateStatusJson().results.stream().anyMatch(result -> result.location.equals(location)), "Found file at: " + location);
+        } catch (Throwable t) {
+            wrapAndThrowWithDetectLogs(t);
+        }
+    }
+
+    public void durationLessThan(int thresholdSeconds) {
+        Pattern pattern = Pattern.compile("Detect duration: (\\d\\d)h (\\d\\d)m (\\d\\d)s");
+        Matcher matcher = pattern.matcher(dockerDetectResult.getDetectLogs());
+
+        try {
+            Assertions.assertTrue(matcher.find(), "Expected Detect to log duration");
+
+            int hours = Integer.parseInt(matcher.group(1));
+            int minutes = Integer.parseInt(matcher.group(2));
+            int seconds = Integer.parseInt(matcher.group(3));
+
+            int totalSeconds = seconds + minutes * 60 + hours * 3600;
+
+            Assertions.assertTrue(
+                totalSeconds < thresholdSeconds,
+                String.format("Expected duration %d seconds to be less than %d seconds", totalSeconds, thresholdSeconds)
+            );
         } catch (Throwable t) {
             wrapAndThrowWithDetectLogs(t);
         }

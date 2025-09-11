@@ -1,9 +1,7 @@
 package com.blackduck.integration.common.util.finder;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
@@ -33,7 +31,7 @@ public class SimpleFileFinder implements FileFinder {
             if (matches) {
                 foundFiles.add(file);
             }
-            if ((!matches || findInsideMatchingDirectories) && shouldFindInDirectory(file, followSymLinks)) {
+            if (!matches || findInsideMatchingDirectories) {
                 foundFiles.addAll(findFiles(file, filter, followSymLinks, depth - 1, findInsideMatchingDirectories));
             }
         }
@@ -42,17 +40,7 @@ public class SimpleFileFinder implements FileFinder {
     }
 
     private boolean shouldFindInDirectory(File file, boolean followSymLinks) {
-        return (file.isDirectory() && (!Files.isSymbolicLink(file.toPath()) || followSymLinks)) && linkPointsToValidDirectory(file);
-    }
-
-    private boolean linkPointsToValidDirectory(File directory) {
-        Path linkTarget;
-        try {
-            linkTarget = directory.toPath().toRealPath();
-        } catch (IOException e) {
-            return false;
-        }
-        return linkTarget.toFile().isDirectory();
+        return file.isDirectory() && (followSymLinks || !Files.isSymbolicLink(file.toPath()));
     }
 
     @NotNull
