@@ -61,7 +61,7 @@ Pipfile.lock dependencies can be filtered using the [detect.pipfile.dependency.t
 
 ## Pip Native Inspector
 
-Pip Native Inspector attempts to run on your project if any of the following are true: a setup.py file is found, a requirements.txt is found, or a requirements file is provided using the [--detect.pip.requirements.path](../properties/detectors/pip.md#pip-requirements-path) property.
+Pip Native Inspector attempts to run on your project if any of the following are true: a setup.py file is found, a pyproject.toml file is found, a requirements.txt is found, or a requirements file is provided using the [--detect.pip.requirements.path](../properties/detectors/pip.md#pip-requirements-path) property.
 
 Pip Native Inspector requires Python and pip executables.
 
@@ -70,7 +70,7 @@ Pip Native Inspector requires Python and pip executables.
 
 Pip Native Inspector runs the [pip-inspector.py script](https://github.com/blackducksoftware/detect/blob/master/src/main/resources/pip-inspector.py), which uses Python/pip libraries to query the pip cache for the project, which may or may not be a virtual environment, for dependency information:
 
-1. pip-inspector.py queries for the project dependencies by project name which can be discovered using setup.py, or provided using the detect.pip.project.name property. If your project is installed into the pip cache, this discovers dependencies specified in setup.py.
+1. pip-inspector.py queries for the project dependencies by project name which can be discovered using setup.py, pyproject.toml, or provided using the detect.pip.project.name property. If your project is installed into the pip cache, this discovers dependencies specified in setup.py or pyproject.toml file.
 1. If one or more requirements files are found or provided, pip-inspector.py queries each requirements file for possible additional dependencies and details of each.
 
 <note type="tip">Only those packages which have been installed; using, for example, `pip install`, into the pip cache and appearing in the output of `pip list`, are included in the output of pip-inspector.py. There must be a match between the package version on which your project depends and the package version installed in the pip cache.</note>
@@ -79,14 +79,14 @@ Pip Native Inspector runs the [pip-inspector.py script](https://github.com/black
 ### Recommendations for Pip Detector
 
 * Be sure that [detect_product_short] is locating the correct version of the Python executable; this can be done by running the logging level at DEBUG and then reading the log. This is a particular concern if your system has multiple versions of Python installed.
-* Create a setup.py file for your project.
+* Create a setup.py or pyproject.toml file for your project.
 * Install your project and dependencies into the pip cache:
 ````
-python setup.py install
+python setup.py install or pip install . (from directory where pyproject.toml is present)
 pip install -r requirements.txt
 ````
-* Pip detector attempts to derive the project name using your setup.py file if you have one. If you do not have a setup.py file, you can provide the correct project name using the propety `--detect.pip.project.name`.
-* If there are any dependencies specified in requirements.txt that are not specified in setup.py, then provide the requirements.txt file using the [detect_product_short] property.   
+* Pip detector attempts to derive the project name using your setup.py or pyproject.toml file if you have one. If you do not have a setup.py or pyproject.toml file, you can provide the correct project name using the property `--detect.pip.project.name`.
+* If there are any dependencies specified in requirements.txt that are not specified in setup.py or pyproject.toml file, then provide the requirements.txt file using the [detect_product_short] property.   
 <note type="tip">If you are using a virtual environment, be sure to switch to that virtual environment when you run [detect_product_short]. This also applies when you are using a tool such as Poetry that sets up a Python virtual environment.</note>
 
 ## PIP Requirements File Parse

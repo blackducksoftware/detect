@@ -1,12 +1,14 @@
 package com.blackduck.integration.detectable.detectables.pip.inspector;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.blackduck.integration.detectable.ExecutableTarget;
@@ -19,11 +21,22 @@ import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.util.ToolVersionLogger;
 import com.blackduck.integration.executable.ExecutableOutput;
 import com.blackduck.integration.executable.ExecutableRunnerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.tomlj.Toml;
+import org.tomlj.TomlParseResult;
+import org.tomlj.TomlTable;
 
 public class PipInspectorExtractor {
+
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final DetectableExecutableRunner executableRunner;
     private final PipInspectorTreeParser pipInspectorTreeParser;
     private final ToolVersionLogger toolVersionLogger;
+    private static final String NAME_KEY = "name";
+    private static final String VERSION_KEY = "version";
+    private static final String PROJECT_KEY = "project";
+    private TomlParseResult tomlParseResult;
 
     public PipInspectorExtractor(DetectableExecutableRunner executableRunner, PipInspectorTreeParser pipInspectorTreeParser, ToolVersionLogger toolVersionLogger) {
         this.executableRunner = executableRunner;
@@ -38,13 +51,14 @@ public class PipInspectorExtractor {
         File pipInspector,
         File setupFile,
         List<Path> requirementFilePaths,
-        String providedProjectName
+        String providedProjectName,
+        File tomlFile
     ) {
         toolVersionLogger.log(directory, pythonExe);
         toolVersionLogger.log(directory, pipExe);
         Extraction extractionResult;
         try {
-            String projectName = getProjectName(directory, pythonExe, setupFile, providedProjectName);
+            String projectName = getProjectName(directory, pythonExe, setupFile, tomlFile, providedProjectName);
 
             if (StringUtils.isEmpty(projectName) && requirementFilePaths.isEmpty()) {
                 return new Extraction.Builder().failure("Unable to run the Pip Inspector without a project name or a requirements file").build();
@@ -105,10 +119,23 @@ public class PipInspectorExtractor {
         return executableRunner.execute(ExecutableUtils.createFromTarget(sourceDirectory, pythonExe, inspectorArguments)).getStandardOutputAsList();
     }
 
-    private String getProjectName(File directory, ExecutableTarget pythonExe, File setupFile, String providedProjectName) throws ExecutableRunnerException {
+    private String getProjectName(File directory, ExecutableTarget pythonExe, File setupFile, File tomlFile, String providedProjectName) throws ExecutableRunnerException {
         String projectName = providedProjectName;
 
-        if (StringUtils.isBlank(projectName) && setupFile != null && setupFile.exists()) {
+        if (StringUtils.isBlank(projectName) && tomlFile != null && tomlFile.exists()) {
+            try {
+                String tomlContent = FileUtils.readFileToString(tomlFile, StandardCharsets.UTF_8);
+                tomlParseResult = Toml.parse(tomlContent);
+            } catch (Exception e) {
+                logger.warn("Unable to read Toml file: " + tomlFile.getAbsolutePath(), e);
+                return projectName;
+            }
+
+            TomlTable projectTable = tomlParseResult.getTable(PROJECT_KEY);
+            if(projectTable.contains(NAME_KEY)) {
+                projectName = projectTable.getString(NAME_KEY);
+            }
+        } else if (StringUtils.isBlank(projectName) && setupFile != null && setupFile.exists()) {
             List<String> pythonArguments = Arrays.asList(setupFile.getAbsolutePath(), "--name");
             ExecutableOutput executableOutput = executableRunner.execute(ExecutableUtils.createFromTarget(directory, pythonExe, pythonArguments));
             if (executableOutput.getReturnCode() == 0) {
