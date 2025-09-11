@@ -10,7 +10,7 @@
 
 <note type="note">It is recommended that customers continue to maintain sig-repo.synopsys.com, and repo.blackduck.com on their allow list until such time as all scripts, services, or pipelines have been updated with the repo.blackduck.com URL.</note>
 
-* [bd_product_long] [SCA Scan Service (SCASS)](https://community.blackduck.com/s/question/0D5Uh00000O2ZSYKA3/black-duck-sca-new-ip-address-requirements-for-2025) requires customers add or update IP addresses configured in their network firewalls or allow lists. This action is required to successfully route scan data to the new service for processing.
+* [bd_product_long] [SCA Scan Service (SCASS)](https://community.blackduck.com/s/question/0D5Uh00000O2ZSYKA3/black-duck-sca-new-ip-address-requirements-for-2025) requires customers add or update IP addresses configured in their network firewalls or allow lists. This action is required to successfully route scan data to the service for processing.
 
 	* scass.blackduck.com - 35.244.200.22
 	* na.scass.blackduck.com - 35.244.200.22
@@ -18,32 +18,27 @@
 	* eu.store.scass.blackduck.com - 34.54.213.11
 	* eu.scass.blackduck.com - 34.54.38.252
 
-## Version 10.7.0
+## Version 11.0.0
 
 ### New features
 
-* Maven CLI Detector now accepts a custom pom.xml file name (matching the pattern *pom.xml) when provided via `detect.maven.build.command`.  
-* Signature Scan now supports ARM architecture with correctly packaged ARM JRE for Windows, Mac, Linux, and Alpine operating systems for [bd_product_long] version 2025.7.0 or later.
-  <note type="hint">To ensure [detect_product_short] correctly identifies the system architecture on ARM-based systems, please install an ARM-specific Java runtime. This is necessary for accurate detection and proper functionality on ARM platforms.</note>
-* Support for Poetry is now extended to 2.1.4.
-* [detect_product_short] Docker Inspector air gap distribution JAR files are now digitally signed with Black Duck Software, Inc authority.
-* [detect_product_short] Nuget Inspector binaries for Windows are now digitally signed with Black Duck Software, Inc authority.
+* When enabled, the new `detect.project.deep.license` property sets the Deep License Data and Deep License Data Snippet fields when creating a project. This property can also be used to update existing projects when the `detect.project.version.update` property is set to true.
 
 ### Changed features
 
-* Yarn workspace identification and processing has been made more efficient, resulting in some scans being faster.
+* ReversingLabs Scans (`detect.tools=THREAT_INTEL`) has been removed.
+* The `detect.threatintel.scan.file.path` property has been removed.
+* The `detect.project.codelocation.unmap` property has been removed.
 
 ### Resolved issues
 
-* (IDETECT-3456) BOM components marked as "ignored" will no longer appear in [detect_product_short] risk reports.
-* (IDETECT-4781) Signature Scans will no longer fail if SCA Scan Service (SCASS) related IPs are blocked. A performance warning will be printed and a non-SCASS Signature Scan will be performed.
-* (IDETECT-4759) Updated [detect_product_short] UV Detector to prevent execution when the `toml` file does not have a `[tool.uv]` section with `managed = true` value, and to not return a success status unless a BDIO file is generated.
-* (IDETECT-4746) Fixed Cargo Lockfile Detector incorrectly labeling transitive dependencies as direct dependencies.
-* (IDETECT-4728) Rapid Scans using `BOM_COMPARE_STRICT` now show a clear message if the project version doesn’t exist, guiding users to run a full scan to create it.
-* (IDETECT-4736) Gradle Native Inspector no longer appends `+FAILED` suffix to unresolved dependency versions in BDIO output.
+* (IDETECT-4738) Corrected behavior of `detect.binary.scan.file.name.patterns` to be case-insensitive. 
+* (IDETECT-4802) Fix UV Lockfile Detector not generating BDIOs for projects with non-normalized names per Python requirements.
+* (IDETECT-4806) Fixed UV detectors to handle dynamic versions and cyclic dependencies.
+* (IDETECT-4751) Prevent server-side parsing errors by normalizing IAC Scan `results.json` contents before uploading to Black Duck SCA.
+* (IDETECT-4799) When constructing the BDIO, ignore the Go toolchain directive, as it is the Go project's build-time configuration setting and not a module dependency.
+* (IDETECT-4813) Fix Gradle Native Inspector to correctly identify projects with only settings.gradle or settings.gradle.kts file in the root directory.
 
 ### Dependency updates
 
-* Upgraded and released Docker Inspector version 11.5.0.
-* Upgraded and released Nuget Inspector version 2.3.1.
-* Updated the Black Duck Software BDIO2 protobuf library to version 3.2.12 to resolve a security vulnerability in its Google Protobuf Java library. 
+* 

@@ -97,6 +97,10 @@ public class SyncProjectOperation {
 
         projectVersionLicensesFindResult.getLicenseUrl().ifPresent(projectSyncModel::setVersionLicenseUrl);
 
+        boolean deepLicenseEnabled = Boolean.TRUE.equals(projectSyncOptions.isDeepLicenseEnabled());
+        projectSyncModel.setDeepLicenseDataEnabled(deepLicenseEnabled);
+        projectSyncModel.setDeepLicenseDataSnippetEnabled(deepLicenseEnabled);
+        
         return projectSyncModel;
     }
 }

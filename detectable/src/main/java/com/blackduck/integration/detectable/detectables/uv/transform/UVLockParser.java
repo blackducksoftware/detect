@@ -41,6 +41,7 @@ public class UVLockParser {
     private final List<CodeLocation> codeLocations = new ArrayList<>();
     private final Map<String, String> packageDependencyMap = new HashMap<>();
     private final Map<String, Set<String>> transitiveDependencyMap = new HashMap<>();
+    private final Set<String> visitedDependencies = new HashSet<>();
 
     public UVLockParser(ExternalIdFactory externalIdFactory) {
         this.externalIdFactory = externalIdFactory;
@@ -51,6 +52,7 @@ public class UVLockParser {
         TomlParseResult uvLockObject = Toml.parse(lockFileContent);
 
         collectWorkspaceMembers(uvLockObject);
+        rootName = normalizePackageName(rootName);
         if(uvLockObject.get(PACKAGE_KEY) != null) {
             TomlArray dependencies = uvLockObject.getArray(PACKAGE_KEY);
             parseDependencies(dependencies, rootName, uvDetectorOptions);
@@ -145,6 +147,13 @@ public class UVLockParser {
 
     // parse all dependencies which we had stored in the Map for transitive dependency for each dependency while parsing it the first time
     private void loopOverDependencies(String dependency, Dependency parentDependency, UVDetectorOptions uvDetectorOptions) {
+
+        if(visitedDependencies.contains(dependency)) {
+            return;
+        }
+
+        visitedDependencies.add(dependency);
+
         if(transitiveDependencyMap.containsKey(dependency)) {
             for(String transitiveDependency: transitiveDependencyMap.get(dependency)) {
                 if(!checkIfMemberExcluded(transitiveDependency, uvDetectorOptions)) {

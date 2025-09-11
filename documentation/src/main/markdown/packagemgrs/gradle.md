@@ -18,7 +18,7 @@
 
 * Discovers dependencies of Gradle projects.
 
-* Will run on your project if it finds a build.gradle file in the top level source directory.
+* Will run on your project if it finds a build.gradle, build.gradle.kts, settings.gradle, or settings.gradle.kts file in the top level source directory.
 
 Gradle Native Inspector requires either gradlew or gradle:
 
