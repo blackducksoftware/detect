@@ -1,18 +1,15 @@
 package com.blackduck.integration.detectable.detectables.setuptools.unit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
-import java.util.List;
 
 import com.blackduck.integration.detectable.python.util.PythonDependency;
 import com.blackduck.integration.detectable.python.util.PythonDependencyTransformer;
 import org.junit.jupiter.api.Test;
 
-public class PythonDependencyTransformerTest {
+class PythonDependencyTransformerTest {
 
     @Test
-    public void testTransformLine() {
+    void testTransformLine() {
         PythonDependencyTransformer transformer = new PythonDependencyTransformer();
 
         // Case 1: Normal dependency with exact version
