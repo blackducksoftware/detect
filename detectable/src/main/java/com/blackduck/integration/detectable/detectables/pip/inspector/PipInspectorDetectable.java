@@ -25,7 +25,7 @@ import com.blackduck.integration.detectable.detectable.result.PassedDetectableRe
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 
-@DetectableInfo(name = "PIP Native Inspector", language = "Python", forge = "Pypi", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "A setup.py file, or pyproject.toml file, or one or more requirements.txt files. Executables: python and pip, or python3 and pip3.")
+@DetectableInfo(name = "PIP Native Inspector", language = "Python", forge = "Pypi", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "A setup.py file, pyproject.toml file, or one or more requirements.txt files. Executables: python and pip, or python3 and pip3.. Executables: python and pip, or python3 and pip3.")
 public class PipInspectorDetectable extends Detectable {
     private static final String SETUPTOOLS_DEFAULT_FILE_NAME = "setup.py";
     private static final String REQUIREMENTS_DEFAULT_FILE_NAME = "requirements.txt";

@@ -70,8 +70,8 @@ Pip Native Inspector requires Python and pip executables.
 
 Pip Native Inspector runs the [pip-inspector.py script](https://github.com/blackducksoftware/detect/blob/master/src/main/resources/pip-inspector.py), which uses Python/pip libraries to query the pip cache for the project, which may or may not be a virtual environment, for dependency information:
 
-1. pip-inspector.py queries for the project dependencies by project name which can be discovered using setup.py, pyproject.toml, or provided using the detect.pip.project.name property. If your project is installed into the pip cache, this discovers dependencies specified in setup.py or pyproject.toml file.
-1. If one or more requirements files are found or provided, pip-inspector.py queries each requirements file for possible additional dependencies and details of each.
+1. pip-inspector.py queries for the project dependencies by project name, which can be discovered using setup.py, pyproject.toml, or provided using the [--detect.pip.project.name](../properties/detectors/pip.md#pip-project-name) property. If your project is installed into the pip cache, this discovers dependencies specified in setup.py, or pyproject.toml file.
+2. If one or more requirements files are found or provided, pip-inspector.py queries each requirements file for possible additional dependencies and details of each.
 
 <note type="tip">Only those packages which have been installed; using, for example, `pip install`, into the pip cache and appearing in the output of `pip list`, are included in the output of pip-inspector.py. There must be a match between the package version on which your project depends and the package version installed in the pip cache.</note>
 <note type="note">If the packages are installed into a virtual environment for your project, you must run [detect_product_short] from within that virtual environment.</note>
