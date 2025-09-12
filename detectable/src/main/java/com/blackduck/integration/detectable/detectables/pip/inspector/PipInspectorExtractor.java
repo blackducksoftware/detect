@@ -125,7 +125,7 @@ public class PipInspectorExtractor {
 
         String projectName = providedProjectName;
 
-        if (StringUtils.isBlank(projectName) && tomlFile != null && tomlFile.exists()) {
+        if (tomlFile != null && tomlFile.exists()) {
             TomlParseResult tomlParseResult;
             try {
                 String tomlContent = FileUtils.readFileToString(tomlFile, StandardCharsets.UTF_8);
@@ -139,7 +139,7 @@ public class PipInspectorExtractor {
             if(projectTable.contains(NAME_KEY)) {
                 projectName = projectTable.getString(NAME_KEY);
             }
-        } else if (StringUtils.isBlank(projectName) && setupFile != null && setupFile.exists()) {
+        } else if (setupFile != null && setupFile.exists()) {
             List<String> pythonArguments = Arrays.asList(setupFile.getAbsolutePath(), "--name");
             ExecutableOutput executableOutput = executableRunner.execute(ExecutableUtils.createFromTarget(directory, pythonExe, pythonArguments));
             if (executableOutput.getReturnCode() == 0) {
