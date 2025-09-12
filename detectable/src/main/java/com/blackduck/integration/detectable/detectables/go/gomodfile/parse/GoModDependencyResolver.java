@@ -3,8 +3,14 @@ package com.blackduck.integration.detectable.detectables.go.gomodfile.parse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.blackduck.integration.bdio.model.dependency.Dependency;
+import com.blackduck.integration.bdio.model.externalid.ExternalId;
+import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
+import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoDependencyNode;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoModFileContent;
+import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoModFileHelpers;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoModuleInfo;
+import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoProxyModuleResolver;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoReplaceDirective;
 
 import java.util.*;
@@ -17,14 +23,27 @@ import java.util.stream.Collectors;
  */
 public class GoModDependencyResolver {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
+    private final GoProxyModuleResolver goProxyModuleResolver = new GoProxyModuleResolver();
+    private final GoModFileParser goModFileParser = new GoModFileParser();
+
+    private Map<GoDependencyNode, List<GoDependencyNode>> visitedNodes = new HashMap<GoDependencyNode, List<GoDependencyNode>>();
 
     /**
      * Resolves dependencies by applying exclude and replace directives.
+     * Additionally, this method now builds a recursive dependency graph by fetching
+     * and parsing go.mod files for each direct dependency using GoProxyModuleResolver.
+     * 
+     * The recursive resolution process:
+     * 1. Applies all directives (replace, exclude, retract) to the current go.mod
+     * 2. For each direct dependency, fetches its go.mod file from proxy.golang.org
+     * 3. Recursively parses and resolves dependencies for each fetched go.mod file
+     * 4. Builds a complete dependency tree with parent-child relationships
+     * 5. Prevents infinite recursion by tracking visited modules
      * 
      * @param goModContent The parsed go.mod file content
-     * @return ResolvedDependencies containing the final dependency lists
+     * @return ResolvedDependencies containing the final dependency lists and recursive graph
      */
-    public ResolvedDependencies resolveDependencies(GoModFileContent goModContent) {
+    public ResolvedDependencies resolveDependencies(GoModFileContent goModContent, ExternalIdFactory externalIdFactory) {
         // Start with all dependencies (direct and indirect)
         List<GoModuleInfo> allDependencies = new ArrayList<>();
         allDependencies.addAll(goModContent.getDirectDependencies());
@@ -48,7 +67,100 @@ public class GoModDependencyResolver {
                 .filter(GoModuleInfo::isIndirect)
                 .collect(Collectors.toList());
         
-        return new ResolvedDependencies(finalDirectDependencies, finalIndirectDependencies);
+        GoModFileHelpers goModFileHelpers = new GoModFileHelpers(externalIdFactory);
+        
+        ExternalId parentModuleExternalId = null;
+        Dependency parentModuleDependency = null;
+
+        // Create a dependency with parent module name and add it to root. This to to map transitive dependencies to the root module
+        if (goModContent.getModuleName() != null) {
+            parentModuleDependency = new Dependency(
+                goModContent.getModuleName(),
+                null,
+                parentModuleExternalId,
+                null
+            );
+        }
+
+        GoDependencyNode rootNode = new GoDependencyNode(true, parentModuleDependency, new ArrayList<>());
+        for (GoModuleInfo directDep : finalDirectDependencies) {
+            GoDependencyNode childNode = new GoDependencyNode(false, goModFileHelpers.CreateDependency(directDep), new ArrayList<>());
+            rootNode.addChild(childNode);
+        }
+
+        List<GoDependencyNode> rootTransitives = new ArrayList<>();
+        for (GoModuleInfo indirectDep : finalIndirectDependencies) {
+            GoDependencyNode childNode = new GoDependencyNode(false, goModFileHelpers.CreateDependency(indirectDep), new ArrayList<>());
+            rootTransitives.add(childNode);
+        }
+
+        // Build a recursive dependency graph
+        GoDependencyNode recursiveGraphNode = computeDependencyTree(rootNode, rootTransitives, externalIdFactory);
+
+        return new ResolvedDependencies(finalDirectDependencies, finalIndirectDependencies, recursiveGraphNode);
+    }
+
+    private ResolvedDependencies parseGoModFile(GoModFileContent goModContent) {
+        // Start with all dependencies (direct and indirect)
+        List<GoModuleInfo> allDependencies = new ArrayList<>();
+        allDependencies.addAll(goModContent.getDirectDependencies());
+        allDependencies.addAll(goModContent.getIndirectDependencies());
+        
+        // Apply replace directives first
+        List<GoModuleInfo> replacedDependencies = applyReplaceDirectives(allDependencies, goModContent.getReplaceDirectives());
+        
+        // Apply exclude directives
+        List<GoModuleInfo> finalDependencies = applyExcludeDirectives(replacedDependencies, goModContent.getExcludedModules());
+        
+        // Filter retracted versions
+        finalDependencies = filterRetractedVersions(finalDependencies, goModContent.getRetractedVersions());
+        
+        // Separate back into direct and indirect
+        List<GoModuleInfo> finalDirectDependencies = finalDependencies.stream()
+                .filter(dep -> !dep.isIndirect())
+                .collect(Collectors.toList());
+        
+        List<GoModuleInfo> finalIndirectDependencies = finalDependencies.stream()
+                .filter(GoModuleInfo::isIndirect)
+                .collect(Collectors.toList());
+        return new ResolvedDependencies(finalDirectDependencies, finalIndirectDependencies, null);
+    }
+
+    private GoDependencyNode computeDependencyTree(GoDependencyNode node, List<GoDependencyNode> rootTransitives, ExternalIdFactory externalIdFactory) {
+        GoModFileHelpers goModFileHelpers = new GoModFileHelpers(externalIdFactory);
+        if (!node.isRootNode()) {
+            List<GoDependencyNode> children = new ArrayList<>();
+            if (visitedNodes.containsKey(node)) {
+                children = visitedNodes.get(node);
+            } else {
+                GoModFileContent childGoModContent = goModFileParser.parseGoModFile(
+                    goProxyModuleResolver.getGoModFileOfTheDependency(node.getDependency())
+                );
+                GoModDependencyResolver.ResolvedDependencies childResolvedDeps = parseGoModFile(childGoModContent);
+                
+                for (GoModuleInfo childInfo : childResolvedDeps.getDirectDependencies()) {
+                    Dependency childDep = goModFileHelpers.CreateDependency(childInfo);
+                    GoDependencyNode childNode = new GoDependencyNode(false, childDep, new ArrayList<>());
+                    children.add(childNode);
+                }
+                visitedNodes.put(node, children);
+            }
+            node.appendChildren(children);
+        }
+
+        for (GoDependencyNode child : node.getChildren()) {
+            if (node.isRootNode()) {
+                computeDependencyTree(child, rootTransitives, externalIdFactory);
+            }else {
+                for(GoDependencyNode item : rootTransitives) {
+                    if (child.getDependency().getName().equals(item.getDependency().getName())) {
+                        computeDependencyTree(child, rootTransitives, externalIdFactory);
+                    }
+                }
+            }
+        }
+
+       return node;
     }
     
     private List<GoModuleInfo> applyReplaceDirectives(List<GoModuleInfo> dependencies, List<GoReplaceDirective> replaceDirectives) {
@@ -80,7 +192,7 @@ public class GoModDependencyResolver {
                 );
                 
                 replacedDependencies.add(replacedDependency);
-                logger.debug("Replaced dependency {} with {}", dependency, replacedDependency);
+                logger.debug("Replaced dependency {} with {}", dependency.toString(), replacedDependency.toString());
             } else {
                 // Check for module-only replacement (without version matching)
                 String moduleOnlyKey = dependency.getName();
@@ -180,10 +292,16 @@ public class GoModDependencyResolver {
     public static class ResolvedDependencies {
         private final List<GoModuleInfo> directDependencies;
         private final List<GoModuleInfo> indirectDependencies;
+        private final GoDependencyNode dependencyGraph;
         
         public ResolvedDependencies(List<GoModuleInfo> directDependencies, List<GoModuleInfo> indirectDependencies) {
+            this(directDependencies, indirectDependencies, null);
+        }
+        
+        public ResolvedDependencies(List<GoModuleInfo> directDependencies, List<GoModuleInfo> indirectDependencies, GoDependencyNode dependencyGraph) {
             this.directDependencies = directDependencies;
             this.indirectDependencies = indirectDependencies;
+            this.dependencyGraph = dependencyGraph;
         }
         
         public List<GoModuleInfo> getDirectDependencies() {
@@ -192,6 +310,10 @@ public class GoModDependencyResolver {
         
         public List<GoModuleInfo> getIndirectDependencies() {
             return indirectDependencies;
+        }
+        
+        public GoDependencyNode getDependencyGraph() {
+            return dependencyGraph;
         }
         
         public List<GoModuleInfo> getAllDependencies() {
@@ -206,6 +328,7 @@ public class GoModDependencyResolver {
             return "ResolvedDependencies{" +
                     "directDependencies=" + directDependencies.size() +
                     ", indirectDependencies=" + indirectDependencies.size() +
+                    ", hasRecursiveGraph=" + (dependencyGraph != null) +
                     '}';
         }
     }
