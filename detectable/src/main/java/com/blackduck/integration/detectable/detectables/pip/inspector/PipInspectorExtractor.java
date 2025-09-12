@@ -119,6 +119,10 @@ public class PipInspectorExtractor {
     }
 
     private String getProjectName(File directory, ExecutableTarget pythonExe, File setupFile, File tomlFile, String providedProjectName) throws ExecutableRunnerException {
+        if (StringUtils.isNotBlank(providedProjectName)) {
+            return providedProjectName;
+        }
+
         String projectName = providedProjectName;
 
         if (StringUtils.isBlank(projectName) && tomlFile != null && tomlFile.exists()) {
