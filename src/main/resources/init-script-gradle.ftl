@@ -20,12 +20,7 @@ gradle.allprojects {
         // Store project name during configuration phase
         def projectName = project.name
         doLast {
-            try {
-                println "Gathering dependencies for " + projectName
-            } catch (Exception e) {
-                println "ERROR in gatherDependencies task: " + e.message
-                e.printStackTrace()
-            }
+            println "Gathering dependencies for " + projectName
         }
     }
 
