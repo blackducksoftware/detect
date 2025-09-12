@@ -36,7 +36,6 @@ public class PipInspectorExtractor {
     private static final String NAME_KEY = "name";
     private static final String VERSION_KEY = "version";
     private static final String PROJECT_KEY = "project";
-    private TomlParseResult tomlParseResult;
 
     public PipInspectorExtractor(DetectableExecutableRunner executableRunner, PipInspectorTreeParser pipInspectorTreeParser, ToolVersionLogger toolVersionLogger) {
         this.executableRunner = executableRunner;
@@ -123,6 +122,7 @@ public class PipInspectorExtractor {
         String projectName = providedProjectName;
 
         if (StringUtils.isBlank(projectName) && tomlFile != null && tomlFile.exists()) {
+            TomlParseResult tomlParseResult;
             try {
                 String tomlContent = FileUtils.readFileToString(tomlFile, StandardCharsets.UTF_8);
                 tomlParseResult = Toml.parse(tomlContent);
