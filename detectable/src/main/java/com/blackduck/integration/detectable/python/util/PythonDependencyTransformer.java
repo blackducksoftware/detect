@@ -17,8 +17,14 @@ public class PythonDependencyTransformer {
     private static final List<String> IGNORE_AFTER_CHARS = Arrays.asList("#", ";");
     private static final List<String> TOKEN_CLEANUP_CHARS = Arrays.asList("\"", "'");
     private static final List<String> TOKEN_IGNORE_AFTER_CHARS = Arrays.asList(",", "[", "==", ">=", "~=", "<=", ">", "<");
+
+    // Matching version from URI of direct reference like "https://download.pytorch.org/whl/cpu/torch-2.6.0%2Bcpu-cp310-cp310-linux_x86_64.whl"
     private static final Pattern URI_VERSION_PATTERN = Pattern.compile(".*/([A-Za-z0-9_.-]+)-([0-9]+(?:\\.[0-9A-Za-z_-]+)*).*\\.(whl|zip|tar\\.gz|tar\\.bz2|tar)$");
+
+    // Matching version from VCS URL of direct reference like "git+https://github.com/pallets/flask.git@2.3.3"
     private static final Pattern VCS_VERSION_PATTERN = Pattern.compile(".*@([0-9]+(?:\\.[0-9]+)*(?:[A-Za-z0-9._-]*)?).*");
+
+    // Matching version from archive or release URL of direct reference like "https://github.com/pypa/pip/archive/1.3.1.zip"
     private static final Pattern ARCHIVE_VERSION_PATTERN = Pattern.compile(".*/(?:archive|releases)/([0-9]+(?:\\.[0-9]+)+).*\\.(zip|tar\\.gz|tar\\.bz2|tar).*");
 
     public List<PythonDependency> transform(File requirementsFile) throws IOException {
@@ -92,7 +98,7 @@ public class PythonDependencyTransformer {
             return "";
         }
 
-        // Case 1: wheel/archive style
+        // Case 1: wheel/archive style like "https://download.pytorch.org/whl/cpu/torchvision-0.21.0%2Bcpu-cp310-cp310-linux_x86_64.whl"
         Matcher matcher = URI_VERSION_PATTERN.matcher(uri);
         if (matcher.find()) {
             return matcher.group(2);
