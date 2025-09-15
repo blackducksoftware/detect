@@ -60,6 +60,7 @@ gradle.allprojects {
                 }
             } catch (Exception e) {
                 println "Could not process configuration: " + name
+                throw e
             }
         }
 
@@ -95,6 +96,7 @@ gradle.allprojects {
             } catch (Exception e) {
                 println "Could not set outputFile property during configuration: " + e.message
                 e.printStackTrace()
+                throw e
             }
         }
 
@@ -124,11 +126,13 @@ gradle.allprojects {
                     } catch (Exception e) {
                         println "ERROR while generating root project metadata: " + e.message
                         e.printStackTrace()
+                        throw e
                     }
                 }
             } catch (Exception e) {
                 println "ERROR in dependencies doFirst: " + e.message
                 e.printStackTrace()
+                throw e
             }
         }
 
@@ -161,6 +165,7 @@ gradle.allprojects {
             } catch (Exception e) {
                 println "ERROR in dependencies doLast: " + e.message
                 e.printStackTrace()
+                throw e
             }
         }
 
@@ -180,7 +185,7 @@ def isRoot(Project project) {
     } catch (Exception e) {
         println "ERROR in isRoot: " + e.message
         e.printStackTrace()
-        return false
+        throw e
     }
 }
 
@@ -210,7 +215,7 @@ def computeProjectFilePath(String projectPath, String outputDirectoryPath) {
     } catch (Exception e) {
         println "ERROR in computeProjectFilePath: " + e.message
         e.printStackTrace()
-        // Do nothing else
+        throw e
     }
 }
 
@@ -228,6 +233,7 @@ def getFilteredConfigurationNames(Project project, String excludedConfigurationN
                 }
             } catch (Exception e) {
                 println "ERROR processing configuration " + configuration.name + ": " + e.message
+                throw e
             }
         }
 
@@ -235,7 +241,7 @@ def getFilteredConfigurationNames(Project project, String excludedConfigurationN
     } catch (Exception e) {
         println "ERROR in getFilteredConfigurationNames: " + e.message
         e.printStackTrace()
-        // Do nothing else
+        throw e
     }
 }
 
