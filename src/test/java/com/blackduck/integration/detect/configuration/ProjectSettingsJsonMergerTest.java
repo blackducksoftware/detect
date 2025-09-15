@@ -103,6 +103,34 @@ public class ProjectSettingsJsonMergerTest {
     }
 
     @Test
+    public void testProjectSettingsObjectExtraction() {
+        // Test the new method that works directly with ProjectSettings objects
+        ProjectSettings projectSettings = new ProjectSettings();
+        projectSettings.setName("TestProject");
+        projectSettings.setDescription("Test description");
+        projectSettings.setTier(2);
+        
+        VersionSettings version = new VersionSettings();
+        version.setName("1.0.0");
+        version.setPhase("DEVELOPMENT");
+        projectSettings.setVersion(version);
+        
+        Map<String, String> properties = merger.extractPropertiesFromProjectSettings(projectSettings);
+        
+        assertEquals("TestProject", properties.get(DetectProperties.DETECT_PROJECT_NAME.getKey()));
+        assertEquals("Test description", properties.get(DetectProperties.DETECT_PROJECT_DESCRIPTION.getKey()));
+        assertEquals("2", properties.get(DetectProperties.DETECT_PROJECT_TIER.getKey()));
+        assertEquals("1.0.0", properties.get(DetectProperties.DETECT_PROJECT_VERSION_NAME.getKey()));
+        assertEquals("DEVELOPMENT", properties.get(DetectProperties.DETECT_PROJECT_VERSION_PHASE.getKey()));
+    }
+
+    @Test
+    public void testNullProjectSettingsReturnsEmptyMap() {
+        Map<String, String> properties = merger.extractPropertiesFromProjectSettings(null);
+        assertTrue(properties.isEmpty());
+    }
+
+    @Test
     public void testAllProjectProperties() {
         String json = "{\n" +
                 "  \"name\": \"ComprehensiveProject\",\n" +

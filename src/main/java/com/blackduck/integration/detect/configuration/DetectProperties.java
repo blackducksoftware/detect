@@ -1626,14 +1626,14 @@ public class DetectProperties {
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
             .build();
 
-    public static final NullableJsonProperty DETECT_PROJECT_SETTINGS =
-        NullableJsonProperty.newBuilder("detect.project.settings")
-            .setInfo("Project Settings JSON", DetectPropertyFromVersion.VERSION_11_0_0)
+    public static final NullablePathProperty DETECT_PROJECT_SETTINGS =
+        NullablePathProperty.newBuilder("detect.project.settings")
+            .setInfo("Project Settings JSON File", DetectPropertyFromVersion.VERSION_11_0_0)
             .setHelp(
-                "A JSON object that can contain any of the individual detect.project.* properties as key-value pairs. This provides a way to consolidate multiple project settings into a single property.",
-                "Individual detect.project.* properties take precedence over values specified in this JSON object."
+                "Path to a JSON file containing project settings. The file should contain a JSON object with any of the individual detect.project.* properties as key-value pairs.",
+                "Individual detect.project.* properties take precedence over values specified in this JSON file."
             )
-            .setExample("{\"name\":\"MyProject\",\"version\":{\"name\":\"1.0.0\"},\"description\":\"My project\"}")
+            .setExample("/path/to/project-settings.json")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
             .setCategory(DetectCategory.Advanced)
             .build();

@@ -30,6 +30,7 @@ public class DetectPropertyConfiguration {
     private final PropertyConfiguration propertyConfiguration;
     private final PathResolver pathResolver;
     private final ProjectSettingsJsonMerger jsonMerger = new ProjectSettingsJsonMerger();
+    private final ProjectSettingsJsonFileReader jsonFileReader = new ProjectSettingsJsonFileReader();
     private Map<String, String> cachedJsonProperties = null;
 
     public DetectPropertyConfiguration(PropertyConfiguration propertyConfiguration, PathResolver pathResolver) {
@@ -175,13 +176,16 @@ public class DetectPropertyConfiguration {
 
     private Map<String, String> loadJsonProperties() {
         try {
-            Optional<JsonElement> jsonSettings = propertyConfiguration.getValue(DetectProperties.DETECT_PROJECT_SETTINGS);
-            if (jsonSettings.isPresent()) {
-                logger.debug("Loading project settings from JSON");
-                return jsonMerger.extractPropertiesFromJson(jsonSettings.get());
+            Path settingsFilePath = getPathOrNull(DetectProperties.DETECT_PROJECT_SETTINGS);
+            if (settingsFilePath != null) {
+                logger.debug("Loading project settings from file: {}", settingsFilePath);
+                ProjectSettings projectSettings = jsonFileReader.readProjectSettings(settingsFilePath);
+                if (projectSettings != null) {
+                    return jsonMerger.extractPropertiesFromProjectSettings(projectSettings);
+                }
             }
         } catch (Exception e) {
-            logger.warn("Failed to parse JSON project settings: {}", e.getMessage());
+            logger.warn("Failed to load project settings from file: {}", e.getMessage());
         }
         return new HashMap<>();
     }
