@@ -840,6 +840,15 @@ public class DetectProperties {
             .setGroups(DetectGroup.GO, DetectGroup.GLOBAL)
             .build();
 
+    public static final NullableStringProperty DETECT_GO_PROXY_URL =
+        NullableStringProperty.newBuilder("detect.go.forge")
+            .setInfo("Go Forge URL", DetectPropertyFromVersion.VERSION_10_0_0)
+            .setHelp(
+                "The Go Forge URL to use when downloading modules. If not set, the default Go Forge (https://proxy.golang.org) will be used. To disable the use of a proxy, set this property to 'direct'."
+            )
+            .setGroups(DetectGroup.GO, DetectGroup.GLOBAL)
+            .build();
+
     public static final NullableStringProperty DETECT_GRADLE_BUILD_COMMAND =
         NullableStringProperty.newBuilder("detect.gradle.build.command")
             .setInfo("Gradle Build Command", DetectPropertyFromVersion.VERSION_3_0_0)

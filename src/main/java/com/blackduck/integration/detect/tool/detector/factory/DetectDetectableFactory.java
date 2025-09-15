@@ -178,7 +178,7 @@ public class DetectDetectableFactory {
     }
 
     public GoModFileDetectable createGoModFileDetectable(DetectableEnvironment environment) {
-        return detectableFactory.createGoModFileDetectable(environment);
+        return detectableFactory.createGoModFileDetectable(environment, detectableOptionFactory.createGoModFileDetectableOptions());
     }
 
     public GoDepLockDetectable createGoLockDetectable(DetectableEnvironment environment) {

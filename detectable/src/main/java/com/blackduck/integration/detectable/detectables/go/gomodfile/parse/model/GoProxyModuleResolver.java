@@ -1,23 +1,26 @@
 package com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model;
 
+import java.net.ConnectException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpClient.Redirect;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.channels.UnresolvedAddressException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.blackduck.integration.bdio.model.dependency.Dependency;
+import com.blackduck.integration.detectable.detectables.go.gomodfile.GoModFileDetectableOptions;
 
 public class GoProxyModuleResolver {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
-    
-    private final String GOPROXY_URL = "https://proxy.golang.org";
+    public final GoModFileDetectableOptions options;
 
-    public GoProxyModuleResolver() {
-        // Default constructor
+    public GoProxyModuleResolver(GoModFileDetectableOptions options) {
+        this.options = options;
     }
 
     private String getGoModFileURL(Dependency dependency) {
@@ -28,7 +31,29 @@ public class GoProxyModuleResolver {
             modulePath = modulePath.substring(1, modulePath.length() - 1);
         }
         String version = dependency.getVersion();
-        return String.format("%s/%s/@v/%s.mod", GOPROXY_URL, modulePath, version);
+        return String.format("%s/%s/@v/%s.mod", options.getGoProxyUrl(), modulePath, version);
+        // Example: https://proxy.golang.org/github.com/fsnotify/fsnotify/@v/v1.8.0.mod
+    }
+
+    public Boolean checkConnectivity() {
+        String testURL = String.format("%s/", options.getGoProxyUrl());
+        HttpClient client = HttpClient.newBuilder().followRedirects(Redirect.ALWAYS).build();
+        try {
+            // configure http client to follow redirects
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(testURL))
+                    .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                    .build();
+            HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
+            logger.debug("Go proxy connectivity check to URL '{}' returned status code: {}", options.getGoProxyUrl(), response.statusCode());
+            return response.statusCode() == 200;
+        } catch (ConnectException e) {
+            logger.error("The Go proxy URL '{}' could not be resolved. Please check the URL and your network connection.", options.getGoProxyUrl());
+            return false;
+        } catch (Exception e) {
+            logger.error("Error checking connectivity to Go proxy: {}", e.getMessage());
+            return false;
+        }
     }
 
     public String getGoModFileOfTheDependency(Dependency dependency) {

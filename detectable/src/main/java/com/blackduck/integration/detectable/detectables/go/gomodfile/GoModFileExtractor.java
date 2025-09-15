@@ -22,9 +22,9 @@ public class GoModFileExtractor {
         this.externalIdFactory = externalIdFactory;
     }
 
-    public Extraction extract(File goModFile) {
+    public Extraction extract(File goModFile, GoModFileDetectableOptions options) {
         try {
-            GoModParser goModParser = new GoModParser(externalIdFactory);
+            GoModParser goModParser = new GoModParser(externalIdFactory, options);
             List<String> goModContents = Files.readAllLines(goModFile.toPath(), StandardCharsets.UTF_8);
             logger.debug(String.join("\n", goModContents));
             DependencyGraph dependencyGraph = goModParser.parseGoModFile(goModContents);

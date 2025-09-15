@@ -19,13 +19,15 @@ public class GoModFileDetectable extends Detectable {
 
     private final FileFinder fileFinder;
     private final GoModFileExtractor goModFileExtractor;
+    private final GoModFileDetectableOptions options;
 
     private File goModFile;
 
-    public GoModFileDetectable(DetectableEnvironment environment, FileFinder fileFinder, GoModFileExtractor goModFileExtractor) {
+    public GoModFileDetectable(DetectableEnvironment environment, FileFinder fileFinder, GoModFileExtractor goModFileExtractor, GoModFileDetectableOptions options) {
         super(environment);
         this.fileFinder = fileFinder;
         this.goModFileExtractor = goModFileExtractor;
+        this.options = options;
     }
 
     @Override
@@ -42,7 +44,7 @@ public class GoModFileDetectable extends Detectable {
 
     @Override
     public Extraction extract(ExtractionEnvironment extractionEnvironment) {
-        return goModFileExtractor.extract(goModFile);
+        return goModFileExtractor.extract(goModFile, options);
     }
 
 }

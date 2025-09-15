@@ -4,6 +4,7 @@ import com.blackduck.integration.bdio.graph.BasicDependencyGraph;
 import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.dependency.Dependency;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
+import com.blackduck.integration.detectable.detectables.go.gomodfile.GoModFileDetectableOptions;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoDependencyNode;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoModFileContent;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoModFileHelpers;
@@ -26,10 +27,10 @@ public class GoModParser {
     private final GoModDependencyResolver dependencyResolver;
     private final GoModFileHelpers goModFileHelpers;
 
-    public GoModParser(ExternalIdFactory externalIdFactory) {
+    public GoModParser(ExternalIdFactory externalIdFactory, GoModFileDetectableOptions options) {
         this.externalIdFactory = externalIdFactory;
         this.fileParser = new GoModFileParser();
-        this.dependencyResolver = new GoModDependencyResolver();
+        this.dependencyResolver = new GoModDependencyResolver(options);
         this.goModFileHelpers = new GoModFileHelpers(externalIdFactory);
     }
 

@@ -2,6 +2,7 @@ package com.blackduck.integration.detectable.detectables.go.gomodfile.parse;
 
 import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
+import com.blackduck.integration.detectable.detectables.go.gomodfile.GoModFileDetectableOptions;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoModFileContent;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoModuleInfo;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoReplaceDirective;
@@ -21,11 +22,12 @@ public class GoModParserTest {
     
     private GoModParser parser;
     private ExternalIdFactory externalIdFactory;
+    private GoModFileDetectableOptions options = new GoModFileDetectableOptions("https://proxy.golang.org");
     
     @BeforeEach
     void setUp() {
         externalIdFactory = new ExternalIdFactory();
-        parser = new GoModParser(externalIdFactory);
+        parser = new GoModParser(externalIdFactory, options);
     }
     
     @Test

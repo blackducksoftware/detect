@@ -142,6 +142,7 @@ import com.blackduck.integration.detectable.detectables.go.gomod.parse.GoModWhyP
 import com.blackduck.integration.detectable.detectables.go.gomod.parse.GoVersionParser;
 import com.blackduck.integration.detectable.detectables.go.gomod.process.GoModGraphGenerator;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.GoModFileDetectable;
+import com.blackduck.integration.detectable.detectables.go.gomodfile.GoModFileDetectableOptions;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.GoModFileExtractor;
 import com.blackduck.integration.detectable.detectables.go.vendor.GoVendorDetectable;
 import com.blackduck.integration.detectable.detectables.go.vendor.GoVendorExtractor;
@@ -438,8 +439,8 @@ public class DetectableFactory {
         return new GoModCliDetectable(environment, fileFinder, goResolver, goModCliExtractor(options));
     }
 
-    public GoModFileDetectable createGoModFileDetectable(DetectableEnvironment environment) {
-        return new GoModFileDetectable(environment, fileFinder, goModFileExtractor());
+    public GoModFileDetectable createGoModFileDetectable(DetectableEnvironment environment, GoModFileDetectableOptions options) {
+        return new GoModFileDetectable(environment, fileFinder, goModFileExtractor(), options);
     }
 
     public GoDepLockDetectable createGoLockDetectable(DetectableEnvironment environment) {

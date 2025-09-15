@@ -7,10 +7,13 @@ import org.jetbrains.annotations.NotNull;
 
 import com.blackduck.integration.detectable.Detectable;
 import com.blackduck.integration.detectable.DetectableEnvironment;
+import com.blackduck.integration.detectable.detectables.go.gomodfile.GoModFileDetectableOptions;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.functional.DetectableFunctionalTest;
 
 public class GoModFileDetectableTest extends DetectableFunctionalTest {
+
+    private GoModFileDetectableOptions options = new GoModFileDetectableOptions("https://proxy.golang.org");
 
     public GoModFileDetectableTest() throws IOException {
         super("gomod");
@@ -24,7 +27,7 @@ public class GoModFileDetectableTest extends DetectableFunctionalTest {
     @NotNull
     @Override
     public Detectable create(@NotNull DetectableEnvironment detectableEnvironment) {
-        return detectableFactory.createGoModFileDetectable(detectableEnvironment);
+        return detectableFactory.createGoModFileDetectable(detectableEnvironment, options);
     }
 
     @Override

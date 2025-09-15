@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import com.blackduck.integration.bdio.model.dependency.Dependency;
 import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
+import com.blackduck.integration.detectable.detectables.go.gomodfile.GoModFileDetectableOptions;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoDependencyNode;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoModFileContent;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoModFileHelpers;
@@ -23,8 +24,12 @@ import java.util.stream.Collectors;
  */
 public class GoModDependencyResolver {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
-    private final GoProxyModuleResolver goProxyModuleResolver = new GoProxyModuleResolver();
+    private final GoProxyModuleResolver goProxyModuleResolver;
     private final GoModFileParser goModFileParser = new GoModFileParser();
+
+    public GoModDependencyResolver(GoModFileDetectableOptions options) {
+        this.goProxyModuleResolver = new GoProxyModuleResolver(options);
+    }
 
     private Map<GoDependencyNode, List<GoDependencyNode>> visitedNodes = new HashMap<GoDependencyNode, List<GoDependencyNode>>();
 
@@ -94,6 +99,11 @@ public class GoModDependencyResolver {
             rootTransitives.add(childNode);
         }
 
+        // Check connectivity to Go proxy
+        if (!goProxyModuleResolver.checkConnectivity()) {
+            logger.warn("Cannot connect to Go proxy at {}. Skipping recursive dependency resolution.", goProxyModuleResolver.options.getGoProxyUrl());
+            return new ResolvedDependencies(finalDirectDependencies, finalIndirectDependencies, rootNode);
+        }
         // Build a recursive dependency graph
         GoDependencyNode recursiveGraphNode = computeDependencyTree(rootNode, rootTransitives, externalIdFactory);
 
@@ -133,9 +143,12 @@ public class GoModDependencyResolver {
             if (visitedNodes.containsKey(node)) {
                 children = visitedNodes.get(node);
             } else {
-                GoModFileContent childGoModContent = goModFileParser.parseGoModFile(
-                    goProxyModuleResolver.getGoModFileOfTheDependency(node.getDependency())
-                );
+                String goModFileContent = goProxyModuleResolver.getGoModFileOfTheDependency(node.getDependency());
+                if (goModFileContent == null) {
+                    logger.warn("Could not fetch go.mod file for dependency {}. Skipping further resolution for this branch.", node.getDependency().toString());
+                    return node;
+                }
+                GoModFileContent childGoModContent = goModFileParser.parseGoModFile(goModFileContent);
                 GoModDependencyResolver.ResolvedDependencies childResolvedDeps = parseGoModFile(childGoModContent);
                 
                 for (GoModuleInfo childInfo : childResolvedDeps.getDirectDependencies()) {
