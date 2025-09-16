@@ -168,7 +168,7 @@ public class ProductBoot {
             AnalyticsSetting analyticsSetting = analyticsConfigurationService.fetchAnalyticsSetting(apiDiscovery, blackDuckService);
             return analyticsSetting.isEnabled();
         } catch (IntegrationException | IOException e) {
-            logger.trace("Failed to check analytics setting on Black Duck. Likely this Black Duck instance does not support it.", e);
+            logger.trace("Failed to check analytics setting on Black Duck SCA. Likely this Black Duck instance does not support it.", e);
             return true; // Skip phone home will be applied at the library level.
         }
     }
