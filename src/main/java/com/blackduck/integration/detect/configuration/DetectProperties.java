@@ -36,7 +36,6 @@ import com.blackduck.integration.configuration.property.types.enums.EnumListProp
 import com.blackduck.integration.configuration.property.types.enums.EnumProperty;
 import com.blackduck.integration.configuration.property.types.integer.IntegerProperty;
 import com.blackduck.integration.configuration.property.types.integer.NullableIntegerProperty;
-import com.blackduck.integration.configuration.property.types.json.NullableJsonProperty;
 import com.blackduck.integration.configuration.property.types.longs.LongProperty;
 import com.blackduck.integration.configuration.property.types.path.NullablePathProperty;
 import com.blackduck.integration.configuration.property.types.path.PathListProperty;
