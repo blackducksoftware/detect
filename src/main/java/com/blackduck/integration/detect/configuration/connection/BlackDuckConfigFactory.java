@@ -51,7 +51,7 @@ public class BlackDuckConfigFactory {
         try {
             return blackDuckServerConfigBuilder.build();
         } catch (IllegalArgumentException e) {
-            throw new DetectUserFriendlyException("Failed to configure Black Duck server connection: " + e.getMessage(), e, ExitCodeType.FAILURE_CONFIGURATION);
+            throw new DetectUserFriendlyException("Failed to configure Black Duck SCA server connection: " + e.getMessage(), e, ExitCodeType.FAILURE_CONFIGURATION);
         }
     }
 }

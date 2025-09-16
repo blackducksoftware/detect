@@ -1330,7 +1330,7 @@ public class OperationRunner {
             );
             if (result.getStatus() == CodeLocationWaitResult.Status.PARTIAL) {
                 throw new DetectUserFriendlyException(
-                    result.getErrorMessage().orElse("Timed out waiting for code locations to finish on the Black Duck server."),
+                    result.getErrorMessage().orElse("Timed out waiting for code locations to finish on the Black Duck SCA server."),
                     ExitCodeType.FAILURE_TIMEOUT
                 );
             }

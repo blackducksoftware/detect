@@ -81,7 +81,7 @@ public class DetectProperties {
     public static final NullableStringProperty BLACKDUCK_API_TOKEN =
         NullableStringProperty.newBuilder("blackduck.api.token")
             .setInfo("Black Duck API Token", DetectPropertyFromVersion.VERSION_4_2_0)
-            .setHelp("The access token used to authenticate with the Black Duck Server.")
+            .setHelp("The access token used to authenticate with the Black Duck SCA Server.")
             .setGroups(DetectGroup.BLACKDUCK_SERVER, DetectGroup.BLACKDUCK, DetectGroup.DEFAULT)
             .build();
 
@@ -167,7 +167,7 @@ public class DetectProperties {
     public static final NullableStringProperty BLACKDUCK_URL =
         NullableStringProperty.newBuilder("blackduck.url")
             .setInfo("Black Duck URL", DetectPropertyFromVersion.VERSION_4_2_0)
-            .setHelp("URL of the Black Duck server.")
+            .setHelp("URL of the Black Duck SCA server.")
             .setExample("https://blackduck.mydomain.com")
             .setGroups(DetectGroup.BLACKDUCK_SERVER, DetectGroup.BLACKDUCK, DetectGroup.DEFAULT)
             .build();
@@ -539,7 +539,7 @@ public class DetectProperties {
         NullableStringProperty.newBuilder("detect.clone.project.version.name")
             .setInfo("Clone Project Version Name", DetectPropertyFromVersion.VERSION_4_2_0)
             .setHelp(
-                "The name of the project version to clone this project version from. Respects the given Clone Categories in detect.project.clone.categories or as set on the Black Duck server.")
+                "The name of the project version to clone this project version from. Respects the given Clone Categories in detect.project.clone.categories or as set on the Black Duck SCA.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.GLOBAL, DetectGroup.PROJECT_SETTING)
             .setCategory(DetectCategory.Advanced)
             .build();
@@ -1936,7 +1936,7 @@ public class DetectProperties {
             .setInfo("Correlated Scanning Enabled", DetectPropertyFromVersion.VERSION_10_0_0)
             .setHelp(
                 "When enabled, Detect activates the Black Duck correlated scanning capability to enhance match accuracy.",
-                "The correlated scanning capability must be present and enabled in your Black Duck server before you enable the correlated scanning feature in Detect."
+                "The correlated scanning capability must be present and enabled in your Black Duck SCA server before you enable the correlated scanning feature in Detect."
             )
             .setGroups(DetectGroup.GENERAL, DetectGroup.GLOBAL)
             .build();
