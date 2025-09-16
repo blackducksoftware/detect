@@ -4,50 +4,50 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.blackduck.integration.detectable.python.util.PythonDependency;
 import com.blackduck.integration.detectable.python.util.PythonDependencyTransformer;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.stream.Stream;
 
 class PythonDependencyTransformerTest {
 
-    @Test
-    void testTransformLine() {
-        PythonDependencyTransformer transformer = new PythonDependencyTransformer();
+    private final PythonDependencyTransformer transformer = new PythonDependencyTransformer();
 
-        // Case 1: Normal dependency with exact version
-        PythonDependency alembic = transformer.transformLine("alembic==1.12.0");
-        assertEquals("alembic", alembic.getName());
-        assertEquals("1.12.0", alembic.getVersion());
+    static Stream<TestCase> dependencyCases() {
+        return Stream.of(
+            new TestCase("alembic==1.12.0", "alembic", "1.12.0"),
+            new TestCase("darkgraylib>=2.31.0,<3.0", "darkgraylib", "2.31.0"),
+            new TestCase("requests>=2.4.0,<3.0.dev0", "requests", "2.4.0"),
+            new TestCase("toml>=0.10.0", "toml", "0.10.0"),
+            new TestCase("torch @ https://download.pytorch.org/whl/cpu/torch-2.6.0%2Bcpu-cp310-cp310-linux_x86_64.whl", "torch", "2.6.0"),
+            new TestCase("torchvision @ https://download.pytorch.org/whl/cpu/torchvision-0.21.0%2Bcpu-cp310-cp310-linux_x86_64.whl", "torchvision", "0.21.0"),
+            new TestCase("pip @ https://github.com/pypa/pip/archive/1.3.1.zip", "pip", "1.3.1"),
+            new TestCase("flask @ git+https://github.com/pallets/flask.git@2.3.3", "flask", "2.3.3")
+        );
+    }
 
-        // Case 2: Normal dependency with version range
-        PythonDependency darkgraylib = transformer.transformLine("darkgraylib>=2.31.0,<3.0");
-        assertEquals("darkgraylib", darkgraylib.getName());
-        assertEquals("2.31.0", darkgraylib.getVersion());
+    @ParameterizedTest
+    @MethodSource("dependencyCases")
+    void testTransformLine(TestCase testCase) {
+        PythonDependency dependency = transformer.transformLine(testCase.line);
+        assertEquals(testCase.expectedName, dependency.getName());
+        assertEquals(testCase.expectedVersion, dependency.getVersion());
+    }
 
-        PythonDependency requests = transformer.transformLine("requests>=2.4.0,<3.0.dev0");
-        assertEquals("requests", requests.getName());
-        assertEquals("2.4.0", requests.getVersion());
+    static class TestCase {
+        final String line;
+        final String expectedName;
+        final String expectedVersion;
 
-        // Case 3: Normal dependency with single version constraint
-        PythonDependency toml = transformer.transformLine("toml>=0.10.0");
-        assertEquals("toml", toml.getName());
-        assertEquals("0.10.0", toml.getVersion());
+        TestCase(String line, String expectedName, String expectedVersion) {
+            this.line = line;
+            this.expectedName = expectedName;
+            this.expectedVersion = expectedVersion;
+        }
 
-        // Case 4: Dependency with direct URL (HTTP/HTTPS)
-        PythonDependency torch = transformer.transformLine("torch @ https://download.pytorch.org/whl/cpu/torch-2.6.0%2Bcpu-cp310-cp310-linux_x86_64.whl");
-        assertEquals("torch", torch.getName());
-        assertEquals("2.6.0", torch.getVersion());
-
-        PythonDependency torchvision = transformer.transformLine("torchvision @ https://download.pytorch.org/whl/cpu/torchvision-0.21.0%2Bcpu-cp310-cp310-linux_x86_64.whl");
-        assertEquals("torchvision", torchvision.getName());
-        assertEquals("0.21.0", torchvision.getVersion());
-
-        // Case 5: Archive dependency
-        PythonDependency pip = transformer.transformLine("pip @ https://github.com/pypa/pip/archive/1.3.1.zip");
-        assertEquals("pip", pip.getName());
-        assertEquals("1.3.1", pip.getVersion());
-
-        // Case 6: Git dependency
-        PythonDependency flask = transformer.transformLine("flask @ git+https://github.com/pallets/flask.git@2.3.3");
-        assertEquals("flask", flask.getName());
-        assertEquals("2.3.3", flask.getVersion());
+        @Override
+        public String toString() {
+            return String.format("line='%s', expectedName=%s, expectedVersion=%s", line, expectedName, expectedVersion);
+        }
     }
 }
