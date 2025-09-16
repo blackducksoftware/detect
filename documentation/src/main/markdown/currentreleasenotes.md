@@ -29,6 +29,7 @@
 * ReversingLabs Scans (`detect.tools=THREAT_INTEL`) has been removed.
 * The `detect.threatintel.scan.file.path` property has been removed.
 * The `detect.project.codelocation.unmap` property has been removed.
+* Detector directory evaluation has been made more efficient, resulting in some scans being faster.
 
 ### Resolved issues
 

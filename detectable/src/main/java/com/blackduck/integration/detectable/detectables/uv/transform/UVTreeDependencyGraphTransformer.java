@@ -156,11 +156,13 @@ public class UVTreeDependencyGraphTransformer {
         if(line.contains("[")) {
             String parenthesis = line.substring(line.indexOf("["), line.indexOf("]") + 1);
             line = line.replace(parenthesis, "");
+            line = line.trim();
         }
 
         if (line.contains("(")) {
             String parenthesis = line.substring(line.indexOf("("), line.indexOf(")") + 1);
             line = line.replace(parenthesis, "");
+            line = line.trim();
         }
 
         // we keep the limit three to split it in three parts if we have extra information such as group or extra, as an example "pytest v8.3.4 (group: dev)"

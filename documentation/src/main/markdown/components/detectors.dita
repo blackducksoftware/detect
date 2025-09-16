@@ -734,7 +734,7 @@
 						</row>
 						<row>
 							<entry> </entry>
-							<entry>Pipenv Lock</entry>
+							<entry>Pipenv CLI</entry>
 							<entry>Python</entry>
 							<entry>PyPI</entry>
 							<entry>
@@ -750,7 +750,7 @@
 							<entry>Python</entry>
 							<entry>PyPI</entry>
 							<entry>
-								<p>Files: setup.py file, or one or more requirements.txt files</p>
+								<p>Files: setup.py file, pyproject.toml file, or one or more requirements.txt files</p>
 								<p>Executables: python and pip, or python3 and pip3 specified via --detect.python.path and --detect.pip.path properties</p>
 							</entry>
 							<entry>HIGH</entry>
@@ -955,7 +955,7 @@
                             <entry>Python</entry>
                             <entry>PyPI</entry>
                             <entry>
-                                <p>Files: pyproject.toml, uv.lock or requirements.txt file </p>
+                                <p>Files: pyproject.toml and uv.lock or requirements.txt file </p>
                             </entry>
                             <entry>HIGH</entry>
                         </row>
