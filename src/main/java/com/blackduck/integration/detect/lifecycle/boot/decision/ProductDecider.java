@@ -27,23 +27,23 @@ public class ProductDecider {
         Optional<String> blackDuckUrl = blackDuckConnectionDetails.getBlackDuckUrl();
 
         if(autonomousScanEnabled && blackduckUrlSpecified && !blackduckOfflineModeSpecified) {
-            logger.debug("Black Duck will run ONLINE: A Black Duck url was found.");
+            logger.debug("Black Duck SCA will run ONLINE: A Black Duck SCA url was found.");
             return BlackDuckDecision.runOnline(scanMode, hasSigScan);
         } else if (offline && (BlackduckScanMode.RAPID.equals(scanMode) || BlackduckScanMode.STATELESS.equals(scanMode))) {
-            logger.debug("Black Duck will NOT run: Rapid mode cannot be run offline.");
+            logger.debug("Black Duck SCA will NOT run: Rapid mode cannot be run offline.");
             return BlackDuckDecision.skip();
         } else if (offline) {
-            logger.debug("Black Duck will run: Black Duck offline mode was set to true.");
+            logger.debug("Black Duck SCA will run: Black Duck SCA offline mode was set to true.");
             return BlackDuckDecision.runOffline();
         } else if (blackDuckUrl.isPresent()) {
-            logger.debug("Black Duck will run ONLINE: A Black Duck url was found.");
+            logger.debug("Black Duck SCA will run ONLINE: A Black Duck SCA url was found.");
             return BlackDuckDecision.runOnline(scanMode, hasSigScan);
         } else {
             if(autonomousScanEnabled) {
-                logger.debug("Black Duck will run offline as determined by autonomous scan mode.");
+                logger.debug("Black Duck SCA will run offline as determined by autonomous scan mode.");
                 return BlackDuckDecision.runOffline();
             }
-            logger.debug("Black Duck will NOT run: The Black Duck url must be provided or offline mode must be set to true.");
+            logger.debug("Black Duck SCA will NOT run: The Black Duck SCA url must be provided or offline mode must be set to true.");
             return BlackDuckDecision.skip();
         }
     }

@@ -689,10 +689,10 @@ public class OperationRunner {
 
             try (Response response = blackDuckApiClient.execute(buildBlackDuckResponseRequest)) {
                 if (response.isStatusCodeSuccess()) {
-                    logger.debug("Sent FINISH chunk to Black Duck.");
+                    logger.debug("Sent FINISH chunk to Black Duck SCA.");
                 } else {
-                    logger.trace("Sent FINISH chunk to Black Duck. Response code: " + response.getStatusCode() + " " + response.getStatusMessage());
-                    throw new IntegrationException("Sent FINISH chunk to Black Duck. Response code: " + response.getStatusCode() + " " + response.getStatusMessage());
+                    logger.trace("Sent FINISH chunk to Black Duck SCA. Response code: " + response.getStatusCode() + " " + response.getStatusMessage());
+                    throw new IntegrationException("Sent FINISH chunk to Black Duck SCA. Response code: " + response.getStatusCode() + " " + response.getStatusMessage());
                 }
             }
         }
@@ -756,7 +756,7 @@ public class OperationRunner {
     }
 
     private String createBomCompareErrorMessage(String originalMessage) {
-        return originalMessage + " BOM_COMPARE mode requires the target project version to exist in Black Duck Hub. " +
+        return originalMessage + " BOM_COMPARE mode requires the target project version to exist in Black Duck SCA Hub. " +
                 "Please ensure 'detect.project.version.name' matches an existing project version. " +
                 "Consider running a full scan first if the version hasn't been uploaded yet.";
     }
@@ -1125,7 +1125,7 @@ public class OperationRunner {
     }
 
     public ScanBatchRunner createScanBatchRunnerWithBlackDuck(BlackDuckRunData blackDuckRunData, File installDirectory) throws OperationException {
-        return auditLog.namedInternal("Create Scan Batch Runner with Black Duck", () -> {
+        return auditLog.namedInternal("Create Scan Batch Runner with Black Duck SCA", () -> {
             ExecutorService executorService = Executors.newFixedThreadPool(detectConfigurationFactory.createBlackDuckSignatureScannerOptions().getParallelProcessors());
             IntEnvironmentVariables intEnvironmentVariables = IntEnvironmentVariables.includeSystemEnv();
             Optional<BlackDuckVersion> blackDuckVersion = blackDuckRunData.getBlackDuckServerVersion();
@@ -1686,7 +1686,7 @@ public class OperationRunner {
     void checkBomStatusAndHandleFailure(BomStatusScanView bomStatusScanView) {
         BomStatusScanStatusType status = bomStatusScanView.getStatus();
         if (status != BomStatusScanStatusType.SUCCESS) {
-            String message = "Black Duck failed to prepare BOM for the scan";
+            String message = "Black Duck SCA failed to prepare BOM for the scan";
             logger.error("BOM Scan Status: {} - {}.", status, message);
             exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_BOM_PREPARATION);
         }

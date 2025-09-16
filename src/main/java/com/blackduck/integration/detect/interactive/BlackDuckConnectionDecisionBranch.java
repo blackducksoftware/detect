@@ -19,8 +19,8 @@ import com.blackduck.integration.detect.lifecycle.boot.product.BlackDuckConnecti
 import com.blackduck.integration.log.SilentIntLogger;
 
 public class BlackDuckConnectionDecisionBranch implements DecisionTree {
-    public static final String SHOULD_TEST_CONNECTION = "Would you like to test the Black Duck connection now?";
-    public static final String SHOULD_RETRY_CONNECTION = "Would you like to retry entering Black Duck information?";
+    public static final String SHOULD_TEST_CONNECTION = "Would you like to test the Black Duck SCA connection now?";
+    public static final String SHOULD_RETRY_CONNECTION = "Would you like to retry entering Black Duck SCA information?";
     private final DetectInfo detectInfo;
     private final List<PropertySource> existingPropertySources;
     private final BlackDuckConnectivityChecker blackDuckConnectivityChecker;

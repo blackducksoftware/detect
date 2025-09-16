@@ -24,12 +24,12 @@ public class BlackDuckVersionParser {
             int major_version_from_bd = Integer.parseInt(parts[0]);
             int minor_version_from_bd = Integer.parseInt(parts[1]);
             int patch_version_from_bd = Integer.parseInt(parts[2]);
-            logger.trace("Black Duck version parsed from version string {}: major: {}, minor: {}, patch: {}",
+            logger.trace("Black Duck SCA version parsed from version string {}: major: {}, minor: {}, patch: {}",
                 blackDuckVersionString, major_version_from_bd, minor_version_from_bd, patch_version_from_bd
             );
             return Optional.of(new BlackDuckVersion(major_version_from_bd, minor_version_from_bd, patch_version_from_bd));
         } catch (Exception e) {
-            logger.warn("Unable to determine the Black Duck version from version string {}", blackDuckVersionString);
+            logger.warn("Unable to determine the Black Duck SCA version from version string {}", blackDuckVersionString);
             return Optional.empty();
         }
     }

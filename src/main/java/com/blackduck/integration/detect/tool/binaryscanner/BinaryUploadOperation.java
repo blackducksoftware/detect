@@ -160,7 +160,7 @@ public class BinaryUploadOperation {
                     // cleanResponse() attempts to produce something reasonable to log in either case
                     String cleanedBlackDuckResponse = cleanResponse(binaryScanOutput.getResponse());
                     String uploadErrorMessage = String.format(
-                        "Error when uploading binary scan: %s (Black Duck response: %s)",
+                        "Error when uploading binary scan: %s (Black Duck SCA response: %s)",
                         binaryScanOutput.getErrorMessage().orElse(binaryScanOutput.getStatusMessage()),
                         cleanedBlackDuckResponse
                     );

@@ -567,7 +567,7 @@ public class ApplicationUpdater extends URLClassLoader {
         }
         
         if (blackduckHost == null) {
-            logMessages.add("Black Duck URL is required for the Self-Update feature.");
+            logMessages.add("Black Duck SCA URL is required for the Self-Update feature.");
         }
         
         if(!logMessages.isEmpty()) {

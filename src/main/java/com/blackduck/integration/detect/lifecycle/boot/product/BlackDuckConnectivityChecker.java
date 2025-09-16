@@ -56,7 +56,7 @@ public class BlackDuckConnectivityChecker {
             BlackDuckServerData blackDuckServerData = blackDuckRegistrationService.getBlackDuckServerData(isAdminOperationAllowed);
             if(blackDuckServerData != null) {
                 version = blackDuckServerData.getVersion();
-                logger.info("Successfully connected to Black Duck (version {})!", version);
+                logger.info("Successfully connected to Black Duck SCA (version {})!", version);
             }
             if (logger.isDebugEnabled()) {
                 logger.debug("Connected as: " + userView.getUserName());
