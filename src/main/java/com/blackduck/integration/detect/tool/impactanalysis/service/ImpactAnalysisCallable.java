@@ -43,7 +43,7 @@ public class ImpactAnalysisCallable implements Callable<ImpactAnalysisOutput> {
             }
         } catch (BlackDuckApiException apiException) {
             String errorMessage = String.format(
-                "Failed to upload impact analysis file: %s; Black Duck SCA response: %s [Black Duck error code: %s]",
+                "Failed to upload impact analysis file: %s; Black Duck SCA response: %s [Black Duck SCA error code: %s]",
                 impactAnalysis.getImpactAnalysisPath().toAbsolutePath(),
                 apiException.getMessage(),
                 apiException.getBlackDuckErrorCode()

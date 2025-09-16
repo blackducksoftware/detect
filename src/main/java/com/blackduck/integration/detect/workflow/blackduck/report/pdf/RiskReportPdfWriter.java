@@ -67,7 +67,7 @@ public class RiskReportPdfWriter {
 
         document.getDocumentInformation().setAuthor("Black Duck Software");
         document.getDocumentInformation().setCreator("Integrations");
-        document.getDocumentInformation().setSubject("Black Duck Risk Report");
+        document.getDocumentInformation().setSubject("Black Duck SCA Risk Report");
 
         try (PDFBoxManager pdfManager = new PDFBoxManager(pdfFile, document)) {
             this.pdfManager = pdfManager;
@@ -93,7 +93,7 @@ public class RiskReportPdfWriter {
         PDRectangle logoRectangle = pdfManager.drawRectangle(0, startingHeight - 100, pageWidth, 100, Color.WHITE);
         pdfManager.drawImage(30, logoRectangle.getLowerLeftY() + 27.5F, 291, 45, "/riskreport/images/BlackDuckLogo.png");
         PDRectangle titleRectangle = pdfManager.drawRectangle(0, logoRectangle.getLowerLeftY() - 80, pageWidth - 35, 80, new Color(154, 115, 184).darker());
-        pdfManager.writeText(35, titleRectangle.getLowerLeftY() + 32F, "Black Duck Risk Report", boldFont, 20, Color.WHITE);
+        pdfManager.writeText(35, titleRectangle.getLowerLeftY() + 32F, "Black Duck SCA Risk Report", boldFont, 20, Color.WHITE);
         logger.trace("Finished writing the pdf header.");
         return titleRectangle;
     }

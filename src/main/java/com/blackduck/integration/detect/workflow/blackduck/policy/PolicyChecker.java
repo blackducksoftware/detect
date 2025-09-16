@@ -108,7 +108,7 @@ public class PolicyChecker {
 
     private Optional<PolicyStatusDescription> fetchPolicyStatusDescription(ProjectVersionView version) throws IntegrationException {
         return Bdo.of(projectBomService.getPolicyStatusForVersion(version))
-            .peek(policyStatus -> logger.info(String.format("Overall Policy Status of project version as reported by Black Duck: %s", policyStatus.getOverallStatus().name())))
+            .peek(policyStatus -> logger.info(String.format("Overall Policy Status of project version as reported by Black Duck SCA: %s", policyStatus.getOverallStatus().name())))
             .map(PolicyStatusDescription::new)
             .toOptional();
     }
