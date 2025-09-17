@@ -22,9 +22,9 @@ public class ProjectSettingsJsonFileReaderTest {
         String validJson = "{\n" +
                 "  \"name\": \"TestProject\",\n" +
                 "  \"description\": \"A test project\",\n" +
-                "  \"tier\": 3,\n" +
-                "  \"version\": {\n" +
-                "    \"name\": \"1.0.0\",\n" +
+                "  \"projectTier\": 3,\n" +
+                "  \"versionRequest\": {\n" +
+                "    \"versionName\": \"1.0.0\",\n" +
                 "    \"phase\": \"DEVELOPMENT\"\n" +
                 "  }\n" +
                 "}";
@@ -50,10 +50,10 @@ public class ProjectSettingsJsonFileReaderTest {
                 "  \"name\": \"ComplexProject\",\n" +
                 "  \"tags\": [\"Production\", \"Critical\"],\n" +
                 "  \"userGroups\": [\"Admins\", \"Developers\"],\n" +
-                "  \"levelAdjustments\": true,\n" +
-                "  \"deepLicense\": false,\n" +
-                "  \"version\": {\n" +
-                "    \"name\": \"2.1.0\",\n" +
+                "  \"projectLevelAdjustments\": true,\n" +
+                "  \"deepLicenseDataEnabled\": false,\n" +
+                "  \"versionRequest\": {\n" +
+                "    \"versionName\": \"2.1.0\",\n" +
                 "    \"nickname\": \"Release\",\n" +
                 "    \"license\": \"MIT\"\n" +
                 "  }\n" +

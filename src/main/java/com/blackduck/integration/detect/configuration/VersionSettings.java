@@ -1,11 +1,13 @@
 package com.blackduck.integration.detect.configuration;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
  * POJO representing version settings from the project settings JSON.
  * 
  * Expected JSON structure:
  * {
- *   "name": "1.0.0",
+ *   "versionName": "1.0.0",
  *   "nickname": "Release Candidate",
  *   "notes": "Initial release candidate version",
  *   "phase": "RELEASED",
@@ -15,6 +17,7 @@ package com.blackduck.integration.detect.configuration;
  * }
  */
 public class VersionSettings {
+    @SerializedName("versionName")
     private String name;
     private String nickname;
     private String notes;

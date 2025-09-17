@@ -24,9 +24,9 @@ public class ProjectSettingsJsonMergerTest {
         String json = "{\n" +
                 "  \"name\": \"MyProject\",\n" +
                 "  \"description\": \"My test project\",\n" +
-                "  \"tier\": 3,\n" +
-                "  \"version\": {\n" +
-                "    \"name\": \"1.0.0\",\n" +
+                "  \"projectTier\": 3,\n" +
+                "  \"versionRequest\": {\n" +
+                "    \"versionName\": \"1.0.0\",\n" +
                 "    \"phase\": \"DEVELOPMENT\"\n" +
                 "  }\n" +
                 "}";
@@ -58,7 +58,7 @@ public class ProjectSettingsJsonMergerTest {
     @Test
     public void testNestedVersionObjectExtraction() {
         String json = "{\n" +
-                "  \"version\": {\n" +
+                "  \"versionRequest\": {\n" +
                 "    \"nickname\": \"Release Candidate\",\n" +
                 "    \"notes\": \"Release candidate for version 1.0\",\n" +
                 "    \"license\": \"Apache License 2.0\"\n" +
@@ -92,7 +92,7 @@ public class ProjectSettingsJsonMergerTest {
     public void testDeepLicensePropertyExtraction() {
         String json = "{\n" +
                 "  \"name\": \"TestProject\",\n" +
-                "  \"deepLicense\": false\n" +
+                "  \"deepLicenseDataEnabled\": false\n" +
                 "}";
 
         JsonElement jsonElement = gson.fromJson(json, JsonElement.class);
@@ -135,16 +135,16 @@ public class ProjectSettingsJsonMergerTest {
         String json = "{\n" +
                 "  \"name\": \"ComprehensiveProject\",\n" +
                 "  \"description\": \"A comprehensive test project\",\n" +
-                "  \"tier\": 5,\n" +
+                "  \"projectTier\": 5,\n" +
                 "  \"applicationId\": \"app-12345\",\n" +
                 "  \"groupName\": \"MyGroup\",\n" +
                 "  \"tags\": [\"Critical\", \"Production\"],\n" +
                 "  \"userGroups\": [\"Admins\", \"Developers\"],\n" +
-                "  \"levelAdjustments\": true,\n" +
-                "  \"deepLicense\": true,\n" +
+                "  \"projectLevelAdjustments\": true,\n" +
+                "  \"deepLicenseDataEnabled\": true,\n" +
                 "  \"cloneCategories\": \"ALL\",\n" +
-                "  \"version\": {\n" +
-                "    \"name\": \"2.0.0\",\n" +
+                "  \"versionRequest\": {\n" +
+                "    \"versionName\": \"2.0.0\",\n" +
                 "    \"nickname\": \"Major Release\",\n" +
                 "    \"notes\": \"Major version update\",\n" +
                 "    \"phase\": \"RELEASED\",\n" +

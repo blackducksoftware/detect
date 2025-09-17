@@ -2,35 +2,41 @@ package com.blackduck.integration.detect.configuration;
 
 import java.util.List;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
  * POJO representing project settings from the project settings JSON.
  * 
  * Expected JSON structure:
  * {
  *   "name": "project-name",
- *   "description": "project description", 
- *   "tier": 3,
+ *   "description": "project description",
+ *   "projectTier": 3,
  *   "applicationId": "app-id",
  *   "groupName": "group-name",
  *   "tags": ["tag1", "tag2"],
  *   "userGroups": ["group1", "group2"],
- *   "levelAdjustments": true,
- *   "deepLicense": true,
+ *   "projectLevelAdjustments": true,
+ *   "deepLicenseDataEnabled": true,
  *   "cloneCategories": "ALL",
- *   "version": { ... }
+ *   "versionRequest": { ... }
  * }
  */
 public class ProjectSettings {
     private String name;
     private String description;
+    @SerializedName("projectTier")
     private Integer tier;
     private String applicationId;
     private String groupName;
     private List<String> tags;
     private List<String> userGroups;
+    @SerializedName("projectLevelAdjustments")
     private Boolean levelAdjustments;
+    @SerializedName("deepLicenseDataEnabled")
     private Boolean deepLicense;
     private String cloneCategories;
+    @SerializedName("versionRequest")
     private VersionSettings version;
 
     public String getName() {
