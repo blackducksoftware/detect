@@ -27,6 +27,9 @@ public class GoModParser {
     private final GoModDependencyResolver dependencyResolver;
     private final GoModFileHelpers goModFileHelpers;
 
+    private static final String ORPHAN_PARENT_NAME = "Additional_Components";
+    private static final String ORPHAN_PARENT_VERSION = "none";
+
     public GoModParser(ExternalIdFactory externalIdFactory, GoModFileDetectableOptions options) {
         this.externalIdFactory = externalIdFactory;
         this.fileParser = new GoModFileParser();
@@ -75,6 +78,8 @@ public class GoModParser {
             graph.addDirectDependency(dependency);
             logger.debug("Added direct dependency: {} to the root module", dependency.toString());
         }
+
+        List<Dependency> orphDependencies = new ArrayList<>();
         
         // Add indirect dependencies
         for (GoModuleInfo indirectDep : resolvedDependencies.getIndirectDependencies()) {
@@ -98,7 +103,19 @@ public class GoModParser {
                     logger.debug("Mapped {} as child of {}", childDependency.getDependency().toString(), parentDependency.getDependency().toString());
                 }
             } else {
-                logger.warn("No path found for indirect dependency: {}", dependency.toString());
+                logger.warn("No path found for indirect dependency: {}. Hence, adding it to orphan dependencies", dependency.toString());
+                orphDependencies.add(dependency);
+            }
+        }
+
+        if (!orphDependencies.isEmpty()) {
+            // Create a parent node for orphan dependencies
+            Dependency orphanParentDependency = goModFileHelpers.CreateDependency(new GoModuleInfo(ORPHAN_PARENT_NAME, ORPHAN_PARENT_VERSION));
+            graph.addDirectDependency(orphanParentDependency);
+            logger.debug("Created orphan parent dependency: {} for orphan dependencies", orphanParentDependency.toString());
+            for (Dependency orphanDep : orphDependencies) {
+                graph.addChildWithParent(orphanDep, orphanParentDependency);
+                logger.debug("Mapped orphan dependency {} as child of {}", orphanDep.toString(), orphanParentDependency.toString());
             }
         }
         
