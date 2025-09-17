@@ -335,7 +335,7 @@ public class DetectConfigurationFactory {
         ProjectVersionDistributionType projectVersionDistribution = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_DISTRIBUTION);
         Integer projectTier = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_TIER);
         String projectDescription = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_DESCRIPTION);
-        String projectVersionNotes = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_NOTES);
+        String projectVersionNotes = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_VERSION_NOTES);
         Boolean projectLevelAdjustments = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_LEVEL_ADJUSTMENTS);
         Boolean forceProjectVersionUpdate = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_UPDATE);
         String projectVersionNickname = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_NICKNAME);
@@ -365,7 +365,7 @@ public class DetectConfigurationFactory {
     }
 
     public ProjectVersionLicenseOptions createProjectVersionLicenseOptions() {
-        String licenseName = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_LICENSE);
+        String licenseName = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_VERSION_LICENSE);
         return new ProjectVersionLicenseOptions(licenseName);
     }
 
@@ -384,17 +384,17 @@ public class DetectConfigurationFactory {
 
     @Nullable
     public String createApplicationId() {
-        return detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_APPLICATION_ID);
+        return detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_APPLICATION_ID);
     }
 
     @Nullable
     public List<String> createTags() {
-        return detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_TAGS);
+        return detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_TAGS);
     }
 
     @Nullable
     public List<String> createGroups() {
-        return detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_USER_GROUPS);
+        return detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_USER_GROUPS);
     }
 
     public BlackDuckSignatureScannerOptions createBlackDuckSignatureScannerOptions() {
@@ -545,7 +545,7 @@ public class DetectConfigurationFactory {
     }
 
     public ProjectGroupOptions createProjectGroupOptions() {
-        String projectGroupName = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_GROUP_NAME);
+        String projectGroupName = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_GROUP_NAME);
         return new ProjectGroupOptions(projectGroupName);
     }
 
