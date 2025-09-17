@@ -26,7 +26,7 @@ public class BlackDuckVersionChecker {
     public BlackDuckVersionCheckerResult check(String actualBlackDuckVersionString) {
         Optional<BlackDuckVersion> actualBlackDuckVersion = parser.parse(actualBlackDuckVersionString);
         if (!actualBlackDuckVersion.isPresent()) {
-            logger.debug("Unable to parse Black SCA Duck version string {}, so unable to perform version compatibility check", actualBlackDuckVersion);
+            logger.debug("Unable to parse Black Duck SCA version string {}, so unable to perform version compatibility check", actualBlackDuckVersion);
             return BlackDuckVersionCheckerResult.passed();
         }
         for (BlackDuckMinimumVersionCheck blackDuckMinimumVersionCheck : blackDuckMinimumVersionChecks.get()) {
