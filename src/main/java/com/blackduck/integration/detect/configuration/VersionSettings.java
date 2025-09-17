@@ -1,7 +1,5 @@
 package com.blackduck.integration.detect.configuration;
 
-import com.google.gson.annotations.SerializedName;
-
 /**
  * POJO representing version settings from the project settings JSON.
  * 
@@ -9,29 +7,24 @@ import com.google.gson.annotations.SerializedName;
  * {
  *   "versionName": "1.0.0",
  *   "nickname": "Release Candidate",
- *   "notes": "Initial release candidate version",
  *   "phase": "RELEASED",
  *   "distribution": "EXTERNAL",
- *   "update": true,
- *   "license": "Apache-2.0"
+ *   "update": true
  * }
  */
 public class VersionSettings {
-    @SerializedName("versionName")
-    private String name;
+    private String versionName;
     private String nickname;
-    private String notes;
     private String phase;
     private String distribution;
     private Boolean update;
-    private String license;
 
-    public String getName() {
-        return name;
+    public String getVersionName() {
+        return versionName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setVersionName(String versionName) {
+        this.versionName = versionName;
     }
 
     public String getNickname() {
@@ -40,14 +33,6 @@ public class VersionSettings {
 
     public void setNickname(String nickname) {
         this.nickname = nickname;
-    }
-
-    public String getNotes() {
-        return notes;
-    }
-
-    public void setNotes(String notes) {
-        this.notes = notes;
     }
 
     public String getPhase() {
@@ -72,13 +57,5 @@ public class VersionSettings {
 
     public void setUpdate(Boolean update) {
         this.update = update;
-    }
-
-    public String getLicense() {
-        return license;
-    }
-
-    public void setLicense(String license) {
-        this.license = license;
     }
 }

@@ -37,25 +37,22 @@ public class ProjectSettingsJsonFileReaderTest {
         assertNotNull(projectSettings);
         assertEquals("TestProject", projectSettings.getName());
         assertEquals("A test project", projectSettings.getDescription());
-        assertEquals(Integer.valueOf(3), projectSettings.getTier());
+        assertEquals(Integer.valueOf(3), projectSettings.getProjectTier());
         
-        assertNotNull(projectSettings.getVersion());
-        assertEquals("1.0.0", projectSettings.getVersion().getName());
-        assertEquals("DEVELOPMENT", projectSettings.getVersion().getPhase());
+        assertNotNull(projectSettings.getVersionRequest());
+        assertEquals("1.0.0", projectSettings.getVersionRequest().getVersionName());
+        assertEquals("DEVELOPMENT", projectSettings.getVersionRequest().getPhase());
     }
 
     @Test
     public void testReadComplexJsonFile(@TempDir Path tempDir) throws IOException {
         String complexJson = "{\n" +
                 "  \"name\": \"ComplexProject\",\n" +
-                "  \"tags\": [\"Production\", \"Critical\"],\n" +
-                "  \"userGroups\": [\"Admins\", \"Developers\"],\n" +
                 "  \"projectLevelAdjustments\": true,\n" +
                 "  \"deepLicenseDataEnabled\": false,\n" +
                 "  \"versionRequest\": {\n" +
                 "    \"versionName\": \"2.1.0\",\n" +
-                "    \"nickname\": \"Release\",\n" +
-                "    \"license\": \"MIT\"\n" +
+                "    \"nickname\": \"Release\"\n" +
                 "  }\n" +
                 "}";
 
@@ -66,16 +63,12 @@ public class ProjectSettingsJsonFileReaderTest {
 
         assertNotNull(projectSettings);
         assertEquals("ComplexProject", projectSettings.getName());
-        assertEquals(2, projectSettings.getTags().size());
-        assertEquals("Production", projectSettings.getTags().get(0));
-        assertEquals("Critical", projectSettings.getTags().get(1));
-        assertEquals(Boolean.TRUE, projectSettings.getLevelAdjustments());
-        assertEquals(Boolean.FALSE, projectSettings.getDeepLicense());
+        assertEquals(Boolean.TRUE, projectSettings.getProjectLevelAdjustments());
+        assertEquals(Boolean.FALSE, projectSettings.getLicenseDeepLicense());
         
-        assertNotNull(projectSettings.getVersion());
-        assertEquals("2.1.0", projectSettings.getVersion().getName());
-        assertEquals("Release", projectSettings.getVersion().getNickname());
-        assertEquals("MIT", projectSettings.getVersion().getLicense());
+        assertNotNull(projectSettings.getVersionRequest());
+        assertEquals("2.1.0", projectSettings.getVersionRequest().getVersionName());
+        assertEquals("Release", projectSettings.getVersionRequest().getNickname());
     }
 
     @Test

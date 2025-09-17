@@ -48,27 +48,19 @@ public class ProjectSettingsJsonMerger {
         // Direct mappings
         addIfNotNull(properties, projectSettings.getName(), DetectProperties.DETECT_PROJECT_NAME.getKey());
         addIfNotNull(properties, projectSettings.getDescription(), DetectProperties.DETECT_PROJECT_DESCRIPTION.getKey());
-        addIfNotNull(properties, projectSettings.getTier(), DetectProperties.DETECT_PROJECT_TIER.getKey());
-        addIfNotNull(properties, projectSettings.getApplicationId(), DetectProperties.DETECT_PROJECT_APPLICATION_ID.getKey());
-        addIfNotNull(properties, projectSettings.getGroupName(), DetectProperties.DETECT_PROJECT_GROUP_NAME.getKey());
-        addIfNotNull(properties, projectSettings.getLevelAdjustments(), DetectProperties.DETECT_PROJECT_LEVEL_ADJUSTMENTS.getKey());
-        addIfNotNull(properties, projectSettings.getDeepLicense(), DetectProperties.DETECT_PROJECT_DEEP_LICENSE.getKey());
+        addIfNotNull(properties, projectSettings.getProjectTier(), DetectProperties.DETECT_PROJECT_TIER.getKey());
+        addIfNotNull(properties, projectSettings.getProjectLevelAdjustments(), DetectProperties.DETECT_PROJECT_LEVEL_ADJUSTMENTS.getKey());
+        addIfNotNull(properties, projectSettings.getLicenseDeepLicense(), DetectProperties.DETECT_PROJECT_DEEP_LICENSE.getKey());
         addIfNotNull(properties, projectSettings.getCloneCategories(), DetectProperties.DETECT_PROJECT_CLONE_CATEGORIES.getKey());
-        
-        // Array mappings (convert to comma-separated strings)
-        addListIfNotNull(properties, projectSettings.getTags(), DetectProperties.DETECT_PROJECT_TAGS.getKey());
-        addListIfNotNull(properties, projectSettings.getUserGroups(), DetectProperties.DETECT_PROJECT_USER_GROUPS.getKey());
 
         // Version object mappings
-        VersionSettings version = projectSettings.getVersion();
+        VersionSettings version = projectSettings.getVersionRequest();
         if (version != null) {
-            addIfNotNull(properties, version.getName(), DetectProperties.DETECT_PROJECT_VERSION_NAME.getKey());
+            addIfNotNull(properties, version.getVersionName(), DetectProperties.DETECT_PROJECT_VERSION_NAME.getKey());
             addIfNotNull(properties, version.getNickname(), DetectProperties.DETECT_PROJECT_VERSION_NICKNAME.getKey());
-            addIfNotNull(properties, version.getNotes(), DetectProperties.DETECT_PROJECT_VERSION_NOTES.getKey());
             addIfNotNull(properties, version.getPhase(), DetectProperties.DETECT_PROJECT_VERSION_PHASE.getKey());
             addIfNotNull(properties, version.getDistribution(), DetectProperties.DETECT_PROJECT_VERSION_DISTRIBUTION.getKey());
             addIfNotNull(properties, version.getUpdate(), DetectProperties.DETECT_PROJECT_VERSION_UPDATE.getKey());
-            addIfNotNull(properties, version.getLicense(), DetectProperties.DETECT_PROJECT_VERSION_LICENSE.getKey());
         }
         
         return properties;

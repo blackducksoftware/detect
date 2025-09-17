@@ -1,9 +1,5 @@
 package com.blackduck.integration.detect.configuration;
 
-import java.util.List;
-
-import com.google.gson.annotations.SerializedName;
-
 /**
  * POJO representing project settings from the project settings JSON.
  * 
@@ -12,10 +8,6 @@ import com.google.gson.annotations.SerializedName;
  *   "name": "project-name",
  *   "description": "project description",
  *   "projectTier": 3,
- *   "applicationId": "app-id",
- *   "groupName": "group-name",
- *   "tags": ["tag1", "tag2"],
- *   "userGroups": ["group1", "group2"],
  *   "projectLevelAdjustments": true,
  *   "deepLicenseDataEnabled": true,
  *   "cloneCategories": "ALL",
@@ -25,19 +17,11 @@ import com.google.gson.annotations.SerializedName;
 public class ProjectSettings {
     private String name;
     private String description;
-    @SerializedName("projectTier")
-    private Integer tier;
-    private String applicationId;
-    private String groupName;
-    private List<String> tags;
-    private List<String> userGroups;
-    @SerializedName("projectLevelAdjustments")
-    private Boolean levelAdjustments;
-    @SerializedName("deepLicenseDataEnabled")
-    private Boolean deepLicense;
+    private Integer projectTier;
+    private Boolean projectLevelAdjustments;
+    private Boolean deepLicenseDataEnabled;
     private String cloneCategories;
-    @SerializedName("versionRequest")
-    private VersionSettings version;
+    private VersionSettings versionRequest;
 
     public String getName() {
         return name;
@@ -55,60 +39,28 @@ public class ProjectSettings {
         this.description = description;
     }
 
-    public Integer getTier() {
-        return tier;
+    public Integer getProjectTier() {
+        return projectTier;
     }
 
-    public void setTier(Integer tier) {
-        this.tier = tier;
+    public void setProjectTier(Integer projectTier) {
+        this.projectTier = projectTier;
     }
 
-    public String getApplicationId() {
-        return applicationId;
+    public Boolean getProjectLevelAdjustments() {
+        return projectLevelAdjustments;
     }
 
-    public void setApplicationId(String applicationId) {
-        this.applicationId = applicationId;
+    public void setProjectLevelAdjustments(Boolean projectLevelAdjustments) {
+        this.projectLevelAdjustments = projectLevelAdjustments;
     }
 
-    public String getGroupName() {
-        return groupName;
+    public Boolean getLicenseDeepLicense() {
+        return deepLicenseDataEnabled;
     }
 
-    public void setGroupName(String groupName) {
-        this.groupName = groupName;
-    }
-
-    public List<String> getTags() {
-        return tags;
-    }
-
-    public void setTags(List<String> tags) {
-        this.tags = tags;
-    }
-
-    public List<String> getUserGroups() {
-        return userGroups;
-    }
-
-    public void setUserGroups(List<String> userGroups) {
-        this.userGroups = userGroups;
-    }
-
-    public Boolean getLevelAdjustments() {
-        return levelAdjustments;
-    }
-
-    public void setLevelAdjustments(Boolean levelAdjustments) {
-        this.levelAdjustments = levelAdjustments;
-    }
-
-    public Boolean getDeepLicense() {
-        return deepLicense;
-    }
-
-    public void setDeepLicense(Boolean deepLicense) {
-        this.deepLicense = deepLicense;
+    public void setLicenseDeepLicense(Boolean deepLicenseDataEnabled) {
+        this.deepLicenseDataEnabled = deepLicenseDataEnabled;
     }
 
     public String getCloneCategories() {
@@ -119,11 +71,11 @@ public class ProjectSettings {
         this.cloneCategories = cloneCategories;
     }
 
-    public VersionSettings getVersion() {
-        return version;
+    public VersionSettings getVersionRequest() {
+        return versionRequest;
     }
 
-    public void setVersion(VersionSettings version) {
-        this.version = version;
+    public void setVersionRequest(VersionSettings versionRequest) {
+        this.versionRequest = versionRequest;
     }
 }
