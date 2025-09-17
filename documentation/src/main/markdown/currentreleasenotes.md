@@ -39,6 +39,7 @@
 * (IDETECT-4751) Prevent server-side parsing errors by normalizing IAC Scan `results.json` contents before uploading to Black Duck SCA.
 * (IDETECT-4799) When constructing the BDIO, ignore the Go toolchain directive, as it is the Go project's build-time configuration setting and not a module dependency.
 * (IDETECT-4813) Fix Gradle Native Inspector to correctly identify projects with only settings.gradle or settings.gradle.kts file in the root directory.
+* (IDETECT-4845) Added support for extracting Python package versions from direct references (PEP 508 URIs) in pyproject.toml. [detect_product_short] now correctly parses versions from wheel URLs, archive URLs, and VCS references for impacted detectors (Setuptools Pip Detector, Setuptools Detector, and UV Lock Detector). When version information is missing or malformed, detectors gracefully fall back to name-only reporting.
 
 ### Dependency updates
 
