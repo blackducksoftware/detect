@@ -544,6 +544,10 @@ public class DetectConfigurationFactory {
         return new DetectorToolOptions(projectBomTool, requiredDetectors, accuracyFilter);
     }
 
+    public List<String> getExcludedDetectors() {
+        return detectConfiguration.getValue(DetectProperties.DETECT_EXCLUDED_DETECTORS);
+    }
+
     public ProjectGroupOptions createProjectGroupOptions() {
         String projectGroupName = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_GROUP_NAME);
         return new ProjectGroupOptions(projectGroupName);
