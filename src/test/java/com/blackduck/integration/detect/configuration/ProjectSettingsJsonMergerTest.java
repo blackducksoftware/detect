@@ -30,8 +30,8 @@ public class ProjectSettingsJsonMergerTest {
                 "  }\n" +
                 "}";
 
-        JsonElement jsonElement = gson.fromJson(json, JsonElement.class);
-        Map<String, String> properties = merger.extractPropertiesFromJson(jsonElement);
+        ProjectSettings projectSettings = gson.fromJson(json, ProjectSettings.class);
+        Map<String, String> properties = merger.extractPropertiesFromProjectSettings(projectSettings);
 
         assertEquals("MyProject", properties.get(DetectProperties.DETECT_PROJECT_NAME.getKey()));
         assertEquals("My test project", properties.get(DetectProperties.DETECT_PROJECT_DESCRIPTION.getKey()));
@@ -48,8 +48,8 @@ public class ProjectSettingsJsonMergerTest {
                 "  }\n" +
                 "}";
 
-        JsonElement jsonElement = gson.fromJson(json, JsonElement.class);
-        Map<String, String> properties = merger.extractPropertiesFromJson(jsonElement);
+        ProjectSettings projectSettings = gson.fromJson(json, ProjectSettings.class);
+        Map<String, String> properties = merger.extractPropertiesFromProjectSettings(projectSettings);
 
         assertEquals("Release Candidate", properties.get(DetectProperties.DETECT_PROJECT_VERSION_NICKNAME.getKey()));
     }
@@ -57,15 +57,9 @@ public class ProjectSettingsJsonMergerTest {
     @Test
     public void testEmptyJsonReturnsEmptyMap() {
         String json = "{}";
-        JsonElement jsonElement = gson.fromJson(json, JsonElement.class);
-        Map<String, String> properties = merger.extractPropertiesFromJson(jsonElement);
+        ProjectSettings projectSettings = gson.fromJson(json, ProjectSettings.class);
+        Map<String, String> properties = merger.extractPropertiesFromProjectSettings(projectSettings);
         
-        assertTrue(properties.isEmpty());
-    }
-
-    @Test
-    public void testNullJsonReturnsEmptyMap() {
-        Map<String, String> properties = merger.extractPropertiesFromJson(null);
         assertTrue(properties.isEmpty());
     }
 
@@ -76,8 +70,8 @@ public class ProjectSettingsJsonMergerTest {
                 "  \"deepLicenseDataEnabled\": false\n" +
                 "}";
 
-        JsonElement jsonElement = gson.fromJson(json, JsonElement.class);
-        Map<String, String> properties = merger.extractPropertiesFromJson(jsonElement);
+        ProjectSettings projectSettings = gson.fromJson(json, ProjectSettings.class);
+        Map<String, String> properties = merger.extractPropertiesFromProjectSettings(projectSettings);
 
         assertEquals("TestProject", properties.get(DetectProperties.DETECT_PROJECT_NAME.getKey()));
         assertEquals("false", properties.get(DetectProperties.DETECT_PROJECT_DEEP_LICENSE.getKey()));
@@ -129,8 +123,8 @@ public class ProjectSettingsJsonMergerTest {
                 "  }\n" +
                 "}";
 
-        JsonElement jsonElement = gson.fromJson(json, JsonElement.class);
-        Map<String, String> properties = merger.extractPropertiesFromJson(jsonElement);
+        ProjectSettings projectSettings = gson.fromJson(json, ProjectSettings.class);
+        Map<String, String> properties = merger.extractPropertiesFromProjectSettings(projectSettings);
 
         // Validate all properties are extracted correctly
         assertEquals("ComprehensiveProject", properties.get(DetectProperties.DETECT_PROJECT_NAME.getKey()));

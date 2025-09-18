@@ -14,25 +14,6 @@ import com.google.gson.JsonElement;
 public class ProjectSettingsJsonMerger {
     private final Gson gson = new Gson();
     
-    /**
-     * Creates a map of property keys to values from the JSON project settings.
-     * Uses POJO deserialization for type-safe parsing.
-     */
-    public Map<String, String> extractPropertiesFromJson(JsonElement jsonElement) {
-        Map<String, String> properties = new HashMap<>();
-        
-        if (jsonElement == null || !jsonElement.isJsonObject()) {
-            return properties;
-        }
-        
-        try {
-            ProjectSettings projectSettings = gson.fromJson(jsonElement, ProjectSettings.class);
-            return extractPropertiesFromProjectSettings(projectSettings);
-        } catch (Exception e) {
-            // If JSON parsing fails, return empty map
-            return properties;
-        }
-    }
 
     /**
      * Creates a map of property keys to values from a ProjectSettings object.
