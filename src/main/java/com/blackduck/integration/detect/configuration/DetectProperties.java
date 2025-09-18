@@ -800,7 +800,7 @@ public class DetectProperties {
             .setInfo("Detectors Excluded", DetectPropertyFromVersion.VERSION_11_0_0)
             .setHelp(
                 "By default, all detectors will be included. If you want to exclude specific detectors, specify the ones to exclude here. Exclusion rules always win.",
-                "This property is similar to --detect.exluded.detector.types; but, allows for more granular control. Values are case-insensitive and spaces can be omitted."
+                "This property is similar to --detect.excluded.detector.types; but, allows for more granular control. Values are case-insensitive and spaces can be omitted."
             )
             .setGroups(DetectGroup.DETECTOR, DetectGroup.GLOBAL)
             .setExample("PIPNativeInspector,PIPRequirementsParse")
