@@ -82,7 +82,6 @@ public class DetectorRuleEvaluator {
         }
 
         Detectable primaryDetectable = definition.getDetectableCreatable().createDetectable(environment);
-       
         DetectableResult applicable = primaryDetectable.applicable();
         if (!applicable.getPassed()) {
             notFoundEntryPoints.add(EntryPointNotFoundResult.notApplicable(entryPoint, searchResult, applicable));
