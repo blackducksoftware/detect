@@ -1629,8 +1629,8 @@ public class DetectProperties {
         NullablePathProperty.newBuilder("detect.project.settings")
             .setInfo("Project Settings JSON File", DetectPropertyFromVersion.VERSION_11_0_0)
             .setHelp(
-                "Path to a JSON file containing project settings. The file should contain a JSON object with any of the individual detect.project.* properties as key-value pairs.",
-                "Individual detect.project.* properties take precedence over values specified in this JSON file."
+                "Path to a JSON file containing project settings. The file should contain a JSON object with detect.project properties specified as key-value pairs.",
+                "detect.project properties provided on the command line take precedence over values specified in the JSON file."
             )
             .setExample("/path/to/project-settings.json")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
