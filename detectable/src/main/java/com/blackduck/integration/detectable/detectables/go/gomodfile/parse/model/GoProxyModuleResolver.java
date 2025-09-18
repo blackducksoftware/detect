@@ -6,8 +6,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpClient.Redirect;
 import java.net.http.HttpResponse.BodyHandlers;
-import java.nio.channels.UnresolvedAddressException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

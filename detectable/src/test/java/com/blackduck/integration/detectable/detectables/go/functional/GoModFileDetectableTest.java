@@ -1,38 +1,44 @@
 package com.blackduck.integration.detectable.detectables.go.functional;
 
-import java.io.IOException;
+import java.io.File;
 import java.nio.file.Paths;
 
-import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
-import com.blackduck.integration.detectable.Detectable;
-import com.blackduck.integration.detectable.DetectableEnvironment;
+import com.blackduck.integration.bdio.graph.DependencyGraph;
+import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
+import com.blackduck.integration.detectable.annotations.FunctionalTest;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.GoModFileDetectableOptions;
+import com.blackduck.integration.detectable.detectables.go.gomodfile.GoModFileExtractor;
 import com.blackduck.integration.detectable.extraction.Extraction;
-import com.blackduck.integration.detectable.functional.DetectableFunctionalTest;
 
-public class GoModFileDetectableTest extends DetectableFunctionalTest {
 
-    private GoModFileDetectableOptions options = new GoModFileDetectableOptions("https://proxy.golang.org");
+@FunctionalTest
+public class GoModFileDetectableTest {
 
-    public GoModFileDetectableTest() throws IOException {
-        super("gomod");
+    private static GoModFileDetectableOptions options = new GoModFileDetectableOptions("https://proxy.golang.org");
+    private static File goModFile;
+    private static GoModFileExtractor goModFileExtractor;
+
+    @BeforeAll
+    protected static void setUp() {
+        ExternalIdFactory externalIdFactory = new ExternalIdFactory();
+        goModFile = Paths.get("src", "test", "resources", "detectables", "functional", "go", "gomodfile", "go.mod").toFile();
+        goModFileExtractor = new GoModFileExtractor(externalIdFactory);
     }
 
-    @Override
-    protected void setup() throws IOException {
-        addFile(Paths.get("go.mod"));
+    @Test
+    public void testDependencyExtractionFromGoModFile() {
+        Extraction testGoModExtraction = goModFileExtractor.extract(goModFile, options);
+        Assertions.assertNotNull(testGoModExtraction);
+        Assertions.assertTrue(testGoModExtraction.getCodeLocations().size() == 1);
+        DependencyGraph dependencyGraph = testGoModExtraction.getCodeLocations().get(0).getDependencyGraph();
+        Assertions.assertNotNull(dependencyGraph);
+        Assertions.assertEquals(dependencyGraph.getDirectDependencies().size(), 2);
+        // TODO: Add more assertions to verify the graph structure
     }
-
-    @NotNull
-    @Override
-    public Detectable create(@NotNull DetectableEnvironment detectableEnvironment) {
-        return detectableFactory.createGoModFileDetectable(detectableEnvironment, options);
-    }
-
-    @Override
-    public void assertExtraction(@NotNull Extraction extraction) {
-
-    }
+    
 
 }

@@ -35,6 +35,16 @@ public class GoDependencyNode {
     public void addChild(GoDependencyNode child) {
         this.children.add(child);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        GoDependencyNode that = (GoDependencyNode) o;
+
+        return dependency != null ? dependency.equals(that.dependency) : that.dependency == null;
+    }
     
     /**
      * Utility method to get the total count of all dependencies in the graph (including transitive).

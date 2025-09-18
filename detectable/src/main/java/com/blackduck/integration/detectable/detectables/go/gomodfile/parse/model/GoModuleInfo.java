@@ -37,12 +37,12 @@ public class GoModuleInfo {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         GoModuleInfo that = (GoModuleInfo) o;
-        return Objects.equals(name, that.name) && Objects.equals(version, that.version);
+        return Objects.equals(name, that.name) && Objects.equals(version, that.version) && isIndirect == that.isIndirect;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, version);
+        return Objects.hash(name, version, isIndirect);
     }
 
     @Override
