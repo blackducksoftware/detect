@@ -21,7 +21,7 @@ import com.blackduck.integration.executable.ExecutableRunnerException;
 
 import java.io.File;
 
-@DetectableInfo(name = "UV Build", language = "Python", forge = "PyPI", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: pyproject.toml file. Executable: uv.")
+@DetectableInfo(name = "UV CLI", language = "Python", forge = "PyPI", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: pyproject.toml file. Executable: uv.")
 public class UVBuildDetectable extends Detectable {
 
     private static final String PYPROJECT_TOML = "pyproject.toml";
