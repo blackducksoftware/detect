@@ -28,6 +28,7 @@ import com.blackduck.integration.detectable.detectables.dart.pubdep.DartPubDepsD
 import com.blackduck.integration.detectable.detectables.docker.DockerDetectableOptions;
 import com.blackduck.integration.detectable.detectables.go.gomod.GoModCliDetectableOptions;
 import com.blackduck.integration.detectable.detectables.go.gomod.GoModDependencyType;
+import com.blackduck.integration.detectable.detectables.go.gomodfile.GoModFileDetectableOptions;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.GradleConfigurationType;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.GradleInspectorOptions;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.inspector.GradleInspectorScriptOptions;
@@ -140,6 +141,18 @@ public class DetectableOptionFactory {
     public GoModCliDetectableOptions createGoModCliDetectableOptions() {
         GoModDependencyType excludedDependencyType = detectConfiguration.getValue(DetectProperties.DETECT_GO_MOD_DEPENDENCY_TYPES_EXCLUDED);
         return new GoModCliDetectableOptions(excludedDependencyType);
+    }
+
+    public GoModFileDetectableOptions createGoModFileDetectableOptions() {
+        String goProxyUrl = detectConfiguration.getNullableValue(DetectProperties.DETECT_GO_PROXY_URL);
+        if (goProxyUrl == null || goProxyUrl.isBlank()) {
+            goProxyUrl = "https://proxy.golang.org";
+        }
+        // if the URL ends with a trailing slash, remove it
+        if (goProxyUrl.endsWith("/")) {
+            goProxyUrl = goProxyUrl.substring(0, goProxyUrl.length() - 1);
+        }
+        return new GoModFileDetectableOptions(goProxyUrl);
     }
 
     public GradleInspectorOptions createGradleInspectorOptions() {

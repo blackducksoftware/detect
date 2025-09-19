@@ -29,6 +29,7 @@ import com.blackduck.integration.detectable.detectables.git.GitParseDetectable;
 import com.blackduck.integration.detectable.detectables.go.godep.GoDepLockDetectable;
 import com.blackduck.integration.detectable.detectables.go.gogradle.GoGradleDetectable;
 import com.blackduck.integration.detectable.detectables.go.gomod.GoModCliDetectable;
+import com.blackduck.integration.detectable.detectables.go.gomodfile.GoModFileDetectable;
 import com.blackduck.integration.detectable.detectables.go.vendor.GoVendorDetectable;
 import com.blackduck.integration.detectable.detectables.go.vendr.GoVndrDetectable;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.GradleInspectorDetectable;
@@ -174,6 +175,10 @@ public class DetectDetectableFactory {
 
     public GoModCliDetectable createGoModCliDetectable(DetectableEnvironment environment) {
         return detectableFactory.createGoModCliDetectable(environment, detectExecutableResolver, detectableOptionFactory.createGoModCliDetectableOptions());
+    }
+
+    public GoModFileDetectable createGoModFileDetectable(DetectableEnvironment environment) {
+        return detectableFactory.createGoModFileDetectable(environment, detectableOptionFactory.createGoModFileDetectableOptions());
     }
 
     public GoDepLockDetectable createGoLockDetectable(DetectableEnvironment environment) {

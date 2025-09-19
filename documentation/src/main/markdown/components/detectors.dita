@@ -377,6 +377,16 @@
 							<entry>HIGH</entry>
 						</row>
 						<row>
+							<entry> </entry>
+							<entry>Go Mod File</entry>
+							<entry>Golang</entry>
+							<entry>Go Modules</entry>
+							<entry>
+								<p>File: go.mod</p>
+							</entry>
+							<entry>HIGH</entry>
+						</row>
+						<row>
 							<entry>
 								<b>GO_VENDOR</b>
 							</entry>
