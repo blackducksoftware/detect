@@ -58,7 +58,7 @@ class DetectorRuleFactoryTest {
 
     @Test
     void testDetectorNamesMatchDocumentation() throws Exception {
-        /* 
+        /**
          * Ideally the docs table would be generated based on the code and we should explore why it wasn't done so far.
          * In the meantime, we have this test that ensures that there isn't a drift between docs and code.
          * This is especially important now that there is the ability to exclude individual detectables based on their names.
