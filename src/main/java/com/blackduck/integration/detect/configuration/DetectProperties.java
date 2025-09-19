@@ -1639,6 +1639,18 @@ public class DetectProperties {
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
             .build();
 
+    public static final NullablePathProperty DETECT_PROJECT_SETTINGS =
+        NullablePathProperty.newBuilder("detect.project.settings")
+            .setInfo("Project Settings JSON File", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setHelp(
+                "Path to a JSON file containing project settings. The file should contain a JSON object with detect.project properties specified as key-value pairs.",
+                "detect.project properties provided on the command line take precedence over values specified in the JSON file."
+            )
+            .setExample("/path/to/project-settings.json")
+            .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
+            .setCategory(DetectCategory.Advanced)
+            .build();
+
     public static final BooleanProperty DETECT_PROJECT_DEEP_LICENSE =
         BooleanProperty.newBuilder("detect.project.deep.license", false)
             .setInfo("Deep License Analysis", DetectPropertyFromVersion.VERSION_11_0_0)
