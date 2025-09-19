@@ -34,7 +34,7 @@ import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 import com.blackduck.integration.detectable.util.CycleDetectedException;
 import com.blackduck.integration.executable.ExecutableRunnerException;
 
-@DetectableInfo(name = "Setuptools Pip", language = "Python", forge = "Pypi", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "A pyproject.toml file and the pip executable.")
+@DetectableInfo(name = "Setuptools Pip Detector", language = "Python", forge = "Pypi", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "A pyproject.toml file and the pip executable.")
 public class SetupToolsBuildDetectable extends Detectable {
     
     private static final String PY_PROJECT_TOML = "pyproject.toml";
