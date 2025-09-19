@@ -25,10 +25,11 @@ import com.blackduck.integration.detectable.detectable.result.PassedDetectableRe
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 
-@DetectableInfo(name = "PIP Native Inspector", language = "Python", forge = "Pypi", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "A setup.py file, or one or more requirements.txt files. Executables: python and pip, or python3 and pip3.")
+@DetectableInfo(name = "PIP Native Inspector", language = "Python", forge = "Pypi", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "A setup.py file, pyproject.toml file, or one or more requirements.txt files. Executables: python and pip, or python3 and pip3.")
 public class PipInspectorDetectable extends Detectable {
     private static final String SETUPTOOLS_DEFAULT_FILE_NAME = "setup.py";
     private static final String REQUIREMENTS_DEFAULT_FILE_NAME = "requirements.txt";
+    private static final String PYPROJECT_DEFAULT_FILE_NAME = "pyproject.toml";
 
     private final FileFinder fileFinder;
     private final PythonResolver pythonResolver;
@@ -42,6 +43,7 @@ public class PipInspectorDetectable extends Detectable {
     private File pipInspector;
     private File setupFile;
     private List<Path> requirementsFiles;
+    private File pyprojectToml;
 
     public PipInspectorDetectable(
         DetectableEnvironment environment,
@@ -66,6 +68,9 @@ public class PipInspectorDetectable extends Detectable {
         setupFile = fileFinder.findFile(environment.getDirectory(), SETUPTOOLS_DEFAULT_FILE_NAME);
         boolean hasSetups = setupFile != null;
 
+        pyprojectToml = fileFinder.findFile(environment.getDirectory(), PYPROJECT_DEFAULT_FILE_NAME);
+        boolean hasPyprojectToml = pyprojectToml != null;
+
         requirementsFiles = pipInspectorDetectableOptions.getRequirementsFilePaths();
         if (CollectionUtils.isEmpty(pipInspectorDetectableOptions.getRequirementsFilePaths())) {
             requirementsFiles = fileFinder.findFiles(environment.getDirectory(), REQUIREMENTS_DEFAULT_FILE_NAME)
@@ -75,7 +80,7 @@ public class PipInspectorDetectable extends Detectable {
         }
         boolean hasRequirements = CollectionUtils.isNotEmpty(requirementsFiles);
 
-        if (hasSetups || hasRequirements) {
+        if (hasSetups || hasRequirements || hasPyprojectToml) {
             return new PassedDetectableResult();
         } else {
             return new FilesNotFoundDetectableResult(SETUPTOOLS_DEFAULT_FILE_NAME, REQUIREMENTS_DEFAULT_FILE_NAME);
@@ -112,7 +117,8 @@ public class PipInspectorDetectable extends Detectable {
             pipInspector,
             setupFile,
             requirementsFiles,
-            pipInspectorDetectableOptions.getPipProjectName().orElse("")
+            pipInspectorDetectableOptions.getPipProjectName().orElse(""),
+            pyprojectToml
         );
     }
 }
