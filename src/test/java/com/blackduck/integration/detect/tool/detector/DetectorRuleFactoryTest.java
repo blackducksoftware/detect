@@ -152,14 +152,15 @@ class DetectorRuleFactoryTest {
                     Element row = (Element) rows.item(i);
                     NodeList entries = row.getElementsByTagName("entry");
 
-                    Element secondEntry = (Element) entries.item(1);
-                    String detectorName = secondEntry.getTextContent().trim();
+                    if (entries.getLength() > 1) {
+                        Element secondEntry = (Element) entries.item(1);
+                        String detectorName = secondEntry.getTextContent().trim();
 
-                    // Only add non-empty detector names (skip type rows and empty entries)
-                    if (!detectorName.isEmpty()) {
-                        detectorNames.add(detectorName);
+                        // Only add non-empty detector names (skip type rows and empty entries)
+                        if (!detectorName.isEmpty()) {
+                            detectorNames.add(detectorName);
+                        }
                     }
-                }
             }
         }
 
