@@ -23,6 +23,7 @@
 ### New features
 
 * When enabled, the new `detect.project.deep.license` property sets the Deep License Data and Deep License Data Snippet fields when creating a project. This property can also be used to update existing projects when the `detect.project.version.update` property is set to true.
+* The new `detect.project.settings` property takes as input a path to a JSON file. This file allows users to pass several existing `detect.project.*` properties as a single argument to Detect. Detect will parse the JSON file to obtain information relevant to creating or updating projects. 
 
 ### Changed features
 
