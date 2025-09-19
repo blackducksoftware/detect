@@ -54,7 +54,7 @@ public class OperationWrapper {
             errorConsumer.accept(e);
             throw e;
         } catch (BlackDuckApiException e) {
-            String contentDetails = "Black Duck response body: " + e.getOriginalIntegrationRestException().getHttpResponseContent();
+            String contentDetails = "Black Duck SCA response body: " + e.getOriginalIntegrationRestException().getHttpResponseContent();
             if (StringUtils.isNotBlank(contentDetails)) {
                 if (contentDetails.length() > MESSAGE_LENGTH_LIMIT) {
                     contentDetails = contentDetails.substring(0, MESSAGE_LENGTH_LIMIT) + "...";

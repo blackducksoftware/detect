@@ -32,14 +32,14 @@ public class BlackDuckConnectivityChecker {
     public BlackDuckConnectivityResult determineConnectivity(BlackDuckServerConfig blackDuckServerConfig)
         throws DetectUserFriendlyException {
 
-        logger.debug("Detect will check communication with the Black Duck server.");
+        logger.debug("Detect will check communication with the Black Duck SCA server.");
 
         ConnectionResult connectionResult = blackDuckServerConfig.attemptConnection(new SilentIntLogger());
 
         if (connectionResult.isFailure()) {
             blackDuckServerConfig.attemptConnection(new Slf4jIntLogger(logger)); //TODO: For the logs, when connection result returns the client, can drop this.
-            logger.error("Failed to connect to the Black Duck server");
-            return BlackDuckConnectivityResult.failure(connectionResult.getFailureMessage().orElse("Could not reach the Black Duck server or the credentials were invalid."));
+            logger.error("Failed to connect to the Black Duck SCA server");
+            return BlackDuckConnectivityResult.failure(connectionResult.getFailureMessage().orElse("Could not reach the Black Duck SCA server or the credentials were invalid."));
         }
 
         BlackDuckServicesFactory blackDuckServicesFactory = blackDuckServerConfig.createBlackDuckServicesFactory(new Slf4jIntLogger(logger));
@@ -56,7 +56,7 @@ public class BlackDuckConnectivityChecker {
             BlackDuckServerData blackDuckServerData = blackDuckRegistrationService.getBlackDuckServerData(isAdminOperationAllowed);
             if(blackDuckServerData != null) {
                 version = blackDuckServerData.getVersion();
-                logger.info("Successfully connected to Black Duck (version {})!", version);
+                logger.info("Successfully connected to Black Duck SCA (version {})!", version);
             }
             if (logger.isDebugEnabled()) {
                 logger.debug("Connected as: " + userView.getUserName());

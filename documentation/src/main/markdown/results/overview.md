@@ -8,7 +8,7 @@ To view and manage your [detect_product_long] scan results after running [detect
 
 ````
 2020-06-11 06:35:39 INFO [main] ---======== Detect Result ========
-2020-06-11 06:35:39 INFO [main] --- Black Duck Project BOM: https://my-hub-docker/api/projects/d8f798f1-1901-4902-aec7-f2e1cf2e4958/versions/6a8938e9-3615-40dd-8386-3bcb4ba52bec/components
+2020-06-11 06:35:39 INFO [main] --- Black Duck SCA Project BOM: https://my-hub-docker/api/projects/d8f798f1-1901-4902-aec7-f2e1cf2e4958/versions/6a8938e9-3615-40dd-8386-3bcb4ba52bec/components
 ````
 - Open the [bd_product_short] Project BOM URL in a browser to view the scan results in [bd_product_short].
 - To find your scan in [bd_product_short], go to your [bd_product_short] instance and click Scans to see a list of scans on the Scans page.

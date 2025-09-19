@@ -569,7 +569,7 @@ GO_MOD, GRADLE, LERNA, RUBYGEMS.
   and [detect.lerna.included.packages](properties/detectors/lerna.md#lerna-packages-included-advanced) to exclude and include specific Lerna packages.
 * Added critical security risks to the Black Duck Risk Report pdf.
 * Added detect.target.type to enhance the docker user experience. When set to IMAGE, some tools are automatically disabled and detect optimizes for an image-based scan.
-* Added binary scanning of the container filesystem to the default Docker image scanning workflow. If you are scanning Docker images and your Black Duck server does not have the
+* Added binary scanning of the container filesystem to the default Docker image scanning workflow. If you are scanning Docker images and your Black Duck SCA server does not have the
   binary scanning feature enabled; use --detect.tools.exluded=BINARY_SCAN to disable the binary scan step.
 
 ### Changed features

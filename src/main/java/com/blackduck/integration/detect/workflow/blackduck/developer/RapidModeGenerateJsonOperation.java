@@ -37,7 +37,7 @@ public class RapidModeGenerateJsonOperation { //TODO: extends Operation<File>
             try {
                 Files.delete(jsonScanFile.toPath());
             } catch (IOException ex) {
-                logger.warn(String.format("Unable to delete an already-existing Black Duck Rapid Scan Result file: %s", jsonScanFile.getAbsoluteFile()));
+                logger.warn(String.format("Unable to delete an already-existing Black Duck SCA Rapid Scan Result file: %s", jsonScanFile.getAbsoluteFile()));
                 new Slf4jIntLogger(logger).error(ex); //TODO: Uhm, ew. - jp
             }
         }

@@ -46,7 +46,7 @@ public class PublishSignatureScanReports {
         .filter(SignatureScannerReport::isScassError)
         .findAny()
         .ifPresent(report -> {
-            logger.error("The Signature Scan failed when attempting to communicate with external resources. Check connectivity to SCASS IPs and Black Duck services.");
+            logger.error("The Signature Scan failed when attempting to communicate with external resources. Check connectivity to SCASS IPs and Black Duck SCA services.");
             exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_SCAN);
         });
 

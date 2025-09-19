@@ -19,7 +19,7 @@ public class InteractiveModeDecisionTree implements DecisionTree {
     public static final String SHOULD_SAVE_TO_APPLICATION_PROPERTIES = "Would you like to save these settings to an application.properties file?";
     public static final String SHOULD_SAVE_TO_PROFILE = "Would you like save these settings to a profile?";
     public static final String SET_PROFILE_NAME = "What is the profile name?";
-    public static final String SHOULD_CONNECT_TO_BLACKDUCK = "Would you like to connect to a Black Duck server?";
+    public static final String SHOULD_CONNECT_TO_BLACKDUCK = "Would you like to connect to a Black Duck SCA server?";
     public static final String SHOULD_FORCE_BDIO_CREATION = "Would you like to mandate BDIO generation even if no code locations are identified?";
     public static final String SHOULD_SET_PROJECT_NAME_VERSION = "Would you like to provide a project name and version to use?";
     public static final String SET_PROJECT_NAME = "What is the project name?";

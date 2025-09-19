@@ -105,7 +105,7 @@ public class ConanLockfileParser {
         ConanLockfileData conanLockfileData = gson.fromJson(conanLockfileContents, ConanLockfileData.class);
         logger.trace("conanLockfileData: {}", conanLockfileData);
         if (!conanLockfileData.getConanLockfileGraph().isRevisionsEnabled()) {
-            logger.warn("The Conan revisions feature is not enabled, which will significantly reduce Black Duck's ability to identify dependencies");
+            logger.warn("The Conan revisions feature is not enabled, which will significantly reduce Black Duck SCA's ability to identify dependencies");
         } else {
             logger.debug("The Conan revisions feature is enabled");
         }

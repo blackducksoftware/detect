@@ -39,7 +39,7 @@ Downgrade to prior version blocked:
 ``` 
 2024-10-31 12:20:57 EDT INFO  \[main] - Detect-Self-Updater:  Checking https://test1.blackduck‎.com/api/tools/detect API for centrally managed Detect version to download to /Users/testuser/tmp.   
 
-2024-10-31 12:21:03 EDT WARN  \[main] - Detect-Self-Updater:  The Detect version 8.7.0 mapped at Black Duck server is not eligible for downgrade as it lacks the self-update feature. The self-update feature is available from 8.9.0 onwards.
+2024-10-31 12:21:03 EDT WARN  \[main] - Detect-Self-Updater:  The Detect version 8.7.0 mapped at Black Duck SCA server is not eligible for downgrade as it lacks the self-update feature. The self-update feature is available from 8.9.0 onwards.
 ```
 
 Update to version allowed (8.9.0+):   
@@ -47,7 +47,7 @@ Update to version allowed (8.9.0+):
 ```
 2024-10-31 12:33:52 EDT INFO  \[main] - Detect-Self-Updater:  Checking https://test1.blackduck‎.com/api/tools/detect API for centrally managed Detect version to download to /Users/testuser/tmp.  
 
-2024-10-31 12:33:53 EDT WARN  \[main] - Detect-Self-Updater:  The Detect version 10.0.0 mapped at Black Duck server is eligible for downgrade from the current version of 10.0.1. The self-update feature is available from 8.9.0 onwards.
+2024-10-31 12:33:53 EDT WARN  \[main] - Detect-Self-Updater:  The Detect version 10.0.0 mapped at Black Duck SCA server is eligible for downgrade from the current version of 10.0.1. The self-update feature is available from 8.9.0 onwards.
 
 2024-10-31 12:33:53 EDT INFO  \[main] - Detect-Self-Updater:  Centrally managed version of Detect was downloaded successfully and is ready to be run: /Users/testuser/tmp/detect-10.0.0.jar.
 ```

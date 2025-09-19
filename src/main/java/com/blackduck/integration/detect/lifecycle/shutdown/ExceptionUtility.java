@@ -17,7 +17,7 @@ import com.blackduck.integration.rest.exception.IntegrationRestException;
 public class ExceptionUtility {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private static final String BLACKDUCK_ERROR_MESSAGE = "An unrecoverable error occurred which may be due to your environment and/or configuration. Please double check the Detect documentation: https://documentation.blackduck.com/bundle/integrations-detect/page/introduction.html";
-    private static final String BLACKDUCK_TIMEOUT_ERROR_MESSAGE = "The Black Duck server did not respond within the timeout period.";
+    private static final String BLACKDUCK_TIMEOUT_ERROR_MESSAGE = "The Black Duck SCA server did not respond within the timeout period.";
 
     public void logException(Exception e) {
         if (e instanceof OperationException) {

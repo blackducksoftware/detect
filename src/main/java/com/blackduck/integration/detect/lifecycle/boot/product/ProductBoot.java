@@ -54,7 +54,7 @@ public class ProductBoot {
     public ProductRunData boot(BlackDuckDecision blackDuckDecision, DetectToolFilter detectToolFilter) throws DetectUserFriendlyException {
         if (!blackDuckDecision.shouldRun()) {
             throw new DetectUserFriendlyException(
-                "Your environment was not sufficiently configured to run Black Duck.  See online help at: https://documentation.blackduck.com/bundle/detect/page/introduction.html",
+                "Your environment was not sufficiently configured to run Black Duck SCA.  See online help at: https://documentation.blackduck.com/bundle/detect/page/introduction.html",
                 ExitCodeType.FAILURE_CONFIGURATION
             );
 
@@ -95,7 +95,7 @@ public class ProductBoot {
             return BlackDuckRunData.offline();
         }
 
-        logger.debug("Will boot Black Duck product.");
+        logger.debug("Will boot Black Duck SCA product.");
         BlackDuckServerConfig blackDuckServerConfig = productBootFactory.createBlackDuckServerConfig();
         BlackDuckConnectivityResult blackDuckConnectivityResult = blackDuckConnectivityChecker.determineConnectivity(blackDuckServerConfig);
 
@@ -115,9 +115,9 @@ public class ProductBoot {
             return createBlackDuckRunDataBasedOnPhoneHomeDecision(blackDuckDecision, blackDuckServicesFactory, blackDuckConnectivityResult, waitAtScanLevel);
         } else {
             if (productBootOptions.isIgnoreConnectionFailures()) {
-                logger.info(String.format("Failed to connect to Black Duck: %s", blackDuckConnectivityResult.getFailureReason()));
+                logger.info(String.format("Failed to connect to Black Duck SCA: %s", blackDuckConnectivityResult.getFailureReason()));
                 logger.info(String.format(
-                    "%s is set to 'true' so Detect will simply disable the Black Duck product.",
+                    "%s is set to 'true' so Detect will simply disable the Black Duck SCA product.",
                     DetectProperties.DETECT_IGNORE_CONNECTION_FAILURES.getName()
                 ));
                 return null;
@@ -148,7 +148,7 @@ public class ProductBoot {
                 logger.debug("Analytics credentials file syntax is invalid. Skipping phone home. Exception: " + e.getMessage());
             }
         } else {
-            logger.debug("Skipping phone home due to Black Duck global settings.");
+            logger.debug("Skipping phone home due to Black Duck SCA global settings.");
         }
         return BlackDuckRunData.onlineNoPhoneHome(blackDuckDecision.scanMode(), blackDuckServicesFactory, blackDuckConnectivityResult, waitAtScanLevel);
     }
@@ -168,7 +168,7 @@ public class ProductBoot {
             AnalyticsSetting analyticsSetting = analyticsConfigurationService.fetchAnalyticsSetting(apiDiscovery, blackDuckService);
             return analyticsSetting.isEnabled();
         } catch (IntegrationException | IOException e) {
-            logger.trace("Failed to check analytics setting on Black Duck. Likely this Black Duck instance does not support it.", e);
+            logger.trace("Failed to check analytics setting on Black Duck SCA. Likely this Black Duck instance does not support it.", e);
             return true; // Skip phone home will be applied at the library level.
         }
     }
