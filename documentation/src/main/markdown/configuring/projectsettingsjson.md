@@ -2,7 +2,8 @@
 
 The `detect.project.settings` property allows for submission of several project related properties to [detect_product_short] in one JSON file. 
 
-The JSON file can include a subset of fields supported by [bd_product_short] SCA for the /api/projects and /api/projects/{projectId}/versions/{projectVersionId} endpoints. 
+The JSON file can include a subset of fields supported by [bd_product_short] SCA for the projects and versions API endpoints.
+
 <note type="note">For more information about [bd_product_short] SCA API endpoints, please refer to the REST API Developers Guide available via the [bd_product_short] SCA UI.</note>
 
 Adding the following parameter to a run of [detect_product_short] allows you to use a JSON file for specifying multiple project-related property settings:
