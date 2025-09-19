@@ -320,8 +320,8 @@ public class DetectConfigurationFactory {
     }
 
     public ProjectNameVersionOptions createProjectNameVersionOptions(String sourceDirectoryName) {
-        String overrideProjectName = StringUtils.trimToNull(detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_NAME));
-        String overrideProjectVersionName = StringUtils.trimToNull(detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_VERSION_NAME));
+        String overrideProjectName = StringUtils.trimToNull(detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_NAME));
+        String overrideProjectVersionName = StringUtils.trimToNull(detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_NAME));
         return new ProjectNameVersionOptions(sourceDirectoryName, overrideProjectName, overrideProjectVersionName);
     }
 
@@ -331,18 +331,18 @@ public class DetectConfigurationFactory {
     }
 
     public ProjectSyncOptions createDetectProjectServiceOptions(Optional<BlackDuckVersion> blackDuckServerVersion) {
-        ProjectVersionPhaseType projectVersionPhase = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_VERSION_PHASE);
-        ProjectVersionDistributionType projectVersionDistribution = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_VERSION_DISTRIBUTION);
-        Integer projectTier = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_TIER);
-        String projectDescription = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_DESCRIPTION);
+        ProjectVersionPhaseType projectVersionPhase = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_PHASE);
+        ProjectVersionDistributionType projectVersionDistribution = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_DISTRIBUTION);
+        Integer projectTier = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_TIER);
+        String projectDescription = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_DESCRIPTION);
         String projectVersionNotes = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_VERSION_NOTES);
-        Boolean projectLevelAdjustments = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_LEVEL_ADJUSTMENTS);
-        Boolean forceProjectVersionUpdate = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_VERSION_UPDATE);
-        String projectVersionNickname = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_VERSION_NICKNAME);
-        Boolean deepLicenseEnabled = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_DEEP_LICENSE);
+        Boolean projectLevelAdjustments = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_LEVEL_ADJUSTMENTS);
+        Boolean forceProjectVersionUpdate = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_UPDATE);
+        String projectVersionNickname = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_NICKNAME);
+        Boolean deepLicenseEnabled = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_DEEP_LICENSE);
         
         List<ProjectCloneCategoriesType> cloneCategories;
-        AllNoneEnumList<ProjectCloneCategoriesType> categoriesEnum = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_CLONE_CATEGORIES);
+        AllNoneEnumList<ProjectCloneCategoriesType> categoriesEnum = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_CLONE_CATEGORIES);
 
         if (canSendSummaryData(blackDuckServerVersion)) {
             cloneCategories = categoriesEnum.representedValuesStreamlined();
