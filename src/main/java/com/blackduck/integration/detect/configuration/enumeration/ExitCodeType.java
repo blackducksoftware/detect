@@ -1,12 +1,14 @@
 package com.blackduck.integration.detect.configuration.enumeration;
 
+import com.blackduck.integration.detect.configuration.DetectProperties;
+
 public enum ExitCodeType {
     SUCCESS(0, "Detect exited successfully."),
     FAILURE_BLACKDUCK_CONNECTIVITY(1, "Detect was unable to connect to Black Duck. Check your configuration and connection."),
     FAILURE_TIMEOUT(2, "Detect was unable to wait for actions to be completed on Black Duck. Check your Black Duck server or increase your timeout."),
     FAILURE_POLICY_VIOLATION(3, "Detect found policy violations."),
     FAILURE_PROXY_CONNECTIVITY(4, "Detect was unable to use the configured proxy. Check your configuration and connection."),
-    FAILURE_DETECTOR(5, "Detect had one or more detector failures while extracting dependencies. Check that all projects build and your environment is configured correctly."),
+    FAILURE_DETECTOR(5, "Detect had one or more detector failures while extracting dependencies. Check that all projects build and your environment is configured correctly. Alternatively, consider disabling individual Detectors using the --" + DetectProperties.DETECT_EXCLUDED_DETECTORS.getKey() + " property."),
     FAILURE_SCAN(6, "Detect was unable to run the signature scanner against your source. Check your configuration."),
     FAILURE_CONFIGURATION(7, "Detect was unable to start due to configuration issues. Check and fix your configuration."),
     FAILURE_DETECTOR_REQUIRED(9, "Detect did not run all of the required detectors. Fix detector issues or disable required detectors."),
