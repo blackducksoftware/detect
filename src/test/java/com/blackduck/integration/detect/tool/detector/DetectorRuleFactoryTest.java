@@ -161,6 +161,7 @@ class DetectorRuleFactoryTest {
                             detectorNames.add(detectorName);
                         }
                     }
+                }
             }
         }
 
