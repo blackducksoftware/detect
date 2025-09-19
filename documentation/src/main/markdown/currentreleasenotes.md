@@ -10,7 +10,7 @@
 
 <note type="note">It is recommended that customers continue to maintain sig-repo.synopsys.com, and repo.blackduck.com on their allow list until such time as all scripts, services, or pipelines have been updated with the repo.blackduck.com URL.</note>
 
-* [bd_product_long] [SCA Scan Service (SCASS)](https://community.blackduck.com/s/question/0D5Uh00000O2ZSYKA3/black-duck-sca-new-ip-address-requirements-for-2025) requires customers add or update IP addresses configured in their network firewalls or allow lists. This action is required to successfully route scan data to the new service for processing.
+* [bd_product_long] [SCA Scan Service (SCASS)](https://community.blackduck.com/s/question/0D5Uh00000O2ZSYKA3/black-duck-sca-new-ip-address-requirements-for-2025) requires customers add or update IP addresses configured in their network firewalls or allow lists. This action is required to successfully route scan data to the service for processing.
 
 	* scass.blackduck.com - 35.244.200.22
 	* na.scass.blackduck.com - 35.244.200.22
@@ -22,17 +22,25 @@
 
 ### New features
 
-* 
+* When enabled, the new `detect.project.deep.license` property sets the Deep License Data and Deep License Data Snippet fields when creating a project. This property can also be used to update existing projects when the `detect.project.version.update` property is set to true.
 
 ### Changed features
 
 * ReversingLabs Scans (`detect.tools=THREAT_INTEL`) has been removed.
 * The `detect.threatintel.scan.file.path` property has been removed.
 * The `detect.project.codelocation.unmap` property has been removed.
+* Detector directory evaluation has been made more efficient, resulting in some scans being faster.
 
 ### Resolved issues
 
-* 
+* (IDETECT-4738) Corrected behavior of `detect.binary.scan.file.name.patterns` to be case-insensitive. 
+* (IDETECT-4802) Fix UV Lockfile Detector not generating BDIOs for projects with non-normalized names per Python requirements.
+* (IDETECT-4806) Fixed UV detectors to handle dynamic versions and cyclic dependencies.
+* (IDETECT-4751) Prevent server-side parsing errors by normalizing IAC Scan `results.json` contents before uploading to Black Duck SCA.
+* (IDETECT-4799) When constructing the BDIO, ignore the Go toolchain directive, as it is the Go project's build-time configuration setting and not a module dependency.
+* (IDETECT-4813) Fix Gradle Native Inspector to correctly identify projects with only settings.gradle or settings.gradle.kts file in the root directory.
+* (IDETECT-4812) Gradle Native Inspector now supports configuration cache (refactored init-detect.gradle to add support for configuration cache in Gradle projects).
+
 
 ### Dependency updates
 

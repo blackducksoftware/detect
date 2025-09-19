@@ -3,6 +3,7 @@ package com.blackduck.integration.detect.tool.iac;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
 
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -20,18 +21,24 @@ public class UploadIacScanResultsOperation {
     public UploadIacScanResultsOperation(IacScanUploadService iacScanUploadService) {this.iacScanUploadService = iacScanUploadService;}
 
     public void uploadResults(File resultsFile, String scanId) throws IntegrationException {
-        String resultsFileContent;
+        String resultsFileContent, normalizedResultsFileContent;
         try {
             logger.trace("Reading {} using character encoding {}", resultsFile.getAbsolutePath(), StandardCharsets.UTF_8);
             resultsFileContent = FileUtils.readFileToString(resultsFile, StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new IntegrationException("Unable to parse Iac Scan results file: " + resultsFile.getAbsolutePath(), e);
         }
-        Response response = iacScanUploadService.uploadIacScanResults(resultsFileContent, scanId);
+        normalizedResultsFileContent = normalizeFileContentToNFD(resultsFileContent);
+        Response response = iacScanUploadService.uploadIacScanResults(normalizedResultsFileContent, scanId);
         if (response.isStatusCodeSuccess()) {
             logger.info("Successfully uploaded Iac Scan results.");
         } else {
             throw new IntegrationException(String.format("Iac Scan upload failed with code %d: %s", response.getStatusCode(), response.getStatusMessage()));
         }
+    }
+
+
+    private String normalizeFileContentToNFD(String originalResultsFileContentAsString) {
+        return Normalizer.normalize(originalResultsFileContentAsString, Normalizer.Form.NFD);
     }
 }

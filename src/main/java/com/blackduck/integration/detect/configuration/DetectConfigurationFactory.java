@@ -50,7 +50,7 @@ import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedIndi
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedReducedPersistanceMode;
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedSnippetMode;
 import com.blackduck.integration.detect.util.filter.DetectToolFilter;
-import com.blackduck.integration.detect.util.finder.DetectDirectoryFileFilter;
+import com.blackduck.integration.detect.util.finder.DetectDirectoryFileFilterCaseSensitive;
 import com.blackduck.integration.detect.util.finder.DetectExcludedDirectoryFilter;
 import com.blackduck.integration.detect.workflow.bdio.BdioOptions;
 import com.blackduck.integration.detect.workflow.blackduck.BlackDuckPostOptions;
@@ -339,6 +339,7 @@ public class DetectConfigurationFactory {
         Boolean projectLevelAdjustments = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_LEVEL_ADJUSTMENTS);
         Boolean forceProjectVersionUpdate = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_VERSION_UPDATE);
         String projectVersionNickname = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_VERSION_NICKNAME);
+        Boolean deepLicenseEnabled = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_DEEP_LICENSE);
         
         List<ProjectCloneCategoriesType> cloneCategories;
         AllNoneEnumList<ProjectCloneCategoriesType> categoriesEnum = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_CLONE_CATEGORIES);
@@ -349,17 +350,18 @@ public class DetectConfigurationFactory {
             cloneCategories = categoriesEnum.representedValues();
         }
 
-        return new ProjectSyncOptions(
-            projectVersionPhase,
-            projectVersionDistribution,
-            projectTier,
-            projectDescription,
-            projectVersionNotes,
-            cloneCategories,
-            forceProjectVersionUpdate,
-            projectVersionNickname,
-            projectLevelAdjustments
-        );
+        return ProjectSyncOptions.builder()
+            .projectVersionPhase(projectVersionPhase)
+            .projectVersionDistribution(projectVersionDistribution)
+            .projectTier(projectTier)
+            .projectDescription(projectDescription)
+            .projectVersionNotes(projectVersionNotes)
+            .cloneCategories(cloneCategories)
+            .forceProjectVersionUpdate(forceProjectVersionUpdate)
+            .projectVersionNickname(projectVersionNickname)
+            .projectLevelAdjustments(projectLevelAdjustments)
+            .deepLicenseEnabled(deepLicenseEnabled)
+            .build();
     }
 
     public ProjectVersionLicenseOptions createProjectVersionLicenseOptions() {
@@ -471,9 +473,9 @@ public class DetectConfigurationFactory {
     public BinaryScanOptions createBinaryScanOptions() {
         Path singleTarget = detectConfiguration.getPathOrNull(DetectProperties.DETECT_BINARY_SCAN_FILE);
         List<String> fileInclusionPatterns = detectConfiguration.getValue(DetectProperties.DETECT_BINARY_SCAN_FILE_NAME_PATTERNS);
-        DetectDirectoryFileFilter fileFilter = null;
+        DetectDirectoryFileFilterCaseSensitive fileFilter = null;
         if (fileInclusionPatterns.stream().anyMatch(StringUtils::isNotBlank)) {
-            fileFilter = new DetectDirectoryFileFilter(collectDirectoryExclusions(), fileInclusionPatterns);
+            fileFilter = new DetectDirectoryFileFilterCaseSensitive(collectDirectoryExclusions(), fileInclusionPatterns, false);
         }
         Integer searchDepth = detectConfiguration.getValue(DetectProperties.DETECT_BINARY_SCAN_SEARCH_DEPTH);
         return new BinaryScanOptions(singleTarget, fileFilter, searchDepth, getFollowSymLinks());

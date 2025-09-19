@@ -267,8 +267,7 @@ public class DetectorRuleFactory {
                     .search().defaults();
             })
             .allEntryPointsFallbackToNext()
-            .yieldsTo(DetectorType.POETRY)
-            .yieldsTo(DetectorType.UV);
+            .yieldsTo(DetectorType.POETRY, DetectorType.UV, DetectorType.SETUPTOOLS);
 
         rules.addDetector(DetectorType.RUBYGEMS, detector -> {
             detector.entryPoint(GemlockDetectable.class)
