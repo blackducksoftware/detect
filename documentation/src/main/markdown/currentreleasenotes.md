@@ -23,6 +23,8 @@
 ### New features
 
 * When enabled, the new `detect.project.deep.license` property sets the Deep License Data and Deep License Data Snippet fields when creating a project. This property can also be used to update existing projects when the `detect.project.version.update` property is set to true.
+* Added support for capturing dependencies from the `go.mod` file via a new buildless detector named "Go Mod File" for Go projects.
+	* Added a new property `detect.go.forge` to customize the Go registry URL used for fetching dependency information. Defaults to `https://proxy.golang.org`.
 
 ### Changed features
 
