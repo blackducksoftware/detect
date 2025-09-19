@@ -37,7 +37,73 @@ public class GoModFileDetectableTest {
         DependencyGraph dependencyGraph = testGoModExtraction.getCodeLocations().get(0).getDependencyGraph();
         Assertions.assertNotNull(dependencyGraph);
         Assertions.assertEquals(dependencyGraph.getDirectDependencies().size(), 2);
-        // TODO: Add more assertions to verify the graph structure
+        // Check if graph contains github.com/fsnotify/fsnotify v1.90 as a direct dependency
+        Assertions.assertTrue(dependencyGraph.getDirectDependencies().stream()
+                .anyMatch(dependency -> "github.com/fsnotify/fsnotify".equals(dependency.getName())
+                        && "v1.9.0".equals(dependency.getVersion())));
+        // Check if graph contains github.com/gin-gonic/gin v1.10.1 as a direct dependency
+        Assertions.assertTrue(dependencyGraph.getDirectDependencies().stream()
+                .anyMatch(dependency -> "github.com/gin-gonic/gin".equals(dependency.getName())
+                        && "v1.10.1".equals(dependency.getVersion())));
+        // google.golang.org/protobuf v1.34.1 should not in the children of github.com/gin-gonic/gin
+        Assertions.assertFalse(dependencyGraph.getChildrenForParent(dependencyGraph.getDirectDependencies().stream()
+                .filter(dependency -> "github.com/gin-gonic/gin".equals(dependency.getName())
+                        && "v1.10.1".equals(dependency.getVersion()))
+                .findFirst()
+                .orElse(null)).stream()
+                .anyMatch(dependency -> "google.golang.org/protobuf".equals(dependency.getName())
+                        && "v1.34.1".equals(dependency.getVersion())));
+        // gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c should not be in the children of github.com/gin-gonic/gin
+        Assertions.assertFalse(dependencyGraph.getChildrenForParent(dependencyGraph.getDirectDependencies().stream()
+                .filter(dependency -> "github.com/gin-gonic/gin".equals(dependency.getName())
+                        && "v1.10.1".equals(dependency.getVersion()))
+                .findFirst()
+                .orElse(null)).stream()
+                .anyMatch(dependency -> "gopkg.in/yaml.v3".equals(dependency.getName())
+                        && "v3.0.0-20200313102051-9f266ea9e77c".equals(dependency.getVersion())));
+    }
+
+    @Test
+    public void testDependencyExtractionFromGoModFileWithInvalidForge() {
+        GoModFileDetectableOptions options = new GoModFileDetectableOptions("https://proxy.invalid.go.forge");
+        Extraction testGoModExtraction = goModFileExtractor.extract(goModFile, options);
+        Assertions.assertNotNull(testGoModExtraction);
+        Assertions.assertTrue(testGoModExtraction.getCodeLocations().size() == 1);
+        DependencyGraph dependencyGraph = testGoModExtraction.getCodeLocations().get(0).getDependencyGraph();
+        Assertions.assertNotNull(dependencyGraph);
+        Assertions.assertEquals(dependencyGraph.getDirectDependencies().size(), 3);
+        // Check if graph contains github.com/fsnotify/fsnotify v1.90 as a direct dependency
+        Assertions.assertTrue(dependencyGraph.getDirectDependencies().stream()
+                .anyMatch(dependency -> "github.com/fsnotify/fsnotify".equals(dependency.getName())
+                        && "v1.9.0".equals(dependency.getVersion())));
+        // Check if graph contains github.com/gin-gonic/gin v1.10.1 as a direct dependency
+        Assertions.assertTrue(dependencyGraph.getDirectDependencies().stream()
+                .anyMatch(dependency -> "github.com/gin-gonic/gin".equals(dependency.getName())
+                        && "v1.10.1".equals(dependency.getVersion())));
+        // Check if graph contains "Additional_Components" as a direct dependency
+        Assertions.assertTrue(dependencyGraph.getDirectDependencies().stream()
+                .anyMatch(dependency -> "Additional_Components".equals(dependency.getName())));
+        // google.golang.org/protobuf v1.34.1 should not in the children of github.com/gin-gonic/gin
+        Assertions.assertFalse(dependencyGraph.getChildrenForParent(dependencyGraph.getDirectDependencies().stream()
+                .filter(dependency -> "github.com/gin-gonic/gin".equals(dependency.getName())
+                        && "v1.10.1".equals(dependency.getVersion()))
+                .findFirst()
+                .orElse(null)).stream()
+                .anyMatch(dependency -> "google.golang.org/protobuf".equals(dependency.getName())
+                        && "v1.34.1".equals(dependency.getVersion())));
+        // gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c should not be in the children of github.com/gin-gonic/gin
+        Assertions.assertFalse(dependencyGraph.getChildrenForParent(dependencyGraph.getDirectDependencies().stream()
+                .filter(dependency -> "github.com/gin-gonic/gin".equals(dependency.getName())
+                        && "v1.10.1".equals(dependency.getVersion()))
+                .findFirst()
+                .orElse(null)).stream()
+                .anyMatch(dependency -> "gopkg.in/yaml.v3".equals(dependency.getName())
+                        && "v3.0.0-20200313102051-9f266ea9e77c".equals(dependency.getVersion())));
+        // Check Additional_Components has 24 children
+        Assertions.assertEquals(24, dependencyGraph.getChildrenForParent(dependencyGraph.getDirectDependencies().stream()
+                .filter(dependency -> "Additional_Components".equals(dependency.getName()))
+                .findFirst()
+                .orElse(null)).size());
     }
     
 
