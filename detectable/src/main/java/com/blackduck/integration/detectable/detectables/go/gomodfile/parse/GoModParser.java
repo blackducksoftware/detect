@@ -67,6 +67,17 @@ public class GoModParser {
     public GoModFileContent getDetailedParseResult(List<String> goModContents) {
         return fileParser.parseGoModFile(goModContents);
     }
+
+    private void printDependencyGraphOfIndirectDependency(Dependency dependency, List<GoDependencyNode> path) {
+        logger.debug("-----------------------------------------------------------");
+        logger.debug("Dependency graph for indirect dependency: {}", dependency.toString());
+        logger.debug("-----------------------------------------------------------");
+        for(int idx=0; idx < path.size(); idx++) {
+            GoDependencyNode pathEntry = path.get(idx);
+            logger.debug(">" + " ".repeat(idx) + pathEntry.getDependency().getName() + " " + pathEntry.getDependency().getVersion());
+        }
+        logger.debug("-----------------------------------------------------------");
+    }
     
     private DependencyGraph createDependencyGraph(GoModDependencyResolver.ResolvedDependencies resolvedDependencies, 
                                                  GoModFileContent goModContent) {
@@ -88,14 +99,7 @@ public class GoModParser {
             // Use DFS to find targetNode from resolvedDependencies.getDependencyGraph() of type GoDependencyNode
             List<GoDependencyNode> path = GetDependencyPathFromGraph(targetNode, resolvedDependencies.getDependencyGraph(), new ArrayList<>());
             if (!path.isEmpty()) {
-                logger.debug("-----------------------------------------------------------");
-                logger.debug("Dependency graph for indirect dependency: {}", dependency.toString());
-                logger.debug("-----------------------------------------------------------");
-                for(int idx=0; idx < path.size(); idx++) {
-                    GoDependencyNode pathEntry = path.get(idx);
-                    logger.debug(">" + " ".repeat(idx) + pathEntry.getDependency().getName() + " " + pathEntry.getDependency().getVersion());
-                }
-                logger.debug("-----------------------------------------------------------");
+                printDependencyGraphOfIndirectDependency(dependency, path);
                 for(int idx=0; idx < path.size() - 1; idx++) {
                     GoDependencyNode parentDependency = path.get(idx);
                     GoDependencyNode childDependency = path.get(idx + 1);

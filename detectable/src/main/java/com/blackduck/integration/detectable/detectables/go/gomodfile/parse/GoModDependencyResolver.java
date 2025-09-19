@@ -164,8 +164,8 @@ public class GoModDependencyResolver {
         for (GoDependencyNode child : node.getChildren()) {
             if (node.isRootNode()) {
                 computeDependencyTree(child, rootTransitives, externalIdFactory);
-            }else {
-                for(GoDependencyNode item : rootTransitives) {
+            } else {
+                for (GoDependencyNode item : rootTransitives) {
                     if (child.getDependency().getName().equals(item.getDependency().getName())) {
                         computeDependencyTree(child, rootTransitives, externalIdFactory);
                     }
