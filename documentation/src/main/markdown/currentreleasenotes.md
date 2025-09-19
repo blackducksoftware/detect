@@ -31,6 +31,13 @@
 * The `detect.threatintel.scan.file.path` property has been removed.
 * The `detect.project.codelocation.unmap` property has been removed.
 * Detector directory evaluation has been made more efficient, resulting in some scans being faster.
+* Support for pyproject.toml file has been added to PIP Native Inspector. For more details, please see [Python Detector page](../markdown/packagemgrs/python.md)
+* Support for pip is now extended to 25.2.
+* Support for pipenv is now extended to 2025.0.4.
+* Support for Setuptools is now extended to 80.9.0.
+* Support for uv is now extended to 0.8.15.
+* Support for Maven is now extended to 3.9.11.
+* Support for Conan is now extended to 2.20.1.
 
 ### Resolved issues
 
