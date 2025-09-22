@@ -22,14 +22,15 @@
 
 ### New features
 
-* When enabled, the new `detect.project.deep.license` property sets the Deep License Data and Deep License Data Snippet fields when creating a project. This property can also be used to update existing projects when the `detect.project.version.update` property is set to true.
-* The new `detect.project.settings` property takes as input a path to a JSON file. This file allows users to pass several existing `detect.project.*` properties as a single argument to Detect. Detect will parse the JSON file to obtain information relevant to creating or updating projects. 
+* When enabled, the new [detect.project.deep.license](properties/configuration/project.md#deep-license-analysis) property sets the Deep License Data and Deep License Data Snippet fields when creating a project. This property can also be used to update existing projects when the [detect.project.version.update](properties/configuration/project.md#update-project-version) property is set to true.
+* The new [detect.project.settings](properties/configuration/project.md#project-settings-via-json) property takes as input a path to a JSON file. This file allows users to pass several existing `detect.project` properties as a single argument to Detect. Detect will parse the JSON file to obtain information relevant to creating or updating projects. 
 
 ### Changed features
 
 * ReversingLabs Scans (`detect.tools=THREAT_INTEL`) has been removed.
 * The `detect.threatintel.scan.file.path` property has been removed.
 * The `detect.project.codelocation.unmap` property has been removed.
+* The efficiency of the Detector directory evaluation has been enhanced, resulting in the acceleration of certain scans.
 * Detector directory evaluation has been made more efficient, resulting in some scans being faster.
 * Support for pyproject.toml file has been added to PIP Native Inspector. For more details, please see [Python Detector page](../markdown/packagemgrs/python.md)
 * Support for pip is now extended to 25.2.
@@ -46,8 +47,8 @@
 * (IDETECT-4806) Fixed UV detectors to handle dynamic versions and cyclic dependencies.
 * (IDETECT-4751) Prevent server-side parsing errors by normalizing IAC Scan `results.json` contents before uploading to Black Duck SCA.
 * (IDETECT-4799) When constructing the BDIO, ignore the Go toolchain directive, as it is the Go project's build-time configuration setting and not a module dependency.
-* (IDETECT-4813) Fix Gradle Native Inspector to correctly identify projects with only settings.gradle or settings.gradle.kts file in the root directory.
-* (IDETECT-4812) Gradle Native Inspector now supports configuration cache (refactored init-detect.gradle to add support for configuration cache in Gradle projects).
+* (IDETECT-4813) Fix Gradle Native Inspector to correctly identify projects with only `settings.gradle` or `settings.gradle.kts` file in the root directory.
+* (IDETECT-4812) Gradle Native Inspector now supports configuration cache (refactored `init-detect.gradle` to add support for configuration cache in Gradle projects).
 * (IDETECT-4845) With added support for extracting Python package versions from direct references [PEP 508 URIs](https://packaging.python.org/en/latest/specifications/dependency-specifiers/#environment-markers) in `pyproject.toml` files, [detect_product_short] now correctly parses versions from wheel and archive URLs and VCS references for impacted detectors (Setuptools Pip Detector, Setuptools Detector, and UV Lock Detector). When data is missing or badly formatted, detectors gracefully switch back to reporting only the package name.
 
 ### Dependency updates

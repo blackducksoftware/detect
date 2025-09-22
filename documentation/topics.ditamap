@@ -57,6 +57,7 @@
 		<topicref href="configuring/commandline.md" format="markdown"/>
 		<topicref href="configuring/envvars.md" format="markdown"/>
 		<topicref href="configuring/configfile.md" format="markdown"/>
+		<topicref href="configuring/projectsettingsjson.md" format="markdown"/>
 		<topicref href="configuring/profiles.md" format="markdown"/>
 		<topicref href="configuring/othermethods.md" format="markdown"/>
 		<topicref href="configuring/credentials.md" format="markdown"/>
