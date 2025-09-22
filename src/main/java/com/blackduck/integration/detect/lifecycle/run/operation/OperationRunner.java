@@ -105,6 +105,7 @@ import com.blackduck.integration.detect.tool.detector.DetectorToolResult;
 import com.blackduck.integration.detect.tool.detector.executable.DetectExecutableRunner;
 import com.blackduck.integration.detect.tool.detector.extraction.ExtractionEnvironmentProvider;
 import com.blackduck.integration.detect.tool.detector.factory.DetectDetectableFactory;
+import com.blackduck.integration.detector.accuracy.detectable.DetectableExclusionEvaluator;
 import com.blackduck.integration.detect.tool.iac.CalculateIacScanTargetsOperation;
 import com.blackduck.integration.detect.tool.iac.IacScanOperation;
 import com.blackduck.integration.detect.tool.iac.IacScanReport;
@@ -352,7 +353,13 @@ public class OperationRunner {
             SearchOptions searchOptions = detectConfigurationFactory.createDetectorSearchOptions();
             DetectorRuleFactory detectorRuleFactory = new DetectorRuleFactory();
             DetectorRuleSet detectRuleSet = detectorRuleFactory.createRules(detectDetectableFactory);
-            DetectorRuleEvaluator detectorRuleEvaluator = new DetectorRuleEvaluator(new SearchEvaluator(searchOptions), new DetectableEvaluator());
+            List<String> excludedDetectors = detectConfigurationFactory.getExcludedDetectors();
+            DetectableExclusionEvaluator detectableExclusionEvaluator = new DetectableExclusionEvaluator(excludedDetectors);
+            DetectorRuleEvaluator detectorRuleEvaluator = new DetectorRuleEvaluator(
+                new SearchEvaluator(searchOptions),
+                new DetectableEvaluator(),
+                detectableExclusionEvaluator
+            );
             DirectoryEvaluator directoryEvaluator = new DirectoryEvaluator(
                 detectorRuleEvaluator,
                 extractionEnvironmentProvider::createExtractionEnvironment

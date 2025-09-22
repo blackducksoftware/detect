@@ -18,7 +18,7 @@ import com.blackduck.integration.detectable.detectable.result.FilesNotFoundDetec
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 
-@DetectableInfo(name = "Pipenv Lock", language = "Python", forge = "PyPi", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "Files: Pipfile or Pipfile.lock. Executables: python or python3, and pipenv.")
+@DetectableInfo(name = "Pipenv CLI", language = "Python", forge = "PyPi", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "Files: Pipfile or Pipfile.lock. Executables: python or python3, and pipenv.")
 public class PipenvDetectable extends Detectable {
     public static final String SETUPTOOLS_DEFAULT_FILE_NAME = "setup.py";
     public static final String PIPFILE_FILE_NAME = "Pipfile";
