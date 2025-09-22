@@ -13,7 +13,7 @@ public class GoModFileHelpers {
         this.externalIdFactory = externalIdFactory;
     }
 
-    public Dependency CreateDependency(GoModuleInfo moduleInfo) {
+    public Dependency createDependency(GoModuleInfo moduleInfo) {
         String cleanVersion = cleanVersionForExternalId(moduleInfo.getVersion());
         ExternalId externalId = externalIdFactory.createNameVersionExternalId(
             Forge.GOLANG, 

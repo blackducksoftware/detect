@@ -85,7 +85,7 @@ public class GoModParser {
         
         // Add direct dependencies
         for (GoModuleInfo directDep : resolvedDependencies.getDirectDependencies()) {
-            Dependency dependency = goModFileHelpers.CreateDependency(directDep);
+            Dependency dependency = goModFileHelpers.createDependency(directDep);
             graph.addDirectDependency(dependency);
             logger.debug("Added direct dependency: {} to the root module", dependency.toString());
         }
@@ -94,12 +94,12 @@ public class GoModParser {
         
         // Add indirect dependencies
         for (GoModuleInfo indirectDep : resolvedDependencies.getIndirectDependencies()) {
-            Dependency dependency = goModFileHelpers.CreateDependency(indirectDep);
+            Dependency dependency = goModFileHelpers.createDependency(indirectDep);
             GoDependencyNode targetNode = new GoDependencyNode(false, dependency, new ArrayList<>());
             // Use DFS to find targetNode from resolvedDependencies.getDependencyGraph() of type GoDependencyNode
-            List<GoDependencyNode> path = GetDependencyPathFromGraph(targetNode, resolvedDependencies.getDependencyGraph(), new ArrayList<>());
+            List<GoDependencyNode> path = getDependencyPathFromGraph(targetNode, resolvedDependencies.getDependencyGraph(), new ArrayList<>());
             if (!path.isEmpty()) {
-                printDependencyGraphOfIndirectDependency(dependency, path);
+                if (logger.isDebugEnabled()) printDependencyGraphOfIndirectDependency(dependency, path);
                 for(int idx=0; idx < path.size() - 1; idx++) {
                     GoDependencyNode parentDependency = path.get(idx);
                     GoDependencyNode childDependency = path.get(idx + 1);
@@ -114,7 +114,7 @@ public class GoModParser {
 
         if (!orphDependencies.isEmpty()) {
             // Create a parent node for orphan dependencies
-            Dependency orphanParentDependency = goModFileHelpers.CreateDependency(new GoModuleInfo(ORPHAN_PARENT_NAME, ORPHAN_PARENT_VERSION));
+            Dependency orphanParentDependency = goModFileHelpers.createDependency(new GoModuleInfo(ORPHAN_PARENT_NAME, ORPHAN_PARENT_VERSION));
             graph.addDirectDependency(orphanParentDependency);
             logger.debug("Created orphan parent dependency: {} for orphan dependencies", orphanParentDependency.toString());
             for (Dependency orphanDep : orphDependencies) {
@@ -126,7 +126,7 @@ public class GoModParser {
         return graph;
     }
 
-    public List<GoDependencyNode> GetDependencyPathFromGraph(GoDependencyNode targetNode, GoDependencyNode graph, List<GoDependencyNode> visited) {
+    public List<GoDependencyNode> getDependencyPathFromGraph(GoDependencyNode targetNode, GoDependencyNode graph, List<GoDependencyNode> visited) {
         boolean isFound = false;
         // Perform DFS to find the path from root to targetNode
         for (GoDependencyNode child : graph.getChildren()) {
@@ -146,11 +146,10 @@ public class GoModParser {
                 visited.add(graph);
             }
             for (GoDependencyNode child : graph.getChildren()) {
-                List<GoDependencyNode> childPath = GetDependencyPathFromGraph(targetNode, child, visited);
+                List<GoDependencyNode> childPath = getDependencyPathFromGraph(targetNode, child, visited);
                 if (childPath.isEmpty()) {
                     visited.remove(visited.size() - 1);
-                }
-                if (!childPath.isEmpty()) {
+                } else {
                     return childPath;
                 }
             }

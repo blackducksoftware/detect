@@ -6,6 +6,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpClient.Redirect;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.time.Duration;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +37,10 @@ public class GoProxyModuleResolver {
 
     public Boolean checkConnectivity() {
         String testURL = String.format("%s/", options.getGoProxyUrl());
-        HttpClient client = HttpClient.newBuilder().followRedirects(Redirect.ALWAYS).build();
+        HttpClient client = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(30))
+            .followRedirects(Redirect.ALWAYS)
+            .build();
         try {
             // configure http client to follow redirects
             HttpRequest request = HttpRequest.newBuilder()

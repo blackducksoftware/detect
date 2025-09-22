@@ -25,7 +25,7 @@ class GoModFileHelpersTest {
     void testCreateDependencyWithValidModuleInfo() {
         GoModuleInfo moduleInfo = new GoModuleInfo("github.com/example/module", "v1.2.3");
 
-        Dependency result = goModFileHelpers.CreateDependency(moduleInfo);
+        Dependency result = goModFileHelpers.createDependency(moduleInfo);
 
         assertEquals("github.com/example/module", result.getName());
         assertEquals("v1.2.3", result.getVersion());
@@ -37,7 +37,7 @@ class GoModFileHelpersTest {
     void testCreateDependencyWithIncompatibleVersion() {
         GoModuleInfo moduleInfo = new GoModuleInfo("github.com/example/module", "v1.2.3+incompatible");
 
-        Dependency result = goModFileHelpers.CreateDependency(moduleInfo);
+        Dependency result = goModFileHelpers.createDependency(moduleInfo);
 
         assertEquals("github.com/example/module", result.getName());
         assertEquals("v1.2.3", result.getVersion());
@@ -48,7 +48,7 @@ class GoModFileHelpersTest {
     void testCreateDependencyWithEncodedIncompatibleVersion() {
         GoModuleInfo moduleInfo = new GoModuleInfo("github.com/example/module", "v1.2.3%2Bincompatible");
 
-        Dependency result = goModFileHelpers.CreateDependency(moduleInfo);
+        Dependency result = goModFileHelpers.createDependency(moduleInfo);
 
         assertEquals("github.com/example/module", result.getName());
         assertEquals("v1.2.3", result.getVersion());
@@ -59,7 +59,7 @@ class GoModFileHelpersTest {
     void testCreateDependencyWithNullVersion() {
         GoModuleInfo moduleInfo = new GoModuleInfo("github.com/example/module", null);
 
-        Dependency result = goModFileHelpers.CreateDependency(moduleInfo);
+        Dependency result = goModFileHelpers.createDependency(moduleInfo);
 
         assertEquals("github.com/example/module", result.getName());
         assertNull(result.getVersion());
@@ -70,7 +70,7 @@ class GoModFileHelpersTest {
     void testCreateDependencyWithEmptyVersion() {
         GoModuleInfo moduleInfo = new GoModuleInfo("github.com/example/module", "");
 
-        Dependency result = goModFileHelpers.CreateDependency(moduleInfo);
+        Dependency result = goModFileHelpers.createDependency(moduleInfo);
 
         assertEquals("github.com/example/module", result.getName());
         assertNull(result.getVersion());

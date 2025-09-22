@@ -89,13 +89,13 @@ public class GoModDependencyResolver {
 
         GoDependencyNode rootNode = new GoDependencyNode(true, parentModuleDependency, new ArrayList<>());
         for (GoModuleInfo directDep : finalDirectDependencies) {
-            GoDependencyNode childNode = new GoDependencyNode(false, goModFileHelpers.CreateDependency(directDep), new ArrayList<>());
+            GoDependencyNode childNode = new GoDependencyNode(false, goModFileHelpers.createDependency(directDep), new ArrayList<>());
             rootNode.addChild(childNode);
         }
 
         List<GoDependencyNode> rootTransitives = new ArrayList<>();
         for (GoModuleInfo indirectDep : finalIndirectDependencies) {
-            GoDependencyNode childNode = new GoDependencyNode(false, goModFileHelpers.CreateDependency(indirectDep), new ArrayList<>());
+            GoDependencyNode childNode = new GoDependencyNode(false, goModFileHelpers.createDependency(indirectDep), new ArrayList<>());
             rootTransitives.add(childNode);
         }
 
@@ -152,7 +152,7 @@ public class GoModDependencyResolver {
                 GoModDependencyResolver.ResolvedDependencies childResolvedDeps = parseGoModFile(childGoModContent);
                 
                 for (GoModuleInfo childInfo : childResolvedDeps.getDirectDependencies()) {
-                    Dependency childDep = goModFileHelpers.CreateDependency(childInfo);
+                    Dependency childDep = goModFileHelpers.createDependency(childInfo);
                     GoDependencyNode childNode = new GoDependencyNode(false, childDep, new ArrayList<>());
                     children.add(childNode);
                 }
