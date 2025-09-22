@@ -6,29 +6,37 @@ There are three ways to run [detect_product_long]:
 1. Download and run a [detect_product_short] [.jar file](runningjar.md).
 1. Run [detect_product_short] from [within a Docker container](../runincontainer.md).
 
-The primary reason to run one of the [detect_product_short] scripts is that the scripts have an auto-update feature.
-By default, they always
-run the latest version of the [detect_product_short] .jar file within a specific major version; downloading it for you if necessary.
-When you run [detect_product_short] via one of the provided scripts, you automatically pick up fixes and new features as they are released.
-Each script limits itself to a specific [detect_product_short] major version (for example, 10.y.z, or 8.y.z), unless you override
-this default behavior.
+# Scripts
 
-| [detect_product_short] version | Script Type | Script Name |
-|---| --- |-------------|
-| 10 | Bash | detect10.sh  |
-| 10 | PowerShell | detect10.ps1 |
-| 9 | Bash | detect9.sh  |
-| 9 | PowerShell | detect9.ps1 |
-| 8 | Bash | detect8.sh  |
-| 8 | PowerShell | detect8.ps1 |
+Running one of the [detect_product_short] scripts provides the convenience of an auto-update feature, keeping you at the latest version with the associated improvements.     
+Auto-update provides the following default behaviour:
 
-Instuctions and examples in this documentation that reference the scripts assume you are running
-[detect_product_short] 10, so refer to detect10.sh or detect10.ps1. To run [detect_product_short] 9 instead,
-substitute detect9.sh and detect9.ps1.
+	Running the `detect.sh/ps1` script will use the latest version of the [detect_product_short] .jar file; downloading it for you if necessary.   
+	
+	Running `detect.sh/ps1` scripts within a specific major version, such as `detect11.sh/ps1`  will use the latest version of the [detect_product_short] .jar file within that specific major version; downloading it for you if necessary.   
+	
+	To override the auto-update functionality by specifying an exact [detect_product_short] version, see: [To run a specific version of Detect](runningscript.md#to-run-a-specific-version-of-detect).   
+	
+	<note type="tip">When you run [detect_product_short] via one of the provided scripts, you automatically pick up fixes and new features as they are released.</note>
+
+| [detect_product_short] version | Script Type | Script Name | Notes |
+|---| --- |-------------|---|
+| Latest | Bash | detect.sh  | Runs latest Detect |
+| Latest | PowerShell | detect.ps1 | Runs latest Detect |
+| 11 | Bash | detect11.sh  | Runs latest Detect 11 |
+| 11 | PowerShell | detect11.ps1 | Runs latest Detect 11 |
+| 10 | Bash | detect10.sh  | Runs latest Detect 10 |
+| 10 | PowerShell | detect10.ps1 | Runs latest Detect 10 |
+| 9 | Bash | detect9.sh  | Runs latest Detect 9 |
+| 9 | PowerShell | detect9.ps1 | Runs latest Detect 9 |
+
+<note type="note">References to [detect_product_short] scripts within this documentation assume you are running the current release.</note>
+
+# JAR file
 
 The primary reason to run the [detect_product_short] .jar directly is that this method provides
-direct control over the exact [detect_product_short] version;
-[detect_product_short] does not automatically update in this scenario.
+direct control over the exact [detect_product_short] version. [detect_product_short] does not automatically update in this scenario.
 
-The primary reason to run [detect_product_short] from within a Docker container is to take advantage of the benefits of Docker containers, which include standardized run environment configuration;
-[detect_product_short] does not automatically update in this scenario.
+# Docker container
+
+The primary reason to run [detect_product_short] from within a Docker container is to take advantage of Docker container benefits, which include standardized run environment configuration. [detect_product_short] does not automatically update in this scenario.
