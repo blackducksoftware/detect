@@ -16,7 +16,7 @@ import com.blackduck.integration.executable.ExecutableRunnerException;
 import java.io.File;
 import java.util.List;
 
-@DetectableInfo(name = "Opam Lock File", language = "OCaml", forge = "opam", accuracy = DetectableAccuracyType.LOW, requirementsMarkdown = "File: opam files with extensions .opam and .opam.locked.")
+@DetectableInfo(name = "Opam Lock", language = "OCaml", forge = "opam", accuracy = DetectableAccuracyType.LOW, requirementsMarkdown = "File: opam files with extensions .opam and .opam.locked.")
 public class OpamLockFileDetectable extends Detectable {
 
     private static final String OPAM_FILE = "*.opam";

@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 
-@DetectableInfo(name = "UV Lockfile", language = "Python", forge = "PyPi", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: pyproject.toml file. Lock File: uv.lock or requirements.txt file.")
+@DetectableInfo(name = "UV Lock", language = "Python", forge = "PyPi", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: pyproject.toml file. Lock File: uv.lock or requirements.txt file.")
 public class UVLockFileDetectable extends Detectable {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());

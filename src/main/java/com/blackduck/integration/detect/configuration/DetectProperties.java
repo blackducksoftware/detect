@@ -787,11 +787,23 @@ public class DetectProperties {
         NoneEnumListProperty.newBuilder("detect.excluded.detector.types", NoneEnum.NONE, DetectorType.class)
             .setInfo("Detector Types Excluded", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp(
-                "By default, all detectors will be included. If you want to exclude specific detectors, specify the ones to exclude here. Exclusion rules always win.",
-                "If Detect runs one or more detector on your project that you would like to exclude, you can use this property to prevent Detect from running them."
+                "By default, all detectors will be included. If you want to exclude specific detector types, specify the ones to exclude here. Exclusion rules always win.",
+                "If Detect runs one or more detector types on your project that you would like to exclude, you can use this property to prevent Detect from running them. For more granular control, please see --detect.excluded.detectors."
             )
             .setGroups(DetectGroup.DETECTOR, DetectGroup.GLOBAL)
             .setExample("NPM,LERNA")
+            .setCategory(DetectCategory.Advanced)
+            .build();
+
+    public static final StringListProperty DETECT_EXCLUDED_DETECTORS =
+        StringListProperty.newBuilder("detect.excluded.detectors", new ArrayList<>())
+            .setInfo("Detectors Excluded", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setHelp(
+                "By default, all detectors will be included. If you want to exclude specific detectors, specify the ones to exclude here. Exclusion rules always win.",
+                "This property is similar to --detect.excluded.detector.types; but, allows for more granular control. Values are case-insensitive and spaces can be omitted."
+            )
+            .setGroups(DetectGroup.DETECTOR, DetectGroup.GLOBAL)
+            .setExample("PIPNativeInspector,PIPRequirementsParse")
             .setCategory(DetectCategory.Advanced)
             .build();
 
