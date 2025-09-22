@@ -22,7 +22,8 @@ class PythonDependencyTransformerTest {
             new TestCase("torch @ https://download.pytorch.org/whl/cpu/torch-2.6.0%2Bcpu-cp310-cp310-linux_x86_64.whl", "torch", "2.6.0"),
             new TestCase("torchvision @ https://download.pytorch.org/whl/cpu/torchvision-0.21.0%2Bcpu-cp310-cp310-linux_x86_64.whl", "torchvision", "0.21.0"),
             new TestCase("pip @ https://github.com/pypa/pip/archive/1.3.1.zip", "pip", "1.3.1"),
-            new TestCase("flask @ git+https://github.com/pallets/flask.git@2.3.3", "flask", "2.3.3")
+            new TestCase("flask @ git+https://github.com/pallets/flask.git@2.3.3", "flask", "2.3.3"),
+            new TestCase("statsmodels @ git+https://github.com/statsmodels/statsmodels.git@v0.14.0", "statsmodels", "0.14.0")
         );
     }
 
