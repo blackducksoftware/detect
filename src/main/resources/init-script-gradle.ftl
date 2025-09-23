@@ -204,15 +204,13 @@ def computeProjectFilePath(String projectPath, String outputDirectoryPath, Proje
         String depth = String.valueOf(depthCount)
 
         String finalName
-        // Special case for root project filename to match old format
+        // Aggressive sanitization for both root and subprojects
         if (projectPath == ":") {
             String rootProjectName = rootProject.getName().replaceAll("[^\\p{IsAlphabetic}\\p{Digit}]+", "_")
             finalName = "root_project_${rootProjectName}"
         } else {
-            // Logic to replicate old subproject naming
             String nameForFile = name.substring(1) // Remove leading ':'
-            nameForFile = nameForFile.replace(':', '_') // Replace remaining ':' with '_'
-            nameForFile = nameForFile.replace('-', '_') // Replace hyphens with underscores
+            nameForFile = nameForFile.replaceAll("[^\\p{IsAlphabetic}\\p{Digit}]+", "_")
             finalName = "project_" + nameForFile
         }
 
