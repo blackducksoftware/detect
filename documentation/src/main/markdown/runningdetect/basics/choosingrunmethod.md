@@ -11,11 +11,13 @@ There are three ways to run [detect_product_long]:
 Running one of the [detect_product_short] scripts provides the convenience of an auto-update feature, keeping you at the latest version with the associated improvements.     
 Auto-update provides the following default behaviour:
 
-Running the unversioned `detect.sh/ps1` script will use the latest version of the [detect_product_short] .jar file; downloading it for you if necessary.   
+Downloading and running the latest unversioned `detect.sh/ps1` script will use the latest version of the [detect_product_short] .jar file; downloading it for you if necessary.   
 	
 Running a versioned `detect.sh/ps1` script such as `detect11.sh/ps1` will use the latest version of the [detect_product_short] .jar file within that specific major version; downloading it for you if necessary.   
 	
 To override the auto-update functionality by specifying an exact [detect_product_short] version, see: [To run a specific version of Detect](runningscript.md#to-run-a-specific-version-of-detect).   
+
+If you are running [detect_product_short] with [bd_product_short] you can also configure the version of [detect_product_short] that should be used. See [Hosting location for Black Duck Detect](https://documentation.blackduck.com/bundle/bd-hub/page/ComponentDiscovery/DetectLocation.html).
 	
 <note type="tip">When you run [detect_product_short] via one of the provided scripts, you automatically pick up fixes and new features as they are released.</note>
 

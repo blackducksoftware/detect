@@ -22,7 +22,7 @@ This is essentially the process that [detect_product_short] expands upon and aut
 
 ## Step 2: Run [detect_product_short] connected to [blackduck_product_name].
 
-<note type="note">Running the unversioned `detect.sh/ps1` script will use the latest version of the [detect_product_short] .jar file, whereas running a versioned script such as `detect11.sh/ps1` will use the latest version of the [detect_product_short] .jar file within that specific major version.</note>  
+<note type="note">Downloading and running the latest unversioned `detect.sh/ps1` script will use the latest version of the [detect_product_short] .jar file, whereas running a versioned script such as `detect11.sh/ps1` will use the latest version of the [detect_product_short] .jar file within that specific major version.</note>  
 
 To run [detect_product_short], you will need to provide login credentials for your [bd_product_short]
 server. One way to do that is to add the following arguments to the command line:
