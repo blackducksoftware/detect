@@ -122,17 +122,17 @@ public class GradleInspectorExtractor {
             }
 
             private int extractDepthNumber(String name) {
-                int i;
                 try {
-                    int s = name.lastIndexOf("depth") + 5; // File name is like project__projectname__depth3_dependencyGraph.txt, we extract the number after depth
-                    int e = name.indexOf("_dependencyGraph");
-                    String number = name.substring(s, e);
-                    i = Integer.parseInt(number);
-                } catch(Exception e) {
-                    logger.error("The file name is not analogous to the structure expected: " + name);
-                    i = 0; //  default to 0
+                    java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("__depth(\\d+)_dependencyGraph\\.txt$");
+                    java.util.regex.Matcher matcher = pattern.matcher(name);
+                    if (matcher.find()) {
+                        return Integer.parseInt(matcher.group(1));
+                    }
+                } catch (Exception e) {
+                    logger.error("The file name is not analogous to the structure expected: {}", name, e);
                 }
-                return i;
+                logger.warn("Could not extract depth from filename: {}. Defaulting to depth 0.", name);
+                return 0; // default to 0
             }
         });
 

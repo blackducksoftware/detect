@@ -70,7 +70,7 @@ gradle.allprojects {
              shouldInclude(projectPathExcludeFilter, projectPathIncludeFilter, projectPath))
 
         // Capture output file path during configuration
-        def projectFilePathConfig = computeProjectFilePath(projectPath, extractionDir)
+        def projectFilePathConfig = computeProjectFilePath(projectPath, extractionDir, rootProject)
 
         // Configure the dependencies task during configuration time
         def dependenciesTask = currentProject.tasks.getByName('dependencies')
@@ -191,27 +191,37 @@ def isRoot(Project project) {
 
 
 // Get path for project file
-def computeProjectFilePath(String projectPath, String outputDirectoryPath) {
+def computeProjectFilePath(String projectPath, String outputDirectoryPath, Project rootProject) {
     try {
         File outputDirectory = createTaskOutputDirectory(outputDirectoryPath)
         String name = projectPath ?: ""
 
-        int depthCount = 0
-        for(char c: name.toCharArray()) {
-            if (c == ':') {
-                depthCount++
-            }
+        int depthCount = name.count(':')
+        // The root project path is ":" which has one colon, but its depth should be 0.
+        if (projectPath == ":") {
+            depthCount = 0
         }
         String depth = String.valueOf(depthCount)
-        // Special case for root project
-        if (projectPath == ":") {
-            return new File(outputDirectory, "root_project_depth${depth}_dependencyGraph.txt").getAbsolutePath()
-        }
-        // Replace all non-alphanumeric characters with underscores
 
-        String nameForFile = name?.replaceAll(/[^\p{IsAlphabetic}\p{Digit}]/, "_")
-        nameForFile = "project_" + nameForFile
-        return new File(outputDirectory, "${nameForFile}_depth${depth}_dependencyGraph.txt").getAbsolutePath()
+        String finalName
+        // Special case for root project filename to match old format
+        if (projectPath == ":") {
+            String rootProjectName = rootProject.getName().replaceAll("[^\\p{IsAlphabetic}\\p{Digit}]+", "_")
+            finalName = "root_project_${rootProjectName}"
+        } else {
+            // Logic to replicate old subproject naming
+            String nameForFile = name.substring(1) // Remove leading ':'
+            nameForFile = nameForFile.replace(':', '_') // Replace remaining ':' with '_'
+            nameForFile = nameForFile.replace('-', '_') // Replace hyphens with underscores
+            finalName = "project_" + nameForFile
+        }
+
+        // Ensure the final name does not end with an underscore before appending __depth
+        if (finalName.endsWith("_")) {
+            finalName = finalName.substring(0, finalName.length() - 1)
+        }
+
+        return new File(outputDirectory, "${finalName}__depth${depth}_dependencyGraph.txt").getAbsolutePath()
     } catch (Exception e) {
         println "ERROR in computeProjectFilePath: " + e.message
         e.printStackTrace()
