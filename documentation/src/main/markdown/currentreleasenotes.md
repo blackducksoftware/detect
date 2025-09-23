@@ -24,7 +24,7 @@
 
 * When enabled, the new [detect.project.deep.license](properties/configuration/project.md#deep-license-analysis) property sets the Deep License Data and Deep License Data Snippet fields when creating a project. This property can also be used to update existing projects when the [detect.project.version.update](properties/configuration/project.md#update-project-version) property is set to true.
 * The new [detect.project.settings](properties/configuration/project.md#project-settings-via-json) property takes as input a path to a JSON file. This file allows users to pass several existing `detect.project` properties as a single argument to Detect. Detect will parse the JSON file to obtain information relevant to creating or updating projects.
-* The new `detect.excluded.detectors` property takes as input a comma-separated list of Detector names to exclude. This allows for more granular control of what Detectors are considered for extraction.
+* The new [detect.excluded.detectors](properties/configuration/detector.md#detectors-excluded-advanced) property takes as input a comma-separated list of Detector names to exclude. This allows for greater control over selection of Detectors.
 
 ### Changed features
 
