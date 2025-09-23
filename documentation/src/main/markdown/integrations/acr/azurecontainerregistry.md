@@ -42,7 +42,7 @@ The *az acr login* command generates an authentication token and authenticates w
 
 **[detect_product_short] - Scanning Images**   
 ```
-bash <(curl -s -L https:‎ //detect.blackduck.com/detect10.sh) \
+bash <(curl -s -L https:‎ //detect.blackduck.com/detect11.sh) \
 --blackduck.url=<URL> \
 --blackduck.api.token=<token> \
 --detect.docker.image=<Image URI> \
@@ -95,7 +95,7 @@ Start in **Pipelines > Library** inside Azure DevOps.
 #Log in to ACR using the configured Variable Group
 docker login <registryname>.azurecr.io -u $(acr.username) -p $(acr.password)
 #Call Detect, passing the Docker Image location
-bash <(curl -s -L https:‎ //detect.blackduck.com/detect10.sh) \
+bash <(curl -s -L https:‎ //detect.blackduck.com/detect11.sh) \
 --blackduck.url=$(blackduck.url) \
 --blackduck.api.token=$(blackduck.api.token) \ 
 --detect.docker.image=<registryname>.azurecr.io/<containername>:$(Build.BuildId) \ 

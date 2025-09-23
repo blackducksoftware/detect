@@ -14,7 +14,7 @@ Populate it with property assignments as previously described.
 To select one or more profiles on the [detect_product_short] command line, assign the the comma-separated list of profiles
 to the Spring Boot property *spring.profiles.active*:
 ```
-bash <(curl -s -L https://detect.blackduck.com/detect10.sh) --spring.profiles.active={profilename}
+bash <(curl -s -L https://detect.blackduck.com/detect11.sh) --spring.profiles.active={profilename}
 ```
 
 This capability is provided by Spring Boot. For more information, refer to

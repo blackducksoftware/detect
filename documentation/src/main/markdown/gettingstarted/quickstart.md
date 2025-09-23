@@ -22,6 +22,8 @@ This is essentially the process that [detect_product_short] expands upon and aut
 
 ## Step 2: Run [detect_product_short] connected to [blackduck_product_name].
 
+<note type="note">Running the unversioned `detect.sh/ps1` script will use the latest version of the [detect_product_short] .jar file, whereas running a versioned script such as `detect11.sh/ps1` will use the latest version of the [detect_product_short] .jar file within that specific major version.</note>  
+
 To run [detect_product_short], you will need to provide login credentials for your [bd_product_short]
 server. One way to do that is to add the following arguments to the command line:
 
@@ -33,13 +35,13 @@ The command you run looks like this:
 On Linux or Mac:
 
 ````
-bash <(curl -s -L https://detect.blackduck.com/detect10.sh) --blackduck.url={your Black Duck server URL} --blackduck.api.token={your Black Duck access token}
+bash <(curl -s -L https://detect.blackduck.com/detect.sh) --blackduck.url={your Black Duck server URL} --blackduck.api.token={your Black Duck access token}
 ````
 
 On Windows:
 
 ````
-powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect" --blackduck.url={your Black Duck server URL} --blackduck.api.token={your Black Duck access token}
+powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect.ps1?$(Get-Random) | iex; detect" --blackduck.url={your Black Duck server URL} --blackduck.api.token={your Black Duck access token}
 ````
 
 The operations performed by [detect_product_short] depends on what it finds in your source directory.
@@ -60,4 +62,3 @@ For guidance on getting started using, and viewing results in [bd_product_short]
 
 [detect_product_short] can be used on a variety of project types, and in a variety of ways, due to it's behavior being highly configurable.
 For more detailed information on how to configure [detect_product_short] for your needs, see [Configuring Detect](../configuring/overview.md).
-
