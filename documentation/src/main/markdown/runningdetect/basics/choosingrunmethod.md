@@ -37,7 +37,7 @@ If you are running [detect_product_short] with [bd_product_short] you can also c
 # JAR file
 
 The primary reason to run the [detect_product_short] .jar directly is that this method provides
-direct control over the exact [detect_product_short] version. [detect_product_short] does not automatically update in this scenario.
+direct control over the exact [detect_product_short] version. [detect_product_short] does not automatically update in this scenario unless configured in [bd_product_short] to do so. See [Hosting location for Black Duck Detect](https://documentation.blackduck.com/bundle/bd-hub/page/ComponentDiscovery/DetectLocation.html).
 
 # Docker container
 
