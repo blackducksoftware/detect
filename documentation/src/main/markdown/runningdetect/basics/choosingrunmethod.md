@@ -41,4 +41,4 @@ direct control over the exact [detect_product_short] version. [detect_product_sh
 
 # Docker container
 
-The primary reason to run [detect_product_short] from within a Docker container is to take advantage of Docker container benefits, which include standardized run environment configuration. [detect_product_short] does not automatically update in this scenario.
+The primary reason to run [detect_product_short] from within a Docker container is to take advantage of Docker container benefits, which include standardized run environment configuration. 
