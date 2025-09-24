@@ -11,7 +11,7 @@ Find the last element in the *RootFS.Layers* array. This is the platform top lay
 *sha256:b079b3fa8d1b4b30a71a6e81763ed3da1327abaf0680ed3ed9f00ad1d5de5e7c*.
 Set the value of the Docker Inspector property docker.platform.top.layer.id to the platform top layer ID. For example:
 ````
-./detect10.sh ... --detect.docker.image={your application image} --detect.docker.platform.top.layer.id=sha256:b079b3fa8d1b4b30a71a6e81763ed3da1327abaf0680ed3ed9f00ad1d5de5e7c
+./detect11.sh ... --detect.docker.image={your application image} --detect.docker.platform.top.layer.id=sha256:b079b3fa8d1b4b30a71a6e81763ed3da1327abaf0680ed3ed9f00ad1d5de5e7c
 ````
 In this mode, there may be some loss in match accuracy from the [blackduck_signature_scanner_name] because, in this scenario, the [blackduck_signature_scanner_name] may be deprived of some contextual information, such as the operating system files that enable it to determine the Linux distribution, and that that may negatively affect its ability to accurately identify components.
 

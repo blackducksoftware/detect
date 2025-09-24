@@ -21,24 +21,24 @@ Rerun the scan after adding or updating the IP addresses listed below in your ne
 
 ### Symptom
 
-detect10.sh fails with: DETECT_SOURCE was not set or computed correctly, please check your configuration and environment.
+detect11.sh fails with: DETECT_SOURCE was not set or computed correctly, please check your configuration and environment.
 
 ### Possible cause
 
-detect10.sh is trying to execute this command:
+detect11.sh is trying to execute this command:
 ````
-curl --silent --header \"X-Result-Detail: info\" https://repo.blackduck.com/api/storage/bds-integrations-release/com/blackduck/integration/detect?properties=DETECT_LATEST_10
+curl --silent --header \"X-Result-Detail: info\" https://repo.blackduck.com/api/storage/bds-integrations-release/com/blackduck/integration/detect?properties=DETECT_LATEST_11
 ````
 The response to this command should be similar to the following:
 ```
 {
 "properties" : {
-"DETECT_LATEST_10" : [ "https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/detect/10.0.0/detect-10.0.0.jar" ]
+"DETECT_LATEST_11" : [ "https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/detect/11.0.0/detect-11.0.0.jar" ]
 },
 "uri" : "https://repo.blackduck.com/api/storage/bds-integrations-release/com/blackduck/integration/detect"
 }
 ```
-When that command does not successfully return a value for property DETECT_LATEST, detect10.sh reports:
+When that command does not successfully return a value for property DETECT_LATEST, detect11.sh reports:
 ````
 DETECT_SOURCE was not set or computed correctly, please check your configuration and environment.
 ````

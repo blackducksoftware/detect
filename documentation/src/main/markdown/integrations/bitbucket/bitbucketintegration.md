@@ -41,7 +41,7 @@ This section describes how to run [detect_product_short] with Bitbucket pipeline
 3.	Add the following snippet to the `bitbucket-pipelines.yml` file:
 
 ```
-bash <(curl -s -L https://detect.blackduck.com/detect10.sh) --blackduck.url="${BLACKDUCK_URL}" 
+bash <(curl -s -L https://detect.blackduck.com/detect11.sh) --blackduck.url="${BLACKDUCK_URL}" 
 --blackduck.api.token="${BLACKDUCK_TOKEN}" --blackduck.trust.cert=true --<any other flags>
 ```
 
@@ -68,7 +68,7 @@ pipelines:
     - step:
         name: detect
         script:
-          - bash <(curl -s -L https://detect.blackduck.com/detect10.sh) --blackduck.url="${BLACKDUCK_URL}" --blackduck.api.token="${BLACKDUCK_TOKEN} --blackduck.trust.cert=true"
+          - bash <(curl -s -L https://detect.blackduck.com/detect11.sh) --blackduck.url="${BLACKDUCK_URL}" --blackduck.api.token="${BLACKDUCK_TOKEN} --blackduck.trust.cert=true"
 ```
 
 <note type="important">Configure [detect_product_short] as a command after the code-build step as it relies on access to the code tree and the build environment.</note>
