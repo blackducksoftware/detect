@@ -846,7 +846,7 @@ public class DetectProperties {
             .setHelp(
                 createTypeFilterHelpText("Go Mod dependency types"),
                 String.format(
-                    "If %s is provided, Detect will use the results of 'go mod why' to filter out unused dependencies from Go modules declaring Go 1.16 or higher. If %s is provided, Detect will use the results of 'go mod why -vendor' to filter out all unused dependencies.",
+                    "If %s is provided, Detect will use the results of 'go mod why' to filter out unused dependencies from Go modules declaring Go 1.16 or higher. If %s is provided, Detect will use the results of 'go mod why -vendor' to filter out all unused dependencies. This property is only applicable to the Go Mod CLI Detector.",
                     GoModDependencyType.UNUSED.name(),
                     GoModDependencyType.VENDORED.name()
                 )
