@@ -21,7 +21,7 @@ public class GoModDependencyResolverTest {
     
     @BeforeEach
     public void setUp() {
-        options = new GoModFileDetectableOptions("https://proxy.golang.org");
+        options = new GoModFileDetectableOptions("https://proxy.golang.org", 30, 30);
         resolver = new GoModDependencyResolver(options);
         externalIdFactory = new ExternalIdFactory();
     }

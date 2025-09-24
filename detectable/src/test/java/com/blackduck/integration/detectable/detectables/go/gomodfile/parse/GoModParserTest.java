@@ -8,6 +8,7 @@ import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoReplaceDirective;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -18,11 +19,12 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Test class demonstrating the functionality of the enhanced Go mod parser.
  */
+@Tag("integration")
 public class GoModParserTest {
     
     private GoModParser parser;
     private ExternalIdFactory externalIdFactory;
-    private GoModFileDetectableOptions options = new GoModFileDetectableOptions("https://proxy.golang.org");
+    private GoModFileDetectableOptions options = new GoModFileDetectableOptions("https://proxy.golang.org", 30, 30);
     
     @BeforeEach
     void setUp() {

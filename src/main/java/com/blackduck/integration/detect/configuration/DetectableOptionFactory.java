@@ -144,15 +144,23 @@ public class DetectableOptionFactory {
     }
 
     public GoModFileDetectableOptions createGoModFileDetectableOptions() {
-        String goProxyUrl = detectConfiguration.getNullableValue(DetectProperties.DETECT_GO_PROXY_URL);
-        if (goProxyUrl == null || goProxyUrl.isBlank()) {
-            goProxyUrl = "https://proxy.golang.org";
+        String goForgeUrl = detectConfiguration.getNullableValue(DetectProperties.DETECT_GO_FORGE);
+        if (goForgeUrl == null || goForgeUrl.isBlank()) {
+            goForgeUrl = "https://proxy.golang.org";
         }
         // if the URL ends with a trailing slash, remove it
-        if (goProxyUrl.endsWith("/")) {
-            goProxyUrl = goProxyUrl.substring(0, goProxyUrl.length() - 1);
+        if (goForgeUrl.endsWith("/")) {
+            goForgeUrl = goForgeUrl.substring(0, goForgeUrl.length() - 1);
         }
-        return new GoModFileDetectableOptions(goProxyUrl);
+        long connectionTimeout = detectConfiguration.getValue(DetectProperties.DETECT_GO_FORGE_CONNECTION_TIMEOUT);
+        if (connectionTimeout <= 0) {
+            connectionTimeout = 30; // default to 30 seconds if not set
+        }
+        long readTimeout = detectConfiguration.getValue(DetectProperties.DETECT_GO_FORGE_READ_TIMEOUT);
+        if (readTimeout <= 0) {
+            readTimeout = 60; // default to 60 seconds if not set
+        }
+        return new GoModFileDetectableOptions(goForgeUrl, connectionTimeout, readTimeout);
     }
 
     public GradleInspectorOptions createGradleInspectorOptions() {

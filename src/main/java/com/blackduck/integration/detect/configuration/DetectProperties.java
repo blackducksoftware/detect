@@ -37,6 +37,7 @@ import com.blackduck.integration.configuration.property.types.enums.EnumProperty
 import com.blackduck.integration.configuration.property.types.integer.IntegerProperty;
 import com.blackduck.integration.configuration.property.types.integer.NullableIntegerProperty;
 import com.blackduck.integration.configuration.property.types.longs.LongProperty;
+import com.blackduck.integration.configuration.property.types.longs.NullableLongProperty;
 import com.blackduck.integration.configuration.property.types.path.NullablePathProperty;
 import com.blackduck.integration.configuration.property.types.path.PathListProperty;
 import com.blackduck.integration.configuration.property.types.string.CaseSensitiveStringListProperty;
@@ -854,12 +855,30 @@ public class DetectProperties {
             .setGroups(DetectGroup.GO, DetectGroup.GLOBAL)
             .build();
 
-    public static final NullableStringProperty DETECT_GO_PROXY_URL =
+    public static final NullableStringProperty DETECT_GO_FORGE =
         NullableStringProperty.newBuilder("detect.go.forge")
             .setInfo("Go Forge URL", DetectPropertyFromVersion.VERSION_11_0_0)
             .setHelp(
                 "The Go Forge URL to use when downloading modules. If not set, the default Go Forge (https://proxy.golang.org) will be used. To disable the use of a proxy, set this property to 'direct'."
             )
+            .setGroups(DetectGroup.GO, DetectGroup.GLOBAL)
+            .build();
+    
+    public static final LongProperty DETECT_GO_FORGE_CONNECTION_TIMEOUT =
+        LongProperty.newBuilder("detect.go.forge.connection.timeout", 30L)
+            .setInfo("Detect Timeout", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setHelp(
+                "The connection timeout in seconds to use when connecting to the Go Forge. If not set, the default connection timeout of 30 seconds will be used."
+            ).setExample("30")
+            .setGroups(DetectGroup.GO, DetectGroup.GLOBAL)
+            .build();
+
+    public static final LongProperty DETECT_GO_FORGE_READ_TIMEOUT =
+        LongProperty.newBuilder("detect.go.forge.read.timeout", 60L)
+            .setInfo("Detect Timeout", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setHelp(
+                "The read timeout in seconds to use when reading from the Go Forge. If not set, the default read timeout of 60 seconds will be used."
+            ).setExample("60")
             .setGroups(DetectGroup.GO, DetectGroup.GLOBAL)
             .build();
 

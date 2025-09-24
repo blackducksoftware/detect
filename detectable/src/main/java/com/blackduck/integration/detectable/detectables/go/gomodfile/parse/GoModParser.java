@@ -30,6 +30,8 @@ public class GoModParser {
     private static final String ORPHAN_PARENT_NAME = "Additional_Components";
     private static final String ORPHAN_PARENT_VERSION = "none";
 
+    private static final String DEPENDENCY_SEPARATOR = "-".repeat(60);
+
     public GoModParser(ExternalIdFactory externalIdFactory, GoModFileDetectableOptions options) {
         this.externalIdFactory = externalIdFactory;
         this.fileParser = new GoModFileParser();
@@ -54,7 +56,7 @@ public class GoModParser {
         logger.debug("Resolved dependencies: {}", resolvedDependencies);
 
         // Create dependency graph
-        return createDependencyGraph(resolvedDependencies, goModContent);
+        return createDependencyGraph(resolvedDependencies);
     }
     
     /**
@@ -69,25 +71,24 @@ public class GoModParser {
     }
 
     private void printDependencyGraphOfIndirectDependency(Dependency dependency, List<GoDependencyNode> path) {
-        logger.debug("-----------------------------------------------------------");
-        logger.debug("Dependency graph for indirect dependency: {}", dependency.toString());
-        logger.debug("-----------------------------------------------------------");
+        logger.debug(DEPENDENCY_SEPARATOR);
+        logger.debug("Dependency graph for indirect dependency: {}", dependency);
+        logger.debug(DEPENDENCY_SEPARATOR);
         for(int idx=0; idx < path.size(); idx++) {
             GoDependencyNode pathEntry = path.get(idx);
-            logger.debug(">" + " ".repeat(idx) + pathEntry.getDependency().getName() + " " + pathEntry.getDependency().getVersion());
+            logger.debug("> {} {} {}", (idx > 0 ? " ".repeat(idx) : ""), pathEntry.getDependency().getName(), pathEntry.getDependency().getVersion());
         }
-        logger.debug("-----------------------------------------------------------");
+        logger.debug(DEPENDENCY_SEPARATOR);
     }
     
-    private DependencyGraph createDependencyGraph(GoModDependencyResolver.ResolvedDependencies resolvedDependencies, 
-                                                 GoModFileContent goModContent) {
+    private DependencyGraph createDependencyGraph(GoModDependencyResolver.ResolvedDependencies resolvedDependencies) {
         DependencyGraph graph = new BasicDependencyGraph();
         
         // Add direct dependencies
         for (GoModuleInfo directDep : resolvedDependencies.getDirectDependencies()) {
             Dependency dependency = goModFileHelpers.createDependency(directDep);
             graph.addDirectDependency(dependency);
-            logger.debug("Added direct dependency: {} to the root module", dependency.toString());
+            logger.debug("Added direct dependency: {} to the root module", dependency);
         }
 
         List<Dependency> orphDependencies = new ArrayList<>();
@@ -104,10 +105,10 @@ public class GoModParser {
                     GoDependencyNode parentDependency = path.get(idx);
                     GoDependencyNode childDependency = path.get(idx + 1);
                     graph.addChildWithParent(childDependency.getDependency(), parentDependency.getDependency());
-                    logger.debug("Mapped {} as child of {}", childDependency.getDependency().toString(), parentDependency.getDependency().toString());
+                    logger.debug("Mapped {} as child of {}", childDependency.getDependency(), parentDependency.getDependency());
                 }
             } else {
-                logger.warn("No path found for indirect dependency: {}. Hence, adding it to orphan dependencies", dependency.toString());
+                logger.warn("No path found for indirect dependency: {}. Hence, adding it to orphan dependencies", dependency);
                 orphDependencies.add(dependency);
             }
         }
@@ -116,10 +117,10 @@ public class GoModParser {
             // Create a parent node for orphan dependencies
             Dependency orphanParentDependency = goModFileHelpers.createDependency(new GoModuleInfo(ORPHAN_PARENT_NAME, ORPHAN_PARENT_VERSION));
             graph.addDirectDependency(orphanParentDependency);
-            logger.debug("Created orphan parent dependency: {} for orphan dependencies", orphanParentDependency.toString());
+            logger.debug("Created orphan parent dependency: {} for orphan dependencies", orphanParentDependency);
             for (Dependency orphanDep : orphDependencies) {
                 graph.addChildWithParent(orphanDep, orphanParentDependency);
-                logger.debug("Mapped orphan dependency {} as child of {}", orphanDep.toString(), orphanParentDependency.toString());
+                logger.debug("Mapped orphan dependency {} as child of {}", orphanDep, orphanParentDependency);
             }
         }
         

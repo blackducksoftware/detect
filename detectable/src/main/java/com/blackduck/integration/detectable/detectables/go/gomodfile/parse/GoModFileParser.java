@@ -73,20 +73,17 @@ public class GoModFileParser {
             line = line.trim();
             
             // Skip empty lines and comments
-            if (isEmptyOrComment(line)) {
-                continue;
-            }
-            
-            // Check for end of blocks
-            if (line.equals(")")) {
-                currentState = ParseState.NORMAL;
+            if (isEmptyOrComment(line) || line.equals(")")) {
+                if (line.equals(")")) {
+                    currentState = ParseState.NORMAL;
+                }
                 continue;
             }
             
             // Parse based on current state
             switch (currentState) {
                 case NORMAL:
-                    currentState = parseNormalLine(line, moduleName, goVersion, toolchainVersion, 
+                    currentState = parseNormalLine(line, 
                                                  directDependencies, indirectDependencies, 
                                                  excludedModules, replaceDirectives, retractedVersions);
                     // Extract module, go version, toolchain if found
@@ -127,7 +124,7 @@ public class GoModFileParser {
         );
     }
     
-    private ParseState parseNormalLine(String line, String moduleName, String goVersion, String toolchainVersion,
+    private ParseState parseNormalLine(String line,
                                      List<GoModuleInfo> directDependencies, List<GoModuleInfo> indirectDependencies,
                                      Set<GoModuleInfo> excludedModules, List<GoReplaceDirective> replaceDirectives,
                                      Set<GoModuleInfo> retractedVersions) {

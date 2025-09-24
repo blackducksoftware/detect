@@ -14,7 +14,11 @@ import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoProxyModuleResolver;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoReplaceDirective;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -26,12 +30,13 @@ public class GoModDependencyResolver {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final GoProxyModuleResolver goProxyModuleResolver;
     private final GoModFileParser goModFileParser = new GoModFileParser();
+    private GoModFileHelpers goModFileHelpers;
 
     public GoModDependencyResolver(GoModFileDetectableOptions options) {
         this.goProxyModuleResolver = new GoProxyModuleResolver(options);
     }
 
-    private Map<GoDependencyNode, List<GoDependencyNode>> visitedNodes = new HashMap<GoDependencyNode, List<GoDependencyNode>>();
+    private Map<GoDependencyNode, List<GoDependencyNode>> visitedNodes = new HashMap<>();
 
     /**
      * Resolves dependencies by applying exclude and replace directives.
@@ -72,7 +77,7 @@ public class GoModDependencyResolver {
                 .filter(GoModuleInfo::isIndirect)
                 .collect(Collectors.toList());
         
-        GoModFileHelpers goModFileHelpers = new GoModFileHelpers(externalIdFactory);
+        goModFileHelpers = new GoModFileHelpers(externalIdFactory);
         
         ExternalId parentModuleExternalId = null;
         Dependency parentModuleDependency = null;
@@ -137,43 +142,59 @@ public class GoModDependencyResolver {
     }
 
     private GoDependencyNode computeDependencyTree(GoDependencyNode node, List<GoDependencyNode> rootTransitives, ExternalIdFactory externalIdFactory) {
-        GoModFileHelpers goModFileHelpers = new GoModFileHelpers(externalIdFactory);
         if (!node.isRootNode()) {
-            List<GoDependencyNode> children = new ArrayList<>();
-            if (visitedNodes.containsKey(node)) {
-                children = visitedNodes.get(node);
-            } else {
-                String goModFileContent = goProxyModuleResolver.getGoModFileOfTheDependency(node.getDependency());
-                if (goModFileContent == null) {
-                    logger.warn("Could not fetch go.mod file for dependency {}. Skipping further resolution for this branch.", node.getDependency().toString());
-                    return node;
-                }
-                GoModFileContent childGoModContent = goModFileParser.parseGoModFile(goModFileContent);
-                GoModDependencyResolver.ResolvedDependencies childResolvedDeps = parseGoModFile(childGoModContent);
-                
-                for (GoModuleInfo childInfo : childResolvedDeps.getDirectDependencies()) {
-                    Dependency childDep = goModFileHelpers.createDependency(childInfo);
-                    GoDependencyNode childNode = new GoDependencyNode(false, childDep, new ArrayList<>());
-                    children.add(childNode);
-                }
-                visitedNodes.put(node, children);
-            }
-            node.appendChildren(children);
+            processNonRootNode(node);
         }
 
+        processChildNodes(node, rootTransitives, externalIdFactory);
+        return node;
+    }
+
+    private void processNonRootNode(GoDependencyNode node) {
+        if (visitedNodes.containsKey(node)) {
+            node.appendChildren(visitedNodes.get(node));
+            return;
+        }
+
+        List<GoDependencyNode> children = fetchAndParseChildren(node);
+        visitedNodes.put(node, children);
+        node.appendChildren(children);
+    }
+
+    private List<GoDependencyNode> fetchAndParseChildren(GoDependencyNode node) {
+        String goModFileContent = goProxyModuleResolver.getGoModFileOfTheDependency(node.getDependency());
+        if (goModFileContent == null) {
+            logger.warn("Could not fetch go.mod file for dependency {}. Skipping further resolution for this branch.", node.getDependency());
+            return new ArrayList<>();
+        }
+
+        GoModFileContent childGoModContent = goModFileParser.parseGoModFile(goModFileContent);
+        ResolvedDependencies childResolvedDeps = parseGoModFile(childGoModContent);
+        
+        List<GoDependencyNode> children = new ArrayList<>();
+        for (GoModuleInfo childInfo : childResolvedDeps.getDirectDependencies()) {
+            Dependency childDep = goModFileHelpers.createDependency(childInfo);
+            GoDependencyNode childNode = new GoDependencyNode(false, childDep, new ArrayList<>());
+            children.add(childNode);
+        }
+        return children;
+    }
+
+    private void processChildNodes(GoDependencyNode node, List<GoDependencyNode> rootTransitives, ExternalIdFactory externalIdFactory) {
         for (GoDependencyNode child : node.getChildren()) {
-            if (node.isRootNode()) {
+            if (shouldProcessChild(node, child, rootTransitives)) {
                 computeDependencyTree(child, rootTransitives, externalIdFactory);
-            } else {
-                for (GoDependencyNode item : rootTransitives) {
-                    if (child.getDependency().getName().equals(item.getDependency().getName())) {
-                        computeDependencyTree(child, rootTransitives, externalIdFactory);
-                    }
-                }
             }
         }
+    }
 
-       return node;
+    private boolean shouldProcessChild(GoDependencyNode node, GoDependencyNode child, List<GoDependencyNode> rootTransitives) {
+        if (node.isRootNode()) {
+            return true;
+        }
+        
+        return rootTransitives.stream()
+                .anyMatch(item -> child.getDependency().getName().equals(item.getDependency().getName()));
     }
     
     private List<GoModuleInfo> applyReplaceDirectives(List<GoModuleInfo> dependencies, List<GoReplaceDirective> replaceDirectives) {
@@ -205,7 +226,7 @@ public class GoModDependencyResolver {
                 );
                 
                 replacedDependencies.add(replacedDependency);
-                logger.debug("Replaced dependency {} with {}", dependency.toString(), replacedDependency.toString());
+                logger.debug("Replaced dependency {} with {}", dependency, replacedDependency);
             } else {
                 // Check for module-only replacement (without version matching)
                 String moduleOnlyKey = dependency.getName();
@@ -280,7 +301,7 @@ public class GoModDependencyResolver {
         }
         
         Set<String> retractedVersionKeys = retractedVersions.stream()
-                .map(retracted -> retracted.getVersion())
+                .map(GoModuleInfo::getVersion)
                 .collect(Collectors.toSet());
         
         return dependencies.stream()

@@ -18,9 +18,16 @@ public class GoProxyModuleResolver {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     public final GoModFileDetectableOptions options;
+    private final HttpClient client;
 
     public GoProxyModuleResolver(GoModFileDetectableOptions options) {
         this.options = options;
+        // initialize the http client with a default connection timeout of 30s and configure it to follow redirects
+        logger.debug("Initializing Go proxy HTTP client with connection timeout of {} seconds and read timeout of {} seconds", options.getConnectionTimeout(), options.getReadTimeout());
+        this.client = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(options.getConnectionTimeout()))
+            .followRedirects(Redirect.ALWAYS)
+            .build();
     }
 
     private String getGoModFileURL(Dependency dependency) {
@@ -37,15 +44,11 @@ public class GoProxyModuleResolver {
 
     public Boolean checkConnectivity() {
         String testURL = String.format("%s/", options.getGoProxyUrl());
-        HttpClient client = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(30))
-            .followRedirects(Redirect.ALWAYS)
-            .build();
         try {
-            // configure http client to follow redirects
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(java.net.URI.create(testURL))
                     .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                    .timeout(Duration.ofSeconds(options.getReadTimeout()))
                     .build();
             HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
             logger.debug("Go proxy connectivity check to URL '{}' returned status code: {}", options.getGoProxyUrl(), response.statusCode());
@@ -61,24 +64,25 @@ public class GoProxyModuleResolver {
 
     public String getGoModFileOfTheDependency(Dependency dependency) {
         String modFileURL = getGoModFileURL(dependency);
-        HttpClient client = HttpClient.newHttpClient();
         // Make a HTTP GET request to fetch the go.mod file content
         try {
-            logger.debug("Fetching go.mod for dependency {} via URL {}: ", dependency.toString(), modFileURL);
+            logger.debug("Fetching go.mod for dependency {} via URL {}: ", dependency, modFileURL);
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(java.net.URI.create(modFileURL))
                     .GET()
+                    .timeout(Duration.ofSeconds(options.getReadTimeout()))
                     .build();
             HttpResponse<String> response  = client.send(request, BodyHandlers.ofString());
             if (response.statusCode() == 200) {
-                logger.debug("Successfully fetched go.mod file for dependency {}", dependency.toString());
+                logger.debug("Successfully fetched go.mod file for dependency {}", dependency);
                 return response.body();
             } else {
-                logger.error("Failed to fetch go.mod file for dependency {}. HTTP request status code: {}. Response text: {}", dependency.toString(), response.statusCode(), response.body());
+                String responseBody = response.body();
+                logger.error("Failed to fetch go.mod file for dependency {}. HTTP request status code: {}. Response text: {}", dependency, response.statusCode(), responseBody);
                 return null;
             }
         } catch (Exception e) {
-            logger.error("Error fetching go.mod file for dependency {}. Error: {}", dependency.toString(), e.getMessage());
+            logger.error("Error fetching go.mod file for dependency {}. Error: {}", dependency, e.getMessage());
         }
         return null;
     }

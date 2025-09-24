@@ -18,7 +18,7 @@ import com.blackduck.integration.detectable.extraction.Extraction;
 @FunctionalTest
 public class GoModFileDetectableTest {
 
-    private static GoModFileDetectableOptions options = new GoModFileDetectableOptions("https://proxy.golang.org");
+    private static GoModFileDetectableOptions options = new GoModFileDetectableOptions("https://proxy.golang.org", 30, 30);
     private static File goModFile;
     private static GoModFileExtractor goModFileExtractor;
 
@@ -65,7 +65,7 @@ public class GoModFileDetectableTest {
 
     @Test
     public void testDependencyExtractionFromGoModFileWithInvalidForge() {
-        GoModFileDetectableOptions options = new GoModFileDetectableOptions("https://proxy.invalid.go.forge");
+        GoModFileDetectableOptions options = new GoModFileDetectableOptions("https://proxy.invalid.go.forge", 30, 30);
         Extraction testGoModExtraction = goModFileExtractor.extract(goModFile, options);
         Assertions.assertNotNull(testGoModExtraction);
         Assertions.assertTrue(testGoModExtraction.getCodeLocations().size() == 1);

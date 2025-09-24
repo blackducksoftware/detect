@@ -14,7 +14,7 @@ class GoProxyModuleResolverTest {
 
     @BeforeEach
     void setUp() {
-        options = new GoModFileDetectableOptions("https://proxy.golang.org");
+        options = new GoModFileDetectableOptions("https://proxy.golang.org", 30, 30);
         resolver = new GoProxyModuleResolver(options);
     }
 
