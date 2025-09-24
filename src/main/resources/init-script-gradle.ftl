@@ -196,7 +196,7 @@ def computeProjectFilePath(String projectPath, String outputDirectoryPath, Proje
         File outputDirectory = createTaskOutputDirectory(outputDirectoryPath)
         String name = projectPath ?: ""
 
-        int depthCount = name.count(':')
+        int depthCount = name.split(':').length - 1
         // The root project path is ":" which has one colon, but its depth should be 0.
         if (projectPath == ":") {
             depthCount = 0

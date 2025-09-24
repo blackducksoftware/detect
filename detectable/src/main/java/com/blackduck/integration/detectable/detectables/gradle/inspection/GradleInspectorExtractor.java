@@ -129,7 +129,7 @@ public class GradleInspectorExtractor {
                         return Integer.parseInt(matcher.group(1));
                     }
                 } catch (Exception e) {
-                    logger.error("The file name is not analogous to the structure expected: {}", name, e);
+                    logger.error("Failed to extract depth from filename: {}. Expected format: *__depth{{number}}_dependencyGraph.txt", name, e);
                 }
                 logger.warn("Could not extract depth from filename: {}. Defaulting to depth 0.", name);
                 return 0; // default to 0
