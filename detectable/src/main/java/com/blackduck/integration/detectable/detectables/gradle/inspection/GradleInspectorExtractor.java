@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Comparator;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.Nullable;
@@ -123,8 +125,8 @@ public class GradleInspectorExtractor {
 
             private int extractDepthNumber(String name) {
                 try {
-                    java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("__depth(\\d+)_dependencyGraph\\.txt$");
-                    java.util.regex.Matcher matcher = pattern.matcher(name);
+                    Pattern pattern = Pattern.compile("__depth(\\d+)_dependencyGraph\\.txt$");
+                    Matcher matcher = pattern.matcher(name);
                     if (matcher.find()) {
                         return Integer.parseInt(matcher.group(1));
                     }
