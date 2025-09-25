@@ -335,7 +335,7 @@ public class DetectConfigurationFactory {
         ProjectVersionDistributionType projectVersionDistribution = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_DISTRIBUTION);
         Integer projectTier = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_TIER);
         String projectDescription = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_DESCRIPTION);
-        String projectVersionNotes = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_VERSION_NOTES);
+        String projectVersionNotes = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_NOTES);
         Boolean projectLevelAdjustments = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_LEVEL_ADJUSTMENTS);
         Boolean forceProjectVersionUpdate = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_UPDATE);
         String projectVersionNickname = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_NICKNAME);
