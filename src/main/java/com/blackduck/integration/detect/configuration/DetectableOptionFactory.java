@@ -28,6 +28,7 @@ import com.blackduck.integration.detectable.detectables.dart.pubdep.DartPubDepsD
 import com.blackduck.integration.detectable.detectables.docker.DockerDetectableOptions;
 import com.blackduck.integration.detectable.detectables.go.gomod.GoModCliDetectableOptions;
 import com.blackduck.integration.detectable.detectables.go.gomod.GoModDependencyType;
+import com.blackduck.integration.detectable.detectables.go.gomodfile.GoModFileDetectableOptions;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.GradleConfigurationType;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.GradleInspectorOptions;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.inspector.GradleInspectorScriptOptions;
@@ -140,6 +141,26 @@ public class DetectableOptionFactory {
     public GoModCliDetectableOptions createGoModCliDetectableOptions() {
         GoModDependencyType excludedDependencyType = detectConfiguration.getValue(DetectProperties.DETECT_GO_MOD_DEPENDENCY_TYPES_EXCLUDED);
         return new GoModCliDetectableOptions(excludedDependencyType);
+    }
+
+    public GoModFileDetectableOptions createGoModFileDetectableOptions() {
+        String goForgeUrl = detectConfiguration.getNullableValue(DetectProperties.DETECT_GO_FORGE);
+        if (goForgeUrl == null || goForgeUrl.isBlank()) {
+            goForgeUrl = "https://proxy.golang.org";
+        }
+        // if the URL ends with a trailing slash, remove it
+        if (goForgeUrl.endsWith("/")) {
+            goForgeUrl = goForgeUrl.substring(0, goForgeUrl.length() - 1);
+        }
+        long connectionTimeout = detectConfiguration.getValue(DetectProperties.DETECT_GO_FORGE_CONNECTION_TIMEOUT);
+        if (connectionTimeout <= 0) {
+            connectionTimeout = 30; // default to 30 seconds if not set
+        }
+        long readTimeout = detectConfiguration.getValue(DetectProperties.DETECT_GO_FORGE_READ_TIMEOUT);
+        if (readTimeout <= 0) {
+            readTimeout = 60; // default to 60 seconds if not set
+        }
+        return new GoModFileDetectableOptions(goForgeUrl, connectionTimeout, readTimeout);
     }
 
     public GradleInspectorOptions createGradleInspectorOptions() {
