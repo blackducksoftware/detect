@@ -47,6 +47,7 @@ import com.blackduck.integration.detect.workflow.blackduck.integratedmatching.mo
 import com.blackduck.integration.detect.workflow.report.util.ReportConstants;
 import com.blackduck.integration.detect.workflow.blackduck.report.ReportData;
 import com.blackduck.integration.detect.workflow.blackduck.report.service.ReportService;
+import com.blackduck.integration.detect.workflow.blackduck.report.service.SbomService;
 import com.blackduck.integration.detect.workflow.result.BlackDuckBomDetectResult;
 import com.blackduck.integration.detect.workflow.result.DetectResult;
 import com.blackduck.integration.detect.workflow.result.ReportDetectResult;
@@ -196,6 +197,11 @@ public class IntelligentModeStepRunner {
         stepHelper.runAsGroup("Black Duck Post Actions", OperationType.INTERNAL, () -> {
             checkPolicy(projectVersion.getProjectVersionView(), blackDuckRunData);
             riskReport(blackDuckRunData, projectVersion);
+            try {
+                SbomService.generateSbom(bdioResult.getUploadTargets());
+            } catch (Exception e) {
+                logger.warn("Failed to generate SBOM from component data", e);
+            }
             noticesReport(blackDuckRunData, projectVersion);
             publishPostResults(bdioResult, projectVersion, detectToolFilter);
         });
