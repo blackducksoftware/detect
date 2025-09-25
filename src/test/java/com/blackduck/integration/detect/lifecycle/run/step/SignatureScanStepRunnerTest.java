@@ -74,11 +74,11 @@ public class SignatureScanStepRunnerTest {
         HttpHostConnectException httpException = createHttpHostConnectException();
 
         doThrow(httpException).doReturn(Collections.emptyList()).when(spyRunner).executeScan(any(), any(), any(), any(),
-                any(), anyBoolean(), anyBoolean(), any());
+                any(), anyBoolean(), anyBoolean());
 
-        spyRunner.runSignatureScannerOnline(TEST_UUID, projectNameVersion, dockerTargetData, scanIdsToWaitFor, gson, any());
+        spyRunner.runSignatureScannerOnline(TEST_UUID, projectNameVersion, dockerTargetData, scanIdsToWaitFor, gson);
 
-        verify(spyRunner, times(2)).executeScan(any(), any(), any(), any(), any(), anyBoolean(), anyBoolean(), any());
+        verify(spyRunner, times(2)).executeScan(any(), any(), any(), any(), any(), anyBoolean(), anyBoolean());
     }
 
     @Test
@@ -96,11 +96,11 @@ public class SignatureScanStepRunnerTest {
         SignatureScanStepRunner spyRunner = spy(signatureScanStepRunner);
 
         doReturn(Collections.emptyList()).when(spyRunner).executeScan(any(), any(), any(), any(), any(), anyBoolean(),
-                anyBoolean(), any());
+                anyBoolean());
 
-        spyRunner.runSignatureScannerOnline(TEST_UUID, projectNameVersion, dockerTargetData, scanIdsToWaitFor, gson, any());
+        spyRunner.runSignatureScannerOnline(TEST_UUID, projectNameVersion, dockerTargetData, scanIdsToWaitFor, gson);
 
-        verify(spyRunner, times(1)).executeScan(any(), any(), any(), any(), any(), anyBoolean(), anyBoolean(), any());
+        verify(spyRunner, times(1)).executeScan(any(), any(), any(), any(), any(), anyBoolean(), anyBoolean());
     }
 
     private HttpHostConnectException createHttpHostConnectException() {

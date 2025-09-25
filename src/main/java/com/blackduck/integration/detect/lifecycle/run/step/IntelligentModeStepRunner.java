@@ -19,6 +19,7 @@ import java.util.ArrayList;
 
 import com.blackduck.integration.detect.lifecycle.AggregateOperationException;
 import com.blackduck.integration.detect.lifecycle.run.data.CommonScanResult;
+import com.blackduck.integration.detect.lifecycle.run.step.utility.ConcurrentScanWaiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,7 +118,7 @@ public class IntelligentModeStepRunner {
 
 
         ExecutorService executorService = operationRunner.createExecutorServiceForScanner();
-
+        ConcurrentScanWaiter concurrentScanWaiter = new ConcurrentScanWaiter(executorService, operationRunner);
 
         List<CompletableFuture<Void>> scanFutures = new ArrayList<>();
 
@@ -129,7 +130,7 @@ public class IntelligentModeStepRunner {
 
         logger.debug("Completed project and version actions.");
         logger.debug("Processing Detect Code Locations.");
-        
+
         Queue<String> scanIdsToWaitFor = new ConcurrentLinkedQueue<>();
         AtomicBoolean mustWaitAtBomSummaryLevel = new AtomicBoolean(false);
 
@@ -139,7 +140,7 @@ public class IntelligentModeStepRunner {
             scanFutures.add(CompletableFuture.runAsync(() -> {
                 try {
                     logger.debug("Starting Package Manager scan at {}", System.currentTimeMillis());
-                    invokePackageManagerScanningWorkflow(projectNameVersion, blackDuckRunData, scanIdsToWaitFor, bdioResult, codeLocationAccumulator);
+                    invokePackageManagerScanningWorkflow(projectNameVersion, blackDuckRunData, scanIdsToWaitFor, bdioResult, codeLocationAccumulator, concurrentScanWaiter, projectVersion);
                     logger.debug("Completed Package Manager scan at {}", System.currentTimeMillis());
                 } catch (Exception e) {
                     throw new RuntimeException(e);
@@ -155,15 +156,20 @@ public class IntelligentModeStepRunner {
             try {
                 logger.debug("Starting Signature Scanner at {}", System.currentTimeMillis());
                 stepHelper.runToolIfIncluded(DetectTool.SIGNATURE_SCAN, "Signature Scanner", () -> {
+                    Queue<String> scanIds = new ConcurrentLinkedQueue<>();
                     SignatureScanStepRunner signatureScanStepRunner = new SignatureScanStepRunner(operationRunner, blackDuckRunData);
                     SignatureScannerCodeLocationResult signatureScannerCodeLocationResult = signatureScanStepRunner.runSignatureScannerOnline(
                             detectRunUuid,
                             projectNameVersion,
                             dockerTargetData,
-                            scanIdsToWaitFor,
-                            gson,
-                            executorService
+                            scanIds,
+                            gson
                     );
+
+                    for (String scanId : scanIds) {
+                        logger.debug("Waiting for signature scan id {}", scanId);
+                        concurrentScanWaiter.startWaitingForScan(scanId, blackDuckRunData, projectVersion);
+                    }
 
                     codeLocationAccumulator.addWaitableCodeLocations(signatureScannerCodeLocationResult.getWaitableCodeLocationData());
                     codeLocationAccumulator.addNonWaitableCodeLocation(signatureScannerCodeLocationResult.getNonWaitableCodeLocationData());
@@ -179,7 +185,7 @@ public class IntelligentModeStepRunner {
             try {
                 logger.debug("Starting Binary Scanner at {}", System.currentTimeMillis());
                 stepHelper.runToolIfIncluded(DetectTool.BINARY_SCAN, "Binary Scanner", () -> {
-                    invokeBinaryScanningWorkflow(DetectTool.BINARY_SCAN, dockerTargetData, projectNameVersion, blackDuckRunData, binaryTargets, scanIdsToWaitFor, codeLocationAccumulator, mustWaitAtBomSummaryLevel);
+                    invokeBinaryScanningWorkflow(DetectTool.BINARY_SCAN, dockerTargetData, projectNameVersion, blackDuckRunData, binaryTargets, scanIdsToWaitFor, codeLocationAccumulator, mustWaitAtBomSummaryLevel, concurrentScanWaiter, projectVersion);
                 });
                 logger.debug("Completed Binary Scanner at {}", System.currentTimeMillis());
             } catch (OperationException e) {
@@ -195,7 +201,7 @@ public class IntelligentModeStepRunner {
                 stepHelper.runToolIfIncluded(
                         DetectTool.CONTAINER_SCAN,
                         "Container Scanner",
-                        () -> invokeContainerScanningWorkflow(scanIdsToWaitFor, codeLocationAccumulator, blackDuckRunData, projectNameVersion)
+                        () -> invokeContainerScanningWorkflow(scanIdsToWaitFor, codeLocationAccumulator, blackDuckRunData, projectNameVersion, concurrentScanWaiter, projectVersion)
                 );
                 logger.debug("Completed Container Scanner at {}", System.currentTimeMillis());
             } catch (OperationException e) {
@@ -276,10 +282,8 @@ public class IntelligentModeStepRunner {
             CodeLocationResults codeLocationResults = calculateCodeLocations(codeLocationAccumulator);
             
             if (operationRunner.createBlackDuckPostOptions().shouldWaitForResults()) {                  
-                // Waiting at the scan level is more reliable, do that if the BD server is new enough.
-                if (blackDuckRunData.shouldWaitAtScanLevel()) {
-                    pollForBomScanCompletion(blackDuckRunData, projectVersion, scanIdsToWaitFor);
-                }
+                // Waiting at the scan level is more reliable, do that if the BD server is new enough.+++++++++
+                concurrentScanWaiter.waitForAllScansToComplete();
 
                 // If the BD server is older, or we can't detect its version, or if we have scans that we are 
                 // not yet able to obtain the scanID for, use the original notification based waiting.
@@ -297,7 +301,7 @@ public class IntelligentModeStepRunner {
         });
     }
 
-    private void invokePackageManagerScanningWorkflow(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData, Queue<String> scanIdsToWaitFor, BdioResult bdioResult, CodeLocationAccumulator codeLocationAccumulator) throws OperationException {
+    private void invokePackageManagerScanningWorkflow(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData, Queue<String> scanIdsToWaitFor, BdioResult bdioResult, CodeLocationAccumulator codeLocationAccumulator, ConcurrentScanWaiter concurrentScanWaiter, ProjectVersionWrapper projectVersion) throws OperationException {
         if (PackageManagerStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion())) {
             PackageManagerStepRunner packageManagerScanStepRunner = new PackageManagerStepRunner(operationRunner);
 
@@ -307,21 +311,23 @@ public class IntelligentModeStepRunner {
                 scanId = commonScanResult.getScanId() == null ? null : commonScanResult.getScanId().toString();
                 if(commonScanResult.isPackageManagerScassPossible()) {
                     scanIdsToWaitFor.add(scanId);
+                    logger.debug("Waiting for package manager scan id {}", scanId);
+                    concurrentScanWaiter.startWaitingForScan(scanId, blackDuckRunData, projectVersion);
                     codeLocationAccumulator.addNonWaitableCodeLocation(commonScanResult.getCodeLocationName());
                     codeLocationAccumulator.incrementAdditionalCounts(DetectTool.DETECTOR, 1);
                     return;
                 }
             }
-            invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId);
+            invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId, concurrentScanWaiter, projectVersion);
         } else {
             String scanId = null;
-            invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId);
+            invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId, concurrentScanWaiter, projectVersion);
         }
     }
 
-    private void invokePreScassPackageManagerWorkflow(BlackDuckRunData blackDuckRunData, BdioResult bdioResult, Queue<String> scanIdsToWaitFor, CodeLocationAccumulator codeLocationAccumulator, String scanId) throws OperationException {
+    private void invokePreScassPackageManagerWorkflow(BlackDuckRunData blackDuckRunData, BdioResult bdioResult, Queue<String> scanIdsToWaitFor, CodeLocationAccumulator codeLocationAccumulator, String scanId, ConcurrentScanWaiter scanWaiter, ProjectVersionWrapper projectVersion) throws OperationException {
         stepHelper.runAsGroup("Upload Bdio", OperationType.INTERNAL, () -> {
-            uploadBdio(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, operationRunner.calculateDetectTimeout(), scanId);
+            uploadBdio(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, operationRunner.calculateDetectTimeout(), scanId, scanWaiter, projectVersion);
         });
     }
 
@@ -333,7 +339,9 @@ public class IntelligentModeStepRunner {
         Set<String> binaryTargets,
         Queue<String> scanIdsToWaitFor,
         CodeLocationAccumulator codeLocationAccumulator,
-        AtomicBoolean mustWaitAtBomSummaryLevel
+        AtomicBoolean mustWaitAtBomSummaryLevel,
+        ConcurrentScanWaiter scanWaiter,
+        ProjectVersionWrapper projectVersion
     )
         throws IntegrationException, OperationException {
         logger.debug("Invoking intelligent persistent binary scan.");
@@ -347,6 +355,8 @@ public class IntelligentModeStepRunner {
         
         if (scanId.isPresent()) {
             scanIdsToWaitFor.add(scanId.get().toString());
+            logger.debug("Waiting for binary scan id {}", scanId);
+            scanWaiter.startWaitingForScan(scanId.get().toString(), blackDuckRunData, projectVersion);
         } else {
             Optional<CodeLocationCreationData<BinaryScanBatchOutput>> codeLocations = binaryScanStepRunner.getCodeLocations();
             
@@ -361,7 +371,9 @@ public class IntelligentModeStepRunner {
         Queue<String> scanIdsToWaitFor,
         CodeLocationAccumulator codeLocationAccumulator,
         BlackDuckRunData blackDuckRunData,
-        NameVersion projectNameVersion
+        NameVersion projectNameVersion,
+        ConcurrentScanWaiter scanWaiter,
+        ProjectVersionWrapper projectVersion
     ) throws IntegrationException, OperationException{
         logger.debug("Invoking intelligent persistent container scan.");
 
@@ -373,7 +385,11 @@ public class IntelligentModeStepRunner {
         }
 
         Optional<UUID> scanId = containerScanStepRunner.invokeContainerScanningWorkflow();
-        scanId.ifPresent(uuid -> scanIdsToWaitFor.add(uuid.toString()));
+        scanId.ifPresent(uuid -> {
+            scanIdsToWaitFor.add(uuid.toString());
+            logger.debug("Waiting for comtainer scan id {}", scanId);
+            scanWaiter.startWaitingForScan(uuid.toString(), blackDuckRunData, projectVersion);
+        });
         Set<String> containerScanCodeLocations = new HashSet<>();
         if(containerScanStepRunner.getCodeLocationName() != null) {
             containerScanCodeLocations.add(containerScanStepRunner.getCodeLocationName());
@@ -397,7 +413,7 @@ public class IntelligentModeStepRunner {
         }
     }
 
-    public void uploadBdio(BlackDuckRunData blackDuckRunData, BdioResult bdioResult, Queue<String> scanIdsToWaitFor, CodeLocationAccumulator codeLocationAccumulator, Long timeout, String scassScanId) throws OperationException {
+    public void uploadBdio(BlackDuckRunData blackDuckRunData, BdioResult bdioResult, Queue<String> scanIdsToWaitFor, CodeLocationAccumulator codeLocationAccumulator, Long timeout, String scassScanId, ConcurrentScanWaiter concurrentScanWaiter, ProjectVersionWrapper projectVersion) throws OperationException {
         BdioUploadResult uploadResult = operationRunner.uploadBdioIntelligentPersistent(blackDuckRunData, bdioResult, timeout, scassScanId);
         Optional<CodeLocationCreationData<UploadBatchOutput>> codeLocationCreationData = uploadResult.getUploadOutput();
         codeLocationCreationData.ifPresent(uploadBatchOutputCodeLocationCreationData -> codeLocationAccumulator.addWaitableCodeLocations(
@@ -406,7 +422,10 @@ public class IntelligentModeStepRunner {
         ));
         if (uploadResult.getUploadOutput().isPresent()) {
             for (UploadOutput result : uploadResult.getUploadOutput().get().getOutput()) {
-                result.getScanId().ifPresent((scanId) -> scanIdsToWaitFor.add(scanId));
+                result.getScanId().ifPresent((scanId) ->  {
+                    scanIdsToWaitFor.add(scanId);
+                    concurrentScanWaiter.startWaitingForScan(scanId, blackDuckRunData, projectVersion);
+                });
             }
         }
     }
