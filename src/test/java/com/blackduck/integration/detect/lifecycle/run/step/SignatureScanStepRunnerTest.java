@@ -9,6 +9,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.apache.http.HttpHost;
 import org.apache.http.conn.HttpHostConnectException;
@@ -56,7 +58,7 @@ public class SignatureScanStepRunnerTest {
     @Test
     public void testRunSignatureScannerOnlineRetriesOnHttpHostConnectException() throws Exception {
         DockerTargetData dockerTargetData = mock(DockerTargetData.class);
-        Set<String> scanIdsToWaitFor = new HashSet<>();
+        Queue<String> scanIdsToWaitFor = new ConcurrentLinkedQueue<>();
         List<SignatureScanPath> scanPaths = Collections.singletonList(mock(SignatureScanPath.class));
         ScanBatch scanBatch = mock(ScanBatch.class);
 
@@ -72,17 +74,17 @@ public class SignatureScanStepRunnerTest {
         HttpHostConnectException httpException = createHttpHostConnectException();
 
         doThrow(httpException).doReturn(Collections.emptyList()).when(spyRunner).executeScan(any(), any(), any(), any(),
-                any(), anyBoolean(), anyBoolean());
+                any(), anyBoolean(), anyBoolean(), any());
 
-        spyRunner.runSignatureScannerOnline(TEST_UUID, projectNameVersion, dockerTargetData, scanIdsToWaitFor, gson);
+        spyRunner.runSignatureScannerOnline(TEST_UUID, projectNameVersion, dockerTargetData, scanIdsToWaitFor, gson, any());
 
-        verify(spyRunner, times(2)).executeScan(any(), any(), any(), any(), any(), anyBoolean(), anyBoolean());
+        verify(spyRunner, times(2)).executeScan(any(), any(), any(), any(), any(), anyBoolean(), anyBoolean(), any());
     }
 
     @Test
     public void testRunSignatureScannerOnlineExecutesOnceWithoutException() throws Exception {
         DockerTargetData dockerTargetData = mock(DockerTargetData.class);
-        Set<String> scanIdsToWaitFor = new HashSet<>();
+        Queue<String> scanIdsToWaitFor = new ConcurrentLinkedQueue<>();
         List<SignatureScanPath> scanPaths = Collections.singletonList(mock(SignatureScanPath.class));
         ScanBatch scanBatch = mock(ScanBatch.class);
 
@@ -94,11 +96,11 @@ public class SignatureScanStepRunnerTest {
         SignatureScanStepRunner spyRunner = spy(signatureScanStepRunner);
 
         doReturn(Collections.emptyList()).when(spyRunner).executeScan(any(), any(), any(), any(), any(), anyBoolean(),
-                anyBoolean());
+                anyBoolean(), any());
 
-        spyRunner.runSignatureScannerOnline(TEST_UUID, projectNameVersion, dockerTargetData, scanIdsToWaitFor, gson);
+        spyRunner.runSignatureScannerOnline(TEST_UUID, projectNameVersion, dockerTargetData, scanIdsToWaitFor, gson, any());
 
-        verify(spyRunner, times(1)).executeScan(any(), any(), any(), any(), any(), anyBoolean(), anyBoolean());
+        verify(spyRunner, times(1)).executeScan(any(), any(), any(), any(), any(), anyBoolean(), anyBoolean(), any());
     }
 
     private HttpHostConnectException createHttpHostConnectException() {

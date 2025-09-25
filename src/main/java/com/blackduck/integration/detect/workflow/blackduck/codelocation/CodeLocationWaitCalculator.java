@@ -2,13 +2,13 @@ package com.blackduck.integration.detect.workflow.blackduck.codelocation;
 
 import java.util.Date;
 import java.util.HashSet;
-import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 
 import com.blackduck.integration.blackduck.service.model.NotificationTaskRange;
 
 public class CodeLocationWaitCalculator {
-    public CodeLocationWaitData calculateWaitData(List<WaitableCodeLocationData> codeLocationCreationDatas) {
+    public CodeLocationWaitData calculateWaitData(Queue<WaitableCodeLocationData> codeLocationCreationDatas) {
         int expectedNotificationCount = 0;
         NotificationTaskRange notificationRange = null;
         Set<String> codeLocationNames = new HashSet<>();

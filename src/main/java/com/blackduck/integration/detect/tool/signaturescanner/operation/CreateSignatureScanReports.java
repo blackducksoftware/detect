@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Queue;
 
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -19,7 +20,7 @@ import com.blackduck.integration.detect.tool.signaturescanner.enums.SignatureSca
 public class CreateSignatureScanReports {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    public List<SignatureScannerReport> createReports(List<SignatureScanPath> signatureScanPaths, List<ScanCommandOutput> scanCommandOutputList, Set<String> failedScans) {
+    public List<SignatureScannerReport> createReports(List<SignatureScanPath> signatureScanPaths, List<ScanCommandOutput> scanCommandOutputList, Queue<String> failedScans) {
         List<SignatureScannerReport> signatureScannerReports = new ArrayList<>();
         for (SignatureScanPath signatureScanPath : signatureScanPaths) {
             Optional<ScanCommandOutput> scanCommandOutput = scanCommandOutputList.stream()
@@ -31,7 +32,7 @@ public class CreateSignatureScanReports {
         return signatureScannerReports;
     }
 
-    public static SignatureScannerReport createReport(SignatureScanPath signatureScanPath, @Nullable ScanCommandOutput scanCommandOutput, Set<String> failedScans) {
+    public static SignatureScannerReport createReport(SignatureScanPath signatureScanPath, @Nullable ScanCommandOutput scanCommandOutput, Queue<String> failedScans) {
         SignatureScanStatusType statusType;
 
         if (scanCommandOutput == null) {
