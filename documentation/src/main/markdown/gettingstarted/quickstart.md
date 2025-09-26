@@ -33,8 +33,9 @@ server. One way to do that is to add the following arguments to the command line
 The command you run looks like this:
 
 On Linux or Mac:
-bash <(curl -s -L https://detect.blackduck.com/detect10.sh) --blackduck.url={your Black Duck SCA server URL} --blackduck.api.token={your Black Duck access token}
-
+````
+bash <(curl -s -L https://detect.blackduck.com/detect10.sh) --blackduck.url={your Black Duck SCA server URL} --blackduck.api.token={your Black Duck SCA access token}
+````
 
 On Windows:
 ````
