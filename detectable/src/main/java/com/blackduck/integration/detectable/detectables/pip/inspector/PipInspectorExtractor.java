@@ -1,14 +1,12 @@
 package com.blackduck.integration.detectable.detectables.pip.inspector;
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.blackduck.integration.detectable.ExecutableTarget;
@@ -23,7 +21,6 @@ import com.blackduck.integration.executable.ExecutableOutput;
 import com.blackduck.integration.executable.ExecutableRunnerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tomlj.Toml;
 import org.tomlj.TomlParseResult;
 import org.tomlj.TomlTable;
 
