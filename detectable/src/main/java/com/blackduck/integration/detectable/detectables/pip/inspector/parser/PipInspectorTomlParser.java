@@ -13,16 +13,11 @@ public class PipInspectorTomlParser {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private static final String PROJECT_KEY = "project";
-    private final File pyprojectTomlFile;
-
-    public PipInspectorTomlParser(File pyprojectTomlFile) {
-        this.pyprojectTomlFile = pyprojectTomlFile;
-    }
 
     public Boolean checkIfProjectKeyExists(TomlParseResult parsedToml) {
         return parsedToml != null && parsedToml.contains(PROJECT_KEY);
     }
-    public TomlParseResult parseToml() {
+    public TomlParseResult parseToml(File pyprojectTomlFile) {
         TomlParseResult parsedToml = null;
         try {
             String tomlContents = FileUtils.readFileToString(pyprojectTomlFile, StandardCharsets.UTF_8);

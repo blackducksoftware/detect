@@ -39,14 +39,14 @@ public class PipInspectorDetectable extends Detectable {
     private final PipInspectorResolver pipInspectorResolver;
     private final PipInspectorExtractor pipInspectorExtractor;
     private final PipInspectorDetectableOptions pipInspectorDetectableOptions;
+    private final PipInspectorTomlParser pipInspectorTomlParser;
 
     private ExecutableTarget pythonExe;
     private ExecutableTarget pipExe;
     private File pipInspector;
     private File setupFile;
     private List<Path> requirementsFiles;
-    private File pyprojectToml;
-    private TomlParseResult tomlParseResult;
+    private TomlParseResult tomlParseResult = null;
 
     public PipInspectorDetectable(
         DetectableEnvironment environment,
@@ -55,7 +55,8 @@ public class PipInspectorDetectable extends Detectable {
         PipResolver pipResolver,
         PipInspectorResolver pipInspectorResolver,
         PipInspectorExtractor pipInspectorExtractor,
-        PipInspectorDetectableOptions pipInspectorDetectableOptions
+        PipInspectorDetectableOptions pipInspectorDetectableOptions,
+        PipInspectorTomlParser pipInspectorTomlParser
     ) {
         super(environment);
         this.fileFinder = fileFinder;
@@ -64,6 +65,7 @@ public class PipInspectorDetectable extends Detectable {
         this.pipInspectorResolver = pipInspectorResolver;
         this.pipInspectorExtractor = pipInspectorExtractor;
         this.pipInspectorDetectableOptions = pipInspectorDetectableOptions;
+        this.pipInspectorTomlParser = pipInspectorTomlParser;
     }
 
     @Override
@@ -71,7 +73,7 @@ public class PipInspectorDetectable extends Detectable {
         setupFile = fileFinder.findFile(environment.getDirectory(), SETUPTOOLS_DEFAULT_FILE_NAME);
         boolean hasSetups = setupFile != null;
 
-        pyprojectToml = fileFinder.findFile(environment.getDirectory(), PYPROJECT_DEFAULT_FILE_NAME);
+        File pyprojectToml = fileFinder.findFile(environment.getDirectory(), PYPROJECT_DEFAULT_FILE_NAME);
         boolean hasPyprojectToml = pyprojectToml != null;
 
         requirementsFiles = pipInspectorDetectableOptions.getRequirementsFilePaths();
@@ -85,8 +87,7 @@ public class PipInspectorDetectable extends Detectable {
 
         boolean validTomlFile = false;
         if (hasPyprojectToml) {
-            PipInspectorTomlParser pipInspectorTomlParser = new PipInspectorTomlParser(pyprojectToml);
-            tomlParseResult = pipInspectorTomlParser.parseToml();
+            tomlParseResult = pipInspectorTomlParser.parseToml(pyprojectToml);
             validTomlFile = pipInspectorTomlParser.checkIfProjectKeyExists(tomlParseResult);
         }
 
