@@ -52,7 +52,8 @@ public class ProjectSettingsJsonFileReaderTest {
                 "  \"deepLicenseDataEnabled\": false,\n" +
                 "  \"versionRequest\": {\n" +
                 "    \"versionName\": \"2.1.0\",\n" +
-                "    \"nickname\": \"Release\"\n" +
+                "    \"nickname\": \"Release\",\n" +
+                "    \"releaseComments\": \"Major version release\"\n" +
                 "  }\n" +
                 "}";
 
@@ -69,6 +70,7 @@ public class ProjectSettingsJsonFileReaderTest {
         assertNotNull(projectSettings.getVersionRequest());
         assertEquals("2.1.0", projectSettings.getVersionRequest().getVersionName());
         assertEquals("Release", projectSettings.getVersionRequest().getNickname());
+        assertEquals("Major version release", projectSettings.getVersionRequest().getReleaseComments());
     }
 
     @Test

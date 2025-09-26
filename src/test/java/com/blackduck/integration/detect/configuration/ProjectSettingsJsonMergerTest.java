@@ -88,6 +88,7 @@ public class ProjectSettingsJsonMergerTest {
         VersionSettings version = new VersionSettings();
         version.setVersionName("1.0.0");
         version.setPhase("DEVELOPMENT");
+        version.setReleaseComments("Development build");
         projectSettings.setVersionRequest(version);
         
         Map<String, String> properties = merger.extractPropertiesFromProjectSettings(projectSettings);
@@ -97,6 +98,7 @@ public class ProjectSettingsJsonMergerTest {
         assertEquals("2", properties.get(DetectProperties.DETECT_PROJECT_TIER.getKey()));
         assertEquals("1.0.0", properties.get(DetectProperties.DETECT_PROJECT_VERSION_NAME.getKey()));
         assertEquals("DEVELOPMENT", properties.get(DetectProperties.DETECT_PROJECT_VERSION_PHASE.getKey()));
+        assertEquals("Development build", properties.get(DetectProperties.DETECT_PROJECT_VERSION_NOTES.getKey()));
     }
 
     @Test
@@ -119,7 +121,8 @@ public class ProjectSettingsJsonMergerTest {
                 "    \"nickname\": \"Major Release\",\n" +
                 "    \"phase\": \"RELEASED\",\n" +
                 "    \"distribution\": \"EXTERNAL\",\n" +
-                "    \"update\": false\n" +
+                "    \"update\": false,\n" +
+                "    \"releaseComments\": \"Final production release\"\n" +
                 "  }\n" +
                 "}";
 
@@ -138,5 +141,6 @@ public class ProjectSettingsJsonMergerTest {
         assertEquals("RELEASED", properties.get(DetectProperties.DETECT_PROJECT_VERSION_PHASE.getKey()));
         assertEquals("EXTERNAL", properties.get(DetectProperties.DETECT_PROJECT_VERSION_DISTRIBUTION.getKey()));
         assertEquals("false", properties.get(DetectProperties.DETECT_PROJECT_VERSION_UPDATE.getKey()));
+        assertEquals("Final production release", properties.get(DetectProperties.DETECT_PROJECT_VERSION_NOTES.getKey()));
     }
 }
