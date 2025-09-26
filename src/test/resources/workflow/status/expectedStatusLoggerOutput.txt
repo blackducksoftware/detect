@@ -47,8 +47,8 @@ PROPERTY KEYS:
 
 ======== Detect Result ========
 
-Black Duck Project BOM: https://example.com/api/projects/project_1
-Black Duck Project BOM: https://example.com/api/projects/project_2
+Black Duck SCA Project BOM: https://example.com/api/projects/project_1
+Black Duck SCA Project BOM: https://example.com/api/projects/project_2
 Detect Air Gap Zip: ./air_gap/directory
 report_1: ./report/1/report_file
 
