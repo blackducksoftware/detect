@@ -1,16 +1,13 @@
 package com.blackduck.integration.detectable.detectables.pip.inspector.parser;
 
-import com.blackduck.integration.util.NameVersion;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tomlj.Toml;
 import org.tomlj.TomlParseResult;
-import org.tomlj.TomlTable;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
 
 public class PipInspectorTomlParser {
 
