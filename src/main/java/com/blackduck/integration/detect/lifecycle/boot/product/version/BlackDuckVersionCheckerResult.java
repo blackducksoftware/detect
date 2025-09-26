@@ -5,7 +5,7 @@ public class BlackDuckVersionCheckerResult {
     private final String message;
 
     public static BlackDuckVersionCheckerResult passed() {
-        return new BlackDuckVersionCheckerResult(true, "Black Duck version check passed");
+        return new BlackDuckVersionCheckerResult(true, "Black Duck SCA version check passed");
     }
 
     public static BlackDuckVersionCheckerResult failed(String message) {

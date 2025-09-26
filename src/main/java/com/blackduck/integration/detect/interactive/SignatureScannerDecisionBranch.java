@@ -4,7 +4,7 @@ import static com.blackduck.integration.detect.configuration.DetectProperties.DE
 import static com.blackduck.integration.detect.configuration.DetectProperties.DETECT_BLACKDUCK_SIGNATURE_SCANNER_LOCAL_PATH;
 
 public class SignatureScannerDecisionBranch implements DecisionTree {
-    public static final String SHOULD_UPLOAD_TO_BLACK_DUCK = "Would you like to upload signature scan results to the Black Duck server?";
+    public static final String SHOULD_UPLOAD_TO_BLACK_DUCK = "Would you like to upload signature scan results to the Black Duck SCA server?";
     public static final String SHOULD_USE_CUSTOM_SCANNER = "Would you like to provide a custom signature scanner path?";
     public static final String SET_SCANNER_OFFLINE_LOCAL_PATH = "What is the location of your offline signature scanner?";
     private final boolean connectedToBlackDuck;

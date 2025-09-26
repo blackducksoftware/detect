@@ -68,7 +68,7 @@ public class IacScanStepRunner {
     public void runIacScanOffline() throws OperationException, IntegrationException {
         List<File> iacScanTargets = operationRunner.calculateIacScanScanTargets();
         File iacScanExe = operationRunner.calculateUserProvidedIacScanPath()
-            .orElseThrow(() -> new IntegrationException("Was not able to install or locate IacScan.  Must either connect to a Black Duck or provide a path to a local IacScan."));
+            .orElseThrow(() -> new IntegrationException("Was not able to install or locate IacScan.  Must either connect to a Black Duck SCA or provide a path to a local IacScan."));
         validateIacScan(iacScanExe);
         List<IacScanReport> iacScanReports = new LinkedList<>();
         int count = 0;

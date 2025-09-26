@@ -17,7 +17,7 @@ public class BlackDuckBomDetectResult implements DetectResult {
 
     @Override
     public String getResultMessage() {
-        return String.format("Black Duck Project BOM: %s", projectComponentsLink);
+        return String.format("Black Duck SCA Project BOM: %s", projectComponentsLink);
     }
 
     @Override

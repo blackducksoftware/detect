@@ -138,7 +138,7 @@ public class ReportService extends DataService {
                     policyStatus = checkPolicyStatusIfBlank(projectVersionComponentView, policyStatus, originalVersionUrl, policyFailure);
                 } catch (IntegrationException e) {
                     policyFailure = true;
-                    logger.debug("Could not get the component policy status, the Black Duck policy module is not enabled");
+                    logger.debug("Could not get the component policy status, the Black Duck SCA policy module is not enabled");
                 }
             }
 
@@ -299,13 +299,13 @@ public class ReportService extends DataService {
             } catch (IntegrationRestException e) {
                 if (e.getHttpStatusCode() == 402) {
                     // unlike the policy module, the licenseReports link is still present when the module is not enabled
-                    logger.warn("Can not create the notice report, the Black Duck notice module is not enabled.");
+                    logger.warn("Can not create the notice report, the Black Duck SCA notice module is not enabled.");
                 } else {
                     throw e;
                 }
             }
         } else {
-            logger.warn("Can not create the notice report, the Black Duck notice module is not enabled.");
+            logger.warn("Can not create the notice report, the Black Duck SCA notice module is not enabled.");
         }
         return null;
     }

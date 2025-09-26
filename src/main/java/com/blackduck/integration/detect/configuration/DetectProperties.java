@@ -81,8 +81,8 @@ public class DetectProperties {
 
     public static final NullableStringProperty BLACKDUCK_API_TOKEN =
         NullableStringProperty.newBuilder("blackduck.api.token")
-            .setInfo("Black Duck API Token", DetectPropertyFromVersion.VERSION_4_2_0)
-            .setHelp("The access token used to authenticate with the Black Duck Server.")
+            .setInfo("Black Duck SCA API Token", DetectPropertyFromVersion.VERSION_4_2_0)
+            .setHelp("The access token used to authenticate with the Black Duck SCA Server.")
             .setGroups(DetectGroup.BLACKDUCK_SERVER, DetectGroup.BLACKDUCK, DetectGroup.DEFAULT)
             .build();
 
@@ -90,7 +90,7 @@ public class DetectProperties {
         BooleanProperty.newBuilder("blackduck.offline.mode", false)
             .setInfo("Offline Mode", DetectPropertyFromVersion.VERSION_4_2_0)
             .setHelp(
-                "This can disable Black Duck communication - if set to true, Detect will not upload BDIO files, or check policies, and it will not download and install the signature scanner. Note that the path to a local instance of the scanner can be provided using the -detect.blackduck.signature.scanner.local.path parameter.")
+                "This can disable Black Duck SCA communication - if set to true, Detect will not upload BDIO files, or check policies, and it will not download and install the signature scanner. Note that the path to a local instance of the scanner can be provided using the -detect.blackduck.signature.scanner.local.path parameter.")
             .setGroups(DetectGroup.BLACKDUCK_SERVER, DetectGroup.BLACKDUCK, DetectGroup.OFFLINE, DetectGroup.DEFAULT)
             .build();
 
@@ -167,8 +167,8 @@ public class DetectProperties {
 
     public static final NullableStringProperty BLACKDUCK_URL =
         NullableStringProperty.newBuilder("blackduck.url")
-            .setInfo("Black Duck URL", DetectPropertyFromVersion.VERSION_4_2_0)
-            .setHelp("URL of the Black Duck server.")
+            .setInfo("Black Duck SCA URL", DetectPropertyFromVersion.VERSION_4_2_0)
+            .setHelp("URL of the Black Duck SCA server.")
             .setExample("https://blackduck.mydomain.com")
             .setGroups(DetectGroup.BLACKDUCK_SERVER, DetectGroup.BLACKDUCK, DetectGroup.DEFAULT)
             .build();
@@ -389,7 +389,7 @@ public class DetectProperties {
         NullableStringProperty.newBuilder("detect.blackduck.signature.scanner.arguments")
             .setInfo("Signature Scanner Arguments", DetectPropertyFromVersion.VERSION_4_2_0)
             .setHelp(
-                "A space-separated list of additional arguments to use when running the Black Duck signature scanner. Key-value pairs specified as arguments will replace the same entries specifed elswhere. Available signature scanner properties can be determined by specifying '--help' when executing the signature scanner jar file from the command line.",
+                "A space-separated list of additional arguments to use when running the Black Duck SCA signature scanner. Key-value pairs specified as arguments will replace the same entries specifed elswhere. Available signature scanner properties can be determined by specifying '--help' when executing the signature scanner jar file from the command line.",
                 "Example usage: Running in bash on Linux and you want signature scanner to read a list of directories to exclude from the scan (using the signature scanner '--exclude-from' option). Configure signature scanner to read excluded directories from a file named excludes.txt in the current working directory with: --detect.blackduck.signature.scanner.arguments='--exclude-from ./excludes.txt'"
             )
             .setGroups(DetectGroup.SIGNATURE_SCANNER, DetectGroup.GLOBAL)
@@ -430,7 +430,7 @@ public class DetectProperties {
     public static final BooleanProperty DETECT_BLACKDUCK_SIGNATURE_SCANNER_COPYRIGHT_SEARCH =
         BooleanProperty.newBuilder("detect.blackduck.signature.scanner.copyright.search", false)
             .setInfo("Signature Scanner Copyright Search", DetectPropertyFromVersion.VERSION_6_4_0)
-            .setHelp("When set to true, user will be able to scan and discover copyright names in Black Duck. Corresponding Signature Scanner CLI Argument: --copyright-search.")
+            .setHelp("When set to true, user will be able to scan and discover copyright names in Black Duck SCA. Corresponding Signature Scanner CLI Argument: --copyright-search.")
             .setGroups(DetectGroup.SIGNATURE_SCANNER)
             .build();
     
@@ -445,7 +445,7 @@ public class DetectProperties {
         BooleanProperty.newBuilder("detect.blackduck.signature.scanner.dry.run", false)
             .setInfo("Signature Scanner Dry Run", DetectPropertyFromVersion.VERSION_4_2_0)
             .setHelp(
-                "If set to true, the signature scanner results are not uploaded to Black Duck, and the scanner results are written to disk via the Signature Scanner CLI argument: --dryRunWriteDir.")
+                "If set to true, the signature scanner results are not uploaded to Black Duck SCA, and the scanner results are written to disk via the Signature Scanner CLI argument: --dryRunWriteDir.")
             .setGroups(DetectGroup.SIGNATURE_SCANNER, DetectGroup.GLOBAL)
             .build();
 
@@ -465,7 +465,7 @@ public class DetectProperties {
     public static final BooleanProperty DETECT_BLACKDUCK_SIGNATURE_SCANNER_LICENSE_SEARCH =
         BooleanProperty.newBuilder("detect.blackduck.signature.scanner.license.search", false)
             .setInfo("Signature Scanner License Search", DetectPropertyFromVersion.VERSION_6_2_0)
-            .setHelp("When set to true, user will be able to scan and discover license names in Black Duck. Corresponding Signature Scanner CLI Argument: --license-search.")
+            .setHelp("When set to true, user will be able to scan and discover license names in Black Duck SCA. Corresponding Signature Scanner CLI Argument: --license-search.")
             .setGroups(DetectGroup.SIGNATURE_SCANNER)
             .build();
 
@@ -525,7 +525,7 @@ public class DetectProperties {
         BooleanProperty.newBuilder("detect.blackduck.signature.scanner.upload.source.mode", false)
             .setInfo("Upload source mode", DetectPropertyFromVersion.VERSION_5_4_0)
             .setHelp(
-                "If set to true, the signature scanner will, if supported by your Black Duck version, upload source code to Black Duck. Corresponding Signature Scanner CLI Argument: --upload-source.")
+                "If set to true, the signature scanner will, if supported by your Black Duck SCA version, upload source code to Black Duck SCA. Corresponding Signature Scanner CLI Argument: --upload-source.")
             .setGroups(DetectGroup.SIGNATURE_SCANNER, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
 
@@ -540,7 +540,7 @@ public class DetectProperties {
         NullableStringProperty.newBuilder("detect.clone.project.version.name")
             .setInfo("Clone Project Version Name", DetectPropertyFromVersion.VERSION_4_2_0)
             .setHelp(
-                "The name of the project version to clone this project version from. Respects the given Clone Categories in detect.project.clone.categories or as set on the Black Duck server.")
+                "The name of the project version to clone this project version from. Respects the given Clone Categories in detect.project.clone.categories or as set on the Black Duck SCA.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.GLOBAL, DetectGroup.PROJECT_SETTING)
             .setCategory(DetectCategory.Advanced)
             .build();
@@ -681,8 +681,8 @@ public class DetectProperties {
         BooleanProperty.newBuilder("detect.ignore.connection.failures", false)
             .setInfo("Detect Ignore Connection Failures", DetectPropertyFromVersion.VERSION_5_3_0)
             .setHelp(
-                "If true, Detect will ignore any products (eg. Black Duck) that it cannot connect to.",
-                "If true, when Detect attempts to boot a product (eg. Black Duck) it will also check if it can communicate with it - if it cannot, it will not run the product."
+                "If true, Detect will ignore any products (eg. Black Duck SCA) that it cannot connect to.",
+                "If true, when Detect attempts to boot a product (eg. Black Duck SCA) it will also check if it can communicate with it - if it cannot, it will not run the product."
             )
             .setGroups(DetectGroup.GENERAL, DetectGroup.BLACKDUCK_SERVER)
             .setCategory(DetectCategory.Advanced)
@@ -820,7 +820,7 @@ public class DetectProperties {
         BooleanProperty.newBuilder("detect.force.success.on.skip", false)
             .setInfo("Force Success On Skip", DetectPropertyFromVersion.VERSION_7_12_1)
             .setHelp(
-                "If true, Detect will always exit with code 0 when a scan of any type is skipped. Typically this happens when the Black Duck minimum scan interval timer has not been met.")
+                "If true, Detect will always exit with code 0 when a scan of any type is skipped. Typically this happens when the Black Duck SCA minimum scan interval timer has not been met.")
             .setGroups(DetectGroup.GENERAL, DetectGroup.GLOBAL)
             .setCategory(DetectCategory.Advanced)
             .build();
@@ -1031,7 +1031,7 @@ public class DetectProperties {
         BooleanProperty.newBuilder("detect.impact.analysis.enabled", false)
             .setInfo("Vulnerability Impact Analysis Enabled", DetectPropertyFromVersion.VERSION_6_5_0)
             .setHelp(
-                "If set to true, Detect will attempt to look for *.class files and generate a Vulnerability Impact Analysis Report for upload to Black Duck.")
+                "If set to true, Detect will attempt to look for *.class files and generate a Vulnerability Impact Analysis Report for upload to  Black Duck SCA.")
             .setGroups(DetectGroup.IMPACT_ANALYSIS, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
 
@@ -1190,7 +1190,7 @@ public class DetectProperties {
     public static final BooleanProperty DETECT_NOTICES_REPORT =
         BooleanProperty.newBuilder("detect.notices.report", false)
             .setInfo("Generate Notices Report", DetectPropertyFromVersion.VERSION_3_0_0)
-            .setHelp("When set to true, a Black Duck notices report in text form will be created in your source directory.")
+            .setHelp("When set to true, a Black Duck SCA notices report in text form will be created in your source directory.")
             .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL)
             .build();
 
@@ -1466,7 +1466,7 @@ public class DetectProperties {
     public static final NullableStringProperty DETECT_PROJECT_GROUP_NAME =
         NullableStringProperty.newBuilder("detect.project.group.name")
             .setInfo("Project Group Name", DetectPropertyFromVersion.VERSION_7_8_0)
-            .setHelp("Sets the 'Project Group' to assign the project to. Must match exactly to an existing project group on Black Duck.")
+            .setHelp("Sets the 'Project Group' to assign the project to. Must match exactly to an existing project group on Black Duck SCA.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
             .setCategory(DetectCategory.Advanced)
             .build();
@@ -1499,7 +1499,7 @@ public class DetectProperties {
         AllNoneEnumListProperty.newBuilder("detect.project.clone.categories", AllNoneEnum.ALL, ProjectCloneCategoriesType.class)
             .setInfo("Clone Project Categories", DetectPropertyFromVersion.VERSION_4_2_0)
             .setHelp(
-                "The value of this property is used to set the 'Cloning' settings on created Black Duck projects. If property detect.project.version.update is set to true, the value of this property is used to set the 'Cloning' settings on updated Black Duck projects.")
+                "The value of this property is used to set the 'Cloning' settings on created Black Duck SCA projects. If property detect.project.version.update is set to true, the value of this property is used to set the 'Cloning' settings on updated Black Duck SCA projects.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
             .setCategory(DetectCategory.Advanced)
             .build();
@@ -1561,7 +1561,7 @@ public class DetectProperties {
             .setInfo("Allow Project Level Adjustments", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp(
                 "If set, created projects will be created with the value of this property. For updates, see detect.project.version.update.",
-                "Corresponds to the 'Always maintain component adjustments to all versions of this project' checkbox under 'Component Adjustments' on the Black Duck Project settings page."
+                "Corresponds to the 'Always maintain component adjustments to all versions of this project' checkbox under 'Component Adjustments' on the Black Duck SCA Project settings page."
             )
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING, DetectGroup.GLOBAL)
             .setCategory(DetectCategory.Advanced)
@@ -1571,7 +1571,7 @@ public class DetectProperties {
         NullableStringProperty.newBuilder("detect.project.name")
             .setInfo("Project Name", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp(
-                "An override for the name to use for the Black Duck project. If not supplied, Detect will attempt to use the tools to figure out a reasonable project name. If that fails, the final part of the directory path where the inspection is taking place will be used.")
+                "An override for the name to use for the Black Duck SCA project. If not supplied, Detect will attempt to use the tools to figure out a reasonable project name. If that fails, the final part of the directory path where the inspection is taking place will be used.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING, DetectGroup.RAPID_SCAN)
             .build();
 
@@ -1579,7 +1579,7 @@ public class DetectProperties {
         NullableStringProperty.newBuilder("detect.parent.project.name")
             .setInfo("Parent Project Name", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp(
-                "When a parent project and version name are specified, the created detect project will be added as a component to the specified parent project version. The specified parent project and parent project version must exist on Black Duck.")
+                "When a parent project and version name are specified, the created detect project will be added as a component to the specified parent project version. The specified parent project and parent project version must exist on Black Duck SCA.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
             .setCategory(DetectCategory.Advanced)
             .build();
@@ -1588,7 +1588,7 @@ public class DetectProperties {
         NullableStringProperty.newBuilder("detect.parent.project.version.name")
             .setInfo("Parent Project Version Name", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp(
-                "When a parent project and version name are specified, the created detect project will be added as a component to the specified parent project version. The specified parent project and parent project version must exist on Black Duck.")
+                "When a parent project and version name are specified, the created detect project will be added as a component to the specified parent project version. The specified parent project and parent project version must exist on Black Duck SCA.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
             .setCategory(DetectCategory.Advanced)
             .build();
@@ -1596,7 +1596,7 @@ public class DetectProperties {
     public static final NullableIntegerProperty DETECT_PROJECT_TIER =
         NullableIntegerProperty.newBuilder("detect.project.tier")
             .setInfo("Project Tier", DetectPropertyFromVersion.VERSION_3_1_0)
-            .setHelp("If a Black Duck project tier is specified, your project will be created with this tier. For updates, see detect.project.version.update.")
+            .setHelp("If a Black Duck SCA project tier is specified, your project will be created with this tier. For updates, see detect.project.version.update.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
             .build();
 
@@ -1623,7 +1623,7 @@ public class DetectProperties {
         NullableStringProperty.newBuilder("detect.project.version.name")
             .setInfo("Version Name", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp(
-                "An override for the version to use for the Black Duck project. If not supplied, Detect will attempt to use the tools to figure out a reasonable version name. If that fails, the current date will be used.")
+                "An override for the version to use for the Black Duck SCA project. If not supplied, Detect will attempt to use the tools to figure out a reasonable version name. If that fails, the current date will be used.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING, DetectGroup.RAPID_SCAN)
             .build();
 
@@ -1652,7 +1652,7 @@ public class DetectProperties {
         BooleanProperty.newBuilder("detect.project.version.update", false)
             .setInfo("Update Project Version", DetectPropertyFromVersion.VERSION_4_0_0)
             .setHelp(
-                "If set to true, Detect will update the Black Duck project and project version according to configured project and project version properties. (By default, these properties are only set on created projects / project versions.)",
+                "If set to true, Detect will update the Black Duck SCA project and project version according to configured project and project version properties. (By default, these properties are only set on created projects / project versions.)",
                 "When set to true, the following properties will be updated on the Project: description (detect.project.description), tier (detect.project.tier), and project level adjustments (detect.project.level.adjustments). "
                     + "The following properties will also be updated on the project version: notes (detect.project.version.notes), phase (detect.project.version.phase), distribution (detect.project.version.distribution), nickname (detect.project.version.nickname), license (detect.project.version.license)."
             )
@@ -1707,14 +1707,14 @@ public class DetectProperties {
     public static final BooleanProperty DETECT_RISK_REPORT_PDF =
         BooleanProperty.newBuilder("detect.risk.report.pdf", false)
             .setInfo("Generate Risk Report (PDF)", DetectPropertyFromVersion.VERSION_3_0_0)
-            .setHelp("When set to true, a Black Duck risk report in PDF form will be created.")
+            .setHelp("When set to true, a Black Duck SCA risk report in PDF form will be created.")
             .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL, DetectGroup.REPORT_SETTING)
             .build();
 
     public static final BooleanProperty DETECT_RISK_REPORT_JSON =
             BooleanProperty.newBuilder("detect.risk.report.json", false)
                     .setInfo("Generate Risk Report (JSON)", DetectPropertyFromVersion.VERSION_10_6_0)
-                    .setHelp("When set to true, a Black Duck risk report in JSON form will be created.")
+                    .setHelp("When set to true, a Black Duck SCA risk report in JSON form will be created.")
                     .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL, DetectGroup.REPORT_SETTING)
                     .build();
 
@@ -1819,8 +1819,8 @@ public class DetectProperties {
 
     public static final BooleanProperty DETECT_TEST_CONNECTION =
         BooleanProperty.newBuilder("detect.test.connection", false)
-            .setInfo("Test Connection to Black Duck", DetectPropertyFromVersion.VERSION_3_0_0)
-            .setHelp("Test the connection to Black Duck with the current configuration.")
+            .setInfo("Test Connection to Black Duck SCA", DetectPropertyFromVersion.VERSION_3_0_0)
+            .setHelp("Test the connection to Black Duck SCA with the current configuration.")
             .setGroups(DetectGroup.BLACKDUCK_SERVER, DetectGroup.GLOBAL)
             .build();
 
@@ -1943,9 +1943,9 @@ public class DetectProperties {
                         "Detect logging uses Spring Boot logging, which uses Logback (https://logback.qos.ch). " +
                         "The format of this property name is <i>logging.level.{package}[.{class}]</i>. " +
                         "The property name shown above specifies package <i>com.blackduck.integration</i> because that is the name of Detect's top-level package. " +
-                        "Changing the logging level for that package changes the logging level for all Detect code, as well as Black Duck integration libraries that Detect uses. " +
-                        "Non-Black Duck libraries that Detect uses are not affected. " +
-                        "However, you can use this property to set the logging level for some of the non-Black Duck libraries that Detect uses by using the appropriate package name. " +
+                        "Changing the logging level for that package changes the logging level for all Detect code, as well as Black Duck SCA integration libraries that Detect uses. " +
+                        "Non-Black Duck SCA libraries that Detect uses are not affected. " +
+                        "However, you can use this property to set the logging level for some of the non-Black Duck SCA libraries that Detect uses by using the appropriate package name. " +
                         "For example, <i>logging.level.org.apache.http=TRACE</i> sets the logging level to TRACE for the Apache HTTP client library. " +
                         "<p/>" +
                         "For log message format, a default value of <i>%d{yyyy-MM-dd HH:mm:ss z} ${LOG_LEVEL_PATTERN:%-6p}[%thread] %clr(---){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}</i> is used. "
@@ -1960,7 +1960,7 @@ public class DetectProperties {
     public static final BooleanProperty DETECT_WAIT_FOR_RESULTS =
         BooleanProperty.newBuilder("detect.wait.for.results", false)
             .setInfo("Wait For Results", DetectPropertyFromVersion.VERSION_5_5_0)
-            .setHelp("If set to true, Detect will wait for Black Duck products until results are available or the detect.timeout is exceeded.")
+            .setHelp("If set to true, Detect will wait for Black Duck SCA products until results are available or the detect.timeout is exceeded.")
             .setGroups(DetectGroup.GENERAL, DetectGroup.GLOBAL)
             .build();
 
@@ -1976,8 +1976,8 @@ public class DetectProperties {
         EnumProperty.newBuilder("detect.blackduck.scan.mode", BlackduckScanMode.INTELLIGENT, BlackduckScanMode.class)
             .setInfo("Detect Scan Mode", DetectPropertyFromVersion.VERSION_6_9_0)
             .setHelp(
-                "Set the Black Duck scanning mode of Detect.",
-                "Set the scanning mode to control how Detect will send data to Black Duck. RAPID will not persist the results and disables select Detect functionality for faster results. INTELLIGENT, referred to as 'Full' scan mode in Black Duck, persists the results and permits all features of Detect."
+                "Set the Black Duck SCA scanning mode of Detect.",
+                "Set the scanning mode to control how Detect will send data to Black Duck SCA. RAPID will not persist the results and disables select Detect functionality for faster results. INTELLIGENT, referred to as 'Full' scan mode in Black Duck SCA, persists the results and permits all features of Detect."
             )
             .setGroups(DetectGroup.BLACKDUCK_SERVER, DetectGroup.BLACKDUCK, DetectGroup.RAPID_SCAN)
             .setCategory(DetectCategory.Advanced)
@@ -1987,8 +1987,8 @@ public class DetectProperties {
         BooleanProperty.newBuilder("detect.blackduck.correlated.scanning.enabled", false)
             .setInfo("Correlated Scanning Enabled", DetectPropertyFromVersion.VERSION_10_0_0)
             .setHelp(
-                "When enabled, Detect activates the Black Duck correlated scanning capability to enhance match accuracy.",
-                "The correlated scanning capability must be present and enabled in your Black Duck server before you enable the correlated scanning feature in Detect."
+                "When enabled, Detect activates the Black Duck SCA correlated scanning capability to enhance match accuracy.",
+                "The correlated scanning capability must be present and enabled in your Black Duck SCA server before you enable the correlated scanning feature in Detect."
             )
             .setGroups(DetectGroup.GENERAL, DetectGroup.GLOBAL)
             .build();
