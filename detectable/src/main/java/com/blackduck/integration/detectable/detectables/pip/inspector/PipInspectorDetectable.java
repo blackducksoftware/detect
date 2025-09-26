@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.blackduck.integration.detectable.detectables.pip.inspector.parser.PipInspectorTomlParser;
 import org.apache.commons.collections4.CollectionUtils;
 
 import com.blackduck.integration.common.util.finder.FileFinder;
@@ -24,6 +25,7 @@ import com.blackduck.integration.detectable.detectable.result.InspectorNotFoundD
 import com.blackduck.integration.detectable.detectable.result.PassedDetectableResult;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
+import org.tomlj.TomlParseResult;
 
 @DetectableInfo(name = "PIP Native Inspector", language = "Python", forge = "Pypi", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "A setup.py file, pyproject.toml file, or one or more requirements.txt files. Executables: python and pip, or python3 and pip3.")
 public class PipInspectorDetectable extends Detectable {
@@ -80,10 +82,17 @@ public class PipInspectorDetectable extends Detectable {
         }
         boolean hasRequirements = CollectionUtils.isNotEmpty(requirementsFiles);
 
-        if (hasSetups || hasRequirements || hasPyprojectToml) {
+        boolean validTomlFile = false;
+        if (hasPyprojectToml) {
+            PipInspectorTomlParser pipInspectorTomlParser = new PipInspectorTomlParser(pyprojectToml);
+            TomlParseResult parsedToml = pipInspectorTomlParser.parseToml();
+            validTomlFile = pipInspectorTomlParser.checkIfProjectKeyExists(parsedToml);
+        }
+
+        if (hasSetups || hasRequirements || ( hasPyprojectToml && validTomlFile)) {
             return new PassedDetectableResult();
         } else {
-            return new FilesNotFoundDetectableResult(SETUPTOOLS_DEFAULT_FILE_NAME, REQUIREMENTS_DEFAULT_FILE_NAME);
+            return new FilesNotFoundDetectableResult(SETUPTOOLS_DEFAULT_FILE_NAME, REQUIREMENTS_DEFAULT_FILE_NAME, PYPROJECT_DEFAULT_FILE_NAME);
         }
     }
 
