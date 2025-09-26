@@ -888,7 +888,7 @@
 						</row>
 						<row>
 							<entry> </entry>
-							<entry>Setuptools Pip Detector</entry>
+							<entry>Setuptools CLI</entry>
 							<entry>Python</entry>
 							<entry>PyPI</entry>
 							<entry>
@@ -899,7 +899,7 @@
 						</row>
 						<row>
 							<entry> </entry>
-							<entry>Setuptools Detector</entry>
+							<entry>Setuptools Parse</entry>
 							<entry>Python</entry>
 							<entry>PyPI</entry>
 							<entry>

@@ -804,7 +804,7 @@ public class DetectProperties {
                 "This property is similar to --detect.excluded.detector.types; but, allows for more granular control. Values are case-insensitive and spaces can be omitted."
             )
             .setGroups(DetectGroup.DETECTOR, DetectGroup.GLOBAL)
-            .setExample("PIPNativeInspector,PIPRequirementsParse")
+            .setExample("PIPNativeInspector,PIPRequirementsFileParse")
             .setCategory(DetectCategory.Advanced)
             .build();
 
