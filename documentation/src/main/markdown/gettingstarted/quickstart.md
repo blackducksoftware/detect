@@ -37,8 +37,9 @@ bash <(curl -s -L https://detect.blackduck.com/detect10.sh) --blackduck.url={you
 
 
 On Windows:
-powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect" --blackduck.url={your Black Duck SCA server URL} --blackduck.api.token={your Black Duck access token}
-
+````
+powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect.ps1?$(Get-Random) | iex; detect" --blackduck.url={your Black Duck SCA server URL} --blackduck.api.token={your Black Duck SCA access token}
+````
 
 The operations performed by [detect_product_short] depends on what it finds in your source directory.
 By default, [detect_product_short] considers the current working directory to be your source directory.
