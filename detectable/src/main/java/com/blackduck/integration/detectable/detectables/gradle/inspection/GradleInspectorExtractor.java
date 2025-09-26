@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Comparator;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.Nullable;
@@ -122,17 +124,17 @@ public class GradleInspectorExtractor {
             }
 
             private int extractDepthNumber(String name) {
-                int i;
                 try {
-                    int s = name.lastIndexOf("depth") + 5; // File name is like project__projectname__depth3_dependencyGraph.txt, we extract the number after depth
-                    int e = name.indexOf("_dependencyGraph");
-                    String number = name.substring(s, e);
-                    i = Integer.parseInt(number);
-                } catch(Exception e) {
-                    logger.error("The file name is not analogous to the structure expected: " + name);
-                    i = 0; //  default to 0
+                    Pattern pattern = Pattern.compile("__depth(\\d+)_dependencyGraph\\.txt$");
+                    Matcher matcher = pattern.matcher(name);
+                    if (matcher.find()) {
+                        return Integer.parseInt(matcher.group(1));
+                    }
+                } catch (Exception e) {
+                    logger.error("Failed to extract depth from filename: {}. Expected format: *__depth{{number}}_dependencyGraph.txt", name, e);
                 }
-                return i;
+                logger.warn("Could not extract depth from filename: {}. Defaulting to depth 0.", name);
+                return 0; // default to 0
             }
         });
 

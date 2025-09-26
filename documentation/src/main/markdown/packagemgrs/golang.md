@@ -6,9 +6,10 @@
 
 ## Overview
 
-[detect_product_short] has four detectors for GoLang:
+[detect_product_short] has six detectors for GoLang:
 
 * Go Mod CLI (GO_MOD) detector (recommended)
+* Go Mod File (GO_MOD) detector
 * Go Lock (GO_DEP) detector
 * Go Gradle (GO_GRADLE) detector
 * Go Vendor (GO_VENDOR) detector
@@ -16,7 +17,7 @@
 
 ## Go Mod CLI (GO_MOD) detector
 
-* Discovers dependencies of go language (GoLang) projects.
+* Discovers dependencies of Go projects that use Go Modules package manager.
 * Attempts to run on your project if a go.mod file is found in your source directory.
 * Requires the *go* executable to be on the PATH or the executable path to be set with [detect.go.path](../properties/detectors/go.md#go-executable).
 * Runs *go list -m*, *go mod why* and *go mod graph*, and parses the output of all to discover direct and transitive dependencies.
@@ -36,6 +37,13 @@ the [go mod why documentation](https://go.dev/ref/mod#go-mod-why) for additional
 #### Note on current exclusion behavior:
 
 [detect_product_short] does not exclude any dependencies from the BOM by default.
+
+## Go Mod File (GO_MOD) detector
+
+* Discovers dependencies of Go projects that use Go Modules package manager.
+* Attempts to run on your project if a go.mod file is found in your source directory.
+* Parses go.mod file to gather dependency information.
+* Computes transitive dependency graph by fetching go.mod files of direct dependencies from proxy.golang.org or custom Go proxy supplied via [detect.go.forge](../properties/detectors/go.md#go-forge) property. If the proxy is not reachable, the transitive dependencies are listed as additional components under the root module.
 
 ## Go Lock (GO_DEP) detector
 

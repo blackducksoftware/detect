@@ -20,6 +20,7 @@ import com.blackduck.integration.detectable.detectables.git.GitParseDetectable;
 import com.blackduck.integration.detectable.detectables.go.godep.GoDepLockDetectable;
 import com.blackduck.integration.detectable.detectables.go.gogradle.GoGradleDetectable;
 import com.blackduck.integration.detectable.detectables.go.gomod.GoModCliDetectable;
+import com.blackduck.integration.detectable.detectables.go.gomodfile.GoModFileDetectable;
 import com.blackduck.integration.detectable.detectables.go.vendor.GoVendorDetectable;
 import com.blackduck.integration.detectable.detectables.go.vendr.GoVndrDetectable;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.GradleInspectorDetectable;
@@ -148,7 +149,9 @@ public class DetectorRuleFactory {
         rules.addDetector(DetectorType.GO_MOD, detector -> {
             detector.entryPoint(GoModCliDetectable.class)
                 .search().defaults();
-        });
+            detector.entryPoint(GoModFileDetectable.class)
+                .search().defaults();
+        }).allEntryPointsFallbackToNext();
 
         rules.addDetector(DetectorType.GO_DEP, detector -> {
             detector.entryPoint(GoDepLockDetectable.class)
@@ -264,8 +267,7 @@ public class DetectorRuleFactory {
                     .search().defaults();
             })
             .allEntryPointsFallbackToNext()
-            .yieldsTo(DetectorType.POETRY)
-            .yieldsTo(DetectorType.UV);
+            .yieldsTo(DetectorType.POETRY, DetectorType.UV, DetectorType.SETUPTOOLS);
 
         rules.addDetector(DetectorType.RUBYGEMS, detector -> {
             detector.entryPoint(GemlockDetectable.class)

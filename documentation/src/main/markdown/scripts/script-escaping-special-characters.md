@@ -13,19 +13,19 @@ When an argument contains a space or other non double quote special character, y
 For example:
 ```
 # name: Project Test
-bash <(curl -s -L https://detect.blackduck.com/detect10.sh) --detect.project.name='Project Test'
+bash <(curl -s -L https://detect.blackduck.com/detect11.sh) --detect.project.name='Project Test'
 
 # name: Project Test
-bash <(curl -s -L https://detect.blackduck.com/detect10.sh) --detect.project.name=Project\ Test
+bash <(curl -s -L https://detect.blackduck.com/detect11.sh) --detect.project.name=Project\ Test
 
 # name: Project!Test
-bash <(curl -s -L https://detect.blackduck.com/detect10.sh) --detect.project.name=Project\!Test
+bash <(curl -s -L https://detect.blackduck.com/detect11.sh) --detect.project.name=Project\!Test
 ```
 
 You can include a double quote by single quoting the string, and escaping the double quotes with backslashes:
 ```
 # license: BSD 3-clause "New" or "Revised" License
-bash <(curl -s -L https://detect.blackduck.com/detect10.sh) --detect.project.version.license='BSD 3-clause \"New\" or \"Revised\" License' 
+bash <(curl -s -L https://detect.blackduck.com/detect11.sh) --detect.project.version.license='BSD 3-clause \"New\" or \"Revised\" License' 
 ```
 
 ## Running in Command Prompt (cmd) on Windows ([powershell_script_name])
@@ -43,13 +43,13 @@ When an argument contains a space or other non quote special character, you can 
 For example:
 ```
 # name: Project Test
-powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect" --detect.project.name='Project Test'
+powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect11.ps1?$(Get-Random) | iex; detect" --detect.project.name='Project Test'
 
 # name: Project Test
-powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect" '--detect.project.name=Project Test'
+powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect11.ps1?$(Get-Random) | iex; detect" '--detect.project.name=Project Test'
 
 # name: Project Test
-powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect" --detect.project.name=Project` Test
+powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect11.ps1?$(Get-Random) | iex; detect" --detect.project.name=Project` Test
 ```   
 
 When an argument contains a comma, you can wrap the argument in single quotes, and escape the special character with a backtick (`). In the case of a name with a comma and a space, you would use a backtick in front of both the comma and space.
@@ -57,25 +57,25 @@ When an argument contains a comma, you can wrap the argument in single quotes, a
 For example:
 ```
 # name: Project,Test   
-Powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm  https://detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect --blackduck.url=<url> --detect.project.name='Project,Test'"   
+Powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm  https://detect.blackduck.com/detect11.ps1?$(Get-Random) | iex; detect --blackduck.url=<url> --detect.project.name='Project,Test'"   
 
 # name: Project,Test   
-Powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm  https://detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect --blackduck.url=<url> '--detect.project.name=Project,Test'"   
+Powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm  https://detect.blackduck.com/detect11.ps1?$(Get-Random) | iex; detect --blackduck.url=<url> '--detect.project.name=Project,Test'"   
 
 # name: Project, Test   
-Powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm  https://detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect --blackduck.url=<url> --detect.project.name=Project`,` Test"   
+Powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm  https://detect.blackduck.com/detect11.ps1?$(Get-Random) | iex; detect --blackduck.url=<url> --detect.project.name=Project`,` Test"   
 ```
 
 You can include a single quote by doubling it:
 ```
 # name: singlequote'
-powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect" --detect.project.name='singlequote'''
+powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect11.ps1?$(Get-Random) | iex; detect" --detect.project.name='singlequote'''
 ```
 
 You can include a double quote using this sequence: double quote, 2 backslashes, 2 double quotes:
 ```
 # license: BSD 3-clause "New" or "Revised" License
-powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect" --detect.project.version.license='BSD 3-clause "\\""New"\\"" or "\\""Revised"\\"" License'
+powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect11.ps1?$(Get-Random) | iex; detect" --detect.project.version.license='BSD 3-clause "\\""New"\\"" or "\\""Revised"\\"" License'
 ```
 
 ## Running in PowerShell on Windows ([powershell_script_name])
@@ -93,10 +93,10 @@ When an argument contains a space or other non-quote special character, you can 
 For example:
 ```
 # name: Project Test
-[Net.ServicePointManager]::SecurityProtocol = 'tls12'; $Env:DETECT_EXIT_CODE_PASSTHRU=1; irm https://detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect --detect.project.name='Project Test'
+[Net.ServicePointManager]::SecurityProtocol = 'tls12'; $Env:DETECT_EXIT_CODE_PASSTHRU=1; irm https://detect.blackduck.com/detect11.ps1?$(Get-Random) | iex; detect --detect.project.name='Project Test'
 
 # name: Project Test
-[Net.ServicePointManager]::SecurityProtocol = 'tls12'; $Env:DETECT_EXIT_CODE_PASSTHRU=1; irm https://detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect "--detect.project.name=Project Test"
+[Net.ServicePointManager]::SecurityProtocol = 'tls12'; $Env:DETECT_EXIT_CODE_PASSTHRU=1; irm https://detect.blackduck.com/detect11.ps1?$(Get-Random) | iex; detect "--detect.project.name=Project Test"
 ```
 
 When an argument contains a comma, you must escape the special character with a backtick (`). In the case of a name with a comma and a space, you would use a backtick in front of both the comma and space.
@@ -105,15 +105,15 @@ For example:
 ```
 # name: Project,Test
 [Net.ServicePointManager]::SecurityProtocol = 'tls12'; $Env:DETECT_EXIT_CODE_PASSTHRU=1; irm https:/
-/detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect --detect.project.name=Project`,Test
+/detect.blackduck.com/detect11.ps1?$(Get-Random) | iex; detect --detect.project.name=Project`,Test
 
 # name: Project, Test
 [Net.ServicePointManager]::SecurityProtocol = 'tls12'; $Env:DETECT_EXIT_CODE_PASSTHRU=1; irm https:/
-/detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect --detect.project.name=Project`,` Test
+/detect.blackduck.com/detect11.ps1?$(Get-Random) | iex; detect --detect.project.name=Project`,` Test
 ```
 
 You can include a double quote using this sequence: backslash, backtick, double quote:
 ```
 # license: BSD 3-clause "New" or "Revised" License
-[Net.ServicePointManager]::SecurityProtocol = 'tls12'; $Env:DETECT_EXIT_CODE_PASSTHRU=1; irm https://detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect --detect.project.version.license="BSD 3-clause \`"New\`" or \`"Revised\`" License"
+[Net.ServicePointManager]::SecurityProtocol = 'tls12'; $Env:DETECT_EXIT_CODE_PASSTHRU=1; irm https://detect.blackduck.com/detect11.ps1?$(Get-Random) | iex; detect --detect.project.version.license="BSD 3-clause \`"New\`" or \`"Revised\`" License"
 ```

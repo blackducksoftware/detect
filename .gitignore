@@ -9,6 +9,7 @@ bin/
 .idea
 *.iml
 out/
+.vscode/
 
 # python
 venv/

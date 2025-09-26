@@ -37,6 +37,7 @@ import com.blackduck.integration.configuration.property.types.enums.EnumProperty
 import com.blackduck.integration.configuration.property.types.integer.IntegerProperty;
 import com.blackduck.integration.configuration.property.types.integer.NullableIntegerProperty;
 import com.blackduck.integration.configuration.property.types.longs.LongProperty;
+import com.blackduck.integration.configuration.property.types.longs.NullableLongProperty;
 import com.blackduck.integration.configuration.property.types.path.NullablePathProperty;
 import com.blackduck.integration.configuration.property.types.path.PathListProperty;
 import com.blackduck.integration.configuration.property.types.string.CaseSensitiveStringListProperty;
@@ -787,11 +788,23 @@ public class DetectProperties {
         NoneEnumListProperty.newBuilder("detect.excluded.detector.types", NoneEnum.NONE, DetectorType.class)
             .setInfo("Detector Types Excluded", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp(
-                "By default, all detectors will be included. If you want to exclude specific detectors, specify the ones to exclude here. Exclusion rules always win.",
-                "If Detect runs one or more detector on your project that you would like to exclude, you can use this property to prevent Detect from running them."
+                "By default, all Detector types will be included. To exclude specific Detector types, specify them via this parameter. Exclusion rules take precedence.",
+                "To prevent Detect from executing one or more Detector types on your project, specify the Detector types using this property. For more granular control, please see --detect.excluded.detectors."
             )
             .setGroups(DetectGroup.DETECTOR, DetectGroup.GLOBAL)
             .setExample("NPM,LERNA")
+            .setCategory(DetectCategory.Advanced)
+            .build();
+
+    public static final StringListProperty DETECT_EXCLUDED_DETECTORS =
+        StringListProperty.newBuilder("detect.excluded.detectors", new ArrayList<>())
+            .setInfo("Detectors Excluded", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setHelp(
+                "By default, all Detectors will be included. If you want to exclude specific Detectors, specify the ones to exclude here. Exclusion rules take precedence.",
+                "This property is similar to --detect.excluded.detector.types; but, allows for more granular control. Values are case-insensitive and spaces can be omitted."
+            )
+            .setGroups(DetectGroup.DETECTOR, DetectGroup.GLOBAL)
+            .setExample("PIPNativeInspector,PIPRequirementsParse")
             .setCategory(DetectCategory.Advanced)
             .build();
 
@@ -833,12 +846,39 @@ public class DetectProperties {
             .setHelp(
                 createTypeFilterHelpText("Go Mod dependency types"),
                 String.format(
-                    "If %s is provided, Detect will use the results of 'go mod why' to filter out unused dependencies from Go modules declaring Go 1.16 or higher. If %s is provided, Detect will use the results of 'go mod why -vendor' to filter out all unused dependencies.",
+                    "If %s is provided, Detect will use the results of 'go mod why' to filter out unused dependencies from Go modules declaring Go 1.16 or higher. If %s is provided, Detect will use the results of 'go mod why -vendor' to filter out all unused dependencies. This property is only applicable to the Go Mod CLI Detector.",
                     GoModDependencyType.UNUSED.name(),
                     GoModDependencyType.VENDORED.name()
                 )
             )
             .setExample(GoModDependencyType.VENDORED.name())
+            .setGroups(DetectGroup.GO, DetectGroup.GLOBAL)
+            .build();
+
+    public static final NullableStringProperty DETECT_GO_FORGE =
+        NullableStringProperty.newBuilder("detect.go.forge")
+            .setInfo("Go Forge URL", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setHelp(
+                "The Go Forge URL to use when downloading modules. If not set, the default Go Forge (https://proxy.golang.org) will be used. To disable the use of a proxy, set this property to 'direct'."
+            )
+            .setGroups(DetectGroup.GO, DetectGroup.GLOBAL)
+            .build();
+    
+    public static final LongProperty DETECT_GO_FORGE_CONNECTION_TIMEOUT =
+        LongProperty.newBuilder("detect.go.forge.connection.timeout", 30L)
+            .setInfo("Detect Timeout", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setHelp(
+                "The connection timeout in seconds to use when connecting to the Go Forge. If not set, the default connection timeout of 30 seconds will be used."
+            ).setExample("30")
+            .setGroups(DetectGroup.GO, DetectGroup.GLOBAL)
+            .build();
+
+    public static final LongProperty DETECT_GO_FORGE_READ_TIMEOUT =
+        LongProperty.newBuilder("detect.go.forge.read.timeout", 60L)
+            .setInfo("Detect Timeout", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setHelp(
+                "The read timeout in seconds to use when reading from the Go Forge. If not set, the default read timeout of 60 seconds will be used."
+            ).setExample("60")
             .setGroups(DetectGroup.GO, DetectGroup.GLOBAL)
             .build();
 
@@ -1625,6 +1665,18 @@ public class DetectProperties {
             .setHelp("If project version license is specified, your project version will be created with this license. For updates, see detect.project.version.update.")
             .setExample("Apache License 2.0")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
+            .build();
+
+    public static final NullablePathProperty DETECT_PROJECT_SETTINGS =
+        NullablePathProperty.newBuilder("detect.project.settings")
+            .setInfo("Project Settings JSON File", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setHelp(
+                "Path to a JSON file containing project settings. The file should contain a JSON object with detect.project properties specified as key-value pairs.",
+                "detect.project properties provided on the command line take precedence over values specified in the JSON file."
+            )
+            .setExample("/path/to/project-settings.json")
+            .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
+            .setCategory(DetectCategory.Advanced)
             .build();
 
     public static final BooleanProperty DETECT_PROJECT_DEEP_LICENSE =
