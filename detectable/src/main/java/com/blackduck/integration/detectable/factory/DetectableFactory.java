@@ -9,6 +9,7 @@ import javax.xml.parsers.SAXParserFactory;
 import com.blackduck.integration.detectable.detectable.executable.resolver.*;
 import com.blackduck.integration.detectable.detectables.cargo.*;
 import com.blackduck.integration.detectable.detectables.cargo.transform.CargoDependencyGraphTransformer;
+import com.blackduck.integration.detectable.detectables.pip.inspector.parser.PipInspectorTomlParser;
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildDetectable;
 import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildExtractor;
@@ -624,7 +625,7 @@ public class DetectableFactory {
         PythonResolver pythonResolver,
         PipResolver pipResolver
     ) {
-        return new PipInspectorDetectable(environment, fileFinder, pythonResolver, pipResolver, pipInspectorResolver, pipInspectorExtractor(), pipInspectorDetectableOptions);
+        return new PipInspectorDetectable(environment, fileFinder, pythonResolver, pipResolver, pipInspectorResolver, pipInspectorExtractor(), pipInspectorDetectableOptions, new PipInspectorTomlParser());
     }
 
     public RequirementsFileDetectable createRequirementsFileDetectable(
