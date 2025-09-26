@@ -51,13 +51,13 @@ public class PipInspectorExtractor {
         File setupFile,
         List<Path> requirementFilePaths,
         String providedProjectName,
-        File tomlFile
+        TomlParseResult tomlParseResult
     ) {
         toolVersionLogger.log(directory, pythonExe);
         toolVersionLogger.log(directory, pipExe);
         Extraction extractionResult;
         try {
-            String projectName = getProjectName(directory, pythonExe, setupFile, tomlFile, providedProjectName);
+            String projectName = getProjectName(directory, pythonExe, setupFile, tomlParseResult, providedProjectName);
 
             if (StringUtils.isEmpty(projectName) && requirementFilePaths.isEmpty()) {
                 return new Extraction.Builder().failure("Unable to run the Pip Inspector without a project name or a requirements file").build();
@@ -118,23 +118,14 @@ public class PipInspectorExtractor {
         return executableRunner.execute(ExecutableUtils.createFromTarget(sourceDirectory, pythonExe, inspectorArguments)).getStandardOutputAsList();
     }
 
-    private String getProjectName(File directory, ExecutableTarget pythonExe, File setupFile, File tomlFile, String providedProjectName) throws ExecutableRunnerException {
+    private String getProjectName(File directory, ExecutableTarget pythonExe, File setupFile, TomlParseResult tomlParseResult, String providedProjectName) throws ExecutableRunnerException {
         if (StringUtils.isNotBlank(providedProjectName)) {
             return providedProjectName;
         }
 
         String projectName = providedProjectName;
 
-        if (tomlFile != null && tomlFile.exists()) {
-            TomlParseResult tomlParseResult;
-            try {
-                String tomlContent = FileUtils.readFileToString(tomlFile, StandardCharsets.UTF_8);
-                tomlParseResult = Toml.parse(tomlContent);
-            } catch (Exception e) {
-                logger.warn("Unable to read Toml file: " + tomlFile.getAbsolutePath(), e);
-                return projectName;
-            }
-
+        if (tomlParseResult != null) {
             TomlTable projectTable = tomlParseResult.getTable(PROJECT_KEY);
             if(projectTable.contains(NAME_KEY)) {
                 projectName = projectTable.getString(NAME_KEY);

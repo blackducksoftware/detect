@@ -46,6 +46,7 @@ public class PipInspectorDetectable extends Detectable {
     private File setupFile;
     private List<Path> requirementsFiles;
     private File pyprojectToml;
+    private TomlParseResult tomlParseResult;
 
     public PipInspectorDetectable(
         DetectableEnvironment environment,
@@ -85,8 +86,8 @@ public class PipInspectorDetectable extends Detectable {
         boolean validTomlFile = false;
         if (hasPyprojectToml) {
             PipInspectorTomlParser pipInspectorTomlParser = new PipInspectorTomlParser(pyprojectToml);
-            TomlParseResult parsedToml = pipInspectorTomlParser.parseToml();
-            validTomlFile = pipInspectorTomlParser.checkIfProjectKeyExists(parsedToml);
+            tomlParseResult = pipInspectorTomlParser.parseToml();
+            validTomlFile = pipInspectorTomlParser.checkIfProjectKeyExists(tomlParseResult);
         }
 
         if (hasSetups || hasRequirements || ( hasPyprojectToml && validTomlFile)) {
@@ -127,7 +128,7 @@ public class PipInspectorDetectable extends Detectable {
             setupFile,
             requirementsFiles,
             pipInspectorDetectableOptions.getPipProjectName().orElse(""),
-            pyprojectToml
+            tomlParseResult
         );
     }
 }
