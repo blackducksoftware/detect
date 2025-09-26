@@ -232,9 +232,20 @@ public class DetectConfigurationFactory {
         AllNoneEnumCollection<DetectTool> excludedTools = detectConfiguration.getValue(DetectProperties.DETECT_TOOLS_EXCLUDED);
         ExcludeIncludeEnumFilter<DetectTool> filter = new ExcludeIncludeEnumFilter<>(excludedTools, includedTools, scanTypeEvidenceMap);
 
-        boolean iacEnabled = includedTools.containsValue(DetectTool.IAC_SCAN) || !detectConfiguration.getValue(DetectProperties.DETECT_IAC_SCAN_PATHS).isEmpty();
+        boolean iacEnabled = isIacScanEnabled(includedTools, excludedTools);
 
         return new DetectToolFilter(filter, impactEnabled.orElse(false), iacEnabled, runDecision, blackDuckDecision);
+    }
+
+    private boolean isIacScanEnabled(AllNoneEnumCollection<DetectTool> includedTools, AllNoneEnumCollection<DetectTool> excludedTools) {
+        boolean containsAll = includedTools.containsAll(); // Checking whether --detect.tools=ALL is set or not
+        boolean containsNone = includedTools.isEmpty(); // Checking whether --detect.tools property is unset or not
+        boolean iacIncluded = includedTools.containsValue(DetectTool.IAC_SCAN); // Checking whether --detect.tools=IAC_SCAN is set or not
+        boolean iacExcluded = excludedTools.containsValue(DetectTool.IAC_SCAN); // Checking whether --detect.tools.excluded=IAC_SCAN is set or not
+
+        // Enable IAC_SCAN only if it is included by detect.tools (ALL, unset, or explicitly included) and not excluded by detect.tools.excluded.
+        // The detect.iac.scan.paths property does not affect whether IAC_SCAN runs.
+        return (containsAll || containsNone || iacIncluded) && !iacExcluded;
     }
 
     public RapidScanOptions createRapidScanOptions() {
