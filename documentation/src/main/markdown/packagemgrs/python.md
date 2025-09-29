@@ -8,7 +8,9 @@
 
 [detect_product_short] detectors for discovery of dependencies in Python:
 
-* Setuptools detector
+* Setuptools detectors
+	* Setuptools CLI
+	* Setuptools Parse
 * PIPENV detectors
 	* Pipenv lock detector
 	* Pipfile lock detector
@@ -16,22 +18,24 @@
 	* Pip Native Inspector
 	* Pip Requirements File Parse
 * Poetry detector
-* UV detector
+* UV detectors
+	* UV CLI
+	* UV Lock
 
-## Setuptools detector
+## Setuptools detectors
 
-Setuptools detector attempts to run on your project if a pyproject.toml file containing a build section with `requires = ["setuptools"]` or equivalent line is located, and a pip installation is found. (Setuptools scans can be run in both build, if a pip installation is available, and buildless mode, if not.)
+Setuptools detectors attempt to run on your project if a pyproject.toml file containing a build section with `requires = ["setuptools"]` or equivalent line is located. (Setuptools scans can be run in both build, if a pip installation is available, and buildless mode, if not.)
 
-<note type="note">Setuptools build detector should be run in a virtual environment, or environment with a clean global pip cache, where a pip install has only been performed for the project being scanned.</note>
+<note type="note">Setuptools CLI detector should be run in a virtual environment, or environment with a clean global pip cache, where a pip install has only been performed for the project being scanned.</note>
 
-[detect_product_short] parses the pyproject.toml file determining if the `[build-system]` section has been configured for Setuptools Pip via the `requires= ["setuptools"]` setting. If the setting is located and pip is installed in the environment, either in the default location or specified via the `--detect.pip.path` property, the detector will execute in a virtual environment, if configured as suggested, and analyze the pyproject.toml, setup.cfg, or setup.py files for dependencies. If the detector discovers a configured pyproject.toml file but not a pip executable, it will execute in buildless mode where it will parse dependencies from the pyproject.toml, setup.cfg, or setup.py files but may not be able to specify exact package versions. If no dependencies are located in the pyproject.toml, setup.cfg, or setup.py files, or if the detector fails, the BDIO file output will not be generated in build or buildless mode. [detect_product_short] will also attempt to run additional detectors if their execution requirements are met.
+[detect_product_short] parses the pyproject.toml file determining if the `[build-system]` section has been configured for Setuptools Pip via the `requries = ["setuptools"]` setting. If the setting is located and pip is installed in the environment, either in the default location or specified via the `--detect.pip.path` property, Setuptools CLI detector will execute in a virtual environment, if configured as suggested, and analyze the pyproject.toml, setup.cfg, or setup.py files for dependencies. If a configured pyproject.toml file is discovered but a pip executable is not, the Setuptools Parse detector will parse dependencies from the pyproject.toml, setup.cfg, or setup.py files but may not be able to specify exact package versions. If no dependencies are located in the pyproject.toml, setup.cfg, or setup.py files, or if the detectors fail the BDIO file output will not be generated in build or buildless mode. [detect_product_short] will also attempt to run additional detectors if their execution requirements are met.
 
-For setup.cfg and setup.py file parsing, the Setuptools detector supports direct mentioning of dependency files. For reference, see 
+For setup.cfg and setup.py file parsing, the Setuptools detectors support direct mentioning of dependency files. For reference, see 
 [Dependency Management in Setuptools](https://setuptools.pypa.io/en/latest/userguide/dependency_management.html).
 
 <note type="tip">URL references, optional dependencies and `file: \<path to file\>` parameters found in setup.cfg are not supported. For setup.py files, programmatic population of the `install_requires` parameter is not supported.</note>
 
-<note type="note">The `--detect.pip.only.project.tree`, `--detect.pip.project.name`, and `--detect.pip.project.version.name` properties do not apply to the Setuptools detector.</note>
+<note type="note">The `--detect.pip.only.project.tree`, `--detect.pip.project.name`, and `--detect.pip.project.version.name` properties do not apply to the Setuptools detectors.</note>
 
 ## PIPENV Detectors
 
@@ -122,7 +126,7 @@ When the `--detect.poetry.dependency.groups.excluded` property is specified, pre
 
 One of the UV detectors will run on your project if a pyproject.toml file containing section `[tool.uv] managed = true` is found. 
 
-The UV detector extracts the project's name and version from the pyproject.toml file. If it does not find that in a pyproject.toml file, it will defer to default values.
+The UV detectors extract the project's name and version from the pyproject.toml file. If these are not found in a pyproject.toml file, default values will be used.
 
 UV has two detectors:
 

@@ -31,7 +31,7 @@ import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 import com.blackduck.integration.detectable.util.CycleDetectedException;
 import com.blackduck.integration.executable.ExecutableRunnerException;
 
-@DetectableInfo(name = "Setuptools Detector", language = "Python", forge = "Pypi", accuracy = DetectableAccuracyType.LOW, requirementsMarkdown = "A pyproject.toml file.")
+@DetectableInfo(name = "Setuptools Parse", language = "Python", forge = "Pypi", accuracy = DetectableAccuracyType.LOW, requirementsMarkdown = "A pyproject.toml file.")
 public class SetupToolsBuildlessDetectable extends Detectable {
     
     private final FileFinder fileFinder;
