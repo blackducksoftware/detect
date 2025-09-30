@@ -96,6 +96,8 @@ public class UniversalStepRunner {
     public BdioResult generateBdio(String integratedMatchingCorrelationId, UniversalToolsResult universalToolsResult, NameVersion projectNameVersion) throws OperationException {
         ProjectDependencyGraph aggregateDependencyGraph = operationRunner.aggregateSubProject(projectNameVersion, universalToolsResult.getDetectCodeLocations());
 
+        // TODO potentially put sbom here before it is turned into a file.
+        
         AggregateCodeLocation aggregateCodeLocation = operationRunner.createAggregateCodeLocation(
             aggregateDependencyGraph,
             projectNameVersion,

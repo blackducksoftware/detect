@@ -17,8 +17,6 @@ import org.cyclonedx.model.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.blackduck.integration.bdio.BdioReader;
 import com.blackduck.integration.bdio.BdioTransformer;
 import com.blackduck.integration.bdio.graph.DependencyGraph;
@@ -26,10 +24,12 @@ import com.blackduck.integration.bdio.model.Forge;
 import com.blackduck.integration.bdio.model.SimpleBdioDocument;
 import com.blackduck.integration.bdio.model.dependency.Dependency;
 import com.blackduck.integration.blackduck.codelocation.upload.UploadTarget;
+import com.google.gson.Gson;
 
 public class SbomService {
     private static final Logger logger = LoggerFactory.getLogger(SbomService.class);
 
+    // TODO working hardcoded version
     public static void generateSbom() throws Exception {
         Bom bom = new Bom();
 
