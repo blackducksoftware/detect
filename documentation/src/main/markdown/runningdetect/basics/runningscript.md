@@ -16,13 +16,13 @@ On Linux or Mac, execute the [detect_product_short] script ([bash_script_name], 
 To download and run the latest version of [detect_product_short] in a single command:
 
 ````
-bash <(curl -s -L https://detect.blackduck.com/detect10.sh)
+bash <(curl -s -L https://detect.blackduck.com/detect.sh)
 ````
 
 Append any command line arguments to the end, separated by spaces. For example:
 
 ````
-bash <(curl -s -L https://detect.blackduck.com/detect10.sh) --blackduck.url=https://blackduck.mydomain.com --blackduck.api.token=myaccesstoken
+bash <(curl -s -L https://detect.blackduck.com/detect.sh) --blackduck.url=https://blackduck.mydomain.com --blackduck.api.token=myaccesstoken
 ````
 
 See [Quoting and escaping shell script arguments](../../scripts/script-escaping-special-characters.md) for details about quoting and escaping arguments.
@@ -31,7 +31,7 @@ See [Quoting and escaping shell script arguments](../../scripts/script-escaping-
 
 ````
 export DETECT_LATEST_RELEASE_VERSION={Detect version}
-bash <(curl -s -L https://detect.blackduck.com/detect10.sh)
+bash <(curl -s -L https://detect.blackduck.com/detect11.sh)
 ````
 
 For example, to run [detect_product_short] version 9.10.0:
@@ -66,14 +66,14 @@ See [Quoting and escaping shell script arguments](../../scripts/script-escaping-
 
 ````
 set DETECT_LATEST_RELEASE_VERSION={Detect version}
-powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect"
+powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect11.ps1?$(Get-Random) | iex; detect"
 ````
 
-For example, to run [detect_product_short] version 10.0.0:
+For example, to run [detect_product_short] version 11.0.0:
 
 ````
-set DETECT_LATEST_RELEASE_VERSION=10.0.0
-powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect"
+set DETECT_LATEST_RELEASE_VERSION=11.0.0
+powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect11.ps1?$(Get-Random) | iex; detect"
 ````
 
 ### Running from Windows Powershell

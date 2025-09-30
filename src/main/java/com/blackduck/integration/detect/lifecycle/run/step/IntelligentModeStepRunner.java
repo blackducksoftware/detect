@@ -431,7 +431,7 @@ public class IntelligentModeStepRunner {
     }
     
     public void uploadCorrelatedScanCounts(BlackDuckRunData blackDuckRunData, CodeLocationAccumulator codeLocationAccumulator, String detectRunUuid) throws OperationException {
-        logger.debug("Uploading correlated scan counts to Black Duck (correlation ID: {})", detectRunUuid);
+        logger.debug("Uploading correlated scan counts to Black Duck SCA (correlation ID: {})", detectRunUuid);
         ScanCountsPayload scanCountsPayload = scanCountsPayloadCreator.create(codeLocationAccumulator.getWaitableCodeLocations(), codeLocationAccumulator.getAdditionalCountsByTool());
         
         if (scanCountsPayload.isValid()) {

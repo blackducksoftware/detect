@@ -21,7 +21,7 @@ project directory.
 * Fail on [policy violation](../../properties/configuration/project.md#fail-on-policy-violation-severities-advanced).
 * Run [IaC Scan](../iacscan.md) on provided targets. Note: Iac Scan capabilities require [bd_product_short] 2022.7.0 or later.
 
-Refer to [Black Duck Server properties](../../properties/configuration/blackduck-server.md), [Black Duck Signature Scanner properties](../../properties/configuration/signature-scanner.md), and [IaC Scan](../iacscan.md) for details.
+Refer to [Black Duck SCA Server properties](../../properties/configuration/blackduck-server.md), [Black Duck Signature Scanner properties](../../properties/configuration/signature-scanner.md), and [IaC Scan](../iacscan.md) for details.
 
 <note type="tip">Available signature scanner properties can be determined by specifying `--help` when executing the signature scanner jar file from the command line.</note>
 

@@ -5,13 +5,13 @@ Properties in [detect_product_long] provide information used to determine how an
 When setting a property value, the property name is prefixed with two hyphens (--). 
 
 ````
-bash <(curl -s -L https://detect.blackduck.com/detect10.sh) <--property=value>
+bash <(curl -s -L https://detect.blackduck.com/detect11.sh) <--property=value>
 ````
 
 Example using properties to specify project name and [bd_product_short] URL:
 
 ````
-bash <(curl -s -L https://detect.blackduck.com/detect10.sh) --detect.project.name=MyProject --blackduck.url=https://blackduck.yourdomain.com
+bash <(curl -s -L https://detect.blackduck.com/detect11.sh) --detect.project.name=MyProject --blackduck.url=https://blackduck.yourdomain.com
 ````
 
 <note type="note">When configuring [detect_product_short] via environment variables or configuration file, specific property handling applies. See [Using environment variables](../../configuring/envvars.md) or [Using a configuration file](../../configuring/configfile.md).</note>

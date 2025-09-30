@@ -7,6 +7,7 @@ package com.blackduck.integration.detect.configuration;
  * {
  *   "versionName": "1.0.0",
  *   "nickname": "Release Candidate",
+ *   "releaseComments" : "releaseComments",
  *   "phase": "RELEASED",
  *   "distribution": "EXTERNAL",
  *   "update": true
@@ -15,6 +16,7 @@ package com.blackduck.integration.detect.configuration;
 public class VersionSettings {
     private String versionName;
     private String nickname;
+    private String releaseComments;
     private String phase;
     private String distribution;
     private Boolean update;
@@ -33,6 +35,14 @@ public class VersionSettings {
 
     public void setNickname(String nickname) {
         this.nickname = nickname;
+    }
+    
+    public String getReleaseComments() {
+        return releaseComments;
+    }
+
+    public void setReleaseComments(String releaseComments) {
+        this.releaseComments = releaseComments;
     }
 
     public String getPhase() {

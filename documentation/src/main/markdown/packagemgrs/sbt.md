@@ -43,5 +43,5 @@ and the SBT detector runs.
 You can apply the workaround suggested in that github issue using the
 *detect.sbt.arguments* property:
 ```
-./detect10.sh --detect.sbt.arguments="-Djline.terminal=jline.UnsupportedTerminal"
+./detect11.sh --detect.sbt.arguments="-Djline.terminal=jline.UnsupportedTerminal"
 ```

@@ -20,6 +20,7 @@ The `.json` file should contain a JSON object with any of the following `detect.
 * [detect.project.deep.license](../properties/configuration/project.md#deep-license-analysis) 
 * [detect.project.version.name](../properties/configuration/project.md#version-name)
 * [detect.project.version.nickname](../properties/configuration/project.md#version-nickname)
+* [detect.project.version.notes](../properties/configuration/project.md#version-notes)
 * [detect.project.version.phase](../properties/configuration/project.md#version-phase)
 * [detect.project.version.distribution](../properties/configuration/project.md#version-distribution-advanced)
 * [detect.project.version.update](../properties/configuration/project.md#update-project-version)
@@ -38,6 +39,7 @@ The `.json` file should contain a JSON object with any of the following `detect.
   "versionRequest": {
     "versionName": "1.0.0",               // detect.project.version.name
     "nickname": "nickname",               // detect.project.version.nickname
+    "releaseComments": "releaseComments", // detect.project.version.notes
     "phase": "DEVELOPMENT",               // detect.project.version.phase
     "distribution": "EXTERNAL",           // detect.project.version.distribution
     "update": false                       // detect.project.version.update

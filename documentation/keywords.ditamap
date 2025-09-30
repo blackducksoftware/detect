@@ -15,12 +15,11 @@
   <keydef keys="var_product_sigma"><topicmeta><keywords><keyword>Sigma</keyword></keywords></topicmeta></keydef>
   <keydef keys="cov"><topicmeta><keywords><keyword>Coverity</keyword></keywords></topicmeta></keydef>
   <keydef keys="var_community"><topicmeta><keywords><keyword>Black Duck Community</keyword></keywords></topicmeta></keydef>
-  <keydef keys="var_company_support"><topicmeta><keywords><keyword>Technical Support</keyword></keywords></topicmeta></keydef>
   <keydef keys="var_bu_name"><topicmeta><keywords><keyword>Black Duck</keyword></keywords></topicmeta></keydef>
   <keydef keys="binary_repo_type"><topicmeta><keywords><keyword>Artifactory</keyword></keywords></topicmeta></keydef>
   <keydef keys="source_project_name"><topicmeta><keywords><keyword>blackduck-detect</keyword></keywords></topicmeta></keydef>
-  <keydef keys="bash_script_name"><topicmeta><keywords><keyword>detect10.sh</keyword></keywords></topicmeta></keydef>
-  <keydef keys="powershell_script_name"><topicmeta><keywords><keyword>detect10.ps1</keyword></keywords></topicmeta></keydef>
+  <keydef keys="bash_script_name"><topicmeta><keywords><keyword>detect11.sh</keyword></keywords></topicmeta></keydef>
+  <keydef keys="powershell_script_name"><topicmeta><keywords><keyword>detect11.ps1</keyword></keywords></topicmeta></keydef>
   <keydef keys="blackduck_signature_scanner_name"><topicmeta><keywords><keyword>Black Duck Signature Scanner</keyword></keywords></topicmeta></keydef>
   <keydef keys="blackduck_signature_scan_act"><topicmeta><keywords><keyword>Black Duck signature scan</keyword></keywords></topicmeta></keydef>
   <keydef keys="dockerinspector_name"><topicmeta><keywords><keyword>Black Duck Docker Inspector</keyword></keywords></topicmeta></keydef>

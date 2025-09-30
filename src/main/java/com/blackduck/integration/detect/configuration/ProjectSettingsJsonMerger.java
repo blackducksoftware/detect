@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 
 /**
  * This class parses the detect.project.settings JSON and extracts individual property values.
@@ -42,6 +41,7 @@ public class ProjectSettingsJsonMerger {
             addIfNotNull(properties, version.getPhase(), DetectProperties.DETECT_PROJECT_VERSION_PHASE.getKey());
             addIfNotNull(properties, version.getDistribution(), DetectProperties.DETECT_PROJECT_VERSION_DISTRIBUTION.getKey());
             addIfNotNull(properties, version.getUpdate(), DetectProperties.DETECT_PROJECT_VERSION_UPDATE.getKey());
+            addIfNotNull(properties, version.getReleaseComments(), DetectProperties.DETECT_PROJECT_VERSION_NOTES.getKey());
         }
         
         return properties;

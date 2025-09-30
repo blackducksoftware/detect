@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.blackduck.integration.detectable.detectables.pip.inspector.parser.PipInspectorTomlParser;
 import org.apache.commons.collections4.CollectionUtils;
 
 import com.blackduck.integration.common.util.finder.FileFinder;
@@ -24,6 +25,7 @@ import com.blackduck.integration.detectable.detectable.result.InspectorNotFoundD
 import com.blackduck.integration.detectable.detectable.result.PassedDetectableResult;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
+import org.tomlj.TomlParseResult;
 
 @DetectableInfo(name = "PIP Native Inspector", language = "Python", forge = "Pypi", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "A setup.py file, pyproject.toml file, or one or more requirements.txt files. Executables: python and pip, or python3 and pip3.")
 public class PipInspectorDetectable extends Detectable {
@@ -37,13 +39,14 @@ public class PipInspectorDetectable extends Detectable {
     private final PipInspectorResolver pipInspectorResolver;
     private final PipInspectorExtractor pipInspectorExtractor;
     private final PipInspectorDetectableOptions pipInspectorDetectableOptions;
+    private final PipInspectorTomlParser pipInspectorTomlParser;
 
     private ExecutableTarget pythonExe;
     private ExecutableTarget pipExe;
     private File pipInspector;
     private File setupFile;
     private List<Path> requirementsFiles;
-    private File pyprojectToml;
+    private TomlParseResult tomlParseResult = null;
 
     public PipInspectorDetectable(
         DetectableEnvironment environment,
@@ -52,7 +55,8 @@ public class PipInspectorDetectable extends Detectable {
         PipResolver pipResolver,
         PipInspectorResolver pipInspectorResolver,
         PipInspectorExtractor pipInspectorExtractor,
-        PipInspectorDetectableOptions pipInspectorDetectableOptions
+        PipInspectorDetectableOptions pipInspectorDetectableOptions,
+        PipInspectorTomlParser pipInspectorTomlParser
     ) {
         super(environment);
         this.fileFinder = fileFinder;
@@ -61,6 +65,7 @@ public class PipInspectorDetectable extends Detectable {
         this.pipInspectorResolver = pipInspectorResolver;
         this.pipInspectorExtractor = pipInspectorExtractor;
         this.pipInspectorDetectableOptions = pipInspectorDetectableOptions;
+        this.pipInspectorTomlParser = pipInspectorTomlParser;
     }
 
     @Override
@@ -68,7 +73,7 @@ public class PipInspectorDetectable extends Detectable {
         setupFile = fileFinder.findFile(environment.getDirectory(), SETUPTOOLS_DEFAULT_FILE_NAME);
         boolean hasSetups = setupFile != null;
 
-        pyprojectToml = fileFinder.findFile(environment.getDirectory(), PYPROJECT_DEFAULT_FILE_NAME);
+        File pyprojectToml = fileFinder.findFile(environment.getDirectory(), PYPROJECT_DEFAULT_FILE_NAME);
         boolean hasPyprojectToml = pyprojectToml != null;
 
         requirementsFiles = pipInspectorDetectableOptions.getRequirementsFilePaths();
@@ -80,10 +85,16 @@ public class PipInspectorDetectable extends Detectable {
         }
         boolean hasRequirements = CollectionUtils.isNotEmpty(requirementsFiles);
 
-        if (hasSetups || hasRequirements || hasPyprojectToml) {
+        boolean validTomlFile = false;
+        if (hasPyprojectToml) {
+            tomlParseResult = pipInspectorTomlParser.parseToml(pyprojectToml);
+            validTomlFile = pipInspectorTomlParser.checkIfProjectKeyExists(tomlParseResult);
+        }
+
+        if (hasSetups || hasRequirements || ( hasPyprojectToml && validTomlFile)) {
             return new PassedDetectableResult();
         } else {
-            return new FilesNotFoundDetectableResult(SETUPTOOLS_DEFAULT_FILE_NAME, REQUIREMENTS_DEFAULT_FILE_NAME);
+            return new FilesNotFoundDetectableResult(SETUPTOOLS_DEFAULT_FILE_NAME, REQUIREMENTS_DEFAULT_FILE_NAME, PYPROJECT_DEFAULT_FILE_NAME);
         }
     }
 
@@ -118,7 +129,7 @@ public class PipInspectorDetectable extends Detectable {
             setupFile,
             requirementsFiles,
             pipInspectorDetectableOptions.getPipProjectName().orElse(""),
-            pyprojectToml
+            tomlParseResult
         );
     }
 }

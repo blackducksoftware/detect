@@ -31,7 +31,7 @@ public class FindLicenseUrlOperation {
         } else {
             List<LicenseView> suggestedLicenses = licenseService.searchLicensesByName(licenseName);
             logger.error(String.format(
-                "Could not find url for license with name %s.  License names are case sensitive, please verify the name of your license in Black Duck in the License Management section.",
+                "Could not find url for license with name %s.  License names are case sensitive, please verify the name of your license in Black Duck SCA in the License Management section.",
                 licenseName
             ));
             if (!suggestedLicenses.isEmpty()) {
