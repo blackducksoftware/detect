@@ -58,6 +58,81 @@ public class GoModFileParser {
      * @return GoModFileContent containing all parsed information
      */
     public GoModFileContent parseGoModFile(List<String> lines) {
+        GoModFileContext context = new GoModFileContext();
+        ParseState currentState = ParseState.NORMAL;
+        
+        for (String line : lines) {
+            line = line.trim();
+            
+            if (shouldSkipLine(line)) {
+                currentState = handleBlockEnd(line, currentState);
+                continue;
+            }
+            
+            currentState = processLine(line, currentState, context);
+        }
+        
+        return context.buildGoModFileContent();
+    }
+
+    private boolean shouldSkipLine(String line) {
+        return isEmptyOrComment(line) || line.equals(")");
+    }
+
+    private ParseState handleBlockEnd(String line, ParseState currentState) {
+        return line.equals(")") ? ParseState.NORMAL : currentState;
+    }
+
+    private ParseState processLine(String line, ParseState currentState, GoModFileContext context) {
+        if (currentState == ParseState.NORMAL) {
+            return processNormalStateLine(line, context);
+        }
+        
+        processBlockStateLine(line, currentState, context);
+        return currentState;
+    }
+
+    private ParseState processNormalStateLine(String line, GoModFileContext context) {
+        extractMetadataIfPresent(line, context);
+        return parseNormalLine(line, 
+                              context.directDependencies, context.indirectDependencies,
+                              context.excludedModules, context.replaceDirectives, 
+                              context.retractedVersions);
+    }
+
+    private void processBlockStateLine(String line, ParseState currentState, GoModFileContext context) {
+        switch (currentState) {
+            case REQUIRE_BLOCK:
+                parseRequireLine(line, context.directDependencies, context.indirectDependencies);
+                break;
+            case EXCLUDE_BLOCK:
+                parseExcludeLine(line, context.excludedModules);
+                break;
+            case REPLACE_BLOCK:
+                parseReplaceLine(line, context.replaceDirectives);
+                break;
+            case RETRACT_BLOCK:
+                parseRetractLine(line, context.retractedVersions);
+                break;
+            default:
+                logger.warn("Encountered line in unknown state {}: {}", currentState, line);
+                break;
+        }
+    }
+
+    private void extractMetadataIfPresent(String line, GoModFileContext context) {
+        if (context.moduleName == null) {
+            context.moduleName = extractModuleName(line);
+        }
+        if (context.goVersion == null) {
+            context.goVersion = extractGoVersion(line);
+        }
+        if (context.toolchainVersion == null) {
+            context.toolchainVersion = extractToolchainVersion(line);
+        }
+    }
+
+    private static class GoModFileContext {
         String moduleName = null;
         String goVersion = null;
         String toolchainVersion = null;
@@ -67,61 +142,13 @@ public class GoModFileParser {
         List<GoReplaceDirective> replaceDirectives = new ArrayList<>();
         Set<GoModuleInfo> retractedVersions = new HashSet<>();
         
-        ParseState currentState = ParseState.NORMAL;
-        
-        for (String line : lines) {
-            line = line.trim();
-            
-            // Skip empty lines and comments
-            if (isEmptyOrComment(line) || line.equals(")")) {
-                if (line.equals(")")) {
-                    currentState = ParseState.NORMAL;
-                }
-                continue;
-            }
-            
-            // Parse based on current state
-            switch (currentState) {
-                case NORMAL:
-                    currentState = parseNormalLine(line, 
-                                                 directDependencies, indirectDependencies, 
-                                                 excludedModules, replaceDirectives, retractedVersions);
-                    // Extract module, go version, toolchain if found
-                    if (moduleName == null) {
-                        moduleName = extractModuleName(line);
-                    }
-                    if (goVersion == null) {
-                        goVersion = extractGoVersion(line);
-                    }
-                    if (toolchainVersion == null) {
-                        toolchainVersion = extractToolchainVersion(line);
-                    }
-                    break;
-                case REQUIRE_BLOCK:
-                    parseRequireLine(line, directDependencies, indirectDependencies);
-                    break;
-                case EXCLUDE_BLOCK:
-                    parseExcludeLine(line, excludedModules);
-                    break;
-                case REPLACE_BLOCK:
-                    parseReplaceLine(line, replaceDirectives);
-                    break;
-                case RETRACT_BLOCK:
-                    parseRetractLine(line, retractedVersions);
-                    break;
-            }
+        GoModFileContent buildGoModFileContent() {
+            return new GoModFileContent(
+                moduleName, goVersion, toolchainVersion,
+                directDependencies, indirectDependencies,
+                excludedModules, replaceDirectives, retractedVersions
+            );
         }
-        
-        return new GoModFileContent(
-            moduleName,
-            goVersion,
-            toolchainVersion,
-            directDependencies,
-            indirectDependencies,
-            excludedModules,
-            replaceDirectives,
-            retractedVersions
-        );
     }
     
     private ParseState parseNormalLine(String line,
