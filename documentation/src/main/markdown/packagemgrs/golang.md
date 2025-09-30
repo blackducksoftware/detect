@@ -44,6 +44,7 @@ the [go mod why documentation](https://go.dev/ref/mod#go-mod-why) for additional
 * Attempts to run on your project if a go.mod file is found in your source directory.
 * Parses go.mod file to gather dependency information.
 * Computes transitive dependency graph by fetching go.mod files of direct dependencies from proxy.golang.org or custom Go proxy supplied via [detect.go.forge](../properties/detectors/go.md#go-forge) property. If the proxy is not reachable, the transitive dependencies are listed as additional components under the root module.
+* Dependency exclusions (unused, vendored) are supported in this detector.
 
 ## Go Lock (GO_DEP) detector
 

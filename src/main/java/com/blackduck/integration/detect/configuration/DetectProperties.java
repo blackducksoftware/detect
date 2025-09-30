@@ -859,7 +859,7 @@ public class DetectProperties {
         NullableStringProperty.newBuilder("detect.go.forge")
             .setInfo("Go Forge URL", DetectPropertyFromVersion.VERSION_11_0_0)
             .setHelp(
-                "The Go Forge URL to use when downloading modules. If not set, the default Go Forge (https://proxy.golang.org) will be used. To disable the use of a proxy, set this property to 'direct'."
+                "The Go Forge URL to fetch the go.mod descriptor of direct dependencies. If not set, the default Go Forge (https://proxy.golang.org) will be used. This is only applicable to the Go Mod File detector."
             )
             .setGroups(DetectGroup.GO, DetectGroup.GLOBAL)
             .build();
