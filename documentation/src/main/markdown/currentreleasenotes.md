@@ -27,8 +27,8 @@
 * The new [detect.excluded.detectors](properties/configuration/detector.md#detectors-excluded-advanced) property takes as input a comma-separated list of Detector names to exclude. This allows for greater control over selection of Detectors.
 * Added support for capturing dependencies from the `go.mod` file via a new buildless detector named "Go Mod File" for Go projects.
 	* Added a new property [detect.go.forge](properties/detectors/go.md#go-forge-url) to customize the Go registry URL used for fetching dependency information. Defaults to `https://proxy.golang.org`.
-	* Added a new property [detect.go.forge.connection.timeout](properties/detectors/go.md#go-connection-timeout) to customize the connection timeout limit while connecting to the Go registry. Defaults to 30 seconds.
-	* Added a new property [detect.go.forge.read.timeout](properties/detectors/go.md#go-read-timeout) to customize the read timeout limit while fetching go.mod file of a dependency from Go registry. Defaults to 60 seconds.
+	* Added a new property [detect.go.forge.connection.timeout](properties/detectors/go.md#go-forge-connection-timeout) to customize the connection timeout limit while connecting to the Go registry. Defaults to 30 seconds.
+	* Added a new property [detect.go.forge.read.timeout](properties/detectors/go.md#go-forge-read-timeout) to customize the read timeout limit while fetching go.mod file of a dependency from Go registry. Defaults to 60 seconds.
 
 ### Changed features
 
