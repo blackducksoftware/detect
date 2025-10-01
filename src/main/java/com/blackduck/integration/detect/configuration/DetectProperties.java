@@ -866,7 +866,7 @@ public class DetectProperties {
     
     public static final LongProperty DETECT_GO_FORGE_CONNECTION_TIMEOUT =
         LongProperty.newBuilder("detect.go.forge.connection.timeout", 30L)
-            .setInfo("Go Connection Timeout", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setInfo("Go Forge Connection Timeout", DetectPropertyFromVersion.VERSION_11_0_0)
             .setHelp(
                 "The connection timeout in seconds to use when connecting to the Go Forge. If not set, the default connection timeout of 30 seconds will be used."
             ).setExample("30")
@@ -875,7 +875,7 @@ public class DetectProperties {
 
     public static final LongProperty DETECT_GO_FORGE_READ_TIMEOUT =
         LongProperty.newBuilder("detect.go.forge.read.timeout", 60L)
-            .setInfo("Go Read Timeout", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setInfo("Go Forge Read Timeout", DetectPropertyFromVersion.VERSION_11_0_0)
             .setHelp(
                 "The read timeout in seconds to use when reading from the Go Forge. If not set, the default read timeout of 60 seconds will be used."
             ).setExample("60")
