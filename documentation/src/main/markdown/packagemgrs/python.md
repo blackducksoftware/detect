@@ -91,7 +91,7 @@ pip install -r requirements.txt
 ````
 * Pip detector attempts to derive the project name using your setup.py or pyproject.toml file if you have one. If you do not have a setup.py or pyproject.toml file, you can provide the correct project name using the property `--detect.pip.project.name`.
 * If there are any dependencies specified in requirements.txt that are not specified in setup.py or pyproject.toml file, then provide the requirements.txt file using the [detect_product_short] property.   
-<note type="tip">If you are using a virtual environment, be sure to switch to that virtual environment when you run [detect_product_short]. This also applies when you are using a tool such as Poetry that sets up a Python virtual environment.</note>
+<note type="important"><li>Ensure that the paths to the Python and pip executables are correctly configured, either via system environment variables or [detect_product_short] properties. For projects using `pyproject.toml` file(s), incorrect paths may lead to [detect_product_short] failures.</li><li>If you are using a virtual environment, be sure to switch to that virtual environment when you run [detect_product_short]. This also applies when you are using a tool such as Poetry that sets up a Python virtual environment.</li></note>
 
 ## PIP Requirements File Parse
 
