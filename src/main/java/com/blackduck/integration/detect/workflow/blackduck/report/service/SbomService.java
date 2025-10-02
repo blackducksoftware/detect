@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import com.blackduck.integration.bdio.BdioReader;
 import com.blackduck.integration.bdio.BdioTransformer;
 import com.blackduck.integration.bdio.graph.DependencyGraph;
+import com.blackduck.integration.bdio.graph.ProjectDependencyGraph;
 import com.blackduck.integration.bdio.model.Forge;
 import com.blackduck.integration.bdio.model.SimpleBdioDocument;
 import com.blackduck.integration.bdio.model.dependency.Dependency;
@@ -37,7 +39,6 @@ public class SbomService {
         component.setType(Component.Type.LIBRARY);
         component.setName("example-lib");
         component.setVersion("1.2.3");
-        component.setGroup("com.example");
         component.setPurl("pkg:maven/com.example/example-lib@1.2.3");
         bom.addComponent(component);
 
@@ -73,6 +74,30 @@ public class SbomService {
         }
     }
 
+    public static void generateSbom(ProjectDependencyGraph projectDependencyGraph) throws Exception {
+        Bom bom = new Bom();
+
+        // Extract components directly from the in-memory dependency graph
+        // ProjectDependencyGraph extends DependencyGraph, so we can use it directly
+        Set<Dependency> allDependencies = projectDependencyGraph.getDirectDependencies();
+        Set<Dependency> visited = new HashSet<>();
+
+        for (Dependency dependency : allDependencies) {
+            addDependencyToSbom(dependency, bom, visited);
+            // Also add transitive dependencies
+            addTransitiveDependenciesToSbom(dependency, projectDependencyGraph, bom, visited);
+        }
+
+        // Specify schema version explicitly
+        BomJsonGenerator generator = BomGeneratorFactory.createJson(Version.VERSION_16, bom);
+
+        String jsonBom = generator.toJsonString();
+
+        try (FileOutputStream out = new FileOutputStream("bom.json")) {
+            out.write(jsonBom.getBytes(StandardCharsets.UTF_8));
+        }
+    }
+
     private static void extractComponentsFromBdio(File bdioFile, Bom bom) throws IOException {
         Gson gson = new Gson();
         BdioTransformer bdioTransformer = new BdioTransformer();
@@ -92,14 +117,21 @@ public class SbomService {
 
         // Add all dependencies to the SBOM
         Set<Dependency> allDependencies = dependencyGraph.getDirectDependencies();
+        Set<Dependency> visited = new HashSet<>();
         for (Dependency dependency : allDependencies) {
-            addDependencyToSbom(dependency, bom);
+            addDependencyToSbom(dependency, bom, visited);
             // Also add transitive dependencies
-            addTransitiveDependenciesToSbom(dependency, dependencyGraph, bom);
+            addTransitiveDependenciesToSbom(dependency, dependencyGraph, bom, visited);
         }
     }
 
-    private static void addDependencyToSbom(Dependency dependency, Bom bom) {
+    private static void addDependencyToSbom(Dependency dependency, Bom bom, Set<Dependency> visited) {
+        // Skip if already visited to avoid duplicates and infinite recursion
+        if (visited.contains(dependency)) {
+            return;
+        }
+        visited.add(dependency);
+
         Component component = new Component();
         component.setType(Component.Type.LIBRARY);
         component.setName(dependency.getName());
@@ -107,10 +139,10 @@ public class SbomService {
 
         // Extract group/namespace from external ID if available
         if (dependency.getExternalId() != null) {
-            String[] moduleNames = dependency.getExternalId().getModuleNames();
-            if (moduleNames != null && moduleNames.length > 0) {
-                component.setGroup(moduleNames[0]);
-            }
+//            String[] moduleNames = dependency.getExternalId().getModuleNames();
+//            if (moduleNames != null && moduleNames.length > 0) {
+//                component.setGroup(moduleNames[0]);
+//            }
 
             // Generate appropriate PURL based on forge type
             String purl = generatePurl(dependency);
@@ -122,12 +154,15 @@ public class SbomService {
         bom.addComponent(component);
     }
 
-    private static void addTransitiveDependenciesToSbom(Dependency parent, DependencyGraph dependencyGraph, Bom bom) {
+    private static void addTransitiveDependenciesToSbom(Dependency parent, DependencyGraph dependencyGraph, Bom bom, Set<Dependency> visited) {
         Set<Dependency> children = dependencyGraph.getChildrenForParent(parent);
         for (Dependency child : children) {
-            addDependencyToSbom(child, bom);
-            // Recursively add transitive dependencies
-            addTransitiveDependenciesToSbom(child, dependencyGraph, bom);
+            // Only recurse if we haven't already visited this child
+            if (!visited.contains(child)) {
+                addDependencyToSbom(child, bom, visited);
+                // Recursively add transitive dependencies
+                addTransitiveDependenciesToSbom(child, dependencyGraph, bom, visited);
+            }
         }
     }
 

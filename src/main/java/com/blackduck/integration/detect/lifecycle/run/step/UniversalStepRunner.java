@@ -27,6 +27,7 @@ import com.blackduck.integration.detect.tool.UniversalToolsResultBuilder;
 import com.blackduck.integration.detect.tool.detector.DetectorToolResult;
 import com.blackduck.integration.detect.workflow.bdio.AggregateCodeLocation;
 import com.blackduck.integration.detect.workflow.bdio.BdioResult;
+import com.blackduck.integration.detect.workflow.blackduck.report.service.SbomService;
 import com.blackduck.integration.detect.workflow.codelocation.DetectCodeLocation;
 import com.blackduck.integration.detect.workflow.codelocation.DetectCodeLocationNamesResult;
 import com.blackduck.integration.detect.workflow.report.util.ReportConstants;
@@ -96,8 +97,13 @@ public class UniversalStepRunner {
     public BdioResult generateBdio(String integratedMatchingCorrelationId, UniversalToolsResult universalToolsResult, NameVersion projectNameVersion) throws OperationException {
         ProjectDependencyGraph aggregateDependencyGraph = operationRunner.aggregateSubProject(projectNameVersion, universalToolsResult.getDetectCodeLocations());
 
-        // TODO potentially put sbom here before it is turned into a file.
-        
+        // Generate SBOM from in-memory dependency graph before it gets serialized to BDIO
+        try {
+            SbomService.generateSbom(aggregateDependencyGraph);
+        } catch (Exception e) {
+            logger.warn("Failed to generate SBOM from dependency graph", e);
+        }
+
         AggregateCodeLocation aggregateCodeLocation = operationRunner.createAggregateCodeLocation(
             aggregateDependencyGraph,
             projectNameVersion,
