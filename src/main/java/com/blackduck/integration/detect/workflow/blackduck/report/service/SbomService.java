@@ -182,15 +182,51 @@ public class SbomService {
         String name = dependency.getName();
         String version = dependency.getVersion();
 
+        // Case names must match Forge.getName() values from integration-bdio Forge.class
+        // PURL format strings follow the PURL specification: https://github.com/package-url/purl-spec
         switch (forge.getName().toLowerCase()) {
-            case "maven":
+            case "maven":      // Forge.MAVEN
                 return String.format("pkg:maven/%s/%s@%s", namespace, name, version);
-            case "npm":
+            case "npmjs":      // Forge.NPMJS
                 return String.format("pkg:npm/%s@%s", name, version);
-            case "pypi":
+            case "pypi":       // Forge.PYPI
                 return String.format("pkg:pypi/%s@%s", name, version);
-            case "nuget":
+            case "nuget":      // Forge.NUGET
                 return String.format("pkg:nuget/%s@%s", name, version);
+            case "rubygems":   // Forge.RUBYGEMS
+                return String.format("pkg:gem/%s@%s", name, version);
+            case "golang":     // Forge.GOLANG
+                return String.format("pkg:golang/%s@%s", name, version);
+            case "crates":     // Forge.CRATES
+                return String.format("pkg:cargo/%s@%s", name, version);
+            case "cocoapods":  // Forge.COCOAPODS
+                return String.format("pkg:cocoapods/%s@%s", name, version);
+            case "packagist":  // Forge.PACKAGIST
+                return String.format("pkg:composer/%s/%s@%s", namespace, name, version);
+            case "alpine":     // Forge.ALPINE
+                return String.format("pkg:alpine/%s@%s", name, version);
+            case "debian":     // Forge.DEBIAN
+                return String.format("pkg:deb/%s@%s", name, version);
+            case "ubuntu":     // Forge.UBUNTU
+                return String.format("pkg:deb/ubuntu/%s@%s", name, version);
+            case "centos":     // Forge.CENTOS
+                return String.format("pkg:rpm/centos/%s@%s", name, version);
+            case "redhat":     // Forge.REDHAT
+                return String.format("pkg:rpm/redhat/%s@%s", name, version);
+            case "fedora":     // Forge.FEDORA
+                return String.format("pkg:rpm/fedora/%s@%s", name, version);
+            case "hex":        // Forge.HEX
+                return String.format("pkg:hex/%s@%s", name, version);
+            case "dart":       // Forge.DART
+                return String.format("pkg:pub/%s@%s", name, version);
+            case "bower":      // Forge.BOWER
+                return String.format("pkg:bower/%s@%s", name, version);
+            case "github":     // Forge.GITHUB
+                return String.format("pkg:github/%s/%s@%s", namespace, name, version);
+            case "cpan":       // Forge.CPAN
+                return String.format("pkg:cpan/%s@%s", name, version);
+            case "cran":       // Forge.CRAN
+                return String.format("pkg:cran/%s@%s", name, version);
             default:
                 return String.format("pkg:generic/%s@%s", name, version);
         }
