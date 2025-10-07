@@ -145,18 +145,18 @@ public class DetectableOptionFactory {
 
     public GoModFileDetectableOptions createGoModFileDetectableOptions() {
         String goForgeUrl = detectConfiguration.getNullableValue(DetectProperties.DETECT_GO_FORGE);
-        if (goForgeUrl == null || goForgeUrl.isBlank()) {
+        if (goForgeUrl == null || goForgeUrl.isEmpty()) {
             goForgeUrl = "https://proxy.golang.org";
         }
         // if the URL ends with a trailing slash, remove it
         if (goForgeUrl.endsWith("/")) {
             goForgeUrl = goForgeUrl.substring(0, goForgeUrl.length() - 1);
         }
-        long connectionTimeout = detectConfiguration.getValue(DetectProperties.DETECT_GO_FORGE_CONNECTION_TIMEOUT);
+        int connectionTimeout = detectConfiguration.getValue(DetectProperties.DETECT_GO_FORGE_CONNECTION_TIMEOUT);
         if (connectionTimeout <= 0) {
             connectionTimeout = 30; // default to 30 seconds if not set
         }
-        long readTimeout = detectConfiguration.getValue(DetectProperties.DETECT_GO_FORGE_READ_TIMEOUT);
+        int readTimeout = detectConfiguration.getValue(DetectProperties.DETECT_GO_FORGE_READ_TIMEOUT);
         if (readTimeout <= 0) {
             readTimeout = 60; // default to 60 seconds if not set
         }

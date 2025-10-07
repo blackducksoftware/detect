@@ -10,6 +10,7 @@ import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoModFileHelpers;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoModuleInfo;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +31,7 @@ public class GoModParser {
     private static final String ORPHAN_PARENT_NAME = "Additional_Components";
     private static final String ORPHAN_PARENT_VERSION = "none";
 
-    private static final String DEPENDENCY_SEPARATOR = "-".repeat(60);
+    private static final String DEPENDENCY_SEPARATOR = StringUtils.repeat("-", 60 );
 
     public GoModParser(ExternalIdFactory externalIdFactory, GoModFileDetectableOptions options) {
         this.externalIdFactory = externalIdFactory;
@@ -76,7 +77,7 @@ public class GoModParser {
         logger.debug(DEPENDENCY_SEPARATOR);
         for(int idx=0; idx < path.size(); idx++) {
             GoDependencyNode pathEntry = path.get(idx);
-            logger.debug("> {} {} {}", (idx > 0 ? " ".repeat(idx) : ""), pathEntry.getDependency().getName(), pathEntry.getDependency().getVersion());
+            logger.debug("> {} {} {}", (idx > 0 ? StringUtils.repeat(" ", idx) : ""), pathEntry.getDependency().getName(), pathEntry.getDependency().getVersion());
         }
         logger.debug(DEPENDENCY_SEPARATOR);
     }
