@@ -36,7 +36,7 @@ public class GoModFileDetectableTest {
         Assertions.assertTrue(testGoModExtraction.getCodeLocations().size() == 1);
         DependencyGraph dependencyGraph = testGoModExtraction.getCodeLocations().get(0).getDependencyGraph();
         Assertions.assertNotNull(dependencyGraph);
-        Assertions.assertEquals(dependencyGraph.getDirectDependencies().size(), 3);
+        Assertions.assertEquals(dependencyGraph.getDirectDependencies().size(), 2);
         // Check if graph contains github.com/fsnotify/fsnotify v1.90 as a direct dependency
         Assertions.assertTrue(dependencyGraph.getDirectDependencies().stream()
                 .anyMatch(dependency -> "github.com/fsnotify/fsnotify".equals(dependency.getName())
@@ -45,9 +45,6 @@ public class GoModFileDetectableTest {
         Assertions.assertTrue(dependencyGraph.getDirectDependencies().stream()
                 .anyMatch(dependency -> "github.com/gin-gonic/gin".equals(dependency.getName())
                         && "v1.10.1".equals(dependency.getVersion())));
-        // Check if graph contains "Additional_Components" as a direct dependency
-        Assertions.assertTrue(dependencyGraph.getDirectDependencies().stream()
-                .anyMatch(dependency -> "Additional_Components".equals(dependency.getName())));
         // google.golang.org/protobuf v1.34.1 should not in the children of github.com/gin-gonic/gin
         Assertions.assertFalse(dependencyGraph.getChildrenForParent(dependencyGraph.getDirectDependencies().stream()
                 .filter(dependency -> "github.com/gin-gonic/gin".equals(dependency.getName())

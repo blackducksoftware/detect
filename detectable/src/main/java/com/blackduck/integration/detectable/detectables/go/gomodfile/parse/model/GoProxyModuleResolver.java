@@ -64,11 +64,10 @@ public class GoProxyModuleResolver {
             conn.setReadTimeout(options.getReadTimeout() * 1000);
             if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
                 try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                    // Read the response context as string
                     String inputLine;
                     StringBuilder content = new StringBuilder();
                     while ((inputLine = in.readLine()) != null) {
-                        content.append(inputLine);
+                        content.append(inputLine).append(System.lineSeparator());
                     }
                     logger.debug("Successfully fetched go.mod file for dependency {}", dependency);
                     return content.toString();
