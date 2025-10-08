@@ -3,6 +3,7 @@ package com.blackduck.integration.detectable.detectables.yarn;
 import com.blackduck.integration.bdio.graph.builder.LazyIdSource;
 import com.blackduck.integration.util.NameVersion;
 import java.util.*;
+import java.util.function.Function;
 import java.util.regex.*;
 
 public class VersionUtility {
@@ -60,13 +61,8 @@ public class VersionUtility {
         for (Version left : versionList) {
             for (String version : possibleVersions) {
                 if (!version.equals("||")) {
-                    if (version.startsWith("<=") || version.startsWith(">=") || version.startsWith("<") || version.startsWith(">") || version.startsWith("^") || version.startsWith("~")) {
-                        version = version.substring(1).trim();
-                    }
+                    version = getVersionSubstring(version);
                     Version right = buildVersion(version);
-                    if(left.compareTo(right) == 0) {
-                        return Optional.of(left.toString());
-                    }
                     if(left.nearestVersion(right) < currentNearestVersion) {
                         currentNearestVersion = left.nearestVersion(right);
                         nearestVersion = left.toString();
@@ -74,10 +70,8 @@ public class VersionUtility {
                 }
             }
         }
-        if(nearestVersion != null) {
-            return Optional.of(nearestVersion);
-        }
-        return Optional.empty();
+
+        return Optional.ofNullable(nearestVersion);
     }
     
     private Optional<String> minorOrPatchUpgrade(List<Version> versionList, String version) {
@@ -93,10 +87,7 @@ public class VersionUtility {
                 nearestVersion = left.toString();
             }
         }
-        if (nearestVersion != null) {
-            return Optional.of(nearestVersion);
-        }
-        return Optional.empty();
+        return Optional.ofNullable(nearestVersion);
     }
     
     private Optional<String> onlyPatchUpgrade(List<Version> versionList, String version) {
@@ -112,10 +103,7 @@ public class VersionUtility {
                 nearestVersion = left.toString();
             }
         }
-        if (nearestVersion != null) {
-            return Optional.of(nearestVersion);
-        }
-        return Optional.empty();
+        return Optional.ofNullable(nearestVersion);
     }
     
     private Optional<String> mustUpgrade(List<Version> versionList, String version) {
@@ -131,10 +119,7 @@ public class VersionUtility {
                 nearestVersion = left.toString();
             }
         }
-        if (nearestVersion != null) {
-            return Optional.of(nearestVersion);
-        }
-        return Optional.empty();
+        return Optional.ofNullable(nearestVersion);
     }
     
     private Optional<String> mustUpgradeGreater(List<Version> versionList, String version) {
@@ -158,10 +143,7 @@ public class VersionUtility {
                 nearestVersion = left.toString();
             }
         }
-        if (nearestVersion != null) {
-            return Optional.of(nearestVersion);
-        }
-        return Optional.empty();
+        return Optional.ofNullable(nearestVersion);
     }
     
     private Optional<String> mustUpgradeGreaterOrEqual(List<Version> versionList, String version) {
@@ -186,10 +168,7 @@ public class VersionUtility {
                 nearestVersion = left.toString();
             }
         }
-        if (nearestVersion != null) {
-            return Optional.of(nearestVersion);
-        }
-        return Optional.empty();
+        return Optional.ofNullable(nearestVersion);
     }
     
     private Optional<String> mustUpgradeLesser(List<Version> versionList, String version) {
@@ -205,10 +184,7 @@ public class VersionUtility {
                 nearestVersion = left.toString();
             }
         }
-        if (nearestVersion != null) {
-            return Optional.of(nearestVersion);
-        }
-        return Optional.empty();
+        return Optional.ofNullable(nearestVersion);
     }
     
     private Optional<String> mustUpgradeLesserOrEqual(List<Version> versionList, String version) {
@@ -224,10 +200,7 @@ public class VersionUtility {
                 nearestVersion = left.toString();
             }
         }
-        if (nearestVersion != null) {
-            return Optional.of(nearestVersion);
-        }
-        return Optional.empty();
+        return Optional.ofNullable(nearestVersion);
     }
     
     private Optional<String> mustUpgradeEqual(List<Version> versionList, String version) {
@@ -243,43 +216,72 @@ public class VersionUtility {
                 nearestVersion = left.toString();
             }
         }
-        if (nearestVersion != null) {
-            return Optional.of(nearestVersion);
+        return Optional.ofNullable(nearestVersion);
+    }
+
+    private String getVersionSubstring(String version) {
+        if (version.startsWith("<") || version.startsWith(">") || version.startsWith("^") || version.startsWith("~")) {
+            if (version.startsWith("<=") || version.startsWith(">=")) {
+                return version.substring(2).trim();
+            } else {
+               return version.substring(1).trim();
+            }
         }
-        return Optional.empty();
+        return version;
     }
     
     Optional<NameVersion> getNameVersion(String dependencyIdString) {
-        int start, mid, end;
-        String name;
-        if ((start = dependencyIdString.indexOf(LazyIdSource.STRING + ESCAPED_BACKSLASH)) > -1
-                &&  (mid = dependencyIdString.lastIndexOf("@npm:")) > -1
-                && (end = dependencyIdString.indexOf("\"]}", mid)) > -1) {
-            name = dependencyIdString.substring(start + (LazyIdSource.STRING + ESCAPED_BACKSLASH).length(), mid);
-            String version = dependencyIdString.substring(mid + "@npm:".length(), end);
-            if ((start = version.indexOf("@")) > -1) {
-                version = version.substring(start);
-            }
-            return Optional.of(new NameVersion(name, version));
-        } else if ((start = dependencyIdString.indexOf(LazyIdSource.NAME_VERSION + ESCAPED_BACKSLASH)) > -1
-                && (mid = dependencyIdString.indexOf(ESCAPED_BACKSLASH + "npm:", start)) > -1
-                && (end = dependencyIdString.indexOf("\"]}", mid)) > -1) {
-            name = dependencyIdString.substring(start + (LazyIdSource.NAME_VERSION + ESCAPED_BACKSLASH).length(), mid);
-            String version = dependencyIdString.substring(mid + (ESCAPED_BACKSLASH + "npm:").length(), end);
-            if ((start = version.indexOf("@")) > -1) {
-                version = version.substring(start + 1);
-            }
-            return Optional.of(new NameVersion(name, version));
-        } else if ((start = dependencyIdString.indexOf(LazyIdSource.NAME_VERSION + ESCAPED_BACKSLASH)) > -1
-                && (mid = dependencyIdString.lastIndexOf(ESCAPED_BACKSLASH)) > -1
-                && (end = dependencyIdString.indexOf("\"]}", mid)) > -1) {
-            name = dependencyIdString.substring(start + (LazyIdSource.NAME_VERSION + ESCAPED_BACKSLASH).length(), mid);
-            String version = dependencyIdString.substring(mid + (ESCAPED_BACKSLASH).length(), end);
-            if ((start = version.indexOf("@")) > -1) {
-                version = version.substring(start + 1);
-            }
-            return Optional.of(new NameVersion(name, version));
-        }
-        return Optional.empty();
+        Optional<NameVersion> result = tryParsePattern(dependencyIdString,
+                LazyIdSource.STRING + ESCAPED_BACKSLASH,
+                "@npm:",
+                true, // use lastIndexOf for mid
+                (version) -> {
+                    int atIndex = version.indexOf("@");
+                    return atIndex > -1 ? version.substring(atIndex) : version;
+                });
+        if (result.isPresent()) return result;
+
+        result = tryParsePattern(dependencyIdString,
+                LazyIdSource.NAME_VERSION + ESCAPED_BACKSLASH,
+                ESCAPED_BACKSLASH + "npm:",
+                false, // use indexOf for mid
+                (version) -> {
+                    int atIndex = version.indexOf("@");
+                    return atIndex > -1 ? version.substring(atIndex + 1) : version;
+                });
+        if (result.isPresent()) return result;
+
+        return tryParsePattern(dependencyIdString,
+                LazyIdSource.NAME_VERSION + ESCAPED_BACKSLASH,
+                ESCAPED_BACKSLASH,
+                true, // use lastIndexOf for mid
+                (version) -> {
+                    int atIndex = version.indexOf("@");
+                    return atIndex > -1 ? version.substring(atIndex + 1) : version;
+                });
+    }
+
+
+    private Optional<NameVersion> tryParsePattern(String dependencyIdString,
+                                                  String startPrefix,
+                                                  String midDelimiter,
+                                                  boolean useLastIndexOf,
+                                                  Function<String, String> versionProcessor) {
+        int start = dependencyIdString.indexOf(startPrefix);
+        if (start == -1) return Optional.empty();
+
+        int mid = useLastIndexOf ?
+                dependencyIdString.lastIndexOf(midDelimiter) :
+                dependencyIdString.indexOf(midDelimiter, start);
+        if (mid == -1) return Optional.empty();
+
+        int end = dependencyIdString.indexOf("\"]}", mid);
+        if (end == -1) return Optional.empty();
+
+        String name = dependencyIdString.substring(start + startPrefix.length(), mid);
+        String version = dependencyIdString.substring(mid + midDelimiter.length(), end);
+        version = versionProcessor.apply(version);
+
+        return Optional.of(new NameVersion(name, version));
     }
 }
