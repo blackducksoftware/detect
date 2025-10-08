@@ -49,7 +49,7 @@ gradle.allprojects {
 
         // Prepare configuration names
         def configurationNames = getFilteredConfigurationNames(currentProject,
-            '${excludedConfigurationNames}', '${includedConfigurationNames}')
+            """${excludedConfigurationNames}""", """${includedConfigurationNames}""")
 
         def selectedConfigs = []
         configurationNames.each { name ->
