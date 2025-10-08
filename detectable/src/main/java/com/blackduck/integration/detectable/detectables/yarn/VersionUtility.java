@@ -230,35 +230,29 @@ public class VersionUtility {
         return version;
     }
     
-    Optional<NameVersion> getNameVersion(String dependencyIdString) {
+    public Optional<NameVersion> getNameVersion(String dependencyIdString) {
         Optional<NameVersion> result = tryParsePattern(dependencyIdString,
                 LazyIdSource.STRING + ESCAPED_BACKSLASH,
                 "@npm:",
                 true, // use lastIndexOf for mid
-                (version) -> {
-                    int atIndex = version.indexOf("@");
-                    return atIndex > -1 ? version.substring(atIndex) : version;
-                });
+                0
+        );
         if (result.isPresent()) return result;
 
         result = tryParsePattern(dependencyIdString,
                 LazyIdSource.NAME_VERSION + ESCAPED_BACKSLASH,
                 ESCAPED_BACKSLASH + "npm:",
                 false, // use indexOf for mid
-                (version) -> {
-                    int atIndex = version.indexOf("@");
-                    return atIndex > -1 ? version.substring(atIndex + 1) : version;
-                });
+                1
+        );
         if (result.isPresent()) return result;
 
         return tryParsePattern(dependencyIdString,
                 LazyIdSource.NAME_VERSION + ESCAPED_BACKSLASH,
                 ESCAPED_BACKSLASH,
                 true, // use lastIndexOf for mid
-                (version) -> {
-                    int atIndex = version.indexOf("@");
-                    return atIndex > -1 ? version.substring(atIndex + 1) : version;
-                });
+                1
+        );
     }
 
 
@@ -266,7 +260,7 @@ public class VersionUtility {
                                                   String startPrefix,
                                                   String midDelimiter,
                                                   boolean useLastIndexOf,
-                                                  Function<String, String> versionProcessor) {
+                                                  int addValue) {
         int start = dependencyIdString.indexOf(startPrefix);
         if (start == -1) return Optional.empty();
 
@@ -280,7 +274,11 @@ public class VersionUtility {
 
         String name = dependencyIdString.substring(start + startPrefix.length(), mid);
         String version = dependencyIdString.substring(mid + midDelimiter.length(), end);
-        version = versionProcessor.apply(version);
+
+        int atIndex = version.indexOf('@');
+        if (atIndex > -1) {
+            version = version.substring(atIndex + addValue);
+        }
 
         return Optional.of(new NameVersion(name, version));
     }
