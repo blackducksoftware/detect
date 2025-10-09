@@ -1,13 +1,10 @@
 package com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.net.ConnectException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.http.HttpClient.Redirect;
-import java.net.http.HttpResponse.BodyHandlers;
-import java.time.Duration;
-
+import java.net.HttpURLConnection;
+import java.net.URL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,16 +15,11 @@ public class GoProxyModuleResolver {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     public final GoModFileDetectableOptions options;
-    private final HttpClient client;
 
     public GoProxyModuleResolver(GoModFileDetectableOptions options) {
         this.options = options;
         // initialize the http client with a default connection timeout of 30s and configure it to follow redirects
         logger.debug("Initializing Go proxy HTTP client with connection timeout of {} seconds and read timeout of {} seconds", options.getConnectionTimeout(), options.getReadTimeout());
-        this.client = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(options.getConnectionTimeout()))
-            .followRedirects(Redirect.ALWAYS)
-            .build();
     }
 
     private String getGoModFileURL(Dependency dependency) {
@@ -45,14 +37,13 @@ public class GoProxyModuleResolver {
     public Boolean checkConnectivity() {
         String testURL = String.format("%s/", options.getGoProxyUrl());
         try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(java.net.URI.create(testURL))
-                    .method("HEAD", HttpRequest.BodyPublishers.noBody())
-                    .timeout(Duration.ofSeconds(options.getReadTimeout()))
-                    .build();
-            HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
-            logger.debug("Go proxy connectivity check to URL '{}' returned status code: {}", options.getGoProxyUrl(), response.statusCode());
-            return response.statusCode() == 200;
+            HttpURLConnection conn = (HttpURLConnection) new URL(testURL).openConnection();
+            conn.setRequestMethod("HEAD");
+            conn.setConnectTimeout(options.getConnectionTimeout() * 1000);
+            conn.setReadTimeout(options.getReadTimeout() * 1000);
+            int responseCode = conn.getResponseCode();
+            logger.debug("Go proxy connectivity check to URL '{}' returned status code: {}", options.getGoProxyUrl(), responseCode);
+            return responseCode == 200;
         } catch (ConnectException e) {
             logger.error("The Go proxy URL '{}' could not be resolved. Please check the URL and your network connection.", options.getGoProxyUrl());
             return false;
@@ -67,18 +58,23 @@ public class GoProxyModuleResolver {
         // Make a HTTP GET request to fetch the go.mod file content
         try {
             logger.debug("Fetching go.mod for dependency {} via URL {}: ", dependency, modFileURL);
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(java.net.URI.create(modFileURL))
-                    .GET()
-                    .timeout(Duration.ofSeconds(options.getReadTimeout()))
-                    .build();
-            HttpResponse<String> response  = client.send(request, BodyHandlers.ofString());
-            if (response.statusCode() == 200) {
-                logger.debug("Successfully fetched go.mod file for dependency {}", dependency);
-                return response.body();
+            HttpURLConnection conn = (HttpURLConnection) new URL(modFileURL).openConnection();
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(options.getConnectionTimeout() * 1000);
+            conn.setReadTimeout(options.getReadTimeout() * 1000);
+            if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                    String inputLine;
+                    StringBuilder content = new StringBuilder();
+                    while ((inputLine = in.readLine()) != null) {
+                        content.append(inputLine).append(System.lineSeparator());
+                    }
+                    logger.debug("Successfully fetched go.mod file for dependency {}", dependency);
+                    return content.toString();
+                }
             } else {
-                String responseBody = response.body();
-                logger.error("Failed to fetch go.mod file for dependency {}. HTTP request status code: {}. Response text: {}", dependency, response.statusCode(), responseBody);
+                String responseMessage = conn.getResponseMessage();
+                logger.error("Failed to fetch go.mod file for dependency {}. HTTP request status code: {}. Response text: {}", dependency, conn.getResponseCode(), responseMessage);
                 return null;
             }
         } catch (Exception e) {

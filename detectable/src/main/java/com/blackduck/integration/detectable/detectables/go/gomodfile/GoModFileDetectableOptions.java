@@ -2,10 +2,10 @@ package com.blackduck.integration.detectable.detectables.go.gomodfile;
 
 public class GoModFileDetectableOptions {
     private final String goProxyUrl;
-    private final long connectionTimeout;
-    private final long readTimeout;
+    private final int connectionTimeout;
+    private final int readTimeout;
 
-    public GoModFileDetectableOptions(String goProxyUrl, long connectionTimeout, long readTimeout) {
+    public GoModFileDetectableOptions(String goProxyUrl, int connectionTimeout, int readTimeout) {
         this.goProxyUrl = goProxyUrl;
         this.connectionTimeout = connectionTimeout;
         this.readTimeout = readTimeout;
@@ -15,11 +15,11 @@ public class GoModFileDetectableOptions {
         return goProxyUrl;
     }
 
-    public long getConnectionTimeout() {
+    public int getConnectionTimeout() {
         return connectionTimeout;
     }
 
-    public long getReadTimeout() {
+    public int getReadTimeout() {
         return readTimeout;
     }
 }

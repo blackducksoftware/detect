@@ -1,6 +1,7 @@
 package com.blackduck.integration.detect.configuration;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -45,7 +46,7 @@ public class ProjectSettingsJsonFileReader {
         }
 
         try {
-            String jsonContent = Files.readString(filePath);
+            String jsonContent = new String(Files.readAllBytes(filePath), StandardCharsets.UTF_8);
             if (jsonContent == null || jsonContent.trim().isEmpty()) {
                 logger.warn("Project settings file is empty: {}", filePath);
                 return null;
