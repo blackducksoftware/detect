@@ -8,10 +8,10 @@ import org.gradle.api.Task
 import org.gradle.api.execution.TaskExecutionListener
 import org.gradle.api.tasks.TaskState
 
-Set<String> projectNameExcludeFilter = convertStringToSet('${excludedProjectNames}')
-Set<String> projectNameIncludeFilter = convertStringToSet('${includedProjectNames}')
-Set<String> projectPathExcludeFilter = convertStringToSet('${excludedProjectPaths}')
-Set<String> projectPathIncludeFilter = convertStringToSet('${includedProjectPaths}')
+Set<String> projectNameExcludeFilter = convertStringToSet("""${excludedProjectNames}""")
+Set<String> projectNameIncludeFilter = convertStringToSet("""${includedProjectNames}""")
+Set<String> projectPathExcludeFilter = convertStringToSet("""${excludedProjectPaths}""")
+Set<String> projectPathIncludeFilter = convertStringToSet("""${includedProjectPaths}""")
 Boolean rootOnly = Boolean.parseBoolean("${rootOnlyOption}")
 
 gradle.allprojects {
@@ -49,7 +49,7 @@ gradle.allprojects {
 
         // Prepare configuration names
         def configurationNames = getFilteredConfigurationNames(currentProject,
-            '${excludedConfigurationNames}', '${includedConfigurationNames}')
+            """${excludedConfigurationNames}""", """${includedConfigurationNames}""")
 
         def selectedConfigs = []
         configurationNames.each { name ->
