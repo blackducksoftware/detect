@@ -33,7 +33,7 @@ public class GoModFileParser {
     private static final Pattern MODULE_PATTERN = Pattern.compile("^module\\s+(.+)$");
     private static final Pattern GO_VERSION_PATTERN = Pattern.compile("^go\\s+(.+)$");
     private static final Pattern TOOLCHAIN_PATTERN = Pattern.compile("^toolchain\\s+(.+)$");
-    private static final Pattern DEPENDENCY_PATTERN = Pattern.compile("^\\s*([^\\s]+)\\s+([^\\s]+(?:-[^\\s]+)*)(?:\\s+//\\s*(.+))?$");
+    private static final Pattern DEPENDENCY_PATTERN = Pattern.compile("^\\s*([^\\s]+)\\s+([^\\s]+)(?:\\s+//\\s*(.+))?$");
     private static final Pattern REPLACE_PATTERN = Pattern.compile("^\\s*([^\\s]+)(?:\\s+([^\\s]+))?\\s+=>");
     private static final Pattern COMMENT_PATTERN = Pattern.compile("^\\s*//.*$");
     private static final Pattern EMPTY_LINE_PATTERN = Pattern.compile("^\\s*$");

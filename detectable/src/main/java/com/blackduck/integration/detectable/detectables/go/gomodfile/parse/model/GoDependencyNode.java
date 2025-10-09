@@ -1,6 +1,7 @@
 package com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model;
 
 import java.util.List;
+import java.util.Objects;
 
 import com.blackduck.integration.bdio.model.dependency.Dependency;
 
@@ -44,6 +45,11 @@ public class GoDependencyNode {
         GoDependencyNode that = (GoDependencyNode) o;
 
         return dependency != null ? dependency.equals(that.dependency) : that.dependency == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(dependency, children, isRootNode);
     }
     
     /**

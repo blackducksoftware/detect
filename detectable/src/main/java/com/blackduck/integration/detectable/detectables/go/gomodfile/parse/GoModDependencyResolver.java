@@ -105,7 +105,7 @@ public class GoModDependencyResolver {
         }
 
         // Check connectivity to Go proxy
-        if (!goProxyModuleResolver.checkConnectivity()) {
+        if (goProxyModuleResolver.checkConnectivity().equals(false)) {
             logger.warn("Cannot connect to Go proxy at {}. Skipping recursive dependency resolution.", goProxyModuleResolver.options.getGoProxyUrl());
             return new ResolvedDependencies(finalDirectDependencies, finalIndirectDependencies, rootNode);
         }
