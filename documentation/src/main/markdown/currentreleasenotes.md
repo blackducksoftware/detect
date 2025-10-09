@@ -55,6 +55,7 @@
 * (IDETECT-4813) Fix Gradle Native Inspector to correctly identify projects with only `settings.gradle` or `settings.gradle.kts` file in the root directory.
 * (IDETECT-4812) Gradle Native Inspector now supports configuration cache (refactored `init-detect.gradle` to add support for configuration cache in Gradle projects).
 * (IDETECT-4845) With added support for extracting Python package versions from direct references [PEP 508 URIs](https://packaging.python.org/en/latest/specifications/dependency-specifiers/#environment-markers) in `pyproject.toml` files, [detect_product_short] now correctly parses versions from wheel and archive URLs and VCS references for impacted detectors (Setuptools CLI, Setuptools Parse, and UV Lock detectors). When data is missing or badly formatted, detectors gracefully switch back to reporting only the package name.
+* (IDETECT-4810) When Component Location Analysis is enabled, exclude irrelevant directories while searching for dependency declaration locations to improve performance.  
 
 ### Dependency updates
 
