@@ -33,8 +33,11 @@ import com.blackduck.integration.detectable.detectables.cargo.transform.CargoLoc
 import com.blackduck.integration.detectable.detectables.cargo.transform.CargoLockPackageTransformer;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.util.NameVersion;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CargoLockfileExtractor {
+    private static final Logger logger = LoggerFactory.getLogger(CargoLockfileExtractor.class);
     private final CargoTomlParser cargoTomlParser;
     private final CargoLockPackageDataTransformer cargoLockPackageDataTransformer;
     private final CargoLockPackageTransformer cargoLockPackageTransformer;
@@ -55,6 +58,15 @@ public class CargoLockfileExtractor {
         List<CargoLockPackageData> filteredPackages = new ArrayList<>(cargoLockPackageDataList);
         List<CargoLockPackageData> unfilteredPackages = new ArrayList<>(cargoLockPackageDataList);
         boolean exclusionEnabled = isDependencyExclusionEnabled(cargoDetectableOptions);
+
+        // if exclusion is enabled, and cargoDetectableOptions contains PROC_MACRO, warn that it will be ignored for the Lockfile Detector
+        if (exclusionEnabled && cargoDetectableOptions.getDependencyTypeFilter().shouldExclude(CargoDependencyType.PROC_MACRO)) {
+            logger.warn(
+                "PROC_MACRO exclusion is not supported by the Cargo Lockfile Detector and will be ignored. " +
+                    "Supported exclusions for Cargo Lockfile Detector: [NORMAL, BUILD, DEV]. "
+            );
+        }
+
         String cargoTomlContents = null;
 
         Set<NameVersion> allRootDependencies = new HashSet<>();
