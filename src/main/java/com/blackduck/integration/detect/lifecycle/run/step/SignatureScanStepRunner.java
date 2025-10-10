@@ -8,8 +8,12 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Queue;
 
 import org.apache.http.conn.HttpHostConnectException;
 import org.jetbrains.annotations.Nullable;
@@ -77,8 +81,7 @@ public class SignatureScanStepRunner {
             SignatureScanOuputResult scanResult =  operationRunner.signatureScan(scanBatch, scanBatchRunner);
 
             // publish report/scan results to status file
-            Queue<String> failedScanIds = new ConcurrentLinkedQueue<>();
-            List<SignatureScannerReport> reports = operationRunner.createSignatureScanReport(scanPaths, scanResult.getScanBatchOutput().getOutputs(), failedScanIds);
+            List<SignatureScannerReport> reports = operationRunner.createSignatureScanReport(scanPaths, scanResult.getScanBatchOutput().getOutputs(), Collections.emptySet());
             operationRunner.publishSignatureScanReport(reports);
 
             return scanResult;
@@ -98,7 +101,7 @@ public class SignatureScanStepRunner {
         SignatureScanOuputResult scanOuputResult = operationRunner.signatureScan(scanBatch, scanBatchRunner);      
 
         // Step 2: Check results and upload BDIO
-        Queue<String> failedScans = processEachScan(scanIdsToWaitFor, scanOuputResult, gson, shouldWaitAtScanLevel, scanBatch.isScassScan(), isOnline, scanBatch.isCsvArchive());
+        Set<String> failedScans = processEachScan(scanIdsToWaitFor, scanOuputResult, gson, shouldWaitAtScanLevel, scanBatch.isScassScan(), isOnline, scanBatch.isCsvArchive());
 
         // Step 3: Report on results
         List<SignatureScannerReport> reports = operationRunner.createSignatureScanReport(scanPaths, scanOuputResult.getScanBatchOutput().getOutputs(), failedScans);
@@ -150,54 +153,37 @@ public class SignatureScanStepRunner {
         return ScanBatchRunnerUserResult.none();
     }
 
-    private Queue<String> processEachScan(Queue<String> scanIdsToWaitFor, SignatureScanOuputResult signatureScanOutputResult, Gson gson, boolean shouldWaitAtScanLevel, boolean scassScan, boolean isOnline, boolean isCsvArchive) throws IOException {
+    private Set<String> processEachScan(Queue<String> scanIdsToWaitFor, SignatureScanOuputResult signatureScanOutputResult, Gson gson, boolean shouldWaitAtScanLevel, boolean scassScan, boolean isOnline, boolean isCsvArchive) throws IOException {
         List<ScanCommandOutput> outputs = signatureScanOutputResult.getScanBatchOutput().getOutputs();
-        Queue<String> failedScans = new ConcurrentLinkedQueue<>();
+        Set<String> failedScans = new HashSet<>();
 
-        ExecutorService scanExecutorService = Executors.newFixedThreadPool(operationRunner.maxParallelProcessors());
-        List<CompletableFuture<Void>> commandFutures = new ArrayList<>();
+        for (ScanCommandOutput output : outputs) {
+            if (output.getResult() != Result.SUCCESS) {
+                continue;
+            }
 
-        outputs.stream().filter(output -> output.getResult() == Result.SUCCESS).forEach(output -> {
-            commandFutures.add(CompletableFuture.runAsync(() -> {
-                // Check if we need to copy csv files. Only do this if the user asked for it and we are not
-                // connected to BlackDuck. If we are connected to BlackDuck the scanner is responsible for
-                // sending the csv there.
-                if (isCsvArchive && !isOnline) {
-                    try {
-                        copyCsvFiles(output.getSpecificRunOutputDirectory(), operationRunner.getDirectoryManager().getCsvOutputDirectory());
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
+            // Check if we need to copy csv files. Only do this if the user asked for it and we are not
+            // connected to BlackDuck. If we are connected to BlackDuck the scanner is responsible for
+            // sending the csv there.
+            if (isCsvArchive && !isOnline) {
+                copyCsvFiles(output.getSpecificRunOutputDirectory(), operationRunner.getDirectoryManager().getCsvOutputDirectory());
+            }
 
-                if (isOnline) {
-                    File specificRunOutputDirectory = output.getSpecificRunOutputDirectory();
-                    String scanOutputLocation = specificRunOutputDirectory.toString()
-                            + SignatureScanResult.OUTPUT_FILE_PATH;
+            if (isOnline) {
+                File specificRunOutputDirectory = output.getSpecificRunOutputDirectory();
+                String scanOutputLocation = specificRunOutputDirectory.toString()
+                        + SignatureScanResult.OUTPUT_FILE_PATH;
 
-                    try {
-                        processOnlineScan(scanIdsToWaitFor, gson, shouldWaitAtScanLevel, scassScan, failedScans, output,
-                                specificRunOutputDirectory, scanOutputLocation);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }, scanExecutorService));
-        });
-
-        for (CompletableFuture<Void> commandFuture : commandFutures) {
-            try {
-                commandFuture.get();
-            } catch (ExecutionException | InterruptedException e) {
-                throw new RuntimeException(e);
+                processOnlineScan(scanIdsToWaitFor, gson, shouldWaitAtScanLevel, scassScan, failedScans, output,
+                        specificRunOutputDirectory, scanOutputLocation);
             }
         }
-        
+
         return failedScans;
     }
 
     private void processOnlineScan(Queue<String> scanIdsToWaitFor, Gson gson, boolean shouldWaitAtScanLevel,
-            boolean scassScan, Queue<String> failedScans, ScanCommandOutput output, File specificRunOutputDirectory,
+            boolean scassScan, Set<String> failedScans, ScanCommandOutput output, File specificRunOutputDirectory,
             String scanOutputLocation) throws IOException, HttpHostConnectException {
         try {
             Reader reader = Files.newBufferedReader(Paths.get(scanOutputLocation));

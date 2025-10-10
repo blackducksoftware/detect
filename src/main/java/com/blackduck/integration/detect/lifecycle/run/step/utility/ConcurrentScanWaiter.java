@@ -29,10 +29,11 @@ public class ConcurrentScanWaiter {
         this.operationRunner = operationRunner;
     }
 
-    public void startWaitingForScan(String scanId, BlackDuckRunData blackDuckRunData, ProjectVersionWrapper projectVersion) {
+    public void startWaitingForScan(String scanId, BlackDuckRunData blackDuckRunData, ProjectVersionWrapper projectVersion, String threadName) {
         if (scanId == null && !blackDuckRunData.shouldWaitAtScanLevel()) return;
 
         CompletableFuture<Void> waitFuture = CompletableFuture.runAsync(() -> {
+            Thread.currentThread().setName(threadName + " Wait For BOM Thread");
             try {
 
                 if (scanId == null) {
