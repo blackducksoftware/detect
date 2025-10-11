@@ -8,10 +8,10 @@ import org.gradle.api.Task
 import org.gradle.api.execution.TaskExecutionListener
 import org.gradle.api.tasks.TaskState
 
-Set<String> projectNameExcludeFilter = convertStringToSet("""${excludedProjectNames}""")
-Set<String> projectNameIncludeFilter = convertStringToSet("""${includedProjectNames}""")
-Set<String> projectPathExcludeFilter = convertStringToSet("""${excludedProjectPaths}""")
-Set<String> projectPathIncludeFilter = convertStringToSet("""${includedProjectPaths}""")
+Set<String> projectNameExcludeFilter = convertStringToSet('${excludedProjectNames}')
+Set<String> projectNameIncludeFilter = convertStringToSet('${includedProjectNames}')
+Set<String> projectPathExcludeFilter = convertStringToSet('${excludedProjectPaths}')
+Set<String> projectPathIncludeFilter = convertStringToSet('${includedProjectPaths}')
 Boolean rootOnly = Boolean.parseBoolean("${rootOnlyOption}")
 
 gradle.allprojects {
@@ -49,7 +49,7 @@ gradle.allprojects {
 
         // Prepare configuration names
         def configurationNames = getFilteredConfigurationNames(currentProject,
-            """${excludedConfigurationNames}""", """${includedConfigurationNames}""")
+            '${excludedConfigurationNames}', '${includedConfigurationNames}')
 
         def selectedConfigs = []
         configurationNames.each { name ->
@@ -64,10 +64,15 @@ gradle.allprojects {
             }
         }
 
-        // Check if the project should be included in results
-        def shouldIncludeProject = (rootOnly && isRootProject) ||
+        println "DEBUG: Selected configurations for project " + projectName + ": " + selectedConfigs.collect { it.name }
+
+        // Check if the project should be included based on project-level filters
+        def projectMatchesFilters = (rootOnly && isRootProject) ||
             (!rootOnly && shouldInclude(projectNameExcludeFilter, projectNameIncludeFilter, projectName) &&
              shouldInclude(projectPathExcludeFilter, projectPathIncludeFilter, projectPath))
+
+        // A project is only included if it matches project filters AND has configurations that match config filters.
+        def shouldIncludeProject = projectMatchesFilters && !selectedConfigs.isEmpty()
 
         // Capture output file path during configuration
         def projectFilePathConfig = computeProjectFilePath(projectPath, extractionDir, rootProject)
@@ -78,6 +83,7 @@ gradle.allprojects {
         // Set the configurations at configuration time if possible
         if (!selectedConfigs.isEmpty()) {
             dependenciesTask.configurations = selectedConfigs
+            println "DEBUG: Configurations set for dependencies task in project " + projectName + ": " + dependenciesTask.configurations.collect { it.name }
         }
 
         // Set the output file at configuration time if possible
