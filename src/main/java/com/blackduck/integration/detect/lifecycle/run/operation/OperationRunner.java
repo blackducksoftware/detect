@@ -1374,7 +1374,7 @@ public class OperationRunner {
         );
     }
 
-    public ExecutorService createExecutorServiceForScanner() {
+    private ExecutorService createExecutorServiceForScanner() {
         return Executors.newFixedThreadPool(detectConfigurationFactory.createBlackDuckSignatureScannerOptions().getParallelProcessors());
     }
 
