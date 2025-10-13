@@ -8,10 +8,10 @@ import org.gradle.api.Task
 import org.gradle.api.execution.TaskExecutionListener
 import org.gradle.api.tasks.TaskState
 
-Set<String> projectNameExcludeFilter = convertStringToSet('${excludedProjectNames}')
-Set<String> projectNameIncludeFilter = convertStringToSet('${includedProjectNames}')
-Set<String> projectPathExcludeFilter = convertStringToSet('${excludedProjectPaths}')
-Set<String> projectPathIncludeFilter = convertStringToSet('${includedProjectPaths}')
+Set<String> projectNameExcludeFilter = convertStringToSet(<#if excludedProjectNames?starts_with("'") && excludedProjectNames?ends_with("'")>${excludedProjectNames}<#else>'${excludedProjectNames}'</#if>)
+Set<String> projectNameIncludeFilter = convertStringToSet(<#if includedProjectNames?starts_with("'") && includedProjectNames?ends_with("'")>${includedProjectNames}<#else>'${includedProjectNames}'</#if>)
+Set<String> projectPathExcludeFilter = convertStringToSet(<#if excludedProjectPaths?starts_with("'") && excludedProjectPaths?ends_with("'")>${excludedProjectPaths}<#else>'${excludedProjectPaths}'</#if>)
+Set<String> projectPathIncludeFilter = convertStringToSet(<#if includedProjectPaths?starts_with("'") && includedProjectPaths?ends_with("'")>${includedProjectPaths}<#else>'${includedProjectPaths}'</#if>)
 Boolean rootOnly = Boolean.parseBoolean("${rootOnlyOption}")
 
 gradle.allprojects {
