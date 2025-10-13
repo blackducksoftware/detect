@@ -47,9 +47,19 @@ gradle.allprojects {
         def projectVersion = currentProject.version.toString()
         def projectParent = currentProject.parent ? currentProject.parent.toString() : "none"
 
-        // Prepare configuration names
+        // Prepare configuration names (handles single quotes issues )
         def configurationNames = getFilteredConfigurationNames(currentProject,
-            '${excludedConfigurationNames}', '${includedConfigurationNames}')
+             <#if excludedConfigurationNames?starts_with("'") && excludedConfigurationNames?ends_with("'")>
+                 ${excludedConfigurationNames}
+             <#else>
+                 '${excludedConfigurationNames}'
+             </#if>,
+             <#if includedConfigurationNames?starts_with("'") && includedConfigurationNames?ends_with("'")>
+                 ${includedConfigurationNames}
+             <#else>
+                 '${includedConfigurationNames}'
+             </#if>
+         )
 
         def selectedConfigs = []
         configurationNames.each { name ->
