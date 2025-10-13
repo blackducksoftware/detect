@@ -74,7 +74,7 @@ public class GoProxyModuleResolver {
                 }
             } else {
                 String responseMessage = conn.getResponseMessage();
-                logger.error("Failed to fetch go.mod file for dependency {}. HTTP request status code: {}. Response text: {}", dependency, conn.getResponseCode(), responseMessage);
+                logger.warn("Could not fetch go.mod file for dependency {}. Status code: {}. Response: {}. Skipping further resolution for this dependency.", dependency, conn.getResponseCode(), responseMessage);
                 return null;
             }
         } catch (Exception e) {
