@@ -74,8 +74,6 @@ gradle.allprojects {
             }
         }
 
-        println "DEBUG: Selected configurations for project " + projectName + ": " + selectedConfigs.collect { it.name }
-
         // Check if the project should be included based on project-level filters
         def projectMatchesFilters = (rootOnly && isRootProject) ||
             (!rootOnly && shouldInclude(projectNameExcludeFilter, projectNameIncludeFilter, projectName) &&
@@ -93,7 +91,6 @@ gradle.allprojects {
         // Set the configurations at configuration time if possible
         if (!selectedConfigs.isEmpty()) {
             dependenciesTask.configurations = selectedConfigs
-            println "DEBUG: Configurations set for dependencies task in project " + projectName + ": " + dependenciesTask.configurations.collect { it.name }
         }
 
         // Set the output file at configuration time if possible
