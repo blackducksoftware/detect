@@ -115,9 +115,6 @@ public class IntelligentModeStepRunner {
         Set<String> binaryTargets
     ) throws Exception {
 
-        logger.debug("Starting parallel scan execution at {}", System.currentTimeMillis());
-
-
         ExecutorService executorService = Executors.newFixedThreadPool(operationRunner.maxParallelProcessors());
         ConcurrentScanWaiter concurrentScanWaiter = new ConcurrentScanWaiter(executorService, operationRunner);
 
