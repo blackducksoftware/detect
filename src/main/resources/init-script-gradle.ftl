@@ -8,10 +8,10 @@ import org.gradle.api.Task
 import org.gradle.api.execution.TaskExecutionListener
 import org.gradle.api.tasks.TaskState
 
-Set<String> projectNameExcludeFilter = convertStringToSet(<#if excludedProjectNames?starts_with("'") && excludedProjectNames?ends_with("'")>${excludedProjectNames}<#else>'${excludedProjectNames}'</#if>)
-Set<String> projectNameIncludeFilter = convertStringToSet(<#if includedProjectNames?starts_with("'") && includedProjectNames?ends_with("'")>${includedProjectNames}<#else>'${includedProjectNames}'</#if>)
-Set<String> projectPathExcludeFilter = convertStringToSet(<#if excludedProjectPaths?starts_with("'") && excludedProjectPaths?ends_with("'")>${excludedProjectPaths}<#else>'${excludedProjectPaths}'</#if>)
-Set<String> projectPathIncludeFilter = convertStringToSet(<#if includedProjectPaths?starts_with("'") && includedProjectPaths?ends_with("'")>${includedProjectPaths}<#else>'${includedProjectPaths}'</#if>)
+Set<String> projectNameExcludeFilter = convertStringToSet('${excludedProjectNames?replace("\\", "\\\\")?replace("\'", "\\\'")}')
+Set<String> projectNameIncludeFilter = convertStringToSet('${includedProjectNames?replace("\\", "\\\\")?replace("\'", "\\\'")}')
+Set<String> projectPathExcludeFilter = convertStringToSet('${excludedProjectPaths?replace("\\", "\\\\")?replace("\'", "\\\'")}')
+Set<String> projectPathIncludeFilter = convertStringToSet('${includedProjectPaths?replace("\\", "\\\\")?replace("\'", "\\\'")}')
 Boolean rootOnly = Boolean.parseBoolean("${rootOnlyOption}")
 
 gradle.allprojects {
@@ -49,16 +49,8 @@ gradle.allprojects {
 
         // Prepare configuration names (handles single quotes issues )
         def configurationNames = getFilteredConfigurationNames(currentProject,
-             <#if excludedConfigurationNames?starts_with("'") && excludedConfigurationNames?ends_with("'")>
-                 ${excludedConfigurationNames}
-             <#else>
-                 '${excludedConfigurationNames}'
-             </#if>,
-             <#if includedConfigurationNames?starts_with("'") && includedConfigurationNames?ends_with("'")>
-                 ${includedConfigurationNames}
-             <#else>
-                 '${includedConfigurationNames}'
-             </#if>
+             '${excludedConfigurationNames?replace("\\", "\\\\")?replace("\'", "\\\'")}',
+             '${includedConfigurationNames?replace("\\", "\\\\")?replace("\'", "\\\'")}'
          )
 
         def selectedConfigs = []
