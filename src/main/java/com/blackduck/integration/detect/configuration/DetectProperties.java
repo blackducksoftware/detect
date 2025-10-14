@@ -37,7 +37,6 @@ import com.blackduck.integration.configuration.property.types.enums.EnumProperty
 import com.blackduck.integration.configuration.property.types.integer.IntegerProperty;
 import com.blackduck.integration.configuration.property.types.integer.NullableIntegerProperty;
 import com.blackduck.integration.configuration.property.types.longs.LongProperty;
-import com.blackduck.integration.configuration.property.types.longs.NullableLongProperty;
 import com.blackduck.integration.configuration.property.types.path.NullablePathProperty;
 import com.blackduck.integration.configuration.property.types.path.PathListProperty;
 import com.blackduck.integration.configuration.property.types.string.CaseSensitiveStringListProperty;
@@ -2055,6 +2054,8 @@ public class DetectProperties {
                 }
             }
         }
+        
+        DETECT_PROJECT_VERSION_PHASE.addDeprecatedValueInfo(ProjectVersionPhaseType.ARCHIVED.name(), "This phase has been deprecated.");
 
         return new Properties(properties);
     }
