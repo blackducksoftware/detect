@@ -56,7 +56,7 @@
 * (IDETECT-4812) Gradle Native Inspector now supports configuration cache (refactored `init-detect.gradle` to add support for configuration cache in Gradle projects).
 * (IDETECT-4845) With added support for extracting Python package versions from direct references [PEP 508 URIs](https://packaging.python.org/en/latest/specifications/dependency-specifiers/#environment-markers) in `pyproject.toml` files, [detect_product_short] now correctly parses versions from wheel and archive URLs and VCS references for impacted detectors (Setuptools CLI, Setuptools Parse, and UV Lock detectors). When data is missing or badly formatted, detectors gracefully switch back to reporting only the package name.
 * (IDETECT-4724) Updated Yarn Detector to correctly identify components that were previously unmatched.
-* (IDETECT-4850) Log a warning when unsupported PROC_MACRO dependency exclusion is attempted with the Cargo Lockfile Detector.
+* (IDETECT-4850) Log a warning when unsupported `PROC_MACRO` dependency exclusion is attempted with the Cargo Lockfile Detector.
 
 ### Dependency updates
 
