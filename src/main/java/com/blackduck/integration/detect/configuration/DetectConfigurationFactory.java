@@ -15,6 +15,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.blackduck.integration.blackduck.api.generated.enumeration.PolicyRuleSeverityType;
 import com.blackduck.integration.blackduck.api.generated.enumeration.ProjectCloneCategoriesType;
@@ -79,6 +81,8 @@ public class DetectConfigurationFactory {
     
     private static final String POLICY_SEVERITY_BLOCKER = "BLOCKER";
     private static final String POLICY_SEVERITY_CRITICAL = "CRITICAL";
+    
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     public DetectConfigurationFactory(DetectPropertyConfiguration detectConfiguration, Gson gson) {
         this.detectConfiguration = detectConfiguration;
@@ -330,6 +334,11 @@ public class DetectConfigurationFactory {
 
     public ProjectSyncOptions createDetectProjectServiceOptions(Optional<BlackDuckVersion> blackDuckServerVersion) {
         ProjectVersionPhaseType projectVersionPhase = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_PHASE);
+        
+        if (projectVersionPhase == ProjectVersionPhaseType.ARCHIVED) {
+            logger.warn("The ARCHIVED phase will be removed in an upcoming release.");
+        }
+        
         ProjectVersionDistributionType projectVersionDistribution = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_DISTRIBUTION);
         Integer projectTier = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_TIER);
         String projectDescription = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_DESCRIPTION);
