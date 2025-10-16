@@ -51,7 +51,7 @@
   * RubyGems: 3.7.1
   * Gradle: 9.0.0
   * Yarn: 4.9.4
-  * NPM: 11
+  * NPM: 11.5.2
 
 ### Resolved issues
 
