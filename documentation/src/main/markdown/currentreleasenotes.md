@@ -35,6 +35,7 @@
 * ReversingLabs Scans (`detect.tools=THREAT_INTEL`) has been removed.
 * The `detect.threatintel.scan.file.path` property has been removed.
 * The `detect.project.codelocation.unmap` property has been removed.
+* The archived phase (`detect.project.version.phase=ARCHIVED`) has been deprecated.
 * The efficiency of the Detector directory evaluation has been enhanced, resulting in the acceleration of certain scans.
 * Detector directory evaluation has been made more efficient, resulting in some scans being faster.
 * Support for `pyproject.toml` file has been added to PIP Native Inspector. For more details, please see [Python Detector page](packagemgrs/python.md)
@@ -55,7 +56,9 @@
 * (IDETECT-4813) Fix Gradle Native Inspector to correctly identify projects with only `settings.gradle` or `settings.gradle.kts` file in the root directory.
 * (IDETECT-4812) Gradle Native Inspector now supports configuration cache (refactored `init-detect.gradle` to add support for configuration cache in Gradle projects).
 * (IDETECT-4845) With added support for extracting Python package versions from direct references [PEP 508 URIs](https://packaging.python.org/en/latest/specifications/dependency-specifiers/#environment-markers) in `pyproject.toml` files, [detect_product_short] now correctly parses versions from wheel and archive URLs and VCS references for impacted detectors (Setuptools CLI, Setuptools Parse, and UV Lock detectors). When data is missing or badly formatted, detectors gracefully switch back to reporting only the package name.
-* (IDETECT-4810) Exclude unnecessary directories when looking for the locations of dependency declarations to enhance performance when Component Location Analysis is enabled.  
+* (IDETECT-4810) Exclude unnecessary directories when looking for the locations of dependency declarations to enhance performance when Component Location Analysis is enabled.
+* (IDETECT-4724) Updated Yarn Detector to correctly identify components that were previously unmatched.
+* (IDETECT-4850) Log a warning when unsupported `PROC_MACRO` dependency exclusion is attempted with the Cargo Lockfile Detector.
 
 ### Dependency updates
 

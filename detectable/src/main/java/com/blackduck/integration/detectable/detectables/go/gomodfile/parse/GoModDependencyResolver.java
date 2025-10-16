@@ -164,7 +164,6 @@ public class GoModDependencyResolver {
     private List<GoDependencyNode> fetchAndParseChildren(GoDependencyNode node) {
         String goModFileContent = goProxyModuleResolver.getGoModFileOfTheDependency(node.getDependency());
         if (goModFileContent == null) {
-            logger.warn("Could not fetch go.mod file for dependency {}. Skipping further resolution for this branch.", node.getDependency());
             return new ArrayList<>();
         }
 

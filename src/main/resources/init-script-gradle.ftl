@@ -8,10 +8,10 @@ import org.gradle.api.Task
 import org.gradle.api.execution.TaskExecutionListener
 import org.gradle.api.tasks.TaskState
 
-Set<String> projectNameExcludeFilter = convertStringToSet('${excludedProjectNames}')
-Set<String> projectNameIncludeFilter = convertStringToSet('${includedProjectNames}')
-Set<String> projectPathExcludeFilter = convertStringToSet('${excludedProjectPaths}')
-Set<String> projectPathIncludeFilter = convertStringToSet('${includedProjectPaths}')
+Set<String> projectNameExcludeFilter = convertStringToSet('${excludedProjectNames?replace("\\", "\\\\")?replace("\'", "\\\'")}')
+Set<String> projectNameIncludeFilter = convertStringToSet('${includedProjectNames?replace("\\", "\\\\")?replace("\'", "\\\'")}')
+Set<String> projectPathExcludeFilter = convertStringToSet('${excludedProjectPaths?replace("\\", "\\\\")?replace("\'", "\\\'")}')
+Set<String> projectPathIncludeFilter = convertStringToSet('${includedProjectPaths?replace("\\", "\\\\")?replace("\'", "\\\'")}')
 Boolean rootOnly = Boolean.parseBoolean("${rootOnlyOption}")
 
 gradle.allprojects {
@@ -47,9 +47,11 @@ gradle.allprojects {
         def projectVersion = currentProject.version.toString()
         def projectParent = currentProject.parent ? currentProject.parent.toString() : "none"
 
-        // Prepare configuration names
+        // Prepare configuration names (handles single quotes issues )
         def configurationNames = getFilteredConfigurationNames(currentProject,
-            '${excludedConfigurationNames}', '${includedConfigurationNames}')
+             '${excludedConfigurationNames?replace("\\", "\\\\")?replace("\'", "\\\'")}',
+             '${includedConfigurationNames?replace("\\", "\\\\")?replace("\'", "\\\'")}'
+         )
 
         def selectedConfigs = []
         configurationNames.each { name ->
@@ -64,10 +66,13 @@ gradle.allprojects {
             }
         }
 
-        // Check if the project should be included in results
-        def shouldIncludeProject = (rootOnly && isRootProject) ||
+        // Check if the project should be included based on project-level filters
+        def projectMatchesFilters = (rootOnly && isRootProject) ||
             (!rootOnly && shouldInclude(projectNameExcludeFilter, projectNameIncludeFilter, projectName) &&
              shouldInclude(projectPathExcludeFilter, projectPathIncludeFilter, projectPath))
+
+        // A project is only included if it matches project filters AND has configurations that match config filters.
+        def shouldIncludeProject = projectMatchesFilters && !selectedConfigs.isEmpty()
 
         // Capture output file path during configuration
         def projectFilePathConfig = computeProjectFilePath(projectPath, extractionDir, rootProject)

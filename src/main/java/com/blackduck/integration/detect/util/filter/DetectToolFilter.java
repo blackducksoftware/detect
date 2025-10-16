@@ -18,7 +18,6 @@ import com.blackduck.integration.detect.lifecycle.boot.decision.RunDecision;
 public class DetectToolFilter {
     private final ExcludeIncludeEnumFilter<DetectTool> excludedIncludedFilter;
     private final boolean impactEnabled;
-    private final boolean iacEnabled;
     private final RunDecision runDecision;
     private final BlackDuckDecision blackDuckDecision;
     
@@ -35,13 +34,11 @@ public class DetectToolFilter {
     public DetectToolFilter(
         ExcludeIncludeEnumFilter<DetectTool> excludedIncludedFilter,
         boolean impactEnabled,
-        boolean iacEnabled, 
         RunDecision runDecision,
         BlackDuckDecision blackDuckDecision
     ) {
         this.excludedIncludedFilter = excludedIncludedFilter;
         this.impactEnabled = impactEnabled;
-        this.iacEnabled = iacEnabled;
         this.runDecision = runDecision;
         this.blackDuckDecision = blackDuckDecision;
     }
@@ -49,9 +46,6 @@ public class DetectToolFilter {
     public boolean shouldInclude(DetectTool detectTool) { //Only turn tools OFF, turning a tool ON prevents the user from being able to turn an undesired tool OFF.
         if (detectTool == DetectTool.IMPACT_ANALYSIS) {
             return impactEnabled;
-        }
-        if (detectTool == DetectTool.IAC_SCAN) {
-            return iacEnabled;
         }
         if (detectTool == DetectTool.DETECTOR && runDecision.getDockerMode() == DetectTargetType.IMAGE) {
             return false;
