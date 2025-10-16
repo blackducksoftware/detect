@@ -39,12 +39,19 @@
 * The efficiency of the Detector directory evaluation has been enhanced, resulting in the acceleration of certain scans.
 * Detector directory evaluation has been made more efficient, resulting in some scans being faster.
 * Support for `pyproject.toml` file has been added to PIP Native Inspector. For more details, please see [Python Detector page](packagemgrs/python.md)
-* Support for pip is now extended to 25.2.
-* Support for pipenv is now extended to 2025.0.4.
-* Support for Setuptools is now extended to 80.9.0.
-* Support for uv is now extended to 0.8.15.
-* Support for Maven is now extended to 3.9.11.
-* Support for Conan is now extended to 2.20.1.
+* Support for the following package managers have been extended:
+  * pip: 25.2
+  * pipenv: 2025.0.4
+  * Setuptools: 80.9.0
+  * uv: 0.8.15
+  * Maven: 3.9.11
+  * Conan: 2.20.1
+  * NuGet: 6.8.1
+  * GoLang: 1.25
+  * RubyGems: 3.7.1
+  * Gradle: 9.0.0
+  * Yarn: 4.9.4
+  * NPM: 11.5.2
 
 ### Resolved issues
 
@@ -59,6 +66,9 @@
 * (IDETECT-4810) Exclude unnecessary directories when looking for the locations of dependency declarations to enhance performance when Component Location Analysis is enabled.
 * (IDETECT-4724) Updated Yarn Detector to correctly identify components that were previously unmatched.
 * (IDETECT-4850) Log a warning when unsupported `PROC_MACRO` dependency exclusion is attempted with the Cargo Lockfile Detector.
+* (IDETECT-4591) The logic for enabling the IAC_SCAN tool has been updated to rely solely on detect.tools and detect.tools.excluded.
+* (IDETECT-4786) `BDIO` uploads will no longer retry unnecessarily when the Black Duck SCA server returns a 412 (Precondition Failed), improving scan efficiency and avoiding timeouts.
 
 ### Dependency updates
-
+* Upgraded and released Docker Inspector version 11.6.0. 
+* Upgraded and released Nuget Inspector version 2.3.2.
