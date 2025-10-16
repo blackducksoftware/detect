@@ -40,14 +40,17 @@
 * Detector directory evaluation has been made more efficient, resulting in some scans being faster.
 * Support for `pyproject.toml` file has been added to PIP Native Inspector. For more details, please see [Python Detector page](packagemgrs/python.md)
 * Support for the following package managers have been extended:
-  * pip: 25.2.
-  * pipenv: 2025.0.4.
-  * Setuptools: 80.9.0.
-  * uv: 0.8.15.
-  * Maven: 3.9.11.
-  * Conan: 2.20.1.
-  * NuGet: 6.8.1.
-  * GoLang: 1.25.
+  * pip: 25.2
+  * pipenv: 2025.0.4
+  * Setuptools: 80.9.0
+  * uv: 0.8.15
+  * Maven: 3.9.11
+  * Conan: 2.20.1
+  * NuGet: 6.8.1
+  * GoLang: 1.25
+  * RubyGems: 3.7.1
+  * Gradle: 9.0.0
+  * Yarn: 4.9.4
 
 ### Resolved issues
 
