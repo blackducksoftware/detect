@@ -69,4 +69,5 @@
 * (IDETECT-4786) `BDIO` uploads will no longer retry unnecessarily when the Black Duck SCA server returns a 412 (Precondition Failed), improving scan efficiency and avoiding timeouts.
 
 ### Dependency updates
-
+* Upgraded and released Docker Inspector version 11.6.0. 
+* Upgraded and released Nuget Inspector version 2.3.2.
