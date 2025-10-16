@@ -45,6 +45,7 @@
 * Support for uv is now extended to 0.8.15.
 * Support for Maven is now extended to 3.9.11.
 * Support for Conan is now extended to 2.20.1.
+* Support for NuGet is now extended to 6.8.1.
 
 ### Resolved issues
 
@@ -58,6 +59,7 @@
 * (IDETECT-4845) With added support for extracting Python package versions from direct references [PEP 508 URIs](https://packaging.python.org/en/latest/specifications/dependency-specifiers/#environment-markers) in `pyproject.toml` files, [detect_product_short] now correctly parses versions from wheel and archive URLs and VCS references for impacted detectors (Setuptools CLI, Setuptools Parse, and UV Lock detectors). When data is missing or badly formatted, detectors gracefully switch back to reporting only the package name.
 * (IDETECT-4724) Updated Yarn Detector to correctly identify components that were previously unmatched.
 * (IDETECT-4850) Log a warning when unsupported `PROC_MACRO` dependency exclusion is attempted with the Cargo Lockfile Detector.
+* (IDETECT-4591) The logic for enabling the IAC_SCAN tool has been updated to rely solely on detect.tools and detect.tools.excluded.
 
 ### Dependency updates
 
