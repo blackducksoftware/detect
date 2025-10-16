@@ -149,59 +149,40 @@ public class IntelligentModeStepRunner {
 
         logger.debug("Completed Detect Code Location processing.");
 
-        scanFutures.add(CompletableFuture.runAsync(() -> {
-            try {
-                Thread.currentThread().setName("Signature Scan Thread");
-                stepHelper.runToolIfIncluded(DetectTool.SIGNATURE_SCAN, "Signature Scanner", () -> {
-                    Queue<String> scanIds = new ConcurrentLinkedQueue<>();
-                    SignatureScanStepRunner signatureScanStepRunner = new SignatureScanStepRunner(operationRunner, blackDuckRunData);
-                    SignatureScannerCodeLocationResult signatureScannerCodeLocationResult = signatureScanStepRunner.runSignatureScannerOnline(
-                            detectRunUuid,
-                            projectNameVersion,
-                            dockerTargetData,
-                            scanIds,
-                            gson
-                    );
+        stepHelper.runToolIfIncluded(DetectTool.SIGNATURE_SCAN, "Signature Scanner", () -> {
+            Queue<String> scanIds = new ConcurrentLinkedQueue<>();
+            SignatureScanStepRunner signatureScanStepRunner = new SignatureScanStepRunner(operationRunner, blackDuckRunData);
+            SignatureScannerCodeLocationResult signatureScannerCodeLocationResult = signatureScanStepRunner.runSignatureScannerOnline(
+                    detectRunUuid,
+                    projectNameVersion,
+                    dockerTargetData,
+                    scanIds,
+                    gson
+            );
 
-                    for (String scanId : scanIds) {
-                        logger.debug("Waiting for signature scan id {}", scanId);
-                        concurrentScanWaiter.startWaitingForScan(scanId, blackDuckRunData, projectVersion, "Signature Scan");
-                    }
-
-                    codeLocationAccumulator.addWaitableCodeLocations(signatureScannerCodeLocationResult.getWaitableCodeLocationData());
-                    codeLocationAccumulator.addNonWaitableCodeLocation(signatureScannerCodeLocationResult.getNonWaitableCodeLocationData());
-                });
-            } catch (OperationException e) {
-                throw new RuntimeException(e);
+            for (String scanId : scanIds) {
+                logger.debug("Waiting for signature scan id {}", scanId);
+                concurrentScanWaiter.startWaitingForScan(scanId, blackDuckRunData, projectVersion, "Signature Scan");
             }
-        }, executorService));
+
+            codeLocationAccumulator.addWaitableCodeLocations(signatureScannerCodeLocationResult.getWaitableCodeLocationData());
+            codeLocationAccumulator.addNonWaitableCodeLocation(signatureScannerCodeLocationResult.getNonWaitableCodeLocationData());
+        }, scanFutures, executorService);
 
 
-        scanFutures.add(CompletableFuture.runAsync(() -> {
-            try {
-                Thread.currentThread().setName("Binary Scan Thread");
-                stepHelper.runToolIfIncluded(DetectTool.BINARY_SCAN, "Binary Scanner", () -> {
-                    invokeBinaryScanningWorkflow(DetectTool.BINARY_SCAN, dockerTargetData, projectNameVersion, blackDuckRunData, binaryTargets, scanIdsToWaitFor, codeLocationAccumulator, mustWaitAtBomSummaryLevel, concurrentScanWaiter, projectVersion);
-                });
-            } catch (OperationException e) {
-                throw new RuntimeException(e);
-            }
-        }, executorService));
+        stepHelper.runToolIfIncluded(DetectTool.BINARY_SCAN, "Binary Scanner", () -> {
+            invokeBinaryScanningWorkflow(DetectTool.BINARY_SCAN, dockerTargetData, projectNameVersion, blackDuckRunData, binaryTargets, scanIdsToWaitFor, codeLocationAccumulator, mustWaitAtBomSummaryLevel, concurrentScanWaiter, projectVersion);
+        }, scanFutures, executorService);
 
 
 
-        scanFutures.add(CompletableFuture.runAsync(() -> {
-            try {
-                Thread.currentThread().setName("Container Scan Thread");
-                stepHelper.runToolIfIncluded(
-                        DetectTool.CONTAINER_SCAN,
-                        "Container Scanner",
-                        () -> invokeContainerScanningWorkflow(scanIdsToWaitFor, codeLocationAccumulator, blackDuckRunData, projectNameVersion, concurrentScanWaiter, projectVersion)
-                );
-            } catch (OperationException e) {
-                throw new RuntimeException(e);
-            }
-        }, executorService));
+        stepHelper.runToolIfIncluded(
+                DetectTool.CONTAINER_SCAN,
+                "Container Scanner",
+                () -> invokeContainerScanningWorkflow(scanIdsToWaitFor, codeLocationAccumulator, blackDuckRunData, projectNameVersion, concurrentScanWaiter, projectVersion),
+                scanFutures,
+                executorService
+        );
 
 
 
@@ -224,20 +205,13 @@ public class IntelligentModeStepRunner {
         }, executorService));
 
 
-        scanFutures.add(CompletableFuture.runAsync(() -> {
-            try {
-                Thread.currentThread().setName("IAC Scan Thread");
-                stepHelper.runToolIfIncluded(DetectTool.IAC_SCAN, "IaC Scanner", () -> {
-                    IacScanStepRunner iacScanStepRunner = new IacScanStepRunner(operationRunner);
-                    IacScanCodeLocationData iacScanCodeLocationData = iacScanStepRunner.runIacScanOnline(detectRunUuid, projectNameVersion, blackDuckRunData);
-                    codeLocationAccumulator.addNonWaitableCodeLocation(iacScanCodeLocationData.getCodeLocationNames());
-                    mustWaitAtBomSummaryLevel.set(true);
-                });
-            } catch (OperationException e) {
-                throw new RuntimeException(e);
-            }
-        }, executorService));
 
+        stepHelper.runToolIfIncluded(DetectTool.IAC_SCAN, "IaC Scanner", () -> {
+            IacScanStepRunner iacScanStepRunner = new IacScanStepRunner(operationRunner);
+            IacScanCodeLocationData iacScanCodeLocationData = iacScanStepRunner.runIacScanOnline(detectRunUuid, projectNameVersion, blackDuckRunData);
+            codeLocationAccumulator.addNonWaitableCodeLocation(iacScanCodeLocationData.getCodeLocationNames());
+            mustWaitAtBomSummaryLevel.set(true);
+        }, scanFutures, executorService);
 
         List<Exception> exceptions = new ArrayList<>();
 
