@@ -29,6 +29,7 @@
 	* Added a new property [detect.go.forge](properties/detectors/go.md#go-forge-url) to customize the Go registry URL used for fetching dependency information. Defaults to `https://proxy.golang.org`.
 	* Added a new property [detect.go.forge.connection.timeout](properties/detectors/go.md#go-forge-connection-timeout) to customize the connection timeout limit while connecting to the Go registry. Defaults to 30 seconds.
 	* Added a new property [detect.go.forge.read.timeout](properties/detectors/go.md#go-forge-read-timeout) to customize the read timeout limit while fetching go.mod file of a dependency from Go registry. Defaults to 60 seconds.
+  * Dependency exclusions (via [detect.go.mod.dependency.types.excluded](properties/detectors/go.md#go-mod-dependency-types-excluded) property) are not supported by this detector.
 
 ### Changed features
 
