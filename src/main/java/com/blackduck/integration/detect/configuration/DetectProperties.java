@@ -1646,7 +1646,7 @@ public class DetectProperties {
             .setHelp("If project version phase is specified, your project version will be created with this phase. For updates, see detect.project.version.update.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
             .build()
-            .deprecateValue(ProjectVersionPhaseType.ARCHIVED, "The ARCHIVED option will be removed in a future release as it is no longer supported by newer Black Duck servers.");
+            .deprecateValue(ProjectVersionPhaseType.ARCHIVED, "The ARCHIVED option will be removed in a future release as it is no longer supported by newer Black Duck SCA servers.");
 
     public static final BooleanProperty DETECT_PROJECT_VERSION_UPDATE =
         BooleanProperty.newBuilder("detect.project.version.update", false)
