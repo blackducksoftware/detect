@@ -99,7 +99,8 @@ public class UniversalStepRunner {
         AggregateCodeLocation aggregateCodeLocation = operationRunner.createAggregateCodeLocation(
             aggregateDependencyGraph,
             projectNameVersion,
-            universalToolsResult.getDetectToolGitInfo()
+            universalToolsResult.getDetectToolGitInfo(),
+            null
         );
         operationRunner.createAggregateBdio2File(integratedMatchingCorrelationId, aggregateCodeLocation, Bdio.ScanType.PACKAGE_MANAGER);
 

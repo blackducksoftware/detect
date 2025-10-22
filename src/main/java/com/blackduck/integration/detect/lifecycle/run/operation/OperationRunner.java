@@ -1344,7 +1344,7 @@ public class OperationRunner {
         });
     }
 
-    public AggregateCodeLocation createAggregateCodeLocation(ProjectDependencyGraph aggregateDependencyGraph, NameVersion projectNameVersion, GitInfo gitInfo)
+    public AggregateCodeLocation createAggregateCodeLocation(ProjectDependencyGraph aggregateDependencyGraph, NameVersion projectNameVersion, GitInfo gitInfo, @Nullable String bdioFileName)
         throws OperationException {
         return auditLog.namedInternal("Create Aggregate Code Location", () -> new CreateAggregateCodeLocationOperation(codeLocationNameManager)
             .createAggregateCodeLocation(
@@ -1352,7 +1352,7 @@ public class OperationRunner {
                 aggregateDependencyGraph,
                 projectNameVersion,
                 gitInfo,
-                detectConfigurationFactory.createBdioOptions().getBdioFileName().orElse(null)
+                bdioFileName != null ? bdioFileName : detectConfigurationFactory.createBdioOptions().getBdioFileName().orElse(null)
             ));
     }
 

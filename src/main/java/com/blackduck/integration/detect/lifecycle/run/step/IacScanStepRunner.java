@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.blackduck.integration.util.IntegrationEscapeUtil;
 import com.blackducksoftware.bdio2.Bdio;
 import com.blackduck.integration.bdio.graph.ProjectDependencyGraph;
 import com.blackduck.integration.bdio.model.dependency.ProjectDependency;
@@ -129,9 +130,11 @@ public class IacScanStepRunner {
 
         ExternalId externalId = ExternalIdCreator.nameVersion(CodeLocationConverter.DETECT_FORGE, projectNameVersion.getName(), projectNameVersion.getVersion());
         ProjectDependency projectDependency = new ProjectDependency(externalId);
+
+        String bdioFileName = new IntegrationEscapeUtil().replaceWithUnderscore(projectNameVersion.getName() + "_" + projectNameVersion.getVersion() + "_iac");
         AggregateCodeLocation codeLocation = overrideAggregateCodeLocationName(
             codeLocationNameOverride,
-            operationRunner.createAggregateCodeLocation(new ProjectDependencyGraph(projectDependency), projectNameVersion, GitInfo.none())
+            operationRunner.createAggregateCodeLocation(new ProjectDependencyGraph(projectDependency), projectNameVersion, GitInfo.none(), bdioFileName)
         );
         operationRunner.createAggregateBdio2File(detectRunUuid, codeLocation, Bdio.ScanType.INFRASTRUCTURE_AS_CODE);
         UploadTarget uploadTarget = UploadTarget.createDefault(codeLocation.getProjectNameVersion(), codeLocation.getCodeLocationName(), codeLocation.getAggregateFile());
