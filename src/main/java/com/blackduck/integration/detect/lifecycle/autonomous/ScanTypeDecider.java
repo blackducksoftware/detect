@@ -114,6 +114,7 @@ public class ScanTypeDecider {
             ".bdio",
             ".txt",
             ".java",
+            ".pdf",
             ".manifest")));
     
     private final MediaTypeRegistry mediaTypeRegistry = MediaTypeRegistry.getDefaultRegistry();
