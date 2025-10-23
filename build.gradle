@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '11.0.0-SIGQA33-SNAPSHOT'
+version = '11.0.0-SIGQA34-devm.rollback-iac-change-SNAPSHOT'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
