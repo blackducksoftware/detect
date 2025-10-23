@@ -1,7 +1,10 @@
 package com.blackduck.integration.detect.lifecycle.run.step.utility;
 
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +34,21 @@ public class StepHelper {
             supplier.execute();
             return true;
         }, () -> {}, (e) -> {});
+    }
+
+    public void runToolIfIncluded(DetectTool detectTool, String name, OperationWrapper.OperationFunction supplier, List<CompletableFuture<Void>> scanFutures, ExecutorService executorService) {
+        scanFutures.add(CompletableFuture.runAsync(() -> {
+            Thread.currentThread().setName(name + " Thread");
+            try {
+                runToolIfIncluded(detectTool, name, () -> {
+                    supplier.execute();
+                    return true;
+                }, () -> {}, (e) -> {});
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }, executorService));
+
     }
 
     public <T> Optional<T> runToolIfIncluded(DetectTool detectTool, String name, OperationWrapper.OperationSupplier<T> supplier) throws OperationException {
