@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '11.0.0-SIGQA32-devm.new-iac-bdio'
+version = '11.0.0-SIGQA33-devm.new-iac-bdio-SNAPSHOT'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
