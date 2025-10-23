@@ -76,29 +76,9 @@ public class DetectorRuleEvaluator {
             return null;
         }
 
-        DetectableDefinition definition = entryPoint.getPrimary();
-        if (detectableExclusionEvaluator.isDetectableExcluded(definition)) {
-            // Check for a fallback and use that here instead if the primary is excluded.
-            List<DetectableDefinition> fallbacks = entryPoint.getFallbacks();
-            
-            DetectableDefinition candidateDefinition = null;
-            
-            if (fallbacks != null) {
-                for (DetectableDefinition fallbackDefinition : fallbacks) {
-                   if (detectableExclusionEvaluator.isDetectableExcluded(fallbackDefinition)) {
-                       continue;
-                   } else {
-                       candidateDefinition = fallbackDefinition;
-                   }
-                }
-            }
-            
-            // No candidates to evaluate so exit
-            if (candidateDefinition == null) {
-                return null;
-            } else {
-                definition = candidateDefinition;
-            }
+        DetectableDefinition definition = selectDetectableDefinition(entryPoint);
+        if (definition == null) {
+            return null;
         }
 
         Detectable selectedDetectable = definition.getDetectableCreatable().createDetectable(environment);
@@ -110,6 +90,26 @@ public class DetectorRuleEvaluator {
 
         EntryPointEvaluation entryPointEvaluation = extract(entryPoint, environment, extractionEnvironmentSupplier);
         return EntryPointFoundResult.evaluated(entryPoint, searchResult, applicable, entryPointEvaluation);
+    }
+
+    private DetectableDefinition selectDetectableDefinition(EntryPoint entryPoint) {
+        DetectableDefinition primary = entryPoint.getPrimary();
+        if (!detectableExclusionEvaluator.isDetectableExcluded(primary)) {
+            return primary;
+        }
+
+        // Primary is excluded, look for the first non-excluded fallback
+        List<DetectableDefinition> fallbacks = entryPoint.getFallbacks();
+        if (fallbacks != null) {
+            for (DetectableDefinition fallback : fallbacks) {
+                if (!detectableExclusionEvaluator.isDetectableExcluded(fallback)) {
+                    return fallback;
+                }
+            }
+        }
+
+        // No valid definition found
+        return null;
     }
 
     private EntryPointEvaluation extract(EntryPoint entryPoint, DetectableEnvironment detectableEnvironment, Supplier<ExtractionEnvironment> extractionEnvironmentSupplier) {
