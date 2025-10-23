@@ -78,11 +78,31 @@ public class DetectorRuleEvaluator {
 
         DetectableDefinition definition = entryPoint.getPrimary();
         if (detectableExclusionEvaluator.isDetectableExcluded(definition)) {
-            return null;
+            // Check for a fallback and use that here instead if the primary is excluded.
+            List<DetectableDefinition> fallbacks = entryPoint.getFallbacks();
+            
+            DetectableDefinition candidateDefinition = null;
+            
+            if (fallbacks != null) {
+                for (DetectableDefinition fallbackDefinition : fallbacks) {
+                   if (detectableExclusionEvaluator.isDetectableExcluded(fallbackDefinition)) {
+                       continue;
+                   } else {
+                       candidateDefinition = fallbackDefinition;
+                   }
+                }
+            }
+            
+            // No candidates to evaluate so exit
+            if (candidateDefinition == null) {
+                return null;
+            } else {
+                definition = candidateDefinition;
+            }
         }
 
-        Detectable primaryDetectable = definition.getDetectableCreatable().createDetectable(environment);
-        DetectableResult applicable = primaryDetectable.applicable();
+        Detectable selectedDetectable = definition.getDetectableCreatable().createDetectable(environment);
+        DetectableResult applicable = selectedDetectable.applicable();
         if (!applicable.getPassed()) {
             notFoundEntryPoints.add(EntryPointNotFoundResult.notApplicable(entryPoint, searchResult, applicable));
             return null;
