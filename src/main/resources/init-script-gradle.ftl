@@ -71,7 +71,7 @@ gradle.allprojects {
             (!rootOnly && shouldInclude(projectNameExcludeFilter, projectNameIncludeFilter, projectName) &&
              shouldInclude(projectPathExcludeFilter, projectPathIncludeFilter, projectPath))
 
-        // A project is only included if it matches project filters AND has configurations that match config filters.
+        // Include if passes project filters and has selected configs or is phantom without build file.
         def isPhantom = !currentProject.buildFile.exists()
         def shouldIncludeProject = projectMatchesFilters && (!selectedConfigs.isEmpty() || isPhantom)
 
