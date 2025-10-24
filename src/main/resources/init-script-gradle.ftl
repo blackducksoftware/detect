@@ -72,7 +72,8 @@ gradle.allprojects {
              shouldInclude(projectPathExcludeFilter, projectPathIncludeFilter, projectPath))
 
         // A project is only included if it matches project filters AND has configurations that match config filters.
-        def shouldIncludeProject = projectMatchesFilters && !selectedConfigs.isEmpty()
+        def isPhantom = !currentProject.buildFile.exists()
+        def shouldIncludeProject = projectMatchesFilters && (!selectedConfigs.isEmpty() || isPhantom)
 
         // Capture output file path during configuration
         def projectFilePathConfig = computeProjectFilePath(projectPath, extractionDir, rootProject)
