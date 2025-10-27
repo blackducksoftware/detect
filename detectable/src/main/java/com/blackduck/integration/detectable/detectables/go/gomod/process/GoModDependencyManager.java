@@ -21,7 +21,6 @@ public class GoModDependencyManager {
     private final ExternalIdFactory externalIdFactory;
     private final Map<String, Dependency> modulesAsDependencies;
     private final Map<String, NameVersion> originalRequiredNameAndVersion;
-    private final KBComponentHelpers kbComponentHelpers = new KBComponentHelpers();
 
     public GoModDependencyManager(List<GoListAllData> allRequiredModules, ExternalIdFactory externalIdFactory) {
         this.externalIdFactory = externalIdFactory;
@@ -52,7 +51,7 @@ public class GoModDependencyManager {
                 .map(ReplaceData::getVersion)
                 .orElse(module.getVersion());
             if (version != null) {
-                String kbCompatibleVersion = kbComponentHelpers.getKbCompatibleVersion(version);
+                String kbCompatibleVersion = KBComponentHelpers.getKbCompatibleVersion(version);
                 if (!version.equals(kbCompatibleVersion)) {
                     version = kbCompatibleVersion;
                 }

@@ -6,7 +6,11 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 
-public class KBComponentHelpers {
+public final class KBComponentHelpers {
+
+    private KBComponentHelpers() {
+        // Prevent instantiation
+    }
 
     private static final String INCOMPATIBLE_SUFFIX = "+incompatible";
     private static final String SHA1_REGEX = "[a-fA-F0-9]{40}";
@@ -14,8 +18,11 @@ public class KBComponentHelpers {
     private static final String GIT_VERSION_FORMAT = ".*(%s).*";
     private static final Pattern SHA1_VERSION_PATTERN = Pattern.compile(String.format(GIT_VERSION_FORMAT, SHA1_REGEX));
     private static final Pattern SHORT_SHA1_VERSION_PATTERN = Pattern.compile(String.format(GIT_VERSION_FORMAT, SHORT_SHA1_REGEX));
-
-    public String getKbCompatibleVersion(String version) {
+    
+    public static String getKbCompatibleVersion(String version) {
+        if (version == null || StringUtils.isBlank(version)) {
+            return version;
+        }
         String kbCompatibleVersion;
         kbCompatibleVersion = handleGitHash(version);
         kbCompatibleVersion = removeIncompatibleSuffix(kbCompatibleVersion);
@@ -23,7 +30,7 @@ public class KBComponentHelpers {
     }
 
     // When a version contains a commit hash, the KB only accepts the git hash, so we must strip out the rest.
-    private String handleGitHash(String version) {
+    private static String handleGitHash(String version) {
         return getVersionFromPattern(version, SHA1_VERSION_PATTERN)
             .orElseGet(() ->
                 getVersionFromPattern(version, SHORT_SHA1_VERSION_PATTERN)
@@ -31,7 +38,7 @@ public class KBComponentHelpers {
             );
     }
 
-    private Optional<String> getVersionFromPattern(String version, Pattern versionPattern) {
+    private static Optional<String> getVersionFromPattern(String version, Pattern versionPattern) {
         Matcher matcher = versionPattern.matcher(version);
         if (matcher.matches()) {
             return Optional.ofNullable(StringUtils.trim(matcher.group(1)));
@@ -40,7 +47,7 @@ public class KBComponentHelpers {
     }
 
     // https://golang.org/ref/mod#incompatible-versions
-    private String removeIncompatibleSuffix(String version) {
+    private static String removeIncompatibleSuffix(String version) {
         if (version.endsWith(INCOMPATIBLE_SUFFIX)) {
             // Trim incompatible suffix so that KB can match component
             version = version.substring(0, version.length() - INCOMPATIBLE_SUFFIX.length());
