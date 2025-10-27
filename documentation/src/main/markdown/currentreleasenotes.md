@@ -67,7 +67,6 @@
 * (IDETECT-4810) Exclude unnecessary directories when looking for the locations of dependency declarations to enhance performance when Component Location Analysis is enabled.
 * (IDETECT-4724) Updated Yarn Detector to correctly identify components that were previously unmatched.
 * (IDETECT-4850) Log a warning when unsupported `PROC_MACRO` dependency exclusion is attempted with the Cargo Lockfile Detector.
-* (IDETECT-4591) The logic for enabling the IAC_SCAN tool has been updated to rely solely on detect.tools and detect.tools.excluded.
 * (IDETECT-4786) `BDIO` uploads will no longer retry unnecessarily when the Black Duck SCA server returns a 412 (Precondition Failed), improving scan efficiency and avoiding timeouts.
 
 ### Dependency updates
