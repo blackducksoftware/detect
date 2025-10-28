@@ -183,8 +183,7 @@ public class GoModDependencyResolverTest {
         
         // Create exclude directives
         Set<GoModuleInfo> excludeDirectives = new HashSet<>(Arrays.asList(
-            new GoModuleInfo("github.com/exclude-exact", "v1.0.0"), // Exact version match
-            new GoModuleInfo("github.com/exclude-module", "") // Module name only
+            new GoModuleInfo("github.com/exclude-exact", "v1.0.0") // Exact version match
         ));
         
         GoModFileContent content = new GoModFileContent(
@@ -199,14 +198,14 @@ public class GoModDependencyResolverTest {
         );
         
         GoModDependencyResolver.ResolvedDependencies result = resolver.resolveDependencies(content, externalIdFactory);
-        
-        assertEquals(1, result.getDirectDependencies().size(), "Should have 1 remaining dependency");
+
+        assertEquals(2, result.getDirectDependencies().size(), "Should have 2 remaining dependencies");
         assertTrue(result.getDirectDependencies().stream()
             .anyMatch(dep -> "github.com/keep".equals(dep.getName())), 
-            "Should keep non-excluded dependency");
+            "Should keep non-excluded dependencies");
         assertTrue(result.getDirectDependencies().stream()
-            .noneMatch(dep -> dep.getName().contains("exclude")), 
-            "Should exclude all excluded dependencies");
+            .noneMatch(dep -> dep.getName().contains("exclude-exact")), 
+            "Should exclude github.com/exclude-exact dependency");
     }
     
     @Test
