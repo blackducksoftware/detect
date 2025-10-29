@@ -11,14 +11,6 @@ You can use the following properties to override the project and version names:
 --detect.project.name=PROJECT-NAME
 --detect.project.version.name=VERSION-NAME
 ```
-You can use the following property to change the default version to a timestamp:
-```
---detect.default.project.version.scheme=timestamp
-```
-You can use the following property to customize the timestamp format:
-```
---detect.default.project.version.timeformat='yyyy-MM-dd:HH:mm:ss.SSS'
-```
 ## Project and version naming for Git projects
 
 If no package manager provides project and version names, you have not provided the project and version names through properties, and the project uses Git, [detect_product_short]] attempts to use Git to determine project information.
