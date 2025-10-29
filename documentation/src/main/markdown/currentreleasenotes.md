@@ -71,5 +71,4 @@
 * (IDETECT-4770) The Cargo Dependency Type Exclusion has been expanded to include `NORMAL` dependencies for both the Cargo Lockfile and Cargo CLI detectors. Additionally, the Cargo CLI Detector now supports `PROC_MACRO` exclusion, regardless of `PROC_MACRO` dependencies not being explicitly listed in `Cargo.toml` or `Cargo.lock`.
 
 ### Dependency updates
-* Upgraded and released Docker Inspector version 11.6.0. 
 * Upgraded and released Nuget Inspector version 2.3.2.
