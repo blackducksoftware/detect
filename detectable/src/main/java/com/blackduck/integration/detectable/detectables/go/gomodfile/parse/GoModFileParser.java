@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoModFileContent;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoModuleInfo;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoReplaceDirective;
+import com.blackduck.integration.detectable.util.KBComponentHelpers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -252,6 +253,7 @@ public class GoModFileParser {
             
             // Clean up version (remove +incompatible, %2Bincompatible suffixes)
             version = cleanVersion(version);
+            version = KBComponentHelpers.getKbCompatibleVersion(version);
             
             // Check if it's an indirect dependency
             boolean isIndirect = comment != null && comment.contains("indirect");
@@ -264,6 +266,7 @@ public class GoModFileParser {
         if (parts.length >= 1) {
             String moduleName = parts[0];
             String version = parts.length > 1 ? cleanVersion(parts[1]) : "";
+            version = KBComponentHelpers.getKbCompatibleVersion(version);
             boolean isIndirect = line.contains("// indirect");
             return new GoModuleInfo(moduleName, version, isIndirect);
         }
