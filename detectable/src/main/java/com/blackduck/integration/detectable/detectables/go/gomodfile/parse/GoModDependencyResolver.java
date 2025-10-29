@@ -268,24 +268,14 @@ public class GoModDependencyResolver {
                 .map(this::createModuleKey)
                 .collect(Collectors.toSet());
         
-        Set<String> excludedModuleNames = excludedModules.stream()
-                .map(GoModuleInfo::getName)
-                .collect(Collectors.toSet());
         
         return dependencies.stream()
                 .filter(dependency -> {
                     String dependencyKey = createModuleKey(dependency);
-                    String moduleName = dependency.getName();
                     
                     // Check exact match first
                     if (excludedKeys.contains(dependencyKey)) {
-                        logger.debug("Excluding dependency {} (exact match)", dependency);
-                        return false;
-                    }
-                    
-                    // Check module name only match
-                    if (excludedModuleNames.contains(moduleName)) {
-                        logger.debug("Excluding dependency {} (module name match)", dependency);
+                        logger.debug("Excluding dependency {} (exact match)", dependencyKey);
                         return false;
                     }
                     

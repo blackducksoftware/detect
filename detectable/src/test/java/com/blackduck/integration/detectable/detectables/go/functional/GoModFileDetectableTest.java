@@ -100,7 +100,7 @@ public class GoModFileDetectableTest {
                 .anyMatch(dependency -> "gopkg.in/yaml.v3".equals(dependency.getName())
                         && "v3.0.0-20200313102051-9f266ea9e77c".equals(dependency.getVersion())));
         // Check Additional_Components has 24 children
-        Assertions.assertEquals(24, dependencyGraph.getChildrenForParent(dependencyGraph.getDirectDependencies().stream()
+        Assertions.assertEquals(26, dependencyGraph.getChildrenForParent(dependencyGraph.getDirectDependencies().stream()
                 .filter(dependency -> "Additional_Components".equals(dependency.getName()))
                 .findFirst()
                 .orElse(null)).size());
