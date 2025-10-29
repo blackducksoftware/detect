@@ -68,6 +68,7 @@
 * (IDETECT-4724) Updated Yarn Detector to correctly identify components that were previously unmatched.
 * (IDETECT-4850) Log a warning when unsupported `PROC_MACRO` dependency exclusion is attempted with the Cargo Lockfile Detector.
 * (IDETECT-4786) `BDIO` uploads will no longer retry unnecessarily when the Black Duck SCA server returns a 412 (Precondition Failed), improving scan efficiency and avoiding timeouts.
+* (IDETECT-4770) The Cargo Dependency Type Exclusion has been expanded to include `NORMAL` dependencies for both the Cargo Lockfile and Cargo CLI detectors. Additionally, the Cargo CLI Detector now supports `PROC_MACRO` exclusion, regardless of `PROC_MACRO` dependencies not being explicitly listed in `Cargo.toml` or `Cargo.lock`.
 
 ### Dependency updates
 * Upgraded and released Docker Inspector version 11.6.0. 
