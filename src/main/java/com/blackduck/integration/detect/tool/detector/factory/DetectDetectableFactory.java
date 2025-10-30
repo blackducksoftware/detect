@@ -36,6 +36,7 @@ import com.blackduck.integration.detectable.detectables.gradle.inspection.Gradle
 import com.blackduck.integration.detectable.detectables.gradle.parsing.GradleProjectInspectorDetectable;
 import com.blackduck.integration.detectable.detectables.ivy.IvyParseDetectable;
 import com.blackduck.integration.detectable.detectables.lerna.LernaDetectable;
+import com.blackduck.integration.detectable.detectables.maven.resolver.MavenResolverDetectable;
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenPomDetectable;
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenPomWrapperDetectable;
 import com.blackduck.integration.detectable.detectables.maven.parsing.MavenProjectInspectorDetectable;
@@ -207,6 +208,16 @@ public class DetectDetectableFactory {
 
     public IvyParseDetectable createIvyParseDetectable(DetectableEnvironment environment) {
         return detectableFactory.createIvyParseDetectable(environment);
+    }
+
+    public MavenResolverDetectable createMavenResolverDetectable(DetectableEnvironment environment) {
+        return detectableFactory.createMavenResolverDetectable(
+                environment,
+                detectExecutableResolver,
+                detectableOptionFactory.createMavenCliOptions(),
+                detectableOptionFactory.createProjectInspectorOptions(),
+                projectInspectorResolver
+        );
     }
 
     public MavenPomDetectable createMavenPomDetectable(DetectableEnvironment environment) {

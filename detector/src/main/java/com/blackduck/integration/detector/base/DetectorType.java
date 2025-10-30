@@ -26,6 +26,7 @@ public enum DetectorType { // TODO: 8.0.0 Rename DetectorTypes
     IVY,
     LERNA,
     MAVEN,
+    MAVENRESOLVER,
     NPM,
     NUGET, // MSBUILD
     PACKAGIST,
