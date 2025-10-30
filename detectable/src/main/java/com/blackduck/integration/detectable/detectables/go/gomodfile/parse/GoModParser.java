@@ -16,6 +16,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Enhanced Go mod parser that handles all go.mod directives and produces a dependency graph
@@ -57,7 +59,7 @@ public class GoModParser {
         logger.debug("Resolved dependencies: {}", resolvedDependencies);
 
         // Create dependency graph
-        return createDependencyGraph(resolvedDependencies);
+        return createDependencyGraph(resolvedDependencies, goModContent);
     }
     
     /**
@@ -81,51 +83,107 @@ public class GoModParser {
         }
         logger.debug(DEPENDENCY_SEPARATOR);
     }
+
+    private String createModuleKey(GoModuleInfo module) {
+        return module.getName() + "@" + module.getVersion();
+    }
     
-    private DependencyGraph createDependencyGraph(GoModDependencyResolver.ResolvedDependencies resolvedDependencies) {
+    private DependencyGraph createDependencyGraph(GoModDependencyResolver.ResolvedDependencies resolvedDependencies, GoModFileContent goModContent) {
         DependencyGraph graph = new BasicDependencyGraph();
+        Set<String> excludedKeys = createExcludedKeys(goModContent);
         
-        // Add direct dependencies
-        for (GoModuleInfo directDep : resolvedDependencies.getDirectDependencies()) {
+        addDirectDependencies(graph, resolvedDependencies.getDirectDependencies(), excludedKeys);
+        List<Dependency> orphanDependencies = addIndirectDependencies(graph, resolvedDependencies, excludedKeys);
+        addOrphanDependencies(graph, orphanDependencies);
+        
+        return graph;
+    }
+
+    private Set<String> createExcludedKeys(GoModFileContent goModContent) {
+        return goModContent.getExcludedModules().stream()
+                .map(this::createModuleKey)
+                .collect(Collectors.toSet());
+    }
+
+    private void addDirectDependencies(DependencyGraph graph, List<GoModuleInfo> directDependencies, Set<String> excludedKeys) {
+        for (GoModuleInfo directDep : directDependencies) {
+            if (isExcluded(directDep, excludedKeys)) {
+                logger.debug("Excluding mapping of direct dependency: {} as it is in the excluded modules list", directDep);
+                continue;
+            }
             Dependency dependency = goModFileHelpers.createDependency(directDep);
             graph.addDirectDependency(dependency);
             logger.debug("Added direct dependency: {} to the root module", dependency);
         }
+    }
 
-        List<Dependency> orphDependencies = new ArrayList<>();
+    private List<Dependency> addIndirectDependencies(DependencyGraph graph, GoModDependencyResolver.ResolvedDependencies resolvedDependencies, Set<String> excludedKeys) {
+        List<Dependency> orphanDependencies = new ArrayList<>();
         
-        // Add indirect dependencies
         for (GoModuleInfo indirectDep : resolvedDependencies.getIndirectDependencies()) {
             Dependency dependency = goModFileHelpers.createDependency(indirectDep);
             GoDependencyNode targetNode = new GoDependencyNode(false, dependency, new ArrayList<>());
-            // Use DFS to find targetNode from resolvedDependencies.getDependencyGraph() of type GoDependencyNode
             List<GoDependencyNode> path = getDependencyPathFromGraph(targetNode, resolvedDependencies.getDependencyGraph(), new ArrayList<>());
-            if (!path.isEmpty()) {
-                if (logger.isDebugEnabled()) printDependencyGraphOfIndirectDependency(dependency, path);
-                for(int idx=0; idx < path.size() - 1; idx++) {
-                    GoDependencyNode parentDependency = path.get(idx);
-                    GoDependencyNode childDependency = path.get(idx + 1);
-                    graph.addChildWithParent(childDependency.getDependency(), parentDependency.getDependency());
-                    logger.debug("Mapped {} as child of {}", childDependency.getDependency(), parentDependency.getDependency());
-                }
+            
+            if (path.isEmpty()) {
+                handleOrphanDependency(dependency, orphanDependencies);
             } else {
-                logger.warn("No path found for indirect dependency: {}. Hence, adding it to orphan dependencies", dependency);
-                orphDependencies.add(dependency);
-            }
-        }
-
-        if (!orphDependencies.isEmpty()) {
-            // Create a parent node for orphan dependencies
-            Dependency orphanParentDependency = goModFileHelpers.createDependency(new GoModuleInfo(ORPHAN_PARENT_NAME, ORPHAN_PARENT_VERSION));
-            graph.addDirectDependency(orphanParentDependency);
-            logger.debug("Created orphan parent dependency: {} for orphan dependencies", orphanParentDependency);
-            for (Dependency orphanDep : orphDependencies) {
-                graph.addChildWithParent(orphanDep, orphanParentDependency);
-                logger.debug("Mapped orphan dependency {} as child of {}", orphanDep, orphanParentDependency);
+                addDependencyPath(graph, dependency, path, excludedKeys);
             }
         }
         
-        return graph;
+        return orphanDependencies;
+    }
+
+    private void handleOrphanDependency(Dependency dependency, List<Dependency> orphanDependencies) {
+        logger.warn("No path found for indirect dependency: {}. Hence, adding it to orphan dependencies", dependency);
+        orphanDependencies.add(dependency);
+    }
+
+    private void addDependencyPath(DependencyGraph graph, Dependency dependency, List<GoDependencyNode> path, Set<String> excludedKeys) {
+        if (logger.isDebugEnabled()) {
+            printDependencyGraphOfIndirectDependency(dependency, path);
+        }
+        
+        GoDependencyNode childDependencyNode = path.get(path.size() - 1);
+        if (isExcluded(childDependencyNode.getDependency(), excludedKeys)) {
+            logger.debug("Excluding mapping of transitive dependency: {} as it is in the excluded modules list", childDependencyNode.getDependency());
+            return;
+        }
+        
+        addPathToGraph(graph, path);
+    }
+
+    private void addPathToGraph(DependencyGraph graph, List<GoDependencyNode> path) {
+        for (int idx = 0; idx < path.size() - 1; idx++) {
+            GoDependencyNode parentDependency = path.get(idx);
+            GoDependencyNode childDependency = path.get(idx + 1);
+            graph.addChildWithParent(childDependency.getDependency(), parentDependency.getDependency());
+            logger.debug("Mapped {} as child of {}", childDependency.getDependency(), parentDependency.getDependency());
+        }
+    }
+
+    private boolean isExcluded(GoModuleInfo module, Set<String> excludedKeys) {
+        return excludedKeys.contains(createModuleKey(module));
+    }
+
+    private boolean isExcluded(Dependency dependency, Set<String> excludedKeys) {
+        return excludedKeys.contains(String.format("%s@%s", dependency.getName(), dependency.getVersion()));
+    }
+
+    private void addOrphanDependencies(DependencyGraph graph, List<Dependency> orphanDependencies) {
+        if (orphanDependencies.isEmpty()) {
+            return;
+        }
+        
+        Dependency orphanParentDependency = goModFileHelpers.createDependency(new GoModuleInfo(ORPHAN_PARENT_NAME, ORPHAN_PARENT_VERSION));
+        graph.addDirectDependency(orphanParentDependency);
+        logger.debug("Created orphan parent dependency: {} for orphan dependencies", orphanParentDependency);
+        
+        for (Dependency orphanDep : orphanDependencies) {
+            graph.addChildWithParent(orphanDep, orphanParentDependency);
+            logger.debug("Mapped orphan dependency {} as child of {}", orphanDep, orphanParentDependency);
+        }
     }
 
     public List<GoDependencyNode> getDependencyPathFromGraph(GoDependencyNode targetNode, GoDependencyNode graph, List<GoDependencyNode> visited) {

@@ -1011,8 +1011,8 @@ public class DetectProperties {
         BooleanProperty.newBuilder("detect.excluded.directories.defaults.disabled", false)
             .setInfo("Detect Excluded Directories Defaults Disabled", DetectPropertyFromVersion.VERSION_7_0_0)
             .setHelp(
-                "If false, Detect will exclude the default list of directory names when searching for applicable detectors (see property details for more information).",
-                "Directories excluded by default: __MACOX, bin, build, .git, .gradle, .yarn, node_modules, out, packages, target, .synopsys, .blackduck, and the following directories will be excluded from signature scan using the Scan CLI '--exclude' flag: .git, .gradle, gradle, node_modules, .synopsys, .blackduck."
+                "If false, Detect will exclude the default list of directory names when searching for applicable detectors.",
+                "Directories excluded by default: __MACOSX, bin, build, .git, .gradle, .yarn, node_modules, out, packages, target, .synopsys, .blackduck, and the following directories will be excluded from signature scan using the Scan CLI '--exclude' flag: .git, .gradle, gradle, node_modules, .synopsys, .blackduck."
             )
             .setGroups(DetectGroup.PATHS, DetectGroup.DETECTOR, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
@@ -1645,7 +1645,8 @@ public class DetectProperties {
             .setInfo("Version Phase", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp("If project version phase is specified, your project version will be created with this phase. For updates, see detect.project.version.update.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
-            .build();
+            .build()
+            .deprecateValue(ProjectVersionPhaseType.ARCHIVED, "The ARCHIVED option will be removed in a future release as it is no longer supported by newer Black Duck SCA servers.");
 
     public static final BooleanProperty DETECT_PROJECT_VERSION_UPDATE =
         BooleanProperty.newBuilder("detect.project.version.update", false)

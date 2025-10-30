@@ -18,7 +18,7 @@ public final class KBComponentHelpers {
     private static final String GIT_VERSION_FORMAT = ".*(%s).*";
     private static final Pattern SHA1_VERSION_PATTERN = Pattern.compile(String.format(GIT_VERSION_FORMAT, SHA1_REGEX));
     private static final Pattern SHORT_SHA1_VERSION_PATTERN = Pattern.compile(String.format(GIT_VERSION_FORMAT, SHORT_SHA1_REGEX));
-    
+
     public static String getKbCompatibleVersion(String version) {
         if (version == null || StringUtils.isBlank(version)) {
             return version;

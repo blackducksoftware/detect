@@ -254,7 +254,7 @@ public class GoModFileParser {
             // Clean up version (remove +incompatible, %2Bincompatible suffixes)
             version = cleanVersion(version);
             version = KBComponentHelpers.getKbCompatibleVersion(version);
-            
+
             // Check if it's an indirect dependency
             boolean isIndirect = comment != null && comment.contains("indirect");
             
