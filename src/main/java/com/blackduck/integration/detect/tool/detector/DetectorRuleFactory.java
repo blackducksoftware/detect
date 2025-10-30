@@ -27,6 +27,7 @@ import com.blackduck.integration.detectable.detectables.gradle.inspection.Gradle
 import com.blackduck.integration.detectable.detectables.gradle.parsing.GradleProjectInspectorDetectable;
 import com.blackduck.integration.detectable.detectables.ivy.IvyParseDetectable;
 import com.blackduck.integration.detectable.detectables.lerna.LernaDetectable;
+import com.blackduck.integration.detectable.detectables.maven.resolver.MavenResolverDetectable;
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenPomDetectable;
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenPomWrapperDetectable;
 import com.blackduck.integration.detectable.detectables.maven.parsing.MavenProjectInspectorDetectable;
@@ -187,6 +188,11 @@ public class DetectorRuleFactory {
         rules.addDetector(DetectorType.HEX, detector -> {
             detector.entryPoint(RebarDetectable.class)
                 .search().defaults();
+        });
+
+        rules.addDetector(DetectorType.MAVENRESOLVER, detector -> {
+            detector.entryPoint(MavenResolverDetectable.class)
+                    .search().defaults();
         });
 
         rules.addDetector(DetectorType.MAVEN, detector -> {
