@@ -30,6 +30,7 @@
 	* Added a new property [detect.go.forge.connection.timeout](properties/detectors/go.md#go-forge-connection-timeout) to customize the connection timeout limit while connecting to the Go registry. Defaults to 30 seconds.
 	* Added a new property [detect.go.forge.read.timeout](properties/detectors/go.md#go-forge-read-timeout) to customize the read timeout limit while fetching go.mod file of a dependency from Go registry. Defaults to 60 seconds.
   * Dependency exclusions (via [detect.go.mod.dependency.types.excluded](properties/detectors/go.md#go-mod-dependency-types-excluded) property) are not supported by this detector.
+* Detect Nuget Inspector binaries for MacOS are now digitally signed with Black Duck Software, Inc authority.
 
 ### Changed features
 
@@ -71,4 +72,4 @@
 * (IDETECT-4770) The Cargo Dependency Type Exclusion has been expanded to include `NORMAL` dependencies for both the Cargo Lockfile and Cargo CLI detectors. Additionally, the Cargo CLI Detector now supports `PROC_MACRO` exclusion, regardless of `PROC_MACRO` dependencies not being explicitly listed in `Cargo.toml` or `Cargo.lock`.
 
 ### Dependency updates
-* Upgraded and released Nuget Inspector version 2.3.2.
+* Upgraded and released Nuget Inspector version 2.4.0.
