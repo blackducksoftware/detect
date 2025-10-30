@@ -39,7 +39,6 @@
 * The `detect.project.codelocation.unmap` property has been removed.
 * The archived phase (`detect.project.version.phase=ARCHIVED`) has been deprecated.
 * The efficiency of the Detector directory evaluation has been enhanced, resulting in the acceleration of certain scans.
-* Detector directory evaluation has been made more efficient, resulting in some scans being faster.
 * Support for `pyproject.toml` file has been added to PIP Native Inspector. For more details, please see [Python Detector page](packagemgrs/python.md)
 * Support for the following package managers have been extended:
   * pip: 25.2
