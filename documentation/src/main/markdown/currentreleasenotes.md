@@ -30,6 +30,7 @@
 	* Added a new property [detect.go.forge.connection.timeout](properties/detectors/go.md#go-forge-connection-timeout) to customize the connection timeout limit while connecting to the Go registry. Defaults to 30 seconds.
 	* Added a new property [detect.go.forge.read.timeout](properties/detectors/go.md#go-forge-read-timeout) to customize the read timeout limit while fetching go.mod file of a dependency from Go registry. Defaults to 60 seconds.
   * Dependency exclusions (via [detect.go.mod.dependency.types.excluded](properties/detectors/go.md#go-mod-dependency-types-excluded) property) are not supported by this detector.
+* Detect Nuget Inspector binaries for MacOS are now digitally signed with Black Duck Software, Inc authority.
 
 ### Changed features
 
@@ -38,7 +39,6 @@
 * The `detect.project.codelocation.unmap` property has been removed.
 * The archived phase (`detect.project.version.phase=ARCHIVED`) has been deprecated.
 * The efficiency of the Detector directory evaluation has been enhanced, resulting in the acceleration of certain scans.
-* Detector directory evaluation has been made more efficient, resulting in some scans being faster.
 * Support for `pyproject.toml` file has been added to PIP Native Inspector. For more details, please see [Python Detector page](packagemgrs/python.md)
 * Support for the following package managers have been extended:
   * pip: 25.2
@@ -71,4 +71,4 @@
 * (IDETECT-4770) The Cargo Dependency Type Exclusion has been expanded to include `NORMAL` dependencies for both the Cargo Lockfile and Cargo CLI detectors. Additionally, the Cargo CLI Detector now supports `PROC_MACRO` exclusion, regardless of `PROC_MACRO` dependencies not being explicitly listed in `Cargo.toml` or `Cargo.lock`.
 
 ### Dependency updates
-* Upgraded and released Nuget Inspector version 2.3.2.
+* Upgraded and released Nuget Inspector version 2.4.0.
