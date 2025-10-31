@@ -563,6 +563,16 @@
 							<entry>LOW</entry>
 						</row>
 						<row>
+							<entry> </entry>
+							<entry>Maven Resolver</entry>
+							<entry>Java</entry>
+							<entry>Maven Central</entry>
+							<entry>
+								<p>File: pom.xml</p>
+							</entry>
+							<entry>HIGH</entry>
+						</row>
+						<row>
 							<entry>
 								<b>NPM</b>
 							</entry>
