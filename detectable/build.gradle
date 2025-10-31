@@ -9,6 +9,20 @@ dependencies {
     implementation 'com.paypal.digraph:digraph-parser:1.0'
     implementation 'guru.nidi:graphviz-java:0.18.1'
 
+    implementation "org.apache.maven.resolver:maven-resolver-api:1.9.24"
+    implementation "org.apache.maven.resolver:maven-resolver-spi:1.9.24"
+    implementation "org.apache.maven.resolver:maven-resolver-util:1.9.24"
+    implementation "org.apache.maven.resolver:maven-resolver-impl:1.9.24"
+    implementation "org.apache.maven.resolver:maven-resolver-connector-basic:1.9.24"
+    implementation "org.apache.maven.resolver:maven-resolver-transport-file:1.9.24"
+    implementation "org.apache.maven.resolver:maven-resolver-transport-http:1.9.24"
+    implementation "org.apache.maven.resolver:maven-resolver-transport-jdk-11:2.0.13"
+    // Note: maven-resolver-transport-jetty version can be different and requires specific Jetty dependencies
+    implementation "org.apache.maven:maven-resolver-provider:1.9.24" // This artifact is deprecated
+    implementation "org.apache.maven.resolver:maven-resolver-generator-gnupg:2.0.13"
+    implementation "org.apache.maven.resolver:maven-resolver-named-locks:1.9.24"
+    implementation "org.apache.maven.resolver:maven-resolver-supplier-mvn3:2.0.13"
+
     testImplementation 'org.skyscreamer:jsonassert:1.5.0'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.3.1'
     testImplementation 'org.apache.commons:commons-collections4:4.2'
