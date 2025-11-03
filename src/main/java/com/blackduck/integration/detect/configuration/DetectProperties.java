@@ -1012,7 +1012,7 @@ public class DetectProperties {
             .setInfo("Detect Excluded Directories Defaults Disabled", DetectPropertyFromVersion.VERSION_7_0_0)
             .setHelp(
                 "If false, Detect will exclude the default list of directory names when searching for applicable detectors.",
-                "Directories excluded by default: __MACOSX, bin, build, .git, .gradle, .yarn, node_modules, out, packages, target, .synopsys, .blackduck, and the following directories will be excluded from signature scan using the Scan CLI '--exclude' flag: .git, .gradle, gradle, node_modules, .synopsys, .blackduck."
+                "Directories excluded by default: __MACOSX, bin, build, .git, .gradle, .yarn, node_modules, out, packages, target, .synopsys, .blackduck, .bridge and the following directories will be excluded from signature scan using the Scan CLI '--exclude' flag: .git, .gradle, gradle, node_modules, .synopsys, .blackduck, .bridge."
             )
             .setGroups(DetectGroup.PATHS, DetectGroup.DETECTOR, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
