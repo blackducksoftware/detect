@@ -23,3 +23,4 @@
 ### Changed features
 
 * When using the `detect.excluded.detectors` property, any fallback Detectors will now we executed if the primary Detector is excluded. Previously, entire sets of Detectors would be excluded.
+* (IDETECT-4880) The `.bridge` directory will now be excluded by default from detector and signature scans.
