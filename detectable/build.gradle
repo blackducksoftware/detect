@@ -22,6 +22,8 @@ dependencies {
     implementation "org.apache.maven.resolver:maven-resolver-generator-gnupg:2.0.13"
     implementation "org.apache.maven.resolver:maven-resolver-named-locks:1.9.24"
     implementation "org.apache.maven.resolver:maven-resolver-supplier-mvn3:2.0.13"
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.20.0'
+
 
     testImplementation 'org.skyscreamer:jsonassert:1.5.0'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.3.1'
