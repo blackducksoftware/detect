@@ -22,7 +22,7 @@ import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
 import com.blackduck.integration.detector.base.DetectorType;
 import com.blackduck.integration.exception.IntegrationException;
 
-//@Tag("integration")
+@Tag("integration")
 public class PipTest {
 
     private static final String[] PIP_VERSIONS_TO_TEST = new String[] { "24.2" };
