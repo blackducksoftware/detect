@@ -590,7 +590,7 @@ public class OperationRunner {
                         .buildBlackDuckResponseRequest(postUrl);
             } else {
                 buildBlackDuckResponseRequest = new BlackDuckRequestBuilder()
-                        .postString(jsonldHeader.getContent(), ContentType.create(scanServicePostContentType))
+                        .postString(jsonldHeader.getContent(), ContentType.create(scanServicePostContentType, StandardCharsets.UTF_8))
                         .buildBlackDuckResponseRequest(postUrl);
             }
 
