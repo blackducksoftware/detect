@@ -23,3 +23,7 @@
 ### Changed features
 
 * When using the `detect.excluded.detectors` property, any fallback Detectors will now we executed if the primary Detector is excluded. Previously, entire sets of Detectors would be excluded.
+
+### Resolved issues
+
+* (IDETECT-4874) Improved support for multibyte characters in project names, version names, and code location names during package manager scans.
