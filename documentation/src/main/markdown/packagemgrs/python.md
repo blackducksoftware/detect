@@ -124,7 +124,7 @@ When the `--detect.poetry.dependency.groups.excluded` property is specified, pre
 
 ## UV Package Manager
 
-One of the UV detectors will run on your project if a pyproject.toml file containing section `[tool.uv] managed = true` is found. 
+One of the UV detectors will run on your project if a pyproject.toml file containing section `[tool.uv]` is found. 
 
 The UV detectors extract the project's name and version from the pyproject.toml file. If these are not found in a pyproject.toml file, default values will be used.
 
