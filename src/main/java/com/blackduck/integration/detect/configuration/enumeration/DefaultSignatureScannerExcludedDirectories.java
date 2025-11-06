@@ -10,7 +10,8 @@ public enum DefaultSignatureScannerExcludedDirectories {
     NODE_MODULES("node_modules"),
     GIT(".git"),
     SYNOPSYS(".synopsys"),
-    BLACKDUCK(".blackduck");
+    BLACKDUCK(".blackduck"),
+    BRIDGE(".bridge");
 
     private final String directoryName;
 

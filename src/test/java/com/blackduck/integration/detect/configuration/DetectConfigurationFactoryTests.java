@@ -20,6 +20,7 @@ import com.blackduck.integration.blackduck.version.BlackDuckVersion;
 import com.blackduck.integration.common.util.Bdo;
 import com.blackduck.integration.detect.configuration.connection.BlackDuckConnectionDetails;
 import com.blackduck.integration.detect.configuration.enumeration.BlackduckScanMode;
+import com.blackduck.integration.detect.configuration.enumeration.DefaultSignatureScannerExcludedDirectories;
 import com.blackduck.integration.detect.configuration.enumeration.DefaultDetectorSearchExcludedDirectories;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
 import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
@@ -67,6 +68,17 @@ public class DetectConfigurationFactoryTests {
 
     @Test
     public void testDefaultSignatureScannerExcludedDirectories() {
+        DetectConfigurationFactory factory = factoryOf();
+
+        List<String> actualExcludedDirectories = factory.collectSignatureScannerDirectoryExclusions();
+
+        List<String> defaultExcludedDirectories = DefaultSignatureScannerExcludedDirectories.getDirectoryNames();
+
+        Assertions.assertEquals(defaultExcludedDirectories, actualExcludedDirectories);
+    }
+
+    @Test
+    public void testDefaultDetectorSearchExcludedDirectories() {
         DetectConfigurationFactory factory = factoryOf();
 
         List<String> actualExcludedDirectories = factory.collectDetectorSearchDirectoryExclusions();
