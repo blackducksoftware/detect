@@ -4,8 +4,8 @@
 
 **New features**
 
-* Updated the plugin to use [company_name] [solution_name] 11.
-    * [company_name] [solution_name] [Release Notes](../../currentreleasenotes.md)
+* Updated the plugin to use [detect_product_long] 11.
+    * [detect_product_long] [Release Notes](../../currentreleasenotes.md)
 
 ## Version 10.1.0
 **New features**
