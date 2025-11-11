@@ -3,11 +3,11 @@
 ## Version 11.0.0
 **New features**
 
-* This release is compatible with [company_name] [solution_name] 11.x.x. (Downloading and using detect11.(sh/ps1)).
+* This release is compatible with [detect_product_long] 11.x.x. (Downloading and using detect11.(sh/ps1)).
 
 **Changed features**
 
-* Updated to use [company_name] [solution_name] 11.x.x for execution.
+* Updated to use [detect_product_long] 11.x.x for execution.
 * Jenkins version 2.462.3 or later is required.
 
 <note type="note">Configuration and usage of the plugin is unchanged.</note>
