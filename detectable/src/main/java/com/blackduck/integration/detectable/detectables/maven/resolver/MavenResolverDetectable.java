@@ -11,6 +11,7 @@ import com.blackduck.integration.detectable.detectable.result.FileNotFoundDetect
 import com.blackduck.integration.detectable.detectable.result.PassedDetectableResult;
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenCliExtractor;
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenCliExtractorOptions;
+import com.blackduck.integration.detectable.detectables.maven.resolver.PropertiesResolverProvider;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 import org.eclipse.aether.RepositorySystem;
@@ -31,10 +32,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.PrintStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @DetectableInfo(
         name = "Maven Resolver",
@@ -110,21 +114,30 @@ public class MavenResolverDetectable extends Detectable {
                     .withLocalRepositoryBaseDirectories(localRepoPath)
                     .build()) {
 
-                // 3. Define a hardcoded artifact to resolve.
-                Artifact artifact = new DefaultArtifact("com.google.guava:guava:31.0.1-jre");
+                // 3. Parse the pom.xml file.
+                PropertiesResolverProvider propertiesResolverProvider = new PropertiesResolverProvider(null, System::getenv);
+                PomParser pomParser = new PomParser();
+                byte[] pomBytes = Files.readAllBytes(pomFile.toPath());
+                PartialMavenProject partialMavenProject = pomParser.parsePomFile(pomFile.getAbsolutePath(), pomBytes, propertiesResolverProvider);
+
+                // 4. Convert dependencies from the parsed POM to Aether Dependencies.
+                List<Dependency> dependencies = partialMavenProject.getDependencies().stream()
+                        .map(dep -> new Dependency(new DefaultArtifact(dep.getGroupId(), dep.getArtifactId(), "jar", dep.getVersion()), dep.getScope()))
+                        .collect(Collectors.toList());
 
                 logger.info("------------------------------------------------------------");
-                logger.info("Resolving dependency tree for: {}", artifact);
+                logger.info("Resolving dependency tree for: {}", pomFile.getAbsolutePath());
 
+                // 5. Use only Maven Central for repository.
                 RemoteRepository central = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
                 List<RemoteRepository> repositories = Collections.singletonList(central);
 
-                // 4. Create a CollectRequest for the artifact.
+                // 6. Create a CollectRequest for the artifact.
                 CollectRequest collectRequest = new CollectRequest();
-                collectRequest.setRoot(new Dependency(artifact, ""));
+                collectRequest.setDependencies(dependencies);
                 collectRequest.setRepositories(repositories);
 
-                // 5. Collect dependencies and print the tree.
+                // 7. Collect dependencies and print the tree.
                 CollectResult collectResult = system.collectDependencies(session, collectRequest);
                 File dependencyTreeFile = extractionEnvironment.getOutputDirectory().toPath().resolve("dependency-tree.txt").toFile();
                 try (PrintStream printStream = new PrintStream(dependencyTreeFile)) {

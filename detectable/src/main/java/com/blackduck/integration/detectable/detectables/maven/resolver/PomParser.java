@@ -46,6 +46,9 @@ public class PomParser {
 
             // Step 2: Parse XML without property resolution first
             XmlMapper xmlMapper = new XmlMapper();
+
+            //workaround for now
+            xmlMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
             PomXml unresolvedParsedPomFile = xmlMapper.readValue(xmlContent, PomXml.class);
 
             // Step 3: Create properties resolver
@@ -95,12 +98,17 @@ public class PomParser {
 
             // Set parent POM info
             ParentPomInfo parentPomInfo = new ParentPomInfo();
-            parentPomInfo.setCoordinates(new JavaCoordinates(
-                    trimSpace(parsedPomFile.getParentGroupId()),
-                    trimSpace(parsedPomFile.getParentArtifactId()),
-                    trimSpace(parsedPomFile.getParentVersion()),
+            PomXmlParent parent = parsedPomFile.getParent();
+            if (parent != null) {
+                parentPomInfo.setCoordinates(new JavaCoordinates(
+                    trimSpace(parent.getGroupId()),
+                    trimSpace(parent.getArtifactId()),
+                    trimSpace(parent.getVersion()),
                     ""
-            ));
+                ));
+            } else {
+                parentPomInfo.setCoordinates(new JavaCoordinates());
+            }
             parentPomInfo.setDependencies(new ArrayList<>());
             parentPomInfo.setDependencyManagement(new ArrayList<>());
 
@@ -127,7 +135,8 @@ public class PomParser {
             String expectedParentPomPath = "";
             JavaCoordinates parentCoords = parentPomInfo.getCoordinates();
             if (isNotEmpty(parentCoords.getGroupId()) && isNotEmpty(parentCoords.getArtifactId()) && isNotEmpty(parentCoords.getVersion())) {
-                expectedParentPomPath = calcExpectedParentPath(pomFilePath, parsedPomFile.getParentRelativePath());
+                String relativePath = (parent != null) ? parent.getRelativePath() : null;
+                expectedParentPomPath = calcExpectedParentPath(pomFilePath, relativePath);
             }
             parentPomInfo.setExpectedPath(expectedParentPomPath);
 
@@ -149,9 +158,9 @@ public class PomParser {
             }
 
             // Process plugins
-            if (parsedPomFile.getPlugins() != null) {
-                for (String plugin : parsedPomFile.getPlugins()) {
-                    result.getPlugins().put(trimSpace(plugin), true);
+            if (parsedPomFile.getBuild() != null && parsedPomFile.getBuild().getPlugins() != null) {
+                for (PomXmlPlugin plugin : parsedPomFile.getBuild().getPlugins()) {
+                    result.getPlugins().put(trimSpace(plugin.getArtifactId()), true);
                 }
             }
 
@@ -255,20 +264,20 @@ public class PomParser {
         return substitutor.replace(content);
     }
 
-    private String calcExpectedParentPath(String childPomFilePath, List<String> xmlParentPath) {
+    private String calcExpectedParentPath(String childPomFilePath, String xmlParentPath) {
         // If the tag is present and empty we keep the empty value
-        if (xmlParentPath != null && xmlParentPath.size() == 1 && trimSpace(xmlParentPath.get(0)).isEmpty()) {
+        if (xmlParentPath != null && xmlParentPath.trim().isEmpty()) {
             return "";
         }
 
         // If the tag isn't present we use the default (../pom.xml)
         Path pomFileBaseDir = Paths.get(childPomFilePath).getParent();
-        if (xmlParentPath == null || xmlParentPath.isEmpty()) {
+        if (xmlParentPath == null) {
             return pomFileBaseDir.resolve("..").resolve("pom.xml").toString();
         }
 
         // Transform the relative path
-        String expectedPath = trimSpace(xmlParentPath.get(0));
+        String expectedPath = xmlParentPath.trim();
         return pomFileBaseDir.resolve(expectedPath).toString();
     }
 
