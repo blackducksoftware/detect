@@ -507,11 +507,7 @@ public class DetectableFactory {
     ) {
         return new MavenResolverDetectable(
                 environment,
-                fileFinder,
-                mavenResolver,
-                mavenCliExtractor(),
-                mavenCliExtractorOptions,
-                createMavenProjectInspectorDetectable(environment, projectInspectorResolver, projectInspectorOptions)
+                fileFinder
         );
     }
 

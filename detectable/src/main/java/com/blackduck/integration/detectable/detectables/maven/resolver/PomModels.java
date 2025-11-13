@@ -346,6 +346,17 @@ class JavaDependency {
     private String type;
     private String classifier;
     private String projectDependencyFilePath;
+    private List<JavaDependencyExclusion> exclusions;
+
+    public JavaDependency() {}
+
+    public JavaDependency(JavaCoordinates coordinates, String scope, String type, String classifier, List<JavaDependencyExclusion> exclusions) {
+        this.coordinates = coordinates;
+        this.scope = scope;
+        this.type = type;
+        this.classifier = classifier;
+        this.exclusions = exclusions;
+    }
 
     // Getters and Setters
     public List<String> getIncludedBy() { return includedBy; }
@@ -365,4 +376,7 @@ class JavaDependency {
 
     public String getProjectDependencyFilePath() { return projectDependencyFilePath; }
     public void setProjectDependencyFilePath(String projectDependencyFilePath) { this.projectDependencyFilePath = projectDependencyFilePath; }
+
+    public List<JavaDependencyExclusion> getExclusions() { return exclusions; }
+    public void setExclusions(List<JavaDependencyExclusion> exclusions) { this.exclusions = exclusions; }
 }
