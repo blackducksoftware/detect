@@ -25,18 +25,8 @@ class PomXml {
     @JacksonXmlProperty(localName = "packaging")
     private String packaging;
 
-    @JacksonXmlProperty(localName = "groupId", namespace = "parent")
-    private String parentGroupId;
-
-    @JacksonXmlProperty(localName = "artifactId", namespace = "parent")
-    private String parentArtifactId;
-
-    @JacksonXmlProperty(localName = "version", namespace = "parent")
-    private String parentVersion;
-
-    @JacksonXmlElementWrapper(localName = "parent")
-    @JacksonXmlProperty(localName = "relativePath")
-    private List<String> parentRelativePath;
+    @JacksonXmlProperty(localName = "parent")
+    private PomXmlParent parent;
 
     @JacksonXmlElementWrapper(localName = "repositories")
     @JacksonXmlProperty(localName = "repository")
@@ -54,9 +44,8 @@ class PomXml {
     @JacksonXmlProperty(localName = "module")
     private List<String> modules;
 
-    @JacksonXmlElementWrapper(localName = "build")
-    @JacksonXmlProperty(localName = "plugins")
-    private List<String> plugins;
+    @JacksonXmlProperty(localName = "build")
+    private PomXmlBuild build;
 
     // Getters and Setters
     public String getGroupId() { return groupId; }
@@ -71,17 +60,8 @@ class PomXml {
     public String getPackaging() { return packaging; }
     public void setPackaging(String packaging) { this.packaging = packaging; }
 
-    public String getParentGroupId() { return parentGroupId; }
-    public void setParentGroupId(String parentGroupId) { this.parentGroupId = parentGroupId; }
-
-    public String getParentArtifactId() { return parentArtifactId; }
-    public void setParentArtifactId(String parentArtifactId) { this.parentArtifactId = parentArtifactId; }
-
-    public String getParentVersion() { return parentVersion; }
-    public void setParentVersion(String parentVersion) { this.parentVersion = parentVersion; }
-
-    public List<String> getParentRelativePath() { return parentRelativePath; }
-    public void setParentRelativePath(List<String> parentRelativePath) { this.parentRelativePath = parentRelativePath; }
+    public PomXmlParent getParent() { return parent; }
+    public void setParent(PomXmlParent parent) { this.parent = parent; }
 
     public List<MavenRepositoryXml> getRepositories() { return repositories; }
     public void setRepositories(List<MavenRepositoryXml> repositories) { this.repositories = repositories; }
@@ -95,8 +75,85 @@ class PomXml {
     public List<String> getModules() { return modules; }
     public void setModules(List<String> modules) { this.modules = modules; }
 
-    public List<String> getPlugins() { return plugins; }
-    public void setPlugins(List<String> plugins) { this.plugins = plugins; }
+    public PomXmlBuild getBuild() { return build; }
+    public void setBuild(PomXmlBuild build) { this.build = build; }
+}
+
+// POM XML Parent
+class PomXmlParent {
+    @JacksonXmlProperty(localName = "groupId")
+    private String groupId;
+
+    @JacksonXmlProperty(localName = "artifactId")
+    private String artifactId;
+
+    @JacksonXmlProperty(localName = "version")
+    private String version;
+
+    @JacksonXmlProperty(localName = "relativePath")
+    private String relativePath;
+
+    // Getters and Setters
+    public String getGroupId() { return groupId; }
+    public void setGroupId(String groupId) { this.groupId = groupId; }
+
+    public String getArtifactId() { return artifactId; }
+    public void setArtifactId(String artifactId) { this.artifactId = artifactId; }
+
+    public String getVersion() { return version; }
+    public void setVersion(String version) { this.version = version; }
+
+    public String getRelativePath() { return relativePath; }
+    public void setRelativePath(String relativePath) { this.relativePath = relativePath; }
+}
+
+class PomXmlBuild {
+    @JacksonXmlElementWrapper(localName = "plugins")
+    @JacksonXmlProperty(localName = "plugin")
+    private List<PomXmlPlugin> plugins;
+
+    public List<PomXmlPlugin> getPlugins() {
+        return plugins;
+    }
+
+    public void setPlugins(List<PomXmlPlugin> plugins) {
+        this.plugins = plugins;
+    }
+}
+
+class PomXmlPlugin {
+    @JacksonXmlProperty(localName = "groupId")
+    private String groupId;
+
+    @JacksonXmlProperty(localName = "artifactId")
+    private String artifactId;
+
+    @JacksonXmlProperty(localName = "version")
+    private String version;
+
+    public String getGroupId() {
+        return groupId;
+    }
+
+    public void setGroupId(String groupId) {
+        this.groupId = groupId;
+    }
+
+    public String getArtifactId() {
+        return artifactId;
+    }
+
+    public void setArtifactId(String artifactId) {
+        this.artifactId = artifactId;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
 }
 
 // Maven Repository XML model
