@@ -5,27 +5,12 @@ import com.blackduck.integration.detectable.Detectable;
 import com.blackduck.integration.detectable.DetectableEnvironment;
 import com.blackduck.integration.detectable.detectable.DetectableAccuracyType;
 import com.blackduck.integration.detectable.detectable.annotation.DetectableInfo;
-import com.blackduck.integration.detectable.detectable.executable.resolver.MavenResolver;
 import com.blackduck.integration.detectable.detectable.result.DetectableResult;
 import com.blackduck.integration.detectable.detectable.result.FileNotFoundDetectableResult;
 import com.blackduck.integration.detectable.detectable.result.PassedDetectableResult;
-import com.blackduck.integration.detectable.detectables.maven.cli.MavenCliExtractor;
-import com.blackduck.integration.detectable.detectables.maven.cli.MavenCliExtractorOptions;
-import com.blackduck.integration.detectable.detectables.maven.resolver.PropertiesResolverProvider;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
-import org.eclipse.aether.RepositorySystem;
-import org.eclipse.aether.RepositorySystemSession.CloseableSession;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.collection.CollectResult;
-import org.eclipse.aether.graph.Dependency;
-import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.spi.connector.transport.TransporterFactory;
-import org.eclipse.aether.supplier.RepositorySystemSupplier;
-import org.eclipse.aether.supplier.SessionBuilderSupplier;
-import org.eclipse.aether.transport.jdk.JdkTransporterFactory;
 import org.eclipse.aether.util.graph.visitor.DependencyGraphDumper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,11 +19,6 @@ import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @DetectableInfo(
         name = "Maven Resolver",
@@ -53,27 +33,15 @@ public class MavenResolverDetectable extends Detectable {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final FileFinder fileFinder;
-    private final MavenResolver mavenResolver;
-    private final MavenCliExtractor mavenCliExtractor;
-    private final MavenCliExtractorOptions mavenCliExtractorOptions;
-    private final Detectable projectInspector;
 
     private File pomFile;
 
     public MavenResolverDetectable(
             DetectableEnvironment environment,
-            FileFinder fileFinder,
-            MavenResolver mavenResolver,
-            MavenCliExtractor mavenCliExtractor,
-            MavenCliExtractorOptions mavenCliExtractorOptions,
-            Detectable projectInspector
+            FileFinder fileFinder
     ) {
         super(environment);
         this.fileFinder = fileFinder;
-        this.mavenResolver = mavenResolver;
-        this.mavenCliExtractor = mavenCliExtractor;
-        this.mavenCliExtractorOptions = mavenCliExtractorOptions;
-        this.projectInspector = projectInspector;
     }
 
     @Override
@@ -95,62 +63,30 @@ public class MavenResolverDetectable extends Detectable {
     @Override
     public Extraction extract(ExtractionEnvironment extractionEnvironment) {
         try {
-            // 1. Create RepositorySystem using the supplier approach.
-            RepositorySystem system = new RepositorySystemSupplier() {
-                @Override
-                protected Map<String, TransporterFactory> createTransporterFactories() {
-                    Map<String, TransporterFactory> result = super.createTransporterFactories();
-                    result.put(
-                            JdkTransporterFactory.NAME,
-                            new JdkTransporterFactory(getChecksumExtractor(), getPathProcessor()));
-                    return result;
-                }
-            }.get();
+            // 1. Build the effective POM using the new ProjectBuilder.
+            Path downloadDir = extractionEnvironment.getOutputDirectory().toPath().resolve("downloads");
+            Files.createDirectories(downloadDir);
+            ProjectBuilder projectBuilder = new ProjectBuilder(downloadDir);
+            MavenProject mavenProject = projectBuilder.buildProject(pomFile);
 
-            // 2. Create a session.
+            // 2. Resolve dependencies using the Aether-based resolver.
+            MavenDependencyResolver dependencyResolver = new MavenDependencyResolver();
             Path localRepoPath = extractionEnvironment.getOutputDirectory().toPath().resolve("local-repo");
-            try (CloseableSession session = new SessionBuilderSupplier(system)
-                    .get()
-                    .withLocalRepositoryBaseDirectories(localRepoPath)
-                    .build()) {
+            CollectResult collectResult = dependencyResolver.resolveDependencies(pomFile, mavenProject, localRepoPath.toFile());
 
-                // 3. Parse the pom.xml file.
-                PropertiesResolverProvider propertiesResolverProvider = new PropertiesResolverProvider(null, System::getenv);
-                PomParser pomParser = new PomParser();
-                byte[] pomBytes = Files.readAllBytes(pomFile.toPath());
-                PartialMavenProject partialMavenProject = pomParser.parsePomFile(pomFile.getAbsolutePath(), pomBytes, propertiesResolverProvider);
-
-                // 4. Convert dependencies from the parsed POM to Aether Dependencies.
-                List<Dependency> dependencies = partialMavenProject.getDependencies().stream()
-                        .map(dep -> new Dependency(new DefaultArtifact(dep.getGroupId(), dep.getArtifactId(), "jar", dep.getVersion()), dep.getScope()))
-                        .collect(Collectors.toList());
-
-                logger.info("------------------------------------------------------------");
-                logger.info("Resolving dependency tree for: {}", pomFile.getAbsolutePath());
-
-                // 5. Use only Maven Central for repository.
-                RemoteRepository central = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
-                List<RemoteRepository> repositories = Collections.singletonList(central);
-
-                // 6. Create a CollectRequest for the artifact.
-                CollectRequest collectRequest = new CollectRequest();
-                collectRequest.setDependencies(dependencies);
-                collectRequest.setRepositories(repositories);
-
-                // 7. Collect dependencies and print the tree.
-                CollectResult collectResult = system.collectDependencies(session, collectRequest);
-                File dependencyTreeFile = extractionEnvironment.getOutputDirectory().toPath().resolve("dependency-tree.txt").toFile();
-                try (PrintStream printStream = new PrintStream(dependencyTreeFile)) {
-                    collectResult.getRoot().accept(new DependencyGraphDumper(printStream::println));
-                }
-                logger.info("Dependency tree saved to dependency-tree.txt");
-
+            // 3. Write the dependency tree to a file for inspection.
+            File dependencyTreeFile = new File(extractionEnvironment.getOutputDirectory(), "dependency-tree.txt");
+            try (PrintStream printStream = new PrintStream(dependencyTreeFile)) {
+                collectResult.getRoot().accept(new DependencyGraphDumper(printStream::println));
             }
+            logger.info("Dependency tree saved to: {}", dependencyTreeFile.getAbsolutePath());
+
+            // The actual result would be a CodeLocation, but for now, we signal success.
+            return new Extraction.Builder().success().build();
+
         } catch (Exception e) {
-            logger.error("Failed to resolve dependencies", e);
+            logger.error("Failed to resolve dependencies for pom.xml: {}", e.getMessage());
             return new Extraction.Builder().exception(e).build();
         }
-
-        return new Extraction.Builder().success().build();
     }
 }
