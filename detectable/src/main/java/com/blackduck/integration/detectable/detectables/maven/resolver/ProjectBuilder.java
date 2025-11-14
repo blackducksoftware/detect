@@ -76,33 +76,46 @@ public class ProjectBuilder {
 
     private PartialMavenProject finalizeEffectiveModel(String path, PartialMavenProject partialModel, PartialMavenProject parentModel) {
         if (parentModel != null) {
-            // Merge repositories
-            List<JavaRepository> allRepositories = Stream.concat(partialModel.getRepositories().stream(), parentModel.getRepositories().stream())
-                .distinct()
-                .collect(Collectors.toList());
-            partialModel.setRepositories(allRepositories);
+            // Merge repositories: Child overrides parent by ID
+            Map<String, JavaRepository> repoMap = new HashMap<>();
+            if (parentModel.getRepositories() != null) {
+                parentModel.getRepositories().forEach(repo -> repoMap.put(repo.getId(), repo));
+            }
+            if (partialModel.getRepositories() != null) {
+                partialModel.getRepositories().forEach(repo -> repoMap.put(repo.getId(), repo));
+            }
+            partialModel.setRepositories(new ArrayList<>(repoMap.values()));
 
-            // Merge dependency management
-            List<PomXmlDependency> allDepMgmt = Stream.concat(partialModel.getDependencyManagement().stream(), parentModel.getDependencyManagement().stream())
-                .distinct()
-                .collect(Collectors.toList());
-            partialModel.setDependencyManagement(allDepMgmt);
+            // Merge dependency management: Child overrides parent by G:A
+            Map<String, PomXmlDependency> depMgmtMap = new HashMap<>();
+            if (parentModel.getDependencyManagement() != null) {
+                parentModel.getDependencyManagement().forEach(dep -> depMgmtMap.put(dep.getGroupId() + ":" + dep.getArtifactId(), dep));
+            }
+            if (partialModel.getDependencyManagement() != null) {
+                partialModel.getDependencyManagement().forEach(dep -> depMgmtMap.put(dep.getGroupId() + ":" + dep.getArtifactId(), dep));
+            }
+            partialModel.setDependencyManagement(new ArrayList<>(depMgmtMap.values()));
 
-            // Merge dependencies
-            List<PomXmlDependency> allDeps = Stream.concat(partialModel.getDependencies().stream(), parentModel.getDependencies().stream())
-                .distinct()
-                .collect(Collectors.toList());
-            partialModel.setDependencies(allDeps);
+            // Merge dependencies: Child overrides parent by G:A
+            Map<String, PomXmlDependency> depsMap = new HashMap<>();
+            if (parentModel.getDependencies() != null) {
+                parentModel.getDependencies().forEach(dep -> depsMap.put(dep.getGroupId() + ":" + dep.getArtifactId(), dep));
+            }
+            if (partialModel.getDependencies() != null) {
+                partialModel.getDependencies().forEach(dep -> depsMap.put(dep.getGroupId() + ":" + dep.getArtifactId(), dep));
+            }
+            partialModel.setDependencies(new ArrayList<>(depsMap.values()));
         }
         pomCache.put(path, partialModel);
         return partialModel;
     }
 
     private MavenProject toCompleteMavenProject(String pomFile, PartialMavenProject project) {
-        // This is a simplified conversion. A real implementation would need to handle dependency management application.
-        List<JavaDependency> dependencies = project.getDependencies().stream()
-            .map(this::convertPomXmlDependencyToJavaDependency)
-            .collect(Collectors.toList());
+        // 1. Resolve properties in dependencies
+        resolveDependencyProperties(project);
+
+        // 2. Apply dependency management
+        List<JavaDependency> finalDependencies = applyDependencyManagement(project);
 
         List<JavaDependency> dependencyManagement = project.getDependencyManagement().stream()
             .map(this::convertPomXmlDependencyToJavaDependency)
@@ -112,10 +125,54 @@ public class ProjectBuilder {
             pomFile,
             project.getCoordinates(),
             project.getRepositories(),
-            dependencies,
+            finalDependencies,
             dependencyManagement,
             project.getModules()
         );
+    }
+
+    private void resolveDependencyProperties(PartialMavenProject project) {
+        // A simple string replacer, a more robust solution would use a library like Apache Commons Text
+        for (PomXmlDependency dep : project.getDependencies()) {
+            dep.setGroupId(resolveProperties(dep.getGroupId(), project.getProperties()));
+            dep.setArtifactId(resolveProperties(dep.getArtifactId(), project.getProperties()));
+            dep.setVersion(resolveProperties(dep.getVersion(), project.getProperties()));
+        }
+        for (PomXmlDependency dep : project.getDependencyManagement()) {
+            dep.setGroupId(resolveProperties(dep.getGroupId(), project.getProperties()));
+            dep.setArtifactId(resolveProperties(dep.getArtifactId(), project.getProperties()));
+            dep.setVersion(resolveProperties(dep.getVersion(), project.getProperties()));
+        }
+    }
+
+    private String resolveProperties(String value, Map<String, String> properties) {
+        if (value == null || !value.contains("${")) {
+            return value;
+        }
+        for (Map.Entry<String, String> entry : properties.entrySet()) {
+            value = value.replace("${" + entry.getKey() + "}", entry.getValue());
+        }
+        return value;
+    }
+
+    private List<JavaDependency> applyDependencyManagement(PartialMavenProject project) {
+        Map<String, PomXmlDependency> managedDependencies = project.getDependencyManagement().stream()
+            .collect(Collectors.toMap(dep -> dep.getGroupId() + ":" + dep.getArtifactId(), dep -> dep));
+
+        return project.getDependencies().stream()
+            .map(dep -> {
+                PomXmlDependency managed = managedDependencies.get(dep.getGroupId() + ":" + dep.getArtifactId());
+                if (managed != null) {
+                    if (dep.getVersion() == null && managed.getVersion() != null) {
+                        dep.setVersion(managed.getVersion());
+                    }
+                    if (dep.getScope() == null && managed.getScope() != null) {
+                        dep.setScope(managed.getScope());
+                    }
+                }
+                return convertPomXmlDependencyToJavaDependency(dep);
+            })
+            .collect(Collectors.toList());
     }
 
     private JavaDependency convertPomXmlDependencyToJavaDependency(PomXmlDependency pomDep) {

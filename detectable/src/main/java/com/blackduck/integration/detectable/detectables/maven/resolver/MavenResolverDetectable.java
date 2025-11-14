@@ -69,6 +69,13 @@ public class MavenResolverDetectable extends Detectable {
             ProjectBuilder projectBuilder = new ProjectBuilder(downloadDir);
             MavenProject mavenProject = projectBuilder.buildProject(pomFile);
 
+            // Suggestion 3: Log the MavenProject details for verification.
+            logger.info("Constructed MavenProject model:");
+            logger.info("  Coordinates: {}", mavenProject.getCoordinates());
+            mavenProject.getDependencies().forEach(dep ->
+                logger.info("  Dependency: {}:{}:{} (Scope: {})", dep.getCoordinates().getGroupId(), dep.getCoordinates().getArtifactId(), dep.getCoordinates().getVersion(), dep.getScope())
+            );
+
             // 2. Resolve dependencies using the Aether-based resolver.
             MavenDependencyResolver dependencyResolver = new MavenDependencyResolver();
             Path localRepoPath = extractionEnvironment.getOutputDirectory().toPath().resolve("local-repo");

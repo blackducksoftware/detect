@@ -39,10 +39,19 @@ public class MavenDependencyResolver {
     public CollectResult resolveDependencies(File pomFile, MavenProject mavenProject, File localRepoDir) throws DependencyCollectionException, DependencyResolutionException {
         RepositorySystemSession session = newSession(localRepoDir);
 
+        org.eclipse.aether.artifact.Artifact rootArtifact = new org.eclipse.aether.artifact.DefaultArtifact(
+            mavenProject.getCoordinates().getGroupId(),
+            mavenProject.getCoordinates().getArtifactId(),
+            "pom",
+            mavenProject.getCoordinates().getVersion()
+        );
+
         List<Dependency> dependencies = mavenProject.getDependencies().stream()
                 .map(dep -> new Dependency(new org.eclipse.aether.artifact.DefaultArtifact(dep.getCoordinates().getGroupId(), dep.getCoordinates().getArtifactId(), "jar", dep.getCoordinates().getVersion()), dep.getScope()))
                 .collect(Collectors.toList());
 
+        // Old code: use repositories from MavenProject
+        /*
         List<RemoteRepository> remoteRepositories = mavenProject.getRepositories().stream()
                 .map(repo -> new RemoteRepository.Builder(repo.getId(), "default", repo.getUrl()).build())
                 .collect(Collectors.toList());
@@ -51,8 +60,21 @@ public class MavenDependencyResolver {
         if (remoteRepositories.isEmpty()) {
             remoteRepositories.add(new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build());
         }
+        */
 
+        // New code: use only Maven Central
+        List<RemoteRepository> remoteRepositories = java.util.Arrays.asList(
+            new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build()
+        );
+
+        /*
         CollectRequest collectRequest = new CollectRequest();
+        collectRequest.setRootArtifact(rootArtifact);
+        collectRequest.setDependencies(dependencies);
+        collectRequest.setRepositories(remoteRepositories);
+        */
+        CollectRequest collectRequest = new CollectRequest();
+        collectRequest.setRoot(new Dependency(rootArtifact, "compile"));
         collectRequest.setDependencies(dependencies);
         collectRequest.setRepositories(remoteRepositories);
 
@@ -69,6 +91,7 @@ public class MavenDependencyResolver {
         DefaultRepositorySystemSession session = new DefaultRepositorySystemSession();
         LocalRepository localRepo = new LocalRepository(localRepoDir.getAbsolutePath());
         session.setLocalRepositoryManager(repositorySystem.newLocalRepositoryManager(session, localRepo));
+        session.setChecksumPolicy("warn");
         return session;
     }
 }
