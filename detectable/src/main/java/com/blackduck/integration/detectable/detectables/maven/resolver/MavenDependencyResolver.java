@@ -1,24 +1,25 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver;
 
-import org.eclipse.aether.DefaultRepositorySystemSession;
+import java.io.File;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyCollectionException;
 import org.eclipse.aether.graph.Dependency;
-import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.resolution.DependencyRequest;
-import org.eclipse.aether.resolution.DependencyResolutionException;
+import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.supplier.RepositorySystemSupplier;
+import org.eclipse.aether.supplier.SessionBuilderSupplier;
+import org.eclipse.aether.transport.jdk.JdkTransporterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class MavenDependencyResolver {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -27,71 +28,52 @@ public class MavenDependencyResolver {
     public MavenDependencyResolver() {
         this.repositorySystem = new RepositorySystemSupplier() {
             @Override
-            protected Map<String, org.eclipse.aether.spi.connector.transport.TransporterFactory> createTransporterFactories() {
-                Map<String, org.eclipse.aether.spi.connector.transport.TransporterFactory> factories = super.createTransporterFactories();
-                // This is intentionally left blank as the JdkTransporterFactory is not available in this context.
-                // The default transporters will be used.
-                return factories;
+            protected Map<String, TransporterFactory> createTransporterFactories() {
+                Map<String, TransporterFactory> result = super.createTransporterFactories();
+                result.put(
+                        JdkTransporterFactory.NAME,
+                        new JdkTransporterFactory(getChecksumExtractor(), getPathProcessor()));
+                return result;
             }
         }.get();
     }
 
-    public CollectResult resolveDependencies(File pomFile, MavenProject mavenProject, File localRepoDir) throws DependencyCollectionException, DependencyResolutionException {
+    public CollectResult resolveDependencies(File pomFile, MavenProject mavenProject, File localRepoDir) throws DependencyCollectionException {
         RepositorySystemSession session = newSession(localRepoDir);
 
-        org.eclipse.aether.artifact.Artifact rootArtifact = new org.eclipse.aether.artifact.DefaultArtifact(
+        List<Dependency> dependencies = mavenProject.getDependencies().stream()
+            .map(dep -> new Dependency(new DefaultArtifact(dep.getCoordinates().getGroupId(), dep.getCoordinates().getArtifactId(), "jar", dep.getCoordinates().getVersion()), dep.getScope()))
+            .collect(Collectors.toList());
+
+        logger.info("------------------------------------------------------------");
+        logger.info("Resolving dependency tree for: {}", pomFile.getAbsolutePath());
+
+        RemoteRepository central = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
+        List<RemoteRepository> repositories = Collections.singletonList(central);
+
+        CollectRequest collectRequest = new CollectRequest();
+
+        collectRequest.setRoot(new Dependency(new DefaultArtifact(
             mavenProject.getCoordinates().getGroupId(),
             mavenProject.getCoordinates().getArtifactId(),
             "pom",
             mavenProject.getCoordinates().getVersion()
-        );
+        ), "compile"));
 
-        List<Dependency> dependencies = mavenProject.getDependencies().stream()
-                .map(dep -> new Dependency(new org.eclipse.aether.artifact.DefaultArtifact(dep.getCoordinates().getGroupId(), dep.getCoordinates().getArtifactId(), "jar", dep.getCoordinates().getVersion()), dep.getScope()))
-                .collect(Collectors.toList());
-
-        // Old code: use repositories from MavenProject
-        /*
-        List<RemoteRepository> remoteRepositories = mavenProject.getRepositories().stream()
-                .map(repo -> new RemoteRepository.Builder(repo.getId(), "default", repo.getUrl()).build())
-                .collect(Collectors.toList());
-
-        // Fallback to Maven Central if no repositories are defined
-        if (remoteRepositories.isEmpty()) {
-            remoteRepositories.add(new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build());
-        }
-        */
-
-        // New code: use only Maven Central
-        List<RemoteRepository> remoteRepositories = java.util.Arrays.asList(
-            new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build()
-        );
-
-        /*
-        CollectRequest collectRequest = new CollectRequest();
-        collectRequest.setRootArtifact(rootArtifact);
         collectRequest.setDependencies(dependencies);
-        collectRequest.setRepositories(remoteRepositories);
-        */
-        CollectRequest collectRequest = new CollectRequest();
-        collectRequest.setRoot(new Dependency(rootArtifact, "compile"));
-        collectRequest.setDependencies(dependencies);
-        collectRequest.setRepositories(remoteRepositories);
+        collectRequest.setRepositories(repositories);
 
-        logger.info("Resolving dependency tree for: {}", pomFile.getAbsolutePath());
         CollectResult collectResult = repositorySystem.collectDependencies(session, collectRequest);
-
-        DependencyRequest dependencyRequest = new DependencyRequest(collectResult.getRoot(), null);
-        repositorySystem.resolveDependencies(session, dependencyRequest);
+        logger.info("Dependency tree collected for: {}", pomFile.getAbsolutePath());
 
         return collectResult;
     }
 
     private RepositorySystemSession newSession(File localRepoDir) {
-        DefaultRepositorySystemSession session = new DefaultRepositorySystemSession();
-        LocalRepository localRepo = new LocalRepository(localRepoDir.getAbsolutePath());
-        session.setLocalRepositoryManager(repositorySystem.newLocalRepositoryManager(session, localRepo));
-        session.setChecksumPolicy("warn");
-        return session;
+        SessionBuilderSupplier sessionBuilderSupplier = new SessionBuilderSupplier(repositorySystem);
+        return sessionBuilderSupplier
+            .get()
+            .withLocalRepositoryBaseDirectories(localRepoDir.toPath())
+            .build();
     }
 }
