@@ -21,7 +21,9 @@ public class GradleReportConfigurationParser {
         configuration.setUnresolved(parseUnresolved(header));
         List<GradleTreeNode> children = new ArrayList<>();
         for (String line: dependencyLines) {
-           children.add(parser.parseLine(line, metadata));
+            if (!line.trim().endsWith("(c)")) {
+                children.add(parser.parseLine(line, metadata));
+            }
         }
         configuration.setChildren(children);
 
