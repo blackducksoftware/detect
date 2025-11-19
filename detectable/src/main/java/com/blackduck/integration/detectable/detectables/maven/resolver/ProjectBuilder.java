@@ -77,6 +77,16 @@ public class ProjectBuilder {
 
     private PartialMavenProject finalizeEffectiveModel(String path, PartialMavenProject partialModel, PartialMavenProject parentModel) {
         if (parentModel != null) {
+            // Merge properties: Child's properties override parent's.
+            Map<String, String> mergedProperties = new HashMap<>();
+            if (parentModel.getProperties() != null) {
+                mergedProperties.putAll(parentModel.getProperties());
+            }
+            if (partialModel.getProperties() != null) {
+                mergedProperties.putAll(partialModel.getProperties());
+            }
+            partialModel.setProperties(mergedProperties);
+
             // Merge repositories: Child overrides parent by ID
             Map<String, JavaRepository> repoMap = new HashMap<>();
             if (parentModel.getRepositories() != null) {
