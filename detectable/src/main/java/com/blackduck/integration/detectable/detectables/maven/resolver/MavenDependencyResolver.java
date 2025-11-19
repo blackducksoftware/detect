@@ -45,6 +45,10 @@ public class MavenDependencyResolver {
             .map(dep -> new Dependency(new DefaultArtifact(dep.getCoordinates().getGroupId(), dep.getCoordinates().getArtifactId(), "jar", dep.getCoordinates().getVersion()), dep.getScope()))
             .collect(Collectors.toList());
 
+        List<Dependency> managedDependencies = mavenProject.getDependencyManagement().stream()
+            .map(dep -> new Dependency(new DefaultArtifact(dep.getCoordinates().getGroupId(), dep.getCoordinates().getArtifactId(), "jar", dep.getCoordinates().getVersion()), dep.getScope()))
+            .collect(Collectors.toList());
+
         logger.info("------------------------------------------------------------");
         logger.info("Resolving dependency tree for: {}", pomFile.getAbsolutePath());
 
@@ -61,6 +65,7 @@ public class MavenDependencyResolver {
         ), "compile"));
 
         collectRequest.setDependencies(dependencies);
+        collectRequest.setManagedDependencies(managedDependencies);
         collectRequest.setRepositories(repositories);
 
         CollectResult collectResult = repositorySystem.collectDependencies(session, collectRequest);
