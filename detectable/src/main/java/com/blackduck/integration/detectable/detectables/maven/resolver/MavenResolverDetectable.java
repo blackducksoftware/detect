@@ -69,11 +69,18 @@ public class MavenResolverDetectable extends Detectable {
             ProjectBuilder projectBuilder = new ProjectBuilder(downloadDir);
             MavenProject mavenProject = projectBuilder.buildProject(pomFile);
 
-            // Suggestion 3: Log the MavenProject details for verification.
-            logger.info("Constructed MavenProject model:");
-            logger.info("  Coordinates: {}", mavenProject.getCoordinates());
+            // Log the MavenProject details for verification.
+            logger.info("Constructed MavenProject model for: {}", mavenProject.getPomFile());
+            logger.info("  Coordinates: {}:{}:{}", mavenProject.getCoordinates().getGroupId(), mavenProject.getCoordinates().getArtifactId(), mavenProject.getCoordinates().getVersion());
+
+            logger.info("  Dependencies found: {}", mavenProject.getDependencies().size());
             mavenProject.getDependencies().forEach(dep ->
-                logger.info("  Dependency: {}:{}:{} (Scope: {})", dep.getCoordinates().getGroupId(), dep.getCoordinates().getArtifactId(), dep.getCoordinates().getVersion(), dep.getScope())
+                logger.info("    - Dependency: {}:{}:{} (Scope: {})", dep.getCoordinates().getGroupId(), dep.getCoordinates().getArtifactId(), dep.getCoordinates().getVersion(), dep.getScope())
+            );
+
+            logger.info("  Managed dependencies found: {}", mavenProject.getDependencyManagement().size());
+            mavenProject.getDependencyManagement().forEach(dep ->
+                logger.info("    - Managed Dependency: {}:{}:{} (Scope: {})", dep.getCoordinates().getGroupId(), dep.getCoordinates().getArtifactId(), dep.getCoordinates().getVersion(), dep.getScope())
             );
 
             // 2. Resolve dependencies using the Aether-based resolver.
