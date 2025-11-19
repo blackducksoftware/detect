@@ -66,6 +66,7 @@ public class MavenDependencyResolver {
             mavenProject.getCoordinates().getVersion()
         ), "compile"));
 
+        //Why? Because if this project doesn't declare any direct dependencies but it is managing a set of dependencies, what we probably want is to see the dependency tree for everything it's managing.
         if (dependencies.isEmpty() && !managedDependencies.isEmpty()) {
             logger.debug("Project has no direct dependencies but does have managed dependencies. Treating managed dependencies as direct for resolution.");
             collectRequest.setDependencies(managedDependencies);

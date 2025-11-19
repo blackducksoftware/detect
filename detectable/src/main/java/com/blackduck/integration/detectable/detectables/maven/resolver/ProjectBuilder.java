@@ -209,21 +209,9 @@ public class ProjectBuilder {
     }
 
     private void resolveDependencyProperties(PartialMavenProject project) {
-        // Create a complete map of properties for resolution, including the project's own coordinates.
+        // Create a complete map of properties for resolution.
+        // This now includes project.* properties from the PomParser stage.
         Map<String, String> allProps = new HashMap<>(project.getProperties());
-        JavaCoordinates coords = project.getCoordinates();
-        if (coords.getGroupId() != null) {
-            allProps.put("project.groupId", coords.getGroupId());
-            allProps.put("pom.groupId", coords.getGroupId());
-        }
-        if (coords.getArtifactId() != null) {
-            allProps.put("project.artifactId", coords.getArtifactId());
-            allProps.put("pom.artifactId", coords.getArtifactId());
-        }
-        if (coords.getVersion() != null) {
-            allProps.put("project.version", coords.getVersion());
-            allProps.put("pom.version", coords.getVersion());
-        }
 
         // Resolve properties for dependencies
         for (PomXmlDependency dep : project.getDependencies()) {

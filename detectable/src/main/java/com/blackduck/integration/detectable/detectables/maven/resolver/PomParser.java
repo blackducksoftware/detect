@@ -51,54 +51,17 @@ public class PomParser {
             xmlMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
             PomXml unresolvedParsedPomFile = xmlMapper.readValue(xmlContent, PomXml.class);
 
-            // Step 3: Create properties resolver
-            PropertyResolver propertiesResolver = propertiesResolverProvider.newResolver(explicitProps, implicitProps);
+            // Step 3: Create a preliminary model to determine final coordinates
+            PartialMavenProject preliminaryResult = new PartialMavenProject();
+            preliminaryResult.setCoordinates(new JavaCoordinates(
+                trimSpace(unresolvedParsedPomFile.getGroupId()),
+                trimSpace(unresolvedParsedPomFile.getArtifactId()),
+                trimSpace(unresolvedParsedPomFile.getVersion()),
+                trimSpace(unresolvedParsedPomFile.getPackaging())
+            ));
 
-            // Step 4: Replace properties in the complete POM XML file
-            String resolvedPomFileContent = replaceProperties(xmlContent, propertiesResolver);
-
-            // Step 5: Parse POM file with properties resolved
-            PomXml parsedPomFile;
-            try {
-                parsedPomFile = xmlMapper.readValue(resolvedPomFileContent, PomXml.class);
-            } catch (Exception e) {
-                logger.debug("Parsing file with resolved properties failed. Using original file without resolved properties.");
-                parsedPomFile = unresolvedParsedPomFile;
-            }
-
-            // Step 6: Retrieve all properties that were defined in this pom file (including parents)
-            Map<String, String> resolvedProperties = new HashMap<>();
-
-            // Add properties that start resolved (proj.*, jvm user props)
-            resolvedProperties.putAll(propertiesResolver.getResolvedProperties());
-
-            // Add properties that need resolution
-            for (Map.Entry<String, String> entry : explicitProps.entrySet()) {
-                String propName = entry.getKey();
-                String propVal = entry.getValue();
-                String resolvedVal = propertiesResolver.resolve(propName);
-                if (resolvedVal != null) {
-                    propVal = resolvedVal;
-                }
-                resolvedProperties.put(propName, propVal);
-            }
-
-            for (Map.Entry<String, String> entry : propertiesResolverProvider.getParentProperties().entrySet()) {
-                String propName = entry.getKey();
-                String propVal = entry.getValue();
-                String resolvedVal = propertiesResolver.resolve(propName);
-                if (resolvedVal != null) {
-                    propVal = resolvedVal;
-                }
-                resolvedProperties.put(propName, propVal);
-            }
-
-            // Step 7: Build resulting POM model
-            PartialMavenProject result = new PartialMavenProject();
-
-            // Set parent POM info
             ParentPomInfo parentPomInfo = new ParentPomInfo();
-            PomXmlParent parent = parsedPomFile.getParent();
+            PomXmlParent parent = unresolvedParsedPomFile.getParent();
             if (parent != null) {
                 parentPomInfo.setCoordinates(new JavaCoordinates(
                     trimSpace(parent.getGroupId()),
@@ -109,19 +72,56 @@ public class PomParser {
             } else {
                 parentPomInfo.setCoordinates(new JavaCoordinates());
             }
+            preliminaryResult.setParentPomInfo(parentPomInfo);
+            JavaCoordinates parentCoords = parentPomInfo.getCoordinates();
+
+            // Inherit GroupId or Version from parent if empty
+            if (isEmpty(preliminaryResult.getCoordinates().getGroupId()) && isNotEmpty(parentCoords.getGroupId())) {
+                preliminaryResult.getCoordinates().setGroupId(parentCoords.getGroupId());
+            }
+            if (isEmpty(preliminaryResult.getCoordinates().getVersion()) && isNotEmpty(parentCoords.getVersion())) {
+                preliminaryResult.getCoordinates().setVersion(parentCoords.getVersion());
+            }
+
+            // Step 4: Create project star properties now that coordinates are finalized
+            Map<String, String> projectStarProperties = new HashMap<>();
+            JavaCoordinates finalCoords = preliminaryResult.getCoordinates();
+            if (isNotEmpty(finalCoords.getGroupId())) {
+                projectStarProperties.put("project.groupId", finalCoords.getGroupId());
+                projectStarProperties.put("pom.groupId", finalCoords.getGroupId());
+            }
+            if (isNotEmpty(finalCoords.getArtifactId())) {
+                projectStarProperties.put("project.artifactId", finalCoords.getArtifactId());
+                projectStarProperties.put("pom.artifactId", finalCoords.getArtifactId());
+            }
+            if (isNotEmpty(finalCoords.getVersion())) {
+                projectStarProperties.put("project.version", finalCoords.getVersion());
+                projectStarProperties.put("pom.version", finalCoords.getVersion());
+            }
+
+            // Step 5: Create the final, fully-contextualized property resolver
+            PropertyResolver propertiesResolver = propertiesResolverProvider.newResolver(explicitProps, projectStarProperties);
+
+            // Step 6: Replace properties in the complete POM XML file
+            String resolvedPomFileContent = replaceProperties(xmlContent, propertiesResolver);
+
+            // Step 7: Parse POM file with properties resolved
+            PomXml parsedPomFile;
+            try {
+                parsedPomFile = xmlMapper.readValue(resolvedPomFileContent, PomXml.class);
+            } catch (Exception e) {
+                logger.debug("Parsing file with resolved properties failed. Using original file without resolved properties.");
+                parsedPomFile = unresolvedParsedPomFile;
+            }
+
+            // Step 8: Build the final resulting POM model
+            PartialMavenProject result = new PartialMavenProject();
+            result.setParentPomInfo(parentPomInfo);
+            result.setProperties(propertiesResolver.getAllProperties());
+            result.setCoordinates(finalCoords); // Use the already finalized coordinates
+
             parentPomInfo.setDependencies(new ArrayList<>());
             parentPomInfo.setDependencyManagement(new ArrayList<>());
-
-            result.setParentPomInfo(parentPomInfo);
-            result.setProperties(resolvedProperties);
-
-            // Set project coordinates
-            result.setCoordinates(new JavaCoordinates(
-                    trimSpace(parsedPomFile.getGroupId()),
-                    trimSpace(parsedPomFile.getArtifactId()),
-                    trimSpace(parsedPomFile.getVersion()),
-                    trimSpace(parsedPomFile.getPackaging())
-            ));
 
             result.setRepositories(new ArrayList<>());
             result.setDependencies(new ArrayList<>());
@@ -133,22 +133,11 @@ public class PomParser {
 
             // Calculate expected parent POM path
             String expectedParentPomPath = "";
-            JavaCoordinates parentCoords = parentPomInfo.getCoordinates();
             if (isNotEmpty(parentCoords.getGroupId()) && isNotEmpty(parentCoords.getArtifactId()) && isNotEmpty(parentCoords.getVersion())) {
                 String relativePath = (parent != null) ? parent.getRelativePath() : null;
                 expectedParentPomPath = calcExpectedParentPath(pomFilePath, relativePath);
             }
             parentPomInfo.setExpectedPath(expectedParentPomPath);
-
-            // Inherit GroupId or Version from parent if empty
-            if (isEmpty(result.getCoordinates().getGroupId()) && isNotEmpty(parentCoords.getGroupId())) {
-                logger.debug("Project groupId not found, overriding with parent pom groupId: {}", parentCoords.getGroupId());
-                result.getCoordinates().setGroupId(parentCoords.getGroupId());
-            }
-            if (isEmpty(result.getCoordinates().getVersion()) && isNotEmpty(parentCoords.getVersion())) {
-                logger.debug("Project version not found, overriding with parent pom version: {}", parentCoords.getVersion());
-                result.getCoordinates().setVersion(parentCoords.getVersion());
-            }
 
             // Process modules
             if (parsedPomFile.getModules() != null) {
