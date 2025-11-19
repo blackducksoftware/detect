@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.commons.text.StringSubstitutor;
 
 public class ProjectBuilder {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -132,16 +133,33 @@ public class ProjectBuilder {
     }
 
     private void resolveDependencyProperties(PartialMavenProject project) {
-        // A simple string replacer, a more robust solution would use a library like Apache Commons Text
-        for (PomXmlDependency dep : project.getDependencies()) {
-            dep.setGroupId(resolveProperties(dep.getGroupId(), project.getProperties()));
-            dep.setArtifactId(resolveProperties(dep.getArtifactId(), project.getProperties()));
-            dep.setVersion(resolveProperties(dep.getVersion(), project.getProperties()));
+        // Create a complete map of properties for resolution, including the project's own coordinates.
+        Map<String, String> allProps = new HashMap<>(project.getProperties());
+        JavaCoordinates coords = project.getCoordinates();
+        if (coords.getGroupId() != null) {
+            allProps.put("project.groupId", coords.getGroupId());
+            allProps.put("pom.groupId", coords.getGroupId());
         }
+        if (coords.getArtifactId() != null) {
+            allProps.put("project.artifactId", coords.getArtifactId());
+            allProps.put("pom.artifactId", coords.getArtifactId());
+        }
+        if (coords.getVersion() != null) {
+            allProps.put("project.version", coords.getVersion());
+            allProps.put("pom.version", coords.getVersion());
+        }
+
+        // Resolve properties for dependencies
+        for (PomXmlDependency dep : project.getDependencies()) {
+            dep.setGroupId(resolveProperties(dep.getGroupId(), allProps));
+            dep.setArtifactId(resolveProperties(dep.getArtifactId(), allProps));
+            dep.setVersion(resolveProperties(dep.getVersion(), allProps));
+        }
+        // Resolve properties for dependency management
         for (PomXmlDependency dep : project.getDependencyManagement()) {
-            dep.setGroupId(resolveProperties(dep.getGroupId(), project.getProperties()));
-            dep.setArtifactId(resolveProperties(dep.getArtifactId(), project.getProperties()));
-            dep.setVersion(resolveProperties(dep.getVersion(), project.getProperties()));
+            dep.setGroupId(resolveProperties(dep.getGroupId(), allProps));
+            dep.setArtifactId(resolveProperties(dep.getArtifactId(), allProps));
+            dep.setVersion(resolveProperties(dep.getVersion(), allProps));
         }
     }
 
@@ -149,10 +167,9 @@ public class ProjectBuilder {
         if (value == null || !value.contains("${")) {
             return value;
         }
-        for (Map.Entry<String, String> entry : properties.entrySet()) {
-            value = value.replace("${" + entry.getKey() + "}", entry.getValue());
-        }
-        return value;
+        // Use StringSubstitutor for more robust property replacement.
+        StringSubstitutor sub = new StringSubstitutor(properties);
+        return sub.replace(value);
     }
 
     private List<JavaDependency> applyDependencyManagement(PartialMavenProject project) {
