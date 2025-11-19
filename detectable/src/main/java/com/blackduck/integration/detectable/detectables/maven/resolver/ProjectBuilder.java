@@ -62,6 +62,9 @@ public class ProjectBuilder {
                     logger.debug("Building effective pom for parent pom \"{}\" ...", parentPomFile.getAbsolutePath());
                     PartialMavenProject effectiveParentPom = internalBuildProject(parentPomFile, identifiedParents);
                     logger.debug("Built effective pom for parent pom \"{}\".", parentPomFile.getAbsolutePath());
+                    logger.info("Parent ({}) properties found: {}", effectiveParentPom.getCoordinates().getArtifactId(), effectiveParentPom.getProperties().size());
+                    effectiveParentPom.getProperties().forEach((k, v) -> logger.info("  - Parent Prop: {} = {}", k, v));
+
 
                     propertiesResolverProvider.setParentProperties(effectiveParentPom.getProperties());
                     PartialMavenProject interpolatedPomInfo = pomParser.parsePomFile(pomFilePath, content, propertiesResolverProvider);
@@ -77,6 +80,10 @@ public class ProjectBuilder {
 
     private PartialMavenProject finalizeEffectiveModel(String path, PartialMavenProject partialModel, PartialMavenProject parentModel) {
         if (parentModel != null) {
+            logger.info("Merging models: child='{}' into parent='{}'", partialModel.getCoordinates().getArtifactId(), parentModel.getCoordinates().getArtifactId());
+            logger.info("Child properties before merge: {}", partialModel.getProperties().size());
+            partialModel.getProperties().forEach((k, v) -> logger.info("  - Child Prop: {} = {}", k, v));
+
             // Merge properties: Child's properties override parent's.
             Map<String, String> mergedProperties = new HashMap<>();
             if (parentModel.getProperties() != null) {
@@ -86,6 +93,8 @@ public class ProjectBuilder {
                 mergedProperties.putAll(partialModel.getProperties());
             }
             partialModel.setProperties(mergedProperties);
+            logger.info("Merged properties count: {}", mergedProperties.size());
+            mergedProperties.forEach((k, v) -> logger.info("  - Merged Prop: {} = {}", k, v));
 
             // Merge repositories: Child overrides parent by ID
             Map<String, JavaRepository> repoMap = new HashMap<>();
@@ -122,6 +131,8 @@ public class ProjectBuilder {
     }
 
     private MavenProject toCompleteMavenProject(String pomFile, PartialMavenProject project) {
+        logger.info("Preparing to complete MavenProject. Final properties for resolution in '{}': {}", project.getCoordinates().getArtifactId(), project.getProperties().size());
+        project.getProperties().forEach((k, v) -> logger.info("  - Final Prop: {} = {}", k, v));
         // 1. Resolve properties in dependencies
         resolveDependencyProperties(project);
 
