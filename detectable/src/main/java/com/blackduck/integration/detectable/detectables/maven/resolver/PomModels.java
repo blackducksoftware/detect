@@ -36,9 +36,8 @@ class PomXml {
     @JacksonXmlProperty(localName = "dependency")
     private List<PomXmlDependency> dependencies;
 
-    @JacksonXmlElementWrapper(localName = "dependencyManagement")
-    @JacksonXmlProperty(localName = "dependencies")
-    private List<PomXmlDependency> dependencyManagement;
+    @JacksonXmlProperty(localName = "dependencyManagement")
+    private PomXmlDependencyManagement dependencyManagement;
 
     @JacksonXmlElementWrapper(localName = "modules")
     @JacksonXmlProperty(localName = "module")
@@ -69,8 +68,8 @@ class PomXml {
     public List<PomXmlDependency> getDependencies() { return dependencies; }
     public void setDependencies(List<PomXmlDependency> dependencies) { this.dependencies = dependencies; }
 
-    public List<PomXmlDependency> getDependencyManagement() { return dependencyManagement; }
-    public void setDependencyManagement(List<PomXmlDependency> dependencyManagement) { this.dependencyManagement = dependencyManagement; }
+    public PomXmlDependencyManagement getDependencyManagement() { return dependencyManagement; }
+    public void setDependencyManagement(PomXmlDependencyManagement dependencyManagement) { this.dependencyManagement = dependencyManagement; }
 
     public List<String> getModules() { return modules; }
     public void setModules(List<String> modules) { this.modules = modules; }
@@ -105,6 +104,20 @@ class PomXmlParent {
 
     public String getRelativePath() { return relativePath; }
     public void setRelativePath(String relativePath) { this.relativePath = relativePath; }
+}
+
+class PomXmlDependencyManagement {
+    @JacksonXmlElementWrapper(localName = "dependencies")
+    @JacksonXmlProperty(localName = "dependency")
+    private List<PomXmlDependency> dependencies;
+
+    public List<PomXmlDependency> getDependencies() {
+        return dependencies;
+    }
+
+    public void setDependencies(List<PomXmlDependency> dependencies) {
+        this.dependencies = dependencies;
+    }
 }
 
 class PomXmlBuild {

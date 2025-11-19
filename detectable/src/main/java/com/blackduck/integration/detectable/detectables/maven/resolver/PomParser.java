@@ -180,8 +180,8 @@ public class PomParser {
             }
 
             // Process dependency management
-            if (unresolvedParsedPomFile.getDependencyManagement() != null) {
-                for (PomXmlDependency depMgmt : unresolvedParsedPomFile.getDependencyManagement()) {
+            if (unresolvedParsedPomFile.getDependencyManagement() != null && unresolvedParsedPomFile.getDependencyManagement().getDependencies() != null) {
+                for (PomXmlDependency depMgmt : unresolvedParsedPomFile.getDependencyManagement().getDependencies()) {
                     trimSpacesInPomXmlDep(depMgmt);
                     result.getDependencyManagement().add(depMgmt);
                 }
