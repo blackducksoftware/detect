@@ -78,6 +78,52 @@ public class ProjectBuilder {
         return finalizeEffectiveModel(pomFilePath, pomFileInfo, null);
     }
 
+    private PartialMavenProject processBoms(String pomFilePath, PartialMavenProject partialModel) throws Exception {
+        List<PomXmlDependency> bomImports = partialModel.getDependencyManagement().stream()
+            .filter(dep -> "import".equals(dep.getScope()))
+            .collect(Collectors.toList());
+
+        if (bomImports.isEmpty()) {
+            return partialModel;
+        }
+
+        logger.info("Found {} BOM imports to process in {}", bomImports.size(), pomFilePath);
+
+        for (PomXmlDependency bom : bomImports) {
+            JavaCoordinates bomCoords = new JavaCoordinates(bom.getGroupId(), bom.getArtifactId(), bom.getVersion(), "pom");
+            MavenDownloader mavenDownloader = new MavenDownloader(partialModel.getRepositories(), downloadDir);
+            File bomPomFile = mavenDownloader.downloadPom(bomCoords);
+
+            if (bomPomFile != null) {
+                logger.debug("Building BOM project: {}", bomPomFile.getAbsolutePath());
+                PartialMavenProject bomProject = internalBuildProject(bomPomFile, new HashSet<>());
+
+                // Merge properties from BOM. Existing properties take precedence.
+                Map<String, String> mergedProperties = new HashMap<>();
+                if (bomProject.getProperties() != null) {
+                    mergedProperties.putAll(bomProject.getProperties());
+                }
+                mergedProperties.putAll(partialModel.getProperties()); // Original properties override BOM's
+                partialModel.setProperties(mergedProperties);
+
+                // Merge dependency management from BOM. Existing entries take precedence.
+                Map<String, PomXmlDependency> depMgmtMap = new HashMap<>();
+                if (bomProject.getDependencyManagement() != null) {
+                    bomProject.getDependencyManagement().forEach(dep -> depMgmtMap.put(dep.getGroupId() + ":" + dep.getArtifactId(), dep));
+                }
+                partialModel.getDependencyManagement().forEach(dep -> depMgmtMap.put(dep.getGroupId() + ":" + dep.getArtifactId(), dep)); // Original entries override BOM's
+                partialModel.setDependencyManagement(new ArrayList<>(depMgmtMap.values()));
+            } else {
+                logger.warn("Could not download BOM POM for coordinates: {}", bomCoords);
+            }
+        }
+
+        // Remove the 'import' scoped dependencies themselves from the list
+        partialModel.getDependencyManagement().removeIf(dep -> "import".equals(dep.getScope()));
+
+        return partialModel;
+    }
+
     private PartialMavenProject finalizeEffectiveModel(String path, PartialMavenProject partialModel, PartialMavenProject parentModel) {
         if (parentModel != null) {
             logger.info("Merging models: child='{}' into parent='{}'", partialModel.getCoordinates().getArtifactId(), parentModel.getCoordinates().getArtifactId());
@@ -130,13 +176,22 @@ public class ProjectBuilder {
         return partialModel;
     }
 
-    private MavenProject toCompleteMavenProject(String pomFile, PartialMavenProject project) {
-        logger.info("Preparing to complete MavenProject. Final properties for resolution in '{}': {}", project.getCoordinates().getArtifactId(), project.getProperties().size());
-        project.getProperties().forEach((k, v) -> logger.info("  - Final Prop: {} = {}", k, v));
-        // 1. Resolve properties in dependencies
+    private MavenProject toCompleteMavenProject(String pomFile, PartialMavenProject project) throws Exception {
+        // 1. First pass of property resolution to resolve BOM coordinates
+        logger.info("Starting first pass of property resolution for '{}'...", project.getCoordinates().getArtifactId());
         resolveDependencyProperties(project);
 
-        // 2. Apply dependency management
+        // 2. Process BOMs, which may add new properties and managed dependencies
+        project = processBoms(pomFile, project);
+
+        // 3. Second pass of property resolution to handle properties from imported BOMs
+        logger.info("Starting second pass of property resolution for '{}' after processing BOMs...", project.getCoordinates().getArtifactId());
+        resolveDependencyProperties(project);
+
+        logger.info("Preparing to complete MavenProject. Final properties for resolution in '{}': {}", project.getCoordinates().getArtifactId(), project.getProperties().size());
+        project.getProperties().forEach((k, v) -> logger.info("  - Final Prop: {} = {}", k, v));
+
+        // 4. Apply dependency management to the final set of dependencies
         List<JavaDependency> finalDependencies = applyDependencyManagement(project);
 
         List<JavaDependency> dependencyManagement = project.getDependencyManagement().stream()

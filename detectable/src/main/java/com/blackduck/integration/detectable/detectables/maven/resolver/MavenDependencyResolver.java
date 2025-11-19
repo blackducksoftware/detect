@@ -42,10 +42,12 @@ public class MavenDependencyResolver {
         RepositorySystemSession session = newSession(localRepoDir);
 
         List<Dependency> dependencies = mavenProject.getDependencies().stream()
+            .filter(this::isVersionResolved)
             .map(dep -> new Dependency(new DefaultArtifact(dep.getCoordinates().getGroupId(), dep.getCoordinates().getArtifactId(), "jar", dep.getCoordinates().getVersion()), dep.getScope()))
             .collect(Collectors.toList());
 
         List<Dependency> managedDependencies = mavenProject.getDependencyManagement().stream()
+            .filter(this::isVersionResolved)
             .map(dep -> new Dependency(new DefaultArtifact(dep.getCoordinates().getGroupId(), dep.getCoordinates().getArtifactId(), "jar", dep.getCoordinates().getVersion()), dep.getScope()))
             .collect(Collectors.toList());
 
@@ -64,8 +66,14 @@ public class MavenDependencyResolver {
             mavenProject.getCoordinates().getVersion()
         ), "compile"));
 
-        collectRequest.setDependencies(dependencies);
-        collectRequest.setManagedDependencies(managedDependencies);
+        if (dependencies.isEmpty() && !managedDependencies.isEmpty()) {
+            logger.debug("Project has no direct dependencies but does have managed dependencies. Treating managed dependencies as direct for resolution.");
+            collectRequest.setDependencies(managedDependencies);
+        } else {
+            collectRequest.setDependencies(dependencies);
+            collectRequest.setManagedDependencies(managedDependencies);
+        }
+
         collectRequest.setRepositories(repositories);
 
         CollectResult collectResult = repositorySystem.collectDependencies(session, collectRequest);
@@ -80,5 +88,17 @@ public class MavenDependencyResolver {
             .get()
             .withLocalRepositoryBaseDirectories(localRepoDir.toPath())
             .build();
+    }
+
+    private boolean isVersionResolved(JavaDependency dependency) {
+        String version = dependency.getCoordinates().getVersion();
+        if (version == null || version.isEmpty() || version.contains("${")) {
+            logger.warn("Skipping dependency with unresolved version: {}:{}:{}",
+                dependency.getCoordinates().getGroupId(),
+                dependency.getCoordinates().getArtifactId(),
+                version);
+            return false;
+        }
+        return true;
     }
 }
