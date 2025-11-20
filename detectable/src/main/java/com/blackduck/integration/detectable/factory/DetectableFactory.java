@@ -507,7 +507,8 @@ public class DetectableFactory {
     ) {
         return new MavenResolverDetectable(
                 environment,
-                fileFinder
+                fileFinder,
+                externalIdFactory
         );
     }
 

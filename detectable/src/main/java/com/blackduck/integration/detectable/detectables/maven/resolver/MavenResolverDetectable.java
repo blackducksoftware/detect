@@ -1,15 +1,20 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver;
 
+import com.blackduck.integration.bdio.graph.DependencyGraph;
+import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.common.util.finder.FileFinder;
 import com.blackduck.integration.detectable.Detectable;
 import com.blackduck.integration.detectable.DetectableEnvironment;
 import com.blackduck.integration.detectable.detectable.DetectableAccuracyType;
 import com.blackduck.integration.detectable.detectable.annotation.DetectableInfo;
+import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import com.blackduck.integration.detectable.detectable.result.DetectableResult;
 import com.blackduck.integration.detectable.detectable.result.FileNotFoundDetectableResult;
 import com.blackduck.integration.detectable.detectable.result.PassedDetectableResult;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
+import com.blackduck.integration.detectable.detectables.maven.resolver.result.MavenParseResult;
+import com.blackduck.integration.util.NameVersion;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.util.graph.visitor.DependencyGraphDumper;
 import org.slf4j.Logger;
@@ -33,15 +38,18 @@ public class MavenResolverDetectable extends Detectable {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final FileFinder fileFinder;
+    private final ExternalIdFactory externalIdFactory;
 
     private File pomFile;
 
     public MavenResolverDetectable(
             DetectableEnvironment environment,
-            FileFinder fileFinder
+            FileFinder fileFinder,
+            ExternalIdFactory externalIdFactory
     ) {
         super(environment);
         this.fileFinder = fileFinder;
+        this.externalIdFactory = externalIdFactory;
     }
 
     @Override
@@ -95,8 +103,21 @@ public class MavenResolverDetectable extends Detectable {
             }
             logger.info("Dependency tree saved to: {}", dependencyTreeFile.getAbsolutePath());
 
-            // The actual result would be a CodeLocation, but for now, we signal success.
-            return new Extraction.Builder().success().build();
+            // 4. Transform the Aether graph to a Detect DependencyGraph
+            MavenGraphParser mavenGraphParser = new MavenGraphParser();
+            MavenParseResult parseResult = mavenGraphParser.parse(collectResult);
+
+            MavenGraphTransformer mavenGraphTransformer = new MavenGraphTransformer(externalIdFactory);
+            DependencyGraph dependencyGraph = mavenGraphTransformer.transform(parseResult);
+
+            // 5. Create CodeLocation
+            CodeLocation codeLocation = new CodeLocation(dependencyGraph);
+
+            // 6. Create NameVersion
+            String projectName = mavenProject.getCoordinates().getGroupId() + ":" + mavenProject.getCoordinates().getArtifactId();
+            NameVersion nameVersion = new NameVersion(projectName, mavenProject.getCoordinates().getVersion());
+
+            return new Extraction.Builder().success(codeLocation).nameVersion(nameVersion).build();
 
         } catch (Exception e) {
             logger.error("Failed to resolve dependencies for pom.xml: {}", e.getMessage());
