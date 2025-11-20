@@ -33,6 +33,79 @@ resources.mkdirs()
 versionFile.delete()
 versionFile << "version=" << version << "\n" << "builddate=" << new Date().format('yyyy-MM-dd')
 
+// CycloneDX cdxgen configuration
+final def cdxgenVersion = '11.9.0'
+final def cdxgenBaseUrl = "https://github.com/CycloneDX/cdxgen/releases/download/v${cdxgenVersion}"
+final def cdxgenResourceDir = new File("${projectDir}/src/main/resources/tools/cdxgen")
+
+task downloadCdxgenBinaries {
+    description = 'Downloads CycloneDX cdxgen standalone binaries for all platforms'
+    group = 'build'
+
+    doLast {
+        cdxgenResourceDir.mkdirs()
+
+        // Map our platform directory names to cdxgen's release asset names
+        def binaries = [
+            'linux-x64': [assetName: 'cdxgen-linux-amd64', executable: 'cdxgen'],
+            'linux-arm64': [assetName: 'cdxgen-linux-arm64', executable: 'cdxgen'],
+            'macos-x64': [assetName: 'cdxgen-darwin-amd64', executable: 'cdxgen'],
+            'macos-arm64': [assetName: 'cdxgen-darwin-arm64', executable: 'cdxgen'],
+            'windows-x64': [assetName: 'cdxgen-windows-amd64.exe', executable: 'cdxgen.exe']
+        ]
+
+        binaries.each { platform, config ->
+            def platformDir = new File(cdxgenResourceDir, platform)
+            platformDir.mkdirs()
+            def outputFile = new File(platformDir, config.executable)
+
+            if (!outputFile.exists() || outputFile.length() == 0) {
+                println "Downloading cdxgen for ${platform} (${config.assetName})..."
+                try {
+                    def downloadUrl = "${cdxgenBaseUrl}/${config.assetName}"
+                    def url = new URL(downloadUrl)
+                    def connection = url.openConnection()
+                    connection.setRequestProperty('User-Agent', 'BlackDuck-Detect-Build')
+                    connection.setInstanceFollowRedirects(true)
+
+                    def startTime = System.currentTimeMillis()
+                    outputFile.withOutputStream { out ->
+                        connection.inputStream.withStream { inp ->
+                            byte[] buffer = new byte[8192]
+                            int bytesRead
+                            long totalBytes = 0
+                            while ((bytesRead = inp.read(buffer)) != -1) {
+                                out.write(buffer, 0, bytesRead)
+                                totalBytes += bytesRead
+                            }
+                            println "Downloaded ${totalBytes / (1024 * 1024)} MB in ${(System.currentTimeMillis() - startTime) / 1000} seconds"
+                        }
+                    }
+
+                    if (!platform.startsWith('windows')) {
+                        outputFile.setExecutable(true)
+                    }
+
+                    println "Successfully downloaded ${config.executable} for ${platform} (${outputFile.length()} bytes)"
+                } catch (Exception e) {
+                    println "Warning: Failed to download cdxgen for ${platform}: ${e.message}"
+                    println "URL attempted: ${cdxgenBaseUrl}/${config.assetName}"
+                    println "Build will continue, but cdxgen may not be available for this platform."
+                    // Clean up empty/partial file
+                    if (outputFile.exists() && outputFile.length() == 0) {
+                        outputFile.delete()
+                    }
+                }
+            } else {
+                println "Cdxgen binary for ${platform} already exists (${outputFile.length()} bytes), skipping download."
+            }
+        }
+    }
+}
+
+// Ensure cdxgen binaries are downloaded before processing resources
+processResources.dependsOn downloadCdxgenBinaries
+
 // By default, starting in 2.5.0, spring boot creates an extra "plain" .jar that we don't want
 jar {
     enabled = false

@@ -197,6 +197,7 @@ public class IntelligentModeStepRunner {
             checkPolicy(projectVersion.getProjectVersionView(), blackDuckRunData);
             riskReport(blackDuckRunData, projectVersion);
             noticesReport(blackDuckRunData, projectVersion);
+            generateSbom("gradle");
             publishPostResults(bdioResult, projectVersion, detectToolFilter);
         });
     }
@@ -454,5 +455,11 @@ public class IntelligentModeStepRunner {
             operationRunner.publishReport(new ReportDetectResult("Notices Report", noticesFile.getCanonicalPath()));
 
         }
+    }
+
+    private void generateSbom(String projectType) throws OperationException {
+        logger.info("Generating CycloneDX SBOM with cdxgen");
+        File sbomFile = operationRunner.generateCdxgenSbom(projectType);
+        logger.info("CycloneDX SBOM available at: {}", sbomFile.getParent());
     }
 }

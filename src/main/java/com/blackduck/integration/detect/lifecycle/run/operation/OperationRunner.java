@@ -106,6 +106,8 @@ import com.blackduck.integration.detect.tool.detector.executable.DetectExecutabl
 import com.blackduck.integration.detect.tool.detector.extraction.ExtractionEnvironmentProvider;
 import com.blackduck.integration.detect.tool.detector.factory.DetectDetectableFactory;
 import com.blackduck.integration.detector.accuracy.detectable.DetectableExclusionEvaluator;
+import com.blackduck.integration.detect.tool.cdxgen.CdxgenResult;
+import com.blackduck.integration.detect.tool.cdxgen.CdxgenRunner;
 import com.blackduck.integration.detect.tool.iac.CalculateIacScanTargetsOperation;
 import com.blackduck.integration.detect.tool.iac.IacScanOperation;
 import com.blackduck.integration.detect.tool.iac.IacScanReport;
@@ -1263,6 +1265,33 @@ public class OperationRunner {
                 count
             )
         );
+    }
+
+    public File generateCdxgenSbom(String projectType) throws OperationException {
+        return auditLog.namedPublic("Generate CycloneDX SBOM", "Cdxgen", () -> {
+            CdxgenRunner cdxgenRunner = new CdxgenRunner(executableRunner);
+
+            // Initialize cdxgen with temp directory
+            File tempDir = new File(System.getProperty("java.io.tmpdir"), "detect-cdxgen");
+            if (!cdxgenRunner.initialize(tempDir)) {
+                throw new IntegrationException("Failed to initialize cdxgen");
+            }
+
+            // Generate SBOM
+            File sourceDirectory = directoryManager.getSourceDirectory();
+            File scanOutputDirectory = directoryManager.getScanOutputDirectory();
+            File sbomFile = new File(scanOutputDirectory, "cdxgen-bom.json");
+
+            logger.info("Generating CycloneDX SBOM for source: {}", sourceDirectory.getAbsolutePath());
+            CdxgenResult result = cdxgenRunner.runCdxgen(sourceDirectory, sbomFile, projectType);
+
+            if (!result.isSuccessful()) {
+                throw new IntegrationException("Cdxgen SBOM generation failed: " + result.getErrorMessage());
+            }
+
+            logger.info("CycloneDX SBOM generated successfully: {}", result.getSbomFile().getAbsolutePath());
+            return result.getSbomFile();
+        });
     }
 
     public void uploadIacScanResults(BlackDuckRunData blackDuckRunData, File iacScanResultsFile, String scanId) throws OperationException {
