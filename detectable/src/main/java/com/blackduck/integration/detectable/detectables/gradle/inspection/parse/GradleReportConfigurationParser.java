@@ -11,6 +11,7 @@ import com.blackduck.integration.detectable.detectables.gradle.inspection.model.
 
 public class GradleReportConfigurationParser {
     private static final String UNRESOLVED_SUFFIX = "(n)";
+    private static final String GRADLE_CONSTRAINT_SUFFIX = "(c)";
 
     private final GradleReportLineParser parser = new GradleReportLineParser();
 
@@ -21,7 +22,7 @@ public class GradleReportConfigurationParser {
         configuration.setUnresolved(parseUnresolved(header));
         List<GradleTreeNode> children = new ArrayList<>();
         for (String line: dependencyLines) {
-            if (!line.trim().endsWith("(c)")) {
+            if (!line.trim().endsWith(GRADLE_CONSTRAINT_SUFFIX)) {
                 children.add(parser.parseLine(line, metadata));
             }
         }
