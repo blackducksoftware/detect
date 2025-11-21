@@ -1272,7 +1272,7 @@ public class DetectProperties {
     public static final NoneEnumListProperty<NugetDependencyType> DETECT_NUGET_DEPENDENCY_TYPES_EXCLUDED =
         NoneEnumListProperty.newBuilder("detect.nuget.dependency.types.excluded", NoneEnum.NONE, NugetDependencyType.class)
             .setInfo("Nuget Dependency Types Excluded", DetectPropertyFromVersion.VERSION_9_4_0)
-            .setHelp(createTypeFilterHelpText("Nuget dependency types"), "This property supports exclusion of dependencies in projects that use PackageReference, packages.config, project.lock.json or project.assets.json. This property does not apply to scans that analyze project.json. For more information, refer to <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/properties/detectors/nuget%2Ehtml#ariaid-title4propertywildcards%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">excluding NuGet dependency types.</xref>")
+            .setHelp(createTypeFilterHelpText("Nuget dependency types"), "This property supports exclusion of dependencies in projects that use PackageReference, packages.config, project.lock.json or project.assets.json. This property does not apply to scans that analyze project.json. For more information, refer to <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/properties/detectors/nuget%2Ehtml#ariaid-title4\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">excluding NuGet dependency types.</xref>")
             .setExample(String.format("%s", NugetDependencyType.DEV.name()))
             .setGroups(DetectGroup.NUGET, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
