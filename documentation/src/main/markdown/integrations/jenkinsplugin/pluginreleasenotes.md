@@ -13,7 +13,6 @@
 <note type="note">Configuration and usage of the plugin is unchanged.</note>
 
 ## Version 10.0.0
-
 **Notice**
 
 The [company_name] Software Integrity Group is now [var_company_name]    
