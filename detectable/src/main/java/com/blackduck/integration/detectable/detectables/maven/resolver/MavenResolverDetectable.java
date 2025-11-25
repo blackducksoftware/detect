@@ -91,7 +91,7 @@ public class MavenResolverDetectable extends Detectable {
                 logger.info("    - Managed Dependency: {}:{}:{} (Scope: {})", dep.getCoordinates().getGroupId(), dep.getCoordinates().getArtifactId(), dep.getCoordinates().getVersion(), dep.getScope())
             );
 
-            // 2. Resolve dependencies using the Aether-based resolver.
+            // 2. Resolve dependencies using the Aether-based resolver for the root pom.
             MavenDependencyResolver dependencyResolver = new MavenDependencyResolver();
             Path localRepoPath = extractionEnvironment.getOutputDirectory().toPath().resolve("local-repo");
             CollectResult collectResult = dependencyResolver.resolveDependencies(pomFile, mavenProject, localRepoPath.toFile());
@@ -109,6 +109,53 @@ public class MavenResolverDetectable extends Detectable {
 
             MavenGraphTransformer mavenGraphTransformer = new MavenGraphTransformer(externalIdFactory);
             DependencyGraph dependencyGraph = mavenGraphTransformer.transform(parseResult);
+
+            // 4b. Process modules (if any) and merge their graphs into the root graph
+            if (mavenProject.getModules() != null && !mavenProject.getModules().isEmpty()) {
+                File rootDir = pomFile.getParentFile();
+                for (String module : mavenProject.getModules()) {
+                    try {
+                        if (module == null || module.trim().isEmpty()) {
+                            continue;
+                        }
+                        String modulePathStr = module.trim();
+                        File modulePom = new File(rootDir, modulePathStr);
+                        // If module points to a directory, append pom.xml
+                        if (modulePom.isDirectory()) {
+                            modulePom = new File(modulePom, POM_XML_FILENAME);
+                        }
+                        // If module string is not a path but a folder name, ensure we check common layout
+                        if (!modulePom.exists()) {
+                            File alternative = new File(rootDir, modulePathStr + File.separator + POM_XML_FILENAME);
+                            if (alternative.exists()) {
+                                modulePom = alternative;
+                            }
+                        }
+
+                        if (!modulePom.exists()) {
+                            logger.warn("Module POM not found for module '{}' at expected path '{}'. Skipping module.", modulePathStr, modulePom.getAbsolutePath());
+                            continue;
+                        }
+
+                        logger.info("Processing module POM: {}", modulePom.getAbsolutePath());
+                        MavenProject moduleProject = projectBuilder.buildProject(modulePom);
+                        CollectResult moduleCollectResult = dependencyResolver.resolveDependencies(modulePom, moduleProject, localRepoPath.toFile());
+                        MavenParseResult moduleParseResult = mavenGraphParser.parse(moduleCollectResult);
+                        DependencyGraph moduleGraph = mavenGraphTransformer.transform(moduleParseResult);
+
+                        // Merge moduleGraph into main dependencyGraph.
+                        try {
+                            dependencyGraph.copyGraphToRoot(moduleGraph);
+                        } catch (NoSuchMethodError | UnsupportedOperationException e) {
+                            // As a fallback, if copyGraphToRoot is not available, log and ignore merging to avoid breaking.
+                            logger.warn("Unable to copy module graph into root graph for module '{}': {}", modulePathStr, e.getMessage());
+                        }
+
+                    } catch (Exception e) {
+                        logger.warn("Failed processing module '{}': {}", module, e.getMessage());
+                    }
+                }
+            }
 
             // 5. Create CodeLocation
             CodeLocation codeLocation = new CodeLocation(dependencyGraph);

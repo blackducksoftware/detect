@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -13,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.commons.text.StringSubstitutor;
 
 public class ProjectBuilder {
@@ -30,12 +30,29 @@ public class ProjectBuilder {
     }
 
     public MavenProject buildProject(File pomFile) throws Exception {
-        PartialMavenProject partialMavenProject = internalBuildProject(pomFile, new HashSet<>());
-        return toCompleteMavenProject(pomFile.getAbsolutePath(), partialMavenProject);
+        // Use canonical path to ensure consistent cache keys and avoid duplicate processing
+        File canonicalPom = pomFile;
+        try {
+            canonicalPom = pomFile.getCanonicalFile();
+        } catch (IOException e) {
+            logger.debug("Could not canonicalize pom file path {}, falling back to provided file: {}", pomFile, e.getMessage());
+        }
+
+        PartialMavenProject partialMavenProject = internalBuildProject(canonicalPom, new HashSet<>());
+        return toCompleteMavenProject(canonicalPom.getCanonicalPath(), partialMavenProject);
     }
 
     private PartialMavenProject internalBuildProject(File pomFile, Set<String> identifiedParents) throws Exception {
-        String pomFilePath = pomFile.getAbsolutePath();
+        // Canonicalize the file to normalize path segments like '..' and symlinks so cache keys match
+        File canonicalFile = pomFile;
+        try {
+            canonicalFile = pomFile.getCanonicalFile();
+        } catch (IOException e) {
+            logger.debug("Could not canonicalize pom file path {}, continuing with absolute path: {}", pomFile, e.getMessage());
+            // fallback to provided file
+        }
+
+        String pomFilePath = canonicalFile.getCanonicalPath();
         logger.debug("Building project file \"{}\"", pomFilePath);
 
         if (pomCache.containsKey(pomFilePath)) {
@@ -43,7 +60,7 @@ public class ProjectBuilder {
             return pomCache.get(pomFilePath);
         }
 
-        byte[] content = Files.readAllBytes(pomFile.toPath());
+        byte[] content = Files.readAllBytes(canonicalFile.toPath());
         PartialMavenProject pomFileInfo = pomParser.parsePomFile(pomFilePath, content, propertiesResolverProvider);
 
         if (pomFileInfo.getParentPomInfo() != null && pomFileInfo.getParentPomInfo().getCoordinates() != null) {
@@ -55,13 +72,41 @@ public class ProjectBuilder {
                 }
                 identifiedParents.add(parentCoords.toString());
 
+                // First attempt: check expected local parent path (relativePath or default ../pom.xml)
+                String expectedParentPath = pomFileInfo.getParentPomInfo().getExpectedPath();
+                if (expectedParentPath != null && !expectedParentPath.isEmpty()) {
+                    File expectedParentFile = new File(expectedParentPath);
+                    try {
+                        expectedParentFile = expectedParentFile.getCanonicalFile();
+                    } catch (IOException e) {
+                        logger.debug("Could not canonicalize expected parent path {}, using raw path: {}", expectedParentPath, e.getMessage());
+                    }
+                    if (expectedParentFile.exists() && expectedParentFile.isFile()) {
+                        logger.info("Found local parent POM at expected path: {}", expectedParentFile.getAbsolutePath());
+                        PartialMavenProject effectiveParentPom = internalBuildProject(expectedParentFile, identifiedParents);
+                        propertiesResolverProvider.setParentProperties(effectiveParentPom.getProperties());
+                        PartialMavenProject interpolatedPomInfo = pomParser.parsePomFile(pomFilePath, content, propertiesResolverProvider);
+                        return finalizeEffectiveModel(pomFilePath, interpolatedPomInfo, effectiveParentPom);
+                    } else {
+                        logger.debug("No local parent POM found at expected path: {}", expectedParentPath);
+                    }
+                }
+
                 MavenDownloader mavenDownloader = new MavenDownloader(pomFileInfo.getRepositories(), downloadDir);
                 File parentPomFile = mavenDownloader.downloadPom(parentCoords);
 
                 if (parentPomFile != null) {
-                    logger.debug("Building effective pom for parent pom \"{}\" ...", parentPomFile.getAbsolutePath());
-                    PartialMavenProject effectiveParentPom = internalBuildProject(parentPomFile, identifiedParents);
-                    logger.debug("Built effective pom for parent pom \"{}\".", parentPomFile.getAbsolutePath());
+                    // Use canonical file when recursing
+                    File canonicalParent = parentPomFile;
+                    try {
+                        canonicalParent = parentPomFile.getCanonicalFile();
+                    } catch (IOException e) {
+                        logger.debug("Could not canonicalize downloaded parent pom path {}, proceeding with returned file: {}", parentPomFile, e.getMessage());
+                    }
+
+                    logger.debug("Building effective pom for parent pom \"{}\" ...", canonicalParent.getAbsolutePath());
+                    PartialMavenProject effectiveParentPom = internalBuildProject(canonicalParent, identifiedParents);
+                    logger.debug("Built effective pom for parent pom \"{}\".", canonicalParent.getAbsolutePath());
                     logger.info("Parent ({}) properties found: {}", effectiveParentPom.getCoordinates().getArtifactId(), effectiveParentPom.getProperties().size());
                     effectiveParentPom.getProperties().forEach((k, v) -> logger.info("  - Parent Prop: {} = {}", k, v));
 

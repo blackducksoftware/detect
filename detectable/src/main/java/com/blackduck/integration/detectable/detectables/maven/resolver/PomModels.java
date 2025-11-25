@@ -180,6 +180,13 @@ class MavenRepositoryXml {
     @JacksonXmlProperty(localName = "url")
     private String url;
 
+    // Repository policy elements
+    @JacksonXmlProperty(localName = "releases")
+    private PomXmlRepositoryPolicy releases;
+
+    @JacksonXmlProperty(localName = "snapshots")
+    private PomXmlRepositoryPolicy snapshots;
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
@@ -188,6 +195,20 @@ class MavenRepositoryXml {
 
     public String getUrl() { return url; }
     public void setUrl(String url) { this.url = url; }
+
+    public PomXmlRepositoryPolicy getReleases() { return releases; }
+    public void setReleases(PomXmlRepositoryPolicy releases) { this.releases = releases; }
+
+    public PomXmlRepositoryPolicy getSnapshots() { return snapshots; }
+    public void setSnapshots(PomXmlRepositoryPolicy snapshots) { this.snapshots = snapshots; }
+}
+
+class PomXmlRepositoryPolicy {
+    @JacksonXmlProperty(localName = "enabled")
+    private String enabled;
+
+    public String getEnabled() { return enabled; }
+    public void setEnabled(String enabled) { this.enabled = enabled; }
 }
 
 // POM XML Dependency Exclusion
@@ -339,6 +360,8 @@ class JavaRepository {
     private String id;
     private String name;
     private String url;
+    private boolean snapshotsEnabled = false; // default: snapshots disabled
+    private boolean releasesEnabled = true;   // default: releases enabled
 
     // Getters and Setters
     public String getId() { return id; }
@@ -349,6 +372,12 @@ class JavaRepository {
 
     public String getUrl() { return url; }
     public void setUrl(String url) { this.url = url; }
+
+    public boolean isSnapshotsEnabled() { return snapshotsEnabled; }
+    public void setSnapshotsEnabled(boolean snapshotsEnabled) { this.snapshotsEnabled = snapshotsEnabled; }
+
+    public boolean isReleasesEnabled() { return releasesEnabled; }
+    public void setReleasesEnabled(boolean releasesEnabled) { this.releasesEnabled = releasesEnabled; }
 }
 
 // Java Dependency

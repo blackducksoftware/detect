@@ -295,6 +295,15 @@ public class PomParser {
         repo.setId(trimSpace(xmlRepository.getId()));
         repo.setName(trimSpace(xmlRepository.getName()));
         repo.setUrl(trimSpace(xmlRepository.getUrl()));
+        // Respect repository policy flags if present
+        if (xmlRepository.getSnapshots() != null && xmlRepository.getSnapshots().getEnabled() != null) {
+            String enabled = trimSpace(xmlRepository.getSnapshots().getEnabled());
+            repo.setSnapshotsEnabled("true".equalsIgnoreCase(enabled));
+        }
+        if (xmlRepository.getReleases() != null && xmlRepository.getReleases().getEnabled() != null) {
+            String enabled = trimSpace(xmlRepository.getReleases().getEnabled());
+            repo.setReleasesEnabled("true".equalsIgnoreCase(enabled));
+        }
         return repo;
     }
 
