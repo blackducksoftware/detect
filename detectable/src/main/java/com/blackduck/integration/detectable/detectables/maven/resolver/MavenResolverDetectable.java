@@ -24,6 +24,8 @@ import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 @DetectableInfo(
         name = "Maven Resolver",
@@ -110,7 +112,22 @@ public class MavenResolverDetectable extends Detectable {
             MavenGraphTransformer mavenGraphTransformer = new MavenGraphTransformer(externalIdFactory);
             DependencyGraph dependencyGraph = mavenGraphTransformer.transform(parseResult);
 
-            // 4b. Process modules (if any) and merge their graphs into the root graph
+            // Prepare code locations list. Create a CodeLocation for the root project first.
+            List<CodeLocation> codeLocations = new ArrayList<>();
+            try {
+                com.blackduck.integration.bdio.model.externalid.ExternalId rootExternalId = externalIdFactory.createMavenExternalId(
+                    mavenProject.getCoordinates().getGroupId(),
+                    mavenProject.getCoordinates().getArtifactId(),
+                    mavenProject.getCoordinates().getVersion()
+                );
+                File rootSourcePath = pomFile.getParentFile();
+                codeLocations.add(new CodeLocation(dependencyGraph, rootExternalId, rootSourcePath));
+            } catch (Exception e) {
+                logger.debug("Failed to create root external id for code location: {}", e.getMessage());
+                codeLocations.add(new CodeLocation(dependencyGraph));
+            }
+
+            // 4b. Process modules (if any) and create separate code locations for each module
             if (mavenProject.getModules() != null && !mavenProject.getModules().isEmpty()) {
                 File rootDir = pomFile.getParentFile();
                 for (String module : mavenProject.getModules()) {
@@ -143,12 +160,18 @@ public class MavenResolverDetectable extends Detectable {
                         MavenParseResult moduleParseResult = mavenGraphParser.parse(moduleCollectResult);
                         DependencyGraph moduleGraph = mavenGraphTransformer.transform(moduleParseResult);
 
-                        // Merge moduleGraph into main dependencyGraph.
+                        // Create a code location for the module and add to the list (do not merge into root)
                         try {
-                            dependencyGraph.copyGraphToRoot(moduleGraph);
-                        } catch (NoSuchMethodError | UnsupportedOperationException e) {
-                            // As a fallback, if copyGraphToRoot is not available, log and ignore merging to avoid breaking.
-                            logger.warn("Unable to copy module graph into root graph for module '{}': {}", modulePathStr, e.getMessage());
+                            com.blackduck.integration.bdio.model.externalid.ExternalId moduleExternalId = externalIdFactory.createMavenExternalId(
+                                moduleProject.getCoordinates().getGroupId(),
+                                moduleProject.getCoordinates().getArtifactId(),
+                                moduleProject.getCoordinates().getVersion()
+                            );
+                            File moduleSourcePath = modulePom.getParentFile();
+                            codeLocations.add(new CodeLocation(moduleGraph, moduleExternalId, moduleSourcePath));
+                        } catch (Exception e) {
+                            logger.debug("Failed to create module external id for module '{}': {}", modulePathStr, e.getMessage());
+                            codeLocations.add(new CodeLocation(moduleGraph));
                         }
 
                     } catch (Exception e) {
@@ -157,14 +180,11 @@ public class MavenResolverDetectable extends Detectable {
                 }
             }
 
-            // 5. Create CodeLocation
-            CodeLocation codeLocation = new CodeLocation(dependencyGraph);
-
-            // 6. Create NameVersion
+            // 5. Return all code locations (root + modules)
             String projectName = mavenProject.getCoordinates().getGroupId() + ":" + mavenProject.getCoordinates().getArtifactId();
             NameVersion nameVersion = new NameVersion(projectName, mavenProject.getCoordinates().getVersion());
 
-            return new Extraction.Builder().success(codeLocation).nameVersion(nameVersion).build();
+            return new Extraction.Builder().success(codeLocations).nameVersion(nameVersion).build();
 
         } catch (Exception e) {
             logger.error("Failed to resolve dependencies for pom.xml: {}", e.getMessage());
