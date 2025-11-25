@@ -17,5 +17,5 @@ Jenkins enables you to set an environment variable at different levels, such as 
 
 [detect_product_long] for Jenkins allows some special characters when *DETECT\_PLUGIN\_ESCAPING* is set to false, and spaces can be included without escape sequences provided that they are enclosed in single or double quotes as described above for different agents. Therefore, instead of `My\ Test\ Project1`, you can pass it as `'My Test Project1'`, the project will be created and uploaded to [bd_product_short] as `My Test Project1*.*`
 
-If *DETECT\_PLUGIN\_ESCAPING* is set to true, then you can provide values enclosed within double quotes. As an example, you can pass values as "Windows Project" in the arguments.
+When *DETECT\_PLUGIN\_ESCAPING* is set to true, you can provide values that are enclosed in double quotes. For instance, values such as "Windows Project" may be included in the arguments.
 
