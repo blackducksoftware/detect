@@ -66,11 +66,12 @@ public class ProjectBuilder {
         if (pomFileInfo.getParentPomInfo() != null && pomFileInfo.getParentPomInfo().getCoordinates() != null) {
             JavaCoordinates parentCoords = pomFileInfo.getParentPomInfo().getCoordinates();
             if (parentCoords.getGroupId() != null && parentCoords.getArtifactId() != null && parentCoords.getVersion() != null) {
-                if (identifiedParents.contains(parentCoords.toString())) {
-                    logger.debug("Cycle detected, treating file \"{}\" as direct super pom descendant.", pomFilePath);
+                String parentKey = buildGavKey(parentCoords);
+                if (identifiedParents.contains(parentKey)) {
+                    logger.debug("Cycle detected for parent key '{}', treating file \"{}\" as direct super pom descendant.", parentKey, pomFilePath);
                     return finalizeEffectiveModel(pomFilePath, pomFileInfo, null);
                 }
-                identifiedParents.add(parentCoords.toString());
+                identifiedParents.add(parentKey);
 
                 // First attempt: check expected local parent path (relativePath or default ../pom.xml)
                 String expectedParentPath = pomFileInfo.getParentPomInfo().getExpectedPath();
@@ -121,6 +122,10 @@ public class ProjectBuilder {
         }
 
         return finalizeEffectiveModel(pomFilePath, pomFileInfo, null);
+    }
+
+    private String buildGavKey(JavaCoordinates coords) {
+        return coords.getGroupId() + ":" + coords.getArtifactId() + ":" + coords.getVersion();
     }
 
     private PartialMavenProject processBoms(String pomFilePath, PartialMavenProject partialModel) throws Exception {

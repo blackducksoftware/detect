@@ -71,6 +71,25 @@ public class MavenDownloader {
             logger.warn("Failed to create download directory {}: {}", downloadDir, e.getMessage());
         }
 
+        // New destination layout includes groupId directories to avoid collisions
+        Path newDestination = downloadDir.resolve(coordinates.getGroupId().replace('.', '/')).resolve(coordinates.getArtifactId()).resolve(coordinates.getVersion()).resolve(coordinates.getArtifactId() + "-" + coordinates.getVersion() + ".pom");
+        // Backwards-compatible old filename
+        Path oldDestination = downloadDir.resolve(coordinates.getArtifactId() + "-" + coordinates.getVersion() + ".pom");
+
+        // If either already exists, return it (prefer new layout)
+        try {
+            if (Files.exists(newDestination)) {
+                logger.debug("Found previously downloaded POM at new location: {}", newDestination);
+                return newDestination.toFile();
+            }
+            if (Files.exists(oldDestination)) {
+                logger.debug("Found previously downloaded POM at old location: {}", oldDestination);
+                return oldDestination.toFile();
+            }
+        } catch (Exception e) {
+            logger.debug("Error while checking existing download paths: {}", e.getMessage());
+        }
+
         for (JavaRepository repository : remoteRepositories) {
             // Respect repository policy for snapshots/releases
             if (isSnapshot && !repository.isSnapshotsEnabled()) {
@@ -86,11 +105,14 @@ public class MavenDownloader {
                 URL url = new URL(repository.getUrl() + pomPath);
                 logger.debug("Attempting to download parent POM from: {} (repo id={}, repo name={})", url, repository.getId(), repository.getName());
 
-                Path destination = downloadDir.resolve(coordinates.getArtifactId() + "-" + coordinates.getVersion() + ".pom");
-                if (Files.exists(destination)) {
-                    logger.debug("POM already exists locally: {}", destination);
-                    return destination.toFile();
+                // Ensure parent directory exists for new destination
+                try {
+                    Files.createDirectories(newDestination.getParent());
+                } catch (Exception e) {
+                    logger.debug("Failed to create parent directories for {}: {}", newDestination, e.getMessage());
                 }
+
+                Path destination = newDestination;
 
                 try (InputStream inputStream = url.openStream();
                      ReadableByteChannel readableByteChannel = Channels.newChannel(inputStream);

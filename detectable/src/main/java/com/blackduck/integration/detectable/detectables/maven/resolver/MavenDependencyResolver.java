@@ -1,6 +1,7 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +14,9 @@ import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyCollectionException;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.graph.Exclusion;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.supplier.RepositorySystemSupplier;
 import org.eclipse.aether.supplier.SessionBuilderSupplier;
@@ -41,21 +44,113 @@ public class MavenDependencyResolver {
     public CollectResult resolveDependencies(File pomFile, MavenProject mavenProject, File localRepoDir) throws DependencyCollectionException {
         RepositorySystemSession session = newSession(localRepoDir);
 
+        // Build Aether Dependency objects from MavenProject dependencies, preserving type/classifier and mapping exclusions
         List<Dependency> dependencies = mavenProject.getDependencies().stream()
             .filter(this::isVersionResolved)
-            .map(dep -> new Dependency(new DefaultArtifact(dep.getCoordinates().getGroupId(), dep.getCoordinates().getArtifactId(), "jar", dep.getCoordinates().getVersion()), dep.getScope()))
+            .map(dep -> {
+                String groupId = dep.getCoordinates().getGroupId();
+                String artifactId = dep.getCoordinates().getArtifactId();
+                String version = dep.getCoordinates().getVersion();
+                String type = dep.getType();
+                String classifier = dep.getClassifier();
+
+                if (type == null || type.trim().isEmpty()) {
+                    type = "jar"; // fallback
+                }
+
+                org.eclipse.aether.artifact.Artifact artifact;
+                if (classifier != null && !classifier.trim().isEmpty()) {
+                    artifact = new DefaultArtifact(groupId, artifactId, classifier, type, version);
+                } else {
+                    artifact = new DefaultArtifact(groupId, artifactId, type, version);
+                }
+
+                // Map exclusions
+                List<Exclusion> aetherExclusions = new ArrayList<>();
+                if (dep.getExclusions() != null) {
+                    dep.getExclusions().forEach(ex -> {
+                        String exclGroup = (ex.getGroupId() == null || ex.getGroupId().trim().isEmpty()) ? "*" : ex.getGroupId();
+                        String exclArtifact = (ex.getArtifactId() == null || ex.getArtifactId().trim().isEmpty()) ? "*" : ex.getArtifactId();
+                        // Use wildcard for classifier and extension
+                        aetherExclusions.add(new Exclusion(exclGroup, exclArtifact, "*", "*"));
+                    });
+                }
+
+                logger.info("Mapping dependency to Aether Artifact: {}:{}:{}:{}:{} (scope={})", groupId, artifactId, classifier == null ? "" : classifier, type, version, dep.getScope());
+
+                if (aetherExclusions.isEmpty()) {
+                    return new Dependency(artifact, dep.getScope());
+                } else {
+                    // Use constructor that includes exclusions when available
+                    return new Dependency(artifact, dep.getScope(), false, aetherExclusions);
+                }
+            })
             .collect(Collectors.toList());
 
         List<Dependency> managedDependencies = mavenProject.getDependencyManagement().stream()
             .filter(this::isVersionResolved)
-            .map(dep -> new Dependency(new DefaultArtifact(dep.getCoordinates().getGroupId(), dep.getCoordinates().getArtifactId(), "jar", dep.getCoordinates().getVersion()), dep.getScope()))
+            .map(dep -> {
+                String groupId = dep.getCoordinates().getGroupId();
+                String artifactId = dep.getCoordinates().getArtifactId();
+                String version = dep.getCoordinates().getVersion();
+                String type = dep.getType();
+                String classifier = dep.getClassifier();
+
+                if (type == null || type.trim().isEmpty()) {
+                    type = "jar";
+                }
+
+                org.eclipse.aether.artifact.Artifact artifact;
+                if (classifier != null && !classifier.trim().isEmpty()) {
+                    artifact = new DefaultArtifact(groupId, artifactId, classifier, type, version);
+                } else {
+                    artifact = new DefaultArtifact(groupId, artifactId, type, version);
+                }
+
+                List<Exclusion> aetherExclusions = new ArrayList<>();
+                if (dep.getExclusions() != null) {
+                    dep.getExclusions().forEach(ex -> {
+                        String exclGroup = (ex.getGroupId() == null || ex.getGroupId().trim().isEmpty()) ? "*" : ex.getGroupId();
+                        String exclArtifact = (ex.getArtifactId() == null || ex.getArtifactId().trim().isEmpty()) ? "*" : ex.getArtifactId();
+                        aetherExclusions.add(new Exclusion(exclGroup, exclArtifact, "*", "*"));
+                    });
+                }
+
+                logger.info("Mapping managed dependency to Aether Artifact: {}:{}:{}:{}:{} (scope={})", groupId, artifactId, classifier == null ? "" : classifier, type, version, dep.getScope());
+
+                if (aetherExclusions.isEmpty()) {
+                    return new Dependency(artifact, dep.getScope());
+                } else {
+                    return new Dependency(artifact, dep.getScope(), false, aetherExclusions);
+                }
+            })
             .collect(Collectors.toList());
 
         logger.info("------------------------------------------------------------");
         logger.info("Resolving dependency tree for: {}", pomFile.getAbsolutePath());
 
-        RemoteRepository central = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
-        List<RemoteRepository> repositories = Collections.singletonList(central);
+        // Map project-declared repositories into Aether RemoteRepository objects
+        List<RemoteRepository> repositories = null;
+        if (mavenProject.getRepositories() != null && !mavenProject.getRepositories().isEmpty()) {
+            repositories = mavenProject.getRepositories().stream()
+                .map(repo -> {
+                    String id = repo.getId() == null || repo.getId().trim().isEmpty() ? repo.getUrl() : repo.getId();
+                    RemoteRepository.Builder builder = new RemoteRepository.Builder(id, "default", repo.getUrl());
+                    // Apply simple release/snapshot enable flags
+                    RepositoryPolicy releasePolicy = new RepositoryPolicy(repo.isReleasesEnabled(), null, null);
+                    RepositoryPolicy snapshotPolicy = new RepositoryPolicy(repo.isSnapshotsEnabled(), null, null);
+                    builder.setReleasePolicy(releasePolicy);
+                    builder.setSnapshotPolicy(snapshotPolicy);
+                    return builder.build();
+                })
+                .collect(Collectors.toList());
+
+            logger.info("Using repositories declared in POM (in order): {}", mavenProject.getRepositories().stream().map(r -> r.getUrl()).collect(Collectors.joining(", ")));
+        } else {
+            RemoteRepository central = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
+            repositories = Collections.singletonList(central);
+            logger.info("No repositories declared in POM. Falling back to Maven Central: https://repo.maven.apache.org/maven2/");
+        }
 
         CollectRequest collectRequest = new CollectRequest();
 
