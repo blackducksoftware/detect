@@ -176,7 +176,7 @@ else:
         try:
             package = package_dict[Requirement.parse(package_name).key]
         except:
-            name_variants = (package_name, package_name.lower(), package_name.replace('-', '_'), package_name.replace('_', '-'))
+            name_variants = (package_name, package_name.lower(), package_name.replace('-', '_'), package_name.replace('_', '-'), package_name.replace('.', '-'))
             for name_variant in name_variants:
                 if name_variant in package_dict:
                     return package_dict[name_variant]
