@@ -109,7 +109,7 @@ public class ProjectBuilder {
                     PartialMavenProject effectiveParentPom = internalBuildProject(canonicalParent, identifiedParents);
                     logger.debug("Built effective pom for parent pom \"{}\".", canonicalParent.getAbsolutePath());
                     logger.info("Parent ({}) properties found: {}", effectiveParentPom.getCoordinates().getArtifactId(), effectiveParentPom.getProperties().size());
-                    effectiveParentPom.getProperties().forEach((k, v) -> logger.info("  - Parent Prop: {} = {}", k, v));
+//                    effectiveParentPom.getProperties().forEach((k, v) -> logger.info("  - Parent Prop: {} = {}", k, v));
 
 
                     propertiesResolverProvider.setParentProperties(effectiveParentPom.getProperties());
@@ -128,7 +128,89 @@ public class ProjectBuilder {
         return coords.getGroupId() + ":" + coords.getArtifactId() + ":" + coords.getVersion();
     }
 
+    private void resolveDependencyProperties(PartialMavenProject project) {
+        // Create a complete map of properties for resolution.
+        // Build a combined properties map that includes parent properties so
+        // BOM coordinates that use parent/root properties (e.g. ${spring-cloud-dependencies.version})
+        // can be resolved during the first pass.
+        Map<String, String> allProps = new HashMap<>();
+        try {
+            Map<String, String> parentProps = propertiesResolverProvider.getParentProperties();
+            if (parentProps != null) {
+                allProps.putAll(parentProps);
+            }
+        } catch (Exception e) {
+            logger.debug("Failed to include parent properties in resolution map: {}", e.getMessage());
+        }
+        if (project.getProperties() != null) {
+            allProps.putAll(project.getProperties());
+        }
+
+        // Resolve properties for dependencies
+        for (PomXmlDependency dep : project.getDependencies()) {
+            dep.setGroupId(resolveProperties(dep.getGroupId(), allProps));
+            dep.setArtifactId(resolveProperties(dep.getArtifactId(), allProps));
+            dep.setVersion(resolveProperties(dep.getVersion(), allProps));
+        }
+        // Resolve properties for dependency management
+        for (PomXmlDependency dep : project.getDependencyManagement()) {
+            dep.setGroupId(resolveProperties(dep.getGroupId(), allProps));
+            dep.setArtifactId(resolveProperties(dep.getArtifactId(), allProps));
+            dep.setVersion(resolveProperties(dep.getVersion(), allProps));
+        }
+    }
+
+    private String resolveProperties(String value, Map<String, String> properties) {
+        if (value == null || !value.contains("${")) {
+            return value;
+        }
+        // Use StringSubstitutor for more robust property replacement.
+        StringSubstitutor sub = new StringSubstitutor(properties);
+        return sub.replace(value);
+    }
+
+    private List<JavaDependency> applyDependencyManagement(PartialMavenProject project) {
+        Map<String, PomXmlDependency> managedDependencies = project.getDependencyManagement().stream()
+            .collect(Collectors.toMap(dep -> dep.getGroupId() + ":" + dep.getArtifactId(), dep -> dep));
+
+        return project.getDependencies().stream()
+            .map(dep -> {
+                PomXmlDependency managed = managedDependencies.get(dep.getGroupId() + ":" + dep.getArtifactId());
+                if (managed != null) {
+                    if (isEmpty(dep.getVersion()) && !isEmpty(managed.getVersion())) {
+                        dep.setVersion(managed.getVersion());
+                    }
+                    if (isEmpty(dep.getScope()) && !isEmpty(managed.getScope())) {
+                        dep.setScope(managed.getScope());
+                    }
+                }
+                return convertPomXmlDependencyToJavaDependency(dep);
+            })
+            .collect(Collectors.toList());
+    }
+
+    private JavaDependency convertPomXmlDependencyToJavaDependency(PomXmlDependency pomDep) {
+        List<JavaDependencyExclusion> exclusions = new ArrayList<>();
+        if (pomDep.getExclusions() != null) {
+            exclusions = pomDep.getExclusions().stream()
+                .map(exclusion -> new JavaDependencyExclusion(exclusion.getGroupId(), exclusion.getArtifactId()))
+                .collect(Collectors.toList());
+        }
+
+        JavaCoordinates coordinates = new JavaCoordinates(pomDep.getGroupId(), pomDep.getArtifactId(), pomDep.getVersion(), pomDep.getType());
+
+        return new JavaDependency(
+            coordinates,
+            pomDep.getScope(),
+            pomDep.getType(),
+            pomDep.getClassifier(),
+            exclusions
+        );
+    }
+
     private PartialMavenProject processBoms(String pomFilePath, PartialMavenProject partialModel) throws Exception {
+        // NOTE: This method was previously defined earlier; we're providing an updated implementation
+        // that resolves BOM coordinates against combined properties before attempting downloads.
         List<PomXmlDependency> bomImports = partialModel.getDependencyManagement().stream()
             .filter(dep -> "import".equals(dep.getScope()))
             .collect(Collectors.toList());
@@ -140,7 +222,25 @@ public class ProjectBuilder {
         logger.info("Found {} BOM imports to process in {}", bomImports.size(), pomFilePath);
 
         for (PomXmlDependency bom : bomImports) {
-            JavaCoordinates bomCoords = new JavaCoordinates(bom.getGroupId(), bom.getArtifactId(), bom.getVersion(), "pom");
+            // Build a combined properties map including parent properties to resolve BOM coordinates
+            Map<String, String> combinedProps = new HashMap<>();
+            try {
+                Map<String, String> parentProps = propertiesResolverProvider.getParentProperties();
+                if (parentProps != null) {
+                    combinedProps.putAll(parentProps);
+                }
+            } catch (Exception e) {
+                logger.debug("Failed to include parent properties while resolving BOM coords: {}", e.getMessage());
+            }
+            if (partialModel.getProperties() != null) {
+                combinedProps.putAll(partialModel.getProperties());
+            }
+
+            String resolvedGroupId = resolveProperties(bom.getGroupId(), combinedProps);
+            String resolvedArtifactId = resolveProperties(bom.getArtifactId(), combinedProps);
+            String resolvedVersion = resolveProperties(bom.getVersion(), combinedProps);
+
+            JavaCoordinates bomCoords = new JavaCoordinates(resolvedGroupId, resolvedArtifactId, resolvedVersion, "pom");
             MavenDownloader mavenDownloader = new MavenDownloader(partialModel.getRepositories(), downloadDir);
             File bomPomFile = mavenDownloader.downloadPom(bomCoords);
 
@@ -164,7 +264,7 @@ public class ProjectBuilder {
                 partialModel.getDependencyManagement().forEach(dep -> depMgmtMap.put(dep.getGroupId() + ":" + dep.getArtifactId(), dep)); // Original entries override BOM's
                 partialModel.setDependencyManagement(new ArrayList<>(depMgmtMap.values()));
             } else {
-                logger.warn("Could not download BOM POM for coordinates: {}", bomCoords);
+                logger.warn("Could not download BOM POM for coordinates: {}:{}:{}", resolvedGroupId, resolvedArtifactId, resolvedVersion);
             }
         }
 
@@ -178,7 +278,7 @@ public class ProjectBuilder {
         if (parentModel != null) {
             logger.info("Merging models: child='{}' into parent='{}'", partialModel.getCoordinates().getArtifactId(), parentModel.getCoordinates().getArtifactId());
             logger.info("Child properties before merge: {}", partialModel.getProperties().size());
-            partialModel.getProperties().forEach((k, v) -> logger.info("  - Child Prop: {} = {}", k, v));
+//            partialModel.getProperties().forEach((k, v) -> logger.info("  - Child Prop: {} = {}", k, v));
 
             // Merge properties: Child's properties override parent's.
             Map<String, String> mergedProperties = new HashMap<>();
@@ -190,7 +290,7 @@ public class ProjectBuilder {
             }
             partialModel.setProperties(mergedProperties);
             logger.info("Merged properties count: {}", mergedProperties.size());
-            mergedProperties.forEach((k, v) -> logger.info("  - Merged Prop: {} = {}", k, v));
+//            mergedProperties.forEach((k, v) -> logger.info("  - Merged Prop: {} = {}", k, v));
 
             // Merge repositories: Child overrides parent by ID
             Map<String, JavaRepository> repoMap = new HashMap<>();
@@ -232,6 +332,8 @@ public class ProjectBuilder {
         resolveDependencyProperties(project);
 
         // 2. Process BOMs, which may add new properties and managed dependencies
+        // Process any imported BOMs so their properties and dependencyManagement entries
+        // are merged into the partial model before the second property resolution pass.
         project = processBoms(pomFile, project);
 
         // 3. Second pass of property resolution to handle properties from imported BOMs
@@ -239,7 +341,7 @@ public class ProjectBuilder {
         resolveDependencyProperties(project);
 
         logger.info("Preparing to complete MavenProject. Final properties for resolution in '{}': {}", project.getCoordinates().getArtifactId(), project.getProperties().size());
-        project.getProperties().forEach((k, v) -> logger.info("  - Final Prop: {} = {}", k, v));
+//        project.getProperties().forEach((k, v) -> logger.info("  - Final Prop: {} = {}", k, v));
 
         // 4. Apply dependency management to the final set of dependencies
         List<JavaDependency> finalDependencies = applyDependencyManagement(project);
@@ -258,70 +360,7 @@ public class ProjectBuilder {
         );
     }
 
-    private void resolveDependencyProperties(PartialMavenProject project) {
-        // Create a complete map of properties for resolution.
-        // This now includes project.* properties from the PomParser stage.
-        Map<String, String> allProps = new HashMap<>(project.getProperties());
-
-        // Resolve properties for dependencies
-        for (PomXmlDependency dep : project.getDependencies()) {
-            dep.setGroupId(resolveProperties(dep.getGroupId(), allProps));
-            dep.setArtifactId(resolveProperties(dep.getArtifactId(), allProps));
-            dep.setVersion(resolveProperties(dep.getVersion(), allProps));
-        }
-        // Resolve properties for dependency management
-        for (PomXmlDependency dep : project.getDependencyManagement()) {
-            dep.setGroupId(resolveProperties(dep.getGroupId(), allProps));
-            dep.setArtifactId(resolveProperties(dep.getArtifactId(), allProps));
-            dep.setVersion(resolveProperties(dep.getVersion(), allProps));
-        }
-    }
-
-    private String resolveProperties(String value, Map<String, String> properties) {
-        if (value == null || !value.contains("${")) {
-            return value;
-        }
-        // Use StringSubstitutor for more robust property replacement.
-        StringSubstitutor sub = new StringSubstitutor(properties);
-        return sub.replace(value);
-    }
-
-    private List<JavaDependency> applyDependencyManagement(PartialMavenProject project) {
-        Map<String, PomXmlDependency> managedDependencies = project.getDependencyManagement().stream()
-            .collect(Collectors.toMap(dep -> dep.getGroupId() + ":" + dep.getArtifactId(), dep -> dep));
-
-        return project.getDependencies().stream()
-            .map(dep -> {
-                PomXmlDependency managed = managedDependencies.get(dep.getGroupId() + ":" + dep.getArtifactId());
-                if (managed != null) {
-                    if (dep.getVersion() == null && managed.getVersion() != null) {
-                        dep.setVersion(managed.getVersion());
-                    }
-                    if (dep.getScope() == null && managed.getScope() != null) {
-                        dep.setScope(managed.getScope());
-                    }
-                }
-                return convertPomXmlDependencyToJavaDependency(dep);
-            })
-            .collect(Collectors.toList());
-    }
-
-    private JavaDependency convertPomXmlDependencyToJavaDependency(PomXmlDependency pomDep) {
-        List<JavaDependencyExclusion> exclusions = new ArrayList<>();
-        if (pomDep.getExclusions() != null) {
-            exclusions = pomDep.getExclusions().stream()
-                .map(exclusion -> new JavaDependencyExclusion(exclusion.getGroupId(), exclusion.getArtifactId()))
-                .collect(Collectors.toList());
-        }
-
-        JavaCoordinates coordinates = new JavaCoordinates(pomDep.getGroupId(), pomDep.getArtifactId(), pomDep.getVersion(), pomDep.getType());
-
-        return new JavaDependency(
-            coordinates,
-            pomDep.getScope(),
-            pomDep.getType(),
-            pomDep.getClassifier(),
-            exclusions
-        );
+    private boolean isEmpty(String s) {
+        return s == null || s.trim().isEmpty();
     }
 }

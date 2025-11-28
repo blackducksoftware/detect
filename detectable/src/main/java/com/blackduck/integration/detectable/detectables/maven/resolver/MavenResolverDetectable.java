@@ -96,23 +96,49 @@ public class MavenResolverDetectable extends Detectable {
             // 2. Resolve dependencies using the Aether-based resolver for the root pom.
             MavenDependencyResolver dependencyResolver = new MavenDependencyResolver();
             Path localRepoPath = extractionEnvironment.getOutputDirectory().toPath().resolve("local-repo");
-            CollectResult collectResult = dependencyResolver.resolveDependencies(pomFile, mavenProject, localRepoPath.toFile());
 
-            // 3. Write the dependency tree to a file for inspection.
-            File dependencyTreeFile = new File(extractionEnvironment.getOutputDirectory(), "dependency-tree.txt");
-            try (PrintStream printStream = new PrintStream(dependencyTreeFile)) {
-                collectResult.getRoot().accept(new DependencyGraphDumper(printStream::println));
+            // TODO: expose a configuration flag `includeTestScope` later; for now we enable two-phase collection (compile + test)
+            boolean includeTestScope = true; // TODO: make configurable
+
+            // Perform compile-phase collection
+            CollectResult collectResultCompile = dependencyResolver.resolveDependencies(pomFile, mavenProject, localRepoPath.toFile(), "compile");
+
+            // Perform test-phase collection (only if enabled)
+            CollectResult collectResultTest = null;
+            if (includeTestScope) {
+                collectResultTest = dependencyResolver.resolveDependencies(pomFile, mavenProject, localRepoPath.toFile(), "test");
             }
-            logger.info("Dependency tree saved to: {}", dependencyTreeFile.getAbsolutePath());
 
-            // 4. Transform the Aether graph to a Detect DependencyGraph
+            // 3. Write the dependency trees to files for inspection.
+            File dependencyTreeCompileFile = new File(extractionEnvironment.getOutputDirectory(), "dependency-tree-compile.txt");
+            try (PrintStream printStream = new PrintStream(dependencyTreeCompileFile)) {
+                collectResultCompile.getRoot().accept(new DependencyGraphDumper(printStream::println));
+            }
+            logger.info("Compile dependency tree saved to: {}", dependencyTreeCompileFile.getAbsolutePath());
+
+            File dependencyTreeTestFile = null;
+            if (includeTestScope && collectResultTest != null) {
+                dependencyTreeTestFile = new File(extractionEnvironment.getOutputDirectory(), "dependency-tree-test.txt");
+                try (PrintStream printStream = new PrintStream(dependencyTreeTestFile)) {
+                    collectResultTest.getRoot().accept(new DependencyGraphDumper(printStream::println));
+                }
+                logger.info("Test dependency tree saved to: {}", dependencyTreeTestFile.getAbsolutePath());
+            }
+
+            // 4. Transform the Aether graphs to Detect DependencyGraphs
             MavenGraphParser mavenGraphParser = new MavenGraphParser();
-            MavenParseResult parseResult = mavenGraphParser.parse(collectResult);
 
+            MavenParseResult parseResultCompile = mavenGraphParser.parse(collectResultCompile);
             MavenGraphTransformer mavenGraphTransformer = new MavenGraphTransformer(externalIdFactory);
-            DependencyGraph dependencyGraph = mavenGraphTransformer.transform(parseResult);
+            DependencyGraph dependencyGraphCompile = mavenGraphTransformer.transform(parseResultCompile);
 
-            // Prepare code locations list. Create a CodeLocation for the root project first.
+            DependencyGraph dependencyGraphTest = null;
+            if (includeTestScope && collectResultTest != null) {
+                MavenParseResult parseResultTest = mavenGraphParser.parse(collectResultTest);
+                dependencyGraphTest = mavenGraphTransformer.transform(parseResultTest);
+            }
+
+            // Prepare code locations list. Create a CodeLocation for the root project for both compile and test (if available).
             List<CodeLocation> codeLocations = new ArrayList<>();
             try {
                 com.blackduck.integration.bdio.model.externalid.ExternalId rootExternalId = externalIdFactory.createMavenExternalId(
@@ -121,13 +147,20 @@ public class MavenResolverDetectable extends Detectable {
                     mavenProject.getCoordinates().getVersion()
                 );
                 File rootSourcePath = pomFile.getParentFile();
-                codeLocations.add(new CodeLocation(dependencyGraph, rootExternalId, rootSourcePath));
+                codeLocations.add(new CodeLocation(dependencyGraphCompile, rootExternalId, rootSourcePath));
+                if (dependencyGraphTest != null) {
+                    // Create a separate codelocation for test-scope
+                    codeLocations.add(new CodeLocation(dependencyGraphTest, rootExternalId, rootSourcePath));
+                }
             } catch (Exception e) {
                 logger.debug("Failed to create root external id for code location: {}", e.getMessage());
-                codeLocations.add(new CodeLocation(dependencyGraph));
+                codeLocations.add(new CodeLocation(dependencyGraphCompile));
+                if (dependencyGraphTest != null) {
+                    codeLocations.add(new CodeLocation(dependencyGraphTest));
+                }
             }
 
-            // 4b. Process modules (if any) and create separate code locations for each module
+            // 4b. Process modules (if any) and create separate code locations for each module (compile + test)
             if (mavenProject.getModules() != null && !mavenProject.getModules().isEmpty()) {
                 File rootDir = pomFile.getParentFile();
                 for (String module : mavenProject.getModules()) {
@@ -156,9 +189,22 @@ public class MavenResolverDetectable extends Detectable {
 
                         logger.info("Processing module POM: {}", modulePom.getAbsolutePath());
                         MavenProject moduleProject = projectBuilder.buildProject(modulePom);
-                        CollectResult moduleCollectResult = dependencyResolver.resolveDependencies(modulePom, moduleProject, localRepoPath.toFile());
-                        MavenParseResult moduleParseResult = mavenGraphParser.parse(moduleCollectResult);
-                        DependencyGraph moduleGraph = mavenGraphTransformer.transform(moduleParseResult);
+
+                        // two-phase for module
+                        CollectResult moduleCollectCompile = dependencyResolver.resolveDependencies(modulePom, moduleProject, localRepoPath.toFile(), "compile");
+                        CollectResult moduleCollectTest = null;
+                        if (includeTestScope) {
+                            moduleCollectTest = dependencyResolver.resolveDependencies(modulePom, moduleProject, localRepoPath.toFile(), "test");
+                        }
+
+                        MavenParseResult moduleParseCompile = mavenGraphParser.parse(moduleCollectCompile);
+                        DependencyGraph moduleGraphCompile = mavenGraphTransformer.transform(moduleParseCompile);
+
+                        DependencyGraph moduleGraphTest = null;
+                        if (includeTestScope && moduleCollectTest != null) {
+                            MavenParseResult moduleParseTest = mavenGraphParser.parse(moduleCollectTest);
+                            moduleGraphTest = mavenGraphTransformer.transform(moduleParseTest);
+                        }
 
                         // Create a code location for the module and add to the list (do not merge into root)
                         try {
@@ -168,10 +214,16 @@ public class MavenResolverDetectable extends Detectable {
                                 moduleProject.getCoordinates().getVersion()
                             );
                             File moduleSourcePath = modulePom.getParentFile();
-                            codeLocations.add(new CodeLocation(moduleGraph, moduleExternalId, moduleSourcePath));
+                            codeLocations.add(new CodeLocation(moduleGraphCompile, moduleExternalId, moduleSourcePath));
+                            if (moduleGraphTest != null) {
+                                codeLocations.add(new CodeLocation(moduleGraphTest, moduleExternalId, moduleSourcePath));
+                            }
                         } catch (Exception e) {
                             logger.debug("Failed to create module external id for module '{}': {}", modulePathStr, e.getMessage());
-                            codeLocations.add(new CodeLocation(moduleGraph));
+                            codeLocations.add(new CodeLocation(moduleGraphCompile));
+                            if (moduleGraphTest != null) {
+                                codeLocations.add(new CodeLocation(moduleGraphTest));
+                            }
                         }
 
                     } catch (Exception e) {
