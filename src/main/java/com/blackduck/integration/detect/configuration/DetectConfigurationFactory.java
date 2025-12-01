@@ -458,6 +458,7 @@ public class DetectConfigurationFactory {
         Boolean runRiskReportPdf = detectConfiguration.getValue(DetectProperties.DETECT_RISK_REPORT_PDF);
         Boolean runRiskReportJson = detectConfiguration.getValue(DetectProperties.DETECT_RISK_REPORT_JSON);
         Boolean runNoticesReport = detectConfiguration.getValue(DetectProperties.DETECT_NOTICES_REPORT);
+        Boolean runSbomReport = detectConfiguration.getValue(DetectProperties.DETECT_SBOM_REPORT);
         Path riskReportPdfPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_RISK_REPORT_PDF_PATH);
         Path riskReportJsonPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_RISK_REPORT_JSON_PATH);
         Path noticesReportPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NOTICES_REPORT_PATH);
@@ -475,7 +476,8 @@ public class DetectConfigurationFactory {
             policyNamesToFailPolicyCheck,
             correlatedScanningEnabled,
             runRiskReportJson,
-            riskReportJsonPath
+            riskReportJsonPath,
+            runSbomReport
         );
     }
 

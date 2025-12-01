@@ -15,6 +15,7 @@ public class BlackDuckPostOptions {
     private final boolean generateRiskReportPdf;
     private final boolean generateRiskReportJson;
     private final boolean generateNoticesReport;
+    private final boolean generateSbomReport;
     private final @Nullable Path riskReportPdfPath;
     private final @Nullable Path riskReportJsonPath;
     private final @Nullable Path noticesReportPath;
@@ -32,7 +33,8 @@ public class BlackDuckPostOptions {
         List<String> policyNamesToFailPolicyCheck,
         boolean correlatedScanningEnabled,
         boolean generateRiskReportJson,
-        @Nullable Path riskReportJsonPath
+        @Nullable Path riskReportJsonPath,
+        boolean generateSbomReport
     ) {
         this.waitForResults = waitForResults;
         this.generateRiskReportPdf = generateRiskReportPdf;
@@ -44,6 +46,7 @@ public class BlackDuckPostOptions {
         this.correlatedScanningEnabled = correlatedScanningEnabled;
         this.generateRiskReportJson = generateRiskReportJson;
         this.riskReportJsonPath = riskReportJsonPath;
+        this.generateSbomReport = generateSbomReport;
     }
 
     public boolean shouldWaitForResults() {
@@ -60,6 +63,10 @@ public class BlackDuckPostOptions {
 
     public boolean shouldGenerateNoticesReport() {
         return generateNoticesReport;
+    }
+
+    public boolean shouldGenerateSbomReport() {
+        return generateSbomReport;
     }
 
     public boolean shouldGenerateAnyReport() {

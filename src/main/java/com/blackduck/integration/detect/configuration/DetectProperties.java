@@ -1200,6 +1200,13 @@ public class DetectProperties {
             .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL, DetectGroup.REPORT_SETTING)
             .build();
 
+    public static final BooleanProperty DETECT_SBOM_REPORT =
+        BooleanProperty.newBuilder("detect.sbom.report", false)
+            .setInfo("Generate SBOM Report", DetectPropertyFromVersion.VERSION_11_1_0)
+            .setHelp("When set to true, a CycloneDX SBOM report will be generated using cdxgen.")
+            .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL)
+            .build();
+
     public static final NullableStringProperty DETECT_NPM_ARGUMENTS =
         NullableStringProperty.newBuilder("detect.npm.arguments")
             .setInfo("Additional NPM Command Arguments", DetectPropertyFromVersion.VERSION_4_3_0)
