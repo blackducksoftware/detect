@@ -54,36 +54,24 @@ final def internalRepoHost = System.getenv('SNPS_INTERNAL_ARTIFACTORY')
 repositories {
     println "Checking if environment property SNPS_INTERNAL_ARTIFACTORY is configured: ${internalRepoHost}"
     maven {
+        // CLL official releases:
         url = uri("${internalRepoHost}/artifactory/bds-integrations-release-not-mirrored")
         content { includeModule(locatorGroup, locatorModule) }
     }
     maven {
-        url = uri("${internalRepoHost}/artifactory/bds-integrations-snapshot-not-mirrored")
+        // CLL SNAPSHOT releases:
+        url = uri("${internalRepoHost}/artifactory/bds-integrations-test")
         content { includeModule(locatorGroup, locatorModule) }
     }
     maven {
+        // Idler official releases:
         url = uri("${internalRepoHost}/artifactory/bds-integration-placeholder-release")
         content { includeModule(locatorGroup, locatorModule) }
     }
     maven {
+        // Idler releases mirrored to:
         url = uri("${externalRepoHost}/bds-integration-placeholder-release")
         content { includeModule(locatorGroup, locatorModule) }
-    }
-    maven {
-        url "${internalRepoHost}/artifactory/bds-bdio-release"
-        content { excludeModule(locatorGroup, locatorModule) }
-    }
-    maven {
-        url "${internalRepoHost}/artifactory/bds-bdio-nightly"
-        content { excludeModule(locatorGroup, locatorModule) }
-    }
-    maven {
-        url "${internalRepoHost}/artifactory/bds-bdio-snapshot"
-        content { excludeModule(locatorGroup, locatorModule) }
-    }
-    maven {
-        url "${externalRepoHost}/bds-bdio-release"
-        content { excludeModule(locatorGroup, locatorModule) }
     }
 }
 
@@ -166,7 +154,7 @@ dependencies {
     implementation "com.blackduck.integration:blackduck-common:${blackDuckCommonVersion}"
     implementation 'com.blackduck.integration:blackduck-upload-common:4.1.2'
     implementation 'com.blackducksoftware:method-analyzer-core:1.0.1'
-    implementation "${locatorGroup}:${locatorModule}:2.2.0-SNAPSHOT+9e2efb7f"
+    implementation "${locatorGroup}:${locatorModule}:2.1.1"
 
     implementation 'org.apache.maven.shared:maven-invoker:3.0.0'
 
