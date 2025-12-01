@@ -123,7 +123,7 @@ public class PipTest {
             blackduckAssertions.hasComponents("granian");
             blackduckAssertions.hasComponents("httpx");
             blackduckAssertions.checkComponentVersionExists("atomicwrites", "1.4.1");
-            blackduckAssertions.checkComponentVersionExists("TOML", "0.10.2");
+            blackduckAssertions.checkComponentVersionExists("to-ml", "0.10.2");
         }
     }
 }
