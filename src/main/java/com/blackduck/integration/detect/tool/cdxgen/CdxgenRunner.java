@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,8 +88,13 @@ public class CdxgenRunner {
             logger.info("Running cdxgen on: {}", sourcePath.getAbsolutePath());
             logger.debug("Cdxgen command: {} {}", extractedExecutable, String.join(" ", arguments));
 
+            // Set environment variables to enable license fetching
+            Map<String, String> environmentVariables = new HashMap<>();
+            environmentVariables.put("FETCH_LICENSE", "true");
+
             Executable executable = Executable.create(
                 sourcePath,
+                environmentVariables,
                 extractedExecutable.getAbsolutePath(),
                 arguments
             );
