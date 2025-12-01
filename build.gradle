@@ -73,6 +73,22 @@ repositories {
         url = uri("${externalRepoHost}/bds-integration-placeholder-release")
         content { includeModule(locatorGroup, locatorModule) }
     }
+    maven {
+        url "${internalRepoHost}/artifactory/bds-bdio-release"
+        content { excludeModule(locatorGroup, locatorModule) }
+    }
+    maven {
+        url "${internalRepoHost}/artifactory/bds-bdio-nightly"
+        content { excludeModule(locatorGroup, locatorModule) }
+    }
+    maven {
+        url "${internalRepoHost}/artifactory/bds-bdio-snapshot"
+        content { excludeModule(locatorGroup, locatorModule) }
+    }
+    maven {
+        url "${externalRepoHost}/bds-bdio-release"
+        content { excludeModule(locatorGroup, locatorModule) }
+    }
 }
 
 tasks.named("bootJar") {
