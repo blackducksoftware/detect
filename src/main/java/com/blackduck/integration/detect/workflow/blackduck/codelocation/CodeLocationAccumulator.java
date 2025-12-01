@@ -1,20 +1,19 @@
 package com.blackduck.integration.detect.workflow.blackduck.codelocation;
 
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.blackduck.integration.blackduck.codelocation.CodeLocationBatchOutput;
 import com.blackduck.integration.blackduck.codelocation.CodeLocationCreationData;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
 
 public class CodeLocationAccumulator {
-    private final List<WaitableCodeLocationData> waitableCodeLocationData = new ArrayList<>();
-    private final Set<String> nonWaitableCodeLocations = new HashSet<>();
-    private final Map<DetectTool, Integer> additionalCountsByTool = new EnumMap<>(DetectTool.class);
+    private final Queue<WaitableCodeLocationData> waitableCodeLocationData = new ConcurrentLinkedQueue<>();
+    private final Queue<String> nonWaitableCodeLocations = new ConcurrentLinkedQueue<>();
+    private final Map<DetectTool, Integer> additionalCountsByTool = new ConcurrentHashMap<>();
 
     public void addWaitableCodeLocations(DetectTool detectTool, CodeLocationCreationData<? extends CodeLocationBatchOutput<?>> creationData) {
         addWaitableCodeLocations(new WaitableCodeLocationData(detectTool,
@@ -40,11 +39,11 @@ public class CodeLocationAccumulator {
         additionalCountsByTool.put(tool, additionalCountsByTool.getOrDefault(tool, 0) + count);
     }
 
-    public List<WaitableCodeLocationData> getWaitableCodeLocations() {
+    public Queue<WaitableCodeLocationData> getWaitableCodeLocations() {
         return waitableCodeLocationData;
     }
 
-    public Set<String> getNonWaitableCodeLocations() {
+    public Queue<String> getNonWaitableCodeLocations() {
         return nonWaitableCodeLocations;
     }
 
