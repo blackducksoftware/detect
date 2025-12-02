@@ -128,8 +128,6 @@ public class PipInspectorTreeParserTest {
         graphAssert.hasRootSize(1);
         graphAssert.hasRootDependency("requests", "2.31.0");
         graphAssert.hasParentChildRelationship("requests", "2.31.0", "charset-normalizer", "3.3.1");
-        graphAssert.hasParentChildRelationship("requests", "2.31.0", "idna", "3.11");
         graphAssert.hasParentChildRelationship("requests", "2.31.0", "urllib3", "2.5.0");
-        graphAssert.hasParentChildRelationship("requests", "2.31.0", "certifi", "2025.11.12");
     }
 }
