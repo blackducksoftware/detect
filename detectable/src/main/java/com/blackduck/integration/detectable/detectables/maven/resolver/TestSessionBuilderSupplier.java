@@ -7,12 +7,13 @@ import org.eclipse.aether.collection.DependencySelector;
 import org.eclipse.aether.supplier.SessionBuilderSupplier;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.graph.selector.ScopeDependencySelector;
+import org.eclipse.aether.util.graph.selector.AndDependencySelector;
+import org.eclipse.aether.util.graph.selector.ExclusionDependencySelector;
+import org.eclipse.aether.internal.impl.scope.OptionalDependencySelector;
 
 /**
- * SessionBuilderSupplier variant that enables TEST scope in the scope selector.
- * This implementation composes a ScopeDependencySelector that includes TEST with
- * OptionalDependencySelector.fromDirect() and ExclusionDependencySelector so the
- * session preserves optional/exclusion semantics while allowing TEST traversal.
+ * SessionBuilderSupplier variant that enables TEST scope in the scope selector and
+ * filters transitive dependencies (test/provided/optional) via TransitiveScopeFilteringSelector.
  */
 public class TestSessionBuilderSupplier extends SessionBuilderSupplier {
     public TestSessionBuilderSupplier(RepositorySystem repositorySystem) {
@@ -32,11 +33,11 @@ public class TestSessionBuilderSupplier extends SessionBuilderSupplier {
             null
         );
 
-        // Use the same optional/exclusion behavior the default builder uses to avoid
-        // removing important filtering (OptionalDependencySelector + ExclusionDependencySelector)
-        org.eclipse.aether.collection.DependencySelector optional = org.eclipse.aether.internal.impl.scope.OptionalDependencySelector.fromDirect();
-        org.eclipse.aether.util.graph.selector.ExclusionDependencySelector exclusion = new org.eclipse.aether.util.graph.selector.ExclusionDependencySelector();
+        DependencySelector optional = OptionalDependencySelector.fromDirect();
+        DependencySelector exclusion = new ExclusionDependencySelector();
+        DependencySelector transitiveFilter = new TransitiveScopeFilteringSelector();
 
-        return new org.eclipse.aether.util.graph.selector.AndDependencySelector(scopeSelector, optional, exclusion);
+        // Compose selectors: scope allows TEST, optional/exclusion keep defaults, transitiveFilter removes unwanted transitives
+        return new AndDependencySelector(scopeSelector, optional, exclusion, transitiveFilter);
     }
 }

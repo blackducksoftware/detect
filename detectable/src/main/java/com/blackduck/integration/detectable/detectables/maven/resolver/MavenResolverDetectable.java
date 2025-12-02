@@ -89,9 +89,9 @@ public class MavenResolverDetectable extends Detectable {
             );
 
             logger.info("  Managed dependencies found: {}", mavenProject.getDependencyManagement().size());
-            mavenProject.getDependencyManagement().forEach(dep ->
-                logger.info("    - Managed Dependency: {}:{}:{} (Scope: {})", dep.getCoordinates().getGroupId(), dep.getCoordinates().getArtifactId(), dep.getCoordinates().getVersion(), dep.getScope())
-            );
+//            mavenProject.getDependencyManagement().forEach(dep ->
+//                logger.info("    - Managed Dependency: {}:{}:{} (Scope: {})", dep.getCoordinates().getGroupId(), dep.getCoordinates().getArtifactId(), dep.getCoordinates().getVersion(), dep.getScope())
+//            );
 
             // 2. Resolve dependencies using the Aether-based resolver for the root pom.
             MavenDependencyResolver dependencyResolver = new MavenDependencyResolver();
