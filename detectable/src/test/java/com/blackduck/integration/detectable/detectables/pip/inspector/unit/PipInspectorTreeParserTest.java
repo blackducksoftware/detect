@@ -106,4 +106,30 @@ public class PipInspectorTreeParserTest {
         Optional<NameVersionCodeLocation> invalidParse = parser.parse(invalidText, "");
         Assertions.assertFalse(invalidParse.isPresent());
     }
+
+    @Test
+    public void requirementsUnknownProjectParseDependenciesTest() {
+        List<String> pipInspectorOutput = Arrays.asList(
+            "p?/not/a/real/path/requirements.txt",
+            "n?==v?",
+            "    requests==2.31.0",
+            "        charset-normalizer==3.3.1",
+            "        idna==3.11",
+            "        urllib3==2.5.0",
+            "        certifi==2025.11.12"
+        );
+
+        Optional<NameVersionCodeLocation> parse = parser.parse(pipInspectorOutput, "");
+        Assertions.assertTrue(parse.isPresent());
+        Assertions.assertEquals("", parse.get().getProjectName());
+        Assertions.assertEquals("", parse.get().getProjectVersion());
+
+        NameVersionGraphAssert graphAssert = new NameVersionGraphAssert(Forge.PYPI, parse.get().getCodeLocation().getDependencyGraph());
+        graphAssert.hasRootSize(1);
+        graphAssert.hasRootDependency("requests", "2.31.0");
+        graphAssert.hasParentChildRelationship("requests", "2.31.0", "charset-normalizer", "3.3.1");
+        graphAssert.hasParentChildRelationship("requests", "2.31.0", "idna", "3.11");
+        graphAssert.hasParentChildRelationship("requests", "2.31.0", "urllib3", "2.5.0");
+        graphAssert.hasParentChildRelationship("requests", "2.31.0", "certifi", "2025.11.12");
+    }
 }
