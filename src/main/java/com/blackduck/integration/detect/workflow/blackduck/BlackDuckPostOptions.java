@@ -22,6 +22,8 @@ public class BlackDuckPostOptions {
     private final List<PolicyRuleSeverityType> severitiesToFailPolicyCheck;
     private final List<String> policyNamesToFailPolicyCheck;
     private final boolean correlatedScanningEnabled;
+    private final List<String> sbomProjectTypes;
+    private final List<String> sbomExcludeTypes;
 
     public BlackDuckPostOptions(
         boolean waitForResults,
@@ -34,7 +36,9 @@ public class BlackDuckPostOptions {
         boolean correlatedScanningEnabled,
         boolean generateRiskReportJson,
         @Nullable Path riskReportJsonPath,
-        boolean generateSbomReport
+        boolean generateSbomReport,
+        List<String> sbomProjectTypes,
+        List<String> sbomExcludeTypes
     ) {
         this.waitForResults = waitForResults;
         this.generateRiskReportPdf = generateRiskReportPdf;
@@ -47,6 +51,8 @@ public class BlackDuckPostOptions {
         this.generateRiskReportJson = generateRiskReportJson;
         this.riskReportJsonPath = riskReportJsonPath;
         this.generateSbomReport = generateSbomReport;
+        this.sbomProjectTypes = sbomProjectTypes;
+        this.sbomExcludeTypes = sbomExcludeTypes;
     }
 
     public boolean shouldWaitForResults() {
@@ -107,5 +113,13 @@ public class BlackDuckPostOptions {
 
     public boolean isCorrelatedScanningEnabled() {
         return correlatedScanningEnabled;
+    }
+
+    public List<String> getSbomProjectTypes() {
+        return sbomProjectTypes;
+    }
+
+    public List<String> getSbomExcludeTypes() {
+        return sbomExcludeTypes;
     }
 }

@@ -68,10 +68,11 @@ public class CdxgenRunner {
      *
      * @param sourcePath Path to the source code to analyze
      * @param outputPath Path where the SBOM file should be written
-     * @param projectType Optional project type (e.g., "java", "javascript", "python")
+     * @param projectTypes Optional list of project types to include (e.g., "java", "javascript", "python")
+     * @param excludeTypes Optional list of project types to exclude
      * @return CdxgenResult containing the execution result and SBOM file location
      */
-    public CdxgenResult runCdxgen(File sourcePath, File outputPath, String projectType) {
+    public CdxgenResult runCdxgen(File sourcePath, File outputPath, List<String> projectTypes, List<String> excludeTypes) {
         if (extractedExecutable == null || !extractedExecutable.exists()) {
             logger.error("Cdxgen has not been initialized. Call initialize() first.");
             return CdxgenResult.failure("Cdxgen not initialized");
@@ -82,7 +83,7 @@ public class CdxgenRunner {
             return CdxgenResult.failure("Source path does not exist: " + sourcePath);
         }
 
-        List<String> arguments = buildCdxgenArguments(outputPath, projectType);
+        List<String> arguments = buildCdxgenArguments(outputPath, sourcePath, projectTypes, excludeTypes);
 
         try {
             logger.info("Running cdxgen on: {}", sourcePath.getAbsolutePath());
@@ -119,22 +120,39 @@ public class CdxgenRunner {
     /**
      * Build the command-line arguments for cdxgen.
      */
-    private List<String> buildCdxgenArguments(File outputPath, String projectType) {
+    private List<String> buildCdxgenArguments(File outputPath, File sourcePath, List<String> projectTypes, List<String> excludeTypes) {
         List<String> arguments = new ArrayList<>();
 
         // Output file
         arguments.add("-o");
         arguments.add(outputPath.getAbsolutePath());
 
-        // Project type (if specified)
-        if (projectType != null && !projectType.trim().isEmpty()) {
-            arguments.add("-t");
-            arguments.add(projectType);
+        // Project types (if specified)
+        if (projectTypes != null && !projectTypes.isEmpty()) {
+            for (String projectType : projectTypes) {
+                if (projectType != null && !projectType.trim().isEmpty()) {
+                    arguments.add("-t");
+                    arguments.add(projectType.trim());
+                }
+            }
+        }
+
+        // Exclude types (if specified)
+        if (excludeTypes != null && !excludeTypes.isEmpty()) {
+            for (String excludeType : excludeTypes) {
+                if (excludeType != null && !excludeType.trim().isEmpty()) {
+                    arguments.add("--exclude-type");
+                    arguments.add(excludeType.trim());
+                }
+            }
         }
 
         // Additional recommended flags
         arguments.add("--spec-version");
         arguments.add("1.6");
+
+        // Source path to scan
+        arguments.add(sourcePath.getAbsolutePath());
 
         return arguments;
     }

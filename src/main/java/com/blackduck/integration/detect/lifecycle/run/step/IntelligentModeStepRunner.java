@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -197,7 +198,7 @@ public class IntelligentModeStepRunner {
             checkPolicy(projectVersion.getProjectVersionView(), blackDuckRunData);
             riskReport(blackDuckRunData, projectVersion);
             noticesReport(blackDuckRunData, projectVersion);
-            generateSbom("gradle");
+            generateSbom();
             publishPostResults(bdioResult, projectVersion, detectToolFilter);
         });
     }
@@ -457,10 +458,12 @@ public class IntelligentModeStepRunner {
         }
     }
 
-    private void generateSbom(String projectType) throws OperationException {
+    private void generateSbom() throws OperationException {
         if (operationRunner.createBlackDuckPostOptions().shouldGenerateSbomReport()) {
             logger.info("Generating CycloneDX SBOM with cdxgen");
-            File sbomFile = operationRunner.generateCdxgenSbom(projectType);
+            List<String> projectTypes = operationRunner.createBlackDuckPostOptions().getSbomProjectTypes();
+            List<String> excludeTypes = operationRunner.createBlackDuckPostOptions().getSbomExcludeTypes();
+            File sbomFile = operationRunner.generateCdxgenSbom(projectTypes, excludeTypes);
             logger.info("CycloneDX SBOM available at: {}", sbomFile.getParent());
         }
     }
