@@ -1200,27 +1200,12 @@ public class DetectProperties {
             .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL, DetectGroup.REPORT_SETTING)
             .build();
 
-    public static final BooleanProperty DETECT_SBOM_REPORT =
-        BooleanProperty.newBuilder("detect.sbom.report", false)
-            .setInfo("Generate SBOM Report", DetectPropertyFromVersion.VERSION_11_1_0)
-            .setHelp("When set to true, a CycloneDX SBOM report will be generated using cdxgen.")
-            .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL)
-            .build();
-
     public static final StringListProperty DETECT_SBOM_PROJECT_TYPES =
         StringListProperty.newBuilder("detect.sbom.project.types", emptyList())
             .setInfo("SBOM Project Types", DetectPropertyFromVersion.VERSION_11_1_0)
-            .setHelp("Comma-separated list of project types to include when generating the SBOM. These map to cdxgen's -t option. When specified, cdxgen will ONLY detect the listed types and disable auto-detection. If not specified, cdxgen will auto-detect all project types. Do not use together with detect.sbom.exclude.types. For a full list of supported types, refer to https://cyclonedx.github.io/cdxgen/#/PROJECT_TYPES")
+            .setHelp("Comma-separated list of project types for SBOM generation. When this property is specified, a CycloneDX SBOM report will be generated using cdxgen for the specified project types. These types are passed to cdxgen's -t option. For a full list of supported types, refer to https://cyclonedx.github.io/cdxgen/#/PROJECT_TYPES")
             .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL)
             .setExample("java,javascript")
-            .build();
-
-    public static final StringListProperty DETECT_SBOM_EXCLUDE_TYPES =
-        StringListProperty.newBuilder("detect.sbom.exclude.types", emptyList())
-            .setInfo("SBOM Exclude Types", DetectPropertyFromVersion.VERSION_11_1_0)
-            .setHelp("Comma-separated list of project types to exclude when generating the SBOM. These map to cdxgen's --exclude-type option. This works with auto-detection to exclude specific types from the results. Do not use together with detect.sbom.project.types. For a full list of supported types, refer to https://cyclonedx.github.io/cdxgen/#/PROJECT_TYPES")
-            .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL)
-            .setExample("python,go")
             .build();
 
     public static final NullableStringProperty DETECT_NPM_ARGUMENTS =

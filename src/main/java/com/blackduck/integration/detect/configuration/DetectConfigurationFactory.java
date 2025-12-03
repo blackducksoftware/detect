@@ -458,7 +458,6 @@ public class DetectConfigurationFactory {
         Boolean runRiskReportPdf = detectConfiguration.getValue(DetectProperties.DETECT_RISK_REPORT_PDF);
         Boolean runRiskReportJson = detectConfiguration.getValue(DetectProperties.DETECT_RISK_REPORT_JSON);
         Boolean runNoticesReport = detectConfiguration.getValue(DetectProperties.DETECT_NOTICES_REPORT);
-        Boolean runSbomReport = detectConfiguration.getValue(DetectProperties.DETECT_SBOM_REPORT);
         Path riskReportPdfPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_RISK_REPORT_PDF_PATH);
         Path riskReportJsonPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_RISK_REPORT_JSON_PATH);
         Path noticesReportPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NOTICES_REPORT_PATH);
@@ -466,7 +465,6 @@ public class DetectConfigurationFactory {
         List<String> policyNamesToFailPolicyCheck = detectConfiguration.getValue(DetectProperties.DETECT_POLICY_CHECK_FAIL_ON_NAMES);
         Boolean correlatedScanningEnabled = detectConfiguration.getValue(DetectProperties.DETECT_CORRELATED_SCANNING_ENABLED);
         List<String> sbomProjectTypes = detectConfiguration.getValue(DetectProperties.DETECT_SBOM_PROJECT_TYPES);
-        List<String> sbomExcludeTypes = detectConfiguration.getValue(DetectProperties.DETECT_SBOM_EXCLUDE_TYPES);
 
         return new BlackDuckPostOptions(
             waitForResults,
@@ -479,9 +477,7 @@ public class DetectConfigurationFactory {
             correlatedScanningEnabled,
             runRiskReportJson,
             riskReportJsonPath,
-            runSbomReport,
-            sbomProjectTypes,
-            sbomExcludeTypes
+            sbomProjectTypes
         );
     }
 

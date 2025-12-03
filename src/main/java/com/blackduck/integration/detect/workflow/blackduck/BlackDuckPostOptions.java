@@ -15,7 +15,6 @@ public class BlackDuckPostOptions {
     private final boolean generateRiskReportPdf;
     private final boolean generateRiskReportJson;
     private final boolean generateNoticesReport;
-    private final boolean generateSbomReport;
     private final @Nullable Path riskReportPdfPath;
     private final @Nullable Path riskReportJsonPath;
     private final @Nullable Path noticesReportPath;
@@ -23,7 +22,6 @@ public class BlackDuckPostOptions {
     private final List<String> policyNamesToFailPolicyCheck;
     private final boolean correlatedScanningEnabled;
     private final List<String> sbomProjectTypes;
-    private final List<String> sbomExcludeTypes;
 
     public BlackDuckPostOptions(
         boolean waitForResults,
@@ -36,9 +34,7 @@ public class BlackDuckPostOptions {
         boolean correlatedScanningEnabled,
         boolean generateRiskReportJson,
         @Nullable Path riskReportJsonPath,
-        boolean generateSbomReport,
-        List<String> sbomProjectTypes,
-        List<String> sbomExcludeTypes
+        List<String> sbomProjectTypes
     ) {
         this.waitForResults = waitForResults;
         this.generateRiskReportPdf = generateRiskReportPdf;
@@ -50,9 +46,7 @@ public class BlackDuckPostOptions {
         this.correlatedScanningEnabled = correlatedScanningEnabled;
         this.generateRiskReportJson = generateRiskReportJson;
         this.riskReportJsonPath = riskReportJsonPath;
-        this.generateSbomReport = generateSbomReport;
         this.sbomProjectTypes = sbomProjectTypes;
-        this.sbomExcludeTypes = sbomExcludeTypes;
     }
 
     public boolean shouldWaitForResults() {
@@ -72,7 +66,7 @@ public class BlackDuckPostOptions {
     }
 
     public boolean shouldGenerateSbomReport() {
-        return generateSbomReport;
+        return CollectionUtils.isNotEmpty(sbomProjectTypes);
     }
 
     public boolean shouldGenerateAnyReport() {
@@ -117,9 +111,5 @@ public class BlackDuckPostOptions {
 
     public List<String> getSbomProjectTypes() {
         return sbomProjectTypes;
-    }
-
-    public List<String> getSbomExcludeTypes() {
-        return sbomExcludeTypes;
     }
 }

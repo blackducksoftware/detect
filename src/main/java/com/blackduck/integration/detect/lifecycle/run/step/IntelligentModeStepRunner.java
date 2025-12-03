@@ -462,8 +462,7 @@ public class IntelligentModeStepRunner {
         if (operationRunner.createBlackDuckPostOptions().shouldGenerateSbomReport()) {
             logger.info("Generating CycloneDX SBOM with cdxgen");
             List<String> projectTypes = operationRunner.createBlackDuckPostOptions().getSbomProjectTypes();
-            List<String> excludeTypes = operationRunner.createBlackDuckPostOptions().getSbomExcludeTypes();
-            File sbomFile = operationRunner.generateCdxgenSbom(projectTypes, excludeTypes);
+            File sbomFile = operationRunner.generateCdxgenSbom(projectTypes);
             logger.info("CycloneDX SBOM available at: {}", sbomFile.getParent());
         }
     }
