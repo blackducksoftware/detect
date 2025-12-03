@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '11.1.0-SIGQA8-SNAPSHOT'
+version = '11.1.0-SIGQA8-zahidblackduck.IDETECT-4707-pip-inspector-normalization-fix'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
