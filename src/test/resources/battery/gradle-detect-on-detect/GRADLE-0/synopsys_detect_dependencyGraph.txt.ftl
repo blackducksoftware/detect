@@ -957,12 +957,12 @@ A web-based, searchable dependency report is available by adding the --scan opti
 
 DETECT META DATA START
 rootProjectDirectory:${sourcePath?replace("\\", "/")}
-rootProjectGroup:com.synopsys.integration
-rootProjectName:synopsys-detect
-rootProjectVersion:7.5.0-SNAPSHOT
-projectDirectory:${sourcePath?replace("\\", "/")}
-projectGroup:com.synopsys.integration
-projectName:synopsys-detect
-projectVersion:7.5.0-SNAPSHOT
+rootProjectGroup:com.blackduck.integration
+rootProjectName:detect
+rootProjectVersion:11.1.0-SIGQA8-SNAPSHOT
+projectDirectory:${sourcePath?replace("\\", "/")}/common
+projectGroup:com.blackduck.integration
+projectName:detect
+projectVersion:11.1.0-SIGQA8-SNAPSHOT
 projectParent:null
 DETECT META DATA END
