@@ -618,10 +618,10 @@ DETECT META DATA START
 rootProjectDirectory:${sourcePath?replace("\\", "/")}
 rootProjectGroup:com.blackduck.integration
 rootProjectName:detect
-rootProjectVersion:11.1.0-SIGQA8-SNAPSHOT
+rootProjectVersion:11.1.0-SIGQA10-SNAPSHOT
 projectDirectory:${sourcePath?replace("\\", "/")}/common
 projectGroup:com.blackduck.integration
 projectName:detectable
-projectVersion:11.1.0-SIGQA8-SNAPSHOT
+projectVersion:11.1.0-SIGQA10-SNAPSHOT
 projectParent:root project 'detect'
 DETECT META DATA END
