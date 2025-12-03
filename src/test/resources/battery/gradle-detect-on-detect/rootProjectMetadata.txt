@@ -1,5 +1,6 @@
 DETECT META DATA START
-rootProjectDirectory:${sourcePath?replace("\\", "/")}
+rootProjectDirectory:/Users/samratmuk/detect
+rootProjectPath::
 rootProjectGroup:com.blackduck.integration
 rootProjectName:detect
 rootProjectVersion:11.1.0-SIGQA10-SNAPSHOT

@@ -122,11 +122,11 @@ compileClasspath - Compile classpath for source set 'main'.
 |    +--- com.google.guava:guava:30.1.1-jre -> 32.1.2-jre (*)
 |    \--- commons-lang:commons-lang:2.6
 +--- com.blackduck.integration:blackduck-common:67.0.20 (*)
-+--- com.blackduck.integration:blackduck-upload-common:4.1.2
++--- com.blackduck.integration:blackduck-upload-common:4.1.3
 +--- com.blackducksoftware:method-analyzer-core:1.0.1
 |    +--- com.google.guava:guava:31.1-jre -> 32.1.2-jre (*)
 |    \--- org.ow2.asm:asm:9.6
-+--- com.blackduck.integration:component-locator:2.1.1
++--- com.blackduck.integration:component-locator:2.2.0
 +--- org.apache.maven.shared:maven-invoker:3.0.0
 |    +--- org.codehaus.plexus:plexus-utils:3.0.24
 |    \--- org.codehaus.plexus:plexus-component-annotations:1.7
@@ -337,9 +337,9 @@ implementation - Implementation only dependencies for source set 'main'. (n)
 +--- ch.qos.logback:logback-classic:1.2.13 (n)
 +--- com.blackducksoftware.bdio:bdio-protobuf:3.2.12 (n)
 +--- com.blackduck.integration:blackduck-common:67.0.20 (n)
-+--- com.blackduck.integration:blackduck-upload-common:4.1.2 (n)
++--- com.blackduck.integration:blackduck-upload-common:4.1.3 (n)
 +--- com.blackducksoftware:method-analyzer-core:1.0.1 (n)
-+--- com.blackduck.integration:component-locator:2.1.1 (n)
++--- com.blackduck.integration:component-locator:2.2.0 (n)
 +--- org.apache.maven.shared:maven-invoker:3.0.0 (n)
 +--- org.springframework:spring-jcl:5.3.34 (n)
 +--- org.springframework:spring-core:5.3.34 (n)
@@ -520,13 +520,13 @@ productionRuntimeClasspath
 |    +--- project :common (*)
 |    +--- com.blackduck.integration:integration-bdio -> 27.0.4 (*)
 |    +--- com.blackduck.integration:integration-rest -> 11.1.2 (*)
-|    +--- org.tomlj:tomlj:1.1.1
-|    |    +--- org.antlr:antlr4-runtime:4.11.1
-|    |    \--- org.checkerframework:checker-qual:3.21.2 -> 3.33.0
+|    +--- org.tomlj:tomlj:1.0.0
+|    |    +--- org.antlr:antlr4-runtime:4.7.2
+|    |    \--- com.google.code.findbugs:jsr305:3.0.2
 |    +--- com.moandjiezana.toml:toml4j:0.7.2
 |    |    \--- com.google.code.gson:gson:2.8.1 -> 2.9.1
 |    +--- com.paypal.digraph:digraph-parser:1.0
-|    |    \--- org.antlr:antlr4-runtime:4.2 -> 4.11.1
+|    |    \--- org.antlr:antlr4-runtime:4.2 -> 4.7.2
 |    \--- guru.nidi:graphviz-java:0.18.1
 |         +--- org.webjars.npm:viz.js-graphviz-java:2.1.3
 |         +--- guru.nidi.com.kitfox:svgSalamander:1.1.3
@@ -555,7 +555,7 @@ productionRuntimeClasspath
 |    +--- com.google.guava:guava:30.1.1-jre -> 32.1.2-jre (*)
 |    \--- commons-lang:commons-lang:2.6
 +--- com.blackduck.integration:blackduck-common:67.0.20 (*)
-+--- com.blackduck.integration:blackduck-upload-common:4.1.2
++--- com.blackduck.integration:blackduck-upload-common:4.1.3
 |    +--- commons-codec:commons-codec:1.15
 |    \--- com.blackduck.integration:integration-rest:11.0.0 -> 11.1.2 (*)
 +--- com.blackducksoftware:method-analyzer-core:1.0.1
@@ -563,7 +563,7 @@ productionRuntimeClasspath
 |    +--- org.slf4j:slf4j-api:1.7.36
 |    +--- com.google.guava:guava:31.1-jre -> 32.1.2-jre (*)
 |    \--- org.ow2.asm:asm:9.6
-+--- com.blackduck.integration:component-locator:2.1.1
++--- com.blackduck.integration:component-locator:2.2.0
 |    +--- com.google.code.gson:gson:2.7 -> 2.9.1
 |    +--- ch.qos.logback:logback-classic:1.2.13 (*)
 |    \--- commons-io:commons-io:2.6 -> 2.15.1
@@ -892,13 +892,13 @@ runtimeClasspath - Runtime classpath of source set 'main'.
 |    +--- project :common (*)
 |    +--- com.blackduck.integration:integration-bdio -> 27.0.4 (*)
 |    +--- com.blackduck.integration:integration-rest -> 11.1.2 (*)
-|    +--- org.tomlj:tomlj:1.1.1
-|    |    +--- org.antlr:antlr4-runtime:4.11.1
-|    |    \--- org.checkerframework:checker-qual:3.21.2 -> 3.33.0
+|    +--- org.tomlj:tomlj:1.0.0
+|    |    +--- org.antlr:antlr4-runtime:4.7.2
+|    |    \--- com.google.code.findbugs:jsr305:3.0.2
 |    +--- com.moandjiezana.toml:toml4j:0.7.2
 |    |    \--- com.google.code.gson:gson:2.8.1 -> 2.9.1
 |    +--- com.paypal.digraph:digraph-parser:1.0
-|    |    \--- org.antlr:antlr4-runtime:4.2 -> 4.11.1
+|    |    \--- org.antlr:antlr4-runtime:4.2 -> 4.7.2
 |    \--- guru.nidi:graphviz-java:0.18.1
 |         +--- org.webjars.npm:viz.js-graphviz-java:2.1.3
 |         +--- guru.nidi.com.kitfox:svgSalamander:1.1.3
@@ -927,7 +927,7 @@ runtimeClasspath - Runtime classpath of source set 'main'.
 |    +--- com.google.guava:guava:30.1.1-jre -> 32.1.2-jre (*)
 |    \--- commons-lang:commons-lang:2.6
 +--- com.blackduck.integration:blackduck-common:67.0.20 (*)
-+--- com.blackduck.integration:blackduck-upload-common:4.1.2
++--- com.blackduck.integration:blackduck-upload-common:4.1.3
 |    +--- commons-codec:commons-codec:1.15
 |    \--- com.blackduck.integration:integration-rest:11.0.0 -> 11.1.2 (*)
 +--- com.blackducksoftware:method-analyzer-core:1.0.1
@@ -935,7 +935,7 @@ runtimeClasspath - Runtime classpath of source set 'main'.
 |    +--- org.slf4j:slf4j-api:1.7.36
 |    +--- com.google.guava:guava:31.1-jre -> 32.1.2-jre (*)
 |    \--- org.ow2.asm:asm:9.6
-+--- com.blackduck.integration:component-locator:2.1.1
++--- com.blackduck.integration:component-locator:2.2.0
 |    +--- com.google.code.gson:gson:2.7 -> 2.9.1
 |    +--- ch.qos.logback:logback-classic:1.2.13 (*)
 |    \--- commons-io:commons-io:2.6 -> 2.15.1
@@ -1232,11 +1232,11 @@ testCompileClasspath - Compile classpath for source set 'test'.
 |    +--- com.google.guava:guava:30.1.1-jre -> 32.1.2-jre (*)
 |    \--- commons-lang:commons-lang:2.6
 +--- com.blackduck.integration:blackduck-common:67.0.20 (*)
-+--- com.blackduck.integration:blackduck-upload-common:4.1.2
++--- com.blackduck.integration:blackduck-upload-common:4.1.3
 +--- com.blackducksoftware:method-analyzer-core:1.0.1
 |    +--- com.google.guava:guava:31.1-jre -> 32.1.2-jre (*)
 |    \--- org.ow2.asm:asm:9.6
-+--- com.blackduck.integration:component-locator:2.1.1
++--- com.blackduck.integration:component-locator:2.2.0
 +--- org.apache.maven.shared:maven-invoker:3.0.0
 |    +--- org.codehaus.plexus:plexus-utils:3.0.24
 |    \--- org.codehaus.plexus:plexus-component-annotations:1.7
@@ -1633,13 +1633,13 @@ testRuntimeClasspath - Runtime classpath of source set 'test'.
 |    +--- project :common (*)
 |    +--- com.blackduck.integration:integration-bdio -> 27.0.4 (*)
 |    +--- com.blackduck.integration:integration-rest -> 11.1.2 (*)
-|    +--- org.tomlj:tomlj:1.1.1
-|    |    +--- org.antlr:antlr4-runtime:4.11.1
-|    |    \--- org.checkerframework:checker-qual:3.21.2 -> 3.33.0
+|    +--- org.tomlj:tomlj:1.0.0
+|    |    +--- org.antlr:antlr4-runtime:4.7.2
+|    |    \--- com.google.code.findbugs:jsr305:3.0.2
 |    +--- com.moandjiezana.toml:toml4j:0.7.2
 |    |    \--- com.google.code.gson:gson:2.8.1 -> 2.9.1
 |    +--- com.paypal.digraph:digraph-parser:1.0
-|    |    \--- org.antlr:antlr4-runtime:4.2 -> 4.11.1
+|    |    \--- org.antlr:antlr4-runtime:4.2 -> 4.7.2
 |    \--- guru.nidi:graphviz-java:0.18.1
 |         +--- org.webjars.npm:viz.js-graphviz-java:2.1.3
 |         +--- guru.nidi.com.kitfox:svgSalamander:1.1.3
@@ -1668,7 +1668,7 @@ testRuntimeClasspath - Runtime classpath of source set 'test'.
 |    +--- com.google.guava:guava:30.1.1-jre -> 32.1.2-jre (*)
 |    \--- commons-lang:commons-lang:2.6
 +--- com.blackduck.integration:blackduck-common:67.0.20 (*)
-+--- com.blackduck.integration:blackduck-upload-common:4.1.2
++--- com.blackduck.integration:blackduck-upload-common:4.1.3
 |    +--- commons-codec:commons-codec:1.15
 |    \--- com.blackduck.integration:integration-rest:11.0.0 -> 11.1.2 (*)
 +--- com.blackducksoftware:method-analyzer-core:1.0.1
@@ -1676,7 +1676,7 @@ testRuntimeClasspath - Runtime classpath of source set 'test'.
 |    +--- org.slf4j:slf4j-api:1.7.36
 |    +--- com.google.guava:guava:31.1-jre -> 32.1.2-jre (*)
 |    \--- org.ow2.asm:asm:9.6
-+--- com.blackduck.integration:component-locator:2.1.1
++--- com.blackduck.integration:component-locator:2.2.0
 |    +--- com.google.code.gson:gson:2.7 -> 2.9.1
 |    +--- ch.qos.logback:logback-classic:1.2.13 (*)
 |    \--- commons-io:commons-io:2.6 -> 2.15.1
@@ -1918,13 +1918,15 @@ testRuntimeOnly - Runtime only dependencies for source set 'test'. (n)
 A web-based, searchable dependency report is available by adding the --scan option.
 
 DETECT META DATA START
-rootProjectDirectory:${sourcePath?replace("\\", "/")}
+rootProjectDirectory:/Users/samratmuk/detect
 rootProjectGroup:com.blackduck.integration
+rootProjectPath::
 rootProjectName:detect
 rootProjectVersion:11.1.0-SIGQA10-SNAPSHOT
-projectDirectory:${sourcePath?replace("\\", "/")}/common
+projectDirectory:/Users/samratmuk/detect
 projectGroup:com.blackduck.integration
 projectName:detect
 projectVersion:11.1.0-SIGQA10-SNAPSHOT
-projectParent:null
+projectPath::
+projectParent:none
 DETECT META DATA END

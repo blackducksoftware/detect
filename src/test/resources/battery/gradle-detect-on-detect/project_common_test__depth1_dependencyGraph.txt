@@ -274,13 +274,15 @@ testRuntimeOnly - Runtime only dependencies for source set 'test'. (n)
 A web-based, searchable dependency report is available by adding the --scan option.
 
 DETECT META DATA START
-rootProjectDirectory:${sourcePath?replace("\\", "/")}
+rootProjectDirectory:/Users/samratmuk/detect
 rootProjectGroup:com.blackduck.integration
+rootProjectPath::
 rootProjectName:detect
 rootProjectVersion:11.1.0-SIGQA10-SNAPSHOT
-projectDirectory:${sourcePath?replace("\\", "/")}/common
+projectDirectory:/Users/samratmuk/detect/common-test
 projectGroup:com.blackduck.integration
 projectName:common-test
 projectVersion:11.1.0-SIGQA10-SNAPSHOT
+projectPath::common-test
 projectParent:root project 'detect'
 DETECT META DATA END
