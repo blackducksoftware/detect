@@ -7,7 +7,7 @@ annotationProcessor - Annotation processors and their dependencies for source se
 No dependencies
 
 api - API dependencies for source set 'main'. (n)
-No dependencies
+\--- com.blackduck.integration:blackduck-common:67.0.20 (n)
 
 apiElements - API elements for main. (n)
 No dependencies
@@ -15,56 +15,96 @@ No dependencies
 archives - Configuration for archive artifacts. (n)
 No dependencies
 
-compile - Dependencies for source set 'main' (deprecated, use 'implementation' instead). (n)
-No dependencies
-
 compileClasspath - Compile classpath for source set 'main'.
-+--- org.slf4j:slf4j-api:1.7.30
-+--- org.apache.commons:commons-lang3:3.10 -> 3.11
-+--- org.jetbrains:annotations:19.0.0 -> 20.1.0
-+--- net.minidev:json-smart:2.4.2
-|    \--- net.minidev:accessors-smart:2.4.2
-|         \--- org.ow2.asm:asm:8.0.1
-+--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.12.3
-|    +--- com.fasterxml.jackson.core:jackson-databind:2.12.3
-|    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.12.3
-|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.3
-|    |    |         +--- com.fasterxml.jackson.core:jackson-core:2.12.3 (c)
-|    |    |         +--- com.fasterxml.jackson.core:jackson-databind:2.12.3 (c)
-|    |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.12.3 (c)
-|    |    |         \--- com.fasterxml.jackson.core:jackson-annotations:2.12.3 (c)
-|    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.3
-|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.3 (*)
-|    |    \--- com.fasterxml.jackson:jackson-bom:2.12.3 (*)
-|    +--- org.yaml:snakeyaml:1.27
-|    +--- com.fasterxml.jackson.core:jackson-core:2.12.3 (*)
-|    \--- com.fasterxml.jackson:jackson-bom:2.12.3 (*)
-\--- com.synopsys.integration:integration-common:24.0.0
-     +--- org.apache.httpcomponents:httpclient:4.5.13
-     |    +--- org.apache.httpcomponents:httpcore:4.4.13
-     |    +--- commons-logging:commons-logging:1.2
-     |    \--- commons-codec:commons-codec:1.11 -> 1.15
-     +--- org.apache.httpcomponents:httpmime:4.5.13
-     |    \--- org.apache.httpcomponents:httpclient:4.5.13 (*)
-     +--- org.apache.commons:commons-lang3:3.11
-     +--- org.apache.commons:commons-text:1.9
-     |    \--- org.apache.commons:commons-lang3:3.11
-     +--- commons-io:commons-io:2.8.0
-     +--- org.apache.commons:commons-compress:1.20
-     +--- commons-codec:commons-codec:1.15
-     +--- commons-beanutils:commons-beanutils:1.9.4
-     |    +--- commons-logging:commons-logging:1.2
-     |    \--- commons-collections:commons-collections:3.2.2
-     +--- com.google.code.gson:gson:2.8.6
-     +--- org.jetbrains:annotations:20.1.0
-     +--- com.jayway.jsonpath:json-path:2.4.0
-     |    +--- net.minidev:json-smart:2.3 -> 2.4.2 (*)
-     |    \--- org.slf4j:slf4j-api:1.7.25 -> 1.7.30
-     +--- org.slf4j:slf4j-api:1.7.30
-     \--- com.flipkart.zjsonpatch:zjsonpatch:0.4.11
-          +--- com.fasterxml.jackson.core:jackson-databind:2.10.3 -> 2.12.3 (*)
-          +--- com.fasterxml.jackson.core:jackson-core:2.10.3 -> 2.12.3 (*)
-          \--- org.apache.commons:commons-collections4:4.2
++--- com.blackduck.integration:blackduck-common:67.0.20
+|    +--- com.blackduck.integration:blackduck-common-api:2023.4.2.13
+|    |    \--- com.blackduck.integration:integration-rest:11.1.2
+|    |         +--- com.blackduck.integration:integration-common:27.0.2 -> 27.0.3
+|    |         |    +--- org.apache.httpcomponents:httpclient:4.5.14
+|    |         |    |    +--- org.apache.httpcomponents:httpcore:4.4.16
+|    |         |    |    +--- commons-logging:commons-logging:1.2 -> 1.3.5
+|    |         |    |    \--- commons-codec:commons-codec:1.11 -> 1.16.1
+|    |         |    +--- org.apache.httpcomponents:httpmime:4.5.14
+|    |         |    |    \--- org.apache.httpcomponents:httpclient:4.5.14 (*)
+|    |         |    +--- org.apache.commons:commons-lang3:3.12.0 -> 3.14.0
+|    |         |    +--- org.apache.commons:commons-text:1.10.0
+|    |         |    |    \--- org.apache.commons:commons-lang3:3.12.0 -> 3.14.0
+|    |         |    +--- commons-io:commons-io:2.11.0 -> 2.15.1
+|    |         |    +--- org.apache.commons:commons-compress:1.26.1
+|    |         |    |    +--- commons-codec:commons-codec:1.16.1
+|    |         |    |    +--- commons-io:commons-io:2.15.1
+|    |         |    |    \--- org.apache.commons:commons-lang3:3.14.0
+|    |         |    +--- commons-codec:commons-codec:1.15 -> 1.16.1
+|    |         |    +--- commons-beanutils:commons-beanutils:1.11.0
+|    |         |    |    +--- commons-logging:commons-logging:1.3.5
+|    |         |    |    \--- commons-collections:commons-collections:3.2.2
+|    |         |    +--- org.apache.commons:commons-collections4:4.4
+|    |         |    +--- com.google.code.gson:gson:2.10.1
+|    |         |    +--- org.jetbrains:annotations:24.0.1
+|    |         |    +--- com.jayway.jsonpath:json-path:2.9.0
+|    |         |    +--- org.slf4j:slf4j-api:2.0.7
+|    |         |    \--- com.flipkart.zjsonpatch:zjsonpatch:0.4.16
+|    |         |         +--- com.fasterxml.jackson.core:jackson-databind:2.14.0 -> 2.15.0
+|    |         |         |    +--- com.fasterxml.jackson.core:jackson-annotations:2.15.0
+|    |         |         |    \--- com.fasterxml.jackson.core:jackson-core:2.15.0
+|    |         |         +--- com.fasterxml.jackson.core:jackson-core:2.14.0 -> 2.15.0
+|    |         |         \--- org.apache.commons:commons-collections4:4.4
+|    |         +--- org.apache.httpcomponents:httpclient:4.5.14 (*)
+|    |         \--- org.apache.httpcomponents:httpmime:4.5.14 (*)
+|    +--- com.blackduck.integration:phone-home-client:7.0.1
+|    |    \--- com.blackduck.integration:integration-common:27.0.2 -> 27.0.3 (*)
+|    +--- com.blackduck.integration:integration-bdio:27.0.4
+|    |    \--- com.blackduck.integration:integration-common:27.0.3 (*)
+|    \--- com.blackducksoftware.bdio:bdio2:3.2.12
+|         +--- com.blackducksoftware.magpie:magpie:0.6.0
+|         |    +--- com.google.code.findbugs:jsr305:2.0.3 -> 3.0.2
+|         |    \--- com.google.guava:guava:23.3-jre -> 32.1.2-jre
+|         |         +--- com.google.guava:failureaccess:1.0.1
+|         |         +--- com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava
+|         |         +--- com.google.code.findbugs:jsr305:3.0.2
+|         |         +--- org.checkerframework:checker-qual:3.33.0
+|         |         +--- com.google.errorprone:error_prone_annotations:2.18.0
+|         |         \--- com.google.j2objc:j2objc-annotations:2.8
+|         +--- com.fasterxml.jackson.core:jackson-annotations:2.15.0
+|         +--- com.fasterxml.jackson.core:jackson-core:2.15.0
+|         +--- com.fasterxml.jackson.core:jackson-databind:2.15.0 (*)
+|         +--- com.google.code.findbugs:jsr305:2.0.3 -> 3.0.2
+|         +--- com.google.guava:guava:30.1.1-jre -> 32.1.2-jre (*)
+|         +--- com.github.jsonld-java:jsonld-java:0.12.3
+|         |    +--- com.fasterxml.jackson.core:jackson-core:2.9.7 -> 2.15.0
+|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.9.7 -> 2.15.0 (*)
+|         |    +--- org.apache.httpcomponents:httpclient-osgi:4.5.6 -> 4.5.14
+|         |    |    +--- org.apache.httpcomponents:httpclient:4.5.14 (*)
+|         |    |    +--- commons-codec:commons-codec:1.11 -> 1.16.1
+|         |    |    +--- org.apache.httpcomponents:httpmime:4.5.14 (*)
+|         |    |    +--- org.apache.httpcomponents:httpclient-cache:4.5.14
+|         |    |    |    +--- org.apache.httpcomponents:httpclient:4.5.14 (*)
+|         |    |    |    \--- commons-logging:commons-logging:1.2 -> 1.3.5
+|         |    |    \--- org.apache.httpcomponents:fluent-hc:4.5.14
+|         |    |         +--- org.apache.httpcomponents:httpclient:4.5.14 (*)
+|         |    |         \--- commons-logging:commons-logging:1.2 -> 1.3.5
+|         |    +--- org.apache.httpcomponents:httpcore-osgi:4.4.10
+|         |    |    +--- org.apache.httpcomponents:httpcore:4.4.10 -> 4.4.16
+|         |    |    \--- org.apache.httpcomponents:httpcore-nio:4.4.10
+|         |    |         \--- org.apache.httpcomponents:httpcore:4.4.10 -> 4.4.16
+|         |    +--- org.slf4j:slf4j-api:1.7.25 -> 2.0.7
+|         |    \--- commons-io:commons-io:2.6 -> 2.15.1
+|         \--- org.reactivestreams:reactive-streams:1.0.2
++--- com.google.guava:guava:32.1.2-jre (*)
++--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.0
+|    +--- com.fasterxml.jackson.core:jackson-databind:2.15.0 (*)
+|    +--- org.yaml:snakeyaml:2.0
+|    +--- com.fasterxml.jackson.core:jackson-core:2.15.0
+|    \--- com.fasterxml.jackson:jackson-bom:2.15.0
+|         +--- com.fasterxml.jackson.core:jackson-annotations:2.15.0 (c)
+|         +--- com.fasterxml.jackson.core:jackson-core:2.15.0 (c)
+|         +--- com.fasterxml.jackson.core:jackson-databind:2.15.0 (c)
+|         \--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.0 (c)
++--- org.yaml:snakeyaml:2.0
++--- com.fasterxml.jackson.core:jackson-core:2.15.0
++--- org.freemarker:freemarker:2.3.31
++--- org.apache.httpcomponents:httpclient-osgi:4.5.14 (*)
+\--- com.blackduck.integration:integration-common -> 27.0.3 (*)
 
 compileOnly - Compile only dependencies for source set 'main'. (n)
 No dependencies
@@ -76,81 +116,133 @@ default - Configuration for default artifacts. (n)
 No dependencies
 
 implementation - Implementation only dependencies for source set 'main'. (n)
-+--- org.slf4j:slf4j-api:1.7.30 (n)
-+--- org.apache.commons:commons-lang3:3.10 (n)
-+--- org.jetbrains:annotations:19.0.0 (n)
-+--- net.minidev:json-smart:2.4.2 (n)
-+--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.12.3 (n)
-\--- com.synopsys.integration:integration-common:24.0.0 (n)
++--- com.google.guava:guava:32.1.2-jre (n)
++--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.0 (n)
++--- org.yaml:snakeyaml:2.0 (n)
++--- com.fasterxml.jackson.core:jackson-core:2.15.0 (n)
++--- org.freemarker:freemarker:2.3.31 (n)
++--- org.apache.httpcomponents:httpclient-osgi:4.5.14 (n)
+\--- com.blackduck.integration:integration-common (n)
 
 jacocoAgent - The Jacoco agent to use to get coverage data.
-\--- org.jacoco:org.jacoco.agent:0.8.6
+\--- org.jacoco:org.jacoco.agent:0.8.7
 
 jacocoAnt - The Jacoco ant tasks to use to get execute Gradle tasks.
-\--- org.jacoco:org.jacoco.ant:0.8.6
-     +--- org.jacoco:org.jacoco.core:0.8.6
-     |    +--- org.ow2.asm:asm:8.0.1
-     |    +--- org.ow2.asm:asm-commons:8.0.1
-     |    |    +--- org.ow2.asm:asm:8.0.1
-     |    |    +--- org.ow2.asm:asm-tree:8.0.1
-     |    |    |    \--- org.ow2.asm:asm:8.0.1
-     |    |    \--- org.ow2.asm:asm-analysis:8.0.1
-     |    |         \--- org.ow2.asm:asm-tree:8.0.1 (*)
-     |    \--- org.ow2.asm:asm-tree:8.0.1 (*)
-     +--- org.jacoco:org.jacoco.report:0.8.6
-     |    \--- org.jacoco:org.jacoco.core:0.8.6 (*)
-     \--- org.jacoco:org.jacoco.agent:0.8.6
-
-runtime - Runtime dependencies for source set 'main' (deprecated, use 'runtimeOnly' instead). (n)
-No dependencies
+\--- org.jacoco:org.jacoco.ant:0.8.7
+     +--- org.jacoco:org.jacoco.core:0.8.7
+     |    +--- org.ow2.asm:asm:9.1
+     |    +--- org.ow2.asm:asm-commons:9.1
+     |    |    +--- org.ow2.asm:asm:9.1
+     |    |    +--- org.ow2.asm:asm-tree:9.1
+     |    |    |    \--- org.ow2.asm:asm:9.1
+     |    |    \--- org.ow2.asm:asm-analysis:9.1
+     |    |         \--- org.ow2.asm:asm-tree:9.1 (*)
+     |    \--- org.ow2.asm:asm-tree:9.1 (*)
+     +--- org.jacoco:org.jacoco.report:0.8.7
+     |    \--- org.jacoco:org.jacoco.core:0.8.7 (*)
+     \--- org.jacoco:org.jacoco.agent:0.8.7
 
 runtimeClasspath - Runtime classpath of source set 'main'.
-+--- org.slf4j:slf4j-api:1.7.30
-+--- org.apache.commons:commons-lang3:3.10 -> 3.11
-+--- org.jetbrains:annotations:19.0.0 -> 20.1.0
-+--- net.minidev:json-smart:2.4.2
-|    \--- net.minidev:accessors-smart:2.4.2
-|         \--- org.ow2.asm:asm:8.0.1
-+--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.12.3
-|    +--- com.fasterxml.jackson.core:jackson-databind:2.12.3
-|    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.12.3
-|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.3
-|    |    |         +--- com.fasterxml.jackson.core:jackson-core:2.12.3 (c)
-|    |    |         +--- com.fasterxml.jackson.core:jackson-databind:2.12.3 (c)
-|    |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.12.3 (c)
-|    |    |         \--- com.fasterxml.jackson.core:jackson-annotations:2.12.3 (c)
-|    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.3
-|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.3 (*)
-|    |    \--- com.fasterxml.jackson:jackson-bom:2.12.3 (*)
-|    +--- org.yaml:snakeyaml:1.27
-|    +--- com.fasterxml.jackson.core:jackson-core:2.12.3 (*)
-|    \--- com.fasterxml.jackson:jackson-bom:2.12.3 (*)
-\--- com.synopsys.integration:integration-common:24.0.0
-     +--- org.apache.httpcomponents:httpclient:4.5.13
-     |    +--- org.apache.httpcomponents:httpcore:4.4.13
-     |    +--- commons-logging:commons-logging:1.2
-     |    \--- commons-codec:commons-codec:1.11 -> 1.15
-     +--- org.apache.httpcomponents:httpmime:4.5.13
-     |    \--- org.apache.httpcomponents:httpclient:4.5.13 (*)
-     +--- org.apache.commons:commons-lang3:3.11
-     +--- org.apache.commons:commons-text:1.9
-     |    \--- org.apache.commons:commons-lang3:3.11
-     +--- commons-io:commons-io:2.8.0
-     +--- org.apache.commons:commons-compress:1.20
-     +--- commons-codec:commons-codec:1.15
-     +--- commons-beanutils:commons-beanutils:1.9.4
-     |    +--- commons-logging:commons-logging:1.2
-     |    \--- commons-collections:commons-collections:3.2.2
-     +--- com.google.code.gson:gson:2.8.6
-     +--- org.jetbrains:annotations:20.1.0
-     +--- com.jayway.jsonpath:json-path:2.4.0
-     |    +--- net.minidev:json-smart:2.3 -> 2.4.2 (*)
-     |    \--- org.slf4j:slf4j-api:1.7.25 -> 1.7.30
-     +--- org.slf4j:slf4j-api:1.7.30
-     \--- com.flipkart.zjsonpatch:zjsonpatch:0.4.11
-          +--- com.fasterxml.jackson.core:jackson-databind:2.10.3 -> 2.12.3 (*)
-          +--- com.fasterxml.jackson.core:jackson-core:2.10.3 -> 2.12.3 (*)
-          \--- org.apache.commons:commons-collections4:4.2
++--- com.blackduck.integration:blackduck-common:67.0.20
+|    +--- com.blackduck.integration:blackduck-common-api:2023.4.2.13
+|    |    \--- com.blackduck.integration:integration-rest:11.1.2
+|    |         +--- com.blackduck.integration:integration-common:27.0.2 -> 27.0.3
+|    |         |    +--- org.junit.jupiter:junit-jupiter-api:5.7.1
+|    |         |    |    +--- org.apiguardian:apiguardian-api:1.1.0
+|    |         |    |    +--- org.opentest4j:opentest4j:1.2.0
+|    |         |    |    \--- org.junit.platform:junit-platform-commons:1.7.1
+|    |         |    |         \--- org.apiguardian:apiguardian-api:1.1.0
+|    |         |    +--- org.apache.httpcomponents:httpclient:4.5.14
+|    |         |    |    +--- org.apache.httpcomponents:httpcore:4.4.16
+|    |         |    |    +--- commons-logging:commons-logging:1.2 -> 1.3.5
+|    |         |    |    \--- commons-codec:commons-codec:1.11 -> 1.16.1
+|    |         |    +--- org.apache.httpcomponents:httpmime:4.5.14
+|    |         |    |    \--- org.apache.httpcomponents:httpclient:4.5.14 (*)
+|    |         |    +--- org.apache.commons:commons-lang3:3.12.0 -> 3.14.0
+|    |         |    +--- org.apache.commons:commons-text:1.10.0
+|    |         |    |    \--- org.apache.commons:commons-lang3:3.12.0 -> 3.14.0
+|    |         |    +--- commons-io:commons-io:2.11.0 -> 2.15.1
+|    |         |    +--- org.apache.commons:commons-compress:1.26.1
+|    |         |    |    +--- commons-codec:commons-codec:1.16.1
+|    |         |    |    +--- commons-io:commons-io:2.15.1
+|    |         |    |    \--- org.apache.commons:commons-lang3:3.14.0
+|    |         |    +--- commons-codec:commons-codec:1.15 -> 1.16.1
+|    |         |    +--- commons-beanutils:commons-beanutils:1.11.0
+|    |         |    |    +--- commons-logging:commons-logging:1.3.5
+|    |         |    |    \--- commons-collections:commons-collections:3.2.2
+|    |         |    +--- org.apache.commons:commons-collections4:4.4
+|    |         |    +--- com.google.code.gson:gson:2.10.1
+|    |         |    +--- org.jetbrains:annotations:24.0.1
+|    |         |    +--- com.jayway.jsonpath:json-path:2.9.0
+|    |         |    |    +--- net.minidev:json-smart:2.5.0
+|    |         |    |    |    \--- net.minidev:accessors-smart:2.5.0
+|    |         |    |    |         \--- org.ow2.asm:asm:9.3
+|    |         |    |    \--- org.slf4j:slf4j-api:2.0.11
+|    |         |    +--- org.slf4j:slf4j-api:2.0.7 -> 2.0.11
+|    |         |    \--- com.flipkart.zjsonpatch:zjsonpatch:0.4.16
+|    |         |         +--- com.fasterxml.jackson.core:jackson-databind:2.14.0 -> 2.15.0
+|    |         |         |    +--- com.fasterxml.jackson.core:jackson-annotations:2.15.0
+|    |         |         |    \--- com.fasterxml.jackson.core:jackson-core:2.15.0
+|    |         |         +--- com.fasterxml.jackson.core:jackson-core:2.14.0 -> 2.15.0
+|    |         |         \--- org.apache.commons:commons-collections4:4.4
+|    |         +--- org.apache.httpcomponents:httpclient:4.5.14 (*)
+|    |         \--- org.apache.httpcomponents:httpmime:4.5.14 (*)
+|    +--- com.blackduck.integration:phone-home-client:7.0.1
+|    |    \--- com.blackduck.integration:integration-common:27.0.2 -> 27.0.3 (*)
+|    +--- com.blackduck.integration:integration-bdio:27.0.4
+|    |    \--- com.blackduck.integration:integration-common:27.0.3 (*)
+|    \--- com.blackducksoftware.bdio:bdio2:3.2.12
+|         +--- com.blackducksoftware.magpie:magpie:0.6.0
+|         |    +--- com.google.code.findbugs:jsr305:2.0.3 -> 3.0.2
+|         |    \--- com.google.guava:guava:23.3-jre -> 32.1.2-jre
+|         |         +--- com.google.guava:failureaccess:1.0.1
+|         |         +--- com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava
+|         |         +--- com.google.code.findbugs:jsr305:3.0.2
+|         |         +--- org.checkerframework:checker-qual:3.33.0
+|         |         +--- com.google.errorprone:error_prone_annotations:2.18.0
+|         |         \--- com.google.j2objc:j2objc-annotations:2.8
+|         +--- com.fasterxml.jackson.core:jackson-annotations:2.15.0
+|         +--- com.fasterxml.jackson.core:jackson-core:2.15.0
+|         +--- com.fasterxml.jackson.core:jackson-databind:2.15.0 (*)
+|         +--- com.google.code.findbugs:jsr305:2.0.3 -> 3.0.2
+|         +--- com.google.guava:guava:30.1.1-jre -> 32.1.2-jre (*)
+|         +--- com.github.jsonld-java:jsonld-java:0.12.3
+|         |    +--- com.fasterxml.jackson.core:jackson-core:2.9.7 -> 2.15.0
+|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.9.7 -> 2.15.0 (*)
+|         |    +--- org.apache.httpcomponents:httpclient-osgi:4.5.6 -> 4.5.14
+|         |    |    +--- org.apache.httpcomponents:httpclient:4.5.14 (*)
+|         |    |    +--- commons-codec:commons-codec:1.11 -> 1.16.1
+|         |    |    +--- org.apache.httpcomponents:httpmime:4.5.14 (*)
+|         |    |    +--- org.apache.httpcomponents:httpclient-cache:4.5.14
+|         |    |    |    +--- org.apache.httpcomponents:httpclient:4.5.14 (*)
+|         |    |    |    \--- commons-logging:commons-logging:1.2 -> 1.3.5
+|         |    |    \--- org.apache.httpcomponents:fluent-hc:4.5.14
+|         |    |         +--- org.apache.httpcomponents:httpclient:4.5.14 (*)
+|         |    |         \--- commons-logging:commons-logging:1.2 -> 1.3.5
+|         |    +--- org.apache.httpcomponents:httpcore-osgi:4.4.10
+|         |    |    +--- org.apache.httpcomponents:httpcore:4.4.10 -> 4.4.16
+|         |    |    \--- org.apache.httpcomponents:httpcore-nio:4.4.10
+|         |    |         \--- org.apache.httpcomponents:httpcore:4.4.10 -> 4.4.16
+|         |    +--- org.slf4j:slf4j-api:1.7.25 -> 2.0.11
+|         |    +--- org.slf4j:jcl-over-slf4j:1.7.25
+|         |    |    \--- org.slf4j:slf4j-api:1.7.25 -> 2.0.11
+|         |    \--- commons-io:commons-io:2.6 -> 2.15.1
+|         \--- org.reactivestreams:reactive-streams:1.0.2
++--- com.google.guava:guava:32.1.2-jre (*)
++--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.0
+|    +--- com.fasterxml.jackson.core:jackson-databind:2.15.0 (*)
+|    +--- org.yaml:snakeyaml:2.0
+|    +--- com.fasterxml.jackson.core:jackson-core:2.15.0
+|    \--- com.fasterxml.jackson:jackson-bom:2.15.0
+|         +--- com.fasterxml.jackson.core:jackson-annotations:2.15.0 (c)
+|         +--- com.fasterxml.jackson.core:jackson-core:2.15.0 (c)
+|         +--- com.fasterxml.jackson.core:jackson-databind:2.15.0 (c)
+|         \--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.0 (c)
++--- org.yaml:snakeyaml:2.0
++--- com.fasterxml.jackson.core:jackson-core:2.15.0
++--- org.freemarker:freemarker:2.3.31
++--- org.apache.httpcomponents:httpclient-osgi:4.5.14 (*)
+\--- com.blackduck.integration:integration-common -> 27.0.3 (*)
 
 runtimeElements - Elements of runtime for main. (n)
 No dependencies
@@ -161,70 +253,105 @@ No dependencies
 testAnnotationProcessor - Annotation processors and their dependencies for source set 'test'.
 No dependencies
 
-testCompile - Dependencies for source set 'test' (deprecated, use 'testImplementation' instead). (n)
-No dependencies
-
 testCompileClasspath - Compile classpath for source set 'test'.
-+--- org.slf4j:slf4j-api:1.7.30
-+--- org.apache.commons:commons-lang3:3.10 -> 3.11
-+--- org.jetbrains:annotations:19.0.0 -> 20.1.0
-+--- net.minidev:json-smart:2.4.2
-|    \--- net.minidev:accessors-smart:2.4.2
-|         \--- org.ow2.asm:asm:8.0.1
-+--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.12.3
-|    +--- com.fasterxml.jackson.core:jackson-databind:2.12.3
-|    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.12.3
-|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.3
-|    |    |         +--- com.fasterxml.jackson.core:jackson-core:2.12.3 (c)
-|    |    |         +--- com.fasterxml.jackson.core:jackson-databind:2.12.3 (c)
-|    |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.12.3 (c)
-|    |    |         \--- com.fasterxml.jackson.core:jackson-annotations:2.12.3 (c)
-|    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.3
-|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.3 (*)
-|    |    \--- com.fasterxml.jackson:jackson-bom:2.12.3 (*)
-|    +--- org.yaml:snakeyaml:1.27
-|    +--- com.fasterxml.jackson.core:jackson-core:2.12.3 (*)
-|    \--- com.fasterxml.jackson:jackson-bom:2.12.3 (*)
-+--- com.synopsys.integration:integration-common:24.0.0
-|    +--- org.apache.httpcomponents:httpclient:4.5.13
-|    |    +--- org.apache.httpcomponents:httpcore:4.4.13
-|    |    +--- commons-logging:commons-logging:1.2
-|    |    \--- commons-codec:commons-codec:1.11 -> 1.15
-|    +--- org.apache.httpcomponents:httpmime:4.5.13
-|    |    \--- org.apache.httpcomponents:httpclient:4.5.13 (*)
-|    +--- org.apache.commons:commons-lang3:3.11
-|    +--- org.apache.commons:commons-text:1.9
-|    |    \--- org.apache.commons:commons-lang3:3.11
-|    +--- commons-io:commons-io:2.8.0
-|    +--- org.apache.commons:commons-compress:1.20
-|    +--- commons-codec:commons-codec:1.15
-|    +--- commons-beanutils:commons-beanutils:1.9.4
-|    |    +--- commons-logging:commons-logging:1.2
-|    |    \--- commons-collections:commons-collections:3.2.2
-|    +--- com.google.code.gson:gson:2.8.6
-|    +--- org.jetbrains:annotations:20.1.0
-|    +--- com.jayway.jsonpath:json-path:2.4.0
-|    |    +--- net.minidev:json-smart:2.3 -> 2.4.2 (*)
-|    |    \--- org.slf4j:slf4j-api:1.7.25 -> 1.7.30
-|    +--- org.slf4j:slf4j-api:1.7.30
-|    \--- com.flipkart.zjsonpatch:zjsonpatch:0.4.11
-|         +--- com.fasterxml.jackson.core:jackson-databind:2.10.3 -> 2.12.3 (*)
-|         +--- com.fasterxml.jackson.core:jackson-core:2.10.3 -> 2.12.3 (*)
-|         \--- org.apache.commons:commons-collections4:4.2
++--- com.blackduck.integration:blackduck-common:67.0.20
+|    +--- com.blackduck.integration:blackduck-common-api:2023.4.2.13
+|    |    \--- com.blackduck.integration:integration-rest:11.1.2
+|    |         +--- com.blackduck.integration:integration-common:27.0.2 -> 27.0.3
+|    |         |    +--- org.apache.httpcomponents:httpclient:4.5.14
+|    |         |    |    +--- org.apache.httpcomponents:httpcore:4.4.16
+|    |         |    |    +--- commons-logging:commons-logging:1.2 -> 1.3.5
+|    |         |    |    \--- commons-codec:commons-codec:1.11 -> 1.16.1
+|    |         |    +--- org.apache.httpcomponents:httpmime:4.5.14
+|    |         |    |    \--- org.apache.httpcomponents:httpclient:4.5.14 (*)
+|    |         |    +--- org.apache.commons:commons-lang3:3.12.0 -> 3.14.0
+|    |         |    +--- org.apache.commons:commons-text:1.10.0
+|    |         |    |    \--- org.apache.commons:commons-lang3:3.12.0 -> 3.14.0
+|    |         |    +--- commons-io:commons-io:2.11.0 -> 2.15.1
+|    |         |    +--- org.apache.commons:commons-compress:1.26.1
+|    |         |    |    +--- commons-codec:commons-codec:1.16.1
+|    |         |    |    +--- commons-io:commons-io:2.15.1
+|    |         |    |    \--- org.apache.commons:commons-lang3:3.14.0
+|    |         |    +--- commons-codec:commons-codec:1.15 -> 1.16.1
+|    |         |    +--- commons-beanutils:commons-beanutils:1.11.0
+|    |         |    |    +--- commons-logging:commons-logging:1.3.5
+|    |         |    |    \--- commons-collections:commons-collections:3.2.2
+|    |         |    +--- org.apache.commons:commons-collections4:4.4
+|    |         |    +--- com.google.code.gson:gson:2.10.1
+|    |         |    +--- org.jetbrains:annotations:24.0.1
+|    |         |    +--- com.jayway.jsonpath:json-path:2.9.0
+|    |         |    +--- org.slf4j:slf4j-api:2.0.7
+|    |         |    \--- com.flipkart.zjsonpatch:zjsonpatch:0.4.16
+|    |         |         +--- com.fasterxml.jackson.core:jackson-databind:2.14.0 -> 2.15.0
+|    |         |         |    +--- com.fasterxml.jackson.core:jackson-annotations:2.15.0
+|    |         |         |    \--- com.fasterxml.jackson.core:jackson-core:2.15.0
+|    |         |         +--- com.fasterxml.jackson.core:jackson-core:2.14.0 -> 2.15.0
+|    |         |         \--- org.apache.commons:commons-collections4:4.4
+|    |         +--- org.apache.httpcomponents:httpclient:4.5.14 (*)
+|    |         \--- org.apache.httpcomponents:httpmime:4.5.14 (*)
+|    +--- com.blackduck.integration:phone-home-client:7.0.1
+|    |    \--- com.blackduck.integration:integration-common:27.0.2 -> 27.0.3 (*)
+|    +--- com.blackduck.integration:integration-bdio:27.0.4
+|    |    \--- com.blackduck.integration:integration-common:27.0.3 (*)
+|    \--- com.blackducksoftware.bdio:bdio2:3.2.12
+|         +--- com.blackducksoftware.magpie:magpie:0.6.0
+|         |    +--- com.google.code.findbugs:jsr305:2.0.3 -> 3.0.2
+|         |    \--- com.google.guava:guava:23.3-jre -> 32.1.2-jre
+|         |         +--- com.google.guava:failureaccess:1.0.1
+|         |         +--- com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava
+|         |         +--- com.google.code.findbugs:jsr305:3.0.2
+|         |         +--- org.checkerframework:checker-qual:3.33.0
+|         |         +--- com.google.errorprone:error_prone_annotations:2.18.0
+|         |         \--- com.google.j2objc:j2objc-annotations:2.8
+|         +--- com.fasterxml.jackson.core:jackson-annotations:2.15.0
+|         +--- com.fasterxml.jackson.core:jackson-core:2.15.0
+|         +--- com.fasterxml.jackson.core:jackson-databind:2.15.0 (*)
+|         +--- com.google.code.findbugs:jsr305:2.0.3 -> 3.0.2
+|         +--- com.google.guava:guava:30.1.1-jre -> 32.1.2-jre (*)
+|         +--- com.github.jsonld-java:jsonld-java:0.12.3
+|         |    +--- com.fasterxml.jackson.core:jackson-core:2.9.7 -> 2.15.0
+|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.9.7 -> 2.15.0 (*)
+|         |    +--- org.apache.httpcomponents:httpclient-osgi:4.5.6 -> 4.5.14
+|         |    |    +--- org.apache.httpcomponents:httpclient:4.5.14 (*)
+|         |    |    +--- commons-codec:commons-codec:1.11 -> 1.16.1
+|         |    |    +--- org.apache.httpcomponents:httpmime:4.5.14 (*)
+|         |    |    +--- org.apache.httpcomponents:httpclient-cache:4.5.14
+|         |    |    |    +--- org.apache.httpcomponents:httpclient:4.5.14 (*)
+|         |    |    |    \--- commons-logging:commons-logging:1.2 -> 1.3.5
+|         |    |    \--- org.apache.httpcomponents:fluent-hc:4.5.14
+|         |    |         +--- org.apache.httpcomponents:httpclient:4.5.14 (*)
+|         |    |         \--- commons-logging:commons-logging:1.2 -> 1.3.5
+|         |    +--- org.apache.httpcomponents:httpcore-osgi:4.4.10
+|         |    |    +--- org.apache.httpcomponents:httpcore:4.4.10 -> 4.4.16
+|         |    |    \--- org.apache.httpcomponents:httpcore-nio:4.4.10
+|         |    |         \--- org.apache.httpcomponents:httpcore:4.4.10 -> 4.4.16
+|         |    +--- org.slf4j:slf4j-api:1.7.25 -> 2.0.7
+|         |    \--- commons-io:commons-io:2.6 -> 2.15.1
+|         \--- org.reactivestreams:reactive-streams:1.0.2
++--- com.google.guava:guava:32.1.2-jre (*)
++--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.0
+|    +--- com.fasterxml.jackson.core:jackson-databind:2.15.0 (*)
+|    +--- org.yaml:snakeyaml:2.0
+|    +--- com.fasterxml.jackson.core:jackson-core:2.15.0
+|    \--- com.fasterxml.jackson:jackson-bom:2.15.0
+|         +--- com.fasterxml.jackson.core:jackson-annotations:2.15.0 (c)
+|         +--- com.fasterxml.jackson.core:jackson-core:2.15.0 (c)
+|         +--- com.fasterxml.jackson.core:jackson-databind:2.15.0 (c)
+|         \--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.0 (c)
++--- org.yaml:snakeyaml:2.0
++--- com.fasterxml.jackson.core:jackson-core:2.15.0
++--- org.freemarker:freemarker:2.3.31
++--- org.apache.httpcomponents:httpclient-osgi:4.5.14 (*)
++--- com.blackduck.integration:integration-common -> 27.0.3 (*)
 +--- org.junit.jupiter:junit-jupiter-api:5.7.1
-|    +--- org.junit:junit-bom:5.7.1
-|    |    +--- org.junit.jupiter:junit-jupiter-api:5.7.1 (c)
-|    |    +--- org.junit.jupiter:junit-jupiter-params:5.7.1 (c)
-|    |    \--- org.junit.platform:junit-platform-commons:1.7.1 (c)
 |    +--- org.apiguardian:apiguardian-api:1.1.0
 |    +--- org.opentest4j:opentest4j:1.2.0
 |    \--- org.junit.platform:junit-platform-commons:1.7.1
 |         \--- org.apiguardian:apiguardian-api:1.1.0
 +--- org.junit-pioneer:junit-pioneer:0.3.3
-+--- org.junit.jupiter:junit-jupiter-params:5.4.2 -> 5.7.1
-|    +--- org.junit:junit-bom:5.7.1 (*)
-|    +--- org.apiguardian:apiguardian-api:1.1.0
-|    \--- org.junit.jupiter:junit-jupiter-api:5.7.1 (*)
++--- org.junit.jupiter:junit-jupiter-params:5.4.2
+|    +--- org.apiguardian:apiguardian-api:1.0.0 -> 1.1.0
+|    \--- org.junit.jupiter:junit-jupiter-api:5.4.2 -> 5.7.1 (*)
 +--- org.mockito:mockito-core:2.+ -> 2.28.2
 |    +--- net.bytebuddy:byte-buddy:1.9.10
 |    +--- net.bytebuddy:byte-buddy-agent:1.9.10
@@ -241,80 +368,119 @@ testImplementation - Implementation only dependencies for source set 'test'. (n)
 +--- org.mockito:mockito-core:2.+ (n)
 \--- org.junit.jupiter:junit-jupiter-api:5.3.1 (n)
 
-testRuntime - Runtime dependencies for source set 'test' (deprecated, use 'testRuntimeOnly' instead). (n)
-No dependencies
-
 testRuntimeClasspath - Runtime classpath of source set 'test'.
-+--- org.slf4j:slf4j-api:1.7.30
-+--- org.apache.commons:commons-lang3:3.10 -> 3.11
-+--- org.jetbrains:annotations:19.0.0 -> 20.1.0
-+--- net.minidev:json-smart:2.4.2
-|    \--- net.minidev:accessors-smart:2.4.2
-|         \--- org.ow2.asm:asm:8.0.1
-+--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.12.3
-|    +--- com.fasterxml.jackson.core:jackson-databind:2.12.3
-|    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.12.3
-|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.3
-|    |    |         +--- com.fasterxml.jackson.core:jackson-core:2.12.3 (c)
-|    |    |         +--- com.fasterxml.jackson.core:jackson-databind:2.12.3 (c)
-|    |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.12.3 (c)
-|    |    |         \--- com.fasterxml.jackson.core:jackson-annotations:2.12.3 (c)
-|    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.3
-|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.3 (*)
-|    |    \--- com.fasterxml.jackson:jackson-bom:2.12.3 (*)
-|    +--- org.yaml:snakeyaml:1.27
-|    +--- com.fasterxml.jackson.core:jackson-core:2.12.3 (*)
-|    \--- com.fasterxml.jackson:jackson-bom:2.12.3 (*)
-+--- com.synopsys.integration:integration-common:24.0.0
-|    +--- org.apache.httpcomponents:httpclient:4.5.13
-|    |    +--- org.apache.httpcomponents:httpcore:4.4.13
-|    |    +--- commons-logging:commons-logging:1.2
-|    |    \--- commons-codec:commons-codec:1.11 -> 1.15
-|    +--- org.apache.httpcomponents:httpmime:4.5.13
-|    |    \--- org.apache.httpcomponents:httpclient:4.5.13 (*)
-|    +--- org.apache.commons:commons-lang3:3.11
-|    +--- org.apache.commons:commons-text:1.9
-|    |    \--- org.apache.commons:commons-lang3:3.11
-|    +--- commons-io:commons-io:2.8.0
-|    +--- org.apache.commons:commons-compress:1.20
-|    +--- commons-codec:commons-codec:1.15
-|    +--- commons-beanutils:commons-beanutils:1.9.4
-|    |    +--- commons-logging:commons-logging:1.2
-|    |    \--- commons-collections:commons-collections:3.2.2
-|    +--- com.google.code.gson:gson:2.8.6
-|    +--- org.jetbrains:annotations:20.1.0
-|    +--- com.jayway.jsonpath:json-path:2.4.0
-|    |    +--- net.minidev:json-smart:2.3 -> 2.4.2 (*)
-|    |    \--- org.slf4j:slf4j-api:1.7.25 -> 1.7.30
-|    +--- org.slf4j:slf4j-api:1.7.30
-|    \--- com.flipkart.zjsonpatch:zjsonpatch:0.4.11
-|         +--- com.fasterxml.jackson.core:jackson-databind:2.10.3 -> 2.12.3 (*)
-|         +--- com.fasterxml.jackson.core:jackson-core:2.10.3 -> 2.12.3 (*)
-|         \--- org.apache.commons:commons-collections4:4.2
-+--- org.junit.jupiter:junit-jupiter-api:5.7.1
-|    +--- org.junit:junit-bom:5.7.1
-|    |    +--- org.junit.jupiter:junit-jupiter-api:5.7.1 (c)
-|    |    +--- org.junit.jupiter:junit-jupiter-engine:5.7.1 (c)
-|    |    +--- org.junit.jupiter:junit-jupiter-params:5.7.1 (c)
-|    |    +--- org.junit.platform:junit-platform-commons:1.7.1 (c)
-|    |    \--- org.junit.platform:junit-platform-engine:1.7.1 (c)
-|    +--- org.apiguardian:apiguardian-api:1.1.0
-|    +--- org.opentest4j:opentest4j:1.2.0
-|    \--- org.junit.platform:junit-platform-commons:1.7.1
-|         \--- org.apiguardian:apiguardian-api:1.1.0
++--- com.blackduck.integration:blackduck-common:67.0.20
+|    +--- com.blackduck.integration:blackduck-common-api:2023.4.2.13
+|    |    \--- com.blackduck.integration:integration-rest:11.1.2
+|    |         +--- com.blackduck.integration:integration-common:27.0.2 -> 27.0.3
+|    |         |    +--- org.junit.jupiter:junit-jupiter-api:5.7.1
+|    |         |    |    +--- org.apiguardian:apiguardian-api:1.1.0
+|    |         |    |    +--- org.opentest4j:opentest4j:1.2.0
+|    |         |    |    \--- org.junit.platform:junit-platform-commons:1.7.1
+|    |         |    |         \--- org.apiguardian:apiguardian-api:1.1.0
+|    |         |    +--- org.apache.httpcomponents:httpclient:4.5.14
+|    |         |    |    +--- org.apache.httpcomponents:httpcore:4.4.16
+|    |         |    |    +--- commons-logging:commons-logging:1.2 -> 1.3.5
+|    |         |    |    \--- commons-codec:commons-codec:1.11 -> 1.16.1
+|    |         |    +--- org.apache.httpcomponents:httpmime:4.5.14
+|    |         |    |    \--- org.apache.httpcomponents:httpclient:4.5.14 (*)
+|    |         |    +--- org.apache.commons:commons-lang3:3.12.0 -> 3.14.0
+|    |         |    +--- org.apache.commons:commons-text:1.10.0
+|    |         |    |    \--- org.apache.commons:commons-lang3:3.12.0 -> 3.14.0
+|    |         |    +--- commons-io:commons-io:2.11.0 -> 2.15.1
+|    |         |    +--- org.apache.commons:commons-compress:1.26.1
+|    |         |    |    +--- commons-codec:commons-codec:1.16.1
+|    |         |    |    +--- commons-io:commons-io:2.15.1
+|    |         |    |    \--- org.apache.commons:commons-lang3:3.14.0
+|    |         |    +--- commons-codec:commons-codec:1.15 -> 1.16.1
+|    |         |    +--- commons-beanutils:commons-beanutils:1.11.0
+|    |         |    |    +--- commons-logging:commons-logging:1.3.5
+|    |         |    |    \--- commons-collections:commons-collections:3.2.2
+|    |         |    +--- org.apache.commons:commons-collections4:4.4
+|    |         |    +--- com.google.code.gson:gson:2.10.1
+|    |         |    +--- org.jetbrains:annotations:24.0.1
+|    |         |    +--- com.jayway.jsonpath:json-path:2.9.0
+|    |         |    |    +--- net.minidev:json-smart:2.5.0
+|    |         |    |    |    \--- net.minidev:accessors-smart:2.5.0
+|    |         |    |    |         \--- org.ow2.asm:asm:9.3
+|    |         |    |    \--- org.slf4j:slf4j-api:2.0.11
+|    |         |    +--- org.slf4j:slf4j-api:2.0.7 -> 2.0.11
+|    |         |    \--- com.flipkart.zjsonpatch:zjsonpatch:0.4.16
+|    |         |         +--- com.fasterxml.jackson.core:jackson-databind:2.14.0 -> 2.15.0
+|    |         |         |    +--- com.fasterxml.jackson.core:jackson-annotations:2.15.0
+|    |         |         |    \--- com.fasterxml.jackson.core:jackson-core:2.15.0
+|    |         |         +--- com.fasterxml.jackson.core:jackson-core:2.14.0 -> 2.15.0
+|    |         |         \--- org.apache.commons:commons-collections4:4.4
+|    |         +--- org.apache.httpcomponents:httpclient:4.5.14 (*)
+|    |         \--- org.apache.httpcomponents:httpmime:4.5.14 (*)
+|    +--- com.blackduck.integration:phone-home-client:7.0.1
+|    |    \--- com.blackduck.integration:integration-common:27.0.2 -> 27.0.3 (*)
+|    +--- com.blackduck.integration:integration-bdio:27.0.4
+|    |    \--- com.blackduck.integration:integration-common:27.0.3 (*)
+|    \--- com.blackducksoftware.bdio:bdio2:3.2.12
+|         +--- com.blackducksoftware.magpie:magpie:0.6.0
+|         |    +--- com.google.code.findbugs:jsr305:2.0.3 -> 3.0.2
+|         |    \--- com.google.guava:guava:23.3-jre -> 32.1.2-jre
+|         |         +--- com.google.guava:failureaccess:1.0.1
+|         |         +--- com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava
+|         |         +--- com.google.code.findbugs:jsr305:3.0.2
+|         |         +--- org.checkerframework:checker-qual:3.33.0
+|         |         +--- com.google.errorprone:error_prone_annotations:2.18.0
+|         |         \--- com.google.j2objc:j2objc-annotations:2.8
+|         +--- com.fasterxml.jackson.core:jackson-annotations:2.15.0
+|         +--- com.fasterxml.jackson.core:jackson-core:2.15.0
+|         +--- com.fasterxml.jackson.core:jackson-databind:2.15.0 (*)
+|         +--- com.google.code.findbugs:jsr305:2.0.3 -> 3.0.2
+|         +--- com.google.guava:guava:30.1.1-jre -> 32.1.2-jre (*)
+|         +--- com.github.jsonld-java:jsonld-java:0.12.3
+|         |    +--- com.fasterxml.jackson.core:jackson-core:2.9.7 -> 2.15.0
+|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.9.7 -> 2.15.0 (*)
+|         |    +--- org.apache.httpcomponents:httpclient-osgi:4.5.6 -> 4.5.14
+|         |    |    +--- org.apache.httpcomponents:httpclient:4.5.14 (*)
+|         |    |    +--- commons-codec:commons-codec:1.11 -> 1.16.1
+|         |    |    +--- org.apache.httpcomponents:httpmime:4.5.14 (*)
+|         |    |    +--- org.apache.httpcomponents:httpclient-cache:4.5.14
+|         |    |    |    +--- org.apache.httpcomponents:httpclient:4.5.14 (*)
+|         |    |    |    \--- commons-logging:commons-logging:1.2 -> 1.3.5
+|         |    |    \--- org.apache.httpcomponents:fluent-hc:4.5.14
+|         |    |         +--- org.apache.httpcomponents:httpclient:4.5.14 (*)
+|         |    |         \--- commons-logging:commons-logging:1.2 -> 1.3.5
+|         |    +--- org.apache.httpcomponents:httpcore-osgi:4.4.10
+|         |    |    +--- org.apache.httpcomponents:httpcore:4.4.10 -> 4.4.16
+|         |    |    \--- org.apache.httpcomponents:httpcore-nio:4.4.10
+|         |    |         \--- org.apache.httpcomponents:httpcore:4.4.10 -> 4.4.16
+|         |    +--- org.slf4j:slf4j-api:1.7.25 -> 2.0.11
+|         |    +--- org.slf4j:jcl-over-slf4j:1.7.25
+|         |    |    \--- org.slf4j:slf4j-api:1.7.25 -> 2.0.11
+|         |    \--- commons-io:commons-io:2.6 -> 2.15.1
+|         \--- org.reactivestreams:reactive-streams:1.0.2
++--- com.google.guava:guava:32.1.2-jre (*)
++--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.0
+|    +--- com.fasterxml.jackson.core:jackson-databind:2.15.0 (*)
+|    +--- org.yaml:snakeyaml:2.0
+|    +--- com.fasterxml.jackson.core:jackson-core:2.15.0
+|    \--- com.fasterxml.jackson:jackson-bom:2.15.0
+|         +--- com.fasterxml.jackson.core:jackson-annotations:2.15.0 (c)
+|         +--- com.fasterxml.jackson.core:jackson-core:2.15.0 (c)
+|         +--- com.fasterxml.jackson.core:jackson-databind:2.15.0 (c)
+|         \--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.0 (c)
++--- org.yaml:snakeyaml:2.0
++--- com.fasterxml.jackson.core:jackson-core:2.15.0
++--- org.freemarker:freemarker:2.3.31
++--- org.apache.httpcomponents:httpclient-osgi:4.5.14 (*)
++--- com.blackduck.integration:integration-common -> 27.0.3 (*)
++--- org.junit.jupiter:junit-jupiter-api:5.7.1 (*)
 +--- org.junit-pioneer:junit-pioneer:0.3.3
 |    \--- org.junit.jupiter:junit-jupiter-api:5.1.1 -> 5.7.1 (*)
-+--- org.junit.jupiter:junit-jupiter-params:5.4.2 -> 5.7.1
-|    +--- org.junit:junit-bom:5.7.1 (*)
-|    +--- org.apiguardian:apiguardian-api:1.1.0
-|    \--- org.junit.jupiter:junit-jupiter-api:5.7.1 (*)
++--- org.junit.jupiter:junit-jupiter-params:5.4.2
+|    +--- org.apiguardian:apiguardian-api:1.0.0 -> 1.1.0
+|    \--- org.junit.jupiter:junit-jupiter-api:5.4.2 -> 5.7.1 (*)
 +--- org.mockito:mockito-core:2.+ -> 2.28.2
 |    +--- net.bytebuddy:byte-buddy:1.9.10
 |    +--- net.bytebuddy:byte-buddy-agent:1.9.10
 |    \--- org.objenesis:objenesis:2.6
 +--- org.junit.jupiter:junit-jupiter-api:5.3.1 -> 5.7.1 (*)
 \--- org.junit.jupiter:junit-jupiter-engine:5.7.1
-     +--- org.junit:junit-bom:5.7.1 (*)
      +--- org.apiguardian:apiguardian-api:1.1.0
      +--- org.junit.platform:junit-platform-engine:1.7.1
      |    +--- org.apiguardian:apiguardian-api:1.1.0
