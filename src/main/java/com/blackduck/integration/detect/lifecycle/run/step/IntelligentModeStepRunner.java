@@ -92,6 +92,7 @@ public class IntelligentModeStepRunner {
         });
 
         operationRunner.generateComponentLocationAnalysisIfEnabled(bdio);
+        generateSbom();
     }
 
     //TODO: Change black duck post options to a decision and stick it in Run Data somewhere.
