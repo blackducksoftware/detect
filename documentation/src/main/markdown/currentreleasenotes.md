@@ -18,6 +18,10 @@
 
 ## Version 11.1.0
 
+### New features
+
+* The Component Locator feature has been extended to the Cargo package manager.
+
 ### Changed features
 
 * When using the `detect.excluded.detectors` property, any fallback Detectors will now we executed if the primary Detector is excluded. Previously, entire sets of Detectors would be excluded.
@@ -26,3 +30,8 @@
 
 * (IDETECT-4874) Improved support for multibyte characters in project names, version names, and code location names during package manager scans.
 * (IDETECT-4880) The `.bridge` directory will now be excluded by default from Detector and Signature Scans.
+* (IDETECT-4897) [detect_product_short] now looks for headers in a case-insensitive fashion when performing multipart binary uploads.
+* (IDETECT-4707) The pip-inspector now appropriately handles package names containing a dot character.
+* (IDETECT-4864) The UV Detector now appropriately runs even if the optional field `[tool.uv] manage = true` is not specified.
+* (IDETECT-4760) Any dependencies listed in a Gradle dependency tree as a `(c)` dependency constraint will no longer be incorrectly identified as dependencies unless they aslo appear elsewhere in the tree.
+
