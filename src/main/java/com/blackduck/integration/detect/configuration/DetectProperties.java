@@ -1208,6 +1208,13 @@ public class DetectProperties {
             .setExample("java,javascript")
             .build();
 
+    public static final NullablePathProperty DETECT_SBOM_OUTPUT_PATH =
+        NullablePathProperty.newBuilder("detect.sbom.output.path")
+            .setInfo("SBOM Output Path", DetectPropertyFromVersion.VERSION_11_1_0)
+            .setHelp("The output path for the CycloneDX SBOM file. When specified, the SBOM will be written to this location instead of the default scan directory. The path can be either a directory (in which case the file will be named cdxgen-bom.json) or a full file path.")
+            .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL)
+            .build();
+
     public static final NullableStringProperty DETECT_NPM_ARGUMENTS =
         NullableStringProperty.newBuilder("detect.npm.arguments")
             .setInfo("Additional NPM Command Arguments", DetectPropertyFromVersion.VERSION_4_3_0)

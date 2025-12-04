@@ -465,6 +465,7 @@ public class DetectConfigurationFactory {
         List<String> policyNamesToFailPolicyCheck = detectConfiguration.getValue(DetectProperties.DETECT_POLICY_CHECK_FAIL_ON_NAMES);
         Boolean correlatedScanningEnabled = detectConfiguration.getValue(DetectProperties.DETECT_CORRELATED_SCANNING_ENABLED);
         List<String> sbomProjectTypes = detectConfiguration.getValue(DetectProperties.DETECT_SBOM_PROJECT_TYPES);
+        Path sbomOutputPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_SBOM_OUTPUT_PATH);
 
         return new BlackDuckPostOptions(
             waitForResults,
@@ -477,7 +478,8 @@ public class DetectConfigurationFactory {
             correlatedScanningEnabled,
             runRiskReportJson,
             riskReportJsonPath,
-            sbomProjectTypes
+            sbomProjectTypes,
+            sbomOutputPath
         );
     }
 

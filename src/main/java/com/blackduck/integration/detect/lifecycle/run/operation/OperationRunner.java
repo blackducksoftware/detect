@@ -1267,7 +1267,7 @@ public class OperationRunner {
         );
     }
 
-    public File generateCdxgenSbom(List<String> projectTypes) throws OperationException {
+    public File generateCdxgenSbom(List<String> projectTypes, Optional<Path> customOutputPath) throws OperationException {
         return auditLog.namedPublic("Generate CycloneDX SBOM", "Cdxgen", () -> {
             CdxgenRunner cdxgenRunner = new CdxgenRunner(executableRunner);
 
@@ -1279,8 +1279,29 @@ public class OperationRunner {
 
             // Generate SBOM
             File sourceDirectory = directoryManager.getSourceDirectory();
-            File scanOutputDirectory = directoryManager.getScanOutputDirectory();
-            File sbomFile = new File(scanOutputDirectory, "cdxgen-bom.json");
+            File sbomFile;
+
+            if (customOutputPath.isPresent()) {
+                // Use custom output path
+                File customPath = customOutputPath.get().toFile();
+                if (customPath.isDirectory() || customPath.getPath().endsWith(File.separator)) {
+                    // Path is a directory, use default filename
+                    sbomFile = new File(customPath, "cdxgen-bom.json");
+                } else {
+                    // Path is a file
+                    sbomFile = customPath;
+                }
+
+                // Verify parent directory exists
+                File parentDir = sbomFile.getParentFile();
+                if (parentDir != null && !parentDir.exists()) {
+                    throw new IntegrationException("SBOM output directory does not exist: " + parentDir.getAbsolutePath());
+                }
+            } else {
+                // Use default scan output directory
+                File scanOutputDirectory = directoryManager.getScanOutputDirectory();
+                sbomFile = new File(scanOutputDirectory, "cdxgen-bom.json");
+            }
 
             logger.info("Generating CycloneDX SBOM for source: {}", sourceDirectory.getAbsolutePath());
             CdxgenResult result = cdxgenRunner.runCdxgen(sourceDirectory, sbomFile, projectTypes);
