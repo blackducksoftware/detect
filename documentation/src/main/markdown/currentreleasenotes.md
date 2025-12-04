@@ -20,7 +20,7 @@
 
 ### New features
 
-* The Component Locator feature has been extended to the Cargo package manager.
+* The Component Location Analysis feature has been extended to the Cargo package manager.
 
 ### Changed features
 
@@ -33,5 +33,5 @@
 * (IDETECT-4897) [detect_product_short] now looks for headers in a case-insensitive fashion when performing multipart binary uploads.
 * (IDETECT-4707) The pip-inspector now appropriately handles package names containing a dot character.
 * (IDETECT-4864) The UV Detector now appropriately runs even if the optional field `[tool.uv] manage = true` is not specified.
-* (IDETECT-4760) Any dependencies listed in a Gradle dependency tree as a `(c)` dependency constraint will no longer be i identified as dependencies unless they also appear elsewhere in the tree.
+* (IDETECT-4760) Any dependencies listed in a Gradle dependency tree as a `(c)` dependency constraint will no longer be identified as dependencies unless they also appear elsewhere in the tree.
 
