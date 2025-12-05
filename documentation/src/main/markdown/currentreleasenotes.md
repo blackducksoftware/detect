@@ -20,7 +20,7 @@
 
 ### New features
 
-* The Component Location Analysis feature has been extended to the Cargo package manager.
+* The [Component Location Analysis](runningdetect/component-location-analysis.md) feature has been extended to support the Cargo package manager.
 
 ### Changed features
 

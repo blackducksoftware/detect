@@ -1,15 +1,15 @@
 # Component Location Analysis
 
-Enable this feature by adding `--detect.component.location.analysis.enabled=TRUE` to a run of [detect_product_long].
+Enable this feature by adding the `--detect.component.location.analysis.enabled=TRUE` parameter to a run of [detect_product_long].
 
-When enabled, [detect_product_short] creates an output file in the scan subdirectory of the output directory with the name `components-with-locations.json` which identifies the declaration locations (file path, line number, and column position) of open source component versions found in the scanned project.
+[detect_product_short] generates a `components-with-locations.json` file in the scan subdirectory of the output directory when Component Location Analysis is enabled. This file contains the declaration locations (file path, line number, and column position) of the open-source component versions that were detected in the scanned project.
 
 <note type="note">By default, when [detect_product_short] shuts down, it performs cleanup operations which include deleting the component location analysis file. You can disable clean up by setting `--detect.cleanup=false`.</note>
 
 ## Requirements and Limitations
 
-* A limited subset of Detector Types support this feature.
-    * Supported Detectors: NPM, MAVEN, GRADLE, NUGET, GO_MOD, GO_DEP, GO_GRADLE, GO_VENDOR, GO_VNDR, PIP, POETRY, CONDA, and YARN.
+* A subset of Detector Types support this feature.
+    * Supported Detectors: CARGO, CONDA, GRADLE, GO_MOD, GO_DEP, GO_GRADLE, GO_VENDOR, GO_VNDR, MAVEN, NPM, NUGET, PIP, POETRY, and YARN.
 * Supported scan modes: Offline and Rapid/Stateless.
     * Offline mode
       * When enabled for a scan without [bd_product_short] connectivity, all detected open source components will be included in the location analysis results.
