@@ -28,11 +28,11 @@ public class RapidModeGenerateJsonOperation { //TODO: extends Operation<File>
         this.directoryManager = directoryManager;
     }
 
-    public File generateJsonFile(NameVersion projectNameVersion, List<DeveloperScansScanView> results) throws DetectUserFriendlyException {
+    public File generateJsonFile(NameVersion projectNameVersion, List<DeveloperScansScanView> results, String fileNameSuffix) throws DetectUserFriendlyException {
         IntegrationEscapeUtil escapeUtil = new IntegrationEscapeUtil();
         String escapedProjectName = escapeUtil.replaceWithUnderscore(projectNameVersion.getName());
         String escapedProjectVersionName = escapeUtil.replaceWithUnderscore(projectNameVersion.getVersion());
-        File jsonScanFile = new File(directoryManager.getScanOutputDirectory(), escapedProjectName + "_" + escapedProjectVersionName + "_BlackDuck_DeveloperMode_Result.json");
+        File jsonScanFile = new File(directoryManager.getScanOutputDirectory(), escapedProjectName + "_" + escapedProjectVersionName + "_BlackDuck_DeveloperMode_Result" + fileNameSuffix + ".json");
         if (jsonScanFile.exists()) {
             try {
                 Files.delete(jsonScanFile.toPath());

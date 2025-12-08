@@ -95,7 +95,7 @@ public class DetectRapidScanWaitJobFull implements ResilientJob<List<DeveloperSc
         logger.debug("Fetching scan results from endpoint: {}", url.string());
         BlackDuckMultipleRequest<DeveloperScansScanView> request =
             new DetectRapidScanRequestBuilder()
-                .createFullRequest(url);
+                .createFullRequest(url); // regular endpoint, not full
         return blackDuckApiClient.getAllResponses(request);
     }
 

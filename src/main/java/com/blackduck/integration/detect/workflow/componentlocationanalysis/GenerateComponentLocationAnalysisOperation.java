@@ -2,8 +2,10 @@ package com.blackduck.integration.detect.workflow.componentlocationanalysis;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 
+import com.blackduck.integration.detect.configuration.DetectProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +60,18 @@ public class GenerateComponentLocationAnalysisOperation {
      * @throws com.blackduck.integration.detect.workflow.componentlocationanalysis.ComponentLocatorException
      * @throws DetectUserFriendlyException
      */
-    public ComponentLocatorResult locateComponents(Set<Component> componentsSet, File scanOutputFolder, File projectSrcDir) throws ComponentLocatorException, DetectUserFriendlyException {
+    public ComponentLocatorResult locateComponents(Set<Component> componentsSet, File scanOutputFolder, File projectSrcDir, File rapidFullResultsFile, DetectConfigurationFactory configFactory) throws ComponentLocatorException, DetectUserFriendlyException {
+        logger.info("invoking quakcpatch as an in between step for now...");
+        if (detectConfigurationFactory.isQuackPatchPossible()) {
+            List<String> buildFilePath = null; // TODO
+            String llmKey = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_KEY);
+            String llmName = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_NAME);
+            String llmURL = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_ENDPOINT);
+
+            ComponentLocator.runQuackPatch(rapidFullResultsFile, buildFilePath);
+        }
+
+
         Input componentLocatorInput = new Input(projectSrcDir.getAbsolutePath(), new JsonObject(), componentsSet);
         String outputFilepath = scanOutputFolder + "/" + LOCATOR_OUTPUT_FILE_NAME;
         if (logger.isDebugEnabled()) {

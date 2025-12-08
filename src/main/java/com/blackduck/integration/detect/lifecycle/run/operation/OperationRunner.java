@@ -28,6 +28,7 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.blackduck.integration.componentlocator.ComponentLocator;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
@@ -725,7 +726,7 @@ public class OperationRunner {
 
             try {
                 return new RapidModeWaitOperation(blackDuckServicesFactory.getBlackDuckApiClient()).waitForScans(
-                        rapidScans,
+                        rapidScans, // url is not full here
                         detectConfigurationFactory.findTimeoutInSeconds(),
                         RapidModeWaitOperation.DEFAULT_WAIT_INTERVAL_IN_SECONDS,
                         mode,
@@ -740,6 +741,42 @@ public class OperationRunner {
             }
         });
     }
+
+    public List<DeveloperScansScanView> waitForRapidFullResults(BlackDuckRunData blackDuckRunData, List<HttpUrl> rapidScans, BlackduckScanMode mode) throws OperationException {
+        // First, append /full-result to all these URLs (TODO has onl been tested w/ pkg mngr scans)
+        List<HttpUrl> fullResultUrls = new ArrayList<>();
+        for (HttpUrl url : rapidScans) {
+            try {
+                HttpUrl fullVersion = url.appendRelativeUrl("full-result");
+                fullResultUrls.add(fullVersion);
+            } catch (Exception e) {
+                logger.debug("uh oh something went wrong");
+                logger.error(e.getMessage(), e);
+            }
+        }
+
+        return auditLog.namedInternal("Rapid Full Wait", () -> {
+            BlackDuckServicesFactory blackDuckServicesFactory = blackDuckRunData.getBlackDuckServicesFactory();
+            int fibonacciSequenceIndex = getFibonacciSequenceIndex();
+
+            try {
+                return new RapidModeWaitOperation(blackDuckServicesFactory.getBlackDuckApiClient()).waitForScans(
+                        fullResultUrls,
+                        detectConfigurationFactory.findTimeoutInSeconds(),
+                        RapidModeWaitOperation.DEFAULT_WAIT_INTERVAL_IN_SECONDS,
+                        mode,
+                        calculateMaxWaitInSeconds(fibonacciSequenceIndex)
+                );
+            } catch (InterruptedException e) {
+                throw e;
+            } catch (IntegrationRestException e) {
+                throw handleRapidScanException(e);
+            } catch (Exception e) {
+                throw new OperationException(e);
+            }
+        });
+    }
+
 
     private OperationException handleRapidScanException(IntegrationRestException e) {
         RapidCompareMode rapidCompareMode = detectConfigurationFactory.createRapidScanOptions().getCompareMode();
@@ -778,9 +815,18 @@ public class OperationRunner {
         return auditLog.namedPublic(
             "Generate Rapid Json File",
             "RapidScan",
-            () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFile(projectNameVersion, scanResults)
+            () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFile(projectNameVersion, scanResults, "")
         );
     }
+
+    public final File generateFULLRapidJsonFile(NameVersion projectNameVersion, List<DeveloperScansScanView> scanResults) throws OperationException {
+        return auditLog.namedPublic(
+                "Generate FULL Rapid Json File",
+                "RapidScan",
+                () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFile(projectNameVersion, scanResults, "_FULL")
+        );
+    }
+
 
     public final void publishRapidResults(File jsonFile, RapidScanResultSummary summary, BlackduckScanMode mode) throws OperationException {
         auditLog.namedInternal("Publish Rapid Results", () -> statusEventPublisher.publishDetectResult(new RapidScanDetectResult(jsonFile.getCanonicalPath(), summary, mode, detectConfigurationFactory.getPoliciesToFailOn())));
@@ -806,7 +852,7 @@ public class OperationRunner {
      * @param bdio
      * @throws OperationException
      */
-    public void generateComponentLocationAnalysisIfEnabled(BdioResult bdio) throws OperationException {
+    public void generateComponentLocationAnalysisIfEnabled(BdioResult bdio, File rapidFullResultsFile) throws OperationException {
         if (detectConfigurationFactory.isComponentLocationAnalysisEnabled()) {
             if (bdio.getCodeLocationNamesResult().getCodeLocationNames().isEmpty()) {
                 failComponentLocationAnalysisOperationTask("Component Location Analysis requires non-empty BDIO results. Skipping location analysis.");
@@ -822,7 +868,7 @@ public class OperationRunner {
                             () -> {
                                 publishResult(
                                     new GenerateComponentLocationAnalysisOperation(detectConfigurationFactory, statusEventPublisher, exitCodePublisher)
-                                        .locateComponents(componentsSet, directoryManager.getScanOutputDirectory(), directoryManager.getSourceDirectory())
+                                        .locateComponents(componentsSet, directoryManager.getScanOutputDirectory(), directoryManager.getSourceDirectory(), rapidFullResultsFile, detectConfigurationFactory)
                                 );
                             }
                     );
@@ -838,7 +884,7 @@ public class OperationRunner {
      * @param bdio
      * @throws OperationException
      */
-    public void generateComponentLocationAnalysisIfEnabled(List<DeveloperScansScanView> rapidResults, BdioResult bdio) throws OperationException {
+    public void generateComponentLocationAnalysisIfEnabled(List<DeveloperScansScanView> rapidResults, BdioResult bdio, File rapidFullResultsFile) throws OperationException {
         if (detectConfigurationFactory.isComponentLocationAnalysisEnabled()) {
             if (rapidResults.isEmpty()) {
                 failComponentLocationAnalysisOperationTask("Component Location Analysis requires non-empty Rapid/Stateless Scan results. Skipping location analysis.");
@@ -854,7 +900,7 @@ public class OperationRunner {
                             () -> {
                                 publishResult(
                                     new GenerateComponentLocationAnalysisOperation(detectConfigurationFactory, statusEventPublisher, exitCodePublisher)
-                                        .locateComponents(componentsSet, directoryManager.getScanOutputDirectory(), directoryManager.getSourceDirectory())
+                                        .locateComponents(componentsSet, directoryManager.getScanOutputDirectory(), directoryManager.getSourceDirectory(), rapidFullResultsFile, detectConfigurationFactory)
                                 );
                             }
                     );

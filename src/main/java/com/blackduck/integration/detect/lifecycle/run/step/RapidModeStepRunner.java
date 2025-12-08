@@ -45,6 +45,9 @@ public class RapidModeStepRunner {
     private final Gson gson;
     private final String detectRunUuid;
     private final DirectoryManager directoryManager;
+    public static final String RAPID_SCAN_ENDPOINT = "/api/developer-scans";
+    public static final String RAPID_SCAN_FULL_RESULT_ENDPOINT = "/api/developer-scans/%s/full-result";
+
 
     public RapidModeStepRunner(OperationRunner operationRunner, StepHelper stepHelper, Gson gson, String detectRunUuid, DirectoryManager directoryManager) {
         this.operationRunner = operationRunner;
@@ -65,10 +68,10 @@ public class RapidModeStepRunner {
         List<HttpUrl> parsedUrls = new ArrayList<>();
         Set<FormattedCodeLocation> formattedCodeLocations = new HashSet<>();
 
-        List<HttpUrl> uploadResultsUrls = operationRunner.performRapidUpload(blackDuckRunData, bdioResult, rapidScanConfig.orElse(null));
+        List<HttpUrl> uploadResultsUrls = operationRunner.performRapidUpload(blackDuckRunData, bdioResult, rapidScanConfig.orElse(null)); // pkg mngr rapid bdio upload, returns the upload url with scan-id
         
         if (uploadResultsUrls != null && uploadResultsUrls.size() > 0) {
-            processScanResults(uploadResultsUrls, parsedUrls, formattedCodeLocations, DetectTool.DETECTOR.name());
+            processScanResults(uploadResultsUrls, parsedUrls, formattedCodeLocations, DetectTool.DETECTOR.name()); // adds URLs that will be polled LATER
         }
 
         stepHelper.runToolIfIncluded(DetectTool.SIGNATURE_SCAN, "Signature Scanner", () -> {
@@ -95,9 +98,7 @@ public class RapidModeStepRunner {
             }
         });
         
-        stepHelper.runToolIfIncluded(
-            DetectTool.CONTAINER_SCAN, "Container Scanner",
-            () -> {
+        stepHelper.runToolIfIncluded(DetectTool.CONTAINER_SCAN, "Container Scanner", () -> {
                 logger.debug("Stateless container scan detected.");
                 // Check if this is an SCA environment.
                 if (scaaasFilePath.isPresent()) {
@@ -116,20 +117,27 @@ public class RapidModeStepRunner {
                         formattedCodeLocations.add(new FormattedCodeLocation(containerScanStepRunner.getCodeLocationName(), scanId.get(), DetectTool.CONTAINER_SCAN.name()));
                     }
                 }
-            }
-        );
+            });
 
         // Get info about any scans that were done
         BlackduckScanMode mode = blackDuckRunData.getScanMode();
-        List<DeveloperScansScanView> rapidResults = operationRunner.waitForRapidResults(blackDuckRunData, parsedUrls, mode);
+        List<DeveloperScansScanView> rapidResults = operationRunner.waitForRapidResults(blackDuckRunData, parsedUrls, mode); // parsedurls here should be normal
+        // Get FULL rapid results for quackpatch separately for now
+        List<DeveloperScansScanView> rapidFullResults = operationRunner.waitForRapidFullResults(blackDuckRunData, parsedUrls, mode); // this one should have /full-result
 
-        operationRunner.generateComponentLocationAnalysisIfEnabled(rapidResults, bdioResult);
 
         // Generate a report, even an empty one if no scans were done as that is what previous detect versions did.
         File jsonFile = operationRunner.generateRapidJsonFile(projectVersion, rapidResults);
+        File jsonFileFULL = operationRunner.generateFULLRapidJsonFile(projectVersion, rapidResults);
+
+        operationRunner.generateComponentLocationAnalysisIfEnabled(rapidFullResults, bdioResult, jsonFileFULL);
+
+
         RapidScanResultSummary summary = operationRunner.logRapidReport(rapidResults, mode);
 
         operationRunner.publishRapidResults(jsonFile, summary, mode);
+//        operationRunner.publishRapidResults(jsonFileFULL, summary, mode);
+
         operationRunner.publishCodeLocationData(formattedCodeLocations);
     }
 
@@ -165,10 +173,10 @@ public class RapidModeStepRunner {
         rapidBdbaStepRunner.downloadAndExtractBdio(directoryManager);
 
         UUID bdScanId = operationRunner.initiateStatelessBdbaScan(blackDuckRunData);
-        operationRunner.uploadBdioEntries(blackDuckRunData, bdScanId);
+        operationRunner.uploadBdioEntries(blackDuckRunData, bdScanId); // uploads to rapid scan endpoint
 
         // add this scan to the URLs to wait for
-        parsedUrls.add(new HttpUrl(blackDuckUrl + "/api/developer-scans/" + bdScanId.toString()));
+        parsedUrls.add(new HttpUrl(blackDuckUrl + String.format(RAPID_SCAN_FULL_RESULT_ENDPOINT, bdScanId.toString())));
     }
 
     /**
@@ -200,7 +208,7 @@ public class RapidModeStepRunner {
                     Set<String> parsedIds = result.parseScanIds();
 
                     for (String id : parsedIds) {
-                        HttpUrl url = new HttpUrl(blackDuckUrl + "/api/developer-scans/" + id);
+                        HttpUrl url = new HttpUrl(blackDuckUrl + String.format(RAPID_SCAN_FULL_RESULT_ENDPOINT, id));
 
                         logger.info(scanMode + " mode signature scan URL: {}", url);
                         parsedUrls.add(url);
