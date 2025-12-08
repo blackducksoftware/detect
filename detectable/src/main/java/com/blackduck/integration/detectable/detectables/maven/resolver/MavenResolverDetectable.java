@@ -25,7 +25,9 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @DetectableInfo(
         name = "Maven Resolver",
@@ -160,75 +162,25 @@ public class MavenResolverDetectable extends Detectable {
                 }
             }
 
-            // 4b. Process modules (if any) and create separate code locations for each module (compile + test)
+            // 4b. Process modules (recursive) and create separate code locations for each module (compile + test)
             if (mavenProject.getModules() != null && !mavenProject.getModules().isEmpty()) {
                 File rootDir = pomFile.getParentFile();
+                Set<String> visitedModulePomPaths = new HashSet<>();
+
                 for (String module : mavenProject.getModules()) {
-                    try {
-                        if (module == null || module.trim().isEmpty()) {
-                            continue;
-                        }
-                        String modulePathStr = module.trim();
-                        File modulePom = new File(rootDir, modulePathStr);
-                        // If module points to a directory, append pom.xml
-                        if (modulePom.isDirectory()) {
-                            modulePom = new File(modulePom, POM_XML_FILENAME);
-                        }
-                        // If module string is not a path but a folder name, ensure we check common layout
-                        if (!modulePom.exists()) {
-                            File alternative = new File(rootDir, modulePathStr + File.separator + POM_XML_FILENAME);
-                            if (alternative.exists()) {
-                                modulePom = alternative;
-                            }
-                        }
-
-                        if (!modulePom.exists()) {
-                            logger.warn("Module POM not found for module '{}' at expected path '{}'. Skipping module.", modulePathStr, modulePom.getAbsolutePath());
-                            continue;
-                        }
-
-                        logger.info("Processing module POM: {}", modulePom.getAbsolutePath());
-                        MavenProject moduleProject = projectBuilder.buildProject(modulePom);
-
-                        // two-phase for module
-                        CollectResult moduleCollectCompile = dependencyResolver.resolveDependencies(modulePom, moduleProject, localRepoPath.toFile(), "compile");
-                        CollectResult moduleCollectTest = null;
-                        if (includeTestScope) {
-                            moduleCollectTest = dependencyResolver.resolveDependencies(modulePom, moduleProject, localRepoPath.toFile(), "test");
-                        }
-
-                        MavenParseResult moduleParseCompile = mavenGraphParser.parse(moduleCollectCompile);
-                        DependencyGraph moduleGraphCompile = mavenGraphTransformer.transform(moduleParseCompile);
-
-                        DependencyGraph moduleGraphTest = null;
-                        if (includeTestScope && moduleCollectTest != null) {
-                            MavenParseResult moduleParseTest = mavenGraphParser.parse(moduleCollectTest);
-                            moduleGraphTest = mavenGraphTransformer.transform(moduleParseTest);
-                        }
-
-                        // Create a code location for the module and add to the list (do not merge into root)
-                        try {
-                            com.blackduck.integration.bdio.model.externalid.ExternalId moduleExternalId = externalIdFactory.createMavenExternalId(
-                                moduleProject.getCoordinates().getGroupId(),
-                                moduleProject.getCoordinates().getArtifactId(),
-                                moduleProject.getCoordinates().getVersion()
-                            );
-                            File moduleSourcePath = modulePom.getParentFile();
-                            codeLocations.add(new CodeLocation(moduleGraphCompile, moduleExternalId, moduleSourcePath));
-                            if (moduleGraphTest != null) {
-                                codeLocations.add(new CodeLocation(moduleGraphTest, moduleExternalId, moduleSourcePath));
-                            }
-                        } catch (Exception e) {
-                            logger.debug("Failed to create module external id for module '{}': {}", modulePathStr, e.getMessage());
-                            codeLocations.add(new CodeLocation(moduleGraphCompile));
-                            if (moduleGraphTest != null) {
-                                codeLocations.add(new CodeLocation(moduleGraphTest));
-                            }
-                        }
-
-                    } catch (Exception e) {
-                        logger.warn("Failed processing module '{}': {}", module, e.getMessage());
-                    }
+                    processModuleRecursive(
+                        module,
+                        rootDir,
+                        projectBuilder,
+                        dependencyResolver,
+                        localRepoPath,
+                        includeTestScope,
+                        externalIdFactory,
+                        codeLocations,
+                        visitedModulePomPaths,
+                        mavenGraphParser,
+                        mavenGraphTransformer
+                    );
                 }
             }
 
@@ -241,6 +193,144 @@ public class MavenResolverDetectable extends Detectable {
         } catch (Exception e) {
             logger.error("Failed to resolve dependencies for pom.xml: {}", e.getMessage());
             return new Extraction.Builder().exception(e).build();
+        }
+    }
+
+    private void processModuleRecursive(
+        String moduleEntry,
+        File parentDir,
+        ProjectBuilder projectBuilder,
+        MavenDependencyResolver dependencyResolver,
+        Path localRepoPath,
+        boolean includeTestScope,
+        ExternalIdFactory externalIdFactory,
+        List<CodeLocation> codeLocations,
+        Set<String> visitedModulePomPaths,
+        MavenGraphParser mavenGraphParser,
+        MavenGraphTransformer mavenGraphTransformer
+    ) {
+        try {
+            if (moduleEntry == null || moduleEntry.trim().isEmpty()) {
+                return;
+            }
+            String modulePathStr = moduleEntry.trim();
+
+            // Resolve module path to POM
+            File modulePom = new File(parentDir, modulePathStr);
+            if (modulePom.isDirectory()) {
+                modulePom = new File(modulePom, POM_XML_FILENAME);
+            }
+            if (!modulePom.exists()) {
+                File alternative = new File(parentDir, modulePathStr + File.separator + POM_XML_FILENAME);
+                if (alternative.exists()) {
+                    modulePom = alternative;
+                }
+            }
+            // Canonicalize and check existence
+            File canonicalModulePom = modulePom;
+            try {
+                canonicalModulePom = modulePom.getCanonicalFile();
+            } catch (Exception e) {
+                logger.debug("Could not canonicalize module pom path {}, continuing with absolute path.", modulePom.getAbsolutePath());
+            }
+            if (!canonicalModulePom.exists() || !canonicalModulePom.isFile()) {
+                logger.warn("Module POM not found for module '{}' at expected path '{}'. Skipping module.", modulePathStr, canonicalModulePom.getAbsolutePath());
+                return;
+            }
+
+            String modulePomPathKey;
+            try {
+                modulePomPathKey = canonicalModulePom.getCanonicalPath();
+            } catch (Exception e) {
+                modulePomPathKey = canonicalModulePom.getAbsolutePath();
+            }
+
+            if (visitedModulePomPaths.contains(modulePomPathKey)) {
+                logger.debug("Skipping already-visited module POM: {}", modulePomPathKey);
+                return;
+            }
+            visitedModulePomPaths.add(modulePomPathKey);
+
+            logger.info("Processing module POM: {}", canonicalModulePom.getAbsolutePath());
+
+            // Build module project (effective model)
+            MavenProject moduleProject;
+            try {
+                moduleProject = projectBuilder.buildProject(canonicalModulePom);
+            } catch (Exception e) {
+                logger.warn("Failed to build effective project for module '{}': {}", modulePomPathKey, e.getMessage());
+                return;
+            }
+
+            // Resolve dependencies for module (compile + test)
+            CollectResult moduleCollectCompile;
+            try {
+                moduleCollectCompile = dependencyResolver.resolveDependencies(canonicalModulePom, moduleProject, localRepoPath.toFile(), "compile");
+            } catch (org.eclipse.aether.collection.DependencyCollectionException e) {
+                logger.warn("Compile dependency resolution failed for module '{}': {}", modulePomPathKey, e.getMessage());
+                return;
+            }
+            CollectResult moduleCollectTest = null;
+            if (includeTestScope) {
+                try {
+                    moduleCollectTest = dependencyResolver.resolveDependencies(canonicalModulePom, moduleProject, localRepoPath.toFile(), "test");
+                } catch (org.eclipse.aether.collection.DependencyCollectionException e) {
+                    logger.warn("Test dependency resolution failed for module '{}': {}", modulePomPathKey, e.getMessage());
+                }
+            }
+
+            // Transform graphs
+            MavenParseResult moduleParseCompile = mavenGraphParser.parse(moduleCollectCompile);
+            DependencyGraph moduleGraphCompile = new MavenGraphTransformer(externalIdFactory).transform(moduleParseCompile);
+
+            DependencyGraph moduleGraphTest = null;
+            if (includeTestScope && moduleCollectTest != null) {
+                MavenParseResult moduleParseTest = mavenGraphParser.parse(moduleCollectTest);
+                moduleGraphTest = new MavenGraphTransformer(externalIdFactory).transform(moduleParseTest);
+            }
+
+            // Emit module CodeLocations
+            try {
+                com.blackduck.integration.bdio.model.externalid.ExternalId moduleExternalId = externalIdFactory.createMavenExternalId(
+                    moduleProject.getCoordinates().getGroupId(),
+                    moduleProject.getCoordinates().getArtifactId(),
+                    moduleProject.getCoordinates().getVersion()
+                );
+                File moduleSourcePath = canonicalModulePom.getParentFile();
+                codeLocations.add(new CodeLocation(moduleGraphCompile, moduleExternalId, moduleSourcePath));
+                if (moduleGraphTest != null) {
+                    codeLocations.add(new CodeLocation(moduleGraphTest, moduleExternalId, moduleSourcePath));
+                }
+            } catch (Exception e) {
+                logger.debug("Failed to create module external id for '{}': {}", modulePomPathKey, e.getMessage());
+                codeLocations.add(new CodeLocation(moduleGraphCompile));
+                if (moduleGraphTest != null) {
+                    codeLocations.add(new CodeLocation(moduleGraphTest));
+                }
+            }
+
+            // Recurse into nested modules declared by this module
+            List<String> nestedModules = moduleProject.getModules();
+            if (nestedModules != null && !nestedModules.isEmpty()) {
+                File childParentDir = canonicalModulePom.getParentFile();
+                for (String childModule : nestedModules) {
+                    processModuleRecursive(
+                        childModule,
+                        childParentDir,
+                        projectBuilder,
+                        dependencyResolver,
+                        localRepoPath,
+                        includeTestScope,
+                        externalIdFactory,
+                        codeLocations,
+                        visitedModulePomPaths,
+                        mavenGraphParser,
+                        mavenGraphTransformer
+                    );
+                }
+            }
+        } catch (Exception e) {
+            logger.warn("Failed processing module '{}' due to: {}", moduleEntry, e.getMessage());
         }
     }
 }
