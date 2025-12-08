@@ -376,7 +376,7 @@ public class OperationRunner {
                 directoryEvaluator
             );
             return detectorTool.performDetectors(
-                directoryManager.getSourceDirectory(),
+                directoryManager,
                 detectRuleSet,
                 detectConfigurationFactory.createDetectorFinderOptions(),
                 detectorToolOptions.getProjectBomTool(),

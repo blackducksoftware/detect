@@ -61,14 +61,14 @@ public class GenerateComponentLocationAnalysisOperation {
      * @throws DetectUserFriendlyException
      */
     public ComponentLocatorResult locateComponents(Set<Component> componentsSet, File scanOutputFolder, File projectSrcDir, File rapidFullResultsFile, DetectConfigurationFactory configFactory) throws ComponentLocatorException, DetectUserFriendlyException {
-        logger.info("invoking quakcpatch as an in between step for now...");
+        logger.info("invoking quackpatch right here for now...");
         if (detectConfigurationFactory.isQuackPatchPossible()) {
-            List<String> buildFilePath = null; // TODO
+            File pathsToRelevantFiles = new File(scanOutputFolder + "/quack/relevantfiles.txt");
             String llmKey = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_KEY);
             String llmName = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_NAME);
             String llmURL = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_ENDPOINT);
 
-            ComponentLocator.runQuackPatch(rapidFullResultsFile, buildFilePath);
+            ComponentLocator.runQuackPatch(rapidFullResultsFile, pathsToRelevantFiles, llmKey, llmName, llmURL);
         }
 
 

@@ -167,7 +167,7 @@ dependencies {
     implementation 'com.blackduck.integration:blackduck-upload-common:4.1.3'
     implementation 'com.blackducksoftware:method-analyzer-core:1.0.1'
 //    implementation "${locatorGroup}:${locatorModule}:2.2.0"
-    implementation files ("/Users/shanty/blackduck/gitlab-folder/component-locator/build/libs/component-locator-2.1.2-buildable-i-hope-all.jar")
+    implementation files ("/Users/shanty/blackduck/gitlab-folder/component-locator/build/libs/component-locator-2.1.2-quack-all.jar")
 
     implementation 'org.apache.maven.shared:maven-invoker:3.0.0'
 
