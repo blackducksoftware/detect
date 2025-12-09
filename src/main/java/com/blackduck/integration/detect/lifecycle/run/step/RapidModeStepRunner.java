@@ -47,7 +47,7 @@ public class RapidModeStepRunner {
     private final String detectRunUuid;
     private final DirectoryManager directoryManager;
     public static final String RAPID_SCAN_ENDPOINT = "/api/developer-scans";
-    public static final String RAPID_SCAN_FULL_RESULT_ENDPOINT = "/api/developer-scans/%s/full-result";
+//    public static final String RAPID_SCAN_FULL_RESULT_ENDPOINT = "/api/developer-scans/%s/full-result";
 
 
     public RapidModeStepRunner(OperationRunner operationRunner, StepHelper stepHelper, Gson gson, String detectRunUuid, DirectoryManager directoryManager) {
@@ -122,22 +122,21 @@ public class RapidModeStepRunner {
 
         // Get info about any scans that were done
         BlackduckScanMode mode = blackDuckRunData.getScanMode();
-//        List<DeveloperScansScanView> rapidResults = operationRunner.waitForRapidResults(blackDuckRunData, parsedUrls, mode); // parsedurls have all the urls we need to poll for results
+        List<DeveloperScansScanView> rapidResults = operationRunner.waitForRapidResults(blackDuckRunData, parsedUrls, mode); // parsedurls have all the urls we need to poll for results
         // Get FULL rapid results for quackpatch separately for now
         // TODO only bother with below if quackpatch is possible (add explicit flag to enable quackpatch?)
         List<Response> rapidFullResults = operationRunner.waitForRapidFullResults(blackDuckRunData, parsedUrls, mode); // TODO write to file as is
 
 
         // Generate a report, even an empty one if no scans were done as that is what previous detect versions did.
-//        File jsonFile = operationRunner.generateRapidJsonFile(projectVersion, rapidResults);
+        File jsonFile = operationRunner.generateRapidJsonFile(projectVersion, rapidResults);
         File jsonFileFULL = operationRunner.generateFULLRapidJsonFile(rapidFullResults);
-//
-        operationRunner.generateComponentLocationAnalysisIfEnabled(rapidFullResults, bdioResult, jsonFileFULL);
-//
-//
-//        RapidScanResultSummary summary = operationRunner.logRapidReport(rapidResults, mode);
-//
-//        operationRunner.publishRapidResults(jsonFile, summary, mode);
+
+        operationRunner.generateComponentLocationAnalysisIfEnabled(rapidResults, bdioResult, jsonFileFULL);
+
+        RapidScanResultSummary summary = operationRunner.logRapidReport(rapidResults, mode);
+
+        operationRunner.publishRapidResults(jsonFile, summary, mode);
 
         operationRunner.publishCodeLocationData(formattedCodeLocations);
     }
@@ -177,7 +176,7 @@ public class RapidModeStepRunner {
         operationRunner.uploadBdioEntries(blackDuckRunData, bdScanId); // uploads to rapid scan endpoint
 
         // add this scan to the URLs to wait for
-        parsedUrls.add(new HttpUrl(blackDuckUrl + String.format(RAPID_SCAN_FULL_RESULT_ENDPOINT, bdScanId.toString())));
+        parsedUrls.add(new HttpUrl(blackDuckUrl + String.format(RAPID_SCAN_ENDPOINT + "/" + bdScanId.toString())));
     }
 
     /**
@@ -209,7 +208,7 @@ public class RapidModeStepRunner {
                     Set<String> parsedIds = result.parseScanIds();
 
                     for (String id : parsedIds) {
-                        HttpUrl url = new HttpUrl(blackDuckUrl + String.format(RAPID_SCAN_FULL_RESULT_ENDPOINT, id));
+                        HttpUrl url = new HttpUrl(blackDuckUrl + String.format(RAPID_SCAN_ENDPOINT + "/" + id));
 
                         logger.info(scanMode + " mode signature scan URL: {}", url);
                         parsedUrls.add(url);
