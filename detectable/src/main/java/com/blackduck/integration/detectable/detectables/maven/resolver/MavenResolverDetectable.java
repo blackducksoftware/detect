@@ -2,6 +2,7 @@ package com.blackduck.integration.detectable.detectables.maven.resolver;
 
 import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
+import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.common.util.finder.FileFinder;
 import com.blackduck.integration.detectable.Detectable;
 import com.blackduck.integration.detectable.DetectableEnvironment;
@@ -143,7 +144,7 @@ public class MavenResolverDetectable extends Detectable {
             // Prepare code locations list. Create a CodeLocation for the root project for both compile and test (if available).
             List<CodeLocation> codeLocations = new ArrayList<>();
             try {
-                com.blackduck.integration.bdio.model.externalid.ExternalId rootExternalId = externalIdFactory.createMavenExternalId(
+                ExternalId rootExternalId = externalIdFactory.createMavenExternalId(
                     mavenProject.getCoordinates().getGroupId(),
                     mavenProject.getCoordinates().getArtifactId(),
                     mavenProject.getCoordinates().getVersion()
@@ -291,7 +292,7 @@ public class MavenResolverDetectable extends Detectable {
 
             // Emit module CodeLocations
             try {
-                com.blackduck.integration.bdio.model.externalid.ExternalId moduleExternalId = externalIdFactory.createMavenExternalId(
+                ExternalId moduleExternalId = externalIdFactory.createMavenExternalId(
                     moduleProject.getCoordinates().getGroupId(),
                     moduleProject.getCoordinates().getArtifactId(),
                     moduleProject.getCoordinates().getVersion()

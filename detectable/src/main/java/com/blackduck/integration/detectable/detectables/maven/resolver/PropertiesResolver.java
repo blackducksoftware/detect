@@ -1,7 +1,7 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver;
 
 /**
- * Property resolution classes - Java port of Go properties package
+ * Property resolution classes
  */
 
 import java.util.HashMap;

@@ -1,7 +1,7 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver;
 
 /**
- * Data model classes for Maven POM parsing - Java port of Go javamodels
+ * Data model classes for Maven POM parsing
  */
 
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
