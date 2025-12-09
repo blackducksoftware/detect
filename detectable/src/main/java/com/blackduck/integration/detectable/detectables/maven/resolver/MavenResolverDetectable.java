@@ -68,8 +68,17 @@ public class MavenResolverDetectable extends Detectable {
 
     @Override
     public DetectableResult extractable() {
-        // For now, we are keeping this simple. We can add more checks later,
-        // for example, to ensure network connectivity or resolver-specific prerequisites.
+        // Ensure the pom file still exists and is readable before extraction.
+        if (pomFile == null) {
+            pomFile = fileFinder.findFile(environment.getDirectory(), POM_XML_FILENAME);
+        }
+        if (pomFile == null || !pomFile.exists() || !pomFile.isFile()) {
+            return new FileNotFoundDetectableResult(POM_XML_FILENAME);
+        }
+        if (!pomFile.canRead()) {
+            // Reuse FileNotFoundDetectableResult to indicate the prerequisite file cannot be accessed.
+            return new FileNotFoundDetectableResult(POM_XML_FILENAME);
+        }
         return new PassedDetectableResult();
     }
 
