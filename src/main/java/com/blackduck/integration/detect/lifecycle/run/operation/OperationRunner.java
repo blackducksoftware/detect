@@ -28,7 +28,6 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.blackduck.integration.componentlocator.ComponentLocator;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
@@ -719,31 +718,31 @@ public class OperationRunner {
         });
     }
 
-    public List<DeveloperScansScanView> waitForRapidResults(BlackDuckRunData blackDuckRunData, List<HttpUrl> rapidScans, BlackduckScanMode mode) throws OperationException {
-        return auditLog.namedInternal("Rapid Wait", () -> {
-            BlackDuckServicesFactory blackDuckServicesFactory = blackDuckRunData.getBlackDuckServicesFactory();
-            int fibonacciSequenceIndex = getFibonacciSequenceIndex();
+//    public List<DeveloperScansScanView> waitForRapidResults(BlackDuckRunData blackDuckRunData, List<HttpUrl> rapidScans, BlackduckScanMode mode) throws OperationException {
+//        return auditLog.namedInternal("Rapid Wait", () -> {
+//            BlackDuckServicesFactory blackDuckServicesFactory = blackDuckRunData.getBlackDuckServicesFactory();
+//            int fibonacciSequenceIndex = getFibonacciSequenceIndex();
+//
+//            try {
+//                return new RapidModeWaitOperation(blackDuckServicesFactory.getBlackDuckApiClient()).waitForScans(
+//                        rapidScans, // url is not full here
+//                        detectConfigurationFactory.findTimeoutInSeconds(),
+//                        RapidModeWaitOperation.DEFAULT_WAIT_INTERVAL_IN_SECONDS,
+//                        mode,
+//                        calculateMaxWaitInSeconds(fibonacciSequenceIndex)
+//                );
+//            } catch (InterruptedException e) {
+//                throw e;
+//            } catch (IntegrationRestException e) {
+//                throw handleRapidScanException(e);
+//            } catch (Exception e) {
+//                throw new OperationException(e);
+//            }
+//        });
+//    }
 
-            try {
-                return new RapidModeWaitOperation(blackDuckServicesFactory.getBlackDuckApiClient()).waitForScans(
-                        rapidScans, // url is not full here
-                        detectConfigurationFactory.findTimeoutInSeconds(),
-                        RapidModeWaitOperation.DEFAULT_WAIT_INTERVAL_IN_SECONDS,
-                        mode,
-                        calculateMaxWaitInSeconds(fibonacciSequenceIndex)
-                );
-            } catch (InterruptedException e) {
-                throw e;
-            } catch (IntegrationRestException e) {
-                throw handleRapidScanException(e);
-            } catch (Exception e) {
-                throw new OperationException(e);
-            }
-        });
-    }
-
-    public List<DeveloperScansScanView> waitForRapidFullResults(BlackDuckRunData blackDuckRunData, List<HttpUrl> rapidScans, BlackduckScanMode mode) throws OperationException {
-        // First, append /full-result to all these URLs (TODO has onl been tested w/ pkg mngr scans)
+    public List<Response> waitForRapidFullResults(BlackDuckRunData blackDuckRunData, List<HttpUrl> rapidScans, BlackduckScanMode mode) throws OperationException {
+        // First, append /full-result to all these URLs (TODO has only been tested w/ pkg mngr scans)
         List<HttpUrl> fullResultUrls = new ArrayList<>();
         for (HttpUrl url : rapidScans) {
             try {
@@ -819,11 +818,11 @@ public class OperationRunner {
         );
     }
 
-    public final File generateFULLRapidJsonFile(NameVersion projectNameVersion, List<DeveloperScansScanView> scanResults) throws OperationException {
+    public final File generateFULLRapidJsonFile(List<Response> scanResults) throws OperationException {
         return auditLog.namedPublic(
-                "Generate FULL Rapid Json File",
+                "Generate Rapid FULL Json File",
                 "RapidScan",
-                () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFile(projectNameVersion, scanResults, "_FULL")
+                () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFileFromString(scanResults.get(0).getContentString())
         );
     }
 

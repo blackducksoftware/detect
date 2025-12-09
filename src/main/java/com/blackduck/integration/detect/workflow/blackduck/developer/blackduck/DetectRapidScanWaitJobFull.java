@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.blackduck.integration.blackduck.api.core.BlackDuckResponse;
 import org.apache.http.HttpStatus;
 
 import com.blackduck.integration.blackduck.api.generated.view.DeveloperScansScanView;
@@ -21,7 +22,7 @@ import com.blackduck.integration.wait.ResilientJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DetectRapidScanWaitJobFull implements ResilientJob<List<DeveloperScansScanView>> {
+public class DetectRapidScanWaitJobFull implements ResilientJob<List<Response>> {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final BlackDuckApiClient blackDuckApiClient;
     private final List<HttpUrl> remainingUrls;
@@ -78,25 +79,29 @@ public class DetectRapidScanWaitJobFull implements ResilientJob<List<DeveloperSc
     }
 
     @Override
-    public List<DeveloperScansScanView> onTimeout() throws IntegrationTimeoutException {
+    public List<Response> onTimeout() throws IntegrationTimeoutException {
         throw new IntegrationTimeoutException("Error getting developer scan result. Timeout may have occurred.");
     }
 
     @Override
-    public List<DeveloperScansScanView> onCompletion() throws IntegrationException {
-        List<DeveloperScansScanView> allComponents = new ArrayList<>();
+    public List<Response> onCompletion() throws IntegrationException {
+//        List<DeveloperScansScanView> allComponents = new ArrayList<>(); how would other urls impact this now? if binary/container/signature was enabled?
+        List<Response> allScanResponses = new ArrayList<>();
         for (HttpUrl url : completedUrls) {
-            allComponents.addAll(getScanResultsForUrl(url));
+            allScanResponses.add(getScanResultsForFULLUrl(url));
         }
-        return allComponents;
+        return allScanResponses;
     }
 
-    private List<DeveloperScansScanView> getScanResultsForUrl(HttpUrl url) throws IntegrationException {
+    private Response getScanResultsForFULLUrl(HttpUrl url) throws IntegrationException {
         logger.debug("Fetching scan results from endpoint: {}", url.string());
         BlackDuckMultipleRequest<DeveloperScansScanView> request =
             new DetectRapidScanRequestBuilder()
-                .createFullRequest(url); // regular endpoint, not full
-        return blackDuckApiClient.getAllResponses(request);
+                .createRequest(url);
+
+//        originalResponse = blackDuckApiClient.getAllResponses(request);
+        Response newResponse =  blackDuckApiClient.get(url);
+        return newResponse;
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.blackduck.integration.detect.workflow.blackduck.developer;
 
 import java.util.List;
 
+import com.blackduck.integration.rest.response.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +28,7 @@ public class RapidModeWaitOperation {
         this.blackDuckApiClient = blackDuckApiClient;
     }
 
-    public List<DeveloperScansScanView> waitForScans(List<HttpUrl> uploadedScans, long timeoutInSeconds, int waitIntervalInSeconds, BlackduckScanMode mode, int maxWaitInSeconds)
+    public List<Response> waitForScans(List<HttpUrl> uploadedScans, long timeoutInSeconds, int waitIntervalInSeconds, BlackduckScanMode mode, int maxWaitInSeconds)
             throws IntegrationException, InterruptedException {
             WaitIntervalTracker waitIntervalTracker = WaitIntervalTrackerFactory.createProgressive(timeoutInSeconds, maxWaitInSeconds);
             ResilientJobConfig waitJobConfig = new ResilientJobConfig(new Slf4jIntLogger(logger), System.currentTimeMillis(), waitIntervalTracker);
@@ -35,13 +36,4 @@ public class RapidModeWaitOperation {
             ResilientJobExecutor jobExecutor = new ResilientJobExecutor(waitJobConfig);
             return jobExecutor.executeJob(waitJob);
         }
-
-    public List<DeveloperScansScanView> waitForFullScans(List<HttpUrl> uploadedScans, long timeoutInSeconds, int waitIntervalInSeconds, BlackduckScanMode mode, int maxWaitInSeconds)
-            throws IntegrationException, InterruptedException {
-        WaitIntervalTracker waitIntervalTracker = WaitIntervalTrackerFactory.createProgressive(timeoutInSeconds, maxWaitInSeconds);
-        ResilientJobConfig waitJobConfig = new ResilientJobConfig(new Slf4jIntLogger(logger), System.currentTimeMillis(), waitIntervalTracker);
-        DetectRapidScanWaitJobFull waitJob = new DetectRapidScanWaitJobFull(blackDuckApiClient, uploadedScans, mode);
-        ResilientJobExecutor jobExecutor = new ResilientJobExecutor(waitJobConfig);
-        return jobExecutor.executeJob(waitJob);
-    }
 }

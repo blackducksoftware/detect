@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.Set;
 
+import com.blackduck.integration.rest.response.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,10 +69,10 @@ public class RapidModeStepRunner {
         List<HttpUrl> parsedUrls = new ArrayList<>();
         Set<FormattedCodeLocation> formattedCodeLocations = new HashSet<>();
 
+        // pkg mgr rapid scan
         List<HttpUrl> uploadResultsUrls = operationRunner.performRapidUpload(blackDuckRunData, bdioResult, rapidScanConfig.orElse(null)); // pkg mngr rapid bdio upload, returns the upload url with scan-id
-        
         if (uploadResultsUrls != null && uploadResultsUrls.size() > 0) {
-            processScanResults(uploadResultsUrls, parsedUrls, formattedCodeLocations, DetectTool.DETECTOR.name()); // adds URLs that will be polled LATER
+            processScanResults(uploadResultsUrls, parsedUrls, formattedCodeLocations, DetectTool.DETECTOR.name()); // adds URLs from the BDIO upload that will be polled LATER
         }
 
         stepHelper.runToolIfIncluded(DetectTool.SIGNATURE_SCAN, "Signature Scanner", () -> {
@@ -121,22 +122,22 @@ public class RapidModeStepRunner {
 
         // Get info about any scans that were done
         BlackduckScanMode mode = blackDuckRunData.getScanMode();
-        List<DeveloperScansScanView> rapidResults = operationRunner.waitForRapidResults(blackDuckRunData, parsedUrls, mode); // parsedurls here should be normal
+//        List<DeveloperScansScanView> rapidResults = operationRunner.waitForRapidResults(blackDuckRunData, parsedUrls, mode); // parsedurls have all the urls we need to poll for results
         // Get FULL rapid results for quackpatch separately for now
-        List<DeveloperScansScanView> rapidFullResults = operationRunner.waitForRapidFullResults(blackDuckRunData, parsedUrls, mode); // this one should have /full-result
+        // TODO only bother with below if quackpatch is possible (add explicit flag to enable quackpatch?)
+        List<Response> rapidFullResults = operationRunner.waitForRapidFullResults(blackDuckRunData, parsedUrls, mode); // TODO write to file as is
 
 
         // Generate a report, even an empty one if no scans were done as that is what previous detect versions did.
-        File jsonFile = operationRunner.generateRapidJsonFile(projectVersion, rapidResults);
-        File jsonFileFULL = operationRunner.generateFULLRapidJsonFile(projectVersion, rapidResults);
-
+//        File jsonFile = operationRunner.generateRapidJsonFile(projectVersion, rapidResults);
+        File jsonFileFULL = operationRunner.generateFULLRapidJsonFile(rapidFullResults);
+//
         operationRunner.generateComponentLocationAnalysisIfEnabled(rapidFullResults, bdioResult, jsonFileFULL);
-
-
-        RapidScanResultSummary summary = operationRunner.logRapidReport(rapidResults, mode);
-
-        operationRunner.publishRapidResults(jsonFile, summary, mode);
-//        operationRunner.publishRapidResults(jsonFileFULL, summary, mode);
+//
+//
+//        RapidScanResultSummary summary = operationRunner.logRapidReport(rapidResults, mode);
+//
+//        operationRunner.publishRapidResults(jsonFile, summary, mode);
 
         operationRunner.publishCodeLocationData(formattedCodeLocations);
     }

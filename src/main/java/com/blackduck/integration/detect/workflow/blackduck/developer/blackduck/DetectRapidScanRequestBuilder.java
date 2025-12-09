@@ -5,6 +5,7 @@ import com.blackduck.integration.blackduck.api.generated.view.DeveloperScansScan
 import com.blackduck.integration.blackduck.http.BlackDuckRequestBuilder;
 import com.blackduck.integration.blackduck.service.request.BlackDuckMultipleRequest;
 import com.blackduck.integration.blackduck.service.request.BlackDuckResponseRequest;
+import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.rest.HttpUrl;
 
 public class DetectRapidScanRequestBuilder {
@@ -21,10 +22,15 @@ public class DetectRapidScanRequestBuilder {
         return blackDuckRequestBuilder.buildBlackDuckResponseRequest(httpUrl);
     }
 
-    public BlackDuckMultipleRequest<DeveloperScansScanView> createRequest(HttpUrl httpUrl) {
+    public BlackDuckMultipleRequest<DeveloperScansScanView> createACTUALLYFullRequest(HttpUrl httpUrl) {
+        try {
+            httpUrl.appendRelativeUrl("full-result");
+        } catch (IntegrationException e) {
+            throw new RuntimeException("Something went wrong while assembling full results request", e);
+        }
         return blackDuckRequestBuilder.buildBlackDuckRequest(new UrlMultipleResponses<>(httpUrl, DeveloperScansScanView.class));
     }
-    public BlackDuckMultipleRequest<DeveloperScansScanView> createFullRequest(HttpUrl httpUrl) {
+    public BlackDuckMultipleRequest<DeveloperScansScanView> createRequest(HttpUrl httpUrl) {
         return blackDuckRequestBuilder.buildBlackDuckRequest(new UrlMultipleResponses<>(httpUrl, DeveloperScansScanView.class));
     }
 
