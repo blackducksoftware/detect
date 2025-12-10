@@ -2,21 +2,17 @@ package com.blackduck.integration.detect.workflow.componentlocationanalysis;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 import java.util.Set;
 
-import com.blackduck.integration.detect.configuration.DetectProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
 import com.blackduck.integration.componentlocator.ComponentLocator;
 import static com.blackduck.integration.componentlocator.ComponentLocator.SUPPORTED_DETECTORS;
 import com.blackduck.integration.componentlocator.beans.Component;
 import com.blackduck.integration.componentlocator.beans.Input;
 import com.blackduck.integration.detect.configuration.DetectConfigurationFactory;
+import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detect.configuration.DetectUserFriendlyException;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
 import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
@@ -27,6 +23,9 @@ import com.blackduck.integration.detect.workflow.result.ComponentLocatorResult;
 import com.blackduck.integration.detect.workflow.status.Status;
 import com.blackduck.integration.detect.workflow.status.StatusEventPublisher;
 import com.blackduck.integration.detect.workflow.status.StatusType;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 
 /**
  * This class will generate the appropriate input file for Component Locator, invoke the library's obfuscated JAR and
@@ -68,7 +67,7 @@ public class GenerateComponentLocationAnalysisOperation {
             String llmName = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_NAME);
             String llmURL = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_ENDPOINT);
 
-            ComponentLocator.runQuackPatch(rapidFullResultsFile, pathsToRelevantFiles, llmKey, llmName, llmURL);
+            ComponentLocator.runQuackPatch(rapidFullResultsFile, pathsToRelevantFiles, llmKey, llmName, llmURL, scanOutputFolder.getPath());
         }
 
 
