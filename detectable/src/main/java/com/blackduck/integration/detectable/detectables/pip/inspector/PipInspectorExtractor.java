@@ -122,9 +122,12 @@ public class PipInspectorExtractor {
 
         String projectName = providedProjectName;
 
-        if (tomlParseResult != null) {
+        // TODO this whole section with the toml parsing can throw NPEs at different points, add try/catch instead of ifs at each step before merging.
+        if (tomlParseResult != null && (tomlParseResult.getTable(PROJECT_KEY) != null)) {
+            logger.info("The value of the condition is: " + (tomlParseResult != null && (tomlParseResult.getTable(PROJECT_KEY) != null)));
             TomlTable projectTable = tomlParseResult.getTable(PROJECT_KEY);
-            if(projectTable.contains(NAME_KEY)) {
+            logger.info("Project table is: " + projectTable);
+            if( projectTable!= null && projectTable.contains(NAME_KEY)) {
                 projectName = projectTable.getString(NAME_KEY);
             }
         } else if (setupFile != null && setupFile.exists()) {
