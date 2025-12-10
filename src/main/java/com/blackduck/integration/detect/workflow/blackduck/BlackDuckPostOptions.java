@@ -23,6 +23,7 @@ public class BlackDuckPostOptions {
     private final boolean correlatedScanningEnabled;
     private final List<String> sbomProjectTypes;
     private final @Nullable Path sbomOutputPath;
+    private final boolean sbomFetchLicenses;
 
     public BlackDuckPostOptions(
         boolean waitForResults,
@@ -36,7 +37,8 @@ public class BlackDuckPostOptions {
         boolean generateRiskReportJson,
         @Nullable Path riskReportJsonPath,
         List<String> sbomProjectTypes,
-        @Nullable Path sbomOutputPath
+        @Nullable Path sbomOutputPath,
+        boolean sbomFetchLicenses
     ) {
         this.waitForResults = waitForResults;
         this.generateRiskReportPdf = generateRiskReportPdf;
@@ -50,6 +52,7 @@ public class BlackDuckPostOptions {
         this.riskReportJsonPath = riskReportJsonPath;
         this.sbomProjectTypes = sbomProjectTypes;
         this.sbomOutputPath = sbomOutputPath;
+        this.sbomFetchLicenses = sbomFetchLicenses;
     }
 
     public boolean shouldWaitForResults() {
@@ -118,5 +121,9 @@ public class BlackDuckPostOptions {
 
     public Optional<Path> getSbomOutputPath() {
         return Optional.ofNullable(sbomOutputPath);
+    }
+
+    public boolean getSbomFetchLicenses() {
+        return sbomFetchLicenses;
     }
 }

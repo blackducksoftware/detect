@@ -466,6 +466,7 @@ public class DetectConfigurationFactory {
         Boolean correlatedScanningEnabled = detectConfiguration.getValue(DetectProperties.DETECT_CORRELATED_SCANNING_ENABLED);
         List<String> sbomProjectTypes = detectConfiguration.getValue(DetectProperties.DETECT_SBOM_PROJECT_TYPES);
         Path sbomOutputPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_SBOM_OUTPUT_PATH);
+        Boolean sbomFetchLicenses = detectConfiguration.getValue(DetectProperties.DETECT_SBOM_FETCH_LICENSES);
 
         return new BlackDuckPostOptions(
             waitForResults,
@@ -479,7 +480,8 @@ public class DetectConfigurationFactory {
             runRiskReportJson,
             riskReportJsonPath,
             sbomProjectTypes,
-            sbomOutputPath
+            sbomOutputPath,
+            sbomFetchLicenses
         );
     }
 

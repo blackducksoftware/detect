@@ -38,6 +38,30 @@ final def cdxgenVersion = '11.9.0'
 final def cdxgenBaseUrl = "https://github.com/CycloneDX/cdxgen/releases/download/v${cdxgenVersion}"
 final def cdxgenResourceDir = new File("${projectDir}/src/main/resources/tools/cdxgen")
 
+// Define supported platforms
+final def platforms = [
+    'linux-x64': [assetName: 'cdxgen-linux-amd64', executable: 'cdxgen'],
+    'linux-arm64': [assetName: 'cdxgen-linux-arm64', executable: 'cdxgen'],
+    'macos-x64': [assetName: 'cdxgen-darwin-amd64', executable: 'cdxgen'],
+    'macos-arm64': [assetName: 'cdxgen-darwin-arm64', executable: 'cdxgen'],
+    'windows-x64': [assetName: 'cdxgen-windows-amd64.exe', executable: 'cdxgen.exe']
+]
+
+// Helper function to detect current platform
+def getCurrentPlatform() {
+    def osName = System.getProperty("os.name").toLowerCase()
+    def osArch = System.getProperty("os.arch").toLowerCase()
+
+    if (osName.contains("mac") || osName.contains("darwin")) {
+        return osArch.contains("aarch64") || osArch.contains("arm64") ? "macos-arm64" : "macos-x64"
+    } else if (osName.contains("win")) {
+        return "windows-x64"
+    } else if (osName.contains("linux")) {
+        return osArch.contains("aarch64") || osArch.contains("arm64") ? "linux-arm64" : "linux-x64"
+    }
+    return "linux-x64" // default
+}
+
 task downloadCdxgenBinaries {
     description = 'Downloads CycloneDX cdxgen standalone binaries for all platforms'
     group = 'build'
@@ -45,16 +69,7 @@ task downloadCdxgenBinaries {
     doLast {
         cdxgenResourceDir.mkdirs()
 
-        // Map our platform directory names to cdxgen's release asset names
-        def binaries = [
-            'linux-x64': [assetName: 'cdxgen-linux-amd64', executable: 'cdxgen'],
-            'linux-arm64': [assetName: 'cdxgen-linux-arm64', executable: 'cdxgen'],
-            'macos-x64': [assetName: 'cdxgen-darwin-amd64', executable: 'cdxgen'],
-            'macos-arm64': [assetName: 'cdxgen-darwin-arm64', executable: 'cdxgen'],
-            'windows-x64': [assetName: 'cdxgen-windows-amd64.exe', executable: 'cdxgen.exe']
-        ]
-
-        binaries.each { platform, config ->
+        platforms.each { platform, config ->
             def platformDir = new File(cdxgenResourceDir, platform)
             platformDir.mkdirs()
             def outputFile = new File(platformDir, config.executable)
@@ -106,13 +121,28 @@ task downloadCdxgenBinaries {
 // Ensure cdxgen binaries are downloaded before processing resources
 processResources.dependsOn downloadCdxgenBinaries
 
+// Exclude cdxgen binaries from standard resource processing
+// They will be added individually to each platform-specific JAR
+processResources {
+    exclude 'tools/cdxgen/**'
+}
+
 // By default, starting in 2.5.0, spring boot creates an extra "plain" .jar that we don't want
 jar {
     enabled = false
 }
 
-def createArtifactName() {
-    return "${buildDir}/libs/${project.name}-${version}.jar"
+// Disable the default bootJar task since we're creating platform-specific ones
+bootJar {
+    enabled = false
+}
+
+def createArtifactName(String platform = null) {
+    if (platform) {
+        return "${buildDir}/libs/${project.name}-${version}-${platform}.jar"
+    }
+    // Default to linux-x64 for backward compatibility with existing tasks
+    return "${buildDir}/libs/${project.name}-${version}-linux-x64.jar"
 }
 
 def createBatteryPath() {
@@ -160,13 +190,36 @@ repositories {
     }
 }
 
-tasks.named("bootJar") {
-    version = rootProject.version
-    manifest {
-        attributes 'Main-Class': "org.springframework.boot.loader.JarLauncher"
-        attributes 'Start-Class': "com.blackduck.integration.detect.Application"
+// Create platform-specific bootJar tasks
+platforms.each { platform, config ->
+    task "bootJar${platform.replaceAll('-', '').capitalize()}"(type: org.springframework.boot.gradle.tasks.bundling.BootJar) {
+        description = "Creates executable JAR for ${platform} with platform-specific cdxgen binary"
+        group = 'build'
+
+        archiveClassifier = platform
+        mainClass = 'com.blackduck.integration.detect.Application'
+
+        // Explicitly set the classpath to include runtime dependencies
+        classpath = configurations.runtimeClasspath
+
+        // Include application classes and resources (excluding cdxgen tools)
+        from(sourceSets.main.output) {
+            into 'BOOT-INF/classes'
+            exclude 'tools/cdxgen/**'
+        }
+
+        // Include only this platform's cdxgen binary
+        from("${projectDir}/src/main/resources/tools/cdxgen/${platform}") {
+            into "BOOT-INF/classes/tools/cdxgen/${platform}"
+        }
+
+        dependsOn downloadCdxgenBinaries
     }
-    classpath sourceSets.main.runtimeClasspath
+}
+
+// Make the build task depend on all platform-specific bootJar tasks
+build.dependsOn platforms.keySet().collect { platform ->
+    "bootJar${platform.replaceAll('-', '').capitalize()}"
 }
 
 subprojects {
@@ -200,16 +253,25 @@ allprojects {
 
 publishing {
     publications {
-        mavenJava(MavenPublication) {
-            def jarName = createArtifactName()
-            artifact(jarName)
+        // Publish all platform-specific JARs
+        platforms.keySet().each { platform ->
+            "mavenJava${platform.replaceAll('-', '').capitalize()}"(MavenPublication) {
+                def jarName = createArtifactName(platform)
+                artifact(jarName) {
+                    classifier = platform
+                }
+            }
         }
     }
 }
 
 artifactory {
     publish {
-        defaults { publications('mavenJava') }
+        // Publish all platform-specific JARs to artifactory
+        def publicationNames = platforms.keySet().collect { platform ->
+            "mavenJava${platform.replaceAll('-', '').capitalize()}"
+        }
+        defaults { publications(publicationNames as String[]) }
     }
 }
 
@@ -320,10 +382,14 @@ task updateBattery(type: UpdateBatteryTask) {}
 task runDetect(type: JavaExec) {
     dependsOn build
 
-    classpath = files(createArtifactName())
-    classpath += sourceSets.main.runtimeClasspath
-    main = 'com.blackduck.integration.detect.Application'
-    args = ['--detect.risk.report.pdf=true']
+    def jarPath = createArtifactName(getCurrentPlatform())
+
+    // Run the platform-specific JAR directly
+    executable = "java"
+    args = ["-jar", jarPath, '--detect.risk.report.pdf=true']
+
+    // Remove classpath configuration since we're running the JAR directly
+    classpath = files()
 }
 
 task verifyBlackDuckDetect(type: VerifyBlackDuckDetectTask) {
@@ -349,8 +415,13 @@ task signJar() {
     dependsOn build
     finalizedBy 'verifyJar'
     doLast {
-        exec {
-            commandLine 'signing-client', '--username', "${System.getenv('SIGNING_USER')}", '--password', "env:SIGNING_TOKEN", '--server', "${System.getenv('SIGNING_SERVER')}", '--port', "${System.getenv('SIGNING_SERVER_PORT')}", '--signer', 'jarsigner', '--output', "${createArtifactName()}", "${createArtifactName()}"
+        // Sign all platform-specific JARs
+        platforms.keySet().each { platform ->
+            def jarPath = createArtifactName(platform)
+            println "Signing JAR for ${platform}: ${jarPath}"
+            exec {
+                commandLine 'signing-client', '--username', "${System.getenv('SIGNING_USER')}", '--password', "env:SIGNING_TOKEN", '--server', "${System.getenv('SIGNING_SERVER')}", '--port', "${System.getenv('SIGNING_SERVER_PORT')}", '--signer', 'jarsigner', '--output', "${jarPath}", "${jarPath}"
+            }
         }
     }
 }
@@ -411,9 +482,14 @@ task publishAirGapZipWithoutDocker() {
 task verifyJar() {
     dependsOn signJar
     doLast {
-        exec {
-            // returns 0 if successfully verified as signed; non-0 if not
-            commandLine 'jarsigner', '-verify', '-strict', "${createArtifactName()}"
+        // Verify all platform-specific JARs
+        platforms.keySet().each { platform ->
+            def jarPath = createArtifactName(platform)
+            println "Verifying JAR for ${platform}: ${jarPath}"
+            exec {
+                // returns 0 if successfully verified as signed; non-0 if not
+                commandLine 'jarsigner', '-verify', '-strict', "${jarPath}"
+            }
         }
     }
 }
@@ -421,10 +497,14 @@ task verifyJar() {
 task helpJson(type: JavaExec) {
     dependsOn build
 
-    classpath = files(createArtifactName())
-    classpath += sourceSets.main.runtimeClasspath
-    main = 'com.blackduck.integration.detect.Application'
-    args = ['--helpjson']
+    def jarPath = createArtifactName(getCurrentPlatform())
+
+    // Run the platform-specific JAR directly
+    executable = "java"
+    args = ["-jar", jarPath, '--helpjson']
+
+    // Remove classpath configuration since we're running the JAR directly
+    classpath = files()
 }
 
 task buildPlatform1 () {

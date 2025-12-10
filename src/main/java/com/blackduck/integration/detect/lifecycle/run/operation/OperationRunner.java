@@ -1267,7 +1267,7 @@ public class OperationRunner {
         );
     }
 
-    public File generateCdxgenSbom(List<String> projectTypes, Optional<Path> customOutputPath) throws OperationException {
+    public File generateCdxgenSbom(List<String> projectTypes, Optional<Path> customOutputPath, boolean fetchLicenses) throws OperationException {
         return auditLog.namedPublic("Generate CycloneDX SBOM", "Cdxgen", () -> {
             CdxgenRunner cdxgenRunner = new CdxgenRunner(executableRunner);
 
@@ -1304,7 +1304,7 @@ public class OperationRunner {
             }
 
             logger.info("Generating CycloneDX SBOM for source: {}", sourceDirectory.getAbsolutePath());
-            CdxgenResult result = cdxgenRunner.runCdxgen(sourceDirectory, sbomFile, projectTypes);
+            CdxgenResult result = cdxgenRunner.runCdxgen(sourceDirectory, sbomFile, projectTypes, fetchLicenses);
 
             if (!result.isSuccessful()) {
                 throw new IntegrationException("Cdxgen SBOM generation failed: " + result.getErrorMessage());

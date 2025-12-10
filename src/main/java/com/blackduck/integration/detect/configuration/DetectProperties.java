@@ -1215,6 +1215,13 @@ public class DetectProperties {
             .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL)
             .build();
 
+    public static final BooleanProperty DETECT_SBOM_FETCH_LICENSES =
+        BooleanProperty.newBuilder("detect.sbom.fetch.licenses", false)
+            .setInfo("SBOM Fetch Licenses", DetectPropertyFromVersion.VERSION_11_1_0)
+            .setHelp("When set to true, cdxgen will attempt to fetch license information for components in the SBOM. This may cause failures if license information cannot be obtained.")
+            .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL)
+            .build();
+
     public static final NullableStringProperty DETECT_NPM_ARGUMENTS =
         NullableStringProperty.newBuilder("detect.npm.arguments")
             .setInfo("Additional NPM Command Arguments", DetectPropertyFromVersion.VERSION_4_3_0)

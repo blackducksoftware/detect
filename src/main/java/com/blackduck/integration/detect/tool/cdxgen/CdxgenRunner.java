@@ -69,9 +69,10 @@ public class CdxgenRunner {
      * @param sourcePath Path to the source code to analyze
      * @param outputPath Path where the SBOM file should be written
      * @param projectTypes List of project types to include (e.g., "java", "javascript", "python")
+     * @param fetchLicenses Whether to fetch license information for components
      * @return CdxgenResult containing the execution result and SBOM file location
      */
-    public CdxgenResult runCdxgen(File sourcePath, File outputPath, List<String> projectTypes) {
+    public CdxgenResult runCdxgen(File sourcePath, File outputPath, List<String> projectTypes, boolean fetchLicenses) {
         if (extractedExecutable == null || !extractedExecutable.exists()) {
             logger.error("Cdxgen has not been initialized. Call initialize() first.");
             return CdxgenResult.failure("Cdxgen not initialized");
@@ -88,9 +89,11 @@ public class CdxgenRunner {
             logger.info("Running cdxgen on: {}", sourcePath.getAbsolutePath());
             logger.debug("Cdxgen command: {} {}", extractedExecutable, String.join(" ", arguments));
 
-            // Set environment variables to enable license fetching
+            // Set environment variables to enable license fetching if requested
             Map<String, String> environmentVariables = new HashMap<>();
-            environmentVariables.put("FETCH_LICENSE", "true");
+            if (fetchLicenses) {
+                environmentVariables.put("FETCH_LICENSE", "true");
+            }
 
             Executable executable = Executable.create(
                 sourcePath,
