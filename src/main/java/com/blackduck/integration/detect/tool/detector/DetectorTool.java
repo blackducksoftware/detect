@@ -1,6 +1,7 @@
 package com.blackduck.integration.detect.tool.detector;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,6 +12,7 @@ import java.util.stream.Collectors;
 import com.blackduck.integration.detect.tool.detector.report.detectable.ExtractedDetectableReport;
 import com.blackduck.integration.detect.workflow.file.DirectoryManager;
 import com.blackduck.integration.detector.base.DetectorStatusCode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +21,6 @@ import com.blackduck.integration.common.util.finder.FileFinder;
 import com.blackduck.integration.detect.configuration.ExcludeIncludeEnumFilter;
 import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
 import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodePublisher;
-import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodeRequest;
 import com.blackduck.integration.detect.tool.detector.report.DetectorDirectoryReport;
 import com.blackduck.integration.detect.tool.detector.report.rule.EvaluatedDetectorRuleReport;
 import com.blackduck.integration.detect.tool.detector.report.rule.ExtractedDetectorRuleReport;
@@ -80,10 +81,9 @@ public class DetectorTool {
         this.directoryEvaluator = directoryEvaluator;
     }
 
-    public void saveRelevantFilePaths(DirectoryManager directoryManager, DetectorToolResult toolResult) {
-        // Convert File to Path
+    public void saveExtractedDetectorsAndTheirRelevantFilePaths(DirectoryManager directoryManager, DetectorToolResult toolResult) {
+        // Create /scan/quack directory
         Path workingDir = directoryManager.getScanOutputDirectory().toPath();
-
         // Create the "quack" subdirectory
         Path quackDir = workingDir.resolve("quack");
         try {
@@ -91,28 +91,32 @@ public class DetectorTool {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
-        // Create the text file with the specified lines
-        // TODO handle multiple reports?
-        DetectorDirectoryReport report = toolResult.getReports().get(0);
-        ExtractedDetectorRuleReport extractedDetectorReport = report.getExtractedDetectors().get(0);
-        ExtractedDetectableReport detectableReport = extractedDetectorReport.getExtractedDetectable();
-        List<File> relevantFiles = detectableReport.getRelevantFiles();
-
-        // Write the lines to the file
+        // Create map of extracted detectors and their relevant files
+        Map<String, List<String>> detectorsAndFiles = new HashMap<>();
+        for (DetectorDirectoryReport report : toolResult.getReports()) {
+            List<ExtractedDetectorRuleReport> extractions = report.getExtractedDetectors();
+            for (ExtractedDetectorRuleReport extractedDetectorReport : extractions) {
+                String detectableName = extractedDetectorReport.getExtractedDetectable().getDetectable().getName();
+                if (detectableName.equals("Git")) continue;
+                List<File> relevantFiles = extractedDetectorReport.getExtractedDetectable().getRelevantFiles();
+                // convert files to absolute paths
+                List<String> relevantFilesAbsolutePaths = relevantFiles.stream()
+                        .map(File::getAbsolutePath)
+                        .collect(Collectors.toList());
+                detectorsAndFiles.put(detectableName, relevantFilesAbsolutePaths);
+            }
+        }
+        // Save to a file for now, refactor later
+        ObjectMapper mapper = new ObjectMapper();
+        Path jsonFile = quackDir.resolve("invokedDetectorsAndTheirRelevantFiles.json");
         try {
-            // Create the text file with absolute paths
-            Path textFile = quackDir.resolve("relevantfiles.txt");
-            List<String> absolutePaths = relevantFiles.stream()
-                    .map(File::getAbsolutePath)
-                    .collect(Collectors.toList());
-
-            // Write the absolute paths to the file
-            Files.write(textFile, absolutePaths);
+            mapper.writeValue(jsonFile.toFile(), detectorsAndFiles);
+            logger.info("Done writing detectors and their relevant files.");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
+
     public DetectorToolResult performDetectors(
         DirectoryManager directoryManager,
         DetectorRuleSet detectorRuleSet,
@@ -147,7 +151,7 @@ public class DetectorTool {
         logger.debug("Finished running detectors.");
         detectorEventPublisher.publishDetectorsComplete(toolResult);
 
-        saveRelevantFilePaths(directoryManager, toolResult);
+        saveExtractedDetectorsAndTheirRelevantFilePaths(directoryManager, toolResult);
         return toolResult;
     }
 

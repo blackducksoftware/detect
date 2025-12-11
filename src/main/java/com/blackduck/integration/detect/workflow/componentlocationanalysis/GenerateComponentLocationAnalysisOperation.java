@@ -2,8 +2,13 @@ package com.blackduck.integration.detect.workflow.componentlocationanalysis;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +54,16 @@ public class GenerateComponentLocationAnalysisOperation {
         this.exitCodePublisher = exitCodePublisher;
     }
 
+    public Map<String, List<String>> loadDetectorsAndFiles(String jsonFilePath) {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            return mapper.readValue(new File(jsonFilePath),
+                    new TypeReference<Map<String, List<String>>>() {});
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read detectors file: " + jsonFilePath, e);
+        }
+    }
+
     /**
      * Given a BDIO, generates an output file consisting of the list of unique components detected and their declaration
      * locations.
@@ -62,12 +77,12 @@ public class GenerateComponentLocationAnalysisOperation {
     public ComponentLocatorResult locateComponents(Set<Component> componentsSet, File scanOutputFolder, File projectSrcDir, File rapidFullResultsFile, DetectConfigurationFactory configFactory) throws ComponentLocatorException, DetectUserFriendlyException {
         logger.info("invoking quackpatch right here for now...");
         if (detectConfigurationFactory.isQuackPatchPossible()) {
-            File pathsToRelevantFiles = new File(scanOutputFolder + "/quack/relevantfiles.txt");
+            Map<String, List<String>> relevantDetectorsAndFiles = loadDetectorsAndFiles(scanOutputFolder.getAbsolutePath() + "/quack/invokedDetectorsAndTheirRelevantFiles.json");
             String llmKey = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_KEY);
             String llmName = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_NAME);
             String llmURL = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_ENDPOINT);
 
-            ComponentLocator.runQuackPatch(rapidFullResultsFile, pathsToRelevantFiles, llmKey, llmName, llmURL, scanOutputFolder.getPath());
+            ComponentLocator.runQuackPatch(rapidFullResultsFile, relevantDetectorsAndFiles, llmKey, llmName, llmURL, scanOutputFolder.getPath());
         }
 
 
