@@ -2,7 +2,10 @@ package com.blackduck.integration.detect.workflow.blackduck.developer;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -28,11 +31,24 @@ public class RapidModeGenerateJsonOperation { //TODO: extends Operation<File>
         this.directoryManager = directoryManager;
     }
 
-    public File generateJsonFile(NameVersion projectNameVersion, List<DeveloperScansScanView> results) throws DetectUserFriendlyException {
+    public File generateJsonFileFromString(String jsonRapidFullResults) {
+        // Create the path to the subdirectory
+        Path quackSubDirPath = Paths.get(directoryManager.getScanOutputDirectory().toString(), "quack");
+        try {
+            Files.createDirectories(quackSubDirPath);
+            Path filePath = quackSubDirPath.resolve("rapidFullResults.json");
+            Files.writeString(filePath, jsonRapidFullResults, StandardCharsets.UTF_8);
+            return filePath.toFile();
+        } catch (IOException e) {
+            throw new RuntimeException("Something went wrong creatign full results json file", e);
+        }
+    }
+
+    public File generateJsonFile(NameVersion projectNameVersion, List<DeveloperScansScanView> results, String fileNameSuffix) throws DetectUserFriendlyException {
         IntegrationEscapeUtil escapeUtil = new IntegrationEscapeUtil();
         String escapedProjectName = escapeUtil.replaceWithUnderscore(projectNameVersion.getName());
         String escapedProjectVersionName = escapeUtil.replaceWithUnderscore(projectNameVersion.getVersion());
-        File jsonScanFile = new File(directoryManager.getScanOutputDirectory(), escapedProjectName + "_" + escapedProjectVersionName + "_BlackDuck_DeveloperMode_Result.json");
+        File jsonScanFile = new File(directoryManager.getScanOutputDirectory(), escapedProjectName + "_" + escapedProjectVersionName + "_BlackDuck_DeveloperMode_Result" + fileNameSuffix + ".json");
         if (jsonScanFile.exists()) {
             try {
                 Files.delete(jsonScanFile.toPath());

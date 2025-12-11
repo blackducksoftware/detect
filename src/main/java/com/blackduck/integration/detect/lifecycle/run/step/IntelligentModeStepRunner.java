@@ -90,7 +90,7 @@ public class IntelligentModeStepRunner {
             iacScanStepRunner.runIacScanOffline();
         });
 
-        operationRunner.generateComponentLocationAnalysisIfEnabled(bdio);
+        operationRunner.generateComponentLocationAnalysisIfEnabled(bdio, null);
     }
 
     //TODO: Change black duck post options to a decision and stick it in Run Data somewhere.

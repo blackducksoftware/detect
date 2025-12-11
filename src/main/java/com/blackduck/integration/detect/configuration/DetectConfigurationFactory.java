@@ -226,9 +226,20 @@ public class DetectConfigurationFactory {
         return detectConfiguration.getValue(DetectProperties.DETECT_COMPONENT_LOCATION_ANALYSIS_ENABLED);
     }
 
+    public Boolean isQuackPatchPossible() {
+        return isComponentLocationAnalysisEnabled()
+                && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_NAME).toString().isEmpty()
+                && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_ENDPOINT).toString().isEmpty()
+                && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_KEY).toString().isEmpty();
+    }
+
     public Boolean doesComponentLocatorAffectStatus() {
         return detectConfiguration.getValue(DetectProperties.DETECT_COMPONENT_LOCATION_ANALYSIS_STATUS);
-    }    
+    }
+
+    public DetectPropertyConfiguration getDetectPropertyConfiguration() {
+        return detectConfiguration;
+    }
 
     public DetectToolFilter createToolFilter(RunDecision runDecision, BlackDuckDecision blackDuckDecision, Map<DetectTool, Set<String>> scanTypeEvidenceMap) {
         Optional<Boolean> impactEnabled = Optional.of(detectConfiguration.getValue(DetectProperties.DETECT_IMPACT_ANALYSIS_ENABLED));

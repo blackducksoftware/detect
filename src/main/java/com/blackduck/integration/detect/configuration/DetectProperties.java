@@ -78,6 +78,18 @@ public class DetectProperties {
     private DetectProperties() {
     }
 
+    public static final StringProperty DETECT_LLM_API_KEY =
+            StringProperty.newBuilder("detect.llm.api.key", "")
+                    .build();
+
+    public static final StringProperty DETECT_LLM_API_ENDPOINT =
+            StringProperty.newBuilder("detect.llm.api.endpoint", "")
+                    .build();
+
+    public static final StringProperty DETECT_LLM_NAME =
+            StringProperty.newBuilder("detect.llm.name", "")
+                    .build();
+
     public static final NullableStringProperty BLACKDUCK_API_TOKEN =
         NullableStringProperty.newBuilder("blackduck.api.token")
             .setInfo("Black Duck SCA API Token", DetectPropertyFromVersion.VERSION_4_2_0)
