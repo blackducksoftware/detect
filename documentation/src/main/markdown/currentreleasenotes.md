@@ -26,7 +26,7 @@
 
 ### Resolved issues
 
-* (IDETECT-4924) Resolved an issue where Impact Analysis Scan threw errors on malformed classes; it now handles them gracefully by logging a warning, skipping the affected classes and puts them in the scan output.
+* (IDETECT-4924) Resolved an issue where Impact Analysis Scan threw errors on malformed classes; it now handles them gracefully by logging a warning, skipping the affected classes, and adding them to the scan output.
 
 ### Dependency Updates
 
