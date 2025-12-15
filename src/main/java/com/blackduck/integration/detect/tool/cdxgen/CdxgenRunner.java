@@ -105,6 +105,17 @@ public class CdxgenRunner {
             ExecutableOutput output = executableRunner.execute(executable);
 
             if (output.getReturnCode() == 0) {
+                // Verify that the output file was actually created
+                // Cdxgen can return 0 even if it fails to create the SBOM
+                if (!outputPath.exists() || outputPath.length() == 0) {
+                    logger.error("Cdxgen completed with return code 0 but did not create the output file: {}", outputPath);
+                    if (fetchLicenses) {
+                        logger.error("Note: FETCH_LICENSE was enabled, which may have contributed to the failure.");
+                    }
+                    logger.error("Cdxgen stdout: {}", output.getStandardOutput());
+                    logger.error("Cdxgen stderr: {}", output.getErrorOutput());
+                    return CdxgenResult.failure("Cdxgen did not create output file");
+                }
                 logger.info("Cdxgen completed successfully. SBOM written to: {}", outputPath);
                 return CdxgenResult.success(outputPath);
             } else {
