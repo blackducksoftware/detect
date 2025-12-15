@@ -79,7 +79,7 @@ public class MavenDependencyResolver {
 
                 // If still unresolved, skip this dependency (log done in isVersionResolved previously)
                 if (effectiveVersion == null || effectiveVersion.isEmpty() || effectiveVersion.contains("${")) {
-                    logger.warn("Skipping dependency with unresolved version: {}:{}:{}", groupId, artifactId, declaredVersion);
+                    logger.info("Skipping dependency with unresolved version: {}:{}:{}", groupId, artifactId, declaredVersion);
                     return null;
                 }
 
@@ -105,7 +105,7 @@ public class MavenDependencyResolver {
                     });
                 }
 
-                logger.info("Mapping dependency to Aether Artifact: {}:{}:{}:{}:{} (scope={})", groupId, artifactId, classifier == null ? "" : classifier, type, effectiveVersion, dep.getScope());
+//                logger.info("Mapping dependency to Aether Artifact: {}:{}:{}:{}:{} (scope={})", groupId, artifactId, classifier == null ? "" : classifier, type, effectiveVersion, dep.getScope());
 
                 if (aetherExclusions.isEmpty()) {
                     return new Dependency(artifact, dep.getScope());
@@ -145,7 +145,7 @@ public class MavenDependencyResolver {
                     });
                 }
 
-                logger.info("Mapping managed dependency to Aether Artifact: {}:{}:{}:{}:{} (scope={})", groupId, artifactId, classifier == null ? "" : classifier, type, version, dep.getScope());
+//                logger.info("Mapping managed dependency to Aether Artifact: {}:{}:{}:{}:{} (scope={})", groupId, artifactId, classifier == null ? "" : classifier, type, version, dep.getScope());
 
                 if (aetherExclusions.isEmpty()) {
                     return new Dependency(artifact, dep.getScope());
@@ -309,7 +309,7 @@ public class MavenDependencyResolver {
     private boolean isVersionResolved(JavaDependency dependency) {
         String version = dependency.getCoordinates().getVersion();
         if (version == null || version.isEmpty() || version.contains("${")) {
-            logger.warn("Skipping dependency with unresolved version: {}:{}:{}",
+            logger.info("Skipping dependency with unresolved version: {}:{}:{}",
                 dependency.getCoordinates().getGroupId(),
                 dependency.getCoordinates().getArtifactId(),
                 version);

@@ -184,6 +184,7 @@ public class MavenResolverDetectable extends Detectable {
                         projectBuilder,
                         dependencyResolver,
                         localRepoPath,
+                        extractionEnvironment.getOutputDirectory(),
                         includeTestScope,
                         externalIdFactory,
                         codeLocations,
@@ -212,6 +213,7 @@ public class MavenResolverDetectable extends Detectable {
         ProjectBuilder projectBuilder,
         MavenDependencyResolver dependencyResolver,
         Path localRepoPath,
+        File outputDir,
         boolean includeTestScope,
         ExternalIdFactory externalIdFactory,
         List<CodeLocation> codeLocations,
@@ -269,6 +271,8 @@ public class MavenResolverDetectable extends Detectable {
                 moduleProject = projectBuilder.buildProject(canonicalModulePom);
             } catch (Exception e) {
                 logger.warn("Failed to build effective project for module '{}': {}", modulePomPathKey, e.getMessage());
+                // Save an error marker file to aid debugging
+                writeErrorTreeFile(outputDir, "compile", "BUILD-PROJECT-ERROR", modulePomPathKey, e.getMessage());
                 return;
             }
 
@@ -278,6 +282,7 @@ public class MavenResolverDetectable extends Detectable {
                 moduleCollectCompile = dependencyResolver.resolveDependencies(canonicalModulePom, moduleProject, localRepoPath.toFile(), "compile");
             } catch (org.eclipse.aether.collection.DependencyCollectionException e) {
                 logger.warn("Compile dependency resolution failed for module '{}': {}", modulePomPathKey, e.getMessage());
+                writeErrorTreeFile(outputDir, "compile", gavOf(moduleProject), modulePomPathKey, e.getMessage());
                 return;
             }
             CollectResult moduleCollectTest = null;
@@ -286,7 +291,30 @@ public class MavenResolverDetectable extends Detectable {
                     moduleCollectTest = dependencyResolver.resolveDependencies(canonicalModulePom, moduleProject, localRepoPath.toFile(), "test");
                 } catch (org.eclipse.aether.collection.DependencyCollectionException e) {
                     logger.warn("Test dependency resolution failed for module '{}': {}", modulePomPathKey, e.getMessage());
+                    writeErrorTreeFile(outputDir, "test", gavOf(moduleProject), modulePomPathKey, e.getMessage());
                 }
+            }
+
+            // Save module dependency trees (compile + test if available)
+            try {
+                String gav = gavOf(moduleProject);
+                String hash = Integer.toHexString(modulePomPathKey.hashCode());
+
+                File compileOut = new File(outputDir, "dependency-tree-compile-" + safeName(gav) + "-" + hash + ".txt");
+                try (PrintStream ps = new PrintStream(compileOut)) {
+                    moduleCollectCompile.getRoot().accept(new DependencyGraphDumper(ps::println));
+                }
+                logger.info("Module compile dependency tree saved to: {}", compileOut.getAbsolutePath());
+
+                if (includeTestScope && moduleCollectTest != null) {
+                    File testOut = new File(outputDir, "dependency-tree-test-" + safeName(gav) + "-" + hash + ".txt");
+                    try (PrintStream ps = new PrintStream(testOut)) {
+                        moduleCollectTest.getRoot().accept(new DependencyGraphDumper(ps::println));
+                    }
+                    logger.info("Module test dependency tree saved to: {}", testOut.getAbsolutePath());
+                }
+            } catch (Exception e) {
+                logger.debug("Failed to write module dependency tree files for '{}': {}", modulePomPathKey, e.getMessage());
             }
 
             // Transform graphs
@@ -330,6 +358,7 @@ public class MavenResolverDetectable extends Detectable {
                         projectBuilder,
                         dependencyResolver,
                         localRepoPath,
+                        outputDir,
                         includeTestScope,
                         externalIdFactory,
                         codeLocations,
@@ -341,6 +370,37 @@ public class MavenResolverDetectable extends Detectable {
             }
         } catch (Exception e) {
             logger.warn("Failed processing module '{}' due to: {}", moduleEntry, e.getMessage());
+        }
+    }
+
+    private String gavOf(MavenProject project) {
+        try {
+            return project.getCoordinates().getGroupId() + ":" + project.getCoordinates().getArtifactId() + ":" + project.getCoordinates().getVersion();
+        } catch (Exception e) {
+            return "unknown:unknown:unknown";
+        }
+    }
+
+    private String safeName(String s) {
+        if (s == null) return "unknown";
+        // Replace characters that are problematic in filenames
+        return s.replace('/', '_').replace('\\', '_').replace(':', '_');
+    }
+
+    private void writeErrorTreeFile(File outputDir, String scope, String gavOrTag, String modulePathKey, String message) {
+        try {
+            String hash = Integer.toHexString(modulePathKey == null ? 0 : modulePathKey.hashCode());
+            String base = "dependency-tree-" + scope + "-" + safeName(gavOrTag) + "-" + hash + "-ERROR.txt";
+            File out = new File(outputDir, base);
+            try (PrintStream ps = new PrintStream(out)) {
+                ps.println("Dependency collection failed for scope '" + scope + "'.");
+                ps.println("Module: " + gavOrTag);
+                ps.println("Path: " + modulePathKey);
+                ps.println("Reason: " + message);
+            }
+            logger.info("Module {} dependency tree error file saved to: {}", scope, out.getAbsolutePath());
+        } catch (Exception ignored) {
+            // best-effort only
         }
     }
 }
