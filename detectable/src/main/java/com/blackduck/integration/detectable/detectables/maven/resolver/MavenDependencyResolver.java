@@ -79,7 +79,7 @@ public class MavenDependencyResolver {
 
                 // If still unresolved, skip this dependency (log done in isVersionResolved previously)
                 if (effectiveVersion == null || effectiveVersion.isEmpty() || effectiveVersion.contains("${")) {
-                    logger.info("Skipping dependency with unresolved version: {}:{}:{}", groupId, artifactId, declaredVersion);
+                    logger.warn("Skipping dependency with unresolved version: {}:{}:{}", groupId, artifactId, declaredVersion);
                     return null;
                 }
 
@@ -105,7 +105,7 @@ public class MavenDependencyResolver {
                     });
                 }
 
-//                logger.info("Mapping dependency to Aether Artifact: {}:{}:{}:{}:{} (scope={})", groupId, artifactId, classifier == null ? "" : classifier, type, effectiveVersion, dep.getScope());
+                logger.info("Mapping dependency to Aether Artifact: {}:{}:{}:{}:{} (scope={})", groupId, artifactId, classifier == null ? "" : classifier, type, effectiveVersion, dep.getScope());
 
                 if (aetherExclusions.isEmpty()) {
                     return new Dependency(artifact, dep.getScope());
@@ -145,7 +145,7 @@ public class MavenDependencyResolver {
                     });
                 }
 
-//                logger.info("Mapping managed dependency to Aether Artifact: {}:{}:{}:{}:{} (scope={})", groupId, artifactId, classifier == null ? "" : classifier, type, version, dep.getScope());
+                logger.info("Mapping managed dependency to Aether Artifact: {}:{}:{}:{}:{} (scope={})", groupId, artifactId, classifier == null ? "" : classifier, type, version, dep.getScope());
 
                 if (aetherExclusions.isEmpty()) {
                     return new Dependency(artifact, dep.getScope());
@@ -158,10 +158,10 @@ public class MavenDependencyResolver {
         logger.info("------------------------------------------------------------");
         logger.info("Resolving dependency tree for: {} (scope={})", pomFile.getAbsolutePath(), rootScope);
 
-        // Map project-declared repositories into Aether RemoteRepository objects (do NOT set RepositoryPolicy objects here to avoid policy parsing errors)
-        List<RemoteRepository> repositories;
+        // Map project-declared repositories into Aether RemoteRepository objects
+        List<RemoteRepository> declaredRepositories;
         if (mavenProject.getRepositories() != null && !mavenProject.getRepositories().isEmpty()) {
-            repositories = mavenProject.getRepositories().stream()
+            declaredRepositories = mavenProject.getRepositories().stream()
                 .map(repo -> {
                     String id = repo.getId() == null || repo.getId().trim().isEmpty() ? repo.getUrl() : repo.getId();
                     try {
@@ -182,13 +182,14 @@ public class MavenDependencyResolver {
 
             logger.info("Using repositories declared in POM (in order): {}", mavenProject.getRepositories().stream().map(r -> r.getUrl()).collect(Collectors.joining(", ")));
         } else {
-            RemoteRepository central = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
-            repositories = Collections.singletonList(central);
-            logger.info("No repositories declared in POM. Falling back to Maven Central: https://repo.maven.apache.org/maven2/");
+            declaredRepositories = new ArrayList<>();
+            logger.info("No repositories declared in POM.");
         }
 
-        CollectRequest collectRequest = new CollectRequest();
+        RemoteRepository central = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
+        boolean centralPresent = declaredRepositories.stream().anyMatch(r -> "https://repo.maven.apache.org/maven2/".equalsIgnoreCase(r.getUrl()));
 
+        CollectRequest collectRequest = new CollectRequest();
         collectRequest.setRoot(new Dependency(new DefaultArtifact(
             mavenProject.getCoordinates().getGroupId(),
             mavenProject.getCoordinates().getArtifactId(),
@@ -196,7 +197,7 @@ public class MavenDependencyResolver {
             mavenProject.getCoordinates().getVersion()
         ), rootScope));
 
-        //Why? Because if this project doesn't declare any direct dependencies but it is managing a set of dependencies, what we probably want is to see the dependency tree for everything it's managing.
+        // If the project has no direct dependencies but has managed dependencies, treat managed as direct for resolution
         if (dependencies.isEmpty() && !managedDependencies.isEmpty()) {
             logger.info("Project has no direct dependencies but does have managed dependencies. Treating managed dependencies as direct for resolution.");
             collectRequest.setDependencies(managedDependencies);
@@ -205,84 +206,67 @@ public class MavenDependencyResolver {
             collectRequest.setManagedDependencies(managedDependencies);
         }
 
-        collectRequest.setRepositories(repositories);
-
-        // Log collect request details for debugging
-        try {
-            logger.debug("Aether will use repositories: {}", repositories.stream().map(r -> r.getUrl()).collect(Collectors.joining(", ")));
-            logger.debug("CollectRequest root artifact: {}:{}:{}", mavenProject.getCoordinates().getGroupId(), mavenProject.getCoordinates().getArtifactId(), mavenProject.getCoordinates().getVersion());
-        } catch (Exception logEx) {
-            logger.debug("Failed to log collect request details: {}", logEx.getMessage());
+        // Inclusive retry strategy
+        List<RemoteRepository> unionRepos = new ArrayList<>(declaredRepositories);
+        if (!centralPresent) {
+            unionRepos.add(central);
         }
 
-        // Attempt collection; on error, try to identify problematic repos and fall back to Central
-        CollectResult collectResult;
+        // Attempt 1: union of declared repos + Central (if not present)
         try {
-            collectResult = repositorySystem.collectDependencies(session, collectRequest);
-            logger.info("Dependency tree collected for: {}", pomFile.getAbsolutePath());
-            return collectResult;
-        } catch (Exception e) {
-            logger.warn("Initial dependency collection failed using POM repositories: {}. Will attempt to identify problematic repositories. Exception: {}",
-                mavenProject.getRepositories() == null ? "(none)" : mavenProject.getRepositories().stream().map(r -> r.getUrl()).collect(Collectors.joining(", ")), e.getMessage());
-            logger.debug("Full exception on initial collectDependencies: ", e);
+            collectRequest.setRepositories(unionRepos);
+            logger.debug("Attempting dependency collection with UNION repos: {}", unionRepos.stream().map(r -> r.getUrl()).collect(Collectors.joining(", ")));
+            CollectResult result = repositorySystem.collectDependencies(session, collectRequest);
+            logger.info("Dependency tree collected for: {} using union repositories", pomFile.getAbsolutePath());
+            return result;
+        } catch (Exception unionEx) {
+            logger.warn("Union repositories collection failed: {}", unionEx.getMessage());
+            logger.debug("Full exception for union attempt: ", unionEx);
+        }
 
-            // Try each repository individually to identify which ones fail
-            List<RemoteRepository> goodRepos = new ArrayList<>();
-            List<RemoteRepository> badRepos = new ArrayList<>();
-            if (repositories != null && !repositories.isEmpty()) {
-                for (RemoteRepository repo : repositories) {
+        // Optional diagnostic probe: test repos individually, but DO NOT exclude on single-repo failure; just log.
+        if (!declaredRepositories.isEmpty()) {
+            for (RemoteRepository repo : declaredRepositories) {
+                try {
                     CollectRequest singleRepoRequest = new CollectRequest();
                     singleRepoRequest.setRoot(collectRequest.getRoot());
                     singleRepoRequest.setDependencies(collectRequest.getDependencies());
                     singleRepoRequest.setManagedDependencies(collectRequest.getManagedDependencies());
                     singleRepoRequest.setRepositories(Collections.singletonList(repo));
-                    try {
-                        logger.debug("Testing repository for issues: {}", repo.getUrl());
-                        repositorySystem.collectDependencies(session, singleRepoRequest);
-                        logger.debug("Repository {} appears to be usable.", repo.getUrl());
-                        goodRepos.add(repo);
-                    } catch (Exception perRepoEx) {
-                        logger.warn("Repository {} caused dependency collection failure: {}", repo.getUrl(), perRepoEx.getMessage());
-                        logger.warn("Full exception for repo {}: ", repo.getUrl(), perRepoEx);
-                        badRepos.add(repo);
-                    }
+                    logger.debug("Diagnostic: testing single repository {}", repo.getUrl());
+                    repositorySystem.collectDependencies(session, singleRepoRequest);
+                    logger.debug("Diagnostic: repository {} can collect in isolation.", repo.getUrl());
+                } catch (Exception perRepoEx) {
+                    logger.warn("Diagnostic: repository {} failed in isolation: {}", repo.getUrl(), perRepoEx.getMessage());
+                    logger.debug("Diagnostic: full exception for repo {}: ", repo.getUrl(), perRepoEx);
                 }
             }
+        }
 
-            if (!goodRepos.isEmpty()) {
-                logger.info("Retrying dependency collection using repositories excluding {} problematic repo(s)", badRepos.size());
-                collectRequest.setRepositories(goodRepos);
-                collectResult = repositorySystem.collectDependencies(session, collectRequest);
-                logger.info("Dependency tree collected for: {} using filtered repositories", pomFile.getAbsolutePath());
-                return collectResult;
-            }
+        // Attempt 2: declared repositories only (original order)
+        try {
+            collectRequest.setRepositories(declaredRepositories);
+            logger.debug("Attempting dependency collection with DECLARED repos: {}", declaredRepositories.stream().map(r -> r.getUrl()).collect(Collectors.joining(", ")));
+            CollectResult result = repositorySystem.collectDependencies(session, collectRequest);
+            logger.info("Dependency tree collected for: {} using declared repositories", pomFile.getAbsolutePath());
+            return result;
+        } catch (Exception declaredEx) {
+            logger.warn("Declared repositories collection failed: {}", declaredEx.getMessage());
+            logger.debug("Full exception for declared attempt: ", declaredEx);
+        }
 
-            // Try one pragmatic union attempt: declared POM repositories + Maven Central
-            try {
-                // Only try union if repositories exists and Central isn't already present
-                boolean centralAlreadyPresent = repositories.stream().anyMatch(r -> "https://repo.maven.apache.org/maven2/".equalsIgnoreCase(r.getUrl()));
-                if (repositories != null && !repositories.isEmpty() && !centralAlreadyPresent) {
-                    logger.info("Attempting combined repositories (POM-declared + Maven Central) to help resolve missing parent descriptors");
-                    List<RemoteRepository> combined = new ArrayList<>(repositories);
-                    RemoteRepository central = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
-                    combined.add(central);
-                    collectRequest.setRepositories(combined);
-                    collectResult = repositorySystem.collectDependencies(session, collectRequest);
-                    logger.info("Dependency tree collected for: {} using combined repositories", pomFile.getAbsolutePath());
-                    return collectResult;
-                }
-            } catch (Exception unionEx) {
-                logger.debug("Combined repositories attempt failed: {}", unionEx.getMessage());
-                logger.debug("Full exception for combined attempt: ", unionEx);
-                // fall-through to existing Central-only fallback
-            }
-
-            logger.warn("No usable POM-declared repositories found ({} problematic). Falling back to Maven Central.", badRepos.size());
-            RemoteRepository central = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
+        // Attempt 3: Central-only fallback
+        try {
             collectRequest.setRepositories(Collections.singletonList(central));
-            collectResult = repositorySystem.collectDependencies(session, collectRequest);
+            logger.info("Falling back to Maven Central only.");
+            CollectResult result = repositorySystem.collectDependencies(session, collectRequest);
             logger.info("Dependency tree collected for: {} using Maven Central fallback", pomFile.getAbsolutePath());
-            return collectResult;
+            return result;
+        } catch (Exception centralOnlyEx) {
+            logger.warn("Maven Central-only collection failed: {}", centralOnlyEx.getMessage());
+            logger.debug("Full exception for Central-only attempt: ", centralOnlyEx);
+            // All attempts failed; propagate as runtime to preserve stack without relying on CollectResult
+            throw new RuntimeException("Dependency collection failed after union/declared/central attempts: " + centralOnlyEx.getMessage(), centralOnlyEx);
         }
     }
 
@@ -309,7 +293,7 @@ public class MavenDependencyResolver {
     private boolean isVersionResolved(JavaDependency dependency) {
         String version = dependency.getCoordinates().getVersion();
         if (version == null || version.isEmpty() || version.contains("${")) {
-            logger.info("Skipping dependency with unresolved version: {}:{}:{}",
+            logger.warn("Skipping dependency with unresolved version: {}:{}:{}",
                 dependency.getCoordinates().getGroupId(),
                 dependency.getCoordinates().getArtifactId(),
                 version);
