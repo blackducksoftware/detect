@@ -59,6 +59,7 @@ import com.blackduck.integration.detectable.detectables.poetry.PoetryDetectable;
 import com.blackduck.integration.detectable.detectables.rebar.RebarDetectable;
 import com.blackduck.integration.detectable.detectables.rubygems.gemlock.GemlockDetectable;
 import com.blackduck.integration.detectable.detectables.rubygems.gemspec.GemspecParseDetectable;
+import com.blackduck.integration.detectable.detectables.rush.RushDetectable;
 import com.blackduck.integration.detectable.detectables.sbt.SbtDetectable;
 import com.blackduck.integration.detectable.detectables.setuptools.tbuild.SetupToolsBuildDetectable;
 import com.blackduck.integration.detectable.detectables.setuptools.buildless.SetupToolsBuildlessDetectable;
@@ -320,6 +321,17 @@ public class DetectDetectableFactory {
             detectableOptionFactory.createYarnLockOptions()
         );
     }
+
+    public RushDetectable createRushDetectable(DetectableEnvironment environment) {
+        return detectableFactory.createRushDetectable(
+                environment,
+                detectableOptionFactory.createNpmLockfileOptions(),
+                detectableOptionFactory.createRushOptions(),
+                detectableOptionFactory.createPnpmLockOptions(),
+                detectableOptionFactory.createYarnLockOptions()
+        );
+    }
+
 
     public NugetProjectInspectorDetectable createNugetParseDetectable(DetectableEnvironment detectableEnvironment) {
         return detectableFactory.createNugetParseDetectable(

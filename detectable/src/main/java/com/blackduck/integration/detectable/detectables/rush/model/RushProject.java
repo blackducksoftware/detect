@@ -1,0 +1,45 @@
+package com.blackduck.integration.detectable.detectables.rush.model;
+
+import com.blackduck.integration.detectable.detectables.yarn.packagejson.NullSafePackageJson;
+import com.google.gson.annotations.SerializedName;
+
+public class RushProject {
+
+    @SerializedName("packageName")
+    private String packageName;
+
+    @SerializedName("projectFolder")
+    private String projectFolder;
+
+    @SerializedName("reviewCategory")
+    private String reviewCategory;
+
+    @SerializedName("shouldPublish")
+    private Boolean shouldPublish;
+
+    private transient NullSafePackageJson packageJson;
+
+    public String getPackageName() {
+        return packageName;
+    }
+
+    public String getProjectFolder() {
+        return projectFolder;
+    }
+
+    public String getReviewCategory() {
+        return reviewCategory;
+    }
+
+    public Boolean isPublishable() {
+        return shouldPublish;
+    }
+
+    public NullSafePackageJson getPackageJson() {
+        return packageJson;
+    }
+
+    public void setPackageJson(NullSafePackageJson packageJson) {
+        this.packageJson = packageJson;
+    }
+}

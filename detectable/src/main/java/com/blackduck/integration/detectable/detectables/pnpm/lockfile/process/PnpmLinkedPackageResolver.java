@@ -2,6 +2,8 @@ package com.blackduck.integration.detectable.detectables.pnpm.lockfile.process;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -25,25 +27,44 @@ public class PnpmLinkedPackageResolver {
     public String resolveVersionOfLinkedPackage(@Nullable String reportingProjectPackagePath, String relativePathToLinkedPackage) {
         File reportingPackage;
         if (reportingProjectPackagePath != null) {
+            reportingProjectPackagePath = reportingProjectPackagePath.replaceAll("^(\\.\\./|\\./)++", "");
             reportingPackage = new File(projectRoot, reportingProjectPackagePath);
         } else {
             reportingPackage = projectRoot;
         }
-        File linkedPackage = new File(reportingPackage, relativePathToLinkedPackage);
+
+        relativePathToLinkedPackage = relativePathToLinkedPackage.replaceAll("^(\\.\\./|\\./)++", "");
+
+        File linkedPackage = new File(projectRoot, relativePathToLinkedPackage);
         File packageJsonFile = new File(linkedPackage, "package.json");
 
-        if (!packageJsonFile.exists()) {
-            logger.debug(String.format("Unable to resolve version for linked package: %s", linkedPackage));
-            return null;
+        if (packageJsonFile.exists()) {
+            try {
+                NullSafePackageJson packageJson = packageJsonFiles.read(packageJsonFile);
+                return packageJson.getVersionString();
+            } catch (IOException e) {
+                logger.debug(String.format("Unable to parse package.json: %s", packageJsonFile.getAbsolutePath()));
+                return null;
+            }
+        } else {
+            linkedPackage = new File(reportingPackage, relativePathToLinkedPackage);
+            packageJsonFile = new File(linkedPackage, "package.json");
+
+            if (!packageJsonFile.exists()) {
+                logger.debug(String.format("Unable to resolve version for linked package: %s", linkedPackage));
+                return null;
+            }
+
+            try {
+                NullSafePackageJson packageJson = packageJsonFiles.read(packageJsonFile);
+                return packageJson.getVersionString();
+            } catch (IOException e) {
+                logger.debug(String.format("Unable to parse package.json: %s", packageJsonFile.getAbsolutePath()));
+                return null;
+            }
         }
 
-        try {
-            NullSafePackageJson packageJson = packageJsonFiles.read(packageJsonFile);
-            return packageJson.getVersionString();
-        } catch (IOException e) {
-            logger.debug(String.format("Unable to parse package.json: %s", packageJsonFile.getAbsolutePath()));
-            return null;
-        }
+
     }
 
 }
