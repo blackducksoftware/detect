@@ -40,15 +40,14 @@ public class MavenDependencyResolver {
         }.get();
     }
 
-    public CollectResult resolveDependencies(File pomFile, MavenProject mavenProject, File localRepoDir) throws DependencyCollectionException {
-        return resolveDependencies(pomFile, mavenProject, localRepoDir, "compile");
-    }
+//    public CollectResult resolveDependencies(File pomFile, MavenProject mavenProject, File localRepoDir) throws DependencyCollectionException {
+//        return resolveDependencies(pomFile, mavenProject, localRepoDir, "compile");
+//    }
 
     // New overloaded method that allows specifying the root scope (e.g., "compile" or "test")
     public CollectResult resolveDependencies(File pomFile, MavenProject mavenProject, File localRepoDir, String rootScope) throws DependencyCollectionException {
         boolean includeTestScope = "test".equalsIgnoreCase(rootScope);
         RepositorySystemSession session = newSession(localRepoDir, includeTestScope);
-
         // Build a map of managed versions from dependencyManagement keyed by group:artifact
         java.util.Map<String, String> managedVersionByGa = mavenProject.getDependencyManagement().stream()
             .collect(Collectors.toMap(
@@ -105,7 +104,7 @@ public class MavenDependencyResolver {
                     });
                 }
 
-                logger.info("Mapping dependency to Aether Artifact: {}:{}:{}:{}:{} (scope={})", groupId, artifactId, classifier == null ? "" : classifier, type, effectiveVersion, dep.getScope());
+//                logger.info("Mapping dependency to Aether Artifact: {}:{}:{}:{}:{} (scope={})", groupId, artifactId, classifier == null ? "" : classifier, type, effectiveVersion, dep.getScope());
 
                 if (aetherExclusions.isEmpty()) {
                     return new Dependency(artifact, dep.getScope());
@@ -145,7 +144,7 @@ public class MavenDependencyResolver {
                     });
                 }
 
-                logger.info("Mapping managed dependency to Aether Artifact: {}:{}:{}:{}:{} (scope={})", groupId, artifactId, classifier == null ? "" : classifier, type, version, dep.getScope());
+//                logger.info("Mapping managed dependency to Aether Artifact: {}:{}:{}:{}:{} (scope={})", groupId, artifactId, classifier == null ? "" : classifier, type, version, dep.getScope());
 
                 if (aetherExclusions.isEmpty()) {
                     return new Dependency(artifact, dep.getScope());
@@ -274,7 +273,7 @@ public class MavenDependencyResolver {
         SessionBuilderSupplier sessionBuilderSupplier = new SessionBuilderSupplier(repositorySystem);
         return sessionBuilderSupplier
             .get()
-            .withLocalRepositoryBaseDirectories(localRepoDir.toPath())
+            .withLocalRepositoryBaseDirectories(localRepoDir.toPath()).setConfigProperty("aether.remoteRepositoryFilter.prefixes", "false")
             .build();
     }
 
@@ -284,7 +283,7 @@ public class MavenDependencyResolver {
             TestSessionBuilderSupplier testSupplier = new TestSessionBuilderSupplier(repositorySystem);
             return testSupplier
                 .get()
-                .withLocalRepositoryBaseDirectories(localRepoDir.toPath())
+                .withLocalRepositoryBaseDirectories(localRepoDir.toPath()).setConfigProperty("aether.remoteRepositoryFilter.prefixes", "false")
                 .build();
         }
         return newSession(localRepoDir);
