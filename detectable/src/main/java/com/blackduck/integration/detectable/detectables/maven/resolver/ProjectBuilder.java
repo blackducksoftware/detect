@@ -248,6 +248,27 @@ public class ProjectBuilder {
                 logger.debug("Building BOM project: {}", bomPomFile.getAbsolutePath());
                 PartialMavenProject bomProject = internalBuildProject(bomPomFile, new HashSet<>());
 
+                // Resolve BOM dependencyManagement entries in BOM context before merging
+                try {
+                    Map<String, String> bomProps = new HashMap<>();
+                    if (bomProject.getProperties() != null) {
+                        bomProps.putAll(bomProject.getProperties());
+                    }
+                    // Substitute properties for all BOM-managed entries so ${project.version} etc. become literals
+                    if (bomProject.getDependencyManagement() != null) {
+                        for (PomXmlDependency depMgmt : bomProject.getDependencyManagement()) {
+                            depMgmt.setGroupId(resolveProperties(depMgmt.getGroupId(), bomProps));
+                            depMgmt.setArtifactId(resolveProperties(depMgmt.getArtifactId(), bomProps));
+                            depMgmt.setVersion(resolveProperties(depMgmt.getVersion(), bomProps));
+                            depMgmt.setScope(resolveProperties(depMgmt.getScope(), bomProps));
+                            depMgmt.setType(resolveProperties(depMgmt.getType(), bomProps));
+                            depMgmt.setClassifier(resolveProperties(depMgmt.getClassifier(), bomProps));
+                        }
+                    }
+                } catch (Exception e) {
+                    logger.debug("Failed to resolve BOM managed entries in BOM context: {}", e.getMessage());
+                }
+
                 // Merge properties from BOM. Existing properties take precedence.
                 Map<String, String> mergedProperties = new HashMap<>();
                 if (bomProject.getProperties() != null) {
