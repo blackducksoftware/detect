@@ -3,6 +3,7 @@ package com.blackduck.integration.detect.tool.detector;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -12,6 +13,7 @@ import java.util.stream.Collectors;
 import com.blackduck.integration.detect.tool.detector.report.detectable.ExtractedDetectableReport;
 import com.blackduck.integration.detect.workflow.file.DirectoryManager;
 import com.blackduck.integration.detector.base.DetectorStatusCode;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,23 +83,33 @@ public class DetectorTool {
         this.directoryEvaluator = directoryEvaluator;
     }
 
-    public void saveExtractedDetectorsAndTheirRelevantFilePaths(DirectoryManager directoryManager, DetectorToolResult toolResult) {
+    public void saveExtractedDetectorsAndTheirRelevantFilePaths(DirectoryManager directoryManager, DetectorToolResult toolResult) throws IOException {
+        // Create map of extracted detectors and their relevant files
+        Map<String, List<String>> detectorsAndFiles = new HashMap<>();
         // Create /scan/quack directory
         Path workingDir = directoryManager.getScanOutputDirectory().toPath();
         // Create the "quack" subdirectory
         Path quackDir = workingDir.resolve("quack");
+        ObjectMapper mapper = new ObjectMapper();
+        Path jsonFile = quackDir.resolve("invokedDetectorsAndTheirRelevantFiles.json");
+
+        // Read existing content if file exists
+        if (Files.exists(jsonFile)) {
+            try (InputStream is = Files.newInputStream(jsonFile)) {
+                detectorsAndFiles = mapper.readValue(is, new TypeReference<Map<String, List<String>>>() {});
+            }
+        }
+
         try {
             Files.createDirectories(quackDir);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        // Create map of extracted detectors and their relevant files
-        Map<String, List<String>> detectorsAndFiles = new HashMap<>();
         for (DetectorDirectoryReport report : toolResult.getReports()) {
             List<ExtractedDetectorRuleReport> extractions = report.getExtractedDetectors();
             for (ExtractedDetectorRuleReport extractedDetectorReport : extractions) {
                 String detectableName = extractedDetectorReport.getExtractedDetectable().getDetectable().getName();
-                if (detectableName.equals("Git")) continue;
+                if (detectableName.equals("Git") || detectableName.contains("NuGet")) continue;
                 List<File> relevantFiles = extractedDetectorReport.getExtractedDetectable().getRelevantFiles();
                 // convert files to absolute paths
                 List<String> relevantFilesAbsolutePaths = relevantFiles.stream()
@@ -107,8 +119,6 @@ public class DetectorTool {
             }
         }
         // Save to a file for now, refactor later
-        ObjectMapper mapper = new ObjectMapper();
-        Path jsonFile = quackDir.resolve("invokedDetectorsAndTheirRelevantFiles.json");
         try {
             mapper.writeValue(jsonFile.toFile(), detectorsAndFiles);
             logger.info("Done writing detectors and their relevant files.");
@@ -151,7 +161,11 @@ public class DetectorTool {
         logger.debug("Finished running detectors.");
         detectorEventPublisher.publishDetectorsComplete(toolResult);
 
+        try {
         saveExtractedDetectorsAndTheirRelevantFilePaths(directoryManager, toolResult);
+        } catch (IOException e) {
+            throw new RuntimeException("something went wrong writing relevant files");
+        }
         return toolResult;
     }
 
