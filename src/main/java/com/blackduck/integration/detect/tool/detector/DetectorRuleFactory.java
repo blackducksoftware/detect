@@ -205,6 +205,11 @@ public class DetectorRuleFactory {
                 .search().defaults();
         });
 
+        rules.addDetector(DetectorType.RUSH, detector -> {
+            detector.entryPoint(RushDetectable.class)
+                    .search().defaults();
+        });
+
         rules.addDetector(DetectorType.YARN, detector -> {
             detector.entryPoint(YarnLockDetectable.class)
                 .search().defaultLock();
@@ -276,11 +281,6 @@ public class DetectorRuleFactory {
             detector.entryPoint(GemspecParseDetectable.class)
                 .search().defaults();
         }).allEntryPointsFallbackToNext();
-
-        rules.addDetector(DetectorType.RUSH, detector -> {
-            detector.entryPoint(RushDetectable.class)
-                    .search().defaults();
-        });
 
         rules.addDetector(DetectorType.GIT, detector -> {
             detector.entryPoint(GitCliDetectable.class)

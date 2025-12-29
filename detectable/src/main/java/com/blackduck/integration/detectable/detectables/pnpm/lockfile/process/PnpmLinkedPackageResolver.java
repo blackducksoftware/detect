@@ -2,8 +2,6 @@ package com.blackduck.integration.detectable.detectables.pnpm.lockfile.process;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
