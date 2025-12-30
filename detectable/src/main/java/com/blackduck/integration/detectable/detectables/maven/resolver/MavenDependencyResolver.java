@@ -20,6 +20,7 @@ import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.supplier.RepositorySystemSupplier;
 import org.eclipse.aether.supplier.SessionBuilderSupplier;
 import org.eclipse.aether.transport.jdk.JdkTransporterFactory;
+import org.eclipse.aether.util.graph.selector.AndDependencySelector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -270,10 +271,13 @@ public class MavenDependencyResolver {
     }
 
     private RepositorySystemSession newSession(File localRepoDir) {
-        SessionBuilderSupplier sessionBuilderSupplier = new SessionBuilderSupplier(repositorySystem);
+        SessionBuilderSupplier sessionBuilderSupplier = new BaseSessionBuilderSupplier(repositorySystem);
         return sessionBuilderSupplier
             .get()
-            .withLocalRepositoryBaseDirectories(localRepoDir.toPath()).setConfigProperty("aether.remoteRepositoryFilter.prefixes", "false").setIgnoreArtifactDescriptorRepositories(true)
+            .withLocalRepositoryBaseDirectories(localRepoDir.toPath())
+                .setConfigProperty("aether.remoteRepositoryFilter.prefixes", "false")
+                .setIgnoreArtifactDescriptorRepositories(true)
+//                .setArtifactDescriptorPolicy(new LenientDescriptionPolicy())
             .build();
     }
 
@@ -283,7 +287,10 @@ public class MavenDependencyResolver {
             TestSessionBuilderSupplier testSupplier = new TestSessionBuilderSupplier(repositorySystem);
             return testSupplier
                 .get()
-                .withLocalRepositoryBaseDirectories(localRepoDir.toPath()).setConfigProperty("aether.remoteRepositoryFilter.prefixes", "false").setIgnoreArtifactDescriptorRepositories(true)
+                .withLocalRepositoryBaseDirectories(localRepoDir.toPath())
+                    .setConfigProperty("aether.remoteRepositoryFilter.prefixes", "false")
+                    .setIgnoreArtifactDescriptorRepositories(true)
+//                    .setArtifactDescriptorPolicy(new LenientDescriptionPolicy())
                 .build();
         }
         return newSession(localRepoDir);

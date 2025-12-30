@@ -36,8 +36,9 @@ public class TestSessionBuilderSupplier extends SessionBuilderSupplier {
         DependencySelector optional = OptionalDependencySelector.fromDirect();
         DependencySelector exclusion = new ExclusionDependencySelector();
         DependencySelector transitiveFilter = new TransitiveScopeFilteringSelector();
+        DependencySelector nearestWinsNoRange = new NearestWinsNoRangeSelector();
 
         // Compose selectors: scope allows TEST, optional/exclusion keep defaults, transitiveFilter removes unwanted transitives
-        return new AndDependencySelector(scopeSelector, optional, exclusion, transitiveFilter);
+        return new AndDependencySelector(scopeSelector, optional, exclusion, transitiveFilter, nearestWinsNoRange);
     }
 }
