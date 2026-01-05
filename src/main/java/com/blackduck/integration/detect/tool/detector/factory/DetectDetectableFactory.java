@@ -8,6 +8,8 @@ import com.blackduck.integration.detectable.detectable.inspector.PipInspectorRes
 import com.blackduck.integration.detectable.detectable.inspector.ProjectInspectorResolver;
 import com.blackduck.integration.detectable.detectable.inspector.nuget.NugetInspectorResolver;
 import com.blackduck.integration.detectable.detectables.bazel.BazelDetectable;
+import com.blackduck.integration.detectable.detectables.bazel.BazelDetectableOptions;
+import com.blackduck.integration.detectable.detectables.bazel.v2.BazelV2Detectable;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectable;
 import com.blackduck.integration.detectable.detectables.cargo.CargoCliDetectable;
 import com.blackduck.integration.detectable.detectables.cargo.CargoLockDetectable;
@@ -114,6 +116,12 @@ public class DetectDetectableFactory {
 
     public BazelDetectable createBazelDetectable(DetectableEnvironment environment) {
         return detectableFactory.createBazelDetectable(environment, detectableOptionFactory.createBazelDetectableOptions(), detectExecutableResolver);
+    }
+
+    // New: auto-detectable that prefers V2 (probing) and keeps the legacy untouched.
+    public BazelV2Detectable createBazelAutoDetectable(DetectableEnvironment environment) {
+        BazelDetectableOptions options = detectableOptionFactory.createBazelDetectableOptions();
+        return detectableFactory.createBazelV2Detectable(environment, options, detectExecutableResolver);
     }
 
     public BitbakeDetectable createBitbakeDetectable(DetectableEnvironment environment) {

@@ -7,6 +7,7 @@ import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
 import com.blackduck.integration.detectable.detectable.executable.resolver.*;
+import com.blackduck.integration.detectable.detectables.bazel.v2.BazelV2Detectable;
 import com.blackduck.integration.detectable.detectables.cargo.*;
 import com.blackduck.integration.detectable.detectables.cargo.transform.CargoDependencyGraphTransformer;
 import com.blackduck.integration.detectable.detectables.pip.inspector.parser.PipInspectorTomlParser;
@@ -331,6 +332,22 @@ public class DetectableFactory {
 
     public BazelDetectable createBazelDetectable(DetectableEnvironment environment, BazelDetectableOptions bazelDetectableOptions, BazelResolver bazelResolver) {
         return new BazelDetectable(environment, fileFinder, bazelExtractor(bazelDetectableOptions), bazelResolver, bazelDetectableOptions.getTargetName().orElse(null));
+    }
+
+    // New: Create Bazel V2 Detectable (probing-based). Does not require WORKSPACE.
+    public BazelV2Detectable createBazelV2Detectable(DetectableEnvironment environment, BazelDetectableOptions options, BazelResolver bazelResolver) {
+        BazelVariableSubstitutor substitutor = new BazelVariableSubstitutor(
+            options.getTargetName().orElse(null),
+            options.getBazelCqueryAdditionalOptions()
+        );
+        HaskellCabalLibraryJsonProtoParser haskellParser = new HaskellCabalLibraryJsonProtoParser(gson);
+        BazelProjectNameGenerator projectNameGenerator = new BazelProjectNameGenerator();
+        return new BazelV2Detectable(environment, fileFinder, executableRunner, externalIdFactory, bazelResolver, options, substitutor, haskellParser, projectNameGenerator);
+    }
+
+    // New: Auto wrapper that tries V2 first (handled here) and keeps legacy untouched. Intentional to keep changes minimal while giving us a hook to implement richer fallback later
+    public BazelV2Detectable createBazelAutoDetectable(DetectableEnvironment environment, BazelDetectableOptions options, BazelResolver bazelResolver) {
+        return createBazelV2Detectable(environment, options, bazelResolver);
     }
 
     public BitbakeDetectable createBitbakeDetectable(DetectableEnvironment environment, BitbakeDetectableOptions bitbakeDetectableOptions, BashResolver bashResolver) {
