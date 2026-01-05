@@ -14,6 +14,7 @@ public class ScanMetadata {
     private DeveloperScansScanItemsLongTermUpgradeGuidanceView longTermUpgradeGuidance;
     private List<DeveloperScansScanItemsTransitiveUpgradeGuidanceView> transitiveUpgradeGuidance;
     private List<DeveloperScansScanItemsComponentViolatingPoliciesView> componentViolatingPolicies;
+    private List<List<String>> dependencyTrees;;
 
     public void setPolicyViolationVulnerabilities(List<DeveloperScansScanItemsPolicyViolationVulnerabilitiesView> policyViolationVulnerabilities) {
         this.policyViolationVulnerabilities = policyViolationVulnerabilities;
@@ -33,5 +34,9 @@ public class ScanMetadata {
 
     public void setComponentViolatingPolicies(List<DeveloperScansScanItemsComponentViolatingPoliciesView> componentViolatingPolicies) {
         this.componentViolatingPolicies = componentViolatingPolicies;
+    }
+
+    public void setDependencyTrees(List<List<String>> dependencyTrees) {
+        this.dependencyTrees = dependencyTrees;
     }
 }

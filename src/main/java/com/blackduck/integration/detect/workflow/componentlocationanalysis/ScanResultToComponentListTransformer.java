@@ -83,6 +83,7 @@ public class ScanResultToComponentListTransformer {
         remediationGuidance.setLongTermUpgradeGuidance(component.getLongTermUpgradeGuidance());
         remediationGuidance.setShortTermUpgradeGuidance(component.getShortTermUpgradeGuidance());
         remediationGuidance.setTransitiveUpgradeGuidance(component.getTransitiveUpgradeGuidance());
+        remediationGuidance.setDependencyTrees(component.getDependencyTrees());
         return remediationGuidance;
     }
 }
