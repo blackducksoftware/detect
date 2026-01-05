@@ -19,19 +19,12 @@ public class BaseSessionBuilderSupplier extends SessionBuilderSupplier {
 
     @Override
     protected DependencySelector getDependencySelector() {
+        // 1. Get the standard Maven selectors (Scope, Optional, Exclusions, etc.)
+        DependencySelector defaultSelector = super.getDependencySelector();
+
+        // 2. Combine the default behavior with required specific selector
         return new AndDependencySelector(
-                new ScopeDependencySelector(
-                        Arrays.asList(
-                                JavaScopes.COMPILE,
-                                JavaScopes.RUNTIME,
-                                JavaScopes.PROVIDED,
-                                JavaScopes.SYSTEM
-                        ),
-                        null
-                ),
-                OptionalDependencySelector.fromDirect(),
-                new ExclusionDependencySelector(),
-                new TransitiveScopeFilteringSelector(),
+                defaultSelector,
                 new NearestWinsNoRangeSelector()
         );
     }

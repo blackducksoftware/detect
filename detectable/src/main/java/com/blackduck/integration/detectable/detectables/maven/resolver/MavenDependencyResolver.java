@@ -105,7 +105,7 @@ public class MavenDependencyResolver {
                     });
                 }
 
-//                logger.info("Mapping dependency to Aether Artifact: {}:{}:{}:{}:{} (scope={})", groupId, artifactId, classifier == null ? "" : classifier, type, effectiveVersion, dep.getScope());
+                logger.info("Mapping dependency to Aether Artifact: {}:{}:{}:{}:{} (scope={})", groupId, artifactId, classifier == null ? "" : classifier, type, effectiveVersion, dep.getScope());
 
                 if (aetherExclusions.isEmpty()) {
                     return new Dependency(artifact, dep.getScope());
@@ -218,6 +218,7 @@ public class MavenDependencyResolver {
             logger.info("Attempting dependency collection with UNION repos: {}", unionRepos.stream().map(r -> r.getUrl()).collect(Collectors.joining(", ")));
             CollectResult result = repositorySystem.collectDependencies(session, collectRequest);
             logger.info("Dependency tree collected for: {} using union repositories", pomFile.getAbsolutePath());
+            logger.info("Collectec root children: {}", result.getRoot().getChildren().stream().map(c -> c.getDependency().getArtifact().toString()).collect(Collectors.joining(", ")));
             return result;
         } catch (Exception unionEx) {
             logger.info("Union repositories collection failed: {}", unionEx.getMessage());

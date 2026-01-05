@@ -44,12 +44,12 @@ public final class TransitiveScopeFilteringSelector implements DependencySelecto
         if (scope != null) {
             String s = scope.toLowerCase();
             if ("test".equals(s) || "provided".equals(s)) {
-                logger.info("Filtering transitive dependency by scope: {}:{}:{} scope={} depth={}",
-                    safe(dependency.getArtifact().getGroupId()),
-                    safe(dependency.getArtifact().getArtifactId()),
-                    safe(dependency.getArtifact().getVersion()),
-                    s,
-                    depth);
+//                logger.info("Filtering transitive dependency by scope: {}:{}:{} scope={} depth={}",
+//                    safe(dependency.getArtifact().getGroupId()),
+//                    safe(dependency.getArtifact().getArtifactId()),
+//                    safe(dependency.getArtifact().getVersion()),
+//                    s,
+//                    depth);
                 return false;
             }
         }

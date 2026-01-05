@@ -269,6 +269,13 @@ public class MavenResolverDetectable extends Detectable {
             MavenProject moduleProject;
             try {
                 moduleProject = projectBuilder.buildProject(canonicalModulePom);
+                logger.info("Module '{}' dependencies: {}", modulePomPathKey,
+                        moduleProject.getDependencies() == null ? "[]" :
+                                moduleProject.getDependencies().stream()
+                                        .map(d -> d.getCoordinates().getArtifactId() + ":" + d.getCoordinates().getVersion())
+                                        .map(s -> "\"" + s + "\"")
+                                        .collect(java.util.stream.Collectors.joining(",", "[", "]"))
+                );
             } catch (Exception e) {
                 logger.warn("Failed to build effective project for module '{}': {}", modulePomPathKey, e.getMessage());
                 // Save an error marker file to aid debugging
