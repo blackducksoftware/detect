@@ -122,21 +122,30 @@ public class PipInspectorExtractor {
 
         String projectName = providedProjectName;
 
-        // TODO this whole section with the toml parsing can throw NPEs at different points, add try/catch instead of ifs at each step before merging.
-        if (tomlParseResult != null && (tomlParseResult.getTable(PROJECT_KEY) != null)) {
-            logger.info("The value of the condition is: " + (tomlParseResult != null && (tomlParseResult.getTable(PROJECT_KEY) != null)));
-            TomlTable projectTable = tomlParseResult.getTable(PROJECT_KEY);
-            logger.info("Project table is: " + projectTable);
-            if( projectTable!= null && projectTable.contains(NAME_KEY)) {
-                projectName = projectTable.getString(NAME_KEY);
+        try {
+            if (tomlParseResult != null && (tomlParseResult.getTable(PROJECT_KEY) != null)) {
+                TomlTable projectTable = tomlParseResult.getTable(PROJECT_KEY);
+                if (projectTable != null && projectTable.contains(NAME_KEY)) {
+                    projectName = projectTable.getString(NAME_KEY);
+                    return projectName;
+                }
             }
-        } else if (setupFile != null && setupFile.exists()) {
-            List<String> pythonArguments = Arrays.asList(setupFile.getAbsolutePath(), "--name");
-            ExecutableOutput executableOutput = executableRunner.execute(ExecutableUtils.createFromTarget(directory, pythonExe, pythonArguments));
-            if (executableOutput.getReturnCode() == 0) {
-                List<String> output = executableOutput.getStandardOutputAsList();
-                projectName = output.get(output.size() - 1).replace('_', '-').trim();
+        } catch (Exception e) {
+            logger.debug("Failed to parse project name from pyproject.toml.");
+        }
+
+
+        try {
+            if (setupFile != null && setupFile.exists()) {
+                List<String> pythonArguments = Arrays.asList(setupFile.getAbsolutePath(), "--name");
+                ExecutableOutput executableOutput = executableRunner.execute(ExecutableUtils.createFromTarget(directory, pythonExe, pythonArguments));
+                if (executableOutput.getReturnCode() == 0) {
+                    List<String> output = executableOutput.getStandardOutputAsList();
+                    projectName = output.get(output.size() - 1).replace('_', '-').trim();
+                }
             }
+        } catch (Exception e) {
+            logger.debug("Failed to parse project name from setup.py.");
         }
 
         return projectName;
