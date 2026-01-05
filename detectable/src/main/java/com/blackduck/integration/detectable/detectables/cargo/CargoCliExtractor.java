@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.EnumMap;
 
 public class CargoCliExtractor {
-    private static final List<String> CARGO_TREE_COMMAND = Arrays.asList("tree", "--prefix", "depth");
+    private static final List<String> CARGO_TREE_COMMAND = Arrays.asList("tree", "--prefix", "depth", "--workspace");
     private final DetectableExecutableRunner executableRunner;
     private final CargoDependencyGraphTransformer cargoDependencyTransformer;
     private final CargoTomlParser cargoTomlParser;
@@ -48,18 +48,16 @@ public class CargoCliExtractor {
 
         List<String> fullTreeOutput = runCargoTreeCommand(directory, cargoExe, fullTreeCommand);
 
-        DependencyGraph graph = cargoDependencyTransformer.transform(fullTreeOutput);
-
         Optional<NameVersion> projectNameVersion = Optional.empty();
         if (cargoTomlFile != null) {
             String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
             projectNameVersion = cargoTomlParser.parseNameVersionFromCargoToml(cargoTomlContents);
         }
 
-        CodeLocation codeLocation = new CodeLocation(graph);
+        List<CodeLocation> codeLocations = cargoDependencyTransformer.transform(fullTreeOutput);
 
         return new Extraction.Builder()
-            .success(codeLocation)
+            .success(codeLocations)
             .nameVersionIfPresent(projectNameVersion)
             .build();
     }

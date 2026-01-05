@@ -6,11 +6,15 @@ import com.blackduck.integration.bdio.model.Forge;
 import com.blackduck.integration.bdio.model.dependency.Dependency;
 import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
+import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
+import com.blackduck.integration.util.NameVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
 
 public class CargoDependencyGraphTransformer {
@@ -22,18 +26,80 @@ public class CargoDependencyGraphTransformer {
         this.externalIdFactory = externalIdFactory;
     }
 
-    public DependencyGraph transform(List<String> cargoTreeOutput) {
+    public List<CodeLocation> transform(List<String> cargoTreeOutput) {
+        List<CodeLocation> codeLocations = new LinkedList<>();
+        List<String> currentWorkspace = new ArrayList<>();
+
+        for (String line : cargoTreeOutput) {
+            if (line.trim().isEmpty()) {
+                if (!currentWorkspace.isEmpty()) {
+                    CodeLocation workspaceCodeLocation = processWorkspace(currentWorkspace);
+                    if (workspaceCodeLocation != null) {
+                        codeLocations.add(workspaceCodeLocation);
+                    }
+                    currentWorkspace.clear();
+                }
+            } else {
+                currentWorkspace.add(line.trim());
+            }
+        }
+
+        // Process last workspace
+        if (!currentWorkspace.isEmpty()) {
+            CodeLocation workspaceCodeLocation = processWorkspace(currentWorkspace);
+            if (workspaceCodeLocation != null) {
+                codeLocations.add(workspaceCodeLocation);
+            }
+        }
+
+        return codeLocations;
+    }
+
+    private CodeLocation processWorkspace(List<String> workspaceLines) {
+        if (workspaceLines.isEmpty()) {
+            return null;
+        }
+
         DependencyGraph graph = new BasicDependencyGraph();
         Deque<Dependency> dependencyStack = new ArrayDeque<>();
 
-        for (String line : cargoTreeOutput) {
-            processLine(line.trim(), graph, dependencyStack);
+        // Extract workspace root from the first line (depth 0)
+        Dependency workspaceRoot = extractWorkspaceRoot(workspaceLines);
+
+        // Add workspace root to graph
+        if (workspaceRoot != null) {
+            graph.addDirectDependency(workspaceRoot);
         }
 
-        return graph;
+        // Process all lines to build the dependency graph
+        for (String line : workspaceLines) {
+            processLine(line, graph, dependencyStack, workspaceRoot);
+        }
+
+        // Return CodeLocation with workspace root's ExternalId
+        return workspaceRoot != null
+            ? new CodeLocation(graph, workspaceRoot.getExternalId())
+            : new CodeLocation(graph);
     }
 
-    private void processLine(String line, DependencyGraph graph, Deque<Dependency> dependencyStack) {
+    private Dependency extractWorkspaceRoot(List<String> workspaceLines) {
+        if (workspaceLines.isEmpty()) {
+            return null;
+        }
+
+        String firstLine = workspaceLines.get(0);
+        int depth = extractDepth(firstLine);
+
+        if (depth == 0) {
+            String dependencyInfo = firstLine.substring(String.valueOf(depth).length()).trim();
+            return parseDependency(dependencyInfo);
+        }
+
+        logger.warn("First line is not a workspace root (depth 0): {}", firstLine);
+        return null;
+    }
+
+    private void processLine(String line, DependencyGraph graph, Deque<Dependency> dependencyStack, Dependency workspaceRoot) {
         if (line.isEmpty()) {
             return;
         }
