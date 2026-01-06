@@ -10,6 +10,8 @@ import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.Baze
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelVariableSubstitutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.HaskellCabalLibraryJsonProtoParser;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.xpathquery.HttpArchiveXpath;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Pipelines {
     private static final String CQUERY_OPTIONS_PLACEHOLDER = "${detect.bazel.cquery.options}";
@@ -17,6 +19,7 @@ public class Pipelines {
     private static final String CQUERY_COMMAND = "cquery";
     private static final String OUTPUT_FLAG = "--output";
     private final EnumMap<WorkspaceRule, Pipeline> availablePipelines = new EnumMap<>(WorkspaceRule.class);
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     public Pipelines(
         BazelCommandExecutor bazelCommandExecutor,
@@ -99,29 +102,22 @@ public class Pipelines {
             // If we cannot detect, default to legacy; pipeline remains robust.
         }
 
+        logger.info("HTTP pipeline variant: {}", bzlmodActive ? "bzlmod" : "legacy");
+
         if (bzlmodActive) {
-            // Bzlmod-aware HTTP pipeline: no //external usage; leverage 'bazel mod show_repo'
+            logger.info("Using robust show_repo parser for bzlmod HTTP pipeline.");
             Pipeline httpArchiveBzlmodPipeline = (new PipelineBuilder(externalIdFactory, bazelCommandExecutor, bazelVariableSubstitutor, haskellCabalLibraryJsonProtoParser))
-                // Harvest external labels under deps(target)
                 .executeBazelOnEachLine(Arrays.asList(QUERY_COMMAND, "kind(.*library, deps(${detect.bazel.target}))"), false)
                 .parseSplitEachLine("\r?\n")
                 .parseFilterLines("^@.*//.*$")
-                // Extract repo name (strip leading @ and everything after //)
                 .parseReplaceInEachLine("^@+", "")
                 .parseReplaceInEachLine("//.*", "")
                 .deDupLines()
-                // Exclude toolchains/maven/repos we don't want
                 .parseFilterLines("^(?!(bazel_tools|platforms|remotejdk|local_config_.*|rules_python|rules_java|rules_cc|maven|unpinned_maven|rules_jvm_external)).*$")
-                // Re-add @ prefix to call mod show_repo
                 .parseReplaceInEachLine("^", "@")
-                // Query show_repo per repo; input is @<repo>
                 .executeBazelOnEachLine(Arrays.asList("mod", "show_repo", "${input.item}"), true)
-                .parseSplitEachLine("\r?\n")
-                // Keep lines that contain explicit URLs (http/https) from Rule class sources
-                .parseFilterLines(".*https?://.*")
-                // Extract the quoted URL from lines like: url = \"https://...\" or urls = [\"https://...\"]
-                .parseReplaceInEachLine("^.*\\\"", "")
-                .parseReplaceInEachLine("\\\".*$", "")
+                // Robust parsing of show_repo attributes and synthesis for go_repository
+                .parseShowRepoToUrlCandidates()
                 .transformGithubUrl()
                 .build();
             availablePipelines.put(WorkspaceRule.HTTP_ARCHIVE, httpArchiveBzlmodPipeline);
