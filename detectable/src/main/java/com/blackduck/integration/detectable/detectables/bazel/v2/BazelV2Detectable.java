@@ -84,12 +84,8 @@ public class BazelV2Detectable extends Detectable {
         logger.info("Bazel V2 detectable starting. Target: {}", target);
         BazelCommandExecutor bazelCmd = new BazelCommandExecutor(executableRunner, environment.getDirectory(), bazelExe);
         BazelGraphProber prober = new BazelGraphProber(bazelCmd, target, 20);
-        Set<WorkspaceRule> pipelines;
-        try {
-            pipelines = prober.decidePipelines();
-        } catch (Exception e) {
-            throw new DetectableException("Bazel V2 probing failed: " + e.getMessage(), e);
-        }
+        // Prober now logs and continues on individual probe failures; do not abort extraction here.
+        Set<WorkspaceRule> pipelines = prober.decidePipelines();
         BazelV2Extractor extractor = new BazelV2Extractor(externalIdFactory, bazelVariableSubstitutor, haskellParser, projectNameGenerator);
         Extraction extraction = extractor.run(bazelCmd, pipelines, target);
         logger.info("Bazel V2 detectable finished.");
