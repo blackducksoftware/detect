@@ -26,17 +26,39 @@ public class BazelGraphProber {
         this.queryTimeoutSeconds = queryTimeoutSeconds;
     }
 
-    public Set<WorkspaceRule> decidePipelines() throws Exception {
+    public Set<WorkspaceRule> decidePipelines() {
         logger.info("Starting Bazel graph probing for target: {}", target);
         Set<WorkspaceRule> enabled = new HashSet<>();
-        boolean mavenInstall = detectMavenInstall();
-        boolean mavenJar = detectMavenJar();
-        boolean haskell = detectHaskellCabal();
-        boolean httpFamily = detectHttpArchiveFamily();
+
+        boolean mavenInstall = false;
+        boolean mavenJar = false;
+        boolean haskell = false;
+        boolean httpFamily = false;
+
+        // Each probe is best-effort: failures are logged and do not abort overall probing.
+        try {
+            mavenInstall = detectMavenInstall();
+        } catch (Exception e) {
+            logger.info("MAVEN_INSTALL probe failed: {}", e.getMessage());
+        }
+        try {
+            mavenJar = detectMavenJar();
+        } catch (Exception e) {
+            logger.info("MAVEN_JAR probe failed: {}", e.getMessage());
+        }
+        try {
+            haskell = detectHaskellCabal();
+        } catch (Exception e) {
+            logger.info("HASKELL_CABAL_LIBRARY probe failed: {}", e.getMessage());
+        }
+        try {
+            httpFamily = detectHttpArchiveFamily();
+        } catch (Exception e) {
+            logger.info("HTTP_ARCHIVE family probe failed: {}", e.getMessage());
+        }
 
         if (mavenInstall) {
             enabled.add(WorkspaceRule.MAVEN_INSTALL);
-            // Precedence: if MAVEN_INSTALL present, suppress MAVEN_JAR
             if (mavenJar) {
                 logger.info("Both MAVEN_INSTALL and MAVEN_JAR indicated; preferring MAVEN_INSTALL and suppressing MAVEN_JAR.");
             }
@@ -49,13 +71,13 @@ public class BazelGraphProber {
         if (httpFamily) {
             enabled.add(WorkspaceRule.HTTP_ARCHIVE);
         }
+
         logger.info("Probing completed. Enabled pipelines: {}", enabled);
         return enabled;
     }
 
     private boolean detectMavenInstall() throws Exception {
         // Query j.*import rules under deps(target) and look for maven_coordinates tags in build output.
-        // cquery --noimplicit_deps kind(j.*import, deps(target)) --output build
         Optional<String> out = bazel.executeToString(java.util.Arrays.asList(
             "cquery", "--noimplicit_deps", "kind(j.*import, deps(" + target + "))", "--output", "build"
         ));
@@ -70,7 +92,6 @@ public class BazelGraphProber {
     }
 
     private boolean detectMavenJar() throws Exception {
-        // cquery filter("@.*:jar", deps(target))
         Optional<String> out = bazel.executeToString(java.util.Arrays.asList(
             "cquery", "filter('@.*:jar', deps(" + target + "))"
         ));
@@ -82,7 +103,6 @@ public class BazelGraphProber {
     }
 
     private boolean detectHaskellCabal() throws Exception {
-        // cquery --noimplicit_deps kind(haskell_cabal_library, deps(target)) --output label_kind (fast signature)
         Optional<String> out = bazel.executeToString(java.util.Arrays.asList(
             "cquery", "--noimplicit_deps", "kind(haskell_cabal_library, deps(" + target + "))", "--output", "label_kind"
         ));
@@ -94,8 +114,6 @@ public class BazelGraphProber {
     }
 
     private boolean detectHttpArchiveFamily() throws Exception {
-        // Heuristic: list external repos under deps(target) and then query each for rule kind in XML; check for http_archive/go_repository/git_repository
-        // We keep it lightweight: a single XML query for kind(.*, //external:<repo>) and scan for rule classes.
         Optional<String> depsOut = bazel.executeToString(java.util.Arrays.asList(
             "query", "kind(.*library, deps(" + target + "))"
         ));
@@ -107,7 +125,6 @@ public class BazelGraphProber {
         for (String line : lines) {
             if (line.startsWith("@") && line.contains("//")) {
                 String repo = line.substring(1, line.indexOf("//"));
-                // Exclude toolchain/common non-dependency repos
                 if (repo.startsWith("bazel_tools") || repo.startsWith("local_config_") || repo.startsWith("remotejdk") || repo.startsWith("platforms") || repo.startsWith("maven") || repo.startsWith("unpinned_maven")) {
                     continue;
                 }
@@ -133,4 +150,3 @@ public class BazelGraphProber {
         return any;
     }
 }
-
