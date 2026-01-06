@@ -200,12 +200,9 @@ public class DetectableOptionFactory {
     }
 
     public RushOptions createRushOptions() {
-        Set<RushProjects> excludedDependencyTypes = detectConfiguration.getValue(DetectProperties.DETECT_RUSH_PROJECT_TYPES_EXCLUDED).representedValueSet();
-        EnumListFilter<RushProjects> rushProjectTypeFilter = EnumListFilter.fromExcluded(excludedDependencyTypes);
-
-        List<String> excludedPackages = detectConfiguration.getValue(DetectProperties.DETECT_LERNA_EXCLUDED_PACKAGES);
-        List<String> includedPackages = detectConfiguration.getValue(DetectProperties.DETECT_LERNA_INCLUDED_PACKAGES);
-        return new RushOptions(rushProjectTypeFilter, excludedPackages, includedPackages);
+        List<String> excludedSubspaces = detectConfiguration.getValue(DetectProperties.DETECT_RUSH_PNPM_EXCLUDED_SUBSPACES);
+        List<String> includedSubspaces = detectConfiguration.getValue(DetectProperties.DETECT_RUSH_PNPM_INCLUDED_SUBSPACES);
+        return new RushOptions(excludedSubspaces, includedSubspaces);
     }
 
     public MavenCliExtractorOptions createMavenCliOptions() {

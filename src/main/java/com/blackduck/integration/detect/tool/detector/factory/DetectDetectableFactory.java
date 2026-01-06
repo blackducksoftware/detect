@@ -326,9 +326,9 @@ public class DetectDetectableFactory {
         return detectableFactory.createRushDetectable(
                 environment,
                 detectableOptionFactory.createNpmLockfileOptions(),
-                detectableOptionFactory.createRushOptions(),
                 detectableOptionFactory.createPnpmLockOptions(),
-                detectableOptionFactory.createYarnLockOptions()
+                detectableOptionFactory.createYarnLockOptions(),
+                detectableOptionFactory.createRushOptions()
         );
     }
 

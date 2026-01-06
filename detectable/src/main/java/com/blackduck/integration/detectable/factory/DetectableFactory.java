@@ -14,6 +14,7 @@ import com.blackduck.integration.detectable.detectables.rush.RushDetectable;
 import com.blackduck.integration.detectable.detectables.rush.RushExtractor;
 import com.blackduck.integration.detectable.detectables.rush.RushOptions;
 import com.blackduck.integration.detectable.detectables.rush.parse.RushJsonParser;
+import com.blackduck.integration.detectable.detectables.rush.parse.RushLockFileParser;
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildDetectable;
 import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildExtractor;
@@ -700,12 +701,13 @@ public class DetectableFactory {
     public RushDetectable createRushDetectable(
             DetectableEnvironment environment,
             NpmLockfileOptions npmLockfileOptions,
-            RushOptions rushOptions,
             PnpmLockOptions  pnpmLockOptions,
-            YarnLockOptions yarnLockOptions
+            YarnLockOptions yarnLockOptions,
+            RushOptions rushOptions
     ) {
         RushJsonParser rushJsonParser = new RushJsonParser(gson);
-        RushExtractor rushExtractor = new RushExtractor(rushJsonParser, npmLockfilePackager(npmLockfileOptions), rushOptions, new PnpmLockYamlParserInitial(pnpmLockOptions), yarnPackager(yarnLockOptions), packageJsonFiles(), yarnLockParser());
+        RushLockFileParser rushLockFileParser = new RushLockFileParser(npmLockfilePackager(npmLockfileOptions), new PnpmLockYamlParserInitial(pnpmLockOptions), yarnPackager(yarnLockOptions), packageJsonFiles(), yarnLockParser(), rushOptions);
+        RushExtractor rushExtractor = new RushExtractor(rushJsonParser, rushLockFileParser);
         return new RushDetectable(environment, fileFinder, rushExtractor);
     }
 

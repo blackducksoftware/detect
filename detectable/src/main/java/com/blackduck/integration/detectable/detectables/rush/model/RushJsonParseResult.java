@@ -2,6 +2,7 @@ package com.blackduck.integration.detectable.detectables.rush.model;
 
 import com.blackduck.integration.common.util.finder.FileFinder;
 import com.blackduck.integration.detectable.detectables.rush.RushDetectable;
+import com.blackduck.integration.detectable.detectables.rush.RushOptions;
 import com.blackduck.integration.detectable.detectables.rush.RushProjectType;
 import com.blackduck.integration.detectable.detectables.yarn.packagejson.NullSafePackageJson;
 import com.blackduck.integration.detectable.detectables.yarn.packagejson.PackageJsonFiles;

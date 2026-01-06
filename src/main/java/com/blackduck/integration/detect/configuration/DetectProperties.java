@@ -1741,54 +1741,23 @@ public class DetectProperties {
             .setGroups(DetectGroup.RUBY, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
 
-
-    public static final NoneEnumListProperty<RushProjects> DETECT_RUSH_PROJECT_TYPES_EXCLUDED =
-            NoneEnumListProperty.newBuilder("detect.rush.projects.types.excluded", NoneEnum.NONE, RushProjects.class)
-                    .setInfo("Rush Project Types Excluded", DetectPropertyFromVersion.VERSION_11_2_0)
-                    .setHelp(createTypeFilterHelpText("Rush project types"))
-                    .setExample(String.format("%s", RushProjects.UNPUBLISHED.name()))
-                    .setGroups(DetectGroup.RUSH, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
-                    .build();
-
-    public static final CaseSensitiveStringListProperty DETECT_RUSH_EXCLUDED_PROJECTS =
-            CaseSensitiveStringListProperty.newBuilder("detect.rush.excluded.projects")
+    public static final CaseSensitiveStringListProperty DETECT_RUSH_PNPM_EXCLUDED_SUBSPACES =
+            CaseSensitiveStringListProperty.newBuilder("detect.rush.pnpm.excluded.subspaces")
                     .setInfo("Rush Projects Excluded", DetectPropertyFromVersion.VERSION_11_2_0)
                     .setHelp(
-                            "A comma-separated list of rush projects to exclude.",
-                            "If set, Detect will only exclude those projects specified via this property when examining the rush monorepo for dependencies."
-                    )
-                    .setGroups(DetectGroup.RUSH, DetectGroup.SOURCE_SCAN)
-                    .setCategory(DetectCategory.Advanced)
-                    .build();
-
-    public static final CaseSensitiveStringListProperty DETECT_RUSH_INCLUDED_PROJECTS =
-            CaseSensitiveStringListProperty.newBuilder("detect.rush.included.projects")
-                    .setInfo("Rush Projects Included", DetectPropertyFromVersion.VERSION_11_2_0)
-                    .setHelp(
-                            "A comma-separated list of rush projects to include.",
-                            "If set, Detect will only include those projects specified via this property when examining the rush monorepo for dependencies, unless the project is set for exclusion. Exclusion rules take precedence over inclusion. Leaving this property unset implies 'include all'."
+                            "A comma-separated list of rush pnpm subspaces to exclude.",
+                            "If set, Detect will only exclude those subspaces specified via this property when examining the rush monorepo for dependencies."
                     )
                     .setGroups(DetectGroup.RUSH, DetectGroup.SOURCE_SCAN)
                     .setCategory(DetectCategory.Advanced)
                     .build();
 
     public static final CaseSensitiveStringListProperty DETECT_RUSH_PNPM_INCLUDED_SUBSPACES =
-            CaseSensitiveStringListProperty.newBuilder("detect.rush.included.projects")
+            CaseSensitiveStringListProperty.newBuilder("detect.rush.pnpm.included.subspaces")
                     .setInfo("Rush Projects Included", DetectPropertyFromVersion.VERSION_11_2_0)
                     .setHelp(
-                            "A comma-separated list of rush projects to include.",
-                            "If set, Detect will only include those projects specified via this property when examining the rush monorepo for dependencies, unless the project is set for exclusion. Exclusion rules take precedence over inclusion. Leaving this property unset implies 'include all'."
-                    )
-                    .setGroups(DetectGroup.RUSH, DetectGroup.SOURCE_SCAN)
-                    .setCategory(DetectCategory.Advanced)
-                    .build();
-
-    public static final CaseSensitiveStringListProperty DETECT_RUSH_PNPM_EXCLUDED_SUBSPACES =
-            CaseSensitiveStringListProperty.newBuilder("detect.rush.included.projects")
-                    .setInfo("Rush Projects Included", DetectPropertyFromVersion.VERSION_11_2_0)
-                    .setHelp(
-                            "A comma-separated list of rush projects to include.",
-                            "If set, Detect will only include those projects specified via this property when examining the rush monorepo for dependencies, unless the project is set for exclusion. Exclusion rules take precedence over inclusion. Leaving this property unset implies 'include all'."
+                            "A comma-separated list of rush subspaces to include.",
+                            "If set, Detect will only include those subspaces specified via this property when examining the rush monorepo for dependencies, unless the project is set for exclusion. Exclusion rules take precedence over inclusion. Leaving this property unset implies 'include all'."
                     )
                     .setGroups(DetectGroup.RUSH, DetectGroup.SOURCE_SCAN)
                     .setCategory(DetectCategory.Advanced)
