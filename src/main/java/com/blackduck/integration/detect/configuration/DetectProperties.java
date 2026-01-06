@@ -622,6 +622,13 @@ public class DetectProperties {
             .setGroups(DetectGroup.CARGO, DetectGroup.DETECTOR, DetectGroup.GLOBAL)
             .build();
 
+    public static final BooleanProperty DETECT_CARGO_IGNORE_ALL_WORKSPACES_MODE =
+        BooleanProperty.newBuilder("detect.cargo.ignore.all.workspaces", false)
+            .setInfo("Ignore All Workspaces", DetectPropertyFromVersion.VERSION_11_2_0)
+            .setHelp("All workspaces are ignored by the Cargo detector.")
+            .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
+            .build();
+
     public static final NoneEnumListProperty<PipenvDependencyType> DETECT_PIPFILE_DEPENDENCY_TYPES_EXCLUDED =
         NoneEnumListProperty.newBuilder("detect.pipfile.dependency.types.excluded", NoneEnum.NONE, PipenvDependencyType.class)
             .setInfo("Pipfile Dependency Types Excluded", DetectPropertyFromVersion.VERSION_7_13_0)

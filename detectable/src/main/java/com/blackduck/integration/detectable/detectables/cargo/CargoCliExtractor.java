@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.EnumMap;
 
 public class CargoCliExtractor {
-    private static final List<String> CARGO_TREE_COMMAND = Arrays.asList("tree", "--prefix", "depth", "--workspace");
+    private static final List<String> CARGO_TREE_COMMAND = Arrays.asList("tree", "--prefix", "depth");
     private final DetectableExecutableRunner executableRunner;
     private final CargoDependencyGraphTransformer cargoDependencyTransformer;
     private final CargoTomlParser cargoTomlParser;
@@ -38,6 +38,11 @@ public class CargoCliExtractor {
 
     public Extraction extract(File directory, ExecutableTarget cargoExe, File cargoTomlFile, CargoDetectableOptions cargoDetectableOptions) throws ExecutableFailedException, IOException {
         List<String> fullTreeCommand = new LinkedList<>(CARGO_TREE_COMMAND);
+
+        boolean ignoreAllWorkspaceMembers = cargoDetectableOptions.getCargoIgnoreAllWorkspacesMode();
+        if (!ignoreAllWorkspaceMembers) {
+            fullTreeCommand.add("--workspace");
+        }
 
         EnumListFilter<CargoDependencyType> dependencyTypeFilter = Optional.ofNullable(cargoDetectableOptions.getDependencyTypeFilter())
             .orElse(EnumListFilter.excludeNone());
