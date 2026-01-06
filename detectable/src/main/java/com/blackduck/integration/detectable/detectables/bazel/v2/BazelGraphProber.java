@@ -5,10 +5,13 @@ import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.Baze
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Probes the Bazel graph (deps(target)) to determine which supported pipelines should be enabled.
@@ -52,7 +55,7 @@ public class BazelGraphProber {
             logger.info("HASKELL_CABAL_LIBRARY probe failed: {}", e.getMessage());
         }
         try {
-            httpFamily = detectHttpArchiveFamily();
+            httpFamily = detectHttpArchiveFamilyEraAware();
         } catch (Exception e) {
             logger.info("HTTP_ARCHIVE family probe failed: {}", e.getMessage());
         }
@@ -95,7 +98,7 @@ public class BazelGraphProber {
         Optional<String> out = bazel.executeToString(java.util.Arrays.asList(
             "cquery", "filter('@.*:jar', deps(" + target + "))"
         ));
-        boolean found = out.isPresent() && out.get().trim().length() > 0;
+        boolean found = out.isPresent() && !out.get().trim().isEmpty();
         if (found) {
             logger.info("Detected maven_jar artifacts via @repo//jar:jar labels.");
         }
@@ -113,40 +116,172 @@ public class BazelGraphProber {
         return found;
     }
 
-    private boolean detectHttpArchiveFamily() throws Exception {
+    /**
+     * Era-aware HTTP archive family detection.
+     */
+    private boolean detectHttpArchiveFamilyEraAware() throws Exception {
+        // Determine if bzlmod is likely active by probing 'mod show_repo'.
+        boolean bzlmodLikely = false;
+        try {
+            Optional<String> modProbe = bazel.executeToString(java.util.Arrays.asList("mod", "show_repo", "@bazel_tools"));
+            bzlmodLikely = modProbe.isPresent();
+        } catch (Exception ignored) {
+            bzlmodLikely = false;
+        }
+
         Optional<String> depsOut = bazel.executeToString(java.util.Arrays.asList(
             "query", "kind(.*library, deps(" + target + "))"
         ));
         if (!depsOut.isPresent()) {
             return false;
         }
-        java.util.List<String> lines = java.util.Arrays.asList(depsOut.get().split("\r?\n"));
-        java.util.Set<String> repos = new java.util.HashSet<>();
+        List<String> lines = java.util.Arrays.asList(depsOut.get().split("\r?\n"));
+        Map<String, LinkedHashSet<String>> repoLabels = new HashMap<>();
+        Map<String, Boolean> repoSawCanonical = new HashMap<>();
         for (String line : lines) {
             if (line.startsWith("@") && line.contains("//")) {
-                String repo = line.substring(1, line.indexOf("//"));
-                if (repo.startsWith("bazel_tools") || repo.startsWith("local_config_") || repo.startsWith("remotejdk") || repo.startsWith("platforms") || repo.startsWith("maven") || repo.startsWith("unpinned_maven")) {
+                int start = line.startsWith("@@") ? 2 : 1; // Support canonical names starting with @@
+                String repo = line.substring(start, line.indexOf("//"));
+                if (isExcludedRepo(repo)) {
                     continue;
                 }
-                repos.add(repo);
-            }
-        }
-        boolean any = false;
-        for (String repo : repos) {
-            Optional<String> xmlOut = bazel.executeToString(java.util.Arrays.asList(
-                "query", "kind(.*, //external:" + repo + ")", "--output", "xml"
-            ));
-            if (xmlOut.isPresent()) {
-                String xml = xmlOut.get();
-                if (xml.contains("class=\"http_archive\"") || xml.contains("class=\"go_repository\"") || xml.contains("class=\"git_repository\"")) {
-                    any = true;
-                    break;
+                repoLabels.computeIfAbsent(repo, r -> new LinkedHashSet<>()).add(line.trim());
+                if (line.startsWith("@@")) {
+                    repoSawCanonical.put(repo, Boolean.TRUE);
+                } else {
+                    repoSawCanonical.putIfAbsent(repo, Boolean.FALSE);
                 }
             }
         }
-        if (any) {
-            logger.info("Detected http_archive/go_repository/git_repository rules.");
+        if (repoLabels.isEmpty()) {
+            return false;
         }
-        return any;
+
+        // Caps to keep it fast
+        int maxRepos = 30;
+        int checkedRepos = 0;
+        for (Map.Entry<String, LinkedHashSet<String>> entry : repoLabels.entrySet()) {
+            if (checkedRepos++ >= maxRepos) {
+                logger.info("HTTP family probe repo cap reached ({}).", maxRepos);
+                break;
+            }
+            String repo = entry.getKey();
+            boolean sawCanonical = repoSawCanonical.getOrDefault(repo, Boolean.FALSE);
+
+            // Bzlmod-native: try 'bazel mod show_repo' to classify provenance first
+            try {
+                if (tryModShowRepoEnableHttp(repo, false)) {
+                    return true;
+                }
+                if (sawCanonical && tryModShowRepoEnableHttp(repo, true)) {
+                    return true;
+                }
+            } catch (Exception e) {
+                logger.info("mod show_repo probe failed for repo {}: {}", repo, e.getMessage());
+            }
+
+            // Under bzlmod, do not enable HTTP based on legacy fallbacks; continue to next repo.
+            if (bzlmodLikely) {
+                continue;
+            }
+
+            // Legacy/workspace-safe fallback: check if root package has rules via label_kind
+            try {
+                Optional<String> rootKind = bazel.executeToString(java.util.Arrays.asList(
+                    "query", "kind('rule', @" + repo + "//:all)", "--output", "label_kind"
+                ));
+                if (rootKind.isPresent() && !rootKind.get().trim().isEmpty()) {
+                    logger.info("Repo {} root package has build targets (label_kind); enabling HTTP.", repo);
+                    return true;
+                }
+            } catch (Exception e) {
+                logger.info("label_kind root-package probe failed for repo {}: {}", repo, e.getMessage());
+            }
+
+            // Secondary fallback: try specific harvested labels to avoid scanning the whole repo
+            try {
+                List<String> samples = new java.util.ArrayList<>();
+                int maxSamples = 3;
+                for (String lbl : entry.getValue()) {
+                    samples.add(lbl);
+                    if (samples.size() >= maxSamples) break;
+                }
+                if (!samples.isEmpty()) {
+                    Optional<String> lkOut = bazel.executeToString(java.util.Arrays.asList(
+                        "query", "kind('rule', set(" + String.join(" ", samples) + "))", "--output", "label_kind"
+                    ));
+                    if (lkOut.isPresent() && !lkOut.get().trim().isEmpty()) {
+                        logger.info("Repo {} specific-label probe found build targets; enabling HTTP.", repo);
+                        return true;
+                    }
+                }
+            } catch (Exception e) {
+                logger.info("label_kind specific-label probe failed for repo {}: {}", repo, e.getMessage());
+            }
+        }
+        return false;
+    }
+
+    private boolean isExcludedRepo(String repo) {
+        String r = repo; // repo name without leading @/@@
+        return r.startsWith("bazel_tools")
+            || r.startsWith("local_config_")
+            || r.startsWith("remotejdk")
+            || r.startsWith("platforms")
+            || r.startsWith("rules_python")
+            || r.startsWith("rules_java")
+            || r.startsWith("rules_cc")
+            || r.startsWith("maven")
+            || r.startsWith("unpinned_maven")
+            || r.startsWith("rules_jvm_external");
+    }
+
+    private boolean tryModShowRepoEnableHttp(String repo, boolean canonical) throws Exception {
+        String at = canonical ? "@@" : "@";
+        Optional<String> modOut = bazel.executeToString(java.util.Arrays.asList(
+            "mod", "show_repo", at + repo
+        ));
+        if (!modOut.isPresent()) {
+            return false;
+        }
+        String info = modOut.get();
+        if (looksLikeKnownMavenExtension(info)) {
+            logger.info("Repo {} classified as Maven-related by mod show_repo; skipping HTTP.", repo);
+            return false;
+        }
+        if (looksLikeSourceArchive(info)) {
+            logger.info("Repo {} classified as HTTP family by mod show_repo (rule class/source).", repo);
+            return true;
+        }
+        if (looksLikeModuleExtension(info) || looksLikeDirectBazelDep(info)) {
+            logger.info("Repo {} classified as extension/direct dep by mod show_repo; enabling HTTP.", repo);
+            return true;
+        }
+        logger.info("Repo {} mod show_repo returned unrecognized classification; trying fallback.", repo);
+        return false;
+    }
+
+    private boolean looksLikeKnownMavenExtension(String modShowRepoOutput) {
+        String s = modShowRepoOutput.toLowerCase();
+        // Heuristic markers for Maven-related module extensions
+        return s.contains("rules_jvm_external") || s.contains("maven_install");
+    }
+
+    private boolean looksLikeModuleExtension(String modShowRepoOutput) {
+        String s = modShowRepoOutput.toLowerCase();
+        // Indicates the repo is produced by a module extension
+        return s.contains("module_extension") || s.contains("module extension") || s.contains("origin: module extension");
+    }
+
+    private boolean looksLikeDirectBazelDep(String modShowRepoOutput) {
+        String s = modShowRepoOutput.toLowerCase();
+        // Direct bazel_dep often implies source-style repos (archives/git) brought in directly
+        return s.contains("bazel_dep");
+    }
+
+    private boolean looksLikeSourceArchive(String modShowRepoOutput) {
+        String s = modShowRepoOutput.toLowerCase();
+        // Prefer explicit rule class/source signals when available in Bazel 8
+        return s.contains("http_archive") || s.contains("git_repository") || s.contains("go_repository") || s.contains("http_file");
     }
 }
