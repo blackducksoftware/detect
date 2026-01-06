@@ -93,7 +93,7 @@ public class CargoLockDependencyExclusionTest extends DetectableFunctionalTest {
     public Detectable create(@NotNull DetectableEnvironment detectableEnvironment) {
         return detectableFactory.createCargoLockfileDetectable(
             detectableEnvironment,
-            new CargoDetectableOptions(EnumListFilter.fromExcluded(CargoDependencyType.NORMAL), false)
+            new CargoDetectableOptions(EnumListFilter.fromExcluded(CargoDependencyType.NORMAL))
         );
     }
 

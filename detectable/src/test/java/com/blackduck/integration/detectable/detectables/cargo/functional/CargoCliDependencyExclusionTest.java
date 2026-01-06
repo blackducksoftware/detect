@@ -74,7 +74,7 @@ public class CargoCliDependencyExclusionTest extends DetectableFunctionalTest {
         return detectableFactory.createCargoCliDetectable(
             detectableEnvironment,
             new CargoResolverTest(),
-            new CargoDetectableOptions(EnumListFilter.fromExcluded(CargoDependencyType.NORMAL), false)
+            new CargoDetectableOptions(EnumListFilter.fromExcluded(CargoDependencyType.NORMAL))
         );
     }
 

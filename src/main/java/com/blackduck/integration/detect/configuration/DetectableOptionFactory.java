@@ -256,7 +256,8 @@ public class DetectableOptionFactory {
         Set<CargoDependencyType> excludedDependencyTypes = detectConfiguration.getValue(DetectProperties.DETECT_CARGO_DEPENDENCY_TYPES_EXCLUDED).representedValueSet();
         Boolean cargoIgnoreAllWorkspacesMode = detectConfiguration.getValue(DetectProperties.DETECT_CARGO_IGNORE_ALL_WORKSPACES_MODE);
         EnumListFilter<CargoDependencyType> dependencyTypeFilter = EnumListFilter.fromExcluded(excludedDependencyTypes);
-        return new CargoDetectableOptions(dependencyTypeFilter, cargoIgnoreAllWorkspacesMode);
+        List<String> excludedWorkspaces = detectConfiguration.getValue(DetectProperties.DETECT_CARGO_EXCLUDED_WORKSPACES);
+        return new CargoDetectableOptions(dependencyTypeFilter, cargoIgnoreAllWorkspacesMode, excludedWorkspaces);
     }
 
     public PipenvDetectableOptions createPipenvDetectableOptions() {

@@ -44,6 +44,14 @@ public class CargoCliExtractor {
             fullTreeCommand.add("--workspace");
         }
 
+        Optional<List<String>> excludedWorkspaces = Optional.ofNullable(cargoDetectableOptions.getExcludedWorkspaces());
+        if(excludedWorkspaces.isPresent()) {
+            for (String excludedWorkspace : excludedWorkspaces.get()) {
+                fullTreeCommand.add("--exclude");
+                fullTreeCommand.add(excludedWorkspace);
+            }
+        }
+
         EnumListFilter<CargoDependencyType> dependencyTypeFilter = Optional.ofNullable(cargoDetectableOptions.getDependencyTypeFilter())
             .orElse(EnumListFilter.excludeNone());
 

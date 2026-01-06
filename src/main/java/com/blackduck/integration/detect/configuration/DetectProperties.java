@@ -629,6 +629,18 @@ public class DetectProperties {
             .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
             .build();
 
+    public static final CaseSensitiveStringListProperty DETECT_CARGO_EXCLUDED_WORKSPACES =
+        CaseSensitiveStringListProperty.newBuilder("detect.cargo.excluded.workspaces")
+            .setInfo("Cargo Exclude Workspaces", DetectPropertyFromVersion.VERSION_11_2_0)
+            .setHelp(
+                "A comma-separated list of Cargo workspaces (specified by the workspace directory's relative path) to exclude.",
+                "By default, Detect includes all workspaces, but will skip any Cargo workspaces specified via this property."
+            )
+            .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
+            .setCategory(DetectCategory.Advanced)
+            .setExample("crates/workspace-a,crates/workspace-b")
+            .build();
+
     public static final NoneEnumListProperty<PipenvDependencyType> DETECT_PIPFILE_DEPENDENCY_TYPES_EXCLUDED =
         NoneEnumListProperty.newBuilder("detect.pipfile.dependency.types.excluded", NoneEnum.NONE, PipenvDependencyType.class)
             .setInfo("Pipfile Dependency Types Excluded", DetectPropertyFromVersion.VERSION_7_13_0)

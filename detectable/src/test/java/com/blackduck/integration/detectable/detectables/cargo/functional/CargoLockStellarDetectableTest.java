@@ -95,7 +95,7 @@ public class CargoLockStellarDetectableTest extends DetectableFunctionalTest {
     public Detectable create(@NotNull DetectableEnvironment detectableEnvironment) {
         return detectableFactory.createCargoLockfileDetectable(
             detectableEnvironment,
-            new CargoDetectableOptions(EnumListFilter.fromExcluded(CargoDependencyType.BUILD), false)
+            new CargoDetectableOptions(EnumListFilter.fromExcluded(CargoDependencyType.BUILD))
         );
     }
 
