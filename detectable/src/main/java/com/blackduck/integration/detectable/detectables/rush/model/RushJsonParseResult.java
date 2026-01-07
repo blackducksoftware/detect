@@ -90,4 +90,8 @@ public class RushJsonParseResult {
                 .collect(Collectors.toList());
     }
 
+    public List<NullSafePackageJson> findAllProjectsPackages() {
+        return rushProjects.stream().map(RushProject::getPackageJson).collect(Collectors.toList());
+    }
+
 }

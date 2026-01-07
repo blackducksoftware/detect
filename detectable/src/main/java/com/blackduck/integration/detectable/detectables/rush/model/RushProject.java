@@ -27,14 +27,6 @@ public class RushProject {
         return projectFolder;
     }
 
-    public String getReviewCategory() {
-        return reviewCategory;
-    }
-
-    public Boolean isPublishable() {
-        return shouldPublish;
-    }
-
     public NullSafePackageJson getPackageJson() {
         return packageJson;
     }

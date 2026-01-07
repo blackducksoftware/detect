@@ -15,6 +15,7 @@ import com.blackduck.integration.detectable.detectables.yarn.packagejson.NullSaf
 import com.blackduck.integration.detectable.detectables.yarn.packagejson.PackageJsonFiles;
 import com.blackduck.integration.detectable.detectables.yarn.parse.YarnLock;
 import com.blackduck.integration.detectable.detectables.yarn.parse.YarnLockParser;
+import com.blackduck.integration.detectable.detectables.yarn.workspace.YarnWorkspaces;
 import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.util.ExcludedIncludedWildcardFilter;
 import com.blackduck.integration.util.NameVersion;
@@ -62,14 +63,22 @@ public class RushLockFileParser {
 
             codeLocations.add(npmPackagerResult.getCodeLocation());
         } else if (rushProjectType == RushProjectType.YARN) {
+            List<NullSafePackageJson> allPackageJsons = rushJsonParseResult.findAllProjectsPackages();
             YarnLock yarnLock = yarnLockParser.parseYarnLock(rushJsonParseResult.getYarnLockContents());
 
-            if (rootPackageJson != null) {
-                YarnResult yarnResult = yarnPackager.generateCodeLocation(rootPackageJson, yarnLock, allPackages);
+            for (NullSafePackageJson packageJson : allPackageJsons) {
+                YarnResult yarnResult = yarnPackager.generateCodeLocation(packageJson, YarnWorkspaces.EMPTY, yarnLock, allPackages, ExcludedIncludedWildcardFilter.EMPTY);
                 if(yarnResult.getCodeLocations() != null) {
                     codeLocations.addAll(yarnResult.getCodeLocations());
                 }
             }
+
+//            if (rootPackageJson != null) {
+//                YarnResult yarnResult = yarnPackager.generateCodeLocation(rootPackageJson, YarnWorkspaces.EMPTY, yarnLock, allPackages, ExcludedIncludedWildcardFilter.EMPTY);
+//                if(yarnResult.getCodeLocations() != null) {
+//                    codeLocations.addAll(yarnResult.getCodeLocations());
+//                }
+//            }
         } else if (rushProjectType == RushProjectType.PNPM) {
             PnpmLinkedPackageResolver pnpmLinkedPackageResolver = new PnpmLinkedPackageResolver(projectDirectory, packageJsonFiles);
 
