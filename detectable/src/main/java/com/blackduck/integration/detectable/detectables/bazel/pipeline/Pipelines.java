@@ -115,7 +115,11 @@ public class Pipelines {
                 .deDupLines()
                 .parseFilterLines("^(?!(bazel_tools|platforms|remotejdk|local_config_.*|rules_python|rules_java|rules_cc|maven|unpinned_maven|rules_jvm_external)).*$")
                 .parseReplaceInEachLine("^", "@")
-                .executeBazelOnEachLine(Arrays.asList("mod", "show_repo", "${input.item}"), true)
+                // Replace direct mod show_repo call with best-effort, mapping-aware step
+                .addIntermediateStep(new com.blackduck.integration.detectable.detectables.bazel.pipeline.step.IntermediateStepExecuteShowRepoWithMapping(
+                    bazelCommandExecutor,
+                    new com.blackduck.integration.detectable.detectables.bazel.pipeline.step.RepoNameMappingResolver(bazelCommandExecutor)
+                ))
                 // Robust parsing of show_repo attributes and synthesis for go_repository
                 .parseShowRepoToUrlCandidates()
                 .transformGithubUrl()
