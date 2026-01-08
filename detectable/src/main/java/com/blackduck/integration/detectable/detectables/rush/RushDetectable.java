@@ -3,7 +3,6 @@ package com.blackduck.integration.detectable.detectables.rush;
 import com.blackduck.integration.common.util.finder.FileFinder;
 import com.blackduck.integration.detectable.Detectable;
 import com.blackduck.integration.detectable.DetectableEnvironment;
-import com.blackduck.integration.detectable.ExecutableTarget;
 import com.blackduck.integration.detectable.detectable.DetectableAccuracyType;
 import com.blackduck.integration.detectable.detectable.Requirements;
 import com.blackduck.integration.detectable.detectable.annotation.DetectableInfo;
@@ -15,14 +14,12 @@ import com.blackduck.integration.detectable.detectables.pnpm.lockfile.PnpmLockDe
 import com.blackduck.integration.detectable.detectables.yarn.YarnLockDetectable;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
-import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.executable.ExecutableRunnerException;
-import com.google.gson.Gson;
 
 import java.io.File;
 import java.io.IOException;
 
-@DetectableInfo(name = "Rush", language = "Node JS", forge = "npmjs", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: " + RushDetectable.RUSH_JSON + " and one of the following: " + RushDetectable.SHRINKWRAP_JSON + ", "
+@DetectableInfo(name = "Rush Lock", language = "Node JS", forge = "npmjs", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: " + RushDetectable.RUSH_JSON + " and one of the following: " + RushDetectable.SHRINKWRAP_JSON + ", "
         + RushDetectable.YARN_LOCK + "," + RushDetectable.PNPM_LOCK + ".")
 public class RushDetectable extends Detectable {
 
