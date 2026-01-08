@@ -50,6 +50,7 @@ import com.blackduck.integration.detectable.detectables.poetry.PoetryDetectable;
 import com.blackduck.integration.detectable.detectables.rebar.RebarDetectable;
 import com.blackduck.integration.detectable.detectables.rubygems.gemlock.GemlockDetectable;
 import com.blackduck.integration.detectable.detectables.rubygems.gemspec.GemspecParseDetectable;
+import com.blackduck.integration.detectable.detectables.rush.RushDetectable;
 import com.blackduck.integration.detectable.detectables.sbt.SbtDetectable;
 import com.blackduck.integration.detectable.detectables.setuptools.tbuild.SetupToolsBuildDetectable;
 import com.blackduck.integration.detectable.detectables.setuptools.buildless.SetupToolsBuildlessDetectable;
@@ -204,15 +205,20 @@ public class DetectorRuleFactory {
                 .search().defaults();
         });
 
+        rules.addDetector(DetectorType.RUSH, detector -> {
+            detector.entryPoint(RushDetectable.class)
+                    .search().defaults();
+        });
+
         rules.addDetector(DetectorType.YARN, detector -> {
             detector.entryPoint(YarnLockDetectable.class)
                 .search().defaultLock();
-        }).yieldsTo(DetectorType.LERNA);
+        }).yieldsTo(DetectorType.LERNA, DetectorType.RUSH);
 
         rules.addDetector(DetectorType.PNPM, detector -> {
             detector.entryPoint(PnpmLockDetectable.class)
                 .search().defaultLock();
-        }).yieldsTo(DetectorType.LERNA);
+        }).yieldsTo(DetectorType.LERNA,  DetectorType.RUSH);
 
         rules.addDetector(DetectorType.NPM, detector -> {
                 detector.entryPoint(NpmShrinkwrapDetectable.class)
@@ -224,7 +230,7 @@ public class DetectorRuleFactory {
                 detector.entryPoint(NpmPackageJsonParseDetectable.class)
                     .search().defaults(); //maybe this one should be defaultLock?
             }).allEntryPointsFallbackToNext()
-            .yieldsTo(DetectorType.LERNA, DetectorType.YARN, DetectorType.PNPM);
+            .yieldsTo(DetectorType.LERNA, DetectorType.YARN, DetectorType.PNPM, DetectorType.RUSH);
 
         rules.addDetector(DetectorType.NUGET, detector -> {
             //four different detectables, last one will be the project inspector

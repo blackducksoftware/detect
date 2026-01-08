@@ -856,6 +856,26 @@
 							<entry>LOW</entry>
 						</row>
 						<row>
+                            <entry>
+                                <b>Rush</b>
+                            </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                        </row>
+                        <row>
+                            <entry> </entry>
+                            <entry>Rush Lock</entry>
+                            <entry>Node JS</entry>
+                            <entry>npmjs</entry>
+                            <entry>
+                                <p>Files: rush.json file, pnpm-lock.yaml, npm-shrinkwrap.json, or yarn.lock </p>
+                            </entry>
+                            <entry>HIGH</entry>
+                        </row>
+						<row>
 							<entry>
 								<b>SBT</b>
 							</entry>

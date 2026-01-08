@@ -1740,6 +1740,28 @@ public class DetectProperties {
             .setGroups(DetectGroup.RUBY, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
 
+    public static final CaseSensitiveStringListProperty DETECT_RUSH_PNPM_EXCLUDED_SUBSPACES =
+            CaseSensitiveStringListProperty.newBuilder("detect.rush.pnpm.excluded.subspaces")
+                    .setInfo("Rush Projects Excluded", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "A comma-separated list of rush pnpm subspaces to exclude.",
+                            "If set, Detect will only exclude those subspaces specified via this property when examining the rush monorepo for dependencies."
+                    )
+                    .setGroups(DetectGroup.RUSH, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_RUSH_PNPM_INCLUDED_SUBSPACES =
+            CaseSensitiveStringListProperty.newBuilder("detect.rush.pnpm.included.subspaces")
+                    .setInfo("Rush Projects Included", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "A comma-separated list of rush subspaces to include.",
+                            "If set, Detect will only include those subspaces specified via this property when examining the rush monorepo for dependencies, unless the project is set for exclusion. Exclusion rules take precedence over inclusion. Leaving this property unset implies 'include all'."
+                    )
+                    .setGroups(DetectGroup.RUSH, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
+
     public static final NullablePathProperty DETECT_SBT_PATH =
         NullablePathProperty.newBuilder("detect.sbt.path")
             .setInfo("Sbt Executable", DetectPropertyFromVersion.VERSION_3_0_0)
