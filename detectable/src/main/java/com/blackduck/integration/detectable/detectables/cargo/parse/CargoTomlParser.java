@@ -11,6 +11,7 @@ import java.util.Set;
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
 import org.tomlj.Toml;
+import org.tomlj.TomlArray;
 import org.tomlj.TomlParseResult;
 
 import com.blackduck.integration.util.NameVersion;
@@ -32,6 +33,26 @@ public class CargoTomlParser {
                 .map(info -> new NameVersion(info.getString(NAME_KEY), info.getString(VERSION_KEY)));
         }
         return Optional.empty();
+    }
+
+    public Set<String> parseWorkspaceMembers(String tomlFileContents) {
+        TomlParseResult toml = Toml.parse(tomlFileContents);
+        Set<String> members = new HashSet<>();
+
+        TomlTable workspace = toml.getTable("workspace");
+        if (workspace != null && workspace.contains("members")) {
+            TomlArray memberArray = workspace.getArray("members");
+            if (memberArray != null) {
+                for (int i = 0; i < memberArray.size(); i++) {
+                    String member = memberArray.getString(i);
+                    if (member != null) {
+                        members.add(member);
+                    }
+                }
+            }
+        }
+
+        return members;
     }
 
     public boolean hasDependencySections(String tomlFileContents) {
