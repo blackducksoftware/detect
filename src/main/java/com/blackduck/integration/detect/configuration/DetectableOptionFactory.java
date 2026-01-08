@@ -9,11 +9,9 @@ import com.blackduck.integration.detectable.detectables.cargo.CargoDetectableOpt
 import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
 import com.blackduck.integration.detectable.detectables.nuget.NugetDependencyType;
 import com.blackduck.integration.detectable.detectables.rush.RushOptions;
-import com.blackduck.integration.detectable.detectables.rush.RushProjects;
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import org.jetbrains.annotations.Nullable;
 
-import com.blackduck.integration.detect.workflow.ArtifactoryConstants;
 import com.blackduck.integration.detect.workflow.diagnostic.DiagnosticSystem;
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.detectable.detectables.bazel.BazelDetectableOptions;

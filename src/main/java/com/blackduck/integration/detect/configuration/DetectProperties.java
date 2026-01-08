@@ -67,7 +67,6 @@ import com.blackduck.integration.detectable.detectables.pear.PearDependencyType;
 import com.blackduck.integration.detectable.detectables.pipenv.parse.PipenvDependencyType;
 import com.blackduck.integration.detectable.detectables.pnpm.lockfile.model.PnpmDependencyType;
 import com.blackduck.integration.detectable.detectables.rubygems.GemspecDependencyType;
-import com.blackduck.integration.detectable.detectables.rush.RushProjects;
 import com.blackduck.integration.detectable.detectables.yarn.YarnDependencyType;
 import com.blackduck.integration.detector.base.DetectorType;
 import com.blackduck.integration.log.LogLevel;
