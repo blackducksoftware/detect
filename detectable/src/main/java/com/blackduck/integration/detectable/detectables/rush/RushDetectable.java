@@ -65,12 +65,6 @@ public class RushDetectable extends Detectable {
         requirements.explainNullableFile(shrinkwrapJson);
         requirements.explainNullableFile(yarnLock);
 
-        // TODO: Use SearchPattern (Maybe make an easier to construct one???)
-        //        requirements.anyFile(
-        //            "let me pass in a bunch of string patterns, and the requirements already has a directory, so default to that"
-        //            new SearchPattern(environment.getDirectory(), PACKAGE_LOCK_JSON, lockFile -> packageLockFile = lockFile)
-        //        );
-
         return requirements.result();
     }
 
