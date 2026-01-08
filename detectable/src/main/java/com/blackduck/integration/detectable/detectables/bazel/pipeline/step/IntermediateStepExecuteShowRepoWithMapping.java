@@ -16,6 +16,8 @@ import java.util.Optional;
  * Input: repo names as strings (with or without leading @/@@), one per line.
  * Output: the full mod show_repo output blocks for repos that succeed.
  */
+
+//TODO: This needs more research and testing to ensure it works as intended. Not yet included in the flow.
 public class IntermediateStepExecuteShowRepoWithMapping implements IntermediateStep {
     private static final Logger logger = LoggerFactory.getLogger(IntermediateStepExecuteShowRepoWithMapping.class);
 
