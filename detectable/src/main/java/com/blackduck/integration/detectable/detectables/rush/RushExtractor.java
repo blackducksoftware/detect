@@ -39,7 +39,7 @@ public class RushExtractor {
                 return Extraction.failure();
             }
 
-            Optional<NameVersion> nameVersion = rushLockFileParser.parseNameVersion();
+            Optional<NameVersion> nameVersion = rushLockFileParser.parseNameVersion(projectDirectory, fileFinder);
             return new Extraction.Builder().success(codeLocations).nameVersionIfPresent(nameVersion).build();
 
         } catch (Exception e) {

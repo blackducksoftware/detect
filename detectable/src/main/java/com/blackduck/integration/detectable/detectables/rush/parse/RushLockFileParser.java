@@ -36,7 +36,6 @@ public class RushLockFileParser {
     private final RushOptions rushOptions;
     private final YarnPackager yarnPackager;
     private final PackageJsonFiles packageJsonFiles;
-    private NullSafePackageJson rootPackageJson = null;
 
 
 
@@ -54,16 +53,14 @@ public class RushLockFileParser {
 
         RushProjectType rushProjectType = rushJsonParseResult.getProjectType();
         rushJsonParseResult.readAllPackageJsons(fileFinder, projectDirectory, packageJsonFiles);
-        List<NameVersion> allPackages = rushJsonParseResult.findAllProjects();
-
-        parseRootJsonFile(projectDirectory, fileFinder);
+        List<NameVersion> allPackages = rushJsonParseResult.getAllProjects();
 
         if (rushProjectType == RushProjectType.NPM) {
             NpmPackagerResult npmPackagerResult = npmLockfilePackager.parseAndTransform(null, null, rushJsonParseResult.getNpmLockFile(), allPackages);
 
             codeLocations.add(npmPackagerResult.getCodeLocation());
         } else if (rushProjectType == RushProjectType.YARN) {
-            List<NullSafePackageJson> allPackageJsons = rushJsonParseResult.findAllProjectsPackages();
+            List<NullSafePackageJson> allPackageJsons = rushJsonParseResult.getAllPackageJsons();
             YarnLock yarnLock = yarnLockParser.parseYarnLock(rushJsonParseResult.getYarnLockContents());
 
             for (NullSafePackageJson packageJson : allPackageJsons) {
@@ -92,14 +89,16 @@ public class RushLockFileParser {
         return codeLocations;
     }
 
-    public Optional<NameVersion> parseNameVersion() {
+    public Optional<NameVersion> parseNameVersion(File sourceDirectory, FileFinder fileFinder) {
+        NullSafePackageJson rootPackageJson = parseRootJsonFile(sourceDirectory, fileFinder);
         if (rootPackageJson != null && rootPackageJson.getName().isPresent() && rootPackageJson.getVersion().isPresent()) {
             return Optional.of(new NameVersion(rootPackageJson.getNameString(), rootPackageJson.getVersionString()));
         }
         return Optional.empty();
     }
 
-    private void parseRootJsonFile(File sourceDirectory, FileFinder fileFinder) {
+    private NullSafePackageJson parseRootJsonFile(File sourceDirectory, FileFinder fileFinder) {
+        NullSafePackageJson rootPackageJson = null;
         try {
             File packageJsonFile = fileFinder.findFile(sourceDirectory, "package.json");
             if (packageJsonFile != null) {
@@ -108,6 +107,7 @@ public class RushLockFileParser {
         } catch (IOException e) {
             logger.warn("Failed to find root package json file. Please make sure you have a root package.json before scanning the project", e);
         }
+        return rootPackageJson;
     }
 
     private ExcludedIncludedWildcardFilter createSubspaceFilter() {
