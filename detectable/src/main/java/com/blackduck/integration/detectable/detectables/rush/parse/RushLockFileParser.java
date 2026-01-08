@@ -72,13 +72,6 @@ public class RushLockFileParser {
                     codeLocations.addAll(yarnResult.getCodeLocations());
                 }
             }
-
-//            if (rootPackageJson != null) {
-//                YarnResult yarnResult = yarnPackager.generateCodeLocation(rootPackageJson, YarnWorkspaces.EMPTY, yarnLock, allPackages, ExcludedIncludedWildcardFilter.EMPTY);
-//                if(yarnResult.getCodeLocations() != null) {
-//                    codeLocations.addAll(yarnResult.getCodeLocations());
-//                }
-//            }
         } else if (rushProjectType == RushProjectType.PNPM) {
             PnpmLinkedPackageResolver pnpmLinkedPackageResolver = new PnpmLinkedPackageResolver(projectDirectory, packageJsonFiles);
 
