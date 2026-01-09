@@ -15,6 +15,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.blackduck.integration.bdio.model.Forge;
+import com.blackduck.integration.bdio.model.externalid.ExternalId;
+import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.detectable.detectables.cargo.data.CargoLockPackageData;
 import com.blackduck.integration.detectable.util.NameOptionalVersion;
@@ -55,11 +58,8 @@ public class CargoLockfileExtractor {
     public Extraction extract(File cargoLockFile, @Nullable File cargoTomlFile, CargoDetectableOptions cargoDetectableOptions) throws IOException, DetectableException, MissingExternalIdException {
         CargoLockData cargoLockData = new Toml().read(cargoLockFile).to(CargoLockData.class);
         List<CargoLockPackageData> cargoLockPackageDataList = cargoLockData.getPackages().orElse(new ArrayList<>());
-        List<CargoLockPackageData> filteredPackages = new ArrayList<>(cargoLockPackageDataList);
-        List<CargoLockPackageData> unfilteredPackages = new ArrayList<>(cargoLockPackageDataList);
         boolean exclusionEnabled = isDependencyExclusionEnabled(cargoDetectableOptions);
 
-        // if exclusion is enabled, and cargoDetectableOptions contains PROC_MACRO, warn that it will be ignored for the Lockfile Detector
         if (exclusionEnabled && cargoDetectableOptions.getDependencyTypeFilter().shouldExclude(CargoDependencyType.PROC_MACRO)) {
             logger.warn(
                 "PROC_MACRO exclusion is not supported by the Cargo Lockfile Detector and will be ignored. " +
@@ -67,68 +67,57 @@ public class CargoLockfileExtractor {
             );
         }
 
-        String cargoTomlContents = null;
-
-        Set<NameVersion> allRootDependencies = new HashSet<>();
-        Set<NameVersion> resolvedRootDependencies = new HashSet<>();
-        Map<NameVersion, List<CargoLockPackageData>> packageLookupMap = indexPackagesByNameVersion(filteredPackages); // Lookup map for quick access by NameVersion
-
-        if(cargoTomlFile == null && exclusionEnabled) {
+        if (cargoTomlFile == null && exclusionEnabled) {
             return new Extraction.Builder()
                 .failure("Cargo.toml file is required to exclude dependencies, but was not provided.")
                 .build();
         }
 
-        if (cargoTomlFile != null) {
-            cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
+        Map<NameVersion, List<CargoLockPackageData>> packageLookupMap = indexPackagesByNameVersion(cargoLockPackageDataList);
+        EnumListFilter<CargoDependencyType> filter = exclusionEnabled ? cargoDetectableOptions.getDependencyTypeFilter() : null;
 
-            EnumListFilter<CargoDependencyType> filter = null;
-            if (exclusionEnabled) {
-                filter = cargoDetectableOptions.getDependencyTypeFilter();
-            }
+        List<CodeLocation> codeLocations = new ArrayList<>();
+        Optional<NameVersion> projectNameVersion = Optional.empty();
 
-            // Only filter if Cargo.toml defines dependency sections.
+        if(cargoTomlFile != null) {
+            String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
+            Set<String> workspaceMembers = cargoTomlParser.parseWorkspaceMembers(cargoTomlContents);
+            File workspaceRoot = cargoTomlFile.getParentFile();
+
+            // Step-1: Process all workspace members and their Cargo.toml first
+            processWorkspaceMembers(workspaceMembers, cargoDetectableOptions, workspaceRoot, cargoLockPackageDataList, packageLookupMap, filter, codeLocations);
+
+            // Step-2: Process single root Cargo.toml. Only filter if Cargo.toml defines dependency sections.
             // Workspace root Cargo.toml files usually don’t, so skip filtering in that case.
             if (cargoTomlParser.hasDependencySections(cargoTomlContents)) {
-                // Parses direct dependencies to include from Cargo.toml applying filter if provided
-                Set<NameVersion> includedDependencies = cargoTomlParser.parseDependenciesToInclude(cargoTomlContents, filter);
-                filteredPackages = resolveDirectAndTransitiveDependencies(cargoLockPackageDataList, includedDependencies, resolvedRootDependencies, packageLookupMap);
-
-                // Collect all direct dependencies from Cargo.toml and their transitive dependencies
-                // from Cargo.lock file to identify and collect orphan dependencies correctly
-                Set<NameVersion> allDependencies = cargoTomlParser.parseDependenciesToInclude(cargoTomlContents, null);
-                unfilteredPackages = resolveDirectAndTransitiveDependencies(cargoLockPackageDataList, allDependencies, allRootDependencies, packageLookupMap);
+                CodeLocation rootCodeLocation = buildCodeLocationFromCargoToml(cargoTomlFile, cargoLockPackageDataList, packageLookupMap, filter);
+                codeLocations.add(rootCodeLocation);
             }
-        }
-
-        // Packages that will be included in the dependency graph ultimately after filtering out NORMAL/BUILD/DEV
-        List<CargoLockPackage> resolvedPackages = filteredPackages.stream()
-            .map(cargoLockPackageDataTransformer::transform)
-            .collect(Collectors.toList());
-        resolvedPackages = resolveDependencyVersions(resolvedPackages, packageLookupMap);
-
-        // All linked Packages via direct + transitive dependencies so as to isolate orphan dependencies
-        List<CargoLockPackage> allConnectedPackages = unfilteredPackages.stream()
-            .map(cargoLockPackageDataTransformer::transform)
-            .collect(Collectors.toList());
-        allConnectedPackages = resolveDependencyVersions(allConnectedPackages, packageLookupMap);
-
-        List<CargoLockPackage> orphanedResolvedPackages = collectOrphanPackages(
-            cargoLockPackageDataList,
-            resolvedPackages,
-            allConnectedPackages
-        );
-
-        DependencyGraph graph = cargoLockPackageTransformer.transformToGraph(resolvedPackages, orphanedResolvedPackages, resolvedRootDependencies);
-
-        Optional<NameVersion> projectNameVersion = Optional.empty();
-        if (cargoTomlFile != null) {
             projectNameVersion = cargoTomlParser.parseNameVersionFromCargoToml(cargoTomlContents);
         }
-        CodeLocation codeLocation = new CodeLocation(graph); //TODO: Consider for producing a ProjectDependencyGraph
+
+        // Fallback: if no Cargo.toml found or CodeLocations were created, treat all Cargo.lock packages as direct dependencies
+        if (cargoTomlFile == null || codeLocations.isEmpty()) {
+            List<CargoLockPackage> allPackages = cargoLockPackageDataList.stream()
+                .map(cargoLockPackageDataTransformer::transform)
+                .collect(Collectors.toList());
+            allPackages = resolveDependencyVersions(allPackages, packageLookupMap);
+
+            Set<NameVersion> allRootDependencies = allPackages.stream()
+                .map(CargoLockPackage::getPackageNameVersion)
+                .collect(Collectors.toSet());
+
+            DependencyGraph graph = cargoLockPackageTransformer.transformToGraph(
+                allPackages,
+                allRootDependencies
+            );
+
+            CodeLocation codeLocation = new CodeLocation(graph);
+            codeLocations.add(codeLocation);
+        }
 
         return new Extraction.Builder()
-            .success(codeLocation)
+            .success(codeLocations)
             .nameVersionIfPresent(projectNameVersion)
             .build();
     }
@@ -239,29 +228,6 @@ public class CargoLockfileExtractor {
         return resolvedPackages;
     }
 
-    private List<CargoLockPackage> collectOrphanPackages(
-        List<CargoLockPackageData> allPackages,
-        List<CargoLockPackage> resolvedPackages,
-        List<CargoLockPackage> allConnectedPackages
-    ) {
-
-        Set<NameVersion> resolvedSet = resolvedPackages.stream()
-            .map(CargoLockPackage::getPackageNameVersion)
-            .collect(Collectors.toSet());
-
-        Set<NameVersion> allConnectedSet = allConnectedPackages.stream()
-            .map(CargoLockPackage::getPackageNameVersion)
-            .collect(Collectors.toSet());
-
-        // Orphaned = in lockfile but not in resolvedPackages and allConnectedSet
-        return allPackages.stream()
-            .map(cargoLockPackageDataTransformer::transform)
-            .filter(pkg -> !allConnectedSet.contains(pkg.getPackageNameVersion()) &&
-                !resolvedSet.contains(pkg.getPackageNameVersion()))
-            .map(pkg -> new CargoLockPackage(pkg.getPackageNameVersion(), Collections.emptyList())) // clear dependencies
-            .collect(Collectors.toList());
-    }
-
     private List<CargoLockPackageData> filterPackagesByInclusion(
             List<CargoLockPackageData> packages,
             Set<NameVersion> dependenciesToInclude
@@ -346,5 +312,117 @@ public class CargoLockfileExtractor {
             }
         }
         return out;
+    }
+
+    private void processWorkspaceMembers(
+        Set<String> workspaceMembers,
+        CargoDetectableOptions cargoDetectableOptions,
+        File workspaceRoot,
+        List<CargoLockPackageData> cargoLockPackageDataList,
+        Map<NameVersion, List<CargoLockPackageData>> packageLookupMap,
+        EnumListFilter<CargoDependencyType> filter,
+        List<CodeLocation> codeLocations
+    ) throws IOException, MissingExternalIdException, DetectableException {
+
+        boolean ignoreAllWorkspaceMembers = cargoDetectableOptions.getCargoIgnoreAllWorkspacesMode();
+        List<String> includedWorkspaces = cargoDetectableOptions.getIncludedWorkspaces();
+        List<String> excludedWorkspaces = cargoDetectableOptions.getExcludedWorkspaces();
+
+        if(ignoreAllWorkspaceMembers || workspaceMembers.isEmpty()) {
+            logger.info("Ignoring all workspace members as per configuration.");
+            return;
+        }
+
+        Set<String> effectiveWorkspaces = getEffectiveWorkspaces(workspaceMembers, includedWorkspaces, excludedWorkspaces);
+
+        for (String workspace : effectiveWorkspaces) {
+            File workspaceToml = new File(workspaceRoot, workspace + File.separator + "Cargo.toml");
+            if (workspaceToml.exists()) {
+                CodeLocation workspaceCodeLocation = buildCodeLocationFromCargoToml(
+                    workspaceToml,
+                    cargoLockPackageDataList,
+                    packageLookupMap,
+                    filter
+                );
+                codeLocations.add(workspaceCodeLocation);
+            } else {
+                logger.warn("Workspace member Cargo.toml not found: {}", workspaceToml.getPath());
+            }
+        }
+    }
+
+    private Set<String> getEffectiveWorkspaces(
+        Set<String> allWorkspaces,
+        List<String> includedWorkspaces,
+        List<String> excludedWorkspaces
+    ) {
+        Set<String> effective = new HashSet<>(allWorkspaces);
+
+        // If specific inclusions exist, filter by matching base names
+        if (includedWorkspaces != null && !includedWorkspaces.isEmpty()) {
+            effective = allWorkspaces.stream()
+                .filter(workspace -> matchesAnyWorkspace(workspace, includedWorkspaces))
+                .collect(Collectors.toSet());
+        }
+
+        // Apply exclusions (exclusion dominates) - also match by base name
+        if (excludedWorkspaces != null && !excludedWorkspaces.isEmpty()) {
+            effective = effective.stream()
+                .filter(workspace -> !matchesAnyWorkspace(workspace, excludedWorkspaces))
+                .collect(Collectors.toSet());
+        }
+
+        return effective;
+    }
+
+    private CodeLocation buildCodeLocationFromCargoToml(
+        File cargoTomlFile,
+        List<CargoLockPackageData> cargoLockPackageDataList,
+        Map<NameVersion, List<CargoLockPackageData>> packageLookupMap,
+        EnumListFilter<CargoDependencyType> filter
+    ) throws IOException, MissingExternalIdException, DetectableException {
+
+        String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
+        Set<NameVersion> includedDependencies = cargoTomlParser.parseDependenciesToInclude(cargoTomlContents, filter);
+        Set<NameVersion> resolvedRootDependencies = new HashSet<>();
+
+        List<CargoLockPackageData> filteredPackages = resolveDirectAndTransitiveDependencies(
+            cargoLockPackageDataList,
+            includedDependencies,
+            resolvedRootDependencies,
+            packageLookupMap
+        );
+
+        List<CargoLockPackage> resolvedPackages = filteredPackages.stream()
+            .map(cargoLockPackageDataTransformer::transform)
+            .collect(Collectors.toList());
+        resolvedPackages = resolveDependencyVersions(resolvedPackages, packageLookupMap);
+
+        DependencyGraph graph = cargoLockPackageTransformer.transformToGraph(
+            resolvedPackages,
+            resolvedRootDependencies
+        );
+
+        Optional<NameVersion> projectNameVersion = cargoTomlParser.parseNameVersionFromCargoToml(cargoTomlContents);
+        String name = projectNameVersion.map(NameVersion::getName).orElse("unknown");
+        String version = projectNameVersion.map(NameVersion::getVersion).orElse(null);
+
+        ExternalIdFactory externalIdFactory = new ExternalIdFactory();
+        ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.CRATES, name, version);
+        return externalId != null? new CodeLocation(graph, externalId): new CodeLocation(graph);
+    }
+
+    private boolean matchesAnyWorkspace(String workspacePath, List<String> workspaceNames) {
+        String baseName = extractWorkspaceBaseName(workspacePath);
+        return workspaceNames.stream()
+            .anyMatch(name -> name.equals(baseName) || name.equals(workspacePath));
+    }
+
+    private String extractWorkspaceBaseName(String workspacePath) {
+        int lastSlash = workspacePath.lastIndexOf('/');
+        if (lastSlash >= 0) {
+            return workspacePath.substring(lastSlash + 1);
+        }
+        return workspacePath;
     }
 }
