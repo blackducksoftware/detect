@@ -87,7 +87,7 @@ public class CargoLockfileExtractor {
             // Step-1: Process all workspace members and their Cargo.toml first
             processWorkspaceMembers(workspaceMembers, cargoDetectableOptions, workspaceRoot, cargoLockPackageDataList, packageLookupMap, filter, codeLocations);
 
-            // Step2: Process single root Cargo.toml. Only filter if Cargo.toml defines dependency sections.
+            // Step-2: Process single root Cargo.toml. Only filter if Cargo.toml defines dependency sections.
             // Workspace root Cargo.toml files usually don’t, so skip filtering in that case.
             if (cargoTomlParser.hasDependencySections(cargoTomlContents)) {
                 CodeLocation rootCodeLocation = buildCodeLocationFromCargoToml(cargoTomlFile, cargoLockPackageDataList, packageLookupMap, filter);
@@ -226,29 +226,6 @@ public class CargoLockfileExtractor {
             resolvedPackages.add(new CargoLockPackage(new NameVersion(name, version), resolvedDependencies));
         }
         return resolvedPackages;
-    }
-
-    private List<CargoLockPackage> collectOrphanPackages(
-        List<CargoLockPackageData> allPackages,
-        List<CargoLockPackage> resolvedPackages,
-        List<CargoLockPackage> allConnectedPackages
-    ) {
-
-        Set<NameVersion> resolvedSet = resolvedPackages.stream()
-            .map(CargoLockPackage::getPackageNameVersion)
-            .collect(Collectors.toSet());
-
-        Set<NameVersion> allConnectedSet = allConnectedPackages.stream()
-            .map(CargoLockPackage::getPackageNameVersion)
-            .collect(Collectors.toSet());
-
-        // Orphaned = in lockfile but not in resolvedPackages and allConnectedSet
-        return allPackages.stream()
-            .map(cargoLockPackageDataTransformer::transform)
-            .filter(pkg -> !allConnectedSet.contains(pkg.getPackageNameVersion()) &&
-                !resolvedSet.contains(pkg.getPackageNameVersion()))
-            .map(pkg -> new CargoLockPackage(pkg.getPackageNameVersion(), Collections.emptyList())) // clear dependencies
-            .collect(Collectors.toList());
     }
 
     private List<CargoLockPackageData> filterPackagesByInclusion(
