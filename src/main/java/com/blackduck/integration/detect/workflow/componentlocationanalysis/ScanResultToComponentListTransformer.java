@@ -26,7 +26,7 @@ public class ScanResultToComponentListTransformer {
      * @param rapidScanFullResults
      * @return set of {@link Component}s
      */
-    public Set<Component> transformScanResultToComponentList(List<DeveloperScansScanView> rapidScanFullResults) {
+    public Set<Component> transformScanResultToComponentSet(List<DeveloperScansScanView> rapidScanFullResults) {
         HashMap<String, ComponentMetadata> componentIdWithMetadata = new HashMap<>();
         Set<String> orderedComponentIDs = new LinkedHashSet<>();
         Set<String> componentNamesWithNullIds = new LinkedHashSet<>(rapidScanFullResults.size());
@@ -49,7 +49,7 @@ public class ScanResultToComponentListTransformer {
         Set<Component> componentSet = new LinkedHashSet<>();
         try {
             for (String componentIdString : orderedComponentIDs) {
-                JsonObject jsonObject = getJsonObjectFromScanMetadata(componentIdWithMetadata.get(componentIdString));
+                JsonObject jsonObject = getJsonObjectFromComponentMetadata(componentIdWithMetadata.get(componentIdString));
                 String[] parts;
                 if ((parts = componentIdString.split(":")).length > 1) {
                     if (parts.length == 2) {
@@ -70,9 +70,8 @@ public class ScanResultToComponentListTransformer {
         return componentSet;
     }
     
-    private JsonObject getJsonObjectFromScanMetadata(ComponentMetadata scanMeta) {
+    private JsonObject getJsonObjectFromComponentMetadata(ComponentMetadata scanMeta) {
         Gson gson = new GsonBuilder().create();
-        JsonObject object = gson.fromJson(gson.toJson(scanMeta), JsonObject.class);
-        return object;
+        return gson.fromJson(gson.toJson(scanMeta), JsonObject.class);
     }
 }
