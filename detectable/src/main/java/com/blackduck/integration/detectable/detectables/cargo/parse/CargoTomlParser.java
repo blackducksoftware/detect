@@ -1,5 +1,6 @@
 package com.blackduck.integration.detectable.detectables.cargo.parse;
 
+import java.io.File;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -35,7 +36,7 @@ public class CargoTomlParser {
         return Optional.empty();
     }
 
-    public Set<String> parseWorkspaceMembers(String tomlFileContents) {
+    public Set<String> parseWorkspaceMembers(String tomlFileContents, File workspaceRoot) {
         TomlParseResult toml = Toml.parse(tomlFileContents);
         Set<String> members = new HashSet<>();
 
@@ -45,14 +46,65 @@ public class CargoTomlParser {
             if (memberArray != null) {
                 for (int i = 0; i < memberArray.size(); i++) {
                     String member = memberArray.getString(i);
-                    if (member != null) {
-                        members.add(member);
-                    }
+                    processMember(member, workspaceRoot, members);
                 }
             }
         }
 
         return members;
+    }
+
+    private void processMember(String member, File workspaceRoot, Set<String> members) {
+        if (member == null || member.equals(".")) {
+            return;
+        }
+
+        if (member.contains("*")) {
+            members.addAll(expandGlobPattern(member, workspaceRoot));
+        } else {
+            members.add(member);
+        }
+    }
+
+    private Set<String> expandGlobPattern(String globPattern, File workspaceRoot) {
+        Set<String> expandedMembers = new HashSet<>();
+
+        if (workspaceRoot == null || !workspaceRoot.exists()) {
+            return expandedMembers;
+        }
+
+        int firstSlashIndex = globPattern.indexOf('/');
+        if (firstSlashIndex <= 0) {
+            return expandedMembers;
+        }
+
+        String prefix = globPattern.substring(0, firstSlashIndex);
+        File baseDir = new File(workspaceRoot, prefix);
+
+        if (!baseDir.exists() || !baseDir.isDirectory()) {
+            return expandedMembers;
+        }
+
+        File[] subDirs = baseDir.listFiles(File::isDirectory);
+        if (subDirs == null) {
+            return expandedMembers;
+        }
+
+        for (File subDir : subDirs) {
+            addWorkspaceMemberIfExists(subDir, prefix, expandedMembers);
+        }
+
+        return expandedMembers;
+    }
+
+    private void addWorkspaceMemberIfExists(File subDir, String prefix, Set<String> expandedMembers) {
+        File cargoToml = new File(subDir, "Cargo.toml");
+        if (!cargoToml.exists()) {
+            return;
+        }
+
+        String relativePath = prefix + "/" + subDir.getName();
+        expandedMembers.add(relativePath);
     }
 
     public boolean hasDependencySections(String tomlFileContents) {

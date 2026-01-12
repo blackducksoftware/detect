@@ -44,9 +44,10 @@ public class CargoCliExtractor {
         Set<String> workspaceMembers = new HashSet<>();
 
         if (cargoTomlFile != null) {
+            File workspaceRoot = cargoTomlFile.getParentFile();
             String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
             projectNameVersion = cargoTomlParser.parseNameVersionFromCargoToml(cargoTomlContents);
-            workspaceMembers = cargoTomlParser.parseWorkspaceMembers(cargoTomlContents);
+            workspaceMembers = cargoTomlParser.parseWorkspaceMembers(cargoTomlContents, workspaceRoot);
         }
 
         EnumListFilter<CargoDependencyType> dependencyTypeFilter = Optional.ofNullable(cargoDetectableOptions.getDependencyTypeFilter())

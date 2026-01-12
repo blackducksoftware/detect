@@ -73,9 +73,6 @@ public class CargoDependencyGraphTransformer {
         Dependency workspaceRoot = extractWorkspaceRoot(workspaceLines);
 
         if (workspaceRoot != null) {
-            // Add workspace root to graph
-//            graph.addDirectDependency(workspaceRoot);
-
             String projectName = determineProjectName(workspaceLines, workspaceMembers, workspaceRoot);
             ExternalId projectExternalId = externalIdFactory.createNameVersionExternalId(
                 Forge.CRATES,
