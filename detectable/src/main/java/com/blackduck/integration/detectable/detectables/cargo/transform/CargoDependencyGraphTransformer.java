@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 public class CargoDependencyGraphTransformer {
 
@@ -26,14 +27,14 @@ public class CargoDependencyGraphTransformer {
         this.externalIdFactory = externalIdFactory;
     }
 
-    public List<CodeLocation> transform(List<String> cargoTreeOutput) {
+    public List<CodeLocation> transform(List<String> cargoTreeOutput, Set<String> workspaceMembers) {
         List<CodeLocation> codeLocations = new LinkedList<>();
         List<String> currentWorkspace = new ArrayList<>();
 
         for (String line : cargoTreeOutput) {
             if (line.trim().isEmpty()) {
                 if (!currentWorkspace.isEmpty()) {
-                    CodeLocation workspaceCodeLocation = processWorkspace(currentWorkspace);
+                    CodeLocation workspaceCodeLocation = processWorkspace(currentWorkspace, workspaceMembers);
                     if (workspaceCodeLocation != null) {
                         codeLocations.add(workspaceCodeLocation);
                     }
@@ -46,7 +47,7 @@ public class CargoDependencyGraphTransformer {
 
         // Process last workspace
         if (!currentWorkspace.isEmpty()) {
-            CodeLocation workspaceCodeLocation = processWorkspace(currentWorkspace);
+            CodeLocation workspaceCodeLocation = processWorkspace(currentWorkspace, workspaceMembers);
             if (workspaceCodeLocation != null) {
                 codeLocations.add(workspaceCodeLocation);
             }
@@ -55,7 +56,7 @@ public class CargoDependencyGraphTransformer {
         return codeLocations;
     }
 
-    private CodeLocation processWorkspace(List<String> workspaceLines) {
+    private CodeLocation processWorkspace(List<String> workspaceLines, Set<String> workspaceMembers) {
         if (workspaceLines.isEmpty()) {
             return null;
         }
@@ -63,23 +64,40 @@ public class CargoDependencyGraphTransformer {
         DependencyGraph graph = new BasicDependencyGraph();
         Deque<Dependency> dependencyStack = new ArrayDeque<>();
 
+        // Process all lines to build the dependency graph
+        for (String line : workspaceLines) {
+            processLine(line, graph, dependencyStack);
+        }
+
         // Extract workspace root from the first line (depth 0)
         Dependency workspaceRoot = extractWorkspaceRoot(workspaceLines);
 
-        // Add workspace root to graph
         if (workspaceRoot != null) {
-            graph.addDirectDependency(workspaceRoot);
+            // Add workspace root to graph
+//            graph.addDirectDependency(workspaceRoot);
+
+            String projectName = determineProjectName(workspaceLines, workspaceMembers, workspaceRoot);
+            ExternalId projectExternalId = externalIdFactory.createNameVersionExternalId(
+                Forge.CRATES,
+                projectName,
+                workspaceRoot.getVersion()
+            );
+            return new CodeLocation(graph, projectExternalId);
         }
 
-        // Process all lines to build the dependency graph
-        for (String line : workspaceLines) {
-            processLine(line, graph, dependencyStack, workspaceRoot);
+        return new CodeLocation(graph);
+    }
+
+    private String determineProjectName(List<String> workspaceLines, Set<String> workspaceMembers, Dependency workspaceRoot) {
+        String matchedMember = extractWorkspacePath(workspaceLines, workspaceMembers);
+
+        // If matched a workspace member, use it
+        if (matchedMember != null) {
+            return matchedMember;
         }
 
-        // Return CodeLocation with workspace root's ExternalId
-        return workspaceRoot != null
-            ? new CodeLocation(graph, workspaceRoot.getExternalId())
-            : new CodeLocation(graph);
+        // Otherwise, use the dependency name
+        return workspaceRoot.getName();
     }
 
     private Dependency extractWorkspaceRoot(List<String> workspaceLines) {
@@ -99,7 +117,36 @@ public class CargoDependencyGraphTransformer {
         return null;
     }
 
-    private void processLine(String line, DependencyGraph graph, Deque<Dependency> dependencyStack, Dependency workspaceRoot) {
+    private String extractWorkspacePath(List<String> workspaceLines, Set<String> workspaceMembers) {
+        if (workspaceLines.isEmpty()) {
+            return null;
+        }
+
+        String firstLine = workspaceLines.get(0);
+        int depth = extractDepth(firstLine);
+
+        if (depth == 0) {
+            // Extract path from parentheses: "0globset v0.4.15 (C:\Users\...\ripgrep\crates\globset)"
+            int startParen = firstLine.indexOf('(');
+            int endParen = firstLine.indexOf(')', startParen);
+
+            if (startParen > 0 && endParen > startParen) {
+                String fullPath = firstLine.substring(startParen + 1, endParen).trim();
+                fullPath = fullPath.replace('\\', '/'); // Normalize to forward slashes
+
+                // Check if any workspace member matches the end of the normalized path
+                for (String member : workspaceMembers) {
+                    if (fullPath.endsWith(member)) {
+                        return member; // Return the matched workspace member directly
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private void processLine(String line, DependencyGraph graph, Deque<Dependency> dependencyStack) {
         if (line.isEmpty()) {
             return;
         }

@@ -19,11 +19,13 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Map;
 import java.util.EnumMap;
+import java.util.Set;
 
 public class CargoCliExtractor {
     private static final List<String> CARGO_TREE_COMMAND = Arrays.asList("tree", "--prefix", "depth");
@@ -52,12 +54,15 @@ public class CargoCliExtractor {
         List<String> fullTreeOutput = runCargoTreeCommand(directory, cargoExe, fullTreeCommand);
 
         Optional<NameVersion> projectNameVersion = Optional.empty();
+        Set<String> workspaceMembers = new HashSet<>();
+
         if (cargoTomlFile != null) {
             String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
             projectNameVersion = cargoTomlParser.parseNameVersionFromCargoToml(cargoTomlContents);
+            workspaceMembers = cargoTomlParser.parseWorkspaceMembers(cargoTomlContents);
         }
 
-        List<CodeLocation> codeLocations = cargoDependencyTransformer.transform(fullTreeOutput);
+        List<CodeLocation> codeLocations = cargoDependencyTransformer.transform(fullTreeOutput, workspaceMembers);
 
         return new Extraction.Builder()
             .success(codeLocations)
