@@ -24,6 +24,7 @@ import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.Baze
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.HaskellCabalLibraryJsonProtoParser;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
+import com.blackduck.integration.detectable.util.ToolVersionLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,6 +83,9 @@ public class BazelV2Detectable extends Detectable {
     public Extraction extract(ExtractionEnvironment extractionEnvironment) throws DetectableException, ExecutableFailedException {
         String target = options.getTargetName().orElseThrow(() -> new DetectableException("Missing detect.bazel.target"));
         logger.info("Bazel V2 detectable starting. Target: {}", target);
+        // Log Bazel tool version similar to v1 behavior
+        new ToolVersionLogger(executableRunner).log(environment.getDirectory(), bazelExe, "version");
+
         BazelCommandExecutor bazelCmd = new BazelCommandExecutor(executableRunner, environment.getDirectory(), bazelExe);
         BazelGraphProber prober = new BazelGraphProber(bazelCmd, target, 20);
         // Prober now logs and continues on individual probe failures; do not abort extraction here.
