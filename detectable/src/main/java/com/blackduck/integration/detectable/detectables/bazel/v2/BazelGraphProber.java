@@ -109,7 +109,7 @@ public class BazelGraphProber {
         Optional<String> out = bazel.executeToString(java.util.Arrays.asList(
             "cquery",
             "--noimplicit_deps",
-            "--incompatible_require_linker_input_cc_api=false",
+            "--incompatible_require_linker_input_cc_api=false", //this flag is to maintain compatibility with bazel versions < 6
             "kind(haskell_cabal_library, deps(" + target + "))",
             "--output",
             "label_kind"
