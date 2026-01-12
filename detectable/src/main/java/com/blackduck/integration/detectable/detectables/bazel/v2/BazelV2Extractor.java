@@ -57,7 +57,7 @@ public class BazelV2Extractor {
         for (WorkspaceRule rule : ordered) {
             logger.info("Executing pipeline for rule: {}", rule);
             List<Dependency> deps = pipelines.get(rule).run();
-            logger.info("Pipeline {} produced {} dependencies.", rule, deps.size());
+            logger.info("Number of dependencies discovered for rule {}: {}", rule, deps.size());
             aggregated.addAll(deps);
         }
 
