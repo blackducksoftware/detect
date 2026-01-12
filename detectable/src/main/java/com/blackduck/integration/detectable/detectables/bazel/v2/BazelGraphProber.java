@@ -107,7 +107,12 @@ public class BazelGraphProber {
 
     private boolean detectHaskellCabal() throws Exception {
         Optional<String> out = bazel.executeToString(java.util.Arrays.asList(
-            "cquery", "--noimplicit_deps", "kind(haskell_cabal_library, deps(" + target + "))", "--output", "label_kind"
+            "cquery",
+            "--noimplicit_deps",
+            "--incompatible_require_linker_input_cc_api=false",
+            "kind(haskell_cabal_library, deps(" + target + "))",
+            "--output",
+            "label_kind"
         ));
         boolean found = out.isPresent() && out.get().contains("haskell_cabal_library");
         if (found) {
