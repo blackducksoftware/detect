@@ -40,19 +40,6 @@ public class CargoCliExtractor {
     }
 
     public Extraction extract(File directory, ExecutableTarget cargoExe, File cargoTomlFile, CargoDetectableOptions cargoDetectableOptions) throws ExecutableFailedException, IOException {
-        List<String> fullTreeCommand = new LinkedList<>(CARGO_TREE_COMMAND);
-
-        addWorkspaceFlags(fullTreeCommand, cargoDetectableOptions);
-
-        EnumListFilter<CargoDependencyType> dependencyTypeFilter = Optional.ofNullable(cargoDetectableOptions.getDependencyTypeFilter())
-            .orElse(EnumListFilter.excludeNone());
-
-        if(!dependencyTypeFilter.shouldIncludeAll()) {
-            addEdgeExclusions(fullTreeCommand, cargoDetectableOptions);
-        }
-
-        List<String> fullTreeOutput = runCargoTreeCommand(directory, cargoExe, fullTreeCommand);
-
         Optional<NameVersion> projectNameVersion = Optional.empty();
         Set<String> workspaceMembers = new HashSet<>();
 
@@ -62,12 +49,53 @@ public class CargoCliExtractor {
             workspaceMembers = cargoTomlParser.parseWorkspaceMembers(cargoTomlContents);
         }
 
+        EnumListFilter<CargoDependencyType> dependencyTypeFilter = Optional.ofNullable(cargoDetectableOptions.getDependencyTypeFilter())
+            .orElse(EnumListFilter.excludeNone());
+
+        List<String> fullTreeOutput = runCargoTreeCommands(directory, cargoExe, cargoDetectableOptions, dependencyTypeFilter);
+
         List<CodeLocation> codeLocations = cargoDependencyTransformer.transform(fullTreeOutput, workspaceMembers);
 
         return new Extraction.Builder()
             .success(codeLocations)
             .nameVersionIfPresent(projectNameVersion)
             .build();
+    }
+
+    private List<String> runCargoTreeCommands(
+        File directory,
+        ExecutableTarget cargoExe,
+        CargoDetectableOptions cargoDetectableOptions,
+        EnumListFilter<CargoDependencyType> dependencyTypeFilter
+    ) throws ExecutableFailedException {
+        List<String> fullTreeOutput = new ArrayList<>();
+
+        boolean ignoreAllWorkspaceMembers = cargoDetectableOptions.getCargoIgnoreAllWorkspacesMode();
+        List<String> includedWorkspaces = cargoDetectableOptions.getIncludedWorkspaces();
+        List<String> excludedWorkspaces = cargoDetectableOptions.getExcludedWorkspaces();
+        List<String> effectiveInclusions = getEffectiveInclusions(includedWorkspaces, excludedWorkspaces);
+
+        // Step 1: Run root workspace command (if not ignoring all workspaces)
+        if (!ignoreAllWorkspaceMembers && !effectiveInclusions.isEmpty()) {
+            List<String> rootCommand = new LinkedList<>(CARGO_TREE_COMMAND);
+            if (!dependencyTypeFilter.shouldIncludeAll()) {
+                addEdgeExclusions(rootCommand, cargoDetectableOptions);
+            }
+            List<String> rootOutput = runCargoTreeCommand(directory, cargoExe, rootCommand);
+            fullTreeOutput.addAll(rootOutput);
+            fullTreeOutput.add(""); // Add separator between workspaces
+        }
+
+        // Step 2: Run workspace-specific command
+        List<String> workspaceCommand = new LinkedList<>(CARGO_TREE_COMMAND);
+        addWorkspaceFlags(workspaceCommand, cargoDetectableOptions);
+        if (!dependencyTypeFilter.shouldIncludeAll()) {
+            addEdgeExclusions(workspaceCommand, cargoDetectableOptions);
+        }
+        List<String> workspaceOutput = runCargoTreeCommand(directory, cargoExe, workspaceCommand);
+        fullTreeOutput.addAll(workspaceOutput);
+
+        return fullTreeOutput;
     }
 
     private List<String> runCargoTreeCommand(File directory, ExecutableTarget cargoExe, List<String> commandArgs) throws ExecutableFailedException {
