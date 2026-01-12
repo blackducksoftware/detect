@@ -7,7 +7,9 @@ import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -31,7 +33,7 @@ class CargoDependencyGraphTransformerTest {
             "2fastrand v2.3.0"
         );
 
-        List<CodeLocation> codeLocations = transformer.transform(input);
+        List<CodeLocation> codeLocations = transformer.transform(input, new HashSet<>());
 
         assertEquals(1, codeLocations.size());
         DependencyGraph graph = codeLocations.get(0).getDependencyGraph();
@@ -53,7 +55,7 @@ class CargoDependencyGraphTransformerTest {
             "1serde v1.0.0"
         );
 
-        List<CodeLocation> codeLocations = transformer.transform(input);
+        List<CodeLocation> codeLocations = transformer.transform(input, new HashSet<>());
 
         assertEquals(1, codeLocations.size());
         DependencyGraph graph = codeLocations.get(0).getDependencyGraph();
@@ -73,7 +75,7 @@ class CargoDependencyGraphTransformerTest {
         );
 
         assertThrows(NumberFormatException.class, () -> {
-            transformer.transform(cargoTreeOutput);
+            transformer.transform(cargoTreeOutput, new HashSet<>());
         });
     }
 
