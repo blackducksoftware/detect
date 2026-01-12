@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
@@ -90,7 +89,13 @@ public class CargoLockfileExtractor {
             // Step-2: Process single root Cargo.toml. Only filter if Cargo.toml defines dependency sections.
             // Workspace root Cargo.toml files usually don’t, so skip filtering in that case.
             if (cargoTomlParser.hasDependencySections(cargoTomlContents)) {
-                CodeLocation rootCodeLocation = buildCodeLocationFromCargoToml(cargoTomlFile, cargoLockPackageDataList, packageLookupMap, filter);
+                CodeLocation rootCodeLocation = buildCodeLocationFromCargoToml(
+                    cargoTomlFile,
+                    cargoLockPackageDataList,
+                    packageLookupMap,
+                    null,
+                    filter
+                );
                 codeLocations.add(rootCodeLocation);
             }
             projectNameVersion = cargoTomlParser.parseNameVersionFromCargoToml(cargoTomlContents);
@@ -342,6 +347,7 @@ public class CargoLockfileExtractor {
                     workspaceToml,
                     cargoLockPackageDataList,
                     packageLookupMap,
+                    workspace,
                     filter
                 );
                 codeLocations.add(workspaceCodeLocation);
@@ -379,6 +385,7 @@ public class CargoLockfileExtractor {
         File cargoTomlFile,
         List<CargoLockPackageData> cargoLockPackageDataList,
         Map<NameVersion, List<CargoLockPackageData>> packageLookupMap,
+        @Nullable String workspacePath,
         EnumListFilter<CargoDependencyType> filter
     ) throws IOException, MissingExternalIdException, DetectableException {
 
@@ -404,7 +411,8 @@ public class CargoLockfileExtractor {
         );
 
         Optional<NameVersion> projectNameVersion = cargoTomlParser.parseNameVersionFromCargoToml(cargoTomlContents);
-        String name = projectNameVersion.map(NameVersion::getName).orElse("unknown");
+        // Use workspace path as name if provided, otherwise use Cargo.toml name
+        String name = (workspacePath != null) ? workspacePath : projectNameVersion.map(NameVersion::getName).orElse("unknown");
         String version = projectNameVersion.map(NameVersion::getVersion).orElse(null);
 
         ExternalIdFactory externalIdFactory = new ExternalIdFactory();
