@@ -41,7 +41,7 @@ public class ScassScanStepRunner {
             throw new IntegrationException("Scan creation response is not provided.");
         }
 
-        ScassUploader scaasScanUploader = createScaasScanUploaderWithProxyInfo();
+        ScassUploader scaasScanUploader = createScassScanUploaderWithProxyInfo();
 
         // Don't upload a file larger than SCASS's capability indicates
         validateGcpSize(scanFileOptional, scanCreationResponse);
@@ -80,7 +80,7 @@ public class ScassScanStepRunner {
         }
     }
 
-    private ScassUploader createScaasScanUploaderWithProxyInfo() throws IntegrationException {
+    private ScassUploader createScassScanUploaderWithProxyInfo() throws IntegrationException {
         UploaderFactory uploadFactory = UploaderHelper.getUploaderFactory(blackDuckRunData);
 
         return uploadFactory.createScassUploaderWithProxyInfo();
