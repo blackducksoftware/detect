@@ -29,7 +29,6 @@ import java.util.regex.Pattern;
  */
 public class GoModFileParser {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
-    private final KBComponentHelpers kbComponentHelpers = new KBComponentHelpers();
     
     // Regular expressions for parsing different sections
     private static final Pattern MODULE_PATTERN = Pattern.compile("^module\\s+(.+)$");
@@ -254,8 +253,8 @@ public class GoModFileParser {
             
             // Clean up version (remove +incompatible, %2Bincompatible suffixes)
             version = cleanVersion(version);
-            version = kbComponentHelpers.getKbCompatibleVersion(version);
-            
+            version = KBComponentHelpers.getKbCompatibleVersion(version);
+
             // Check if it's an indirect dependency
             boolean isIndirect = comment != null && comment.contains("indirect");
             
@@ -267,7 +266,7 @@ public class GoModFileParser {
         if (parts.length >= 1) {
             String moduleName = parts[0];
             String version = parts.length > 1 ? cleanVersion(parts[1]) : "";
-            version = kbComponentHelpers.getKbCompatibleVersion(version);
+            version = KBComponentHelpers.getKbCompatibleVersion(version);
             boolean isIndirect = line.contains("// indirect");
             return new GoModuleInfo(moduleName, version, isIndirect);
         }

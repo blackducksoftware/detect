@@ -85,16 +85,6 @@ public class GoModuleDependencyHelper {
         return directs.contains(modulePathWithVersion);
     }
 
-    
-    private boolean hasDependency(List<String> correctedDependencies, String splitLinePart){
-        for (String adep : correctedDependencies) {
-            if (splitLinePart.startsWith(adep)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private String getProperParentage(String grphLine, String[] splitLine, Map<String, List<String>> whyMap, Set<String> correctedDependencies) {
         String childModulePath = splitLine[1].replaceAll("@.*", "");
         // If we have already found the correct parent for this module, don't try to find it again

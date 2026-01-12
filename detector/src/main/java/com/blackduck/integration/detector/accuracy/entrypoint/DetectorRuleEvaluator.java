@@ -76,13 +76,13 @@ public class DetectorRuleEvaluator {
             return null;
         }
 
-        DetectableDefinition definition = entryPoint.getPrimary();
-        if (detectableExclusionEvaluator.isDetectableExcluded(definition)) {
+        DetectableDefinition definition = selectDetectableDefinition(entryPoint);
+        if (definition == null) {
             return null;
         }
 
-        Detectable primaryDetectable = definition.getDetectableCreatable().createDetectable(environment);
-        DetectableResult applicable = primaryDetectable.applicable();
+        Detectable selectedDetectable = definition.getDetectableCreatable().createDetectable(environment);
+        DetectableResult applicable = selectedDetectable.applicable();
         if (!applicable.getPassed()) {
             notFoundEntryPoints.add(EntryPointNotFoundResult.notApplicable(entryPoint, searchResult, applicable));
             return null;
@@ -90,6 +90,26 @@ public class DetectorRuleEvaluator {
 
         EntryPointEvaluation entryPointEvaluation = extract(entryPoint, environment, extractionEnvironmentSupplier);
         return EntryPointFoundResult.evaluated(entryPoint, searchResult, applicable, entryPointEvaluation);
+    }
+
+    private DetectableDefinition selectDetectableDefinition(EntryPoint entryPoint) {
+        DetectableDefinition primary = entryPoint.getPrimary();
+        if (!detectableExclusionEvaluator.isDetectableExcluded(primary)) {
+            return primary;
+        }
+
+        // Primary is excluded, look for the first non-excluded fallback
+        List<DetectableDefinition> fallbacks = entryPoint.getFallbacks();
+        if (fallbacks != null) {
+            for (DetectableDefinition fallback : fallbacks) {
+                if (!detectableExclusionEvaluator.isDetectableExcluded(fallback)) {
+                    return fallback;
+                }
+            }
+        }
+
+        // No valid definition found
+        return null;
     }
 
     private EntryPointEvaluation extract(EntryPoint entryPoint, DetectableEnvironment detectableEnvironment, Supplier<ExtractionEnvironment> extractionEnvironmentSupplier) {

@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -81,5 +82,48 @@ public class PipTest {
         blackduckAssertions.checkComponentVersionExists("MarkupSafe", "2.1.5");
         blackduckAssertions.checkComponentVersionExists("Packaging", "24.1");
         blackduckAssertions.checkComponentVersionExists("pycparser", "2.22");
+    }
+
+    @Test
+    public void pythonHybridTest() throws IntegrationException, IOException {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("python-hybrid-test", "python-hybrid-test:1.0.0" )) {
+
+            Map<String, String> dockerfileArgs = new HashMap<>();
+            dockerfileArgs.put("ARTIFACTORY_URL", ARTIFACTORY_URL);
+
+            BuildDockerImageProvider buildDockerImageProvider = BuildDockerImageProvider.forDockerfilResourceNamed("PythonHybrid.dockerfile");
+            buildDockerImageProvider.setBuildArgs(dockerfileArgs);
+            test.withImageProvider(buildDockerImageProvider);
+
+            // Set up blackduck connection and environment
+            String projectVersion = "python-hybrid-test-project";
+            BlackDuckTestConnection blackDuckTestConnection = BlackDuckTestConnection.fromEnvironment();
+            BlackDuckAssertions blackduckAssertions = blackDuckTestConnection.projectVersionAssertions("python-hybrid-test", projectVersion);
+            blackduckAssertions.emptyOnBlackDuck();
+
+            // Build command with BlackDuck config
+            DetectCommandBuilder commandBuilder = new DetectCommandBuilder().defaults().defaultDirectories(test);
+            commandBuilder.connectToBlackDuck(blackDuckTestConnection);
+            commandBuilder.projectNameVersion(blackduckAssertions);
+            commandBuilder.waitForResults();
+
+            // Set up Detect properties
+            commandBuilder.property(DetectProperties.DETECT_TOOLS, DetectTool.DETECTOR.toString());
+            commandBuilder.property(DetectProperties.DETECT_PIP_PATH, "/usr/local/bin/pip");
+            commandBuilder.property(DetectProperties.DETECT_PYTHON_PATH, "/usr/bin/python3");
+            commandBuilder.property(DetectProperties.DETECT_ACCURACY_REQUIRED, "NONE");
+            DockerAssertions dockerAssertions = test.run(commandBuilder);
+
+            // Detect specific assertions
+            dockerAssertions.successfulDetectorType(DetectorType.UV.toString());
+            dockerAssertions.logContains("SETUPTOOLS: SUCCESS");
+            dockerAssertions.successfulDetectorType(DetectorType.POETRY.toString());
+            dockerAssertions.atLeastOneBdioFile();
+
+            blackduckAssertions.hasComponents("granian");
+            blackduckAssertions.hasComponents("httpx");
+            blackduckAssertions.checkComponentVersionExists("atomicwrites", "1.4.1");
+            blackduckAssertions.checkComponentVersionExists("idna", "3.10");
+        }
     }
 }

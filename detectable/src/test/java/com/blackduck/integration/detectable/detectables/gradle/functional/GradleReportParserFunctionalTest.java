@@ -114,4 +114,18 @@ public class GradleReportParserFunctionalTest {
 
         System.out.println(new GsonBuilder().setPrettyPrinting().create().toJson(codeLocation.get()));
     }
+
+    @Test
+    void testConstraintsAreFiltered() {
+        Optional<CodeLocation> codeLocation = buildCodeLocation("/gradle/constraints_dependencyGraph.txt", true);
+        Assertions.assertTrue(codeLocation.isPresent());
+        DependencyGraph graph = codeLocation.get().getDependencyGraph();
+
+        MavenGraphAssert graphAssert = new MavenGraphAssert(graph);
+        graphAssert.hasRootSize(1);
+        graphAssert.hasRootDependency("com.google.code.gson:gson:2.8.9");
+        graphAssert.hasNoDependency("org.apache.logging.log4j:log4j-api:2.17.1");
+        graphAssert.hasNoDependency("org.apache.commons:commons-collections4:4.4");
+        graphAssert.hasNoDependency("javax.servlet:javax.servlet-api:3.1.0");
+    }
 }

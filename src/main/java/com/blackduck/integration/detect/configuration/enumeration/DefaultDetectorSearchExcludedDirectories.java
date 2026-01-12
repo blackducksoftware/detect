@@ -17,7 +17,8 @@ public enum DefaultDetectorSearchExcludedDirectories {
     GIT(".git"),
     TARGET("target"),
     SYNOPSYS(".synopsys"),
-    BLACKDUCK(".blackduck");
+    BLACKDUCK(".blackduck"),
+    BRIDGE(".bridge");
 
     private final String directoryName;
 

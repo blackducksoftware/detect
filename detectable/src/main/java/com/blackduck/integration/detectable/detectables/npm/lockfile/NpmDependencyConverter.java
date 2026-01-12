@@ -213,16 +213,19 @@ public class NpmDependencyConverter {
      */
     private void gatherAllDependencies(PackageLock packageLock, String packageName) {
         PackageLockPackage packageLockPackage = packageLock.packages.get(packageName);
-        if (packageLockPackage.dependencies != null) {
-            if (packageLockPackage.devDependencies != null) {
-                packageLockPackage.dependencies.putAll(packageLockPackage.devDependencies);
-            }
-            if (packageLockPackage.peerDependencies != null) {
-                packageLockPackage.dependencies.putAll(packageLockPackage.peerDependencies);
-            }
-            if (packageLockPackage.optionalDependencies != null) {
-                packageLockPackage.dependencies.putAll(packageLockPackage.optionalDependencies);
-            } 
+
+        if (packageLockPackage.dependencies == null) {
+            packageLockPackage.dependencies = new HashMap<>();
+        }
+
+        if (packageLockPackage.devDependencies != null) {
+            packageLockPackage.dependencies.putAll(packageLockPackage.devDependencies);
+        }
+        if (packageLockPackage.peerDependencies != null) {
+            packageLockPackage.dependencies.putAll(packageLockPackage.peerDependencies);
+        }
+        if (packageLockPackage.optionalDependencies != null) {
+            packageLockPackage.dependencies.putAll(packageLockPackage.optionalDependencies);
         }
     }
 }

@@ -13,12 +13,6 @@ Enable this feature by adding [--detect.blackduck.scan.mode=STATELESS](../proper
 ### Signature Scan Requirements
  * Must be running [bd_product_short] 2022.10.0 or greater using the hosted KB.
  
-### Binary Scan Requirements
- * Must be running [bd_product_short] 2023.4.0 or greater using the hosted KB.
- * It is necessary to have [detect_product_short] and [bd_product_short] running in the hosted environment to perform these scans. 
- * To run binary scan a [bdba_product_short](BDBA) license is required.
- * [detect_product_short] and [bd_product_short] must be running in the hosted Software Composition Analysis as a Service(SCAaaS) environment.
- 
  ### Container Scan Requirements
  * Must be running [bd_product_short] 2023.10.0 or greater to execute container scans that provide container layer findings.
  * It is necessary to have [detect_product_short] and [bd_product_short] running in the hosted environment to perform these scans. 
