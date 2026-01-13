@@ -20,6 +20,8 @@
 
 ### New features
 
+* New `detect.cargo.included.workspaces` and `detect.cargo.excluded.workspaces` properties for cargo detector provide control over which workspace members are included or excluded during scanning. See [cargo](properties/detectors/cargo.md) for details.
+* New `detect.cargo.ignore.all.workspaces` property allows disabling workspace support entirely when set to true (default: false). See [cargo](properties/detectors/cargo.md) for more information.
 
 ### Changed features
 
@@ -27,6 +29,7 @@
 ### Resolved issues
 
 * (IDETECT-4924) Resolved an issue where Impact Analysis Scan threw errors on malformed classes; it now handles them gracefully by logging a warning, skipping the affected classes, and adding them to the scan output.
+* (IDETECT-4919) Added Cargo workspace support in Cargo detectors. Detect now identifies `[workspace]` in the root `Cargo.toml` and resolves dependencies across all members using the shared `Cargo.lock`. Additional_components section has been removed, ensuring complete SBOMs.
 
 ### Dependency Updates
 
