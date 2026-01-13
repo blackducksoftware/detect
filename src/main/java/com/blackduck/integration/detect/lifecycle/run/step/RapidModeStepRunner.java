@@ -123,6 +123,7 @@ public class RapidModeStepRunner {
         // Get info about any scans that were done
         BlackduckScanMode mode = blackDuckRunData.getScanMode();
         List<DeveloperScansScanView> rapidResults = operationRunner.waitForRapidResults(blackDuckRunData, parsedUrls, mode); // parsedurls have all the urls we need to poll for results
+
         // Get FULL rapid results for quackpatch separately for now
         // TODO only bother with below if quackpatch is possible (add explicit flag to enable quackpatch?)
         List<Response> rapidFullResults = operationRunner.waitForRapidFullResults(blackDuckRunData, parsedUrls, mode); // TODO write to file as is

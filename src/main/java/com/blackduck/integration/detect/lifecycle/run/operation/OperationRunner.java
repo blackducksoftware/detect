@@ -851,7 +851,7 @@ public class OperationRunner {
      * @param bdio
      * @throws OperationException
      */
-    public void generateComponentLocationAnalysisIfEnabled(BdioResult bdio, File rapidFullResultsFile) throws OperationException {
+    public void generateComponentLocationAnalysisIfEnabled(BdioResult bdio) throws OperationException {
         if (detectConfigurationFactory.isComponentLocationAnalysisEnabled()) {
             if (bdio.getCodeLocationNamesResult().getCodeLocationNames().isEmpty()) {
                 failComponentLocationAnalysisOperationTask("Component Location Analysis requires non-empty BDIO results. Skipping location analysis.");
@@ -867,7 +867,7 @@ public class OperationRunner {
                             () -> {
                                 publishResult(
                                     new GenerateComponentLocationAnalysisOperation(detectConfigurationFactory, statusEventPublisher, exitCodePublisher)
-                                        .locateComponents(componentsSet, directoryManager.getScanOutputDirectory(), directoryManager.getSourceDirectory(), rapidFullResultsFile, detectConfigurationFactory)
+                                        .locateComponents(componentsSet, directoryManager.getScanOutputDirectory(), directoryManager.getSourceDirectory(), null, detectConfigurationFactory)
                                 );
                             }
                     );

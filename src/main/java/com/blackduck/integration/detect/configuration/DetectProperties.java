@@ -1056,6 +1056,15 @@ public class DetectProperties {
             .setGroups(DetectGroup.IMPACT_ANALYSIS, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
 
+    public static final BooleanProperty DETECT_QUACK_PATCH_ENABLED =
+            BooleanProperty.newBuilder("detect.quack.patch.enabled", false)
+                    .setInfo("QuackPatch Enabled", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "TODO",
+                            "TODO")
+                    .setGroups(DetectGroup.GENERAL)
+                    .build();
+
     public static final BooleanProperty DETECT_COMPONENT_LOCATION_ANALYSIS_ENABLED =
         BooleanProperty.newBuilder("detect.component.location.analysis.enabled", false)
             .setInfo("Component Location Analysis Enabled", DetectPropertyFromVersion.VERSION_8_11_0)

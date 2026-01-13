@@ -2,7 +2,6 @@ package com.blackduck.integration.detect.workflow.componentlocationanalysis;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -75,17 +74,7 @@ public class GenerateComponentLocationAnalysisOperation {
      * @throws DetectUserFriendlyException
      */
     public ComponentLocatorResult locateComponents(Set<Component> componentsSet, File scanOutputFolder, File projectSrcDir, File rapidFullResultsFile, DetectConfigurationFactory configFactory) throws ComponentLocatorException, DetectUserFriendlyException {
-        logger.info("invoking quackpatch right here for now...");
-        if (detectConfigurationFactory.isQuackPatchPossible()) {
-            Map<String, List<String>> relevantDetectorsAndFiles = loadDetectorsAndFiles(scanOutputFolder.getAbsolutePath() + "/quack/invokedDetectorsAndTheirRelevantFiles.json");
-            String llmKey = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_KEY);
-            String llmName = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_NAME);
-            String llmURL = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_ENDPOINT);
-
-            ComponentLocator.runQuackPatch(rapidFullResultsFile, relevantDetectorsAndFiles, llmKey, llmName, llmURL, scanOutputFolder.getPath());
-        }
-
-
+        runQuackPatch(scanOutputFolder, rapidFullResultsFile, configFactory);
         Input componentLocatorInput = new Input(projectSrcDir.getAbsolutePath(), new JsonObject(), componentsSet);
         String outputFilepath = scanOutputFolder + "/" + LOCATOR_OUTPUT_FILE_NAME;
         if (logger.isDebugEnabled()) {
@@ -102,6 +91,20 @@ public class GenerateComponentLocationAnalysisOperation {
         logger.info(ReportConstants.RUN_SEPARATOR);
         publishComponentLocatorSuccessIfEnabled();
         return new ComponentLocatorResult(outputFilepath);
+    }
+
+    public void runQuackPatch(File scanOutputFolder, File rapidFullResultsFile, DetectConfigurationFactory configFactory) throws ComponentLocatorException, DetectUserFriendlyException {
+        logger.info("invoking quackpatch right here for now...");
+        if (detectConfigurationFactory.isQuackPatchPossible()) {
+            Map<String, List<String>> relevantDetectorsAndFiles = loadDetectorsAndFiles(scanOutputFolder.getAbsolutePath() + "/quack/invokedDetectorsAndTheirRelevantFiles.json");
+            String llmKey = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_KEY);
+            String llmName = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_NAME);
+            String llmURL = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_ENDPOINT);
+
+            ComponentLocator.runQuackPatch(rapidFullResultsFile, relevantDetectorsAndFiles, llmKey, llmName, llmURL, scanOutputFolder.getPath());
+        } else {
+            logger.info("Quack Patch cannot run because not all requirements are met. Please check your configuration.");
+        }
     }
 
     public ComponentLocatorResult locateComponentsForOnlineIntelligentScan() throws ComponentLocatorException {

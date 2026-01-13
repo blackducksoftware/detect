@@ -226,11 +226,15 @@ public class DetectConfigurationFactory {
         return detectConfiguration.getValue(DetectProperties.DETECT_COMPONENT_LOCATION_ANALYSIS_ENABLED);
     }
 
+    public Boolean isQuackPatchEnabled() {
+        return detectConfiguration.getValue(DetectProperties.DETECT_QUACK_PATCH_ENABLED);
+    }
+
     public Boolean isQuackPatchPossible() {
-        return isComponentLocationAnalysisEnabled()
-                && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_NAME).toString().isEmpty()
-                && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_ENDPOINT).toString().isEmpty()
-                && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_KEY).toString().isEmpty();
+        return isQuackPatchEnabled() //&& !isComponentLocationAnalysisEnabled()
+                && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_NAME).isEmpty()
+                && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_ENDPOINT).isEmpty()
+                && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_KEY).isEmpty();
     }
 
     public Boolean doesComponentLocatorAffectStatus() {
