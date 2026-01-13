@@ -52,14 +52,14 @@ public class CargoCliDependencyExclusionTest extends DetectableFunctionalTest {
         ExecutableOutput cargoVersionOutput = createStandardOutput("cargo 1.85.0 (abc123 2020-06-17)");
         addExecutableOutput(cargoVersionOutput, "cargo", "--version");
 
-        // Mock "cargo tree --no-dedupe --prefix depth --edges no-normal" command output
+        // Mock "cargo tree --prefix depth --workspace --edges no-normal" command output
         ExecutableOutput cargoTreeOutput = createStandardOutput(
             "0sample-cargo-project v0.1.0 (/path/to/project)",
             "1regex v1.11.1",
             "1openssl v0.10.73",
             "1regex-lite v0.1.6 (https://github.com/rust-lang/regex.git#1a069b92)"
         );
-        addExecutableOutput(cargoTreeOutput, "cargo", "tree", "--prefix", "depth", "--edges", "no-normal");
+        addExecutableOutput(cargoTreeOutput, "cargo", "tree", "--prefix", "depth", "--workspace", "--edges", "no-normal");
     }
 
     @NotNull

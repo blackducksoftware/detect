@@ -83,8 +83,10 @@ public class CargoLockfileExtractor {
             File workspaceRoot = cargoTomlFile.getParentFile();
             Set<String> workspaceMembers = cargoTomlParser.parseWorkspaceMembers(cargoTomlContents, workspaceRoot);
 
-            // Step-1: Process all workspace members and their Cargo.toml first
-            processWorkspaceMembers(workspaceMembers, cargoDetectableOptions, workspaceRoot, cargoLockPackageDataList, packageLookupMap, filter, codeLocations);
+            if(cargoDetectableOptions != null) {
+                // Step-1: Process all workspace members and their Cargo.toml first
+                processWorkspaceMembers(workspaceMembers, cargoDetectableOptions, workspaceRoot, cargoLockPackageDataList, packageLookupMap, filter, codeLocations);
+            }
 
             // Step-2: Process single root Cargo.toml. Only filter if Cargo.toml defines dependency sections.
             // Workspace root Cargo.toml files usually don’t, so skip filtering in that case.
