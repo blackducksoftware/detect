@@ -101,7 +101,7 @@ public class BazelV2Detectable extends Detectable {
 
         // If no pipelines are detected/selected, fail with a clear v2-specific message.
         if (pipelines == null || pipelines.isEmpty()) {
-            throw new DetectableException("No supported Bazel dependency pipelines detected for given target.");
+            throw new DetectableException("No supported Bazel dependency sources found for given target. To override, use detect.bazel.workspace.rules property.");
         }
 
         BazelV2Extractor extractor = new BazelV2Extractor(externalIdFactory, bazelVariableSubstitutor, haskellParser, projectNameGenerator);
