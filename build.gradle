@@ -47,6 +47,15 @@ final def platforms = [
     'windows-x64': [assetName: 'cdxgen-windows-amd64.exe', executable: 'cdxgen.exe']
 ]
 
+// Expected minimum file sizes for validation (in bytes)
+final def expectedMinSizes = [
+    'linux-x64': 200_000_000,      // ~200MB minimum
+    'linux-arm64': 200_000_000,
+    'macos-x64': 180_000_000,
+    'macos-arm64': 200_000_000,
+    'windows-x64': 180_000_000
+]
+
 // Helper function to detect current platform
 def getCurrentPlatform() {
     def osName = System.getProperty("os.name").toLowerCase()
@@ -82,6 +91,8 @@ task downloadCdxgenBinaries {
                     def connection = url.openConnection()
                     connection.setRequestProperty('User-Agent', 'BlackDuck-Detect-Build')
                     connection.setInstanceFollowRedirects(true)
+                    connection.setConnectTimeout(30000)  // 30 second connect timeout
+                    connection.setReadTimeout(60000)     // 60 second read timeout
 
                     def startTime = System.currentTimeMillis()
                     outputFile.withOutputStream { out ->
@@ -97,6 +108,12 @@ task downloadCdxgenBinaries {
                         }
                     }
 
+                    // Validate minimum file size
+                    def minSize = expectedMinSizes[platform] ?: 100_000_000
+                    if (outputFile.length() < minSize) {
+                        throw new Exception("Downloaded file too small (${outputFile.length()} bytes, expected at least ${minSize})")
+                    }
+
                     if (!platform.startsWith('windows')) {
                         outputFile.setExecutable(true)
                     }
@@ -106,8 +123,9 @@ task downloadCdxgenBinaries {
                     println "Warning: Failed to download cdxgen for ${platform}: ${e.message}"
                     println "URL attempted: ${cdxgenBaseUrl}/${config.assetName}"
                     println "Build will continue, but cdxgen may not be available for this platform."
-                    // Clean up empty/partial file
-                    if (outputFile.exists() && outputFile.length() == 0) {
+                    // Clean up any partial/failed download
+                    if (outputFile.exists()) {
+                        println "Cleaning up partial download (${outputFile.length()} bytes)"
                         outputFile.delete()
                     }
                 }
