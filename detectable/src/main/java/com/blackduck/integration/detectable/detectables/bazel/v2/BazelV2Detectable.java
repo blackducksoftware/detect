@@ -87,13 +87,23 @@ public class BazelV2Detectable extends Detectable {
         new ToolVersionLogger(executableRunner).log(environment.getDirectory(), bazelExe, "version");
 
         BazelCommandExecutor bazelCmd = new BazelCommandExecutor(executableRunner, environment.getDirectory(), bazelExe);
-        BazelGraphProber prober = new BazelGraphProber(bazelCmd, target, 20);
-        // Prober now logs and continues on individual probe failures; do not abort extraction here.
-        Set<WorkspaceRule> pipelines = prober.decidePipelines();
-        // If no pipelines are detected, fail with a clear v2-specific message.
+
+        Set<WorkspaceRule> pipelines;
+        Set<WorkspaceRule> rulesFromProperty = options.getWorkspaceRulesFromProperty();
+        if (rulesFromProperty != null && !rulesFromProperty.isEmpty()) {
+            logger.info("Using detect.bazel.workspace.rules override; skipping graph probing. Pipelines: {}", rulesFromProperty);
+            pipelines = rulesFromProperty;
+        } else {
+            BazelGraphProber prober = new BazelGraphProber(bazelCmd, target, 20);
+            // Prober now logs and continues on individual probe failures; do not abort extraction here.
+            pipelines = prober.decidePipelines();
+        }
+
+        // If no pipelines are detected/selected, fail with a clear v2-specific message.
         if (pipelines == null || pipelines.isEmpty()) {
             throw new DetectableException("No supported Bazel dependency pipelines detected for given target.");
         }
+
         BazelV2Extractor extractor = new BazelV2Extractor(externalIdFactory, bazelVariableSubstitutor, haskellParser, projectNameGenerator);
         Extraction extraction = extractor.run(bazelCmd, pipelines, target);
         logger.info("Bazel V2 detectable finished.");
