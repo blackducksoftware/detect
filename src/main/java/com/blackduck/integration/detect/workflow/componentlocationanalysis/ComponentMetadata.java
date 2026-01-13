@@ -6,37 +6,23 @@ import com.blackduck.integration.blackduck.api.generated.view.DeveloperScansScan
 import java.util.List;
 
 /**
- * Corresponds to the data Detect chooses to include from Rapid/Stateless Detector scan results when generating the
- * component location analysis file to aid in vulnerability remediation.
+ * Exposes desired fields from the Rapid/Stateless scan results {@link com.blackduck.integration.blackduck.api.generated.view.DeveloperScansScanView}
+ * for inclusion in the input file for component location analysis.
  */
 public class ComponentMetadata {
-    private final DeveloperScansScanView scanView;
+    private List<DeveloperScansScanItemsComponentViolatingPoliciesView> componentViolatingPolicies;
+    private List<DeveloperScansScanItemsPolicyViolationVulnerabilitiesView> policyViolationVulnerabilities;
+    private DeveloperScansScanItemsLongTermUpgradeGuidanceView longTermUpgradeGuidance;
+    private DeveloperScansScanItemsShortTermUpgradeGuidanceView shortTermUpgradeGuidance;
+    private List<DeveloperScansScanItemsTransitiveUpgradeGuidanceView> transitiveUpgradeGuidance;
+    private List<List<String>> dependencyTrees;
 
     public ComponentMetadata(DeveloperScansScanView scanView) {
-        this.scanView = scanView;
-    }
-
-    public List<DeveloperScansScanItemsComponentViolatingPoliciesView> getComponentViolatingPolicies() {
-        return scanView.getComponentViolatingPolicies();
-    }
-
-    public List<DeveloperScansScanItemsPolicyViolationVulnerabilitiesView> getPolicyViolationVulnerabilities() {
-        return scanView.getPolicyViolationVulnerabilities();
-    }
-
-    public Object getLongTermUpgradeGuidance() {
-        return scanView.getLongTermUpgradeGuidance();
-    }
-
-    public Object getShortTermUpgradeGuidance() {
-        return scanView.getShortTermUpgradeGuidance();
-    }
-
-    public Object getTransitiveUpgradeGuidance() {
-        return scanView.getTransitiveUpgradeGuidance();
-    }
-
-    public Object getDependencyTrees() {
-        return scanView.getDependencyTrees();
+        this.componentViolatingPolicies = scanView.getComponentViolatingPolicies();
+        this.policyViolationVulnerabilities = scanView.getPolicyViolationVulnerabilities();
+        this.longTermUpgradeGuidance = scanView.getLongTermUpgradeGuidance();
+        this.shortTermUpgradeGuidance = scanView.getShortTermUpgradeGuidance();
+        this.transitiveUpgradeGuidance = scanView.getTransitiveUpgradeGuidance();
+        this.dependencyTrees = scanView.getDependencyTrees();
     }
 }
