@@ -8,19 +8,19 @@ import java.util.*;
 
 /**
  * Encapsulates era-aware probing for HTTP archive family (http_archive, git_repository, go_repository, http_file).
- * Uses `bazel mod show_repo` when available (bzlmod), otherwise falls back to legacy //external-safe queries.
+ * Era is provided centrally via BazelEnvironmentAnalyzer.
  */
 public class HttpFamilyProber {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final BazelCommandExecutor bazel;
+    private final BazelEnvironmentAnalyzer.Era era;
 
-    public HttpFamilyProber(BazelCommandExecutor bazel) {
+    public HttpFamilyProber(BazelCommandExecutor bazel, BazelEnvironmentAnalyzer.Era era) {
         this.bazel = bazel;
+        this.era = era;
     }
 
     public boolean detect(String target) throws Exception {
-        boolean bzlmodLikely = isBzlmodLikely();
-
         Optional<String> depsOut = bazel.executeToString(Arrays.asList(
             "query", "kind(.*library, deps(" + target + "))"
         ));
@@ -51,6 +51,7 @@ public class HttpFamilyProber {
 
         int maxRepos = 30;
         int checkedRepos = 0;
+        boolean bzlmodActive = (era == BazelEnvironmentAnalyzer.Era.BZLMOD);
         for (Map.Entry<String, LinkedHashSet<String>> entry : repoLabels.entrySet()) {
             if (checkedRepos++ >= maxRepos) {
                 logger.info("HTTP family probe repo cap reached ({}).", maxRepos);
@@ -59,21 +60,22 @@ public class HttpFamilyProber {
             String repo = entry.getKey();
             boolean sawCanonical = repoSawCanonical.getOrDefault(repo, Boolean.FALSE);
 
-            try {
-                if (tryModShowRepoEnableHttp(repo, false)) {
-                    return true;
+            if (bzlmodActive) {
+                try {
+                    if (tryModShowRepoEnableHttp(repo, false)) {
+                        return true;
+                    }
+                    if (sawCanonical && tryModShowRepoEnableHttp(repo, true)) {
+                        return true;
+                    }
+                } catch (Exception e) {
+                    logger.info("mod show_repo probe failed for repo {}: {}", repo, e.getMessage());
                 }
-                if (sawCanonical && tryModShowRepoEnableHttp(repo, true)) {
-                    return true;
-                }
-            } catch (Exception e) {
-                logger.info("mod show_repo probe failed for repo {}: {}", repo, e.getMessage());
-            }
-
-            if (bzlmodLikely) {
+                // Under bzlmod, do not use legacy fallbacks; continue to next repo.
                 continue;
             }
 
+            // Legacy/workspace-safe fallback: check if root package has rules via label_kind
             try {
                 Optional<String> rootKind = bazel.executeToString(Arrays.asList(
                     "query", "kind('rule', @" + repo + "//:all)", "--output", "label_kind"
@@ -86,6 +88,7 @@ public class HttpFamilyProber {
                 logger.info("label_kind root-package probe failed for repo {}: {}", repo, e.getMessage());
             }
 
+            // Secondary fallback: try specific harvested labels to avoid scanning the whole repo
             try {
                 List<String> samples = new ArrayList<>();
                 int maxSamples = 3;
@@ -107,15 +110,6 @@ public class HttpFamilyProber {
             }
         }
         return false;
-    }
-
-    private boolean isBzlmodLikely() {
-        try {
-            Optional<String> modProbe = bazel.executeToString(Arrays.asList("mod", "show_repo", "@bazel_tools"));
-            return modProbe.isPresent();
-        } catch (Exception ignored) {
-            return false;
-        }
     }
 
     private boolean isExcludedRepo(String repo) {

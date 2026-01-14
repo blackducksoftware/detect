@@ -9,20 +9,16 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * Probes the Bazel graph (deps(target)) to determine which supported pipelines should be enabled.
- * Scope is intentionally limited to existing rules: MAVEN_INSTALL, MAVEN_JAR, HASKELL_CABAL_LIBRARY, HTTP_ARCHIVE family.
- */
 public class BazelGraphProber {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final BazelCommandExecutor bazel;
     private final String target;
-    private final int queryTimeoutSeconds;
+    private final BazelEnvironmentAnalyzer.Era era;
 
-    public BazelGraphProber(BazelCommandExecutor bazel, String target, int queryTimeoutSeconds) {
+    public BazelGraphProber(BazelCommandExecutor bazel, String target, int queryTimeoutSeconds, BazelEnvironmentAnalyzer.Era era) {
         this.bazel = bazel;
         this.target = target;
-        this.queryTimeoutSeconds = queryTimeoutSeconds;
+        this.era = era;
     }
 
     public Set<WorkspaceRule> decidePipelines() {
@@ -34,7 +30,6 @@ public class BazelGraphProber {
         boolean haskell = false;
         boolean httpFamily = false;
 
-        // Each probe is best-effort: failures are logged and do not abort overall probing.
         try {
             mavenInstall = detectMavenInstall();
         } catch (Exception e) {
@@ -51,7 +46,8 @@ public class BazelGraphProber {
             logger.info("HASKELL_CABAL_LIBRARY probe failed: {}", e.getMessage());
         }
         try {
-            httpFamily = new HttpFamilyProber(bazel).detect(target);
+            HttpFamilyProber httpProber = new HttpFamilyProber(bazel, era == null ? BazelEnvironmentAnalyzer.Era.BZLMOD : era);
+            httpFamily = httpProber.detect(target);
         } catch (Exception e) {
             logger.info("HTTP_ARCHIVE family probe failed: {}", e.getMessage());
         }

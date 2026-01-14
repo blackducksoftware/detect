@@ -87,6 +87,9 @@ public class BazelV2Detectable extends Detectable {
         new ToolVersionLogger(executableRunner).log(environment.getDirectory(), bazelExe, "version");
 
         BazelCommandExecutor bazelCmd = new BazelCommandExecutor(executableRunner, environment.getDirectory(), bazelExe);
+        BazelEnvironmentAnalyzer envAnalyzer = new BazelEnvironmentAnalyzer(bazelCmd);
+        BazelEnvironmentAnalyzer.Era era = envAnalyzer.getEra();
+        logger.info("Using Bazel era: {}", era);
 
         Set<WorkspaceRule> pipelines;
         Set<WorkspaceRule> rulesFromProperty = options.getWorkspaceRulesFromProperty();
@@ -94,18 +97,16 @@ public class BazelV2Detectable extends Detectable {
             logger.info("Using detect.bazel.workspace.rules override; skipping graph probing. Pipelines: {}", rulesFromProperty);
             pipelines = rulesFromProperty;
         } else {
-            BazelGraphProber prober = new BazelGraphProber(bazelCmd, target, 20);
-            // Prober now logs and continues on individual probe failures; do not abort extraction here.
+            BazelGraphProber prober = new BazelGraphProber(bazelCmd, target, 20, era);
             pipelines = prober.decidePipelines();
         }
 
-        // If no pipelines are detected/selected, fail with a clear v2-specific message.
         if (pipelines == null || pipelines.isEmpty()) {
-            throw new DetectableException("No supported Bazel dependency sources found for given target. To override, use detect.bazel.workspace.rules property.");
+            throw new DetectableException("No supported Bazel dependency sources found for target '" + target + "'. To override, use detect.bazel.workspace.rules property.");
         }
 
         BazelV2Extractor extractor = new BazelV2Extractor(externalIdFactory, bazelVariableSubstitutor, haskellParser, projectNameGenerator);
-        Extraction extraction = extractor.run(bazelCmd, pipelines, target);
+        Extraction extraction = extractor.run(bazelCmd, pipelines, target, era);
         logger.info("Bazel V2 detectable finished.");
         return extraction;
     }

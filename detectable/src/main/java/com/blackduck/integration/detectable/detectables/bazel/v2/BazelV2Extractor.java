@@ -7,6 +7,7 @@ import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.exception.DetectableException;
 import com.blackduck.integration.detectable.detectable.executable.ExecutableFailedException;
 import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
+import com.blackduck.integration.detectable.detectables.bazel.pipeline.Pipeline;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.Pipelines;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelCommandExecutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelVariableSubstitutor;
@@ -14,6 +15,8 @@ import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.Hask
 import com.blackduck.integration.detectable.detectables.bazel.BazelProjectNameGenerator;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import com.blackduck.integration.detectable.extraction.Extraction;
+import com.blackduck.integration.detectable.extraction.Extraction.Builder;
+import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,11 +46,13 @@ public class BazelV2Extractor {
         this.projectNameGenerator = projectNameGenerator;
     }
 
+    // Pass the Era decided by BazelEnvironmentAnalyzer so HTTP variant selection is consistent.
     public Extraction run(BazelCommandExecutor bazelCmd,
                           Set<WorkspaceRule> rules,
-                          String bazelTarget) throws ExecutableFailedException, DetectableException {
+                          String bazelTarget,
+                          BazelEnvironmentAnalyzer.Era era) throws ExecutableFailedException, DetectableException {
         logger.info("Starting Bazel V2 extraction. Target: {}. Pipelines: {}", bazelTarget, rules);
-        Pipelines pipelines = new Pipelines(bazelCmd, bazelVariableSubstitutor, externalIdFactory, haskellParser);
+        Pipelines pipelines = new Pipelines(bazelCmd, bazelVariableSubstitutor, externalIdFactory, haskellParser, era);
 
         List<WorkspaceRule> ordered = rules.stream()
             .sorted(Comparator.comparingInt(this::priority))
@@ -88,4 +93,3 @@ public class BazelV2Extractor {
         }
     }
 }
-
