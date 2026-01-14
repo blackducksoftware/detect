@@ -11,6 +11,7 @@ import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.Baze
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.HaskellCabalLibraryJsonProtoParser;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.IntermediateStepExecuteShowRepoHeuristic;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.xpathquery.HttpArchiveXpath;
+import com.blackduck.integration.detectable.detectables.bazel.v2.BazelEnvironmentAnalyzer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +29,27 @@ public class Pipelines {
         ExternalIdFactory externalIdFactory,
         HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser
     ) {
+        // Auto-detect era for legacy callers and delegate to the era-aware constructor.
+        BazelEnvironmentAnalyzer analyzer = new BazelEnvironmentAnalyzer(bazelCommandExecutor);
+        BazelEnvironmentAnalyzer.Era era = analyzer.getEra();
+        this.init(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, era);
+    }
+
+    public Pipelines(
+        BazelCommandExecutor bazelCommandExecutor,
+        BazelVariableSubstitutor bazelVariableSubstitutor,
+        ExternalIdFactory externalIdFactory,
+        HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser,
+        BazelEnvironmentAnalyzer.Era era
+    ) {
+        this.init(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, era);
+    }
+
+    private void init(BazelCommandExecutor bazelCommandExecutor,
+                      BazelVariableSubstitutor bazelVariableSubstitutor,
+                      ExternalIdFactory externalIdFactory,
+                      HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser,
+                      BazelEnvironmentAnalyzer.Era era) {
         Pipeline mavenJarPipeline = (new PipelineBuilder(externalIdFactory, bazelCommandExecutor, bazelVariableSubstitutor, haskellCabalLibraryJsonProtoParser))
             .executeBazelOnEachLine(Arrays.asList(CQUERY_COMMAND, CQUERY_OPTIONS_PLACEHOLDER, "filter('@.*:jar', deps(${detect.bazel.target}))"), false)
             // The trailing parens may contain a hex number, or "null"; the pattern below handles either
@@ -72,37 +94,7 @@ public class Pipelines {
             .build();
         availablePipelines.put(WorkspaceRule.HASKELL_CABAL_LIBRARY, haskellCabalLibraryPipeline);
 
-        // Era detection: prefer authoritative bazel info; fallback to probing bzlmod/mod and //external availability.
-        boolean bzlmodActive = false;
-        try {
-            java.util.Optional<String> infoOut = bazelCommandExecutor.executeToString(java.util.Arrays.asList("info", "--show_make_env"));
-            if (infoOut.isPresent()) {
-                String info = infoOut.get();
-                bzlmodActive = info.contains("ENABLE_BZLMOD=1");
-            }
-            // If not decided yet, try a cheap mod probe; if this succeeds, bzlmod is active
-            if (!bzlmodActive) {
-                try {
-                    java.util.Optional<String> modProbe = bazelCommandExecutor.executeToString(java.util.Arrays.asList("mod", "show_repo", "@bazel_tools"));
-                    if (modProbe.isPresent()) {
-                        bzlmodActive = true;
-                    }
-                } catch (Exception ignoredMod) {
-                    // ignore; may not be bzlmod or command unsupported
-                }
-            }
-            // If still not decided, probe //external; any failure indicates bzlmod
-            if (!bzlmodActive) {
-                try {
-                    bazelCommandExecutor.executeToString(java.util.Arrays.asList(QUERY_COMMAND, "kind(.*, //external:bazel_tools)", OUTPUT_FLAG, "xml"));
-                } catch (Exception any) {
-                    bzlmodActive = true; // treat any non-zero/exception as bzlmod active
-                }
-            }
-        } catch (Exception ignored) {
-            // If we cannot detect, default to legacy; pipeline remains robust.
-        }
-
+        boolean bzlmodActive = (era == BazelEnvironmentAnalyzer.Era.BZLMOD);
         logger.info("HTTP pipeline variant: {}", bzlmodActive ? "bzlmod" : "legacy");
 
         if (bzlmodActive) {
@@ -116,31 +108,28 @@ public class Pipelines {
                 .deDupLines()
                 .parseFilterLines("^(?!(bazel_tools|platforms|remotejdk|local_config_.*|rules_python|rules_java|rules_cc|maven|unpinned_maven|rules_jvm_external)).*$")
                 .parseReplaceInEachLine("^", "@")
-                // Heuristic-only show_repo execution (no mapping)
                 .addIntermediateStep(new IntermediateStepExecuteShowRepoHeuristic(
                     bazelCommandExecutor
                 ))
-                // Robust parsing of show_repo attributes and synthesis for go_repository
                 .parseShowRepoToUrlCandidates()
                 .transformGithubUrl()
                 .build();
             availablePipelines.put(WorkspaceRule.HTTP_ARCHIVE, httpArchiveBzlmodPipeline);
         } else {
-            // Legacy WORKSPACE HTTP pipeline (existing behavior using //external), but exclude known repos
             Pipeline httpArchiveGithubUrlPipeline = (new PipelineBuilder(externalIdFactory, bazelCommandExecutor, bazelVariableSubstitutor, haskellCabalLibraryJsonProtoParser))
                 .executeBazelOnEachLine(Arrays.asList(QUERY_COMMAND, "kind(.*library, deps(${detect.bazel.target}))"), false)
                 .parseSplitEachLine("\r?\n")
                 .parseFilterLines("^@.*//.*$")
-                .parseReplaceInEachLine("^@", "")
-                .parseReplaceInEachLine("//.*", "")
-                .deDupLines()
-                .parseFilterLines("^(?!(bazel_tools|platforms|remotejdk|local_config_.*|rules_python|rules_java|rules_cc|maven|unpinned_maven|rules_jvm_external)).*$")
-                .parseReplaceInEachLine("^", "//external:")
-                .executeBazelOnEachLine(Arrays.asList(QUERY_COMMAND, "kind(.*, ${input.item})", OUTPUT_FLAG, "xml"), true)
+                .parseReplaceInEachLine("^@", "") //remove the leading "@" from each line.
+                .parseReplaceInEachLine("//.*", "") //remove the "//..." suffix from each line, leaving just the repo name.
+                .deDupLines() //remove duplicate repo names.
+                .parseFilterLines("^(?!(bazel_tools|platforms|remotejdk|local_config_.*|rules_python|rules_java|rules_cc|maven|unpinned_maven|rules_jvm_external)).*$") //filter out known non-http-external repos.
+                .parseReplaceInEachLine("^", "//external:") //convert each repo name into a label pointing at the root package of that repo.
+                .executeBazelOnEachLine(Arrays.asList(QUERY_COMMAND, "kind(.*, ${input.item})", OUTPUT_FLAG, "xml"), true) //for each label, run a query to get all rules in that root package, outputting XML.
                 .parseValuesFromXml(HttpArchiveXpath.QUERY, "value")
-                .transformGithubUrl()
-                .build();
-            availablePipelines.put(WorkspaceRule.HTTP_ARCHIVE, httpArchiveGithubUrlPipeline);
+                .transformGithubUrl() //transform the collected URL candidates into GitHub URLs.
+                .build(); //build the pipeline.
+            availablePipelines.put(WorkspaceRule.HTTP_ARCHIVE, httpArchiveGithubUrlPipeline); //add the pipeline to the available pipelines.
         }
     }
 

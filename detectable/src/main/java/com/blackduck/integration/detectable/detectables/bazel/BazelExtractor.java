@@ -32,6 +32,7 @@ import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.Baze
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.HaskellCabalLibraryJsonProtoParser;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.util.ToolVersionLogger;
+import com.blackduck.integration.detectable.detectables.bazel.v2.BazelEnvironmentAnalyzer;
 
 public class BazelExtractor {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -73,7 +74,9 @@ public class BazelExtractor {
     public Extraction extract(ExecutableTarget bazelExe, File workspaceDir, File workspaceFile) throws ExecutableFailedException, DetectableException {
         toolVersionLogger.log(workspaceDir, bazelExe, "version");
         BazelCommandExecutor bazelCommandExecutor = new BazelCommandExecutor(executableRunner, workspaceDir, bazelExe);
-        Pipelines pipelines = new Pipelines(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser);
+        // Detect Bazel era once and pass it to Pipelines for correct HTTP variant selection.
+        BazelEnvironmentAnalyzer.Era era = new BazelEnvironmentAnalyzer(bazelCommandExecutor).getEra();
+        Pipelines pipelines = new Pipelines(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, era);
         Set<WorkspaceRule> workspaceRulesFromFile = parseWorkspaceRulesFromFile(workspaceFile);
         Set<WorkspaceRule> workspaceRulesToQuery = workspaceRuleChooser.choose(workspaceRulesFromFile, workspaceRulesFromProperty);
         CodeLocation codeLocation = generateCodelocation(pipelines, workspaceRulesToQuery);
