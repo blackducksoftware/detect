@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Map;
 import java.util.HashMap;
@@ -22,18 +23,32 @@ public class CargoTomlParser {
     private static final String NAME_KEY = "name";
     private static final String VERSION_KEY = "version";
     private static final String PACKAGE_KEY = "package";
+    private static final String WORKSPACE_KEY = "workspace";
     private static final String NORMAL_DEPENDENCIES_KEY = "dependencies";
     private static final String BUILD_DEPENDENCIES_KEY = "build-dependencies";
     private static final String DEV_DEPENDENCIES_KEY = "dev-dependencies";
 
     public Optional<NameVersion> parseNameVersionFromCargoToml(String tomlFileContents) {
         TomlParseResult cargoTomlObject = Toml.parse(tomlFileContents);
-        if (cargoTomlObject.contains(PACKAGE_KEY)) {
-            return Optional.ofNullable(cargoTomlObject.getTable(PACKAGE_KEY))
-                .filter(info -> info.contains(NAME_KEY))
-                .map(info -> new NameVersion(info.getString(NAME_KEY), info.getString(VERSION_KEY)));
+        TomlTable packageTable = cargoTomlObject.getTable(PACKAGE_KEY);
+        if (packageTable == null || !packageTable.contains(NAME_KEY)) {
+            return Optional.empty();
         }
-        return Optional.empty();
+
+        String name = packageTable.getString(NAME_KEY);
+        String version = null;
+        Object versionObj = packageTable.get(VERSION_KEY);
+
+        if (versionObj instanceof String) {
+            version = (String) versionObj;
+        } else if (versionObj instanceof TomlTable && Boolean.TRUE.equals(((TomlTable) versionObj).getBoolean(WORKSPACE_KEY))) {
+            TomlTable workspacePackage = cargoTomlObject.getTable(WORKSPACE_KEY) != null ? Objects.requireNonNull(cargoTomlObject.getTable(WORKSPACE_KEY)).getTable(PACKAGE_KEY) : null;
+            if (workspacePackage != null) {
+                version = workspacePackage.getString(VERSION_KEY);
+            }
+        }
+
+        return Optional.of(new NameVersion(name, version));
     }
 
     public Set<String> parseWorkspaceMembers(String tomlFileContents, File workspaceRoot) {
