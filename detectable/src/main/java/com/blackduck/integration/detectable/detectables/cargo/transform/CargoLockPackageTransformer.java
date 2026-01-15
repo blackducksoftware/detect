@@ -20,12 +20,9 @@ import com.blackduck.integration.util.NameVersion;
 public class CargoLockPackageTransformer {
     private final ExternalIdFactory externalIdFactory = new ExternalIdFactory();
     private final DependencyFactory dependencyFactory = new DependencyFactory(externalIdFactory);
-    private static final String ORPHAN_PARENT_NAME = "Additional_Components";
-    private static final String ORPHAN_PARENT_VERSION = "none";
 
     public DependencyGraph transformToGraph(
             List<CargoLockPackage> resolvedPackages,
-            List<CargoLockPackage> orphanedPackages,
             Set<NameVersion> rootDependencies
     ) throws MissingExternalIdException, DetectableException {
 
@@ -54,22 +51,6 @@ public class CargoLockPackageTransformer {
                 graph.addChildWithParent(childId, id);
             }
         }
-
-        // Handle orphaned packages explicitly
-        if (orphanedPackages != null && !orphanedPackages.isEmpty()) {
-            LazyId orphanParentId = LazyId.fromNameAndVersion(ORPHAN_PARENT_NAME, ORPHAN_PARENT_VERSION);
-            Dependency orphanParentDep = dependencyFactory.createNameVersionDependency(Forge.CRATES, ORPHAN_PARENT_NAME, ORPHAN_PARENT_VERSION);
-            graph.addChildToRoot(orphanParentId);
-            graph.setDependencyInfo(orphanParentId, orphanParentDep.getName(), orphanParentDep.getVersion(), orphanParentDep.getExternalId());
-
-            for (CargoLockPackage orphanPackage : orphanedPackages) {
-                LazyId id = LazyId.fromNameAndVersion(orphanPackage.getPackageNameVersion().getName(),
-                    orphanPackage.getPackageNameVersion().getVersion());
-                graph.addChildWithParent(id, orphanParentId);
-                addPackageToGraph(graph, orphanPackage);
-            }
-        }
-
         return graph.build();
     }
 

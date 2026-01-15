@@ -1,5 +1,6 @@
 package com.blackduck.integration.detectable.detectables.cargo.parse;
 
+import java.io.File;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.Set;
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
 import org.tomlj.Toml;
+import org.tomlj.TomlArray;
 import org.tomlj.TomlParseResult;
 
 import com.blackduck.integration.util.NameVersion;
@@ -47,6 +49,77 @@ public class CargoTomlParser {
         }
 
         return Optional.of(new NameVersion(name, version));
+    }
+
+    public Set<String> parseWorkspaceMembers(String tomlFileContents, File workspaceRoot) {
+        TomlParseResult toml = Toml.parse(tomlFileContents);
+        Set<String> members = new HashSet<>();
+
+        TomlTable workspace = toml.getTable("workspace");
+        if (workspace != null && workspace.contains("members")) {
+            TomlArray memberArray = workspace.getArray("members");
+            if (memberArray != null) {
+                for (int i = 0; i < memberArray.size(); i++) {
+                    String member = memberArray.getString(i);
+                    processMember(member, workspaceRoot, members);
+                }
+            }
+        }
+
+        return members;
+    }
+
+    private void processMember(String member, File workspaceRoot, Set<String> members) {
+        if (member == null || member.equals(".")) {
+            return;
+        }
+
+        if (member.contains("*")) {
+            members.addAll(expandGlobPattern(member, workspaceRoot));
+        } else {
+            members.add(member);
+        }
+    }
+
+    private Set<String> expandGlobPattern(String globPattern, File workspaceRoot) {
+        Set<String> expandedMembers = new HashSet<>();
+
+        if (workspaceRoot == null || !workspaceRoot.exists()) {
+            return expandedMembers;
+        }
+
+        int firstSlashIndex = globPattern.indexOf('/');
+        if (firstSlashIndex <= 0) {
+            return expandedMembers;
+        }
+
+        String prefix = globPattern.substring(0, firstSlashIndex);
+        File baseDir = new File(workspaceRoot, prefix);
+
+        if (!baseDir.exists() || !baseDir.isDirectory()) {
+            return expandedMembers;
+        }
+
+        File[] subDirs = baseDir.listFiles(File::isDirectory);
+        if (subDirs == null) {
+            return expandedMembers;
+        }
+
+        for (File subDir : subDirs) {
+            addWorkspaceMemberIfExists(subDir, prefix, expandedMembers);
+        }
+
+        return expandedMembers;
+    }
+
+    private void addWorkspaceMemberIfExists(File subDir, String prefix, Set<String> expandedMembers) {
+        File cargoToml = new File(subDir, "Cargo.toml");
+        if (!cargoToml.exists()) {
+            return;
+        }
+
+        String relativePath = prefix + "/" + subDir.getName();
+        expandedMembers.add(relativePath);
     }
 
     public boolean hasDependencySections(String tomlFileContents) {
