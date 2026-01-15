@@ -44,6 +44,13 @@ public class BazelV2Detectable extends Detectable {
 
     private ExecutableTarget bazelExe;
 
+    // Factory interface to create BazelGraphProber instances; injectable for tests.
+    public interface BazelGraphProberFactory {
+        BazelGraphProber create(BazelCommandExecutor bazelCmd, String target, int queryTimeoutSeconds, BazelEnvironmentAnalyzer.Era era);
+    }
+
+    private final BazelGraphProberFactory bazelGraphProberFactory;
+
     /**
      * Constructor for BazelV2Detectable
      * @param environment The detectable environment
@@ -65,6 +72,24 @@ public class BazelV2Detectable extends Detectable {
                               BazelVariableSubstitutor bazelVariableSubstitutor,
                               HaskellCabalLibraryJsonProtoParser haskellParser,
                               BazelProjectNameGenerator projectNameGenerator) {
+        this(environment, fileFinder, executableRunner, externalIdFactory, bazelResolver, options, bazelVariableSubstitutor, haskellParser, projectNameGenerator,
+            (bazelCmd, target, queryTimeoutSeconds, era) -> new BazelGraphProber(bazelCmd, target, queryTimeoutSeconds, era)
+        );
+    }
+
+    /**
+     * Testable constructor allowing injection of a custom BazelGraphProberFactory.
+     */
+    public BazelV2Detectable(DetectableEnvironment environment,
+                              FileFinder fileFinder,
+                              DetectableExecutableRunner executableRunner,
+                              ExternalIdFactory externalIdFactory,
+                              BazelResolver bazelResolver,
+                              BazelDetectableOptions options,
+                              BazelVariableSubstitutor bazelVariableSubstitutor,
+                              HaskellCabalLibraryJsonProtoParser haskellParser,
+                              BazelProjectNameGenerator projectNameGenerator,
+                              BazelGraphProberFactory bazelGraphProberFactory) {
         super(environment);
         this.fileFinder = fileFinder;
         this.executableRunner = executableRunner;
@@ -74,6 +99,7 @@ public class BazelV2Detectable extends Detectable {
         this.bazelVariableSubstitutor = bazelVariableSubstitutor;
         this.haskellParser = haskellParser;
         this.projectNameGenerator = projectNameGenerator;
+        this.bazelGraphProberFactory = bazelGraphProberFactory;
     }
 
     /**
@@ -123,7 +149,7 @@ public class BazelV2Detectable extends Detectable {
             pipelines = rulesFromProperty;
         } else {
             // Probe the Bazel dependency graph to determine enabled pipelines
-            BazelGraphProber prober = new BazelGraphProber(bazelCmd, target, 20, era);
+            BazelGraphProber prober = bazelGraphProberFactory.create(bazelCmd, target, 20, era);
             pipelines = prober.decidePipelines();
         }
 
