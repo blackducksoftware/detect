@@ -47,7 +47,7 @@ public class RushJsonParseResult {
     }
 
     public void findAllLockFiles(File sourceDirectory, FileFinder fileFinder) throws IOException {
-        File lockFilePath = new File(sourceDirectory.getAbsolutePath() + "/common/config/rush");
+        File lockFilePath = new File(sourceDirectory.getAbsolutePath() + File.separator +  "common" + File.separator + "config" + File.separator + "rush");
         File npmLockFile = fileFinder.findFile(lockFilePath, RushDetectable.SHRINKWRAP_JSON);
         if (npmLockFile != null) {
             npmLockContents = FileUtils.readFileToString(npmLockFile, StandardCharsets.UTF_8);
@@ -60,7 +60,7 @@ public class RushJsonParseResult {
             return;
         }
 
-        File subspacesDir = new File(sourceDirectory.getAbsolutePath() + "/common/config/subspaces");
+        File subspacesDir = new File(sourceDirectory.getAbsolutePath() + File.separator +  "common"  + File.separator + "config" + File.separator + "subspaces");
         if (subspacesDir.exists()) {
             pnpmSubspacesLockFiles = fileFinder.findFiles(subspacesDir, RushDetectable.PNPM_LOCK, false, 2);
         } else {
@@ -70,7 +70,7 @@ public class RushJsonParseResult {
 
     public void readAllPackageJsons(FileFinder fileFinder, File sourceDirectory, PackageJsonFiles packageJsonFiles) {
         rushProjects.forEach(rushProject -> {
-           File projectPath = new File(sourceDirectory + "/" + rushProject.getProjectFolder());
+           File projectPath = new File(sourceDirectory + File.separator + rushProject.getProjectFolder());
            File packageJson = fileFinder.findFile(projectPath, PACKAGE_JSON);
            if (packageJson != null) {
                NullSafePackageJson packageJsonFile = null;
