@@ -47,14 +47,14 @@ public class RushDetectable extends Detectable {
     public DetectableResult extractable() throws DetectableException {
         Requirements requirements = new Requirements(fileFinder, environment);
 
-        File lockFilePath = new File(environment.getDirectory(), "/common/config/rush");
+        File lockFilePath = new File(environment.getDirectory(), File.separator +  "common" + File.separator + "config" + File.separator + "rush");
 
         // Rush is used in conjunction with traditional NPM projects, Yarn projects or PNPM projects.
         File shrinkwrapJson = fileFinder.findFile(lockFilePath, SHRINKWRAP_JSON);
         File yarnLock = fileFinder.findFile(lockFilePath, YARN_LOCK);
         File pnpmLock = fileFinder.findFile(lockFilePath, PNPM_LOCK);
         if (pnpmLock == null && shrinkwrapJson == null && yarnLock == null) {
-            File subspacesPath = new File(environment.getDirectory(), "/common/config/subspaces/default");
+            File subspacesPath = new File(environment.getDirectory(), File.separator +  "common"  + File.separator + "config" + File.separator + "subspaces" + File.separator + "default");
             pnpmLock = fileFinder.findFile(subspacesPath, PNPM_LOCK);
 
             if (pnpmLock == null) {
