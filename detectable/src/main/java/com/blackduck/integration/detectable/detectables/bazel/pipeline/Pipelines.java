@@ -145,19 +145,17 @@ public class Pipelines {
         } else {
             // legacy: Use XML parsing pipeline for HTTP pipeline
             Pipeline httpArchiveGithubUrlPipeline = (new PipelineBuilder(externalIdFactory, bazelCommandExecutor, bazelVariableSubstitutor, haskellCabalLibraryJsonProtoParser))
-                .executeBazelOnEachLine(Arrays.asList(QUERY_COMMAND, "kind(.*library, deps(${detect.bazel.target}))"), false)
-                .parseSplitEachLine("\r?\n")
-                .parseFilterLines("^@.*//.*$")
-                .parseReplaceInEachLine("^@", "") // remove the leading "@" from each line
-                .parseReplaceInEachLine("//.*", "") // remove the "//..." suffix from each line, leaving just the repo name
-                .deDupLines() // remove duplicate repo names
-                .parseFilterLines("^(?!(bazel_tools|platforms|remotejdk|local_config_.*|rules_python|rules_java|rules_cc|maven|unpinned_maven|rules_jvm_external)).*$") // filter out known non-http-external repos
-                .parseReplaceInEachLine("^", "//external:") // convert each repo name into a label pointing at the root package of that repo
-                // For each label, run a query to get all rules in that root package, outputting XML
-                .executeBazelOnEachLine(Arrays.asList(QUERY_COMMAND, "kind(.*, ${input.item})", OUTPUT_FLAG, "xml"), true)
-                .parseValuesFromXml(HttpArchiveXpath.QUERY, "value")
-                .transformGithubUrl() // transform the collected URL candidates into GitHub URLs
-                .build(); // build the pipeline
+                    .executeBazelOnEachLine(Arrays.asList(QUERY_COMMAND, "kind(.*library, deps(${detect.bazel.target}))"), false)
+                    .parseSplitEachLine("\r?\n")
+                    .parseFilterLines("^@.*//.*$")
+                    .parseReplaceInEachLine("^@", "")
+                    .parseReplaceInEachLine("//.*", "")
+                    .deDupLines()
+                    .parseReplaceInEachLine("^", "//external:")
+                    .executeBazelOnEachLine(Arrays.asList(QUERY_COMMAND, "kind(.*, ${input.item})", OUTPUT_FLAG, "xml"), true)
+                    .parseValuesFromXml(HttpArchiveXpath.QUERY, "value")
+                    .transformGithubUrl()
+                    .build();
             availablePipelines.put(WorkspaceRule.HTTP_ARCHIVE, httpArchiveGithubUrlPipeline); // add the pipeline to the available pipelines
         }
     }

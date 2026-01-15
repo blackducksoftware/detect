@@ -48,7 +48,7 @@ public class BazelV2DetectableNoPipelinesTest {
         BazelGraphProber mockProber = proberFactory.create(null, "//:test", 20, null);
         when(mockProber.decidePipelines()).thenReturn(Collections.emptySet());
 
-        BazelDetectableOptions options = new BazelDetectableOptions("//:test", null, null);
+        BazelDetectableOptions options = new BazelDetectableOptions("//:test", null, null, null);
 
         BazelV2Detectable detectable = new BazelV2Detectable(environment, fileFinder, executableRunner, externalIdFactory, bazelResolver, options, substitutor, haskellParser, projectNameGenerator, (bazelCmd, target, timeout, era) -> mockProber);
 

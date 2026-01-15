@@ -241,6 +241,13 @@ public class DetectProperties {
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();
 
+    public static final NullableStringProperty DETECT_BAZEL_ERA =
+        NullableStringProperty.newBuilder("detect.bazel.era")
+            .setInfo("Bazel Era Override", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setHelp("Override Bazel environment era detection. By default, Detect automatically determines whether the Bazel project uses BZLMOD or LEGACY (WORKSPACE-based) dependency management. Only set this property if auto-detection fails or for testing purposes. Incorrect values may cause extraction to fail. Valid values: LEGACY, BZLMOD, UNKNOWN")
+            .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
+            .build();
+
     public static final NullablePathProperty DETECT_CONAN_PATH =
         NullablePathProperty.newBuilder("detect.conan.path")
             .setInfo("Conan Executable", DetectPropertyFromVersion.VERSION_6_8_0)

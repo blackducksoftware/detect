@@ -28,6 +28,7 @@ import com.blackduck.integration.detectable.util.ToolVersionLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Optional;
 import java.util.Set;
 
 @DetectableInfo(name = "Bazel CLI V2", language = "various", forge = "Maven Central", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "Executable: bazel. Property: detect.bazel.target.")
@@ -135,11 +136,21 @@ public class BazelV2Detectable extends Detectable {
         // Log Bazel tool version similar to v1 behavior
         new ToolVersionLogger(executableRunner).log(environment.getDirectory(), bazelExe, "version");
 
-        // Set up Bazel command executor and environment analyzer
+        // Set up Bazel command executor and determine environment era
         BazelCommandExecutor bazelCmd = new BazelCommandExecutor(executableRunner, environment.getDirectory(), bazelExe);
-        BazelEnvironmentAnalyzer envAnalyzer = new BazelEnvironmentAnalyzer(bazelCmd);
-        BazelEnvironmentAnalyzer.Era era = envAnalyzer.getEra();
-        logger.info("Using Bazel era: {}", era);
+        BazelEnvironmentAnalyzer.Era era;
+
+        // Check for era override property first
+        Optional<BazelEnvironmentAnalyzer.Era> eraOverride = options.getEraOverride();
+        if (eraOverride.isPresent()) {
+            era = eraOverride.get();
+            logger.info("Using Bazel era from property override: {}", era);
+        } else {
+            // Auto-detect era if not overridden
+            BazelEnvironmentAnalyzer envAnalyzer = new BazelEnvironmentAnalyzer(bazelCmd);
+            era = envAnalyzer.getEra();
+            logger.info("Using Bazel era from auto-detection: {}", era);
+        }
 
         Set<WorkspaceRule> pipelines;
         // Check if workspace rules are provided via property; if not, probe the Bazel graph

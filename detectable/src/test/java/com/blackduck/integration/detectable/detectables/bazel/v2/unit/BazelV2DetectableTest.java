@@ -39,7 +39,7 @@ public class BazelV2DetectableTest {
         HaskellCabalLibraryJsonProtoParser haskellParser = Mockito.mock(HaskellCabalLibraryJsonProtoParser.class);
         BazelProjectNameGenerator projectNameGenerator = Mockito.mock(BazelProjectNameGenerator.class);
 
-        BazelDetectableOptions options = new BazelDetectableOptions("//:target", null, null);
+        BazelDetectableOptions options = new BazelDetectableOptions("//:target", null, null, null);
         BazelV2Detectable detectable = new BazelV2Detectable(environment, fileFinder, executableRunner, externalIdFactory, bazelResolver, options, substitutor, haskellParser, projectNameGenerator);
 
         assertTrue(detectable.applicable().getPassed());
@@ -58,7 +58,7 @@ public class BazelV2DetectableTest {
 
         when(bazelResolver.resolveBazel()).thenReturn(ExecutableTarget.forCommand("bazel"));
 
-        BazelDetectableOptions options = new BazelDetectableOptions("//:target", null, null);
+        BazelDetectableOptions options = new BazelDetectableOptions("//:target", null, null, null);
         BazelV2Detectable detectable = new BazelV2Detectable(environment, fileFinder, executableRunner, externalIdFactory, bazelResolver, options, substitutor, haskellParser, projectNameGenerator);
 
         assertTrue(detectable.extractable().getPassed());
@@ -77,7 +77,7 @@ public class BazelV2DetectableTest {
 
         when(bazelResolver.resolveBazel()).thenReturn(null);
 
-        BazelDetectableOptions options = new BazelDetectableOptions("//:target", null, null);
+        BazelDetectableOptions options = new BazelDetectableOptions("//:target", null, null, null);
         BazelV2Detectable detectable = new BazelV2Detectable(environment, fileFinder, executableRunner, externalIdFactory, bazelResolver, options, substitutor, haskellParser, projectNameGenerator);
 
         assertFalse(detectable.extractable().getPassed());
@@ -94,7 +94,7 @@ public class BazelV2DetectableTest {
         HaskellCabalLibraryJsonProtoParser haskellParser = Mockito.mock(HaskellCabalLibraryJsonProtoParser.class);
         BazelProjectNameGenerator projectNameGenerator = Mockito.mock(BazelProjectNameGenerator.class);
 
-        BazelDetectableOptions options = new BazelDetectableOptions(null, null, null);
+        BazelDetectableOptions options = new BazelDetectableOptions(null, null, null, null);
         BazelV2Detectable detectable = new BazelV2Detectable(environment, fileFinder, executableRunner, externalIdFactory, bazelResolver, options, substitutor, haskellParser, projectNameGenerator);
 
         assertThrows(DetectableException.class, () -> detectable.extract(null));
