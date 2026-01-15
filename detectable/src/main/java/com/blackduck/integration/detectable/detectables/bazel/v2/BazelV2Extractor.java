@@ -7,7 +7,6 @@ import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.exception.DetectableException;
 import com.blackduck.integration.detectable.detectable.executable.ExecutableFailedException;
 import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
-import com.blackduck.integration.detectable.detectables.bazel.pipeline.Pipeline;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.Pipelines;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelCommandExecutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelVariableSubstitutor;
@@ -15,8 +14,6 @@ import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.Hask
 import com.blackduck.integration.detectable.detectables.bazel.BazelProjectNameGenerator;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import com.blackduck.integration.detectable.extraction.Extraction;
-import com.blackduck.integration.detectable.extraction.Extraction.Builder;
-import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +24,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Executes selected pipelines deterministically and produces an Extraction.
+ * Executes selected Bazel dependency pipelines deterministically and produces an Extraction.
  */
 public class BazelV2Extractor {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -36,6 +33,13 @@ public class BazelV2Extractor {
     private final HaskellCabalLibraryJsonProtoParser haskellParser;
     private final BazelProjectNameGenerator projectNameGenerator;
 
+    /**
+     * Constructor for BazelV2Extractor
+     * @param externalIdFactory Factory for creating ExternalId objects
+     * @param bazelVariableSubstitutor Substitutes variables in Bazel commands
+     * @param haskellParser Parses Haskell cabal library JSON proto output
+     * @param projectNameGenerator Generates project names from Bazel targets
+     */
     public BazelV2Extractor(ExternalIdFactory externalIdFactory,
                             BazelVariableSubstitutor bazelVariableSubstitutor,
                             HaskellCabalLibraryJsonProtoParser haskellParser,
@@ -46,19 +50,32 @@ public class BazelV2Extractor {
         this.projectNameGenerator = projectNameGenerator;
     }
 
-    // Pass the Era decided by BazelEnvironmentAnalyzer so HTTP variant selection is consistent.
+    /**
+     * Runs the extraction process for the given Bazel target and set of workspace rules.
+     * Executes each pipeline in a deterministic order, aggregates dependencies, and builds the Extraction result.
+     * @param bazelCmd Bazel command executor
+     * @param rules Set of workspace rules to execute
+     * @param bazelTarget Bazel target to analyze
+     * @param era Bazel environment era (for HTTP variant selection)
+     * @return Extraction result containing discovered dependencies and project name
+     * @throws ExecutableFailedException if a Bazel command fails
+     * @throws DetectableException if extraction fails
+     */
     public Extraction run(BazelCommandExecutor bazelCmd,
                           Set<WorkspaceRule> rules,
                           String bazelTarget,
                           BazelEnvironmentAnalyzer.Era era) throws ExecutableFailedException, DetectableException {
         logger.info("Starting Bazel V2 extraction. Target: {}. Pipelines: {}", bazelTarget, rules);
+        // Create pipelines for each workspace rule
         Pipelines pipelines = new Pipelines(bazelCmd, bazelVariableSubstitutor, externalIdFactory, haskellParser, era);
 
+        // Sort rules by priority for deterministic execution
         List<WorkspaceRule> ordered = rules.stream()
             .sorted(Comparator.comparingInt(this::priority))
             .collect(Collectors.toList());
 
         List<Dependency> aggregated = new ArrayList<>();
+        // Execute each pipeline and aggregate discovered dependencies
         for (WorkspaceRule rule : ordered) {
             logger.info("Executing pipeline for rule: {}", rule);
             List<Dependency> deps = pipelines.get(rule).run();
@@ -66,9 +83,11 @@ public class BazelV2Extractor {
             aggregated.addAll(deps);
         }
 
+        // Build the dependency graph and code location
         DependencyGraph graph = new BasicDependencyGraph();
         graph.addChildrenToRoot(aggregated);
         CodeLocation cl = new CodeLocation(graph);
+        // Generate project name from Bazel target
         String projectName = projectNameGenerator.generateFromBazelTarget(bazelTarget);
         Extraction.Builder builder = new Extraction.Builder()
             .success(java.util.Collections.singletonList(cl))
@@ -77,6 +96,12 @@ public class BazelV2Extractor {
         return builder.build();
     }
 
+    /**
+     * Determines the execution priority for each workspace rule.
+     * Lower number means earlier execution.
+     * @param rule WorkspaceRule to prioritize
+     * @return Priority value
+     */
     private int priority(WorkspaceRule rule) {
         // Lower number = earlier execution
         switch (rule) {

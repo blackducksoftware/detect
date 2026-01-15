@@ -44,6 +44,18 @@ public class BazelV2Detectable extends Detectable {
 
     private ExecutableTarget bazelExe;
 
+    /**
+     * Constructor for BazelV2Detectable
+     * @param environment The detectable environment
+     * @param fileFinder File finder utility
+     * @param executableRunner Executable runner
+     * @param externalIdFactory External ID factory
+     * @param bazelResolver Bazel executable resolver
+     * @param options Bazel detectable options
+     * @param bazelVariableSubstitutor Variable substitutor for Bazel
+     * @param haskellParser Haskell cabal library parser
+     * @param projectNameGenerator Project name generator
+     */
     public BazelV2Detectable(DetectableEnvironment environment,
                               FileFinder fileFinder,
                               DetectableExecutableRunner executableRunner,
@@ -64,6 +76,9 @@ public class BazelV2Detectable extends Detectable {
         this.projectNameGenerator = projectNameGenerator;
     }
 
+    /**
+     * Checks if the detectable is applicable by verifying the Bazel target property is present.
+     */
     @Override
     public DetectableResult applicable() {
         if (options.getTargetName().isPresent()) {
@@ -72,6 +87,9 @@ public class BazelV2Detectable extends Detectable {
         return new PropertyInsufficientDetectableResult();
     }
 
+    /**
+     * Checks if the Bazel executable is available and sets it for later use.
+     */
     @Override
     public DetectableResult extractable() throws DetectableException {
         Requirements req = new Requirements(fileFinder, environment);
@@ -79,32 +97,42 @@ public class BazelV2Detectable extends Detectable {
         return req.result();
     }
 
+    /**
+     * Main extraction logic for Bazel V2 detectable.
+     * Probes the Bazel environment, determines which dependency pipelines to use, and runs extraction.
+     */
     @Override
     public Extraction extract(ExtractionEnvironment extractionEnvironment) throws DetectableException, ExecutableFailedException {
+        // Get the Bazel target from options or throw if missing
         String target = options.getTargetName().orElseThrow(() -> new DetectableException("Missing detect.bazel.target"));
         logger.info("Bazel V2 detectable starting. Target: {}", target);
         // Log Bazel tool version similar to v1 behavior
         new ToolVersionLogger(executableRunner).log(environment.getDirectory(), bazelExe, "version");
 
+        // Set up Bazel command executor and environment analyzer
         BazelCommandExecutor bazelCmd = new BazelCommandExecutor(executableRunner, environment.getDirectory(), bazelExe);
         BazelEnvironmentAnalyzer envAnalyzer = new BazelEnvironmentAnalyzer(bazelCmd);
         BazelEnvironmentAnalyzer.Era era = envAnalyzer.getEra();
         logger.info("Using Bazel era: {}", era);
 
         Set<WorkspaceRule> pipelines;
+        // Check if workspace rules are provided via property; if not, probe the Bazel graph
         Set<WorkspaceRule> rulesFromProperty = options.getWorkspaceRulesFromProperty();
         if (rulesFromProperty != null && !rulesFromProperty.isEmpty()) {
             logger.info("Using detect.bazel.workspace.rules override; skipping graph probing. Pipelines: {}", rulesFromProperty);
             pipelines = rulesFromProperty;
         } else {
+            // Probe the Bazel dependency graph to determine enabled pipelines
             BazelGraphProber prober = new BazelGraphProber(bazelCmd, target, 20, era);
             pipelines = prober.decidePipelines();
         }
 
+        // Fail if no supported pipelines are found
         if (pipelines == null || pipelines.isEmpty()) {
             throw new DetectableException("No supported Bazel dependency sources found for target '" + target + "'. To override, use detect.bazel.workspace.rules property.");
         }
 
+        // Run the extraction using the determined pipelines
         BazelV2Extractor extractor = new BazelV2Extractor(externalIdFactory, bazelVariableSubstitutor, haskellParser, projectNameGenerator);
         Extraction extraction = extractor.run(bazelCmd, pipelines, target, era);
         logger.info("Bazel V2 detectable finished.");

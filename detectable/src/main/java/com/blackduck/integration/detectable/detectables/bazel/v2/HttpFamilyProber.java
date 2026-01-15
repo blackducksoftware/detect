@@ -13,31 +13,50 @@ import java.util.*;
 public class HttpFamilyProber {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final BazelCommandExecutor bazel;
+    // Bazel environment era (e.g., BZLMOD)
     private final BazelEnvironmentAnalyzer.Era era;
 
+    /**
+     * Constructor for HttpFamilyProber
+     * @param bazel Bazel command executor
+     * @param era Bazel environment era
+     */
     public HttpFamilyProber(BazelCommandExecutor bazel, BazelEnvironmentAnalyzer.Era era) {
         this.bazel = bazel;
         this.era = era;
     }
 
+    /**
+     * Probes the Bazel dependency graph for HTTP archive family repositories (http_archive, git_repository, etc.).
+     * Uses different probing strategies depending on the Bazel era (BZLMOD or legacy).
+     * @param target Bazel target to analyze
+     * @return true if HTTP family repository is detected, false otherwise
+     * @throws Exception if Bazel command execution fails
+     */
     public boolean detect(String target) throws Exception {
+        // Query for all library dependencies of the target
         Optional<String> depsOut = bazel.executeToString(Arrays.asList(
             "query", "kind(.*library, deps(" + target + "))"
         ));
         if (!depsOut.isPresent()) {
             return false;
         }
-        List<String> lines = Arrays.asList(depsOut.get().split("\r?\n"));
+        // Split output into lines and process repository labels
+        // Use Arrays.asList for Java 8 compatibility
+        String[] lines = depsOut.get().split("\r?\n");
         Map<String, LinkedHashSet<String>> repoLabels = new HashMap<>();
         Map<String, Boolean> repoSawCanonical = new HashMap<>();
         for (String line : lines) {
+            // Look for external repository labels (start with @ or @@)
             if (line.startsWith("@") && line.contains("//")) {
                 int start = line.startsWith("@@") ? 2 : 1; // Support canonical names starting with @@
                 String repo = line.substring(start, line.indexOf("//"));
                 if (isExcludedRepo(repo)) {
                     continue;
                 }
+                // Track all labels for each repo
                 repoLabels.computeIfAbsent(repo, r -> new LinkedHashSet<>()).add(line.trim());
+                // Track if canonical repo name was seen
                 if (line.startsWith("@@")) {
                     repoSawCanonical.put(repo, Boolean.TRUE);
                 } else {
@@ -52,6 +71,7 @@ public class HttpFamilyProber {
         int maxRepos = 30;
         int checkedRepos = 0;
         boolean bzlmodActive = (era == BazelEnvironmentAnalyzer.Era.BZLMOD);
+        // Probe each repository for HTTP family characteristics
         for (Map.Entry<String, LinkedHashSet<String>> entry : repoLabels.entrySet()) {
             if (checkedRepos++ >= maxRepos) {
                 logger.info("HTTP family probe repo cap reached ({}).", maxRepos);
@@ -62,6 +82,7 @@ public class HttpFamilyProber {
 
             if (bzlmodActive) {
                 try {
+                    // Try mod show_repo for non-canonical and canonical repo names
                     if (tryModShowRepoEnableHttp(repo, false)) {
                         return true;
                     }
@@ -112,6 +133,9 @@ public class HttpFamilyProber {
         return false;
     }
 
+    /**
+     * Returns true if the repo name is in the list of excluded (non-HTTP) repositories.
+     */
     private boolean isExcludedRepo(String repo) {
         String r = repo;
         return r.startsWith("bazel_tools")
@@ -126,6 +150,13 @@ public class HttpFamilyProber {
             || r.startsWith("rules_jvm_external");
     }
 
+    /**
+     * Uses 'bazel mod show_repo' to classify a repo as HTTP family or not.
+     * @param repo Repository name
+     * @param canonical Whether to use canonical repo name (starts with @@)
+     * @return true if HTTP family is detected, false otherwise
+     * @throws Exception if Bazel command execution fails
+     */
     private boolean tryModShowRepoEnableHttp(String repo, boolean canonical) throws Exception {
         String at = canonical ? "@@" : "@";
         Optional<String> modOut = bazel.executeToString(Arrays.asList(
@@ -135,40 +166,54 @@ public class HttpFamilyProber {
             return false;
         }
         String info = modOut.get();
+        // Check for known Maven extension
         if (looksLikeKnownMavenExtension(info)) {
             logger.info("Repo {} classified as Maven-related by mod show_repo; skipping HTTP.", repo);
             return false;
         }
+        // Check for HTTP archive family rule class/source
         if (looksLikeSourceArchive(info)) {
             logger.info("Repo {} classified as HTTP family by mod show_repo (rule class/source).", repo);
             return true;
         }
+        // Check for module extension or direct Bazel dependency
         if (looksLikeModuleExtension(info) || looksLikeDirectBazelDep(info)) {
             logger.info("Repo {} classified as extension/direct dep by mod show_repo; enabling HTTP.", repo);
             return true;
         }
-        logger.info("Repo {} mod show_repo returned unrecognized classification; trying fallback.");
+        logger.info("Repo {} mod show_repo returned unrecognized classification; trying fallback.", repo);
         return false;
     }
 
+    /**
+     * Returns true if the mod show_repo output indicates a known Maven extension.
+     */
     private boolean looksLikeKnownMavenExtension(String modShowRepoOutput) {
         String s = modShowRepoOutput.toLowerCase();
         return s.contains("rules_jvm_external") || s.contains("maven_install");
     }
 
+    /**
+     * Returns true if the mod show_repo output indicates a module extension.
+     */
     private boolean looksLikeModuleExtension(String modShowRepoOutput) {
         String s = modShowRepoOutput.toLowerCase();
         return s.contains("module_extension") || s.contains("module extension") || s.contains("origin: module extension");
     }
 
+    /**
+     * Returns true if the mod show_repo output indicates a direct Bazel dependency.
+     */
     private boolean looksLikeDirectBazelDep(String modShowRepoOutput) {
         String s = modShowRepoOutput.toLowerCase();
         return s.contains("bazel_dep");
     }
 
+    /**
+     * Returns true if the mod show_repo output indicates a source archive rule (http_archive, git_repository, etc.).
+     */
     private boolean looksLikeSourceArchive(String modShowRepoOutput) {
         String s = modShowRepoOutput.toLowerCase();
         return s.contains("http_archive") || s.contains("git_repository") || s.contains("go_repository") || s.contains("http_file");
     }
 }
-

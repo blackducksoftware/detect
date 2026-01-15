@@ -15,12 +15,23 @@ public class BazelGraphProber {
     private final String target;
     private final BazelEnvironmentAnalyzer.Era era;
 
+    /**
+     * Constructor for BazelGraphProber
+     * @param bazel Bazel command executor
+     * @param target Bazel target to probe
+     * @param queryTimeoutSeconds Timeout for queries (unused)
+     * @param era Bazel environment era
+     */
     public BazelGraphProber(BazelCommandExecutor bazel, String target, int queryTimeoutSeconds, BazelEnvironmentAnalyzer.Era era) {
         this.bazel = bazel;
         this.target = target;
         this.era = era;
     }
 
+    /**
+     * Probes the Bazel dependency graph to decide which pipelines (rules) are enabled for the given target.
+     * @return Set of enabled WorkspaceRule
+     */
     public Set<WorkspaceRule> decidePipelines() {
         logger.info("Starting Bazel graph probing for target: {}", target);
         Set<WorkspaceRule> enabled = new HashSet<>();
@@ -30,21 +41,25 @@ public class BazelGraphProber {
         boolean haskell = false;
         boolean httpFamily = false;
 
+        // Probe for rules_jvm_external (maven_install)
         try {
             mavenInstall = detectMavenInstall();
         } catch (Exception e) {
             logger.info("MAVEN_INSTALL probe failed: {}", e.getMessage());
         }
+        // Probe for maven_jar
         try {
             mavenJar = detectMavenJar();
         } catch (Exception e) {
             logger.info("MAVEN_JAR probe failed: {}", e.getMessage());
         }
+        // Probe for haskell_cabal_library
         try {
             haskell = detectHaskellCabal();
         } catch (Exception e) {
             logger.info("HASKELL_CABAL_LIBRARY probe failed: {}", e.getMessage());
         }
+        // Probe for http_archive and related rules
         try {
             HttpFamilyProber httpProber = new HttpFamilyProber(bazel, era == null ? BazelEnvironmentAnalyzer.Era.BZLMOD : era);
             httpFamily = httpProber.detect(target);
@@ -52,6 +67,7 @@ public class BazelGraphProber {
             logger.info("HTTP_ARCHIVE family probe failed: {}", e.getMessage());
         }
 
+        // Prefer maven_install over maven_jar if both are detected
         if (mavenInstall) {
             enabled.add(WorkspaceRule.MAVEN_INSTALL);
             if (mavenJar) {
@@ -71,6 +87,10 @@ public class BazelGraphProber {
         return enabled;
     }
 
+    /**
+     * Detects if rules_jvm_external (maven_install) is used by querying for j.*import rules with maven_coordinates.
+     * @return true if maven_install is detected, false otherwise
+     */
     private boolean detectMavenInstall() throws Exception {
         // Query j.*import rules under deps(target) and look for maven_coordinates tags in build output.
         Optional<String> out = bazel.executeToString(java.util.Arrays.asList(
@@ -86,6 +106,10 @@ public class BazelGraphProber {
         return found;
     }
 
+    /**
+     * Detects if maven_jar is used by filtering for @repo//jar:jar labels in the dependency graph.
+     * @return true if maven_jar is detected, false otherwise
+     */
     private boolean detectMavenJar() throws Exception {
         Optional<String> out = bazel.executeToString(java.util.Arrays.asList(
             "cquery", "filter('@.*:jar', deps(" + target + "))"
@@ -97,6 +121,10 @@ public class BazelGraphProber {
         return found;
     }
 
+    /**
+     * Detects if haskell_cabal_library rules are present in the dependency graph.
+     * @return true if haskell_cabal_library is detected, false otherwise
+     */
     private boolean detectHaskellCabal() throws Exception {
         Optional<String> out = bazel.executeToString(java.util.Arrays.asList(
             "cquery", "--noimplicit_deps", "kind(haskell_cabal_library, deps(" + target + "))", "--output", "label_kind"
