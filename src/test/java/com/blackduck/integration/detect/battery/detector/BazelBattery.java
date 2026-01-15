@@ -25,6 +25,7 @@ class BazelBattery {
         test.withToolsValue("BAZEL");
         test.property("detect.bazel.target", "//tests/integration:ArtifactExclusionsTest");
         test.property("detect.bazel.workspace.rules", "MAVEN_INSTALL");
+        test.property("detect.bazel.era", "LEGACY");
         test.executableFromResourceFiles(DetectProperties.DETECT_BAZEL_PATH, BAZEL_MAVEN_INSTALL_OUTPUT_RESOURCE);
         test.sourceDirectoryNamed("bazel-maven-install");
         test.sourceFileNamed("WORKSPACE");
@@ -38,6 +39,7 @@ class BazelBattery {
         test.withToolsValue("BAZEL");
         test.property("detect.bazel.target", "//tests/integration:ArtifactExclusionsTest");
         test.property("detect.bazel.workspace.rules", "MAVEN_INSTALL");
+        test.property("detect.bazel.era", "LEGACY");
         test.executableFromResourceFiles(DetectProperties.DETECT_BAZEL_PATH, BAZEL_MAVEN_INSTALL_OUTPUT_RESOURCE);
         test.sourceDirectoryNamed("bazel-maven-install-complex");
         test.sourceFileNamed("WORKSPACE");
@@ -51,6 +53,7 @@ class BazelBattery {
         test.withToolsValue("BAZEL");
         test.property("detect.bazel.target", "//cat_hs/lib/args:args");
         test.property("detect.bazel.workspace.rules", "HASKELL_CABAL_LIBRARY");
+        test.property("detect.bazel.era", "LEGACY");
         test.executableFromResourceFiles(DetectProperties.DETECT_BAZEL_PATH, BAZEL_HASKELL_CABAL_LIBRARY_OUTPUT_RESOURCE);
         test.sourceDirectoryNamed("bazel-haskell-cabal-library");
         test.sourceFileNamed("WORKSPACE");
@@ -64,6 +67,7 @@ class BazelBattery {
         test.withToolsValue("BAZEL");
         test.property("detect.bazel.target", "//:ProjectRunner");
         test.property("detect.bazel.workspace.rules", "MAVEN_JAR");
+        test.property("detect.bazel.era", "LEGACY");
         test.executableFromResourceFiles(DetectProperties.DETECT_BAZEL_PATH, BAZEL_MAVEN_JAR_OUTPUT1_RESOURCE, BAZEL_MAVEN_JAR_OUTPUT2_RESOURCE, BAZEL_MAVEN_JAR_OUTPUT3_RESOURCE);
         test.sourceDirectoryNamed("bazel-maven-jar");
         test.sourceFileNamed("WORKSPACE");
@@ -77,6 +81,7 @@ class BazelBattery {
         test.withToolsValue("BAZEL");
         test.property("detect.bazel.target", "//cat_hs/lib/args:args");
         test.property("detect.bazel.workspace.rules", "ALL");
+        test.property("detect.bazel.era", "LEGACY");
         test.executableFromResourceFiles(
             DetectProperties.DETECT_BAZEL_PATH,
             EMPTY_OUTPUT_RESOURCE,
@@ -96,12 +101,13 @@ class BazelBattery {
         test.withToolsValue("BAZEL");
         test.property("detect.bazel.target", "//:bd_bazel");
         test.property("detect.bazel.workspace.rules", "HTTP_ARCHIVE");
+        test.property("detect.bazel.era", "LEGACY");
         test.executableFromResourceFiles(
             DetectProperties.DETECT_BAZEL_PATH,
-            BAZEL_HTTP_ARCHIVE_GITHUB_OUTPUT1_RESOURCE,
-            BAZEL_HTTP_ARCHIVE_GITHUB_OUTPUT2_RESOURCE,
-            BAZEL_HTTP_ARCHIVE_GITHUB_OUTPUT3_RESOURCE,
-            BAZEL_HTTP_ARCHIVE_GITHUB_OUTPUT4_RESOURCE
+            BAZEL_HTTP_ARCHIVE_GITHUB_OUTPUT1_RESOURCE,  // query1.xout - Initial library query
+            BAZEL_HTTP_ARCHIVE_GITHUB_OUTPUT2_RESOURCE,  // query2_and_3.xout - bazel_tools
+            BAZEL_HTTP_ARCHIVE_GITHUB_OUTPUT4_RESOURCE,  // query5.xout - gflags (comes first in LinkedHashSet order, ref: IntermediateStepDeDupLines)
+            BAZEL_HTTP_ARCHIVE_GITHUB_OUTPUT3_RESOURCE   // query4.xout - glog
         );
         test.sourceDirectoryNamed("bazel-http-archive-github");
         test.sourceFileNamed("WORKSPACE");

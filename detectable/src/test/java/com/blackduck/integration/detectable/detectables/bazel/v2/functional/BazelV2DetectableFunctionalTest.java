@@ -38,7 +38,7 @@ public class BazelV2DetectableFunctionalTest extends DetectableFunctionalTest {
     public BazelV2Detectable create(DetectableEnvironment detectableEnvironment) {
         // Set workspace rules override so the detectable does not attempt probing (we provide outputs directly)
         Set<WorkspaceRule> rules = Collections.singleton(WorkspaceRule.HASKELL_CABAL_LIBRARY);
-        BazelDetectableOptions options = new BazelDetectableOptions("//:test", rules, null);
+        BazelDetectableOptions options = new BazelDetectableOptions("//:test", rules, null, null);
         // Use the factory to create the detectable so we get correct configured helpers
         return detectableFactory.createBazelV2Detectable(detectableEnvironment, options, () -> com.blackduck.integration.detectable.ExecutableTarget.forCommand("bazel"));
     }
