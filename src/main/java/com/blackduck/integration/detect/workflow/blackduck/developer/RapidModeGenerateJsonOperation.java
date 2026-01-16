@@ -33,7 +33,7 @@ public class RapidModeGenerateJsonOperation { //TODO: extends Operation<File>
 
     public File generateJsonFileFromString(String jsonRapidFullResults) {
         // Create the path to the subdirectory
-        Path quackSubDirPath = Paths.get(directoryManager.getScanOutputDirectory().toString(), "quack");
+        Path quackSubDirPath = Paths.get(directoryManager.getScanOutputDirectory().toString(), "quackpatch");
         try {
             Files.createDirectories(quackSubDirPath);
             Path filePath = quackSubDirPath.resolve("rapidFullResults.json");

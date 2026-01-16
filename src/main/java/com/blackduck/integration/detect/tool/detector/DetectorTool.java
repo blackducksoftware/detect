@@ -89,7 +89,7 @@ public class DetectorTool {
         // Create /scan/quack directory
         Path workingDir = directoryManager.getScanOutputDirectory().toPath();
         // Create the "quack" subdirectory
-        Path quackDir = workingDir.resolve("quack");
+        Path quackDir = workingDir.resolve("quackpatch");
         ObjectMapper mapper = new ObjectMapper();
         Path jsonFile = quackDir.resolve("invokedDetectorsAndTheirRelevantFiles.json");
 

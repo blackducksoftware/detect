@@ -125,13 +125,14 @@ public class RapidModeStepRunner {
         List<DeveloperScansScanView> rapidResults = operationRunner.waitForRapidResults(blackDuckRunData, parsedUrls, mode); // parsedurls have all the urls we need to poll for results
 
         // Get FULL rapid results for quackpatch separately for now
-        // TODO only bother with below if quackpatch is possible (add explicit flag to enable quackpatch?)
-        List<Response> rapidFullResults = operationRunner.waitForRapidFullResults(blackDuckRunData, parsedUrls, mode); // TODO write to file as is
+        List<Response> rapidFullResults = operationRunner.waitForRapidFullResults(blackDuckRunData, parsedUrls, mode);
 
 
         // Generate a report, even an empty one if no scans were done as that is what previous detect versions did.
         File jsonFile = operationRunner.generateRapidJsonFile(projectVersion, rapidResults);
         File jsonFileFULL = operationRunner.generateFULLRapidJsonFile(rapidFullResults);
+
+//        operationRunner.generateComponentLocationAnalysisIfEnabled(rapidResults, bdioResult, jsonFileFULL); TODO isolate CLL from quack
 
         operationRunner.generateComponentLocationAnalysisIfEnabled(rapidResults, bdioResult, jsonFileFULL);
 
