@@ -20,6 +20,7 @@
 
 ### New features
 
+* Support for Rush Package Manager has been added under [Rush Detector](packagemgrs/rush.md)
 
 ### Changed features
 
