@@ -10,19 +10,22 @@ public class CargoDetectableOptions {
     private final boolean cargoIgnoreAllWorkspacesMode;
     private final List<String> excludedWorkspaces;
     private final List<String> includedWorkspaces;
+    private final List<String> includedFeatures;
 
     public CargoDetectableOptions(EnumListFilter<CargoDependencyType> dependencyTypeFilter,
                                   boolean cargoIgnoreAllWorkspacesMode,
                                   List<String> includedWorkspaces,
-                                  List<String> excludedWorkspaces) {
+                                  List<String> excludedWorkspaces,
+                                  List<String> includedFeatures) {
         this.dependencyTypeFilter = dependencyTypeFilter;
         this.cargoIgnoreAllWorkspacesMode = cargoIgnoreAllWorkspacesMode;
         this.includedWorkspaces = includedWorkspaces;
         this.excludedWorkspaces = excludedWorkspaces;
+        this.includedFeatures = includedFeatures;
     }
 
     public CargoDetectableOptions(EnumListFilter<CargoDependencyType> dependencyTypeFilter) {
-        this(dependencyTypeFilter, false, new ArrayList<>(), new ArrayList<>());
+        this(dependencyTypeFilter, false, new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
     }
 
     public EnumListFilter<CargoDependencyType> getDependencyTypeFilter() {
@@ -39,5 +42,9 @@ public class CargoDetectableOptions {
 
     public List<String> getExcludedWorkspaces() {
         return excludedWorkspaces;
+    }
+
+    public List<String> getIncludedFeatures() {
+        return includedFeatures;
     }
 }

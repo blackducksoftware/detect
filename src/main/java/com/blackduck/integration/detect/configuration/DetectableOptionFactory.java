@@ -11,7 +11,6 @@ import com.blackduck.integration.detectable.detectables.nuget.NugetDependencyTyp
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import org.jetbrains.annotations.Nullable;
 
-import com.blackduck.integration.detect.workflow.ArtifactoryConstants;
 import com.blackduck.integration.detect.workflow.diagnostic.DiagnosticSystem;
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.detectable.detectables.bazel.BazelDetectableOptions;
@@ -259,7 +258,8 @@ public class DetectableOptionFactory {
         Boolean cargoIgnoreAllWorkspacesMode = detectConfiguration.getValue(DetectProperties.DETECT_CARGO_IGNORE_ALL_WORKSPACES_MODE);
         List<String> includedWorkspaces = detectConfiguration.getValue(DetectProperties.DETECT_CARGO_INCLUDED_WORKSPACES);
         List<String> excludedWorkspaces = detectConfiguration.getValue(DetectProperties.DETECT_CARGO_EXCLUDED_WORKSPACES);
-        return new CargoDetectableOptions(dependencyTypeFilter, cargoIgnoreAllWorkspacesMode, includedWorkspaces, excludedWorkspaces);
+        List<String> includedFeatures = detectConfiguration.getValue(DetectProperties.DETECT_CARGO_INCLUDED_FEATURES);
+        return new CargoDetectableOptions(dependencyTypeFilter, cargoIgnoreAllWorkspacesMode, includedWorkspaces, excludedWorkspaces, includedFeatures);
     }
 
     public PipenvDetectableOptions createPipenvDetectableOptions() {

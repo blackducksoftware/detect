@@ -1,6 +1,5 @@
 package com.blackduck.integration.detectable.detectables.cargo;
 
-import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.detectable.ExecutableTarget;
 import com.blackduck.integration.detectable.ExecutableUtils;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
@@ -90,6 +89,7 @@ public class CargoCliExtractor {
         // Step 2: Run workspace-specific command
         List<String> workspaceCommand = new LinkedList<>(CARGO_TREE_COMMAND);
         addWorkspaceFlags(workspaceCommand, cargoDetectableOptions);
+        addFeatureFlags(workspaceCommand, cargoDetectableOptions);
         if (!dependencyTypeFilter.shouldIncludeAll()) {
             addEdgeExclusions(workspaceCommand, cargoDetectableOptions);
         }
@@ -133,6 +133,26 @@ public class CargoCliExtractor {
         } else if (!ignoreAllWorkspaceMembers) {
             command.add("--workspace");
         }
+    }
+
+    private void addFeatureFlags(List<String> command, CargoDetectableOptions options) {
+        List<String> features = options.getIncludedFeatures();
+
+        // Check if user wants all features (support "ALL" keyword or empty list meaning all)
+        if (features != null && !features.isEmpty()) {
+            // Check for special "ALL" keyword (case-insensitive)
+            boolean includeAllFeatures = features.stream()
+                .anyMatch(feature -> "ALL".equalsIgnoreCase(feature.trim()));
+
+            if (includeAllFeatures) {
+                command.add("--all-features");
+            } else {
+                // Add specific features
+                command.add("--features");
+                command.add(String.join(",", features));
+            }
+        }
+        // If features is null or empty, use cargo's default behavior (no feature flags)
     }
 
     private List<String> getEffectiveInclusions(List<String> included, List<String> excluded) {
