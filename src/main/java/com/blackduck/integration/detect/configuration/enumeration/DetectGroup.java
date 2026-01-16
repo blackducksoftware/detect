@@ -75,7 +75,8 @@ public enum DetectGroup implements Group {
     PROJECT_SETTING("project setting"),
     REPORT_SETTING("report setting"),
     SEARCH("search"),
-    DEFAULT("default");
+    DEFAULT("default"),
+    QUACKPATCH("quackpatch");
 
     private final String name;
     private final Group superGroup;

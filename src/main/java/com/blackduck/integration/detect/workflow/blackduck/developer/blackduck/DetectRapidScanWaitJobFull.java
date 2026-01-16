@@ -85,7 +85,6 @@ public class DetectRapidScanWaitJobFull implements ResilientJob<List<Response>> 
 
     @Override
     public List<Response> onCompletion() throws IntegrationException {
-//        List<DeveloperScansScanView> allComponents = new ArrayList<>(); how would other urls impact this now? if binary/container/signature was enabled?
         List<Response> allScanResponses = new ArrayList<>();
         for (HttpUrl url : completedUrls) {
             allScanResponses.add(getScanResultsForFULLUrl(url));
@@ -94,12 +93,7 @@ public class DetectRapidScanWaitJobFull implements ResilientJob<List<Response>> 
     }
 
     private Response getScanResultsForFULLUrl(HttpUrl url) throws IntegrationException {
-        logger.debug("Fetching scan results from endpoint: {}", url.string());
-//        BlackDuckMultipleRequest<DeveloperScansScanView> request =
-//            new DetectRapidScanRequestBuilder()
-//                .createACTUALLYFullRequest((url));
-
-//        originalResponse = blackDuckApiClient.getAllResponses(request);
+        logger.debug("Fetching full rapid scan results from endpoint: {}", url.string());
         Response newResponse =  blackDuckApiClient.get(url.appendRelativeUrl("full-result"));
         return newResponse;
     }

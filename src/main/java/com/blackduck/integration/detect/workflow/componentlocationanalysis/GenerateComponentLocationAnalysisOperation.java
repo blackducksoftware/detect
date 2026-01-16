@@ -74,38 +74,23 @@ public class GenerateComponentLocationAnalysisOperation {
      * @throws com.blackduck.integration.detect.workflow.componentlocationanalysis.ComponentLocatorException
      * @throws DetectUserFriendlyException
      */
-    public ComponentLocatorResult locateComponents(Set<Component> componentsSet, File scanOutputFolder, File projectSrcDir, File rapidFullResultsFile, DetectConfigurationFactory configFactory) throws ComponentLocatorException, DetectUserFriendlyException {
-        runQuackPatch(scanOutputFolder, rapidFullResultsFile, configFactory);
-//        Input componentLocatorInput = new Input(projectSrcDir.getAbsolutePath(), new JsonObject(), componentsSet);
-//        String outputFilepath = scanOutputFolder + "/" + LOCATOR_OUTPUT_FILE_NAME;
-//        if (logger.isDebugEnabled()) {
-//            serializeInputToJson(scanOutputFolder, componentLocatorInput);
-//        }
-//        logger.info(ReportConstants.RUN_SEPARATOR);
-//        int status = ComponentLocator.locateComponents(componentLocatorInput, outputFilepath);
-//        if (status != 0) {
-//            logger.warn("Component Locator execution has failed.");
-//            logger.info(ReportConstants.RUN_SEPARATOR);
-//            failComponentLocationAnalysisOperation();
-//        }
-//        logger.info("Component Location Analysis file saved at: {}", outputFilepath);
-//        logger.info(ReportConstants.RUN_SEPARATOR);
-//        publishComponentLocatorSuccessIfEnabled();
-        return new ComponentLocatorResult(scanOutputFolder.getAbsolutePath() + "/" + QUACKPATCH_SUBDIRECTORY_NAME);
-    }
-
-    public void runQuackPatch(File scanOutputFolder, File rapidFullResultsFile, DetectConfigurationFactory configFactory) throws ComponentLocatorException, DetectUserFriendlyException {
-        logger.info("Attempting QuackPatch.");
-        if (detectConfigurationFactory.isQuackPatchPossible()) {
-            Map<String, List<String>> relevantDetectorsAndFiles = loadDetectorsAndFiles(scanOutputFolder.getAbsolutePath() + "/" +QUACKPATCH_SUBDIRECTORY_NAME + "/invokedDetectorsAndTheirRelevantFiles.json");
-            String llmKey = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_KEY);
-            String llmName = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_NAME);
-            String llmURL = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_ENDPOINT);
-
-            ComponentLocator.runQuackPatch(rapidFullResultsFile, relevantDetectorsAndFiles, llmKey, llmName, llmURL, scanOutputFolder.getPath());
-        } else {
-            logger.info("QuackPatch cannot run because not all requirements are met. Please check your configuration.");
+    public ComponentLocatorResult locateComponents(Set<Component> componentsSet, File scanOutputFolder, File projectSrcDir) throws ComponentLocatorException, DetectUserFriendlyException {
+        Input componentLocatorInput = new Input(projectSrcDir.getAbsolutePath(), new JsonObject(), componentsSet);
+        String outputFilepath = scanOutputFolder + "/" + LOCATOR_OUTPUT_FILE_NAME;
+        if (logger.isDebugEnabled()) {
+            serializeInputToJson(scanOutputFolder, componentLocatorInput);
         }
+        logger.info(ReportConstants.RUN_SEPARATOR);
+        int status = ComponentLocator.locateComponents(componentLocatorInput, outputFilepath);
+        if (status != 0) {
+            logger.warn("Component Locator execution has failed.");
+            logger.info(ReportConstants.RUN_SEPARATOR);
+            failComponentLocationAnalysisOperation();
+        }
+        logger.info("Component Location Analysis file saved at: {}", outputFilepath);
+        logger.info(ReportConstants.RUN_SEPARATOR);
+        publishComponentLocatorSuccessIfEnabled();
+        return new ComponentLocatorResult(outputFilepath);
     }
 
     public ComponentLocatorResult locateComponentsForOnlineIntelligentScan() throws ComponentLocatorException {
@@ -126,6 +111,21 @@ public class GenerateComponentLocationAnalysisOperation {
     public void failComponentLocationAnalysisOperation() throws ComponentLocatorException {
         publishComponentLocatorFailureIfEnabled();
         throw new ComponentLocatorException("Failed to generate Component Location Analysis file.");
+    }
+
+    public QuackPatchResult runQuackPatch(File scanOutputFolder, File rapidFullResultsFile, DetectConfigurationFactory configFactory) throws ComponentLocatorException, DetectUserFriendlyException {
+        logger.info("Attempting QuackPatch.");
+        if (detectConfigurationFactory.isQuackPatchPossible()) {
+            Map<String, List<String>> relevantDetectorsAndFiles = loadDetectorsAndFiles(scanOutputFolder.getAbsolutePath() + "/" +QUACKPATCH_SUBDIRECTORY_NAME + "/invokedDetectorsAndTheirRelevantFiles.json");
+            String llmKey = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_KEY);
+            String llmName = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_NAME);
+            String llmURL = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_ENDPOINT);
+
+            boolean success = ComponentLocator.runQuackPatch(rapidFullResultsFile, relevantDetectorsAndFiles, llmKey, llmName, llmURL, scanOutputFolder.getPath());
+        } else {
+            logger.info("QuackPatch cannot run because not all requirements are met. Please check your configuration.");
+        }
+        return QuackPatchResult(success);
     }
 
 

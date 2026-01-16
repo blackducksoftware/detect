@@ -80,14 +80,26 @@ public class DetectProperties {
 
     public static final StringProperty DETECT_LLM_API_KEY =
             StringProperty.newBuilder("detect.llm.api.key", "")
+                    .setHelp(
+                            "TODO",
+                            "TODO")
+                    .setGroups(DetectGroup.QUACKPATCH)
                     .build();
 
     public static final StringProperty DETECT_LLM_API_ENDPOINT =
             StringProperty.newBuilder("detect.llm.api.endpoint", "")
+                    .setHelp(
+                            "TODO",
+                            "TODO")
+                    .setGroups(DetectGroup.QUACKPATCH)
                     .build();
 
     public static final StringProperty DETECT_LLM_NAME =
             StringProperty.newBuilder("detect.llm.name", "")
+                    .setHelp(
+                            "TODO",
+                            "TODO")
+                    .setGroups(DetectGroup.QUACKPATCH)
                     .build();
 
     public static final NullableStringProperty BLACKDUCK_API_TOKEN =
@@ -1062,7 +1074,7 @@ public class DetectProperties {
                     .setHelp(
                             "TODO",
                             "TODO")
-                    .setGroups(DetectGroup.GENERAL)
+                    .setGroups(DetectGroup.QUACKPATCH)
                     .build();
 
     public static final BooleanProperty DETECT_COMPONENT_LOCATION_ANALYSIS_ENABLED =
