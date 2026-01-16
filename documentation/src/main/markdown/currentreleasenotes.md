@@ -28,6 +28,7 @@
 ### Resolved issues
 
 * (IDETECT-4924) Resolved an issue where Impact Analysis Scan threw errors on malformed classes; it now handles them gracefully by logging a warning, skipping the affected classes, and adding them to the scan output.
+* (IDETECT-4921) Fixed upload failures in proxied environments when SCASS is enabled. 
 
 ### Dependency Updates
 

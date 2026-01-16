@@ -115,7 +115,7 @@ public class RushLockFileParser {
         List<String> excludedSubspaces = rushOptions.getExcludedSubspaces();
         ExcludedIncludedWildcardFilter subspacesFilter;
 
-        if(!excludedSubspaces.isEmpty() && !includedSubspaces.isEmpty()) {
+        if(excludedSubspaces.isEmpty() && includedSubspaces.isEmpty()) {
             subspacesFilter = null;
         } else {
             subspacesFilter = ExcludedIncludedWildcardFilter.fromCollections(excludedSubspaces, includedSubspaces);

@@ -10,13 +10,6 @@ public class RushProject {
 
     @SerializedName("projectFolder")
     private String projectFolder;
-
-    @SerializedName("reviewCategory")
-    private String reviewCategory;
-
-    @SerializedName("shouldPublish")
-    private Boolean shouldPublish;
-
     private transient NullSafePackageJson packageJson;
 
     public String getPackageName() {
