@@ -1,6 +1,5 @@
 package com.blackduck.integration.detectable.detectables.cargo;
 
-import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.detectable.ExecutableTarget;
 import com.blackduck.integration.detectable.ExecutableUtils;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
@@ -47,7 +46,7 @@ public class CargoCliExtractor {
             File workspaceRoot = cargoTomlFile.getParentFile();
             String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
             projectNameVersion = cargoTomlParser.parseNameVersionFromCargoToml(cargoTomlContents);
-            workspaceMembers = cargoTomlParser.parseWorkspaceMembers(cargoTomlContents, workspaceRoot);
+            workspaceMembers = cargoTomlParser.parseAllWorkspaceMembers(cargoTomlContents, workspaceRoot);
         }
 
         EnumListFilter<CargoDependencyType> dependencyTypeFilter = Optional.ofNullable(cargoDetectableOptions.getDependencyTypeFilter())

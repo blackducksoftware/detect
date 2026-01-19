@@ -81,7 +81,7 @@ public class CargoLockfileExtractor {
         if(cargoTomlFile != null) {
             String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
             File workspaceRoot = cargoTomlFile.getParentFile();
-            Set<String> workspaceMembers = cargoTomlParser.parseWorkspaceMembers(cargoTomlContents, workspaceRoot);
+            Set<String> workspaceMembers = cargoTomlParser.parseActiveWorkspaceMembers(cargoTomlContents, workspaceRoot);
 
             if(cargoDetectableOptions != null) {
                 // Step-1: Process all workspace members and their Cargo.toml first

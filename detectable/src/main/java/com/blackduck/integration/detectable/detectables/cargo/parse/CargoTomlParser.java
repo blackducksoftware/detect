@@ -24,6 +24,8 @@ public class CargoTomlParser {
     private static final String VERSION_KEY = "version";
     private static final String PACKAGE_KEY = "package";
     private static final String WORKSPACE_KEY = "workspace";
+    private static final String WORKSPACE_MEMBER_KEY = "members";
+    private static final String WORKSPACE_EXCLUSION_KEY = "exclude";
     private static final String NORMAL_DEPENDENCIES_KEY = "dependencies";
     private static final String BUILD_DEPENDENCIES_KEY = "build-dependencies";
     private static final String DEV_DEPENDENCIES_KEY = "dev-dependencies";
@@ -51,22 +53,51 @@ public class CargoTomlParser {
         return Optional.of(new NameVersion(name, version));
     }
 
-    public Set<String> parseWorkspaceMembers(String tomlFileContents, File workspaceRoot) {
+    public Set<String> parseActiveWorkspaceMembers(String tomlFileContents, File workspaceRoot) {
         TomlParseResult toml = Toml.parse(tomlFileContents);
         Set<String> members = new HashSet<>();
+        Set<String> exclusions = new HashSet<>();
 
-        TomlTable workspace = toml.getTable("workspace");
-        if (workspace != null && workspace.contains("members")) {
-            TomlArray memberArray = workspace.getArray("members");
-            if (memberArray != null) {
-                for (int i = 0; i < memberArray.size(); i++) {
-                    String member = memberArray.getString(i);
-                    processMember(member, workspaceRoot, members);
+        TomlTable workspace = toml.getTable(WORKSPACE_KEY);
+        if (workspace != null) {
+            // Parse members
+            parseWorkspaceArray(workspace, WORKSPACE_MEMBER_KEY, workspaceRoot, members);
+
+            // Parse exclusions
+            parseWorkspaceArray(workspace, WORKSPACE_EXCLUSION_KEY, workspaceRoot, exclusions);
+        }
+
+        // Apply exclusions - remove any member that matches an exclusion pattern
+        members.removeIf(exclusions::contains);
+
+        return members;
+    }
+
+    public Set<String> parseAllWorkspaceMembers(String tomlFileContents, File workspaceRoot) {
+        TomlParseResult toml = Toml.parse(tomlFileContents);
+        Set<String> members = new HashSet<>();
+        Set<String> exclusions = new HashSet<>();
+
+        TomlTable workspace = toml.getTable(WORKSPACE_KEY);
+        if (workspace != null) {
+            // Parse members
+            parseWorkspaceArray(workspace, WORKSPACE_MEMBER_KEY, workspaceRoot, members);
+        }
+        return members;
+    }
+
+    private void parseWorkspaceArray(TomlTable workspace, String key, File workspaceRoot, Set<String> targetSet) {
+        if (workspace.contains(key)) {
+            TomlArray array = workspace.getArray(key);
+            if (array != null) {
+                for (int i = 0; i < array.size(); i++) {
+                    String value = array.getString(i);
+                    if (value != null) {
+                        processMember(value, workspaceRoot, targetSet);
+                    }
                 }
             }
         }
-
-        return members;
     }
 
     private void processMember(String member, File workspaceRoot, Set<String> members) {
