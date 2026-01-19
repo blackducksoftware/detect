@@ -53,6 +53,15 @@ public class CargoTomlParser {
         return Optional.of(new NameVersion(name, version));
     }
 
+    public String parsePackageNameFromCargoToml(String tomlFileContents) {
+        TomlParseResult toml = Toml.parse(tomlFileContents);
+        TomlTable packageTable = toml.getTable(PACKAGE_KEY);
+        if (packageTable != null && packageTable.contains(NAME_KEY)) {
+            return packageTable.getString(NAME_KEY);
+        }
+        return null;
+    }
+
     public Set<String> parseActiveWorkspaceMembers(String tomlFileContents, File workspaceRoot) {
         TomlParseResult toml = Toml.parse(tomlFileContents);
         Set<String> members = new HashSet<>();
@@ -76,7 +85,6 @@ public class CargoTomlParser {
     public Set<String> parseAllWorkspaceMembers(String tomlFileContents, File workspaceRoot) {
         TomlParseResult toml = Toml.parse(tomlFileContents);
         Set<String> members = new HashSet<>();
-        Set<String> exclusions = new HashSet<>();
 
         TomlTable workspace = toml.getTable(WORKSPACE_KEY);
         if (workspace != null) {
