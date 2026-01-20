@@ -742,18 +742,6 @@ public class OperationRunner {
     }
 
     public List<Response> waitForRapidFullResults(BlackDuckRunData blackDuckRunData, List<HttpUrl> rapidScans, BlackduckScanMode mode) throws OperationException {
-//        // First, append /full-result to all these URLs (TODO has only been tested w/ pkg mngr scans)
-//        List<HttpUrl> fullResultUrls = new ArrayList<>();
-//        for (HttpUrl url : rapidScans) {
-//            try {
-//                HttpUrl fullVersion = url.appendRelativeUrl("full-result");
-//                fullResultUrls.add(fullVersion);
-//            } catch (Exception e) {
-//                logger.debug("uh oh something went wrong");
-//                logger.error(e.getMessage(), e);
-//            }
-//        }
-
         return auditLog.namedInternal("Rapid Full Wait", () -> {
             BlackDuckServicesFactory blackDuckServicesFactory = blackDuckRunData.getBlackDuckServicesFactory();
             int fibonacciSequenceIndex = getFibonacciSequenceIndex();
@@ -762,7 +750,6 @@ public class OperationRunner {
                 return new RapidModeWaitOperation(blackDuckServicesFactory.getBlackDuckApiClient()).waitForFullScans(
                         rapidScans,
                         detectConfigurationFactory.findTimeoutInSeconds(),
-                        RapidModeWaitOperation.DEFAULT_WAIT_INTERVAL_IN_SECONDS,
                         mode,
                         calculateMaxWaitInSeconds(fibonacciSequenceIndex)
                 );
@@ -826,6 +813,23 @@ public class OperationRunner {
         );
     }
 
+    public boolean shouldAttemptQuackPatchFullResults() {
+        return detectConfigurationFactory.isQuackPatchPossible();
+    }
+
+    public void runQuackPatch(File rapidFullResultsJson) throws OperationException {
+        auditLog.namedPublic(
+                "Quack Patch",
+                () -> {
+                    publishResult(
+                            new GenerateComponentLocationAnalysisOperation(detectConfigurationFactory, statusEventPublisher, exitCodePublisher)
+                                    .runQuackPatch(directoryManager.getScanOutputDirectory(), rapidFullResultsJson, detectConfigurationFactory)
+                    );
+                }
+        );
+
+    }
+
 
     public final void publishRapidResults(File jsonFile, RapidScanResultSummary summary, BlackduckScanMode mode) throws OperationException {
         auditLog.namedInternal("Publish Rapid Results", () -> statusEventPublisher.publishDetectResult(new RapidScanDetectResult(jsonFile.getCanonicalPath(), summary, mode, detectConfigurationFactory.getPoliciesToFailOn())));
@@ -867,7 +871,7 @@ public class OperationRunner {
                             () -> {
                                 publishResult(
                                     new GenerateComponentLocationAnalysisOperation(detectConfigurationFactory, statusEventPublisher, exitCodePublisher)
-                                        .locateComponents(componentsSet, directoryManager.getScanOutputDirectory(), directoryManager.getSourceDirectory(), null, detectConfigurationFactory)
+                                        .locateComponents(componentsSet, directoryManager.getScanOutputDirectory(), directoryManager.getSourceDirectory())
                                 );
                             }
                     );
@@ -883,7 +887,7 @@ public class OperationRunner {
      * @param bdio
      * @throws OperationException
      */
-    public void generateComponentLocationAnalysisIfEnabled(List<DeveloperScansScanView> rapidResults, BdioResult bdio, File rapidFullResultsFile) throws OperationException {
+    public void generateComponentLocationAnalysisIfEnabled(List<DeveloperScansScanView> rapidResults, BdioResult bdio) throws OperationException {
         if (detectConfigurationFactory.isComponentLocationAnalysisEnabled()) {
             if (rapidResults.isEmpty()) {
                 failComponentLocationAnalysisOperationTask("Component Location Analysis requires non-empty Rapid/Stateless Scan results. Skipping location analysis.");
@@ -899,7 +903,7 @@ public class OperationRunner {
                             () -> {
                                 publishResult(
                                     new GenerateComponentLocationAnalysisOperation(detectConfigurationFactory, statusEventPublisher, exitCodePublisher)
-                                        .locateComponents(componentsSet, directoryManager.getScanOutputDirectory(), directoryManager.getSourceDirectory(), rapidFullResultsFile, detectConfigurationFactory)
+                                        .locateComponents(componentsSet, directoryManager.getScanOutputDirectory(), directoryManager.getSourceDirectory())
                                 );
                             }
                     );

@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.Set;
 
+import com.blackduck.integration.detect.configuration.DetectConfigurationFactory;
 import com.blackduck.integration.rest.response.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,17 +125,18 @@ public class RapidModeStepRunner {
         BlackduckScanMode mode = blackDuckRunData.getScanMode();
         List<DeveloperScansScanView> rapidResults = operationRunner.waitForRapidResults(blackDuckRunData, parsedUrls, mode); // parsedurls have all the urls we need to poll for results
 
-        // Get FULL rapid results for quackpatch separately for now
-        List<Response> rapidFullResults = operationRunner.waitForRapidFullResults(blackDuckRunData, parsedUrls, mode);
 
+        if (operationRunner.shouldAttemptQuackPatchFullResults()) {
+            logger.info("Quack Patch is enabled, attempting to retrieve full Rapid scan results.");
+            List<Response> rapidFullResults = operationRunner.waitForRapidFullResults(blackDuckRunData, parsedUrls, mode);
+            File jsonFileFULL = operationRunner.generateFULLRapidJsonFile(rapidFullResults);
+            operationRunner.runQuackPatch(jsonFileFULL);
+        }
 
         // Generate a report, even an empty one if no scans were done as that is what previous detect versions did.
         File jsonFile = operationRunner.generateRapidJsonFile(projectVersion, rapidResults);
-        File jsonFileFULL = operationRunner.generateFULLRapidJsonFile(rapidFullResults);
 
-//        operationRunner.generateComponentLocationAnalysisIfEnabled(rapidResults, bdioResult, jsonFileFULL); TODO isolate CLL from quack
-
-        operationRunner.generateComponentLocationAnalysisIfEnabled(rapidResults, bdioResult, jsonFileFULL);
+        operationRunner.generateComponentLocationAnalysisIfEnabled(rapidResults, bdioResult);
 
         RapidScanResultSummary summary = operationRunner.logRapidReport(rapidResults, mode);
 

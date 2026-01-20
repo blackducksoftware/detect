@@ -36,16 +36,18 @@ public class RapidModeGenerateJsonOperation { //TODO: extends Operation<File>
 
     public File generateJsonFileFromString(String jsonRapidFullResults) {
         // Create the path to the subdirectory
-        Path quackSubDirPath = Paths.get(DirectoryManager.getScanDirectoryName())
-                .resolve(QUACKPATCH_SUBDIRECTORY_NAME)
-                .resolve(INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON);
+        File quackSubDir = new File(directoryManager.getScanOutputDirectory(), QUACKPATCH_SUBDIRECTORY_NAME);
+
         try {
-            Files.createDirectories(quackSubDirPath);
-            Path filePath = quackSubDirPath.resolve("rapidFullResults.json");
-            Files.writeString(filePath, jsonRapidFullResults, StandardCharsets.UTF_8); // TODO not compatible with java 8
-            return filePath.toFile();
+            if (!quackSubDir.exists()) {
+                quackSubDir.mkdirs();
+            }
+            File jsonFile = new File(quackSubDir, "rapidFullResults.json");
+            Path filePath = jsonFile.toPath();
+            Files.write(filePath, jsonRapidFullResults.getBytes(StandardCharsets.UTF_8));
+            return jsonFile;
         } catch (IOException e) {
-            throw new RuntimeException("Something went wrong creating Rapid scan full results JSON file. ", e);
+            throw new RuntimeException("Something went wrong creating Rapid scan full results JSON file.", e);
         }
     }
 
