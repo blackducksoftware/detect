@@ -6,37 +6,31 @@
 
 ## Overview
 
-The Rush Detector will run in the presence of a rush.json file.
+When a rush.json file is present in the analyzed code, the Rush Detector will run.
 
-Each package has a location within the project structure defined in the `rush.json` file. [detect_product_short] will parse it to find the type of package manager used and all the projects and its location.
+Included packages have a location within the project structure defined in the `rush.json` file. [detect_product_short] will parse the `rush.json` file to determine the type of package manager used, included projects, and their locations.
 
 It is expected to find some type of lock file within `common/config/rush` directory.
 Supported lockfile types are pnpm-lock.yaml, npm-shrinkwrap.json, and yarn.lock.
 
-If no lockfile is present at the above-mentioned directory in the project, Rush extraction will fail.
+Rush Detector requires one of `pnpm-lock.yaml`, `npm-shrinkwrap.json`, or `yarn.lock` be present in the `common/config/rush` directory of the analyzed project. If no lockfile is present in the `common/config/rush` directory, Rush Detector will exit.
 
 ## Extracting from pnpm-lock.yaml
 
-The Rush detector will execute the same code as the [PNPM detector](pnpm.md).
-
-The [PNPM detector](../properties/detectors/pnpm.md) related properties also apply.
+When a pnpm-lock.yaml file is located in the analyzed directory, the Rush Detector will take [PNPM detector](../properties/detectors/pnpm.md) related properties as input.
 
 ### Exclude/Include Subspaces
 
-Since PNPM package manager supports concept of subspaces in Rush, individual subspaces can be excluded/included in the scan result using properties defined here [Rush Subspaces](../properties/detectors/rush.md)
+Rush Detector supports inclusion and exclusions of individual subspaces in the scan results using properties defined here: [Rush Subspaces](../properties/detectors/rush.md)
 
 ## Extracting from npm-shrinkwrap.json
 
-The Rush detector will execute the same code as the [NPM shrinkwrap detector](npm.md#npm-shrinkwrap).
-
-The [NPM shrinkwrap detector](../properties/detectors/npm.md/) related properties also apply.
+When a npm-shrinkwrap.json file is located in the analyzed directory, the Rush Detector will take [NPM shrinkwrap detector](../properties/detectors/npm.md) related properties as input.
 
 Since the Rush detector is currently not using the NPM Cli, the only property that applies is [detect.npm.dependency.types.excluded](../properties/detectors/npm.md#npm-dependency-types-excluded).
 
 ## Extracting from yarn.lock
 
-The Rush detector will execute the same code as the [Yarn detector](yarn.md#yarn-support).
-
-The [Yarn detector related properties](../properties/detectors/yarn.md) also apply.
+When a yarn.lock file is located in the analyzed directory, the Rush Detector will take [Yarn detector](../properties/detectors/yarn.md) related properties as input.
 
 Yarn workspaces are not currently supported by the Rush detector.

@@ -20,7 +20,7 @@
 
 ### New features
 
-* Support for Rush Package Manager has been added under [Rush Detector](packagemgrs/rush.md)
+* [detect_product_short] now supports Rush Package Manager. For details and configuration information, see: [Rush Detector](packagemgrs/rush.md)
 
 ### Changed features
 
