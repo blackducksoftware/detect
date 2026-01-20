@@ -1070,7 +1070,7 @@ public class DetectProperties {
 
     public static final BooleanProperty DETECT_QUACK_PATCH_ENABLED =
             BooleanProperty.newBuilder("detect.quack.patch.enabled", false)
-                    .setInfo("QuackPatch Enabled", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setInfo("Quack Patch Enabled", DetectPropertyFromVersion.VERSION_11_2_0)
                     .setHelp(
                             "TODO",
                             "TODO")

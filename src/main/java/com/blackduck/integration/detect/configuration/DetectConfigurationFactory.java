@@ -233,6 +233,7 @@ public class DetectConfigurationFactory {
     public Boolean isQuackPatchPossible() {
         if (isQuackPatchEnabled() && isComponentLocationAnalysisEnabled()) {
             logger.warn("Quack Patch cannot run when Component Location Analysis is also enabled. Disabling Quack Patch.");
+            return false;
         }
         if (isQuackPatchEnabled() && !isComponentLocationAnalysisEnabled()
                 && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_NAME).isEmpty()
@@ -240,7 +241,7 @@ public class DetectConfigurationFactory {
                 && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_KEY).isEmpty()) {
             return true;
         }
-        logger.info("QuackPatch cannot run because not all required properties are set. Please check your configuration.");
+        logger.info("Quack Patch cannot run because not all required properties are set. Please check your configuration.");
         return false;
     }
 
