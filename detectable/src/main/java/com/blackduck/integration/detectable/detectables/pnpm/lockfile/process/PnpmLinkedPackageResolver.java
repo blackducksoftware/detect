@@ -3,6 +3,7 @@ package com.blackduck.integration.detectable.detectables.pnpm.lockfile.process;
 import java.io.File;
 import java.io.IOException;
 
+import com.blackduck.integration.detectable.detectables.rush.RushProjectType;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +17,8 @@ public class PnpmLinkedPackageResolver {
     private final File projectRoot;
     private final PackageJsonFiles packageJsonFiles;
 
+    private static final String FILE_PREFIX = "^(\\.\\./|\\./)++";
+
     public PnpmLinkedPackageResolver(File projectRoot, PackageJsonFiles packageJsonFiles) {
         this.projectRoot = projectRoot;
         this.packageJsonFiles = packageJsonFiles;
@@ -25,18 +28,34 @@ public class PnpmLinkedPackageResolver {
     public String resolveVersionOfLinkedPackage(@Nullable String reportingProjectPackagePath, String relativePathToLinkedPackage) {
         File reportingPackage;
         if (reportingProjectPackagePath != null) {
+            reportingProjectPackagePath = reportingProjectPackagePath.replaceAll(FILE_PREFIX, "");
             reportingPackage = new File(projectRoot, reportingProjectPackagePath);
         } else {
             reportingPackage = projectRoot;
         }
-        File linkedPackage = new File(reportingPackage, relativePathToLinkedPackage);
+
+        relativePathToLinkedPackage = relativePathToLinkedPackage.replaceAll(FILE_PREFIX, "");
+
+        File linkedPackage = new File(projectRoot, relativePathToLinkedPackage);
         File packageJsonFile = new File(linkedPackage, "package.json");
 
-        if (!packageJsonFile.exists()) {
-            logger.debug(String.format("Unable to resolve version for linked package: %s", linkedPackage));
-            return null;
-        }
+        if (packageJsonFile.exists()) {
+           return readPackageJson(packageJsonFile);
+        } else {
+            linkedPackage = new File(reportingPackage, relativePathToLinkedPackage);
+            packageJsonFile = new File(linkedPackage, "package.json");
 
+            if (!packageJsonFile.exists()) {
+                logger.debug(String.format("Unable to resolve version for linked package: %s", linkedPackage));
+                return null;
+            }
+
+            return readPackageJson(packageJsonFile);
+        }
+    }
+
+
+    private String readPackageJson(File packageJsonFile) {
         try {
             NullSafePackageJson packageJson = packageJsonFiles.read(packageJsonFile);
             return packageJson.getVersionString();

@@ -8,6 +8,7 @@ import java.util.Set;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDetectableOptions;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
 import com.blackduck.integration.detectable.detectables.nuget.NugetDependencyType;
+import com.blackduck.integration.detectable.detectables.rush.RushOptions;
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import org.jetbrains.annotations.Nullable;
 
@@ -194,6 +195,12 @@ public class DetectableOptionFactory {
         List<String> excludedPackages = detectConfiguration.getValue(DetectProperties.DETECT_LERNA_EXCLUDED_PACKAGES);
         List<String> includedPackages = detectConfiguration.getValue(DetectProperties.DETECT_LERNA_INCLUDED_PACKAGES);
         return new LernaOptions(lernaPackageTypeFilter, excludedPackages, includedPackages);
+    }
+
+    public RushOptions createRushOptions() {
+        List<String> excludedSubspaces = detectConfiguration.getValue(DetectProperties.DETECT_RUSH_PNPM_EXCLUDED_SUBSPACES);
+        List<String> includedSubspaces = detectConfiguration.getValue(DetectProperties.DETECT_RUSH_PNPM_INCLUDED_SUBSPACES);
+        return new RushOptions(excludedSubspaces, includedSubspaces);
     }
 
     public MavenCliExtractorOptions createMavenCliOptions() {

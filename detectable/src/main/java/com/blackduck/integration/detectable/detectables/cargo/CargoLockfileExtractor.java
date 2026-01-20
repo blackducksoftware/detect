@@ -81,7 +81,7 @@ public class CargoLockfileExtractor {
         if(cargoTomlFile != null) {
             String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
             File workspaceRoot = cargoTomlFile.getParentFile();
-            Set<String> workspaceMembers = cargoTomlParser.parseWorkspaceMembers(cargoTomlContents, workspaceRoot);
+            Set<String> workspaceMembers = cargoTomlParser.parseActiveWorkspaceMembers(cargoTomlContents, workspaceRoot);
 
             if(cargoDetectableOptions != null) {
                 // Step-1: Process all workspace members and their Cargo.toml first
@@ -340,7 +340,7 @@ public class CargoLockfileExtractor {
             return;
         }
 
-        Set<String> effectiveWorkspaces = getEffectiveWorkspaces(workspaceMembers, includedWorkspaces, excludedWorkspaces);
+        Set<String> effectiveWorkspaces = getEffectiveWorkspaces(workspaceMembers, includedWorkspaces, excludedWorkspaces, workspaceRoot);
 
         for (String workspace : effectiveWorkspaces) {
             File workspaceToml = new File(workspaceRoot, workspace + File.separator + "Cargo.toml");
@@ -362,21 +362,22 @@ public class CargoLockfileExtractor {
     private Set<String> getEffectiveWorkspaces(
         Set<String> allWorkspaces,
         List<String> includedWorkspaces,
-        List<String> excludedWorkspaces
+        List<String> excludedWorkspaces,
+        File workspaceRoot
     ) {
         Set<String> effective = new HashSet<>(allWorkspaces);
 
         // If specific inclusions exist, filter by matching base names
         if (includedWorkspaces != null && !includedWorkspaces.isEmpty()) {
             effective = allWorkspaces.stream()
-                .filter(workspace -> matchesAnyWorkspace(workspace, includedWorkspaces))
+                .filter(workspace -> matchesAnyWorkspace(workspace, includedWorkspaces, workspaceRoot))
                 .collect(Collectors.toSet());
         }
 
         // Apply exclusions (exclusion dominates) - also match by base name
         if (excludedWorkspaces != null && !excludedWorkspaces.isEmpty()) {
             effective = effective.stream()
-                .filter(workspace -> !matchesAnyWorkspace(workspace, excludedWorkspaces))
+                .filter(workspace -> !matchesAnyWorkspace(workspace, excludedWorkspaces, workspaceRoot))
                 .collect(Collectors.toSet());
         }
 
@@ -422,10 +423,47 @@ public class CargoLockfileExtractor {
         return externalId != null? new CodeLocation(graph, externalId): new CodeLocation(graph);
     }
 
-    private boolean matchesAnyWorkspace(String workspacePath, List<String> workspaceNames) {
+    private boolean matchesAnyWorkspace(String workspacePath, List<String> workspaceNames, File workspaceRoot) {
         String baseName = extractWorkspaceBaseName(workspacePath);
-        return workspaceNames.stream()
-            .anyMatch(name -> name.equals(baseName) || name.equals(workspacePath));
+
+        for (String name : workspaceNames) {
+            // Exact matches
+            if (name.equals(baseName) || name.equals(workspacePath)) {
+                return true;
+            }
+
+            // Try to resolve workspace path to package name from Cargo.toml
+            String packageName = resolveWorkspaceToPackageName(workspacePath, workspaceRoot);
+            if (packageName != null && packageName.equals(name)) {
+                return true;
+            }
+
+            // Suffix matching as fallback
+            if (name.endsWith(baseName) || baseName.endsWith(name)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private String resolveWorkspaceToPackageName(String workspacePath, File workspaceRoot) {
+        if (workspaceRoot == null || workspacePath == null) {
+            return null;
+        }
+
+        File workspaceToml = new File(workspaceRoot, workspacePath + File.separator + "Cargo.toml");
+        if (!workspaceToml.exists()) {
+            return null;
+        }
+
+        try {
+            String tomlContents = FileUtils.readFileToString(workspaceToml, StandardCharsets.UTF_8);
+            return cargoTomlParser.parsePackageNameFromCargoToml(tomlContents);
+        } catch (IOException e) {
+            logger.warn("Failed to read Cargo.toml for workspace: {}", workspacePath, e);
+            return null;
+        }
     }
 
     private String extractWorkspaceBaseName(String workspacePath) {
