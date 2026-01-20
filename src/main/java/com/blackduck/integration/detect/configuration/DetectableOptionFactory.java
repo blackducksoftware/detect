@@ -1,10 +1,13 @@
 package com.blackduck.integration.detect.configuration;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation;
+import com.blackduck.integration.detect.workflow.file.DirectoryManager;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDetectableOptions;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
 import com.blackduck.integration.detectable.detectables.nuget.NugetDependencyType;
@@ -60,6 +63,9 @@ import com.blackduck.integration.detectable.detectables.yarn.YarnDependencyType;
 import com.blackduck.integration.detectable.detectables.yarn.YarnLockOptions;
 import com.blackduck.integration.log.LogLevel;
 import com.blackduck.integration.rest.proxy.ProxyInfo;
+
+import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON;
+import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.QUACKPATCH_SUBDIRECTORY_NAME;
 
 public class DetectableOptionFactory {
 
@@ -334,7 +340,10 @@ public class DetectableOptionFactory {
         Path nugetConfigPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_CONFIG_PATH);
         Set<NugetDependencyType> nugetExcludedDependencyTypes = detectConfiguration.getValue(DetectProperties.DETECT_NUGET_DEPENDENCY_TYPES_EXCLUDED).representedValueSet();
         Path nugetArtifactsPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_ARTIFACTS_PATH);
-        return new NugetInspectorOptions(ignoreFailures, excludedModules, includedModules, packagesRepoUrl, nugetConfigPath, nugetExcludedDependencyTypes, nugetArtifactsPath);
+        Path relevantDetectorsAndFilesInfoPath = Paths.get(DirectoryManager.getScanDirectoryName())
+                .resolve(QUACKPATCH_SUBDIRECTORY_NAME)
+                .resolve(INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON);
+        return new NugetInspectorOptions(ignoreFailures, excludedModules, includedModules, packagesRepoUrl, nugetConfigPath, nugetExcludedDependencyTypes, nugetArtifactsPath, relevantDetectorsAndFilesInfoPath);
     }
 
     private boolean getFollowSymLinks() {
