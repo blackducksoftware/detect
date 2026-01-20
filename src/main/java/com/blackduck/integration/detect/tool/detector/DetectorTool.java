@@ -89,9 +89,7 @@ public class DetectorTool {
     public void saveExtractedDetectorsAndTheirRelevantFilePaths(DirectoryManager directoryManager, DetectorToolResult toolResult) throws IOException {
         // Create map of extracted detectors and their relevant files
         Map<String, List<String>> detectorsAndFiles = new HashMap<>();
-        // Create /scan/quack directory
         Path workingDir = directoryManager.getScanOutputDirectory().toPath();
-        // Create the "quack" subdirectory
         Path quackDir = workingDir.resolve(QUACKPATCH_SUBDIRECTORY_NAME);
         ObjectMapper mapper = new ObjectMapper();
         Path jsonFile = quackDir.resolve(INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON);

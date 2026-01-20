@@ -48,7 +48,6 @@ public class RapidModeStepRunner {
     private final String detectRunUuid;
     private final DirectoryManager directoryManager;
     public static final String RAPID_SCAN_ENDPOINT = "/api/developer-scans";
-//    public static final String RAPID_SCAN_FULL_RESULT_ENDPOINT = "/api/developer-scans/%s/full-result";
 
 
     public RapidModeStepRunner(OperationRunner operationRunner, StepHelper stepHelper, Gson gson, String detectRunUuid, DirectoryManager directoryManager) {
@@ -71,9 +70,9 @@ public class RapidModeStepRunner {
         Set<FormattedCodeLocation> formattedCodeLocations = new HashSet<>();
 
         // pkg mgr rapid scan
-        List<HttpUrl> uploadResultsUrls = operationRunner.performRapidUpload(blackDuckRunData, bdioResult, rapidScanConfig.orElse(null)); // pkg mngr rapid bdio upload, returns the upload url with scan-id
+        List<HttpUrl> uploadResultsUrls = operationRunner.performRapidUpload(blackDuckRunData, bdioResult, rapidScanConfig.orElse(null));
         if (uploadResultsUrls != null && uploadResultsUrls.size() > 0) {
-            processScanResults(uploadResultsUrls, parsedUrls, formattedCodeLocations, DetectTool.DETECTOR.name()); // adds URLs from the BDIO upload that will be polled LATER
+            processScanResults(uploadResultsUrls, parsedUrls, formattedCodeLocations, DetectTool.DETECTOR.name());
         }
 
         stepHelper.runToolIfIncluded(DetectTool.SIGNATURE_SCAN, "Signature Scanner", () -> {
@@ -123,7 +122,7 @@ public class RapidModeStepRunner {
 
         // Get info about any scans that were done
         BlackduckScanMode mode = blackDuckRunData.getScanMode();
-        List<DeveloperScansScanView> rapidResults = operationRunner.waitForRapidResults(blackDuckRunData, parsedUrls, mode); // parsedurls have all the urls we need to poll for results
+        List<DeveloperScansScanView> rapidResults = operationRunner.waitForRapidResults(blackDuckRunData, parsedUrls, mode);
 
 
         if (operationRunner.shouldAttemptQuackPatchFullResults()) {
@@ -177,7 +176,7 @@ public class RapidModeStepRunner {
         rapidBdbaStepRunner.downloadAndExtractBdio(directoryManager);
 
         UUID bdScanId = operationRunner.initiateStatelessBdbaScan(blackDuckRunData);
-        operationRunner.uploadBdioEntries(blackDuckRunData, bdScanId); // uploads to rapid scan endpoint
+        operationRunner.uploadBdioEntries(blackDuckRunData, bdScanId);
 
         // add this scan to the URLs to wait for
         parsedUrls.add(new HttpUrl(blackDuckUrl + String.format(RAPID_SCAN_ENDPOINT + "/" + bdScanId.toString())));

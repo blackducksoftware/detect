@@ -25,14 +25,6 @@ public class DetectRapidScanRequestBuilder {
         return blackDuckRequestBuilder.buildBlackDuckResponseRequest(httpUrl);
     }
 
-//    public List<Response> createACTUALLYFullRequest(HttpUrl httpUrl) {
-//        try {
-//            httpUrl.appendRelativeUrl("full-result");
-//        } catch (IntegrationException e) {
-//            throw new RuntimeException("Something went wrong while assembling full results request", e);
-//        }
-//        return blackDuckRequestBuilder.buildBlackDuckRequest(new UrlMultipleResponses<>(httpUrl, DeveloperScansScanView.class));
-//    }
     public BlackDuckMultipleRequest<DeveloperScansScanView> createRegularRequest(HttpUrl httpUrl) {
         return blackDuckRequestBuilder.buildBlackDuckRequest(new UrlMultipleResponses<>(httpUrl, DeveloperScansScanView.class));
     }
