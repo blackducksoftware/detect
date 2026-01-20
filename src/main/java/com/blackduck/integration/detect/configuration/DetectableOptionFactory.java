@@ -78,8 +78,8 @@ public class DetectableOptionFactory {
         String targetName = detectConfiguration.getNullableValue(DetectProperties.DETECT_BAZEL_TARGET);
         List<String> bazelCqueryAdditionalOptions = detectConfiguration.getValue(DetectProperties.DETECT_BAZEL_CQUERY_OPTIONS);
         Set<WorkspaceRule> workspaceRulesFromProperty = detectConfiguration.getValue(DetectProperties.DETECT_BAZEL_WORKSPACE_RULES).representedValueSet();
-        String eraOverride = detectConfiguration.getNullableValue(DetectProperties.DETECT_BAZEL_ERA);
-        return new BazelDetectableOptions(targetName, workspaceRulesFromProperty, bazelCqueryAdditionalOptions, eraOverride);
+        String modeOverride = detectConfiguration.getNullableValue(DetectProperties.DETECT_BAZEL_MODE);
+        return new BazelDetectableOptions(targetName, workspaceRulesFromProperty, bazelCqueryAdditionalOptions, modeOverride);
     }
 
     public BitbakeDetectableOptions createBitbakeDetectableOptions() {

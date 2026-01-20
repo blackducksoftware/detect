@@ -8,38 +8,38 @@ import java.util.Arrays;
 import java.util.Optional;
 
 /**
- * Detects the active Bazel environment "era" for this invocation: BZLMOD vs LEGACY.
+ * Detects the active Bazel environment mode for this invocation: BZLMOD vs WORKSPACE.
  * Uses fast, read-only Bazel commands (no builds) and caches the decision.
  */
 public class BazelEnvironmentAnalyzer {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
-    public enum Era { BZLMOD, LEGACY, UNKNOWN }
+    public enum Mode { BZLMOD, WORKSPACE, UNKNOWN }
 
     private final BazelCommandExecutor bazel;
-    private Era cachedEra;
+    private Mode cachedMode;
 
     public BazelEnvironmentAnalyzer(BazelCommandExecutor bazel) {
         this.bazel = bazel;
     }
 
-    public synchronized Era getEra() {
-        if (cachedEra != null) return cachedEra;
-        cachedEra = detectEra();
-        logger.info("Bazel era detected: {}", cachedEra);
-        return cachedEra;
+    public synchronized Mode getMode() {
+        if (cachedMode != null) return cachedMode;
+        cachedMode = detectMode();
+        logger.info("Bazel mode detected: {}", cachedMode);
+        return cachedMode;
     }
 
     public boolean isBzlmodActive() {
-        return getEra() == Era.BZLMOD;
+        return getMode() == Mode.BZLMOD;
     }
 
-    private Era detectEra() {
+    private Mode detectMode() {
         // Primary: mod show_repo should exist and respond under bzlmod
         try {
             Optional<String> modProbe = bazel.executeToString(Arrays.asList("mod", "show_repo", "@bazel_tools"));
             if (modProbe.isPresent()) {
-                logger.debug("Era detection via 'bazel mod show_repo @bazel_tools': BZLMOD");
-                return Era.BZLMOD;
+                logger.debug("Mode detection via 'bazel mod show_repo @bazel_tools': BZLMOD");
+                return Mode.BZLMOD;
             }
         } catch (Exception ignored) {
             // proceed to next probe
@@ -49,27 +49,27 @@ public class BazelEnvironmentAnalyzer {
         try {
             Optional<String> infoOut = bazel.executeToString(Arrays.asList("info", "--show_make_env"));
             if (infoOut.isPresent() && infoOut.get().contains("ENABLE_BZLMOD=1")) {
-                logger.debug("Era detection via 'bazel info --show_make_env': BZLMOD");
-                return Era.BZLMOD;
+                logger.debug("Mode detection via 'bazel info --show_make_env': BZLMOD");
+                return Mode.BZLMOD;
             }
         } catch (Exception ignored) {
             // proceed to next probe
         }
 
-        // Tertiary: legacy //external probe; if it succeeds, assume legacy
+        // Tertiary: legacy //external probe; if it succeeds, assume workspace mode
         try {
             Optional<String> extProbe = bazel.executeToString(Arrays.asList("query", "kind(.*, //external:bazel_tools)", "--output", "xml"));
             if (extProbe.isPresent()) {
-                logger.debug("Era detection via '//external' probe: LEGACY");
-                return Era.LEGACY;
+                logger.debug("Mode detection via '//external' probe: WORKSPACE");
+                return Mode.WORKSPACE;
             }
         } catch (Exception ignored) {
             // fall through
         }
 
         // Default posture for 2026: prefer BZLMOD when inconclusive
-        logger.debug("Era detection inconclusive; defaulting to BZLMOD");
-        return Era.BZLMOD;
+        logger.debug("Mode detection inconclusive; defaulting to BZLMOD");
+        return Mode.BZLMOD;
     }
 }
 

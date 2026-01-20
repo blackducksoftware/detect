@@ -13,19 +13,19 @@ public class BazelGraphProber {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final BazelCommandExecutor bazel;
     private final String target;
-    private final BazelEnvironmentAnalyzer.Era era;
+    private final BazelEnvironmentAnalyzer.Mode mode;
 
     /**
      * Constructor for BazelGraphProber
      * @param bazel Bazel command executor
      * @param target Bazel target to probe
-     * @param queryTimeoutSeconds Timeout for queries (unused)
-     * @param era Bazel environment era
+     * @param queryTimeoutSeconds Timeout for queries (unused for now)
+     * @param mode Bazel environment mode
      */
-    public BazelGraphProber(BazelCommandExecutor bazel, String target, int queryTimeoutSeconds, BazelEnvironmentAnalyzer.Era era) {
+    public BazelGraphProber(BazelCommandExecutor bazel, String target, int queryTimeoutSeconds, BazelEnvironmentAnalyzer.Mode mode) {
         this.bazel = bazel;
         this.target = target;
-        this.era = era;
+        this.mode = mode;
     }
 
     /**
@@ -61,7 +61,7 @@ public class BazelGraphProber {
         }
         // Probe for http_archive and related rules
         try {
-            HttpFamilyProber httpProber = new HttpFamilyProber(bazel, era == null ? BazelEnvironmentAnalyzer.Era.BZLMOD : era);
+            HttpFamilyProber httpProber = new HttpFamilyProber(bazel, mode == null ? BazelEnvironmentAnalyzer.Mode.BZLMOD : mode);
             httpFamily = httpProber.detect(target);
         } catch (Exception e) {
             logger.info("HTTP_ARCHIVE family probe failed: {}", e.getMessage());

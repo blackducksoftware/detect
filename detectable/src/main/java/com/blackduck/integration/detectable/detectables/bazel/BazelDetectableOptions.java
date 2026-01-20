@@ -13,18 +13,18 @@ public class BazelDetectableOptions {
     private final String targetName;
     private final Set<WorkspaceRule> workspaceRulesFromProperty;
     private final List<String> bazelCqueryAdditionalOptions;
-    private final String eraOverride;
+    private final String modeOverride;
 
     public BazelDetectableOptions(
         String targetName,
         Set<WorkspaceRule> workspaceRulesFromProperty,
         List<String> bazelCqueryAdditionalOptions,
-        String eraOverride
+        String modeOverride
     ) {
         this.targetName = targetName;
         this.workspaceRulesFromProperty = workspaceRulesFromProperty;
         this.bazelCqueryAdditionalOptions = bazelCqueryAdditionalOptions;
-        this.eraOverride = eraOverride;
+        this.modeOverride = modeOverride;
     }
 
     public Optional<String> getTargetName() {
@@ -39,15 +39,15 @@ public class BazelDetectableOptions {
         return workspaceRulesFromProperty;
     }
 
-    public Optional<BazelEnvironmentAnalyzer.Era> getEraOverride() {
-        if (eraOverride == null || eraOverride.trim().isEmpty()) {
+    public Optional<BazelEnvironmentAnalyzer.Mode> getModeOverride() {
+        if (modeOverride == null || modeOverride.trim().isEmpty()) {
             return Optional.empty();
         }
         try {
-            BazelEnvironmentAnalyzer.Era era = BazelEnvironmentAnalyzer.Era.valueOf(eraOverride.trim().toUpperCase());
-            return Optional.of(era);
+            BazelEnvironmentAnalyzer.Mode mode = BazelEnvironmentAnalyzer.Mode.valueOf(modeOverride.trim().toUpperCase());
+            return Optional.of(mode);
         } catch (IllegalArgumentException e) {
-            logger.warn("Invalid Bazel era override value '{}'. Valid values: LEGACY, BZLMOD, UNKNOWN. Falling back to auto-detection.", eraOverride);
+            logger.warn("Invalid Bazel mode override value '{}'. Valid values: WORKSPACE, BZLMOD, UNKNOWN. Falling back to auto-detection.", modeOverride);
             return Optional.empty();
         }
     }

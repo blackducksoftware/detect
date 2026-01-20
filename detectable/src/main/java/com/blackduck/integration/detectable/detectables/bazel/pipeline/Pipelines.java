@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Manages and constructs dependency extraction pipelines for each supported Bazel WorkspaceRule.
  * Each pipeline defines a sequence of Bazel commands and parsing steps to extract dependencies for a rule.
- * Pipelines are selected and constructed based on the Bazel environment (legacy or bzlmod).
+ * Pipelines are selected and constructed based on the Bazel environment (workspace or bzlmod).
  */
 public class Pipelines {
     // Placeholder for cquery options in command templates
@@ -34,7 +34,7 @@ public class Pipelines {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     /**
-     * Constructs pipelines and auto-detects Bazel era for legacy callers.
+     * Constructs pipelines and auto-detects Bazel mode for legacy callers.
      */
     public Pipelines(
         BazelCommandExecutor bazelCommandExecutor,
@@ -42,35 +42,35 @@ public class Pipelines {
         ExternalIdFactory externalIdFactory,
         HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser
     ) {
-        // Auto-detect era for legacy callers and delegate to the era-aware constructor.
+        // Auto-detect mode for legacy callers and delegate to the mode-aware constructor.
         BazelEnvironmentAnalyzer analyzer = new BazelEnvironmentAnalyzer(bazelCommandExecutor);
-        BazelEnvironmentAnalyzer.Era era = analyzer.getEra();
-        this.init(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, era);
+        BazelEnvironmentAnalyzer.Mode mode = analyzer.getMode();
+        this.init(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, mode);
     }
 
     /**
-     * Constructs pipelines for the specified Bazel era.
+     * Constructs pipelines for the specified Bazel mode.
      */
     public Pipelines(
         BazelCommandExecutor bazelCommandExecutor,
         BazelVariableSubstitutor bazelVariableSubstitutor,
         ExternalIdFactory externalIdFactory,
         HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser,
-        BazelEnvironmentAnalyzer.Era era
+        BazelEnvironmentAnalyzer.Mode mode
     ) {
-        this.init(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, era);
+        this.init(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, mode);
     }
 
     /**
      * Initializes and registers all supported pipelines for each WorkspaceRule.
      * Pipelines are constructed as sequences of Bazel commands and parsing steps.
-     * The HTTP_ARCHIVE pipeline is selected based on the Bazel era (bzlmod or legacy).
+     * The HTTP_ARCHIVE pipeline is selected based on the Bazel mode (bzlmod or WORKSPACE).
      */
     private void init(BazelCommandExecutor bazelCommandExecutor,
                       BazelVariableSubstitutor bazelVariableSubstitutor,
                       ExternalIdFactory externalIdFactory,
                       HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser,
-                      BazelEnvironmentAnalyzer.Era era) {
+                      BazelEnvironmentAnalyzer.Mode mode) {
         // Pipeline for maven_jar: extracts Maven dependencies from maven_jar rules
         Pipeline mavenJarPipeline = (new PipelineBuilder(externalIdFactory, bazelCommandExecutor, bazelVariableSubstitutor, haskellCabalLibraryJsonProtoParser))
             .executeBazelOnEachLine(Arrays.asList(CQUERY_COMMAND, CQUERY_OPTIONS_PLACEHOLDER, "filter('@.*:jar', deps(${detect.bazel.target}))"), false)
@@ -118,9 +118,9 @@ public class Pipelines {
             .build();
         availablePipelines.put(WorkspaceRule.HASKELL_CABAL_LIBRARY, haskellCabalLibraryPipeline);
 
-        // Select HTTP_ARCHIVE pipeline variant based on Bazel era
-        boolean bzlmodActive = (era == BazelEnvironmentAnalyzer.Era.BZLMOD);
-        logger.info("HTTP pipeline variant: {}", bzlmodActive ? "bzlmod" : "legacy");
+        // Select HTTP_ARCHIVE pipeline variant based on Bazel mode
+        boolean bzlmodActive = (mode == BazelEnvironmentAnalyzer.Mode.BZLMOD);
+        logger.info("HTTP pipeline variant: {}", bzlmodActive ? "bzlmod" : "workspace");
 
         if (bzlmodActive) {
             // bzlmod: Use robust show_repo parser for HTTP pipeline
@@ -143,7 +143,7 @@ public class Pipelines {
                 .build();
             availablePipelines.put(WorkspaceRule.HTTP_ARCHIVE, httpArchiveBzlmodPipeline);
         } else {
-            // legacy: Use XML parsing pipeline for HTTP pipeline
+            // WORKSPACE: Use XML parsing pipeline for HTTP pipeline
             Pipeline httpArchiveGithubUrlPipeline = (new PipelineBuilder(externalIdFactory, bazelCommandExecutor, bazelVariableSubstitutor, haskellCabalLibraryJsonProtoParser))
                     .executeBazelOnEachLine(Arrays.asList(QUERY_COMMAND, "kind(.*library, deps(${detect.bazel.target}))"), false)
                     .parseSplitEachLine("\r?\n")

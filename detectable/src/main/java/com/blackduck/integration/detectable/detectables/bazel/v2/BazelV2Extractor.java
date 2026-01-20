@@ -56,7 +56,7 @@ public class BazelV2Extractor {
      * @param bazelCmd Bazel command executor
      * @param rules Set of workspace rules to execute
      * @param bazelTarget Bazel target to analyze
-     * @param era Bazel environment era (for HTTP variant selection)
+     * @param mode Bazel environment mode (for HTTP variant selection)
      * @return Extraction result containing discovered dependencies and project name
      * @throws ExecutableFailedException if a Bazel command fails
      * @throws DetectableException if extraction fails
@@ -64,10 +64,10 @@ public class BazelV2Extractor {
     public Extraction run(BazelCommandExecutor bazelCmd,
                           Set<WorkspaceRule> rules,
                           String bazelTarget,
-                          BazelEnvironmentAnalyzer.Era era) throws ExecutableFailedException, DetectableException {
+                          BazelEnvironmentAnalyzer.Mode mode) throws ExecutableFailedException, DetectableException {
         logger.info("Starting Bazel V2 extraction. Target: {}. Pipelines: {}", bazelTarget, rules);
         // Create pipelines for each workspace rule
-        Pipelines pipelines = new Pipelines(bazelCmd, bazelVariableSubstitutor, externalIdFactory, haskellParser, era);
+        Pipelines pipelines = new Pipelines(bazelCmd, bazelVariableSubstitutor, externalIdFactory, haskellParser, mode);
 
         // Sort rules by priority for deterministic execution
         List<WorkspaceRule> ordered = rules.stream()
