@@ -74,9 +74,9 @@ public class BazelExtractor {
     public Extraction extract(ExecutableTarget bazelExe, File workspaceDir, File workspaceFile) throws ExecutableFailedException, DetectableException {
         toolVersionLogger.log(workspaceDir, bazelExe, "version");
         BazelCommandExecutor bazelCommandExecutor = new BazelCommandExecutor(executableRunner, workspaceDir, bazelExe);
-        // Detect Bazel era once and pass it to Pipelines for correct HTTP variant selection.
-        BazelEnvironmentAnalyzer.Era era = new BazelEnvironmentAnalyzer(bazelCommandExecutor).getEra();
-        Pipelines pipelines = new Pipelines(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, era);
+        // Detect Bazel mode once and pass it to Pipelines for correct HTTP variant selection.
+        BazelEnvironmentAnalyzer.Mode mode = new BazelEnvironmentAnalyzer(bazelCommandExecutor).getMode();
+        Pipelines pipelines = new Pipelines(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, mode);
         Set<WorkspaceRule> workspaceRulesFromFile = parseWorkspaceRulesFromFile(workspaceFile);
         Set<WorkspaceRule> workspaceRulesToQuery = workspaceRuleChooser.choose(workspaceRulesFromFile, workspaceRulesFromProperty);
         CodeLocation codeLocation = generateCodelocation(pipelines, workspaceRulesToQuery);

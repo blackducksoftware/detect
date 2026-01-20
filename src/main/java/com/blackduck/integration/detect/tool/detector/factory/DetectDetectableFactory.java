@@ -119,7 +119,7 @@ public class DetectDetectableFactory {
         return detectableFactory.createBazelDetectable(environment, detectableOptionFactory.createBazelDetectableOptions(), detectExecutableResolver);
     }
 
-    // New: auto-detectable that prefers V2 (probing) and keeps the legacy untouched.
+    // New: auto-detectable that prefers V2 (probing) and keeps the workspace (legacy) untouched.
     public BazelV2Detectable createBazelAutoDetectable(DetectableEnvironment environment) {
         BazelDetectableOptions options = detectableOptionFactory.createBazelDetectableOptions();
         return detectableFactory.createBazelV2Detectable(environment, options, detectExecutableResolver);

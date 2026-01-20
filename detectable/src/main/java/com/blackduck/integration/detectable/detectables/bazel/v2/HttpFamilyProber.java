@@ -7,28 +7,28 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 /**
- * Encapsulates era-aware probing for HTTP archive family (http_archive, git_repository, go_repository, http_file).
- * Era is provided centrally via BazelEnvironmentAnalyzer.
+ * Encapsulates mode-aware probing for HTTP archive family (http_archive, git_repository, go_repository, http_file).
+ * Mode is provided centrally via BazelEnvironmentAnalyzer.
  */
 public class HttpFamilyProber {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final BazelCommandExecutor bazel;
-    // Bazel environment era (e.g., BZLMOD)
-    private final BazelEnvironmentAnalyzer.Era era;
+    // Bazel environment mode (e.g., BZLMOD)
+    private final BazelEnvironmentAnalyzer.Mode mode;
 
     /**
      * Constructor for HttpFamilyProber
      * @param bazel Bazel command executor
-     * @param era Bazel environment era
+     * @param mode Bazel environment mode
      */
-    public HttpFamilyProber(BazelCommandExecutor bazel, BazelEnvironmentAnalyzer.Era era) {
+    public HttpFamilyProber(BazelCommandExecutor bazel, BazelEnvironmentAnalyzer.Mode mode) {
         this.bazel = bazel;
-        this.era = era;
+        this.mode = mode;
     }
 
     /**
      * Probes the Bazel dependency graph for HTTP archive family repositories (http_archive, git_repository, etc.).
-     * Uses different probing strategies depending on the Bazel era (BZLMOD or legacy).
+     * Uses different probing strategies depending on the Bazel mode (BZLMOD or WORKSPACE).
      * @param target Bazel target to analyze
      * @return true if HTTP family repository is detected, false otherwise
      * @throws Exception if Bazel command execution fails
@@ -70,7 +70,7 @@ public class HttpFamilyProber {
 
         int maxRepos = 30;
         int checkedRepos = 0;
-        boolean bzlmodActive = (era == BazelEnvironmentAnalyzer.Era.BZLMOD);
+        boolean bzlmodActive = (mode == BazelEnvironmentAnalyzer.Mode.BZLMOD);
         // Probe each repository for HTTP family characteristics
         for (Map.Entry<String, LinkedHashSet<String>> entry : repoLabels.entrySet()) {
             if (checkedRepos++ >= maxRepos) {

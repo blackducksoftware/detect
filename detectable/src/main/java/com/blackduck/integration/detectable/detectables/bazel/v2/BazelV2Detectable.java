@@ -47,7 +47,7 @@ public class BazelV2Detectable extends Detectable {
 
     // Factory interface to create BazelGraphProber instances; injectable for tests.
     public interface BazelGraphProberFactory {
-        BazelGraphProber create(BazelCommandExecutor bazelCmd, String target, int queryTimeoutSeconds, BazelEnvironmentAnalyzer.Era era);
+        BazelGraphProber create(BazelCommandExecutor bazelCmd, String target, int queryTimeoutSeconds, BazelEnvironmentAnalyzer.Mode mode);
     }
 
     private final BazelGraphProberFactory bazelGraphProberFactory;
@@ -74,7 +74,7 @@ public class BazelV2Detectable extends Detectable {
                               HaskellCabalLibraryJsonProtoParser haskellParser,
                               BazelProjectNameGenerator projectNameGenerator) {
         this(environment, fileFinder, executableRunner, externalIdFactory, bazelResolver, options, bazelVariableSubstitutor, haskellParser, projectNameGenerator,
-            (bazelCmd, target, queryTimeoutSeconds, era) -> new BazelGraphProber(bazelCmd, target, queryTimeoutSeconds, era)
+            (bazelCmd, target, queryTimeoutSeconds, mode) -> new BazelGraphProber(bazelCmd, target, queryTimeoutSeconds, mode)
         );
     }
 
@@ -136,20 +136,20 @@ public class BazelV2Detectable extends Detectable {
         // Log Bazel tool version similar to v1 behavior
         new ToolVersionLogger(executableRunner).log(environment.getDirectory(), bazelExe, "version");
 
-        // Set up Bazel command executor and determine environment era
+        // Set up Bazel command executor and determine environment mode
         BazelCommandExecutor bazelCmd = new BazelCommandExecutor(executableRunner, environment.getDirectory(), bazelExe);
-        BazelEnvironmentAnalyzer.Era era;
+        BazelEnvironmentAnalyzer.Mode mode;
 
-        // Check for era override property first
-        Optional<BazelEnvironmentAnalyzer.Era> eraOverride = options.getEraOverride();
-        if (eraOverride.isPresent()) {
-            era = eraOverride.get();
-            logger.info("Using Bazel era from property override: {}", era);
+        // Check for mode override property first
+        Optional<BazelEnvironmentAnalyzer.Mode> modeOverride = options.getModeOverride();
+        if (modeOverride.isPresent()) {
+            mode = modeOverride.get();
+            logger.info("Using Bazel mode from property override: {}", mode);
         } else {
-            // Auto-detect era if not overridden
+            // Auto-detect mode if not overridden
             BazelEnvironmentAnalyzer envAnalyzer = new BazelEnvironmentAnalyzer(bazelCmd);
-            era = envAnalyzer.getEra();
-            logger.info("Using Bazel era from auto-detection: {}", era);
+            mode = envAnalyzer.getMode();
+            logger.info("Using Bazel mode from auto-detection: {}", mode);
         }
 
         Set<WorkspaceRule> pipelines;
@@ -160,7 +160,7 @@ public class BazelV2Detectable extends Detectable {
             pipelines = rulesFromProperty;
         } else {
             // Probe the Bazel dependency graph to determine enabled pipelines
-            BazelGraphProber prober = bazelGraphProberFactory.create(bazelCmd, target, 20, era);
+            BazelGraphProber prober = bazelGraphProberFactory.create(bazelCmd, target, 20, mode);
             pipelines = prober.decidePipelines();
         }
 
@@ -171,7 +171,7 @@ public class BazelV2Detectable extends Detectable {
 
         // Run the extraction using the determined pipelines
         BazelV2Extractor extractor = new BazelV2Extractor(externalIdFactory, bazelVariableSubstitutor, haskellParser, projectNameGenerator);
-        Extraction extraction = extractor.run(bazelCmd, pipelines, target, era);
+        Extraction extraction = extractor.run(bazelCmd, pipelines, target, mode);
         logger.info("Bazel V2 detectable finished.");
         return extraction;
     }
