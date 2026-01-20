@@ -4,13 +4,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.blackduck.integration.blackduck.api.core.BlackDuckResponse;
 import org.apache.http.HttpStatus;
 
-import com.blackduck.integration.blackduck.api.generated.view.DeveloperScansScanView;
 import com.blackduck.integration.blackduck.exception.BlackDuckIntegrationException;
 import com.blackduck.integration.blackduck.service.BlackDuckApiClient;
-import com.blackduck.integration.blackduck.service.request.BlackDuckMultipleRequest;
 import com.blackduck.integration.blackduck.service.request.BlackDuckResponseRequest;
 import com.blackduck.integration.detect.configuration.enumeration.BlackduckScanMode;
 import com.blackduck.integration.exception.IntegrationException;
@@ -28,7 +25,6 @@ public class DetectRapidScanWaitJobFull implements ResilientJob<List<Response>> 
     private final List<HttpUrl> remainingUrls;
     private final List<HttpUrl> completedUrls;
 
-    //This can't be static because the job name could contain the word "Rapid" OR "Stateless" etc.
     private final String JOB_NAME;
 
     private boolean complete;
@@ -80,12 +76,11 @@ public class DetectRapidScanWaitJobFull implements ResilientJob<List<Response>> 
 
     @Override
     public List<Response> onTimeout() throws IntegrationTimeoutException {
-        throw new IntegrationTimeoutException("Error getting developer scan result. Timeout may have occurred.");
+        throw new IntegrationTimeoutException("Error getting full rapid scan result. Timeout may have occurred.");
     }
 
     @Override
     public List<Response> onCompletion() throws IntegrationException {
-//        List<DeveloperScansScanView> allComponents = new ArrayList<>(); how would other urls impact this now? if binary/container/signature was enabled?
         List<Response> allScanResponses = new ArrayList<>();
         for (HttpUrl url : completedUrls) {
             allScanResponses.add(getScanResultsForFULLUrl(url));
@@ -94,12 +89,7 @@ public class DetectRapidScanWaitJobFull implements ResilientJob<List<Response>> 
     }
 
     private Response getScanResultsForFULLUrl(HttpUrl url) throws IntegrationException {
-        logger.debug("Fetching scan results from endpoint: {}", url.string());
-//        BlackDuckMultipleRequest<DeveloperScansScanView> request =
-//            new DetectRapidScanRequestBuilder()
-//                .createACTUALLYFullRequest((url));
-
-//        originalResponse = blackDuckApiClient.getAllResponses(request);
+        logger.debug("Fetching full rapid scan results from endpoint: {}", url.string());
         Response newResponse =  blackDuckApiClient.get(url.appendRelativeUrl("full-result"));
         return newResponse;
     }

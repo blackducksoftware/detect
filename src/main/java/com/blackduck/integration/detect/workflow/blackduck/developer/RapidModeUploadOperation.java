@@ -33,7 +33,7 @@ public class RapidModeUploadOperation {
             uploadBatch.addUploadTarget(uploadTarget);
         }
         List<HttpUrl> results = rapidScanService.performUpload(uploadBatch, rapidScanOptions, rapidScanConfig);
-        logger.debug("Rapid scan url count: {}", results.size()); // TODO when can count be more than 1?
+        logger.debug("Rapid scan url count: {}", results.size());
         return results;
     }
 }
