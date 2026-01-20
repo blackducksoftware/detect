@@ -80,14 +80,26 @@ public class DetectProperties {
 
     public static final StringProperty DETECT_LLM_API_KEY =
             StringProperty.newBuilder("detect.llm.api.key", "")
+                    .setInfo("TODO", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "TODO",
+                            "TODO")
                     .build();
 
     public static final StringProperty DETECT_LLM_API_ENDPOINT =
             StringProperty.newBuilder("detect.llm.api.endpoint", "")
+                    .setInfo("TODO", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "TODO",
+                            "TODO")
                     .build();
 
     public static final StringProperty DETECT_LLM_NAME =
             StringProperty.newBuilder("detect.llm.name", "")
+                    .setInfo("TODO", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "TODO",
+                            "TODO")
                     .build();
 
     public static final NullableStringProperty BLACKDUCK_API_TOKEN =

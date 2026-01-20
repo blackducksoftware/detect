@@ -231,10 +231,17 @@ public class DetectConfigurationFactory {
     }
 
     public Boolean isQuackPatchPossible() {
-        return isQuackPatchEnabled() //&& !isComponentLocationAnalysisEnabled()
+        if (isQuackPatchEnabled() && isComponentLocationAnalysisEnabled()) {
+            logger.warn("Quack Patch cannot run when Component Location Analysis is also enabled. Disabling Quack Patch.");
+        }
+        if (isQuackPatchEnabled() && !isComponentLocationAnalysisEnabled()
                 && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_NAME).isEmpty()
                 && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_ENDPOINT).isEmpty()
-                && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_KEY).isEmpty();
+                && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_KEY).isEmpty()) {
+            return true;
+        }
+        logger.info("QuackPatch cannot run because not all required properties are set. Please check your configuration.");
+        return false;
     }
 
     public Boolean doesComponentLocatorAffectStatus() {
@@ -616,7 +623,4 @@ public class DetectConfigurationFactory {
         return Optional.ofNullable(detectConfiguration.getNullableValue(DetectProperties.DETECT_CONTAINER_SCAN_FILE));
     }
 
-    public Optional<Path> getScanSubdirectoryFilePath() {
-        return Optional.ofNullable(detectConfiguration.getPathOrNull(DetectProperties.DETECT_SCAN_OUTPUT_PATH));
-    }
 }

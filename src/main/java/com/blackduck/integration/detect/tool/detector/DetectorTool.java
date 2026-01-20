@@ -51,6 +51,9 @@ import com.blackduck.integration.detector.rule.DetectorRule;
 import com.blackduck.integration.detector.rule.DetectorRuleSet;
 import com.blackduck.integration.util.NameVersion;
 
+import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON;
+import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.QUACKPATCH_SUBDIRECTORY_NAME;
+
 public class DetectorTool {
     private static final String THREE_TABS = "\t\t\t";
     private static final String TWO_TABS = "\t\t";
@@ -89,9 +92,9 @@ public class DetectorTool {
         // Create /scan/quack directory
         Path workingDir = directoryManager.getScanOutputDirectory().toPath();
         // Create the "quack" subdirectory
-        Path quackDir = workingDir.resolve("quackpatch");
+        Path quackDir = workingDir.resolve(QUACKPATCH_SUBDIRECTORY_NAME);
         ObjectMapper mapper = new ObjectMapper();
-        Path jsonFile = quackDir.resolve("invokedDetectorsAndTheirRelevantFiles.json");
+        Path jsonFile = quackDir.resolve(INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON);
 
         // Read existing content if file exists
         if (Files.exists(jsonFile)) {
@@ -109,19 +112,18 @@ public class DetectorTool {
             List<ExtractedDetectorRuleReport> extractions = report.getExtractedDetectors();
             for (ExtractedDetectorRuleReport extractedDetectorReport : extractions) {
                 String detectableName = extractedDetectorReport.getExtractedDetectable().getDetectable().getName();
+                // Skip Git because it has no relevant files, and NuGet because the inspector will do this already
                 if (detectableName.equals("Git") || detectableName.contains("NuGet")) continue;
                 List<File> relevantFiles = extractedDetectorReport.getExtractedDetectable().getRelevantFiles();
-                // convert files to absolute paths
                 List<String> relevantFilesAbsolutePaths = relevantFiles.stream()
                         .map(File::getAbsolutePath)
                         .collect(Collectors.toList());
                 detectorsAndFiles.put(detectableName, relevantFilesAbsolutePaths);
             }
         }
-        // Save to a file for now, refactor later
         try {
             mapper.writeValue(jsonFile.toFile(), detectorsAndFiles);
-            logger.info("Done writing detectors and their relevant files.");
+            logger.debug("Done writing detectors and their relevant files to: " + jsonFile);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
