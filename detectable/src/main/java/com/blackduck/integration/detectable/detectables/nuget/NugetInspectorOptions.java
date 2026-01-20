@@ -1,5 +1,6 @@
 package com.blackduck.integration.detectable.detectables.nuget;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -16,8 +17,9 @@ public class NugetInspectorOptions {
     private final Set<NugetDependencyType> nugetExcludedDependencyTypes;
     private final Path nugetArtifactsPath;
     private final Path inspectedFilesInfoPath;
+    private final File nugetInspectorPath;
 
-    public NugetInspectorOptions(boolean ignoreFailures, List<String> excludedModules, List<String> includedModules, List<String> packagesRepoUrl, @Nullable Path nugetConfigPath, Set<NugetDependencyType> nugetExcludedDependencyTypes, @Nullable Path nugetArtifactsPath, Path inspectedFilesInfoPath) {
+    public NugetInspectorOptions(boolean ignoreFailures, List<String> excludedModules, List<String> includedModules, List<String> packagesRepoUrl, @Nullable Path nugetConfigPath, Set<NugetDependencyType> nugetExcludedDependencyTypes, @Nullable Path nugetArtifactsPath, Path inspectedFilesInfoPath, @Nullable File nugetInspectorPath) {
         this.ignoreFailures = ignoreFailures;
         this.excludedModules = excludedModules;
         this.includedModules = includedModules;
@@ -26,6 +28,7 @@ public class NugetInspectorOptions {
         this.nugetExcludedDependencyTypes = nugetExcludedDependencyTypes;
         this.nugetArtifactsPath = nugetArtifactsPath;
         this.inspectedFilesInfoPath = inspectedFilesInfoPath;
+        this.nugetInspectorPath = nugetInspectorPath;
     }
 
     public boolean isIgnoreFailures() {
@@ -53,4 +56,8 @@ public class NugetInspectorOptions {
     public Optional<Path> getNugetArtifactsPath() { return Optional.ofNullable(nugetArtifactsPath); }
 
     public Optional<Path> getInspectedFilesInfoPath() { return Optional.ofNullable(inspectedFilesInfoPath); }
+
+    public Optional<File> getNugetInspectorPath() {
+        return Optional.ofNullable(nugetInspectorPath);
+    }
 }

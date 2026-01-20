@@ -1,5 +1,6 @@
 package com.blackduck.integration.detect.configuration;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -343,7 +344,12 @@ public class DetectableOptionFactory {
         Path relevantDetectorsAndFilesInfoPath = Paths.get(DirectoryManager.getScanDirectoryName())
                 .resolve(QUACKPATCH_SUBDIRECTORY_NAME)
                 .resolve(INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON);
-        return new NugetInspectorOptions(ignoreFailures, excludedModules, includedModules, packagesRepoUrl, nugetConfigPath, nugetExcludedDependencyTypes, nugetArtifactsPath, relevantDetectorsAndFilesInfoPath);
+        Path nugetInspectorPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_INSPECTOR_PATH);
+        File nugetInspectorPathFile = null;
+        if (nugetInspectorPath != null) {
+            nugetInspectorPathFile = nugetInspectorPath.toFile();
+        }
+        return new NugetInspectorOptions(ignoreFailures, excludedModules, includedModules, packagesRepoUrl, nugetConfigPath, nugetExcludedDependencyTypes, nugetArtifactsPath, relevantDetectorsAndFilesInfoPath, nugetInspectorPathFile);
     }
 
     private boolean getFollowSymLinks() {

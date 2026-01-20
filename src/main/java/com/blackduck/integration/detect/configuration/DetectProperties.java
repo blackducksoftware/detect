@@ -78,30 +78,6 @@ public class DetectProperties {
     private DetectProperties() {
     }
 
-    public static final StringProperty DETECT_LLM_API_KEY =
-            StringProperty.newBuilder("detect.llm.api.key", "")
-                    .setInfo("TODO", DetectPropertyFromVersion.VERSION_11_2_0)
-                    .setHelp(
-                            "TODO",
-                            "TODO")
-                    .build();
-
-    public static final StringProperty DETECT_LLM_API_ENDPOINT =
-            StringProperty.newBuilder("detect.llm.api.endpoint", "")
-                    .setInfo("TODO", DetectPropertyFromVersion.VERSION_11_2_0)
-                    .setHelp(
-                            "TODO",
-                            "TODO")
-                    .build();
-
-    public static final StringProperty DETECT_LLM_NAME =
-            StringProperty.newBuilder("detect.llm.name", "")
-                    .setInfo("TODO", DetectPropertyFromVersion.VERSION_11_2_0)
-                    .setHelp(
-                            "TODO",
-                            "TODO")
-                    .build();
-
     public static final NullableStringProperty BLACKDUCK_API_TOKEN =
         NullableStringProperty.newBuilder("blackduck.api.token")
             .setInfo("Black Duck SCA API Token", DetectPropertyFromVersion.VERSION_4_2_0)
@@ -1074,7 +1050,35 @@ public class DetectProperties {
                     .setHelp(
                             "TODO",
                             "TODO")
+                    .setGroups(DetectGroup.QUACKPATCH)
                     .setGroups(DetectGroup.GENERAL)
+                    .build();
+
+    public static final StringProperty DETECT_LLM_API_KEY =
+            StringProperty.newBuilder("detect.llm.api.key", "")
+                    .setInfo("TODO", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "TODO",
+                            "TODO")
+                    .setGroups(DetectGroup.QUACKPATCH)
+                    .build();
+
+    public static final StringProperty DETECT_LLM_API_ENDPOINT =
+            StringProperty.newBuilder("detect.llm.api.endpoint", "")
+                    .setInfo("TODO", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "TODO",
+                            "TODO")
+                    .setGroups(DetectGroup.QUACKPATCH)
+                    .build();
+
+    public static final StringProperty DETECT_LLM_NAME =
+            StringProperty.newBuilder("detect.llm.name", "")
+                    .setInfo("TODO", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "TODO",
+                            "TODO")
+                    .setGroups(DetectGroup.QUACKPATCH)
                     .build();
 
     public static final BooleanProperty DETECT_COMPONENT_LOCATION_ANALYSIS_ENABLED =
@@ -1256,6 +1260,16 @@ public class DetectProperties {
             .setHelp("The path to the Npm executable.")
             .setGroups(DetectGroup.NPM, DetectGroup.GLOBAL)
             .build();
+
+    public static final NullablePathProperty DETECT_NUGET_INSPECTOR_PATH =
+            NullablePathProperty.newBuilder("detect.nuget.inspector.path")
+                    .setInfo("NuGet Inspector Path", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "Use this property to point Detect to a local NuGet Inspector executable, instead of the default that Detect downloads from the binary repository."
+                    )
+                    .setGroups(DetectGroup.NUGET, DetectGroup.GLOBAL)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
 
     public static final NullablePathProperty DETECT_NUGET_CONFIG_PATH =
         NullablePathProperty.newBuilder("detect.nuget.config.path")
