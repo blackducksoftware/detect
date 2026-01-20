@@ -725,7 +725,7 @@ public class OperationRunner {
 
             try {
                 return new RapidModeWaitOperation(blackDuckServicesFactory.getBlackDuckApiClient()).waitForRegularScans(
-                        rapidScans, // url is not full here
+                        rapidScans,
                         detectConfigurationFactory.findTimeoutInSeconds(),
                         RapidModeWaitOperation.DEFAULT_WAIT_INTERVAL_IN_SECONDS,
                         mode,
