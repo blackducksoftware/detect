@@ -21,8 +21,6 @@ import com.blackduck.integration.log.Slf4jIntLogger;
 import com.blackduck.integration.util.IntegrationEscapeUtil;
 import com.blackduck.integration.util.NameVersion;
 
-import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.QUACKPATCH_SUBDIRECTORY_NAME;
-
 public class RapidModeGenerateJsonOperation { //TODO: extends Operation<File>
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final Gson gson;
@@ -33,15 +31,16 @@ public class RapidModeGenerateJsonOperation { //TODO: extends Operation<File>
         this.directoryManager = directoryManager;
     }
 
-    public File generateFullRapidResultsJsonFileFromString(String jsonRapidFullResults) {
-        Path quackSubDirPath = Paths.get(directoryManager.getScanOutputDirectory().toString(), QUACKPATCH_SUBDIRECTORY_NAME);
+    public File generateJsonFileFromString(String jsonRapidFullResults) {
+        // Create the path to the subdirectory
+        Path quackSubDirPath = Paths.get(directoryManager.getScanOutputDirectory().toString(), "quackpatch");
         try {
             Files.createDirectories(quackSubDirPath);
             Path filePath = quackSubDirPath.resolve("rapidFullResults.json");
             Files.writeString(filePath, jsonRapidFullResults, StandardCharsets.UTF_8);
             return filePath.toFile();
         } catch (IOException e) {
-            logger.warn("Something went wrong while saving Rapid Full results to file. This may affect QuackPatch functionality.");
+            throw new RuntimeException("Something went wrong creatign full results json file", e);
         }
     }
 

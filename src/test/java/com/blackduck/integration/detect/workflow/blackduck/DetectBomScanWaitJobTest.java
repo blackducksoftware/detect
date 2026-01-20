@@ -121,6 +121,8 @@ class DetectBomScanWaitJobTest {
         DetectBomScanWaitJob job = new DetectBomScanWaitJob(blackDuckApiClient, scanUrl);
         
         job.attemptJob();
+        
+//        assertEquals(mockResponse, job.onCompletion());
     }
 
     @Test

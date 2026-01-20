@@ -51,8 +51,6 @@ import com.blackduck.integration.detector.rule.DetectorRule;
 import com.blackduck.integration.detector.rule.DetectorRuleSet;
 import com.blackduck.integration.util.NameVersion;
 
-import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.QUACKPATCH_SUBDIRECTORY_NAME;
-
 public class DetectorTool {
     private static final String THREE_TABS = "\t\t\t";
     private static final String TWO_TABS = "\t\t";
@@ -86,14 +84,16 @@ public class DetectorTool {
     }
 
     public void saveExtractedDetectorsAndTheirRelevantFilePaths(DirectoryManager directoryManager, DetectorToolResult toolResult) throws IOException {
-        // Create a map of extracted detectors and their relevant files
+        // Create map of extracted detectors and their relevant files
         Map<String, List<String>> detectorsAndFiles = new HashMap<>();
+        // Create /scan/quack directory
         Path workingDir = directoryManager.getScanOutputDirectory().toPath();
-        Path quackDir = workingDir.resolve(QUACKPATCH_SUBDIRECTORY_NAME);
+        // Create the "quack" subdirectory
+        Path quackDir = workingDir.resolve("quackpatch");
         ObjectMapper mapper = new ObjectMapper();
         Path jsonFile = quackDir.resolve("invokedDetectorsAndTheirRelevantFiles.json");
 
-        // Read existing content if file exists (NuGet Inspector may have already populated it)
+        // Read existing content if file exists
         if (Files.exists(jsonFile)) {
             try (InputStream is = Files.newInputStream(jsonFile)) {
                 detectorsAndFiles = mapper.readValue(is, new TypeReference<Map<String, List<String>>>() {});
@@ -111,15 +111,17 @@ public class DetectorTool {
                 String detectableName = extractedDetectorReport.getExtractedDetectable().getDetectable().getName();
                 if (detectableName.equals("Git") || detectableName.contains("NuGet")) continue;
                 List<File> relevantFiles = extractedDetectorReport.getExtractedDetectable().getRelevantFiles();
+                // convert files to absolute paths
                 List<String> relevantFilesAbsolutePaths = relevantFiles.stream()
                         .map(File::getAbsolutePath)
                         .collect(Collectors.toList());
                 detectorsAndFiles.put(detectableName, relevantFilesAbsolutePaths);
             }
         }
+        // Save to a file for now, refactor later
         try {
             mapper.writeValue(jsonFile.toFile(), detectorsAndFiles);
-            logger.debug("Done writing detectors and their relevant files.");
+            logger.info("Done writing detectors and their relevant files.");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -162,7 +164,7 @@ public class DetectorTool {
         try {
         saveExtractedDetectorsAndTheirRelevantFilePaths(directoryManager, toolResult);
         } catch (IOException e) {
-            logger.warn("Something went wrong writing relevant files. This may affect QuackPatch functionality.");
+            throw new RuntimeException("something went wrong writing relevant files");
         }
         return toolResult;
     }

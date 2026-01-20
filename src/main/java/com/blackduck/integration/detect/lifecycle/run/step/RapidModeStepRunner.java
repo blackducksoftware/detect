@@ -47,6 +47,8 @@ public class RapidModeStepRunner {
     private final String detectRunUuid;
     private final DirectoryManager directoryManager;
     public static final String RAPID_SCAN_ENDPOINT = "/api/developer-scans";
+//    public static final String RAPID_SCAN_FULL_RESULT_ENDPOINT = "/api/developer-scans/%s/full-result";
+
 
     public RapidModeStepRunner(OperationRunner operationRunner, StepHelper stepHelper, Gson gson, String detectRunUuid, DirectoryManager directoryManager) {
         this.operationRunner = operationRunner;
@@ -67,10 +69,10 @@ public class RapidModeStepRunner {
         List<HttpUrl> parsedUrls = new ArrayList<>();
         Set<FormattedCodeLocation> formattedCodeLocations = new HashSet<>();
 
-        List<HttpUrl> uploadResultsUrls = operationRunner.performRapidUpload(blackDuckRunData, bdioResult, rapidScanConfig.orElse(null));
-
+        // pkg mgr rapid scan
+        List<HttpUrl> uploadResultsUrls = operationRunner.performRapidUpload(blackDuckRunData, bdioResult, rapidScanConfig.orElse(null)); // pkg mngr rapid bdio upload, returns the upload url with scan-id
         if (uploadResultsUrls != null && uploadResultsUrls.size() > 0) {
-            processScanResults(uploadResultsUrls, parsedUrls, formattedCodeLocations, DetectTool.DETECTOR.name());
+            processScanResults(uploadResultsUrls, parsedUrls, formattedCodeLocations, DetectTool.DETECTOR.name()); // adds URLs from the BDIO upload that will be polled LATER
         }
 
         stepHelper.runToolIfIncluded(DetectTool.SIGNATURE_SCAN, "Signature Scanner", () -> {
@@ -97,9 +99,7 @@ public class RapidModeStepRunner {
             }
         });
         
-        stepHelper.runToolIfIncluded(
-            DetectTool.CONTAINER_SCAN, "Container Scanner",
-            () -> {
+        stepHelper.runToolIfIncluded(DetectTool.CONTAINER_SCAN, "Container Scanner", () -> {
                 logger.debug("Stateless container scan detected.");
                 // Check if this is an SCA environment.
                 if (scaaasFilePath.isPresent()) {
@@ -118,26 +118,28 @@ public class RapidModeStepRunner {
                         formattedCodeLocations.add(new FormattedCodeLocation(containerScanStepRunner.getCodeLocationName(), scanId.get(), DetectTool.CONTAINER_SCAN.name()));
                     }
                 }
-            }
-        );
+            });
 
         // Get info about any scans that were done
         BlackduckScanMode mode = blackDuckRunData.getScanMode();
-        List<DeveloperScansScanView> rapidResults = operationRunner.waitForRapidResults(blackDuckRunData, parsedUrls, mode);
+        List<DeveloperScansScanView> rapidResults = operationRunner.waitForRapidResults(blackDuckRunData, parsedUrls, mode); // parsedurls have all the urls we need to poll for results
+
+        // Get FULL rapid results for quackpatch separately for now
+        List<Response> rapidFullResults = operationRunner.waitForRapidFullResults(blackDuckRunData, parsedUrls, mode);
+
 
         // Generate a report, even an empty one if no scans were done as that is what previous detect versions did.
         File jsonFile = operationRunner.generateRapidJsonFile(projectVersion, rapidResults);
+        File jsonFileFULL = operationRunner.generateFULLRapidJsonFile(rapidFullResults);
 
-        if (operationRunner.shouldAttemptQuackPatch()) {
-            List<Response> rapidFullResults = operationRunner.waitForRapidFullResults(blackDuckRunData, parsedUrls, mode);
-            File jsonFileFULL = operationRunner.generateFULLRapidJsonFile(rapidFullResults);
-            operationRunner.runQuackPatch(jsonFileFULL);
-        }
+//        operationRunner.generateComponentLocationAnalysisIfEnabled(rapidResults, bdioResult, jsonFileFULL); TODO isolate CLL from quack
 
-        operationRunner.generateComponentLocationAnalysisIfEnabled(rapidResults, bdioResult);
+        operationRunner.generateComponentLocationAnalysisIfEnabled(rapidResults, bdioResult, jsonFileFULL);
 
         RapidScanResultSummary summary = operationRunner.logRapidReport(rapidResults, mode);
+
         operationRunner.publishRapidResults(jsonFile, summary, mode);
+
         operationRunner.publishCodeLocationData(formattedCodeLocations);
     }
 

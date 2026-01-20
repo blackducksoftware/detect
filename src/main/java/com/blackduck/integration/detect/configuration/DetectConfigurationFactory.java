@@ -231,7 +231,7 @@ public class DetectConfigurationFactory {
     }
 
     public Boolean isQuackPatchPossible() {
-        return isQuackPatchEnabled() && !isComponentLocationAnalysisEnabled()
+        return isQuackPatchEnabled() //&& !isComponentLocationAnalysisEnabled()
                 && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_NAME).isEmpty()
                 && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_ENDPOINT).isEmpty()
                 && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_KEY).isEmpty();
