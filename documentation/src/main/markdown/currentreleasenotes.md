@@ -34,4 +34,6 @@
 * (IDETECT-4707) The PIP Native Inspector now appropriately handles package names containing a dot character.
 * (IDETECT-4864) The UV Detector now appropriately runs even if the optional field `[tool.uv] manage = true` is not specified.
 * (IDETECT-4760) Any dependencies listed in a Gradle dependency tree as a `(c)` dependency constraint will no longer be identified as dependencies unless they also appear elsewhere in the tree.
+* (IDETECT-4860) When Component Location Analysis is enabled, metadata section of component-source.json will now contain 'dependencyTrees' field from Rapid scan results.
+* (IDETECT-4923) Fixed a bug during pyproject.toml parsing when project name could not be derived.
 
