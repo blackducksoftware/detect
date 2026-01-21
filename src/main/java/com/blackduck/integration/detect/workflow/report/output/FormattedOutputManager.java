@@ -155,7 +155,7 @@ public class FormattedOutputManager {
             detectorToolResult.getDetectorReports().forEach(report -> {
                 report.getExtractedDetectors().forEach(extracted -> {
                     extracted.getAttemptedDetectables().stream()
-                        .map(attempted -> convertAttempted(report.getDirectory(), extracted.getRule().getDetectorType(), attempted, "ATTEMPTED", DetectorStatusCode.ATTEMPTED))
+                        .map(attempted -> convertAttempted(report.getDirectory(), extracted.getRule().getDetectorType(), attempted, "ATTEMPTED", attempted.getStatusCode()))
                         .forEach(outputs::add);
 
                     outputs.add(convertExtracted(report.getDirectory(), extracted.getRule().getDetectorType(), extracted.getExtractedDetectable(), "SUCCESS"));
