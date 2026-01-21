@@ -2,12 +2,13 @@ package com.blackduck.integration.detect.workflow.blackduck.integratedmatching;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Queue;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -35,9 +36,8 @@ class ScanCountsPayloadCreatorTest {
         successfulBinaryCodeLocationNames.add("binaryScan3");
         Mockito.when(binaryWaitableCodeLocationData.getSuccessfulCodeLocationNames()).thenReturn(successfulBinaryCodeLocationNames);
 
-        List<WaitableCodeLocationData> waitableCodeLocationDataList = Arrays.asList(
-            signatureScanWaitableCodeLocationData,
-            binaryWaitableCodeLocationData);
+        Queue<WaitableCodeLocationData> waitableCodeLocationDataList = new ConcurrentLinkedQueue<>();
+        Collections.addAll(waitableCodeLocationDataList, signatureScanWaitableCodeLocationData, binaryWaitableCodeLocationData);
 
         ScanCountsPayloadCreator creator = new ScanCountsPayloadCreator();
 
@@ -82,11 +82,8 @@ class ScanCountsPayloadCreatorTest {
         successfulIacCodeLocationNames.add("iacScan2");
         Mockito.when(iacWaitableCodeLocationData.getSuccessfulCodeLocationNames()).thenReturn(successfulIacCodeLocationNames);
 
-        List<WaitableCodeLocationData> waitableCodeLocationDataList = Arrays.asList(
-            bazelWaitableCodeLocationData,
-            dockerWaitableCodeLocationData,
-            detectorWaitableCodeLocationData,
-            iacWaitableCodeLocationData);
+        Queue<WaitableCodeLocationData> waitableCodeLocationDataList = new ConcurrentLinkedQueue<>();
+        Collections.addAll(waitableCodeLocationDataList,bazelWaitableCodeLocationData, detectorWaitableCodeLocationData, iacWaitableCodeLocationData, dockerWaitableCodeLocationData);
 
         ScanCountsPayloadCreator creator = new ScanCountsPayloadCreator();
         ScanCountsPayload payload = creator.create(waitableCodeLocationDataList, new HashMap<>());
