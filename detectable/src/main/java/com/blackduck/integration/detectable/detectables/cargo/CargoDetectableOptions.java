@@ -11,10 +11,12 @@ public class CargoDetectableOptions {
     private final List<String> excludedWorkspaces;
     private final List<String> includedWorkspaces;
 
-    public CargoDetectableOptions(EnumListFilter<CargoDependencyType> dependencyTypeFilter,
-                                  boolean cargoIgnoreAllWorkspacesMode,
-                                  List<String> includedWorkspaces,
-                                  List<String> excludedWorkspaces) {
+    public CargoDetectableOptions(
+        EnumListFilter<CargoDependencyType> dependencyTypeFilter,
+        boolean cargoIgnoreAllWorkspacesMode,
+        List<String> includedWorkspaces,
+        List<String> excludedWorkspaces
+    ) {
         this.dependencyTypeFilter = dependencyTypeFilter;
         this.cargoIgnoreAllWorkspacesMode = cargoIgnoreAllWorkspacesMode;
         this.includedWorkspaces = includedWorkspaces;
