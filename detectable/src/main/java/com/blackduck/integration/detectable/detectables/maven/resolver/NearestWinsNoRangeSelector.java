@@ -7,6 +7,8 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.version.VersionConstraint;
 import org.eclipse.aether.version.VersionScheme;
 import org.eclipse.aether.util.version.GenericVersionScheme;
+import org.eclipse.aether.version.VersionRange;
+
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,55 +45,45 @@ public class NearestWinsNoRangeSelector implements DependencySelector {
 
     @Override
     public boolean selectDependency(Dependency dependency) {
-        if (dependency == null || dependency.getArtifact() == null) {
-            return true;
-        }
+        if (dependency == null || dependency.getArtifact() == null) return true;
 
         Artifact artifact = dependency.getArtifact();
+        String version = artifact.getVersion();
+        String ga = artifact.getGroupId() + ":" + artifact.getArtifactId();
 
-        String groupId = artifact.getGroupId();
-        String artifactId = artifact.getArtifactId();
-        String ga = (groupId == null ? "" : groupId) + ":" + (artifactId == null ? "" : artifactId);
+        if (depth > 1 && version != null && isRangeSyntax(version)) {
+            try {
+                VersionConstraint constraint = VERSION_SCHEME.parseVersionConstraint(version);
+                VersionRange range = constraint.getRange();
 
-        if (enableLogging) {
-            logger.debug("[NearestWinsNoRangeSelector] Depth: {}, Checking dependency: {}:{}", depth, ga, artifact.getVersion());
-        }
+                if (range != null) {
+                    boolean hasLower = range.getLowerBound() != null;
+                    boolean hasUpper = range.getUpperBound() != null;
 
-        // Conditional GA re-entry prevention (configurable)
-        if (preventReentry && seen.contains(ga)) {
-            if (enableLogging) {
-                logger.debug("Skipping re-entered GA: {}", ga);
-            }
-            return false;
-        }
+                    // Strategy 1: Block open-ended ranges (e.g., [1.0, ) or (, 2.0])
+                    if (!hasLower || !hasUpper) {
+                        logger.info("Blocking open-ended range {} for {} at depth {}", version, ga, depth);
+                        return false;
+                    }
 
-        // Always-on: Skip transitive version ranges (depth > 1)
-        if (depth > 1) {
-            String version = artifact.getVersion();
-            if (version != null) {
-                // cheap pre-check for common range characters
-                if (version.indexOf('[') >= 0 || version.indexOf('(') >= 0 || version.indexOf(',') >= 0 || version.indexOf(']') >= 0 || version.indexOf(')') >= 0) {
-                    try {
-                        VersionConstraint constraint = VERSION_SCHEME.parseVersionConstraint(version);
-                        if (constraint != null && constraint.getRange() != null) {
-                            if (enableLogging) {
-                                logger.info("Skipping transitive ranged version for {}: {}", ga, version);
-                            }
-                            return false;
-                        }
-                    } catch (Exception e) {
-                        // If parsing fails, be conservative and allow the dependency
-                        if (enableLogging) {
-                            logger.info("Version parsing failed for {}:{} -> allowing. Error: {}", ga, version, e.getMessage());
-                        }
-                        return true;
+                    // Strategy 2: Block even bounded ranges if they are too deep
+                    if (depth > 3) {
+                        logger.info("Blocking deep bounded range {} for {} at depth {}", version, ga, depth);
+                        return false;
                     }
                 }
+            } catch (Exception e) {
+                // Be lenient: if we can't parse it, let Maven try its default resolution
+                return true;
             }
         }
-
         return true;
     }
+
+    private boolean isRangeSyntax(String version) {
+        return version.contains("[") || version.contains("(") || version.contains(",");
+    }
+
 
     @Override
     public DependencySelector deriveChildSelector(

@@ -198,13 +198,13 @@ public class MavenDependencyResolver {
         ), rootScope));
 
         // If the project has no direct dependencies but has managed dependencies, treat managed as direct for resolution
-        if (dependencies.isEmpty() && !managedDependencies.isEmpty()) {
-            logger.info("Project has no direct dependencies but does have managed dependencies. Treating managed dependencies as direct for resolution.");
-            collectRequest.setDependencies(managedDependencies);
-        } else {
+//        if (dependencies.isEmpty() && !managedDependencies.isEmpty()) {
+//            logger.info("Project has no direct dependencies but does have managed dependencies. Treating managed dependencies as direct for resolution.");
+//            collectRequest.setDependencies(managedDependencies);
+//        } else {
             collectRequest.setDependencies(dependencies);
             collectRequest.setManagedDependencies(managedDependencies);
-        }
+//        }
 
         // Inclusive retry strategy
         List<RemoteRepository> unionRepos = new ArrayList<>(declaredRepositories);
