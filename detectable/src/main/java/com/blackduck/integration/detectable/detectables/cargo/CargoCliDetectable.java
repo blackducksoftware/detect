@@ -40,12 +40,14 @@ public class CargoCliDetectable extends Detectable {
     private ExecutableTarget cargoExe;
     private File cargoToml;
 
-    public CargoCliDetectable(DetectableEnvironment environment,
-                              FileFinder fileFinder,
-                              CargoResolver cargoResolver,
-                              CargoCliExtractor cargoCliExtractor,
-                              DetectableExecutableRunner executableRunner,
-                              CargoDetectableOptions cargoDetectableOptions) {
+    public CargoCliDetectable(
+        DetectableEnvironment environment,
+        FileFinder fileFinder,
+        CargoResolver cargoResolver,
+        CargoCliExtractor cargoCliExtractor,
+        DetectableExecutableRunner executableRunner,
+        CargoDetectableOptions cargoDetectableOptions
+    ) {
         super(environment);
         this.fileFinder = fileFinder;
         this.cargoResolver = cargoResolver;

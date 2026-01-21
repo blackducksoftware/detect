@@ -1,6 +1,7 @@
 package com.blackduck.integration.detectable.detectables.cargo.parse;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -65,6 +66,12 @@ public class CargoTomlParser {
     public Set<String> parseActiveWorkspaceMembers(String tomlFileContents, File workspaceRoot) {
         TomlParseResult toml = Toml.parse(tomlFileContents);
         Set<String> members = new HashSet<>();
+
+        // Check for parsing errors
+        if (toml.hasErrors()) {
+            return members; // Return empty set if TOML is malformed
+        }
+
         Set<String> exclusions = new HashSet<>();
 
         TomlTable workspace = toml.getTable(WORKSPACE_KEY);
@@ -85,6 +92,11 @@ public class CargoTomlParser {
     public Set<String> parseAllWorkspaceMembers(String tomlFileContents, File workspaceRoot) {
         TomlParseResult toml = Toml.parse(tomlFileContents);
         Set<String> members = new HashSet<>();
+
+        // Check for parsing errors
+        if (toml.hasErrors()) {
+            return members; // Return empty set if TOML is malformed
+        }
 
         TomlTable workspace = toml.getTable(WORKSPACE_KEY);
         if (workspace != null) {
@@ -137,6 +149,17 @@ public class CargoTomlParser {
 
         if (!baseDir.exists() || !baseDir.isDirectory()) {
             return expandedMembers;
+        }
+
+        // Validate that baseDir is within workspace root (prevent path traversal)
+        try {
+            File canonicalBase = baseDir.getCanonicalFile();
+            File canonicalRoot = workspaceRoot.getCanonicalFile();
+            if (!canonicalBase.getPath().startsWith(canonicalRoot.getPath())) {
+                return expandedMembers; // Reject path traversal
+            }
+        } catch (IOException e) {
+            return expandedMembers; // Reject if canonicalization fails
         }
 
         File[] subDirs = baseDir.listFiles(File::isDirectory);

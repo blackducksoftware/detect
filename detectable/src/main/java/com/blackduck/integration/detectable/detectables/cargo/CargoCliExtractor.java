@@ -67,11 +67,48 @@ public class CargoCliExtractor {
         CargoDetectableOptions cargoDetectableOptions,
         EnumListFilter<CargoDependencyType> dependencyTypeFilter
     ) throws ExecutableFailedException {
-        List<String> command = new LinkedList<>(CARGO_TREE_COMMAND);
 
         boolean shouldIgnoreAllWorkspaceMembers = cargoDetectableOptions.getCargoIgnoreAllWorkspacesMode();
+        List<String> includedWorkspaces = cargoDetectableOptions.getIncludedWorkspaces();
+        List<String> excludedWorkspaces = cargoDetectableOptions.getExcludedWorkspaces();
 
-        // Add workspace flags only if not ignoring all workspaces
+        boolean hasInclusions = includedWorkspaces != null && !includedWorkspaces.isEmpty();
+        boolean hasExclusions = excludedWorkspaces != null && !excludedWorkspaces.isEmpty();
+
+        // Special case: inclusions without exclusions - run two separate commands
+        // This ensures we get root package + included packages
+        if (!shouldIgnoreAllWorkspaceMembers && hasInclusions && !hasExclusions) {
+
+            // Command 1: Get root package dependencies
+            List<String> rootCommand = new LinkedList<>(CARGO_TREE_COMMAND);
+            if (!dependencyTypeFilter.shouldIncludeAll()) {
+                addEdgeExclusions(rootCommand, cargoDetectableOptions);
+            }
+            List<String> combinedOutput = new LinkedList<>(runCargoTreeCommand(directory, cargoExe, rootCommand));
+
+            // Add line break separator
+            combinedOutput.add("");
+
+            // Command 2: Get included packages dependencies
+            List<String> includedCommand = new LinkedList<>(CARGO_TREE_COMMAND);
+            for (String includeWorkspace : includedWorkspaces) {
+                includedCommand.add("--package");
+                includedCommand.add(includeWorkspace);
+            }
+            if (!dependencyTypeFilter.shouldIncludeAll()) {
+                addEdgeExclusions(includedCommand, cargoDetectableOptions);
+            }
+            combinedOutput.addAll(runCargoTreeCommand(directory, cargoExe, includedCommand));
+
+            return combinedOutput;
+        }
+
+        // Single-command logic for all other cases:
+        // - No filters (default workspace)
+        // - Only exclusions (--workspace --exclude)
+        // - Both inclusions AND exclusions (--package --workspace --exclude)
+        List<String> command = new LinkedList<>(CARGO_TREE_COMMAND);
+
         if (!shouldIgnoreAllWorkspaceMembers) {
             addWorkspaceFlags(command, cargoDetectableOptions);
         }
@@ -79,7 +116,6 @@ public class CargoCliExtractor {
         // Add features flags if required
         addFeatureFlags(command, cargoDetectableOptions);
 
-        // Always add edge exclusions if needed
         if (!dependencyTypeFilter.shouldIncludeAll()) {
             addEdgeExclusions(command, cargoDetectableOptions);
         }
@@ -103,20 +139,12 @@ public class CargoCliExtractor {
 
         // Add --workspace flag when:
         // 1. No filters specified (default: scan entire workspace)
-        if (!hasInclusions && !hasExclusions) {
-            command.add("--workspace");
-            return;
-        }
-
-        // Add --workspace flag in two cases:
-        // 1. When no specific packages are included (default: scan entire workspace)
-        // 2. When exclusions are present (cargo requires --workspace with --exclude)
+        // 2. Exclusions are present (cargo requires --workspace with --exclude)
         if (!hasInclusions || hasExclusions) {
             command.add("--workspace");
         }
 
         // Add --package flags for each explicitly included workspace member
-        // Note: Can be used alone (without --workspace) when no exclusions are present
         if (hasInclusions) {
             for (String includeWorkspace : includedWorkspaces) {
                 command.add("--package");
@@ -125,7 +153,6 @@ public class CargoCliExtractor {
         }
 
         // Add --exclude flags for workspace members to skip
-        // Note: Must be used with --workspace flag (enforced by cargo CLI)
         if (hasExclusions) {
             for (String excludedWorkspace : excludedWorkspaces) {
                 command.add("--exclude");
