@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.Map;
 import java.util.EnumMap;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class CargoCliExtractor {
     private static final List<String> CARGO_TREE_COMMAND = Arrays.asList("tree", "--prefix", "depth");
@@ -95,6 +96,10 @@ public class CargoCliExtractor {
                 includedCommand.add("--package");
                 includedCommand.add(includeWorkspace);
             }
+
+            // Add features flags if required
+            addFeatureFlags(includedCommand, cargoDetectableOptions);
+
             if (!dependencyTypeFilter.shouldIncludeAll()) {
                 addEdgeExclusions(includedCommand, cargoDetectableOptions);
             }
@@ -163,22 +168,40 @@ public class CargoCliExtractor {
 
     private void addFeatureFlags(List<String> command, CargoDetectableOptions options) {
         List<String> features = options.getIncludedFeatures();
+//        boolean disableDefaultFeatures = options.getDisableDefaultFeatures(); // New property
+        boolean disableDefaultFeatures = false; // New property
 
-        // Check if user wants all features (support "ALL" keyword or empty list meaning all)
+        // Handle --no-default-features flag (independent of specific features)
+        if (disableDefaultFeatures) {
+            command.add("--no-default-features");
+        }
+
+        // Handle feature specifications
         if (features != null && !features.isEmpty()) {
-            // Check for special "ALL" keyword (case-insensitive)
+            // Check for special keywords (case-insensitive)
             boolean includeAllFeatures = features.stream()
                 .anyMatch(feature -> "ALL".equalsIgnoreCase(feature.trim()));
+            boolean includeNoFeatures = features.stream()
+                .anyMatch(feature -> "NONE".equalsIgnoreCase(feature.trim()));
 
-            if (includeAllFeatures) {
+            if (includeNoFeatures) {
+                // NONE keyword: skip all feature processing (already handled disableDefaultFeatures above)
+                return;
+            } else if (includeAllFeatures) {
                 command.add("--all-features");
             } else {
-                // Add specific features
-                command.add("--features");
-                command.add(String.join(",", features));
+                // Combine features into comma-separated list
+                String featureList = features.stream()
+                    .map(String::trim)
+                    .filter(f -> !f.isEmpty())
+                    .collect(Collectors.joining(","));
+
+                if (!featureList.isEmpty()) {
+                    command.add("--features");
+                    command.add(featureList);
+                }
             }
         }
-        // If features is null or empty, use cargo's default behavior (no feature flags)
     }
 
     private void addEdgeExclusions(List<String> cargoTreeCommand, CargoDetectableOptions options) {
