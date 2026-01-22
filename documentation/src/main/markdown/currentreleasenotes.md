@@ -34,4 +34,5 @@
 ### Dependency Updates
 
 * Updated method-analyzer-core to 1.0.7.
+* Upgraded and released Nuget Inspector version 2.5.0.
 
