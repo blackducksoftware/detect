@@ -1,5 +1,7 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver;
 
+import com.blackduck.integration.detectable.detectables.maven.resolver.model.*;
+
 import java.util.List;
 
 public class MavenProject {

@@ -1,5 +1,7 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver;
 
+import com.blackduck.integration.detectable.detectables.maven.resolver.model.*;
+import org.apache.commons.text.StringSubstitutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

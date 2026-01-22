@@ -1,5 +1,7 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver;
 
+import com.blackduck.integration.detectable.detectables.maven.resolver.model.*;
+
 /**
  * Utility class for formatting Maven coordinates and strings for various purposes.
  *

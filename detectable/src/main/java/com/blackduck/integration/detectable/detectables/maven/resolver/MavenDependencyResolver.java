@@ -1,5 +1,7 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver;
 
+import com.blackduck.integration.detectable.detectables.maven.resolver.model.*;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;

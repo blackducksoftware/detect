@@ -1,11 +1,13 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver;
 
-/**
- * Main data classes for the POM parser - Java port of Go pomparser models
- */
+import com.blackduck.integration.detectable.detectables.maven.resolver.model.*;
 
 import java.util.List;
 import java.util.Map;
+
+/**
+ * Main data classes for the POM parser - Java port of Go pomparser models
+ */
 
 /**
  * Contains parent pom information for a parsed pom file.
