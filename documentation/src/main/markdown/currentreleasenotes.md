@@ -20,6 +20,7 @@
 
 ### New features
 
+* [detect_product_short] now supports Rush Package Manager. For details and configuration information, see: [Rush Detector](packagemgrs/rush.md)
 * Control over which workspace members are included or excluded during scanning is made possible by the new `detect.cargo.included.workspaces` and `detect.cargo.excluded.workspaces` properties for Cargo Detector. See [Cargo](properties/detectors/cargo.md) for details.
 * When set to true (default: false), the new `detect.cargo.ignore.all.workspaces` property allows you to completely disable workspace support. See [Cargo](properties/detectors/cargo.md) for more information.
 
