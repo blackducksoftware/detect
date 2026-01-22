@@ -653,6 +653,13 @@ public class DetectProperties {
             .setExample("crates/workspace-a,crates/workspace-b")
             .build();
 
+    public static final BooleanProperty DETECT_CARGO_DISABLE_DEFAULT_FEATURES =
+        BooleanProperty.newBuilder("detect.cargo.disable.default.features", false)
+            .setInfo("Disable Default Features", DetectPropertyFromVersion.VERSION_11_3_0)
+            .setHelp("All default features are disabled by the Cargo detector.")
+            .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
+            .build();
+
     public static final CaseSensitiveStringListProperty DETECT_CARGO_INCLUDED_FEATURES =
         CaseSensitiveStringListProperty.newBuilder("detect.cargo.included.features")
             .setInfo("Cargo Include Features", DetectPropertyFromVersion.VERSION_11_3_0)

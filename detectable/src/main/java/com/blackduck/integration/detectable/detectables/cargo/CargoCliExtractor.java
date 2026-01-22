@@ -24,7 +24,6 @@ import java.util.Optional;
 import java.util.Map;
 import java.util.EnumMap;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class CargoCliExtractor {
     private static final List<String> CARGO_TREE_COMMAND = Arrays.asList("tree", "--prefix", "depth");
@@ -168,11 +167,10 @@ public class CargoCliExtractor {
 
     private void addFeatureFlags(List<String> command, CargoDetectableOptions options) {
         List<String> features = options.getIncludedFeatures();
-//        boolean disableDefaultFeatures = options.getDisableDefaultFeatures(); // New property
-        boolean disableDefaultFeatures = false; // New property
+        boolean isDefaultFeaturesDisabled = options.isDefaultFeaturesDisabled();
 
         // Handle --no-default-features flag (independent of specific features)
-        if (disableDefaultFeatures) {
+        if (isDefaultFeaturesDisabled) {
             command.add("--no-default-features");
         }
 
@@ -185,20 +183,19 @@ public class CargoCliExtractor {
                 .anyMatch(feature -> "NONE".equalsIgnoreCase(feature.trim()));
 
             if (includeNoFeatures) {
-                // NONE keyword: skip all feature processing (already handled disableDefaultFeatures above)
+                // NONE keyword: skip all feature processing
                 return;
             } else if (includeAllFeatures) {
                 command.add("--all-features");
             } else {
-                // Combine features into comma-separated list
-                String featureList = features.stream()
-                    .map(String::trim)
-                    .filter(f -> !f.isEmpty())
-                    .collect(Collectors.joining(","));
-
-                if (!featureList.isEmpty()) {
-                    command.add("--features");
-                    command.add(featureList);
+                // Add each feature with its own --features flag
+                // This handles edge cases like features starting with digits (e.g., "2d", "3d")
+                for (String feature : features) {
+                    String trimmedFeature = feature.trim();
+                    if (!trimmedFeature.isEmpty()) {
+                        command.add("--features");
+                        command.add(trimmedFeature);
+                    }
                 }
             }
         }
