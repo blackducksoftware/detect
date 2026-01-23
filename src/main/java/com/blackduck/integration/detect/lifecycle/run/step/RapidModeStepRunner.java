@@ -12,7 +12,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.Set;
 
-import com.blackduck.integration.detect.configuration.DetectConfigurationFactory;
 import com.blackduck.integration.rest.response.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,7 +68,6 @@ public class RapidModeStepRunner {
         List<HttpUrl> parsedUrls = new ArrayList<>();
         Set<FormattedCodeLocation> formattedCodeLocations = new HashSet<>();
 
-        // pkg mgr rapid scan
         List<HttpUrl> uploadResultsUrls = operationRunner.performRapidUpload(blackDuckRunData, bdioResult, rapidScanConfig.orElse(null));
         if (uploadResultsUrls != null && uploadResultsUrls.size() > 0) {
             processScanResults(uploadResultsUrls, parsedUrls, formattedCodeLocations, DetectTool.DETECTOR.name());
@@ -128,19 +126,16 @@ public class RapidModeStepRunner {
         if (operationRunner.shouldAttemptQuackPatchFullResults()) {
             logger.info("Quack Patch is enabled, attempting to retrieve full Rapid scan results.");
             List<Response> rapidFullResults = operationRunner.waitForRapidFullResults(blackDuckRunData, parsedUrls, mode);
-            File jsonFileFULL = operationRunner.generateFULLRapidJsonFile(rapidFullResults);
+            File jsonFileFULL = operationRunner.generateFullRapidJsonFile(rapidFullResults);
             operationRunner.runQuackPatch(jsonFileFULL);
         }
 
         // Generate a report, even an empty one if no scans were done as that is what previous detect versions did.
         File jsonFile = operationRunner.generateRapidJsonFile(projectVersion, rapidResults);
-
         operationRunner.generateComponentLocationAnalysisIfEnabled(rapidResults, bdioResult);
-
         RapidScanResultSummary summary = operationRunner.logRapidReport(rapidResults, mode);
 
         operationRunner.publishRapidResults(jsonFile, summary, mode);
-
         operationRunner.publishCodeLocationData(formattedCodeLocations);
     }
 
@@ -211,7 +206,7 @@ public class RapidModeStepRunner {
                     Set<String> parsedIds = result.parseScanIds();
 
                     for (String id : parsedIds) {
-                        HttpUrl url = new HttpUrl(blackDuckUrl + String.format(RAPID_SCAN_ENDPOINT + "/" + id));
+                        HttpUrl url = new HttpUrl(blackDuckUrl + RAPID_SCAN_ENDPOINT + "/" + id);
 
                         logger.info(scanMode + " mode signature scan URL: {}", url);
                         parsedUrls.add(url);

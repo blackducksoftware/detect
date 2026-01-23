@@ -805,9 +805,9 @@ public class OperationRunner {
         );
     }
 
-    public final File generateFULLRapidJsonFile(List<Response> scanResults) throws OperationException {
+    public final File generateFullRapidJsonFile(List<Response> scanResults) throws OperationException {
         return auditLog.namedPublic(
-                "Generate Rapid FULL Json File",
+                "Generate Rapid Full Json File",
                 "RapidScan",
                 () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFileFromString(scanResults.get(0).getContentString())
         );
