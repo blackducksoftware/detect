@@ -1,15 +1,15 @@
 # Quack Patch (Experimental)
 
-An AI tool that generates package manager code fixes to mitigate security vulnerabilities detected by Black Duck SCA.
+An artificial intelligence tool that creates package manager code fixes to address security flaws identified by Black Duck SCA.
 
 ## Overview
 
-Quack Patch helps developers automatically create code patches for package managers to fix vulnerabilities in third-party components identified by Black Duck SCA. It detects transitive dependencies without a short-term direct upgrade path via their parents and generates patches with dependency overrides for these dependencies. Using Large Language Models, it sends the original source file and upgrade guidance to the LLM gateway, producing a patch applicable to the source file. Output patches are saved in the `quack-patch` directory within the scan output directory.
+Quack Patch assists developers in automatically generating code patches for package managers to address vulnerabilities in third-party components identified by Black Duck Software Composition Analysis (SCA). It effectively detects transitive dependencies lacking a direct upgrade path through their parent dependencies and creates patches that include dependency overrides for these components. Utilizing Large Language Models (LLMs), Quack Patch sends the original source file along with upgrade guidance to the LLM gateway, resulting in a patch that is applicable to the source file. The generated patches are saved in the `quack-patch` directory located within the scan output directory.
 
 ## Requirements
 
-* Quack Patch works only with Rapid scan workflow using Black Duck SCA (Online mode).
-* Quack Patch supports these package managers:
+* Quack Patch works only with Black Duck SCA (online mode) using the Rapid Scan workflow.
+* Supported package manager and config file types:
     * Maven     (Supported Files: `pom.xml`)
     * Gradle    (Supported Files: `build.gradle`, `build.gradle.kts`)
     * NuGet     (Supported Files: `Directory.Packages.props`, `packages.config`, `*.csproj`)
@@ -21,16 +21,17 @@ Quack Patch helps developers automatically create code patches for package manag
     * GPT-4
     * Gemini 2.5 Pro
     
-    >Note: You may use other LLM models compatible with OpenAI API standards, but results may vary by model capabilities.
-* Ensure the target project has policies configured in Black Duck SCA to guide component upgrade generation. Components violating policies due to vulnerabilities will be considered for upgrade guidance.
+    <note type="note">Other LLM models compatible with OpenAI API standards may be used but results will vary by model capabilities.</note>
+* Target project must have policies configured in Black Duck SCA to guide component upgrade generation.
+    * Components violating policies due to vulnerabilities will be considered for upgrade guidance.
 
 ## Configuration
 
-* Set the scan mode to Rapid using the detect.blackduck.scan.mode property, e.g., `--detect.blackduck.scan.mode=RAPID`.
-* Enable Quack Patch with the detect.blackduck.quack.patch.enabled property, e.g., `--detect.blackduck.quack.patch.enabled=true`.
-* Set the LLM Gateway URL with the detect.llm.api.endpoint property, e.g., `--detect.llm.api.endpoint=https://your-llm-gateway.com`.
-* Set the LLM Gateway API key with the detect.llm.api.key property, e.g., `--detect.llm.api.key=your-llm-api-key`.
-* Set the LLM model with the detect.llm.name property, e.g., `--detect.llm.name=gpt-4`.
+* Set the scan mode to Rapid using the detect.blackduck.scan.mode property: `--detect.blackduck.scan.mode=RAPID`.
+* Enable Quack Patch with the detect.blackduck.quack.patch.enabled property: `--detect.blackduck.quack.patch.enabled=true`.
+* Set the LLM Gateway URL with the detect.llm.api.endpoint property: `--detect.llm.api.endpoint=https://your-llm-gateway.com`.
+* Set the LLM Gateway API key with the detect.llm.api.key property: `--detect.llm.api.key=your-llm-api-key`.
+* Set the LLM model with the detect.llm.name property: `--detect.llm.name=gpt-4`.
 
 ## Example Usage
 
@@ -94,6 +95,6 @@ git apply /path/to/scan/quack-patch/3grh7-build.gradle.patch
 * Patch effectiveness varies with the LLM model and input data quality.
 * Ensure build source files contain no sensitive information, as they are sent to the LLM gateway.
 * Quack Patch focuses on generating dependency overrides and may not handle complex scenarios with multiple interdependent components or custom build configurations.
-* Define the detect.llm.api.key via environment variable to avoid exposing it in command line history.
+* Define the `detect.llm.api.key` value via environment variable to avoid exposing it in command line history.
 * Comply with your organization's policies on AI-generated content and data privacy when using Quack Patch.
 

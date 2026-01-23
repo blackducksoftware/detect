@@ -21,7 +21,7 @@
 ### New features
 
 * [detect_product_short] now supports Rush Package Manager. For details and configuration information, see: [Rush Detector](packagemgrs/rush.md)
-* Introducing Quack Patch: An AI assisted code patching tool integrated into [detect_product_short] to help developers generate code patches for vulnerable components. For more information, see: [Quack Patch Documentation](runningdetect/quack-patch.md)
+* Introducing Quack Patch: An AI-assisted code patching tool integrated into [detect_product_short] to help developers generate code patches for vulnerable components. For more information, see: [Quack Patch Documentation](runningdetect/quack-patch.md)
 
 ### Changed features
 
