@@ -4,20 +4,23 @@ import java.util.Collections;
 import java.util.List;
 
 public class QuackPatchResult implements DetectResult {
+    private final String quackPatchOutputDir;
 
+
+    public QuackPatchResult(String quackPatchOutputDir) { this.quackPatchOutputDir = quackPatchOutputDir; }
     @Override
     public String getResultLocation() {
-        return "";
+        return quackPatchOutputDir;
     }
 
     @Override
     public String getResultMessage() {
-        return "";
+        return String.format("Quack Patch results directory: %s", quackPatchOutputDir);
     }
 
     @Override
     public List<String> getResultSubMessages() {
-        return List.of();
+        return Collections.emptyList();
     }
 
     @Override
