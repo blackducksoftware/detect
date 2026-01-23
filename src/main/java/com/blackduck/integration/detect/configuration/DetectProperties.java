@@ -1051,7 +1051,6 @@ public class DetectProperties {
                             "TODO",
                             "TODO")
                     .setGroups(DetectGroup.QUACKPATCH)
-                    .setGroups(DetectGroup.GENERAL)
                     .build();
 
     public static final StringProperty DETECT_LLM_API_KEY =
