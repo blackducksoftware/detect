@@ -230,11 +230,12 @@ public class DetectConfigurationFactory {
         return detectConfiguration.getValue(DetectProperties.DETECT_QUACK_PATCH_ENABLED);
     }
 
-    public Boolean isQuackPatchPossible() {
-        if (isQuackPatchEnabled()
-                && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_NAME).isEmpty()
+    public boolean isQuackPatchPossible() {
+        boolean allQuackPatchPropertiesSet = Boolean.TRUE.equals(!detectConfiguration.getValue(DetectProperties.DETECT_LLM_NAME).isEmpty()
                 && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_ENDPOINT).isEmpty()
-                && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_KEY).isEmpty()) {
+                && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_KEY).isEmpty());
+
+        if (Boolean.TRUE.equals(isQuackPatchEnabled()) && allQuackPatchPropertiesSet) {
             return true;
         }
         logger.info("Quack Patch cannot run because not all required properties are set. Please check your configuration.");
