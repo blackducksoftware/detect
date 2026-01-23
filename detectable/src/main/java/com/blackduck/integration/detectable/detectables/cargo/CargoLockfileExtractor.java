@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -77,15 +78,20 @@ public class CargoLockfileExtractor {
 
         List<CodeLocation> codeLocations = new ArrayList<>();
         Optional<NameVersion> projectNameVersion = Optional.empty();
+        Map<String, String> workspaceDependencies = new HashMap<>();
 
         if(cargoTomlFile != null) {
             String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
             File workspaceRoot = cargoTomlFile.getParentFile();
+
+            // Parse workspace dependencies from root Cargo.toml
+            workspaceDependencies = cargoTomlParser.parseWorkspaceDependencies(cargoTomlContents);
+
             Set<String> workspaceMembers = cargoTomlParser.parseActiveWorkspaceMembers(cargoTomlContents, workspaceRoot);
 
             if(cargoDetectableOptions != null) {
                 // Step-1: Process all workspace members and their Cargo.toml first
-                processWorkspaceMembers(workspaceMembers, cargoDetectableOptions, workspaceRoot, cargoLockPackageDataList, packageLookupMap, filter, codeLocations);
+                processWorkspaceMembers(workspaceMembers, cargoDetectableOptions, workspaceRoot, cargoLockPackageDataList, packageLookupMap, filter, workspaceDependencies, codeLocations);
             }
 
             // Step-2: Process single root Cargo.toml. Only filter if Cargo.toml defines dependency sections.
@@ -96,7 +102,8 @@ public class CargoLockfileExtractor {
                     cargoLockPackageDataList,
                     packageLookupMap,
                     null,
-                    filter
+                    filter,
+                    workspaceDependencies
                 );
                 codeLocations.add(rootCodeLocation);
             }
@@ -328,6 +335,7 @@ public class CargoLockfileExtractor {
         List<CargoLockPackageData> cargoLockPackageDataList,
         Map<NameVersion, List<CargoLockPackageData>> packageLookupMap,
         EnumListFilter<CargoDependencyType> filter,
+        Map<String, String> workspaceDependencies,
         List<CodeLocation> codeLocations
     ) throws IOException, MissingExternalIdException, DetectableException {
 
@@ -350,7 +358,8 @@ public class CargoLockfileExtractor {
                     cargoLockPackageDataList,
                     packageLookupMap,
                     workspace,
-                    filter
+                    filter,
+                    workspaceDependencies
                 );
                 codeLocations.add(workspaceCodeLocation);
             } else {
@@ -389,11 +398,12 @@ public class CargoLockfileExtractor {
         List<CargoLockPackageData> cargoLockPackageDataList,
         Map<NameVersion, List<CargoLockPackageData>> packageLookupMap,
         @Nullable String workspacePath,
-        EnumListFilter<CargoDependencyType> filter
+        EnumListFilter<CargoDependencyType> filter,
+        Map<String, String> workspaceDependencies
     ) throws IOException, MissingExternalIdException, DetectableException {
 
         String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
-        Set<NameVersion> includedDependencies = cargoTomlParser.parseDependenciesToInclude(cargoTomlContents, filter);
+        Set<NameVersion> includedDependencies = cargoTomlParser.parseDependenciesToInclude(cargoTomlContents, filter, workspaceDependencies);
         Set<NameVersion> resolvedRootDependencies = new HashSet<>();
 
         List<CargoLockPackageData> filteredPackages = resolveDirectAndTransitiveDependencies(

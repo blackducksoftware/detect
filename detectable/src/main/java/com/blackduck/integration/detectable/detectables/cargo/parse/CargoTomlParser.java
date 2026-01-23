@@ -191,13 +191,13 @@ public class CargoTomlParser {
             || toml.contains(DEV_DEPENDENCIES_KEY);
     }
 
-    public Set<NameVersion> parseDependenciesToInclude(String tomlFileContents, EnumListFilter<CargoDependencyType> dependencyTypeFilter) {
+    public Set<NameVersion> parseDependenciesToInclude(String tomlFileContents, EnumListFilter<CargoDependencyType> dependencyTypeFilter, Map<String, String> workspaceDependencies) {
         TomlParseResult toml = Toml.parse(tomlFileContents);
         Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap = new HashMap<>();
 
-        parseDependenciesFromTomlTable(toml, NORMAL_DEPENDENCIES_KEY, CargoDependencyType.NORMAL, dependencyTypeMap);
-        parseDependenciesFromTomlTable(toml, BUILD_DEPENDENCIES_KEY, CargoDependencyType.BUILD, dependencyTypeMap);
-        parseDependenciesFromTomlTable(toml, DEV_DEPENDENCIES_KEY, CargoDependencyType.DEV, dependencyTypeMap);
+        parseDependenciesFromTomlTable(toml, NORMAL_DEPENDENCIES_KEY, CargoDependencyType.NORMAL, dependencyTypeMap, workspaceDependencies);
+        parseDependenciesFromTomlTable(toml, BUILD_DEPENDENCIES_KEY, CargoDependencyType.BUILD, dependencyTypeMap, workspaceDependencies);
+        parseDependenciesFromTomlTable(toml, DEV_DEPENDENCIES_KEY, CargoDependencyType.DEV, dependencyTypeMap, workspaceDependencies);
 
         Set<NameVersion> dependenciesToInclude = new HashSet<>();
         for (Map.Entry<NameVersion, EnumSet<CargoDependencyType>> entry : dependencyTypeMap.entrySet()) {
@@ -219,11 +219,30 @@ public class CargoTomlParser {
         return dependenciesToInclude;
     }
 
+    public Map<String, String> parseWorkspaceDependencies(String tomlFileContents) {
+        TomlParseResult toml = Toml.parse(tomlFileContents);
+        Map<String, String> workspaceDeps = new HashMap<>();
+        TomlTable workspace = toml.getTable(WORKSPACE_KEY);
+        if (workspace != null) {
+            TomlTable dependencies = workspace.getTable(NORMAL_DEPENDENCIES_KEY);
+            if (dependencies != null) {
+                for (String key : dependencies.keySet()) {
+                    String version = extractVersion(dependencies.get(key));
+                    if (version != null) {
+                        workspaceDeps.put(key, version);
+                    }
+                }
+            }
+        }
+        return workspaceDeps;
+    }
+
     private void parseDependenciesFromTomlTable(
         TomlParseResult toml,
         String sectionKey,
         CargoDependencyType cargoDependencyType,
-        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap
+        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap,
+        Map<String, String> workspaceDependencies
     ) {
         // Sanitize the section key before fetching table
         String sanitizedSectionKey = sanitizeKey(sectionKey);
@@ -236,7 +255,13 @@ public class CargoTomlParser {
                 if (value instanceof String) {
                     version = (String) value;
                 } else if (value instanceof TomlTable) {
-                    version = ((TomlTable) value).getString(VERSION_KEY); // may be null
+                    TomlTable depTable = (TomlTable) value;
+                    // Check if this is a workspace reference
+                    if (Boolean.TRUE.equals(depTable.getBoolean(WORKSPACE_KEY))) {
+                        version = workspaceDependencies.get(key);
+                    } else {
+                        version = depTable.getString(VERSION_KEY);
+                    }
                 }
 
                 NameVersion nv = new NameVersion(key, version);
@@ -251,7 +276,8 @@ public class CargoTomlParser {
             toml,
             sectionKey, // keep original for matching
             cargoDependencyType,
-            dependencyTypeMap
+            dependencyTypeMap,
+            workspaceDependencies
         );
     }
 
@@ -259,16 +285,17 @@ public class CargoTomlParser {
         Object node,
         String sectionKey,
         CargoDependencyType cargoDependencyType,
-        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap
+        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap,
+        Map<String, String> workspaceDependencies
     ) {
         if (node == null) return;
 
         if (node instanceof TomlTable) {
-            parseTomlTableNode((TomlTable) node, sectionKey, cargoDependencyType, dependencyTypeMap);
+            parseTomlTableNode((TomlTable) node, sectionKey, cargoDependencyType, dependencyTypeMap, workspaceDependencies);
         } else if (node instanceof Map) {
-            parseMapNode((Map<?, ?>) node, sectionKey, cargoDependencyType, dependencyTypeMap);
+            parseMapNode((Map<?, ?>) node, sectionKey, cargoDependencyType, dependencyTypeMap, workspaceDependencies);
         } else if (node instanceof List) {
-            parseListNode((List<?>) node, sectionKey, cargoDependencyType, dependencyTypeMap);
+            parseListNode((List<?>) node, sectionKey, cargoDependencyType, dependencyTypeMap, workspaceDependencies);
         }
     }
 
@@ -276,17 +303,18 @@ public class CargoTomlParser {
         TomlTable tableNode,
         String sectionKey,
         CargoDependencyType cargoDependencyType,
-        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap
+        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap,
+        Map<String, String> workspaceDependencies
     ) {
         for (String key : tableNode.keySet()) {
             Object value = tableNode.get(sanitizeKey(key));
 
             if (key.equals(sectionKey)) {
-                parseDependenciesFromSection(value, cargoDependencyType, dependencyTypeMap);
+                parseDependenciesFromSection(value, cargoDependencyType, dependencyTypeMap, workspaceDependencies);
             }
 
             if (value instanceof TomlTable || value instanceof Map || value instanceof List) {
-                parseNestedDependencies(value, sectionKey, cargoDependencyType, dependencyTypeMap);
+                parseNestedDependencies(value, sectionKey, cargoDependencyType, dependencyTypeMap, workspaceDependencies);
             }
         }
     }
@@ -295,17 +323,18 @@ public class CargoTomlParser {
         Map<?, ?> mapNode,
         String sectionKey,
         CargoDependencyType cargoDependencyType,
-        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap
+        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap,
+        Map<String, String> workspaceDependencies
     ) {
         for (Map.Entry<?, ?> entry : mapNode.entrySet()) {
             Object value = entry.getValue();
 
             if (entry.getKey().toString().equals(sectionKey)) {
-                parseDependenciesFromSection(value, cargoDependencyType, dependencyTypeMap);
+                parseDependenciesFromSection(value, cargoDependencyType, dependencyTypeMap, workspaceDependencies);
             }
 
             if (value instanceof TomlTable || value instanceof Map || value instanceof List) {
-                parseNestedDependencies(value, sectionKey, cargoDependencyType, dependencyTypeMap);
+                parseNestedDependencies(value, sectionKey, cargoDependencyType, dependencyTypeMap, workspaceDependencies);
             }
         }
     }
@@ -314,22 +343,27 @@ public class CargoTomlParser {
         List<?> listNode,
         String sectionKey,
         CargoDependencyType cargoDependencyType,
-        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap
+        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap,
+        Map<String, String> workspaceDependencies
     ) {
         for (Object elem : listNode) {
-            parseNestedDependencies(elem, sectionKey, cargoDependencyType, dependencyTypeMap);
+            parseNestedDependencies(elem, sectionKey, cargoDependencyType, dependencyTypeMap, workspaceDependencies);
         }
     }
 
     private void parseDependenciesFromSection(
         Object value,
         CargoDependencyType cargoDependencyType,
-        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap
+        Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap,
+        Map<String, String> workspaceDependencies
     ) {
         if (value instanceof TomlTable) {
             TomlTable depsTable = (TomlTable) value;
             for (String depName : depsTable.keySet()) {
                 String version = extractVersion(depsTable.get(depName));
+                if(version == null) {
+                    version = extractVersionWithWorkspace(depsTable.get(depName), depName, workspaceDependencies);
+                }
                 addDependency(depName, version, cargoDependencyType, dependencyTypeMap);
             }
         } else if (value instanceof Map) {
@@ -337,6 +371,9 @@ public class CargoTomlParser {
             for (Map.Entry<?, ?> depEntry : depsMap.entrySet()) {
                 String depName = depEntry.getKey().toString();
                 String version = extractVersion(depEntry.getValue());
+                if(version == null) {
+                    version = extractVersionWithWorkspace(depEntry.getValue(), depName, workspaceDependencies);
+                }
                 addDependency(depName, version, cargoDependencyType, dependencyTypeMap);
             }
         }
@@ -370,6 +407,37 @@ public class CargoTomlParser {
 
         if (depValue instanceof Map) {
             Object version = ((Map<?, ?>) depValue).get(VERSION_KEY);
+            if (version instanceof String) {
+                return (String) version;
+            }
+        }
+
+        return null;
+    }
+
+    private String extractVersionWithWorkspace(Object depValue, String depName, Map<String, String> workspaceDependencies) {
+        if (depValue == null) return null;
+        if (depValue instanceof String) return (String) depValue;
+
+        if (depValue instanceof TomlTable) {
+            TomlTable table = (TomlTable) depValue;
+            if (Boolean.TRUE.equals(table.getBoolean(WORKSPACE_KEY))) {
+                return workspaceDependencies.get(depName);
+            }
+            if (table.contains(VERSION_KEY)) {
+                Object versionObj = table.get(VERSION_KEY);
+                if (versionObj instanceof String) {
+                    return (String) versionObj;
+                }
+            }
+        }
+
+        if (depValue instanceof Map) {
+            Map<?, ?> map = (Map<?, ?>) depValue;
+            if (Boolean.TRUE.equals(map.get(WORKSPACE_KEY))) {
+                return workspaceDependencies.get(depName);
+            }
+            Object version = map.get(VERSION_KEY);
             if (version instanceof String) {
                 return (String) version;
             }
