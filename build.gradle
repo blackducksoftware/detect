@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '11.2.0-SIGQA6-shanty.IDETECT-4900-SNAPSHOT'
+version = '11.2.0-SIGQA12-SNAPSHOT'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
@@ -178,8 +178,8 @@ dependencies {
 
     implementation 'com.blackducksoftware.bdio:bdio-protobuf:3.2.12'
     implementation "com.blackduck.integration:blackduck-common:${blackDuckCommonVersion}"
-    implementation 'com.blackduck.integration:blackduck-upload-common:4.1.3'
-    implementation 'com.blackducksoftware:method-analyzer-core:1.0.1'
+    implementation 'com.blackduck.integration:blackduck-upload-common:4.1.4'
+    implementation 'com.blackducksoftware:method-analyzer-core:1.0.7'
     implementation "${locatorGroup}:${locatorModule}:2.3.3"
 
     implementation 'org.apache.maven.shared:maven-invoker:3.0.0'
