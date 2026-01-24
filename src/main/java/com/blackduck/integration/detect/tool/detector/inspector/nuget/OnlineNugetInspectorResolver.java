@@ -48,35 +48,38 @@ public class OnlineNugetInspectorResolver implements NugetInspectorResolver {
             inspector = ExecutableTarget.forFile(providedNugetInspectorPath.get());
         } else {
             if (!hasResolvedInspector) {
-                File inspectorFile = null;
                 hasResolvedInspector = true;
-
-                File installDirectory = directoryManager.getPermanentDirectory(INSPECTOR_NAME);
-                try {
-                    inspectorFile = installer.install(installDirectory);
-                } catch (DetectableException e) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Unable to install the detect nuget inspector from Artifactory.", e);
-                    } else {
-                        logger.warn("Unable to install the detect nuget inspector from Artifactory.");
-                    }
-                }
-
-                if (inspectorFile == null) {
-                    // Remote installation has failed
-                    logger.debug("Attempting to locate previous install of detect nuget inspector.");
-                    inspectorFile = installedToolLocator.locateTool(INSPECTOR_NAME)
-                        .orElseThrow(() -> {
-                            logger.warn("Unable to locate previous install of the detect nuget inspector.");
-                            return new DetectableException("Unable to locate previous install of the detect nuget inspector.");
-                        });
-                } else {
-                    installedToolManager.saveInstalledToolLocation(INSPECTOR_NAME, inspectorFile.getAbsolutePath());
-                }
-
+                File inspectorFile = resolveOrInstallInspectorFile();
                 inspector = ExecutableTarget.forFile(inspectorFile);
-        }
+            }
         }
         return inspector;
     }
+
+    private File resolveOrInstallInspectorFile() throws DetectableException {
+        File inspectorFile = null;
+        File installDirectory = directoryManager.getPermanentDirectory(INSPECTOR_NAME);
+        try {
+            inspectorFile = installer.install(installDirectory);
+        } catch (DetectableException e) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Unable to install the detect nuget inspector from Artifactory.", e);
+            } else {
+                logger.warn("Unable to install the detect nuget inspector from Artifactory.");
+            }
+        }
+
+        if (inspectorFile == null) {
+            logger.debug("Attempting to locate previous install of detect nuget inspector.");
+            inspectorFile = installedToolLocator.locateTool(INSPECTOR_NAME)
+                    .orElseThrow(() -> {
+                        logger.warn("Unable to locate previous install of the detect nuget inspector.");
+                        return new DetectableException("Unable to locate previous install of the detect nuget inspector.");
+                    });
+        } else {
+            installedToolManager.saveInstalledToolLocation(INSPECTOR_NAME, inspectorFile.getAbsolutePath());
+        }
+        return inspectorFile;
+    }
+
 }
