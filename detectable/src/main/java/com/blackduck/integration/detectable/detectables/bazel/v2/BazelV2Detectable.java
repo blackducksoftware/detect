@@ -47,7 +47,7 @@ public class BazelV2Detectable extends Detectable {
 
     // Factory interface to create BazelGraphProber instances; injectable for tests.
     public interface BazelGraphProberFactory {
-        BazelGraphProber create(BazelCommandExecutor bazelCmd, String target, int queryTimeoutSeconds, BazelEnvironmentAnalyzer.Mode mode, int httpProbeLimit);
+        BazelGraphProber create(BazelCommandExecutor bazelCmd, String target, BazelEnvironmentAnalyzer.Mode mode, int httpProbeLimit);
     }
 
     private final BazelGraphProberFactory bazelGraphProberFactory;
@@ -74,7 +74,7 @@ public class BazelV2Detectable extends Detectable {
                               HaskellCabalLibraryJsonProtoParser haskellParser,
                               BazelProjectNameGenerator projectNameGenerator) {
         this(environment, fileFinder, executableRunner, externalIdFactory, bazelResolver, options, bazelVariableSubstitutor, haskellParser, projectNameGenerator,
-            (bazelCmd, target, queryTimeoutSeconds, mode, httpProbeLimit) -> new BazelGraphProber(bazelCmd, target, queryTimeoutSeconds, mode, httpProbeLimit)
+            (bazelCmd, target, mode, httpProbeLimit) -> new BazelGraphProber(bazelCmd, target, mode, httpProbeLimit)
         );
     }
 
@@ -160,7 +160,7 @@ public class BazelV2Detectable extends Detectable {
             pipelines = rulesFromProperty;
         } else {
             // Probe the Bazel dependency graph to determine enabled pipelines
-            BazelGraphProber prober = bazelGraphProberFactory.create(bazelCmd, target, 20, mode, options.getHttpProbeLimit());
+            BazelGraphProber prober = bazelGraphProberFactory.create(bazelCmd, target, mode, options.getHttpProbeLimit());
             pipelines = prober.decidePipelines();
         }
 
