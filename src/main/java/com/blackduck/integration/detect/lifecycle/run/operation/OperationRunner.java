@@ -443,6 +443,17 @@ public class OperationRunner {
             if (containerImageFilePath.isPresent()) {
                 String containerImageUri = containerImageFilePath.get();
 
+                // Validate that the URI points to a .tar file before processing
+                if (!containerImageUri.toLowerCase().endsWith(".tar")) {
+                    throw new DetectUserFriendlyException(
+                        String.format("The container scan file path '%s' must point to a .tar file. " +
+                            "The .tar file must conform to either Docker Image Specification v1.2.0 (produced by 'docker save' command) " +
+                            "or Open Container Initiative (OCI) Image Format Specification.",
+                            containerImageUri),
+                        ExitCodeType.FAILURE_CONFIGURATION
+                    );
+                }
+
                 if (containerImageUri.startsWith("http://") || containerImageUri.startsWith("https://")) {
                     containerImageFile = downloadContainerImage(gson, downloadDirectory, containerImageUri);
                 } else {

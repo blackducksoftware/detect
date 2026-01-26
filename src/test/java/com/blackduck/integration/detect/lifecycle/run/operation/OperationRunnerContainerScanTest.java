@@ -126,4 +126,30 @@ public class OperationRunnerContainerScanTest {
         Assertions.assertEquals(expectedImageMetadataObject, operationRunner.createScanMetadata(ContainerScanTestUtils.TEST_SCAN_ID, projectNameVersion, CommonScanStepRunner.CONTAINER));
     }
 
+    @Test
+    public void testGetContainerScanImageRejectsNonTarFile() {
+        // Test that a non-.tar file is rejected
+        String nonTarFilePath = "src/test/resources/tool/container.scan/testImage.zip";
+        OperationException exception = Assertions.assertThrows(
+            OperationException.class,
+            () -> updateDetectConfigAndGetContainerImage(BlackduckScanMode.INTELLIGENT, nonTarFilePath)
+        );
+        Assertions.assertTrue(exception.getCause() instanceof DetectUserFriendlyException);
+        Assertions.assertTrue(exception.getMessage().contains("must point to a .tar file"));
+        Assertions.assertTrue(exception.getMessage().contains("Docker Image Specification"));
+    }
+
+    @Test
+    public void testGetContainerScanImageRejectsNonTarUrl() {
+        // Test that a URL to a non-.tar file is rejected
+        String nonTarUrl = "https://www.container.artifactory.com/testImage.iso";
+        OperationException exception = Assertions.assertThrows(
+            OperationException.class,
+            () -> updateDetectConfigAndGetContainerImage(BlackduckScanMode.INTELLIGENT, nonTarUrl)
+        );
+        Assertions.assertTrue(exception.getCause() instanceof DetectUserFriendlyException);
+        Assertions.assertTrue(exception.getMessage().contains("must point to a .tar file"));
+        Assertions.assertTrue(exception.getMessage().contains("Docker Image Specification"));
+    }
+
 }

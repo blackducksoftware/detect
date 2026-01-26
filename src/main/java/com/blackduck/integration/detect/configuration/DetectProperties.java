@@ -335,8 +335,10 @@ public class DetectProperties {
         NullableStringProperty.newBuilder("detect.container.scan.file.path")
             .setInfo("Container Scan Target", DetectPropertyFromVersion.VERSION_9_1_0)
             .setHelp(
-                "If specified, this file and this file only will be uploaded for container scan analysis.",
-                "Detect will accept either a user provided local file path, or remote HTTP/HTTPS URL to fetch a container image for scanning. The CONTAINER_SCAN tool does not provide project and version name defaults to Detect, so you need to set project and version names via properties when only the CONTAINER_SCAN tool is invoked."
+                "If specified, this .tar file and this .tar file only will be uploaded for container scan analysis.",
+                "Detect will accept either a user provided local .tar file path, or remote HTTP/HTTPS URL to fetch a container image .tar file for scanning. "
+                    + "The .tar file must conform to either of the following image format specifications: 1. Docker Image Specification v1.2.0 (https://github.com/moby/docker-image-spec/blob/main/v1.2.md), which is the format produced by the \"docker save\" command, or 2. Open Container Initiative (OCI) Image Format Specification (https://github.com/opencontainers/image-spec/blob/main/spec.md). "
+                    + "The CONTAINER_SCAN tool does not provide project and version name defaults to Detect, so you need to set project and version names via properties when only the CONTAINER_SCAN tool is invoked."
             )
             .setGroups(DetectGroup.CONTAINER_SCANNER, DetectGroup.SOURCE_PATH)
             .build();
