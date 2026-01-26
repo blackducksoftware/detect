@@ -20,14 +20,13 @@ public class BazelGraphProber {
      * Constructor for BazelGraphProber
      * @param bazel Bazel command executor
      * @param target Bazel target to probe
-     * @param queryTimeoutSeconds Timeout for queries (unused for now)
-     * @param mode Bazel environment mode
+     * @param mode Bazel environment mode (defaults to BZLMOD if null)
      * @param httpProbeLimit Maximum number of repositories to probe for HTTP detection
      */
-    public BazelGraphProber(BazelCommandExecutor bazel, String target, int queryTimeoutSeconds, BazelEnvironmentAnalyzer.Mode mode, int httpProbeLimit) {
+    public BazelGraphProber(BazelCommandExecutor bazel, String target, BazelEnvironmentAnalyzer.Mode mode, int httpProbeLimit) {
         this.bazel = bazel;
         this.target = target;
-        this.mode = mode;
+        this.mode = mode != null ? mode : BazelEnvironmentAnalyzer.Mode.BZLMOD;
         this.httpProbeLimit = httpProbeLimit;
     }
 
