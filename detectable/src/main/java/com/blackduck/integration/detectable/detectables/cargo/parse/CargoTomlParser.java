@@ -27,6 +27,7 @@ public class CargoTomlParser {
     private static final String WORKSPACE_KEY = "workspace";
     private static final String WORKSPACE_MEMBER_KEY = "members";
     private static final String WORKSPACE_EXCLUSION_KEY = "exclude";
+    private static final String WORKSPACE_PATH_SEPARATOR = "/";
     private static final String NORMAL_DEPENDENCIES_KEY = "dependencies";
     private static final String BUILD_DEPENDENCIES_KEY = "build-dependencies";
     private static final String DEV_DEPENDENCIES_KEY = "dev-dependencies";
@@ -180,7 +181,7 @@ public class CargoTomlParser {
             return;
         }
 
-        String relativePath = prefix + "/" + subDir.getName();
+        String relativePath = prefix + WORKSPACE_PATH_SEPARATOR + subDir.getName();
         expandedMembers.add(relativePath);
     }
 
@@ -219,22 +220,45 @@ public class CargoTomlParser {
         return dependenciesToInclude;
     }
 
+    /**
+     * Parses workspace-level dependency versions from the root Cargo.toml file.
+     *
+     * In Cargo workspace projects, dependencies can be defined once in [workspace.dependencies],
+     * [workspace.build-dependencies], or [workspace.dev-dependencies] sections of the root Cargo.toml.
+     * Workspace members can then reference these dependencies using `.workspace = true` syntax instead
+     * of specifying versions directly. This method extracts all workspace-level dependencies and their
+     * versions, which are later used to resolve dependencies in member crates that use workspace inheritance.
+     *
+     * @param tomlFileContents The content of the root Cargo.toml file
+     * @return A map of dependency names to their versions defined at the workspace level
+     */
     public Map<String, String> parseWorkspaceDependencies(String tomlFileContents) {
         TomlParseResult toml = Toml.parse(tomlFileContents);
         Map<String, String> workspaceDeps = new HashMap<>();
         TomlTable workspace = toml.getTable(WORKSPACE_KEY);
         if (workspace != null) {
-            TomlTable dependencies = workspace.getTable(NORMAL_DEPENDENCIES_KEY);
-            if (dependencies != null) {
-                for (String key : dependencies.keySet()) {
-                    String version = extractVersion(dependencies.get(key));
-                    if (version != null) {
-                        workspaceDeps.put(key, version);
-                    }
+            // Parse [workspace.dependencies]
+            extractWorkspaceDependencies(workspace, NORMAL_DEPENDENCIES_KEY, workspaceDeps);
+
+            // Parse [workspace.build-dependencies]
+            extractWorkspaceDependencies(workspace, BUILD_DEPENDENCIES_KEY, workspaceDeps);
+
+            // Parse [workspace.dev-dependencies]
+            extractWorkspaceDependencies(workspace, DEV_DEPENDENCIES_KEY, workspaceDeps);
+        }
+        return workspaceDeps;
+    }
+
+    private void extractWorkspaceDependencies(TomlTable workspace, String sectionKey, Map<String, String> workspaceDeps) {
+        TomlTable dependencies = workspace.getTable(sectionKey);
+        if (dependencies != null) {
+            for (String key : dependencies.keySet()) {
+                String version = extractVersion(dependencies.get(key));
+                if (version != null) {
+                    workspaceDeps.put(key, version);
                 }
             }
         }
-        return workspaceDeps;
     }
 
     private void parseDependenciesFromTomlTable(
