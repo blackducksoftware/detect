@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '11.2.0-SIGQA12-zahidblackduck.IDETECT-4919-lockfile-detector-bugfix'
+version = '11.2.0-SIGQA13-zahidblackduck.IDETECT-4919-lockfile-detector-bugfix-SNAPSHOT'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
