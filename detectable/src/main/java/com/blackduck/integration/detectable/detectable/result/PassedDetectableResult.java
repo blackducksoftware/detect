@@ -30,6 +30,11 @@ public class PassedDetectableResult implements DetectableResult {
         this.relevantFiles = Collections.emptyList();
     }
 
+    public PassedDetectableResult(Explanation explanation, File relevantFile) {
+        this.explanations = Collections.singletonList(explanation);
+        this.relevantFiles = Collections.singletonList(relevantFile);
+    }
+
     @Override
     public boolean getPassed() {
         return true;

@@ -1075,6 +1075,42 @@ public class DetectProperties {
             .setGroups(DetectGroup.IMPACT_ANALYSIS, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
 
+    public static final BooleanProperty DETECT_QUACK_PATCH_ENABLED =
+            BooleanProperty.newBuilder("detect.quack.patch.enabled", false)
+                    .setInfo("Quack Patch Enabled", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "TODO",
+                            "TODO")
+                    .setGroups(DetectGroup.QUACKPATCH)
+                    .build();
+
+    public static final StringProperty DETECT_LLM_API_KEY =
+            StringProperty.newBuilder("detect.llm.api.key", "")
+                    .setInfo("TODO", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "TODO",
+                            "TODO")
+                    .setGroups(DetectGroup.QUACKPATCH)
+                    .build();
+
+    public static final StringProperty DETECT_LLM_API_ENDPOINT =
+            StringProperty.newBuilder("detect.llm.api.endpoint", "")
+                    .setInfo("TODO", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "TODO",
+                            "TODO")
+                    .setGroups(DetectGroup.QUACKPATCH)
+                    .build();
+
+    public static final StringProperty DETECT_LLM_NAME =
+            StringProperty.newBuilder("detect.llm.name", "")
+                    .setInfo("TODO", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "TODO",
+                            "TODO")
+                    .setGroups(DetectGroup.QUACKPATCH)
+                    .build();
+
     public static final BooleanProperty DETECT_COMPONENT_LOCATION_ANALYSIS_ENABLED =
         BooleanProperty.newBuilder("detect.component.location.analysis.enabled", false)
             .setInfo("Component Location Analysis Enabled", DetectPropertyFromVersion.VERSION_8_11_0)
@@ -1254,6 +1290,16 @@ public class DetectProperties {
             .setHelp("The path to the Npm executable.")
             .setGroups(DetectGroup.NPM, DetectGroup.GLOBAL)
             .build();
+
+    public static final NullablePathProperty DETECT_NUGET_INSPECTOR_PATH =
+            NullablePathProperty.newBuilder("detect.nuget.inspector.path")
+                    .setInfo("NuGet Inspector Path", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "Use this property to point Detect to a local NuGet Inspector executable, instead of the default that Detect downloads from the binary repository."
+                    )
+                    .setGroups(DetectGroup.NUGET, DetectGroup.GLOBAL)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
 
     public static final NullablePathProperty DETECT_NUGET_CONFIG_PATH =
         NullablePathProperty.newBuilder("detect.nuget.config.path")
