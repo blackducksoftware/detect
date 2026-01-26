@@ -79,7 +79,8 @@ public class DetectableOptionFactory {
         List<String> bazelCqueryAdditionalOptions = detectConfiguration.getValue(DetectProperties.DETECT_BAZEL_CQUERY_OPTIONS);
         Set<WorkspaceRule> workspaceRulesFromProperty = detectConfiguration.getValue(DetectProperties.DETECT_BAZEL_WORKSPACE_RULES).representedValueSet();
         String modeOverride = detectConfiguration.getNullableValue(DetectProperties.DETECT_BAZEL_MODE);
-        return new BazelDetectableOptions(targetName, workspaceRulesFromProperty, bazelCqueryAdditionalOptions, modeOverride);
+        int httpProbeLimit = detectConfiguration.getValue(DetectProperties.DETECT_BAZEL_HTTP_PROBE_LIMIT);
+        return new BazelDetectableOptions(targetName, workspaceRulesFromProperty, bazelCqueryAdditionalOptions, modeOverride, httpProbeLimit);
     }
 
     public BitbakeDetectableOptions createBitbakeDetectableOptions() {

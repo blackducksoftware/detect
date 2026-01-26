@@ -14,17 +14,20 @@ public class BazelDetectableOptions {
     private final Set<WorkspaceRule> workspaceRulesFromProperty;
     private final List<String> bazelCqueryAdditionalOptions;
     private final String modeOverride;
+    private final int httpProbeLimit;
 
     public BazelDetectableOptions(
         String targetName,
         Set<WorkspaceRule> workspaceRulesFromProperty,
         List<String> bazelCqueryAdditionalOptions,
-        String modeOverride
+        String modeOverride,
+        int httpProbeLimit
     ) {
         this.targetName = targetName;
         this.workspaceRulesFromProperty = workspaceRulesFromProperty;
         this.bazelCqueryAdditionalOptions = bazelCqueryAdditionalOptions;
         this.modeOverride = modeOverride;
+        this.httpProbeLimit = httpProbeLimit;
     }
 
     public Optional<String> getTargetName() {
@@ -37,6 +40,10 @@ public class BazelDetectableOptions {
 
     public Set<WorkspaceRule> getWorkspaceRulesFromProperty() {
         return workspaceRulesFromProperty;
+    }
+
+    public int getHttpProbeLimit() {
+        return httpProbeLimit;
     }
 
     public Optional<BazelEnvironmentAnalyzer.Mode> getModeOverride() {

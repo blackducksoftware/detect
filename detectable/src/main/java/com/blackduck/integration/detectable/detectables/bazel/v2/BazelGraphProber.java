@@ -14,6 +14,7 @@ public class BazelGraphProber {
     private final BazelCommandExecutor bazel;
     private final String target;
     private final BazelEnvironmentAnalyzer.Mode mode;
+    private final int httpProbeLimit;
 
     /**
      * Constructor for BazelGraphProber
@@ -21,11 +22,13 @@ public class BazelGraphProber {
      * @param target Bazel target to probe
      * @param queryTimeoutSeconds Timeout for queries (unused for now)
      * @param mode Bazel environment mode
+     * @param httpProbeLimit Maximum number of repositories to probe for HTTP detection
      */
-    public BazelGraphProber(BazelCommandExecutor bazel, String target, int queryTimeoutSeconds, BazelEnvironmentAnalyzer.Mode mode) {
+    public BazelGraphProber(BazelCommandExecutor bazel, String target, int queryTimeoutSeconds, BazelEnvironmentAnalyzer.Mode mode, int httpProbeLimit) {
         this.bazel = bazel;
         this.target = target;
         this.mode = mode;
+        this.httpProbeLimit = httpProbeLimit;
     }
 
     /**
@@ -61,7 +64,7 @@ public class BazelGraphProber {
         }
         // Probe for http_archive and related rules
         try {
-            HttpFamilyProber httpProber = new HttpFamilyProber(bazel, mode == null ? BazelEnvironmentAnalyzer.Mode.BZLMOD : mode);
+            HttpFamilyProber httpProber = new HttpFamilyProber(bazel, mode == null ? BazelEnvironmentAnalyzer.Mode.BZLMOD : mode, httpProbeLimit);
             httpFamily = httpProber.detect(target);
         } catch (Exception e) {
             logger.info("HTTP_ARCHIVE family probe failed: {}", e.getMessage());

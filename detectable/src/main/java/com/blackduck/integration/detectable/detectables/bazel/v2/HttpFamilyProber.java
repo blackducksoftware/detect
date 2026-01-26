@@ -16,14 +16,73 @@ public class HttpFamilyProber {
     // Bazel environment mode (e.g., BZLMOD)
     private final BazelEnvironmentAnalyzer.Mode mode;
 
+    // Classification keyword constants
+    private static final List<String> MAVEN_KEYWORDS = Arrays.asList(
+        "rules_jvm_external", "maven_install"
+    );
+
+    private static final List<String> SOURCE_ARCHIVE_KEYWORDS = Arrays.asList(
+        "http_archive", "git_repository", "go_repository", "http_file"
+    );
+
+    private static final List<String> MODULE_EXTENSION_KEYWORDS = Arrays.asList(
+        "module_extension", "module extension", "origin: module extension"
+    );
+
+    private static final List<String> BAZEL_DEP_KEYWORDS = Arrays.asList(
+        "bazel_dep"
+    );
+
+    // Excluded repository prefixes
+    private static final List<String> EXCLUDED_REPO_PREFIXES = Arrays.asList(
+        "bazel_tools",
+        "local_config_",
+        "remotejdk",
+        "platforms",
+        "rules_python",
+        "rules_java",
+        "rules_cc",
+        "maven",
+        "unpinned_maven",
+        "rules_jvm_external"
+    );
+
     /**
-     * Constructor for HttpFamilyProber
+     * Performance limits for repository probing.
+     * These caps prevent excessive subprocess calls when analyzing targets with many dependencies.
+     *
+     * MAX_REPOS_TO_PROBE: Default limit for the number of repositories checked per target.
+     * Each probe involves subprocess execution (~100ms), so 30 repos = ~3 seconds worst case.
+     * Can be overridden via detect.bazel.http.probe.limit property.
+     *
+     * MAX_LABEL_SAMPLES_PER_REPO: In WORKSPACE mode, limits label samples tested per repository.
+     * Reduces query cost when repos have hundreds of labels. Testing first few labels is typically
+     * sufficient to detect HTTP-family repos since most have build targets in root package.
+     */
+    private static final int DEFAULT_MAX_REPOS_TO_PROBE = 30;
+    private static final int MAX_LABEL_SAMPLES_PER_REPO = 3;
+
+    private final int maxReposToProbe;
+
+    /**
+     * Constructor for HttpFamilyProber with default probe limit
      * @param bazel Bazel command executor
      * @param mode Bazel environment mode
      */
     public HttpFamilyProber(BazelCommandExecutor bazel, BazelEnvironmentAnalyzer.Mode mode) {
+        this(bazel, mode, DEFAULT_MAX_REPOS_TO_PROBE);
+    }
+
+    /**
+     * Constructor for HttpFamilyProber with configurable probe limit
+     * @param bazel Bazel command executor
+     * @param mode Bazel environment mode
+     * @param maxReposToProbe Maximum number of repositories to probe
+     */
+    public HttpFamilyProber(BazelCommandExecutor bazel, BazelEnvironmentAnalyzer.Mode mode, int maxReposToProbe) {
         this.bazel = bazel;
         this.mode = mode;
+        this.maxReposToProbe = maxReposToProbe;
     }
 
     /**
@@ -45,7 +104,6 @@ public class HttpFamilyProber {
         // Use Arrays.asList for Java 8 compatibility
         String[] lines = depsOut.get().split("\r?\n");
         Map<String, LinkedHashSet<String>> repoLabels = new HashMap<>();
-        Map<String, Boolean> repoSawCanonical = new HashMap<>();
         for (String line : lines) {
             // Look for external repository labels (start with @ or @@)
             if (line.startsWith("@") && line.contains("//")) {
@@ -56,108 +114,139 @@ public class HttpFamilyProber {
                 }
                 // Track all labels for each repo
                 repoLabels.computeIfAbsent(repo, r -> new LinkedHashSet<>()).add(line.trim());
-                // Track if canonical repo name was seen
-                if (line.startsWith("@@")) {
-                    repoSawCanonical.put(repo, Boolean.TRUE);
-                } else {
-                    repoSawCanonical.putIfAbsent(repo, Boolean.FALSE);
-                }
             }
         }
         if (repoLabels.isEmpty()) {
             return false;
         }
 
-        int maxRepos = 30;
         int checkedRepos = 0;
-        boolean bzlmodActive = (mode == BazelEnvironmentAnalyzer.Mode.BZLMOD);
         // Probe each repository for HTTP family characteristics
         for (Map.Entry<String, LinkedHashSet<String>> entry : repoLabels.entrySet()) {
-            if (checkedRepos++ >= maxRepos) {
-                logger.info("HTTP family probe repo cap reached ({}).", maxRepos);
+            if (checkedRepos++ >= maxReposToProbe) {
+                logger.warn("Repository probe limit reached ({} repos checked). " +
+                           "If HTTP dependencies are missed, this target may have unusually many external repos. " +
+                           "Consider analyzing a more specific target or increase the limit via detect.bazel.http.probe.limit property.",
+                           maxReposToProbe);
                 break;
             }
-            String repo = entry.getKey();
-            boolean sawCanonical = repoSawCanonical.getOrDefault(repo, Boolean.FALSE);
-
-            if (bzlmodActive) {
-                try {
-                    // Try mod show_repo for non-canonical and canonical repo names
-                    if (tryModShowRepoEnableHttp(repo, false)) {
-                        return true;
-                    }
-                    if (sawCanonical && tryModShowRepoEnableHttp(repo, true)) {
-                        return true;
-                    }
-                } catch (Exception e) {
-                    logger.info("mod show_repo probe failed for repo {}: {}", repo, e.getMessage());
-                }
-                // Under bzlmod, do not use legacy fallbacks; continue to next repo.
-                continue;
-            }
-
-            // Legacy/workspace-safe fallback: check if root package has rules via label_kind
-            try {
-                Optional<String> rootKind = bazel.executeToString(Arrays.asList(
-                    "query", "kind('rule', @" + repo + "//:all)", "--output", "label_kind"
-                ));
-                if (rootKind.isPresent() && !rootKind.get().trim().isEmpty()) {
-                    logger.info("Repo {} root package has build targets (label_kind); enabling HTTP.", repo);
-                    return true;
-                }
-            } catch (Exception e) {
-                logger.info("label_kind root-package probe failed for repo {}: {}", repo, e.getMessage());
-            }
-
-            // Secondary fallback: try specific harvested labels to avoid scanning the whole repo
-            try {
-                List<String> samples = new ArrayList<>();
-                int maxSamples = 3;
-                for (String lbl : entry.getValue()) {
-                    samples.add(lbl);
-                    if (samples.size() >= maxSamples) break;
-                }
-                if (!samples.isEmpty()) {
-                    Optional<String> lkOut = bazel.executeToString(Arrays.asList(
-                        "query", "kind('rule', set(" + String.join(" ", samples) + "))", "--output", "label_kind"
-                    ));
-                    if (lkOut.isPresent() && !lkOut.get().trim().isEmpty()) {
-                        logger.info("Repo {} specific-label probe found build targets; enabling HTTP.", repo);
-                        return true;
-                    }
-                }
-            } catch (Exception e) {
-                logger.info("label_kind specific-label probe failed for repo {}: {}", repo, e.getMessage());
+            if (probeRepo(entry.getKey(), entry.getValue())) {
+                return true;
             }
         }
         return false;
     }
 
     /**
-     * Returns true if the repo name is in the list of excluded (non-HTTP) repositories.
+     * Dispatches repository probing based on the Bazel environment mode.
+     * @param repo Repository name
+     * @param labels Set of labels discovered for this repo
+     * @return true if HTTP family repository is detected, false otherwise
      */
-    private boolean isExcludedRepo(String repo) {
-        String r = repo;
-        return r.startsWith("bazel_tools")
-            || r.startsWith("local_config_")
-            || r.startsWith("remotejdk")
-            || r.startsWith("platforms")
-            || r.startsWith("rules_python")
-            || r.startsWith("rules_java")
-            || r.startsWith("rules_cc")
-            || r.startsWith("maven")
-            || r.startsWith("unpinned_maven")
-            || r.startsWith("rules_jvm_external");
+    private boolean probeRepo(String repo, Set<String> labels) {
+        switch (mode) {
+            case BZLMOD:
+                return probeBzlmodRepo(repo);
+            case WORKSPACE:
+                return probeLegacyRepo(repo, labels);
+            default:
+                throw new IllegalStateException("Unknown Bazel mode: " + mode);
+        }
     }
 
     /**
-     * Uses 'bazel mod show_repo' to classify a repo as HTTP family or not.
+     * Probes a repository using BZLMOD-specific strategy (bazel mod show_repo).
+     * Tries both non-canonical (@repo) and canonical (@@repo) forms for maximum compatibility.
+     * @param repo Repository name
+     * @return true if HTTP family repository is detected, false otherwise
+     */
+    private boolean probeBzlmodRepo(String repo) {
+        try {
+            // Try non-canonical first (most common), then canonical as fallback
+            return classifyRepoByModShowRepo(repo, false)
+                || classifyRepoByModShowRepo(repo, true);
+        } catch (Exception e) {
+            logger.debug("mod show_repo probe failed for repo {}: {}", repo, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Probes a repository using legacy WORKSPACE-compatible strategy (bazel query with label_kind).
+     * @param repo Repository name
+     * @param labels Set of labels discovered for this repo
+     * @return true if HTTP family repository is detected, false otherwise
+     */
+    private boolean probeLegacyRepo(String repo, Set<String> labels) {
+        // Strategy 1: Check if root package has build targets
+        if (probeRepoWithLabelKind(repo, "@" + repo + "//:all", "root package")) {
+            return true;
+        }
+
+        // Strategy 2: Sample specific labels to avoid scanning whole repo
+        List<String> samples = selectSampleLabels(labels, MAX_LABEL_SAMPLES_PER_REPO);
+        if (!samples.isEmpty()) {
+            String targets = "set(" + String.join(" ", samples) + ")";
+            if (probeRepoWithLabelKind(repo, targets, "specific labels")) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Probes a repository using label_kind query to detect build targets.
+     * @param repo Repository name
+     * @param queryTarget The Bazel query target expression
+     * @param strategyName Description of the strategy for logging
+     * @return true if build targets are found, false otherwise
+     */
+    private boolean probeRepoWithLabelKind(String repo, String queryTarget, String strategyName) {
+        try {
+            Optional<String> result = bazel.executeToString(Arrays.asList(
+                "query", "kind('rule', " + queryTarget + ")", "--output", "label_kind"
+            ));
+            if (result.isPresent() && !result.get().trim().isEmpty()) {
+                logger.info("HTTP pipeline enabled for repo {}: {} probe found build targets", repo, strategyName);
+                return true;
+            }
+        } catch (Exception e) {
+            logger.debug("label_kind probe ({}) failed for repo {}: {}", strategyName, repo, e.getMessage());
+        }
+        return false;
+    }
+
+    /**
+     * Selects sample labels from a set for probing.
+     * @param labels Set of labels to sample from
+     * @param maxSamples Maximum number of samples to select
+     * @return List of sample labels
+     */
+    private List<String> selectSampleLabels(Set<String> labels, int maxSamples) {
+        List<String> samples = new ArrayList<>();
+        for (String lbl : labels) {
+            samples.add(lbl);
+            if (samples.size() >= maxSamples) break;
+        }
+        return samples;
+    }
+
+    /**
+     * Returns true if the repo name is in the list of excluded (non-HTTP) repositories.
+     */
+    private boolean isExcludedRepo(String repo) {
+        return EXCLUDED_REPO_PREFIXES.stream().anyMatch(repo::startsWith);
+    }
+
+    /**
+     * Classifies a repository as HTTP-family using 'bazel mod show_repo' output analysis.
      * @param repo Repository name
      * @param canonical Whether to use canonical repo name (starts with @@)
      * @return true if HTTP family is detected, false otherwise
      * @throws Exception if Bazel command execution fails
      */
-    private boolean tryModShowRepoEnableHttp(String repo, boolean canonical) throws Exception {
+    private boolean classifyRepoByModShowRepo(String repo, boolean canonical) throws Exception {
         String at = canonical ? "@@" : "@";
         Optional<String> modOut = bazel.executeToString(Arrays.asList(
             "mod", "show_repo", at + repo
@@ -167,17 +256,17 @@ public class HttpFamilyProber {
         }
         String info = modOut.get();
         // Check for known Maven extension
-        if (looksLikeKnownMavenExtension(info)) {
+        if (checkForKnownMavenExtension(info)) {
             logger.info("Repo {} classified as Maven-related by mod show_repo; skipping HTTP.", repo);
             return false;
         }
         // Check for HTTP archive family rule class/source
-        if (looksLikeSourceArchive(info)) {
+        if (checkForSourceArchive(info)) {
             logger.info("Repo {} classified as HTTP family by mod show_repo (rule class/source).", repo);
             return true;
         }
         // Check for module extension or direct Bazel dependency
-        if (looksLikeModuleExtension(info) || looksLikeDirectBazelDep(info)) {
+        if (checkForModuleExtension(info) || checkForDirectBazelDep(info)) {
             logger.info("Repo {} classified as extension/direct dep by mod show_repo; enabling HTTP.", repo);
             return true;
         }
@@ -186,34 +275,38 @@ public class HttpFamilyProber {
     }
 
     /**
+     * Helper method to check if text contains any of the provided keywords (case-insensitive).
+     */
+    private boolean containsAnyKeyword(String text, List<String> keywords) {
+        String lower = text.toLowerCase();
+        return keywords.stream().anyMatch(lower::contains);
+    }
+
+    /**
      * Returns true if the mod show_repo output indicates a known Maven extension.
      */
-    private boolean looksLikeKnownMavenExtension(String modShowRepoOutput) {
-        String s = modShowRepoOutput.toLowerCase();
-        return s.contains("rules_jvm_external") || s.contains("maven_install");
+    private boolean checkForKnownMavenExtension(String modShowRepoOutput) {
+        return containsAnyKeyword(modShowRepoOutput, MAVEN_KEYWORDS);
     }
 
     /**
      * Returns true if the mod show_repo output indicates a module extension.
      */
-    private boolean looksLikeModuleExtension(String modShowRepoOutput) {
-        String s = modShowRepoOutput.toLowerCase();
-        return s.contains("module_extension") || s.contains("module extension") || s.contains("origin: module extension");
+    private boolean checkForModuleExtension(String modShowRepoOutput) {
+        return containsAnyKeyword(modShowRepoOutput, MODULE_EXTENSION_KEYWORDS);
     }
 
     /**
      * Returns true if the mod show_repo output indicates a direct Bazel dependency.
      */
-    private boolean looksLikeDirectBazelDep(String modShowRepoOutput) {
-        String s = modShowRepoOutput.toLowerCase();
-        return s.contains("bazel_dep");
+    private boolean checkForDirectBazelDep(String modShowRepoOutput) {
+        return containsAnyKeyword(modShowRepoOutput, BAZEL_DEP_KEYWORDS);
     }
 
     /**
      * Returns true if the mod show_repo output indicates a source archive rule (http_archive, git_repository, etc.).
      */
-    private boolean looksLikeSourceArchive(String modShowRepoOutput) {
-        String s = modShowRepoOutput.toLowerCase();
-        return s.contains("http_archive") || s.contains("git_repository") || s.contains("go_repository") || s.contains("http_file");
+    private boolean checkForSourceArchive(String modShowRepoOutput) {
+        return containsAnyKeyword(modShowRepoOutput, SOURCE_ARCHIVE_KEYWORDS);
     }
 }
