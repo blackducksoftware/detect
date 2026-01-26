@@ -39,7 +39,7 @@ public class BazelV2DetectableMavenInstallFunctionalTest extends DetectableFunct
     @Override
     public BazelV2Detectable create(DetectableEnvironment detectableEnvironment) {
         Set<WorkspaceRule> rules = Collections.singleton(WorkspaceRule.MAVEN_INSTALL);
-        BazelDetectableOptions options = new BazelDetectableOptions("//:test", rules, null, null);
+        BazelDetectableOptions options = new BazelDetectableOptions("//:test", rules, null, null, 30);
         return detectableFactory.createBazelV2Detectable(detectableEnvironment, options, () -> com.blackduck.integration.detectable.ExecutableTarget.forCommand("bazel"));
     }
 
