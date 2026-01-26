@@ -45,6 +45,12 @@ public class CargoLockfileExtractor {
     private final CargoLockPackageDataTransformer cargoLockPackageDataTransformer;
     private final CargoLockPackageTransformer cargoLockPackageTransformer;
 
+    private Map<String, String> workspaceDependencies = new HashMap<>();
+
+    private Map<String, String> getWorkspaceDependencies() {
+        return workspaceDependencies;
+    }
+
     public CargoLockfileExtractor(
         CargoTomlParser cargoTomlParser,
         CargoLockPackageDataTransformer cargoLockPackageDataTransformer,
@@ -78,20 +84,19 @@ public class CargoLockfileExtractor {
 
         List<CodeLocation> codeLocations = new ArrayList<>();
         Optional<NameVersion> projectNameVersion = Optional.empty();
-        Map<String, String> workspaceDependencies = new HashMap<>();
 
         if(cargoTomlFile != null) {
             String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
             File workspaceRoot = cargoTomlFile.getParentFile();
 
-            // Parse workspace dependencies from root Cargo.toml
-            workspaceDependencies = cargoTomlParser.parseWorkspaceDependencies(cargoTomlContents);
+            // Parse workspace dependencies from root Cargo.toml and set the local field for later use
+            this.workspaceDependencies = cargoTomlParser.parseWorkspaceDependencies(cargoTomlContents);
 
             Set<String> workspaceMembers = cargoTomlParser.parseActiveWorkspaceMembers(cargoTomlContents, workspaceRoot);
 
             if(cargoDetectableOptions != null) {
                 // Step-1: Process all workspace members and their Cargo.toml first
-                processWorkspaceMembers(workspaceMembers, cargoDetectableOptions, workspaceRoot, cargoLockPackageDataList, packageLookupMap, filter, workspaceDependencies, codeLocations);
+                processWorkspaceMembers(workspaceMembers, cargoDetectableOptions, workspaceRoot, cargoLockPackageDataList, packageLookupMap, filter, codeLocations);
             }
 
             // Step-2: Process single root Cargo.toml. Only filter if Cargo.toml defines dependency sections.
@@ -102,8 +107,7 @@ public class CargoLockfileExtractor {
                     cargoLockPackageDataList,
                     packageLookupMap,
                     null,
-                    filter,
-                    workspaceDependencies
+                    filter
                 );
                 codeLocations.add(rootCodeLocation);
             }
@@ -335,7 +339,6 @@ public class CargoLockfileExtractor {
         List<CargoLockPackageData> cargoLockPackageDataList,
         Map<NameVersion, List<CargoLockPackageData>> packageLookupMap,
         EnumListFilter<CargoDependencyType> filter,
-        Map<String, String> workspaceDependencies,
         List<CodeLocation> codeLocations
     ) throws IOException, MissingExternalIdException, DetectableException {
 
@@ -358,8 +361,7 @@ public class CargoLockfileExtractor {
                     cargoLockPackageDataList,
                     packageLookupMap,
                     workspace,
-                    filter,
-                    workspaceDependencies
+                    filter
                 );
                 codeLocations.add(workspaceCodeLocation);
             } else {
@@ -398,12 +400,11 @@ public class CargoLockfileExtractor {
         List<CargoLockPackageData> cargoLockPackageDataList,
         Map<NameVersion, List<CargoLockPackageData>> packageLookupMap,
         @Nullable String workspacePath,
-        EnumListFilter<CargoDependencyType> filter,
-        Map<String, String> workspaceDependencies
+        EnumListFilter<CargoDependencyType> filter
     ) throws IOException, MissingExternalIdException, DetectableException {
 
         String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
-        Set<NameVersion> includedDependencies = cargoTomlParser.parseDependenciesToInclude(cargoTomlContents, filter, workspaceDependencies);
+        Set<NameVersion> includedDependencies = cargoTomlParser.parseDependenciesToInclude(cargoTomlContents, filter, getWorkspaceDependencies());
         Set<NameVersion> resolvedRootDependencies = new HashSet<>();
 
         List<CargoLockPackageData> filteredPackages = resolveDirectAndTransitiveDependencies(
