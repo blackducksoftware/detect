@@ -2,7 +2,10 @@ package com.blackduck.integration.detect.workflow.blackduck.developer;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -18,6 +21,9 @@ import com.blackduck.integration.log.Slf4jIntLogger;
 import com.blackduck.integration.util.IntegrationEscapeUtil;
 import com.blackduck.integration.util.NameVersion;
 
+import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON;
+import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.QUACKPATCH_SUBDIRECTORY_NAME;
+
 public class RapidModeGenerateJsonOperation { //TODO: extends Operation<File>
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final Gson gson;
@@ -28,11 +34,28 @@ public class RapidModeGenerateJsonOperation { //TODO: extends Operation<File>
         this.directoryManager = directoryManager;
     }
 
-    public File generateJsonFile(NameVersion projectNameVersion, List<DeveloperScansScanView> results) throws DetectUserFriendlyException {
+    public File generateJsonFileFromString(String jsonRapidFullResults) {
+        // Create the path to the subdirectory
+        File quackSubDir = new File(directoryManager.getScanOutputDirectory(), QUACKPATCH_SUBDIRECTORY_NAME);
+
+        try {
+            if (!quackSubDir.exists()) {
+                quackSubDir.mkdirs();
+            }
+            File jsonFile = new File(quackSubDir, "rapidFullResults.json");
+            Path filePath = jsonFile.toPath();
+            Files.write(filePath, jsonRapidFullResults.getBytes(StandardCharsets.UTF_8));
+            return jsonFile;
+        } catch (IOException e) {
+            throw new RuntimeException("Something went wrong creating Rapid scan full results JSON file.", e);
+        }
+    }
+
+    public File generateJsonFile(NameVersion projectNameVersion, List<DeveloperScansScanView> results, String fileNameSuffix) throws DetectUserFriendlyException {
         IntegrationEscapeUtil escapeUtil = new IntegrationEscapeUtil();
         String escapedProjectName = escapeUtil.replaceWithUnderscore(projectNameVersion.getName());
         String escapedProjectVersionName = escapeUtil.replaceWithUnderscore(projectNameVersion.getVersion());
-        File jsonScanFile = new File(directoryManager.getScanOutputDirectory(), escapedProjectName + "_" + escapedProjectVersionName + "_BlackDuck_DeveloperMode_Result.json");
+        File jsonScanFile = new File(directoryManager.getScanOutputDirectory(), escapedProjectName + "_" + escapedProjectVersionName + "_BlackDuck_DeveloperMode_Result" + fileNameSuffix + ".json");
         if (jsonScanFile.exists()) {
             try {
                 Files.delete(jsonScanFile.toPath());
