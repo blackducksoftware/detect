@@ -64,7 +64,7 @@ class CargoTomlDependencyFilterTest {
         CargoTomlParser parser = new CargoTomlParser();
         EnumListFilter<CargoDependencyType> filter = EnumListFilter.excludeNone();
 
-        Set<NameVersion> result = parser.parseDependenciesToInclude(cargoTomlContents, filter, new HashMap<>());
+        Set<NameVersion> result = parser.parseDependenciesToInclude(cargoTomlContents, filter);
 
         assertEquals(5, result.size());
         assertTrue(result.contains(new NameVersion("rand", "0.9.1")));
@@ -79,7 +79,7 @@ class CargoTomlDependencyFilterTest {
         CargoTomlParser parser = new CargoTomlParser();
         EnumListFilter<CargoDependencyType> filter = EnumListFilter.fromExcluded(CargoDependencyType.DEV);
 
-        Set<NameVersion> result = parser.parseDependenciesToInclude(cargoTomlContents, filter, new HashMap<>());
+        Set<NameVersion> result = parser.parseDependenciesToInclude(cargoTomlContents, filter);
 
         assertEquals(3, result.size());
         assertTrue(result.contains(new NameVersion("rand", "0.9.1")));
@@ -94,7 +94,7 @@ class CargoTomlDependencyFilterTest {
         CargoTomlParser parser = new CargoTomlParser();
         EnumListFilter<CargoDependencyType> filter = EnumListFilter.fromExcluded(CargoDependencyType.BUILD);
 
-        Set<NameVersion> result = parser.parseDependenciesToInclude(cargoTomlContents, filter, new HashMap<>());
+        Set<NameVersion> result = parser.parseDependenciesToInclude(cargoTomlContents, filter);
 
         assertEquals(4, result.size());
         assertTrue(result.contains(new NameVersion("rand", "0.9.1")));
@@ -109,7 +109,7 @@ class CargoTomlDependencyFilterTest {
         CargoTomlParser parser = new CargoTomlParser();
         EnumListFilter<CargoDependencyType> filter = EnumListFilter.fromExcluded(EnumSet.of(CargoDependencyType.DEV, CargoDependencyType.BUILD));
 
-        Set<NameVersion> result = parser.parseDependenciesToInclude(cargoTomlContents, filter, new HashMap<>());
+        Set<NameVersion> result = parser.parseDependenciesToInclude(cargoTomlContents, filter);
 
         assertEquals(2, result.size());
         assertTrue(result.contains(new NameVersion("rand", "0.9.1")));
@@ -124,7 +124,7 @@ class CargoTomlDependencyFilterTest {
         CargoTomlParser parser = new CargoTomlParser();
         EnumListFilter<CargoDependencyType> filter = EnumListFilter.fromExcluded(CargoDependencyType.DEV);
 
-        Set<NameVersion> result = parser.parseDependenciesToInclude(overlappingTomlContents, filter, new HashMap<>());
+        Set<NameVersion> result = parser.parseDependenciesToInclude(overlappingTomlContents, filter);
 
         assertEquals(3, result.size());
         assertTrue(result.contains(new NameVersion("serde", "1.0.0"))); // normal + build
@@ -138,7 +138,7 @@ class CargoTomlDependencyFilterTest {
         CargoTomlParser parser = new CargoTomlParser();
         EnumListFilter<CargoDependencyType> filter = EnumListFilter.fromExcluded(CargoDependencyType.BUILD);
 
-        Set<NameVersion> result = parser.parseDependenciesToInclude(overlappingTomlContents, filter, new HashMap<>());
+        Set<NameVersion> result = parser.parseDependenciesToInclude(overlappingTomlContents, filter);
 
         assertEquals(3, result.size());
         assertTrue(result.contains(new NameVersion("serde", "1.0.0"))); // normal + build
@@ -152,7 +152,7 @@ class CargoTomlDependencyFilterTest {
         CargoTomlParser parser = new CargoTomlParser();
         EnumListFilter<CargoDependencyType> filter = EnumListFilter.fromExcluded(EnumSet.of(CargoDependencyType.DEV, CargoDependencyType.BUILD));
 
-        Set<NameVersion> result = parser.parseDependenciesToInclude(overlappingTomlContents, filter, new HashMap<>());
+        Set<NameVersion> result = parser.parseDependenciesToInclude(overlappingTomlContents, filter);
 
         assertEquals(2, result.size());
         assertTrue(result.contains(new NameVersion("serde", "1.0.0"))); // normal + build

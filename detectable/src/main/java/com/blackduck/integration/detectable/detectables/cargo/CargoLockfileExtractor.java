@@ -6,7 +6,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -44,12 +43,6 @@ public class CargoLockfileExtractor {
     private final CargoTomlParser cargoTomlParser;
     private final CargoLockPackageDataTransformer cargoLockPackageDataTransformer;
     private final CargoLockPackageTransformer cargoLockPackageTransformer;
-
-    private Map<String, String> workspaceDependencies = new HashMap<>();
-
-    private Map<String, String> getWorkspaceDependencies() {
-        return workspaceDependencies;
-    }
 
     public CargoLockfileExtractor(
         CargoTomlParser cargoTomlParser,
@@ -89,8 +82,9 @@ public class CargoLockfileExtractor {
             String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
             File workspaceRoot = cargoTomlFile.getParentFile();
 
-            // Parse workspace dependencies from root Cargo.toml and set the local field for later use
-            this.workspaceDependencies = cargoTomlParser.parseWorkspaceDependencies(cargoTomlContents);
+            // Setting of workspace dependencies (lookup table) is done once at the start
+            // So, the parsing of workspace inheritance syntax version resolved correctly
+            cargoTomlParser.setWorkspaceDependencies(cargoTomlContents);
 
             Set<String> workspaceMembers = cargoTomlParser.parseActiveWorkspaceMembers(cargoTomlContents, workspaceRoot);
 
@@ -404,7 +398,7 @@ public class CargoLockfileExtractor {
     ) throws IOException, MissingExternalIdException, DetectableException {
 
         String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
-        Set<NameVersion> includedDependencies = cargoTomlParser.parseDependenciesToInclude(cargoTomlContents, filter, getWorkspaceDependencies());
+        Set<NameVersion> includedDependencies = cargoTomlParser.parseDependenciesToInclude(cargoTomlContents, filter);
         Set<NameVersion> resolvedRootDependencies = new HashSet<>();
 
         List<CargoLockPackageData> filteredPackages = resolveDirectAndTransitiveDependencies(

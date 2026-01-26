@@ -88,7 +88,9 @@ class CargoTomlWorkspaceParsingTest {
     @Test
     void testParseWorkspaceDependencies() {
         CargoTomlParser parser = new CargoTomlParser();
-        Map<String, String> workspaceDeps = parser.parseWorkspaceDependencies(rootWorkspaceToml);
+        parser.setWorkspaceDependencies(rootWorkspaceToml);
+
+        Map<String, String> workspaceDeps = parser.parseRootWorkspaceDependencies(rootWorkspaceToml);
 
         assertEquals(6, workspaceDeps.size());
         assertEquals("1.0.152", workspaceDeps.get("serde"));
@@ -102,12 +104,11 @@ class CargoTomlWorkspaceParsingTest {
     @Test
     void testParseMemberWithWorkspaceInheritance() {
         CargoTomlParser parser = new CargoTomlParser();
-        Map<String, String> workspaceDeps = parser.parseWorkspaceDependencies(rootWorkspaceToml);
+        parser.setWorkspaceDependencies(rootWorkspaceToml);
 
         Set<NameVersion> result = parser.parseDependenciesToInclude(
             memberTomlWithInheritance,
-            EnumListFilter.excludeNone(),
-            workspaceDeps
+            EnumListFilter.excludeNone()
         );
 
         assertEquals(4, result.size());
@@ -120,12 +121,11 @@ class CargoTomlWorkspaceParsingTest {
     @Test
     void testParseMemberWithMixedDependencies() {
         CargoTomlParser parser = new CargoTomlParser();
-        Map<String, String> workspaceDeps = parser.parseWorkspaceDependencies(rootWorkspaceToml);
+        parser.setWorkspaceDependencies(rootWorkspaceToml);
 
         Set<NameVersion> result = parser.parseDependenciesToInclude(
             memberTomlWithMixedDependencies,
-            EnumListFilter.excludeNone(),
-            workspaceDeps
+            EnumListFilter.excludeNone()
         );
 
         assertEquals(5, result.size());
