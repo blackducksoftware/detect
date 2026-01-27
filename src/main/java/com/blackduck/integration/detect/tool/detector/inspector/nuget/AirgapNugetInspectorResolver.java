@@ -2,6 +2,7 @@ package com.blackduck.integration.detect.tool.detector.inspector.nuget;
 
 import java.io.File;
 
+import com.blackduck.integration.detectable.detectables.nuget.NugetInspectorOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +33,7 @@ public class AirgapNugetInspectorResolver implements NugetInspectorResolver {
     }
 
     @Override
-    public ExecutableTarget resolveNugetInspector() throws DetectableException {
+    public ExecutableTarget resolveNugetInspector(NugetInspectorOptions nugetInspectorOptions) throws DetectableException {
         if (!hasResolvedInspector) {
             hasResolvedInspector = true;
             inspector = resolve();
