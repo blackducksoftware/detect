@@ -47,30 +47,8 @@ public class HttpFamilyProber {
         "rules_jvm_external"
     );
 
-    /**
-     * Performance limits for repository probing.
-     * These caps prevent excessive subprocess calls when analyzing targets with many dependencies.
-     *
-     * DEFAULT_MAX_REPOS_TO_PROBE: Default limit for the number of repositories checked per target.
-     * Each probe involves subprocess execution (~100ms), so 30 repos = ~3 seconds worst case.
-     * Can be overridden via detect.bazel.http.probe.limit property.
-     *
-     * Note: In WORKSPACE mode, all discovered labels per repository are tested in a single set() query
-     * to avoid false negatives from arbitrary sampling. Since repositories are capped at 30, this
-     * provides comprehensive coverage while maintaining bounded performance.
-     */
-    private static final int DEFAULT_MAX_REPOS_TO_PROBE = 30;
-
     private final int maxReposToProbe;
 
-    /**
-     * Constructor for HttpFamilyProber with default probe limit
-     * @param bazel Bazel command executor
-     * @param mode Bazel environment mode
-     */
-    public HttpFamilyProber(BazelCommandExecutor bazel, BazelEnvironmentAnalyzer.Mode mode) {
-        this(bazel, mode, DEFAULT_MAX_REPOS_TO_PROBE);
-    }
 
     /**
      * Constructor for HttpFamilyProber with configurable probe limit
