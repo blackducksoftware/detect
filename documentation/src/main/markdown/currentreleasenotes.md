@@ -32,7 +32,7 @@
 * (IDETECT-4924) Resolved an issue where Impact Analysis Scan threw errors on malformed classes; it now handles them gracefully by logging a warning, skipping the affected classes, and adding them to the scan output.
 * (IDETECT-4921) Fixed upload failures in proxied environments when SCASS is enabled. 
 * (IDETECT-4919) Added Cargo workspace support in Cargo detectors. [detect_product_short] now identifies `[workspace]` in the root `Cargo.toml` and resolves dependencies across all members using the shared `Cargo.lock`. The "Additional_components" section has been removed from SBOMs for completeness.
-* (IDETECT-4860) When Component Location Analysis is enabled, metadata section of component-source.json will now contain 'dependencyTrees' field from Rapid scan results.
+* (IDETECT-4860) When Component Location Analysis is enabled, metadata section of component-source.json will now contain 'dependencyTrees' field from Rapid/Stateless scan results.
 * (IDETECT-4923) Fixed a bug during pyproject.toml parsing when project name could not be derived.
 
 ### Dependency Updates
