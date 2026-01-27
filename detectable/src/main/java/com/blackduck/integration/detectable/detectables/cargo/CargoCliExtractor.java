@@ -143,20 +143,12 @@ public class CargoCliExtractor {
         boolean hasExclusions = excludedWorkspaces != null && !excludedWorkspaces.isEmpty();
         boolean noActiveWorkspaceMembers = hasExclusions && activeWorkspaceMembers.isEmpty();
 
-        // Case 1: User wants to ignore all workspace members for virtual workspace
-        if (shouldIgnoreAllWorkspaceMembers && isVirtualWorkspace) {
+        // Case: User excluded all workspace members (via property or exclude config) for virtual workspace
+        if (isVirtualWorkspace && (shouldIgnoreAllWorkspaceMembers || noActiveWorkspaceMembers)) {
             logger.warn(
-                "Cannot exclude all workspace members for virtual manifest. At least one workspace member must remain active " +
-                    "to build a dependency graph with components. Zero components will be reported in SBOM."
-            );
-            return new LinkedList<>();
-        }
-
-        // Case 2: User excluded all members via exclude property for virtual workspace
-        if (noActiveWorkspaceMembers && isVirtualWorkspace) {
-            logger.warn(
-                "Cannot exclude all workspace members for virtual manifest. At least one workspace member must remain active " +
-                    "to build a dependency graph with components. Zero components will be reported in SBOM."
+                "Cannot exclude all workspace members for virtual manifest. " +
+                    "Please check your workspace configuration (detect.cargo.ignore.all.workspaces or exclude properties). " +
+                    "Zero components will be reported in SBOM."
             );
             return new LinkedList<>();
         }
