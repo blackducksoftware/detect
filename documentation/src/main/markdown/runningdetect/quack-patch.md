@@ -1,4 +1,4 @@
-# Quack Patch (Experimental)
+# Quack Patch (Beta)
 
 An artificial intelligence tool that creates package manager code fixes to address security flaws identified by Black Duck SCA.
 
@@ -91,7 +91,7 @@ git apply /path/to/scan/quack-patch/3grh7-build.gradle.patch
 
 ## Notes and Limitations
 
-* Quack Patch is experimental and may miss some edge cases. Review generated patches before applying them.
+* Quack Patch is in beta and may miss some edge cases. Review generated patches before applying them.
 * Patch effectiveness varies with the LLM model and input data quality.
 * Ensure build source files contain no sensitive information, as they are sent to the LLM gateway.
 * Quack Patch focuses on generating dependency overrides and may not handle complex scenarios with multiple interdependent components or custom build configurations.
