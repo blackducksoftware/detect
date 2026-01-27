@@ -51,16 +51,15 @@ public class HttpFamilyProber {
      * Performance limits for repository probing.
      * These caps prevent excessive subprocess calls when analyzing targets with many dependencies.
      *
-     * MAX_REPOS_TO_PROBE: Default limit for the number of repositories checked per target.
+     * DEFAULT_MAX_REPOS_TO_PROBE: Default limit for the number of repositories checked per target.
      * Each probe involves subprocess execution (~100ms), so 30 repos = ~3 seconds worst case.
      * Can be overridden via detect.bazel.http.probe.limit property.
      *
-     * MAX_LABEL_SAMPLES_PER_REPO: In WORKSPACE mode, limits label samples tested per repository.
-     * Reduces query cost when repos have hundreds of labels. Testing first few labels is typically
-     * sufficient to detect HTTP-family repos since most have build targets in root package.
+     * Note: In WORKSPACE mode, all discovered labels per repository are tested in a single set() query
+     * to avoid false negatives from arbitrary sampling. Since repositories are capped at 30, this
+     * provides comprehensive coverage while maintaining bounded performance.
      */
     private static final int DEFAULT_MAX_REPOS_TO_PROBE = 30;
-    private static final int MAX_LABEL_SAMPLES_PER_REPO = 3;
 
     private final int maxReposToProbe;
 
@@ -101,7 +100,6 @@ public class HttpFamilyProber {
             return false;
         }
         // Split output into lines and process repository labels
-        // Use Arrays.asList for Java 8 compatibility
         String[] lines = depsOut.get().split("\r?\n");
         Map<String, LinkedHashSet<String>> repoLabels = new HashMap<>();
         for (String line : lines) {
@@ -183,11 +181,12 @@ public class HttpFamilyProber {
             return true;
         }
 
-        // Strategy 2: Sample specific labels to avoid scanning whole repo
-        List<String> samples = selectSampleLabels(labels, MAX_LABEL_SAMPLES_PER_REPO);
-        if (!samples.isEmpty()) {
-            String targets = "set(" + String.join(" ", samples) + ")";
-            if (probeRepoWithLabelKind(repo, targets, "specific labels")) {
+        // Strategy 2: Query all discovered labels to avoid false negatives from sampling
+        // Since repos are capped at DEFAULT_MAX_REPOS_TO_PROBE, querying all labels per repo
+        // is acceptable (typically 10-100 labels from dependency graph)
+        if (!labels.isEmpty()) {
+            String targets = "set(" + String.join(" ", labels) + ")";
+            if (probeRepoWithLabelKind(repo, targets, "all discovered labels")) {
                 return true;
             }
         }
@@ -217,20 +216,6 @@ public class HttpFamilyProber {
         return false;
     }
 
-    /**
-     * Selects sample labels from a set for probing.
-     * @param labels Set of labels to sample from
-     * @param maxSamples Maximum number of samples to select
-     * @return List of sample labels
-     */
-    private List<String> selectSampleLabels(Set<String> labels, int maxSamples) {
-        List<String> samples = new ArrayList<>();
-        for (String lbl : labels) {
-            samples.add(lbl);
-            if (samples.size() >= maxSamples) break;
-        }
-        return samples;
-    }
 
     /**
      * Returns true if the repo name is in the list of excluded (non-HTTP) repositories.
