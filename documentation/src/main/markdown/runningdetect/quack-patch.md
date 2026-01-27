@@ -8,7 +8,7 @@ Quack Patch assists developers in automatically generating code patches for pack
 
 ## Requirements
 
-* Quack Patch works only with Black Duck SCA (online mode) using the Rapid Scan workflow.
+* Quack Patch works only with Black Duck SCA (online mode) using the Rapid or Stateless Scan workflow.
 * Supported package manager and config file types:
     * Maven     (Supported Files: `pom.xml`)
     * Gradle    (Supported Files: `build.gradle`, `build.gradle.kts`)
@@ -27,7 +27,7 @@ Quack Patch assists developers in automatically generating code patches for pack
 
 ## Configuration
 
-* Set the scan mode to Rapid using the detect.blackduck.scan.mode property: `--detect.blackduck.scan.mode=RAPID`.
+* Set the scan mode to RAPID or STATELESS using the detect.blackduck.scan.mode property: `--detect.blackduck.scan.mode=RAPID`.
 * Enable Quack Patch with the detect.blackduck.quack.patch.enabled property: `--detect.blackduck.quack.patch.enabled=true`.
 * Set the LLM Gateway URL with the detect.llm.api.endpoint property: `--detect.llm.api.endpoint=https://your-llm-gateway.com`.
 * Set the LLM Gateway API key with the detect.llm.api.key property: `--detect.llm.api.key=your-llm-api-key`.
