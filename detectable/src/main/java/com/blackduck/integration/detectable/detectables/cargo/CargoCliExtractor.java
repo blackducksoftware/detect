@@ -58,7 +58,7 @@ public class CargoCliExtractor {
             workspaceMemberPaths = cargoTomlParser.parseAllWorkspaceMembers(cargoTomlContents, workspaceRoot);
 
             // Resolve paths to package names
-            allWorkspaceMembers = resolveWorkspaceMemberNames(workspaceMemberPaths, workspaceRoot);
+            allWorkspaceMembers.addAll(resolveWorkspaceMemberNames(workspaceMemberPaths, workspaceRoot));
 
             // Calculate active members after exclusions
             activeWorkspaceMembers = calculateActiveMembers(
@@ -168,14 +168,7 @@ public class CargoCliExtractor {
             combinedOutput.add("");
 
             // Command 2: Get included packages dependencies
-            List<String> includedCommand = new LinkedList<>(CARGO_TREE_COMMAND);
-            for (String includeWorkspace : includedWorkspaces) {
-                includedCommand.add("--package");
-                includedCommand.add(includeWorkspace);
-            }
-            if (!dependencyTypeFilter.shouldIncludeAll()) {
-                addEdgeExclusions(includedCommand, cargoDetectableOptions);
-            }
+            List<String> includedCommand = buildPackageCommand(includedWorkspaces, dependencyTypeFilter, cargoDetectableOptions);
             combinedOutput.addAll(runCargoTreeCommand(directory, cargoExe, includedCommand));
 
             return combinedOutput;
@@ -205,22 +198,23 @@ public class CargoCliExtractor {
         return output.getStandardOutputAsList();
     }
 
-    private List<String> handleNoActiveMembers(
-        File directory,
-        ExecutableTarget cargoExe,
-        CargoDetectableOptions cargoDetectableOptions,
-        EnumListFilter<CargoDependencyType> dependencyTypeFilter
-    ) throws ExecutableFailedException {
-        logger.warn(
-            "Cannot exclude all workspace members. At least one workspace member must remain active. " +
-                "Falling back to scanning the root package only."
-        );
-
+    private List<String> buildPackageCommand(
+        List<String> packages,
+        EnumListFilter<CargoDependencyType> dependencyTypeFilter,
+        CargoDetectableOptions options
+    ) {
         List<String> command = new LinkedList<>(CARGO_TREE_COMMAND);
-        if (!dependencyTypeFilter.shouldIncludeAll()) {
-            addEdgeExclusions(command, cargoDetectableOptions);
+
+        for (String packageName : packages) {
+            command.add("--package");
+            command.add(packageName);
         }
-        return runCargoTreeCommand(directory, cargoExe, command);
+
+        if (!dependencyTypeFilter.shouldIncludeAll()) {
+            addEdgeExclusions(command, options);
+        }
+
+        return command;
     }
 
     private void addWorkspaceFlags(List<String> command, CargoDetectableOptions options) {
