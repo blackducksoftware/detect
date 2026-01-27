@@ -12,6 +12,8 @@ import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.executable.ExecutableOutput;
 import com.blackduck.integration.util.NameVersion;
 import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,6 +28,7 @@ import java.util.EnumMap;
 import java.util.Set;
 
 public class CargoCliExtractor {
+    private static final Logger logger = LoggerFactory.getLogger(CargoCliExtractor.class);
     private static final List<String> CARGO_TREE_COMMAND = Arrays.asList("tree", "--prefix", "depth");
     private final DetectableExecutableRunner executableRunner;
     private final CargoDependencyGraphTransformer cargoDependencyTransformer;
@@ -39,21 +42,36 @@ public class CargoCliExtractor {
 
     public Extraction extract(File directory, ExecutableTarget cargoExe, File cargoTomlFile, CargoDetectableOptions cargoDetectableOptions) throws ExecutableFailedException, IOException {
         Optional<NameVersion> projectNameVersion = Optional.empty();
-        Set<String> workspaceMembers = new HashSet<>();
+        Set<String> workspaceMemberPaths = new HashSet<>();
+        Set<String> allWorkspaceMembers = new HashSet<>();
+        Set<String> activeWorkspaceMembers = new HashSet<>();
 
         if (cargoTomlFile != null) {
             File workspaceRoot = cargoTomlFile.getParentFile();
             String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
+
             projectNameVersion = cargoTomlParser.parseNameVersionFromCargoToml(cargoTomlContents);
-            workspaceMembers = cargoTomlParser.parseAllWorkspaceMembers(cargoTomlContents, workspaceRoot);
+
+            // Get workspace member paths
+            workspaceMemberPaths = cargoTomlParser.parseAllWorkspaceMembers(cargoTomlContents, workspaceRoot);
+
+            // Resolve paths to package names
+            allWorkspaceMembers = resolveWorkspaceMemberNames(workspaceMemberPaths, workspaceRoot);
+
+            // Calculate active members after exclusions
+            activeWorkspaceMembers = calculateActiveMembers(
+                allWorkspaceMembers,
+                cargoDetectableOptions.getIncludedWorkspaces(),
+                cargoDetectableOptions.getExcludedWorkspaces()
+            );
         }
 
         EnumListFilter<CargoDependencyType> dependencyTypeFilter = Optional.ofNullable(cargoDetectableOptions.getDependencyTypeFilter())
             .orElse(EnumListFilter.excludeNone());
 
-        List<String> fullTreeOutput = runCargoTreeCommand(directory, cargoExe, cargoDetectableOptions, dependencyTypeFilter);
+        List<String> fullTreeOutput = runCargoTreeCommand(directory, cargoExe, cargoDetectableOptions, dependencyTypeFilter, activeWorkspaceMembers);
 
-        List<CodeLocation> codeLocations = cargoDependencyTransformer.transform(fullTreeOutput, workspaceMembers);
+        List<CodeLocation> codeLocations = cargoDependencyTransformer.transform(fullTreeOutput, workspaceMemberPaths);
 
         return new Extraction.Builder()
             .success(codeLocations)
@@ -61,11 +79,50 @@ public class CargoCliExtractor {
             .build();
     }
 
+    private Set<String> calculateActiveMembers(
+        Set<String> allMembers,
+        List<String> includedWorkspaces,
+        List<String> excludedWorkspaces
+    ) {
+        Set<String> activeMembers = new HashSet<>(allMembers);
+
+        if (includedWorkspaces != null && !includedWorkspaces.isEmpty()) {
+            activeMembers.retainAll(includedWorkspaces);
+        }
+
+        if (excludedWorkspaces != null && !excludedWorkspaces.isEmpty()) {
+            activeMembers.removeAll(excludedWorkspaces);
+        }
+
+        return activeMembers;
+    }
+
+    private Set<String> resolveWorkspaceMemberNames(Set<String> workspaceMemberPaths, File workspaceRoot) throws IOException {
+        Set<String> packageNames = new HashSet<>();
+
+        for (String memberPath : workspaceMemberPaths) {
+            File memberDir = new File(workspaceRoot, memberPath);
+            File memberCargoToml = new File(memberDir, "Cargo.toml");
+
+            if (memberCargoToml.exists()) {
+                String memberTomlContents = FileUtils.readFileToString(memberCargoToml, StandardCharsets.UTF_8);
+                String packageName = cargoTomlParser.parsePackageNameFromCargoToml(memberTomlContents);
+
+                if (packageName != null) {
+                    packageNames.add(packageName);
+                }
+            }
+        }
+
+        return packageNames;
+    }
+
     private List<String> runCargoTreeCommand(
         File directory,
         ExecutableTarget cargoExe,
         CargoDetectableOptions cargoDetectableOptions,
-        EnumListFilter<CargoDependencyType> dependencyTypeFilter
+        EnumListFilter<CargoDependencyType> dependencyTypeFilter,
+        Set<String> activeWorkspaceMembers
     ) throws ExecutableFailedException {
 
         boolean shouldIgnoreAllWorkspaceMembers = cargoDetectableOptions.getCargoIgnoreAllWorkspacesMode();
@@ -74,10 +131,16 @@ public class CargoCliExtractor {
 
         boolean hasInclusions = includedWorkspaces != null && !includedWorkspaces.isEmpty();
         boolean hasExclusions = excludedWorkspaces != null && !excludedWorkspaces.isEmpty();
+        boolean noActiveWorkspaceMembers = hasExclusions && activeWorkspaceMembers.isEmpty();
+
+        // If all members are excluded OR ignore mode is on, just run simple cargo tree
+        if (noActiveWorkspaceMembers) {
+            return handleNoActiveMembers(directory, cargoExe, cargoDetectableOptions, dependencyTypeFilter);
+        }
 
         // Special case: inclusions without exclusions - run two separate commands
         // This ensures we get root package + included packages
-        if (!shouldIgnoreAllWorkspaceMembers && hasInclusions && !hasExclusions) {
+        if (hasInclusions && !hasExclusions) {
 
             // Command 1: Get root package dependencies
             List<String> rootCommand = new LinkedList<>(CARGO_TREE_COMMAND);
@@ -125,6 +188,24 @@ public class CargoCliExtractor {
             ExecutableUtils.createFromTarget(directory, cargoExe, commandArgs)
         );
         return output.getStandardOutputAsList();
+    }
+
+    private List<String> handleNoActiveMembers(
+        File directory,
+        ExecutableTarget cargoExe,
+        CargoDetectableOptions cargoDetectableOptions,
+        EnumListFilter<CargoDependencyType> dependencyTypeFilter
+    ) throws ExecutableFailedException {
+        logger.warn(
+            "Cannot exclude all workspace members. At least one workspace member must remain active. " +
+                "Falling back to scanning the root package only."
+        );
+
+        List<String> command = new LinkedList<>(CARGO_TREE_COMMAND);
+        if (!dependencyTypeFilter.shouldIncludeAll()) {
+            addEdgeExclusions(command, cargoDetectableOptions);
+        }
+        return runCargoTreeCommand(directory, cargoExe, command);
     }
 
     private void addWorkspaceFlags(List<String> command, CargoDetectableOptions options) {
