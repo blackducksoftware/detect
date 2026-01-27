@@ -84,13 +84,13 @@ public class DetectRapidScanWaitJobFull implements ResilientJob<List<Response>> 
     public List<Response> onCompletion() throws IntegrationException {
         List<Response> allScanResponses = new ArrayList<>();
         for (HttpUrl url : completedUrls) {
-            allScanResponses.add(getScanResultsForFULLUrl(url));
+            allScanResponses.add(getScanResultsForFullUrl(url));
         }
         return allScanResponses;
     }
 
-    private Response getScanResultsForFULLUrl(HttpUrl url) throws IntegrationException {
-        logger.debug("Fetching full rapid scan results from endpoint: {}", url.string());
+    private Response getScanResultsForFullUrl(HttpUrl url) throws IntegrationException {
+        logger.debug("Fetching full rapid scan results from endpoint: {}/full-result", url.string());
         Response newResponse =  blackDuckApiClient.get(url.appendRelativeUrl("full-result"));
         return newResponse;
     }

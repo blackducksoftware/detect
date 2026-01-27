@@ -84,6 +84,10 @@ repositories {
         content { includeModule(locatorGroup, locatorModule) }
     }
     maven {
+        url = uri("${externalRepoHost}/bds-integration-placeholder-release")
+        content { includeModule(quackPatchGroup, quackPatchModule) }
+    }
+    maven {
         url "${internalRepoHost}/artifactory/bds-bdio-release"
         content { excludeModule(locatorGroup, locatorModule) }
     }
