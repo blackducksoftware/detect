@@ -48,11 +48,15 @@ bash <(curl -s -L https://detect.blackduck.com/detect11.sh) \
 ### Optional Properties
 
 #### `detect.bazel.dependency.sources`
+
+- This property replaces `detect.bazel.workspace.rules`. Only the name has changed; the behavior and supported values are identical. Existing workflows should switch to `detect.bazel.dependency.sources` without any functional differences.
+
 - **Description:** Manually specify which dependency sources to extract. By default (NONE), the detector automatically probes the dependency graph to determine which sources are present.
 - **Default:** `NONE` (auto-detection enabled)
 - **Valid Values:** `MAVEN_INSTALL`, `MAVEN_JAR`, `HASKELL_CABAL_LIBRARY`, `HTTP_ARCHIVE`, `ALL`, `NONE`
 - **Example:** `--detect.bazel.dependency.sources=MAVEN_INSTALL,HTTP_ARCHIVE`
-- **Note:** This property works for both BZLMOD and WORKSPACE projects despite the name. Setting explicit values bypasses graph probing for faster execution.
+- **Note:** This property works for both BZLMOD and WORKSPACE projects.
+- **When to Use:** Set this property if you know which dependency sources are present in your target to skip the probing step. This can improve performance, especially in CI/CD environments. Use `ALL` to extract from all supported sources without probing.
 
 #### `detect.bazel.mode`
 - **Description:** Manually override Bazel mode detection. By default, the detector automatically determines whether the project uses BZLMOD or WORKSPACE.
