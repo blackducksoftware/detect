@@ -133,9 +133,13 @@ public class CargoCliExtractor {
         boolean hasExclusions = excludedWorkspaces != null && !excludedWorkspaces.isEmpty();
         boolean noActiveWorkspaceMembers = hasExclusions && activeWorkspaceMembers.isEmpty();
 
-        // If all members are excluded OR ignore mode is on, just run simple cargo tree
+        // If all members are excluded, return empty list (0 components)
         if (noActiveWorkspaceMembers) {
-            return handleNoActiveMembers(directory, cargoExe, cargoDetectableOptions, dependencyTypeFilter);
+            logger.warn(
+                "Cannot exclude all workspace members for virtual manifest. At least one workspace member must remain active " +
+                    "to build a dependency graph with components. Zero components will be reported in SBOM."
+            );
+            return new LinkedList<>();
         }
 
         // Special case: inclusions without exclusions - run two separate commands
