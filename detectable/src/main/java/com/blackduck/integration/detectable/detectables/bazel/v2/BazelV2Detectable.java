@@ -149,6 +149,17 @@ public class BazelV2Detectable extends Detectable {
             // Auto-detect mode if not overridden
             BazelEnvironmentAnalyzer envAnalyzer = new BazelEnvironmentAnalyzer(bazelCmd);
             mode = envAnalyzer.getMode();
+
+            // Fail fast if mode detection returned UNKNOWN
+            if (mode == BazelEnvironmentAnalyzer.Mode.UNKNOWN) {
+                throw new DetectableException(
+                    "Unable to determine Bazel mode automatically. " +
+                    "The 'bazel mod show_repo' command failed with an unexpected error. " +
+                    "Please set the 'detect.bazel.mode' property to either 'WORKSPACE' or 'BZLMOD' to proceed. " +
+                    "Example: --detect.bazel.mode=WORKSPACE"
+                );
+            }
+
             logger.info("Using Bazel mode from auto-detection: {}", mode);
         }
 

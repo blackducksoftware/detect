@@ -334,7 +334,7 @@ public class DetectableFactory {
         return new BazelDetectable(environment, fileFinder, bazelExtractor(bazelDetectableOptions), bazelResolver, bazelDetectableOptions.getTargetName().orElse(null));
     }
 
-    // New: Create Bazel V2 Detectable (probing-based). Does not require WORKSPACE.
+    //Bazel V2 Detectable (probing-based). Does not require WORKSPACE file. Supports both BZLMOD and WORKSPACE modes.
     public BazelV2Detectable createBazelV2Detectable(DetectableEnvironment environment, BazelDetectableOptions options, BazelResolver bazelResolver) {
         BazelVariableSubstitutor substitutor = new BazelVariableSubstitutor(
             options.getTargetName().orElse(null),
@@ -345,10 +345,6 @@ public class DetectableFactory {
         return new BazelV2Detectable(environment, fileFinder, executableRunner, externalIdFactory, bazelResolver, options, substitutor, haskellParser, projectNameGenerator);
     }
 
-    // New: Auto wrapper that tries V2 first (handled here) and keeps legacy untouched. Intentional to keep changes minimal while giving us a hook to implement richer fallback later
-    public BazelV2Detectable createBazelAutoDetectable(DetectableEnvironment environment, BazelDetectableOptions options, BazelResolver bazelResolver) {
-        return createBazelV2Detectable(environment, options, bazelResolver);
-    }
 
     public BitbakeDetectable createBitbakeDetectable(DetectableEnvironment environment, BitbakeDetectableOptions bitbakeDetectableOptions, BashResolver bashResolver) {
         BitbakeExtractor bitbakeExtractor = new BitbakeExtractor(
