@@ -805,9 +805,9 @@ public class OperationRunner {
         );
     }
 
-    public final File generateFULLRapidJsonFile(List<Response> scanResults) throws OperationException {
+    public final File generateFullRapidJsonFile(List<Response> scanResults) throws OperationException {
         return auditLog.namedPublic(
-                "Generate Rapid FULL Json File",
+                "Generate Rapid Full Json File",
                 "RapidScan",
                 () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFileFromString(scanResults.get(0).getContentString())
         );
@@ -894,7 +894,7 @@ public class OperationRunner {
             } else if (!applicableDetectorsIncludeAtLeastOneSupportedDetector(bdio.getApplicableDetectorTypes())) {
                 failComponentLocationAnalysisOperationTask(SUPPORTED_DETECTORS_LOG_MSG);
             } else {
-                Set<Component> componentsSet = new ScanResultToComponentListTransformer().transformScanResultToComponentList(rapidResults);
+                Set<Component> componentsSet = new ScanResultToComponentListTransformer().transformScanResultToComponentSet(rapidResults);
                 if (componentsSet.isEmpty()) {
                     failComponentLocationAnalysisOperationTask("Component Location Analysis requires at least one dependency in Rapid/Stateless Detector Scan results. Skipping location analysis.");
                 } else {

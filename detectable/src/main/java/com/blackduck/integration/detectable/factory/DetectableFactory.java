@@ -10,6 +10,11 @@ import com.blackduck.integration.detectable.detectable.executable.resolver.*;
 import com.blackduck.integration.detectable.detectables.cargo.*;
 import com.blackduck.integration.detectable.detectables.cargo.transform.CargoDependencyGraphTransformer;
 import com.blackduck.integration.detectable.detectables.pip.inspector.parser.PipInspectorTomlParser;
+import com.blackduck.integration.detectable.detectables.rush.RushDetectable;
+import com.blackduck.integration.detectable.detectables.rush.RushExtractor;
+import com.blackduck.integration.detectable.detectables.rush.RushOptions;
+import com.blackduck.integration.detectable.detectables.rush.parse.RushJsonParser;
+import com.blackduck.integration.detectable.detectables.rush.parse.RushLockFileParser;
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildDetectable;
 import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildExtractor;
@@ -692,6 +697,20 @@ public class DetectableFactory {
         LernaExtractor lernaExtractor = new LernaExtractor(lernaPackageDiscoverer, lernaPackager);
         return new LernaDetectable(environment, fileFinder, lernaResolver, lernaExtractor);
     }
+
+    public RushDetectable createRushDetectable(
+            DetectableEnvironment environment,
+            NpmLockfileOptions npmLockfileOptions,
+            PnpmLockOptions  pnpmLockOptions,
+            YarnLockOptions yarnLockOptions,
+            RushOptions rushOptions
+    ) {
+        RushJsonParser rushJsonParser = new RushJsonParser(gson);
+        RushLockFileParser rushLockFileParser = new RushLockFileParser(npmLockfilePackager(npmLockfileOptions), new PnpmLockYamlParserInitial(pnpmLockOptions), yarnPackager(yarnLockOptions), packageJsonFiles(), yarnLockParser(), rushOptions);
+        RushExtractor rushExtractor = new RushExtractor(rushJsonParser, rushLockFileParser);
+        return new RushDetectable(environment, fileFinder, rushExtractor);
+    }
+
 
     public XcodeProjectDetectable createXcodeProjectDetectable(DetectableEnvironment environment) {
         PackageResolvedExtractor packageResolvedExtractor = createPackageResolvedExtractor();

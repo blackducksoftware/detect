@@ -12,10 +12,10 @@ import com.blackduck.integration.detect.workflow.file.DirectoryManager;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDetectableOptions;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
 import com.blackduck.integration.detectable.detectables.nuget.NugetDependencyType;
+import com.blackduck.integration.detectable.detectables.rush.RushOptions;
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import org.jetbrains.annotations.Nullable;
 
-import com.blackduck.integration.detect.workflow.ArtifactoryConstants;
 import com.blackduck.integration.detect.workflow.diagnostic.DiagnosticSystem;
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.detectable.detectables.bazel.BazelDetectableOptions;
@@ -204,6 +204,12 @@ public class DetectableOptionFactory {
         return new LernaOptions(lernaPackageTypeFilter, excludedPackages, includedPackages);
     }
 
+    public RushOptions createRushOptions() {
+        List<String> excludedSubspaces = detectConfiguration.getValue(DetectProperties.DETECT_RUSH_PNPM_EXCLUDED_SUBSPACES);
+        List<String> includedSubspaces = detectConfiguration.getValue(DetectProperties.DETECT_RUSH_PNPM_INCLUDED_SUBSPACES);
+        return new RushOptions(excludedSubspaces, includedSubspaces);
+    }
+
     public MavenCliExtractorOptions createMavenCliOptions() {
         String mavenBuildCommand = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_BUILD_COMMAND);
         List<String> mavenExcludedScopes = detectConfiguration.getValue(DetectProperties.DETECT_MAVEN_EXCLUDED_SCOPES);
@@ -262,7 +268,11 @@ public class DetectableOptionFactory {
     public CargoDetectableOptions createCargoDetectableOptions() {
         Set<CargoDependencyType> excludedDependencyTypes = detectConfiguration.getValue(DetectProperties.DETECT_CARGO_DEPENDENCY_TYPES_EXCLUDED).representedValueSet();
         EnumListFilter<CargoDependencyType> dependencyTypeFilter = EnumListFilter.fromExcluded(excludedDependencyTypes);
-        return new CargoDetectableOptions(dependencyTypeFilter);
+
+        Boolean cargoIgnoreAllWorkspacesMode = detectConfiguration.getValue(DetectProperties.DETECT_CARGO_IGNORE_ALL_WORKSPACES_MODE);
+        List<String> includedWorkspaces = detectConfiguration.getValue(DetectProperties.DETECT_CARGO_INCLUDED_WORKSPACES);
+        List<String> excludedWorkspaces = detectConfiguration.getValue(DetectProperties.DETECT_CARGO_EXCLUDED_WORKSPACES);
+        return new CargoDetectableOptions(dependencyTypeFilter, cargoIgnoreAllWorkspacesMode, includedWorkspaces, excludedWorkspaces);
     }
 
     public PipenvDetectableOptions createPipenvDetectableOptions() {

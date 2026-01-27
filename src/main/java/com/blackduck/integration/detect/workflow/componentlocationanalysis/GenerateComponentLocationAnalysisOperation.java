@@ -71,7 +71,7 @@ public class GenerateComponentLocationAnalysisOperation {
      */
     public ComponentLocatorResult locateComponents(Set<Component> componentsSet, File scanOutputFolder, File projectSrcDir) throws ComponentLocatorException, DetectUserFriendlyException {
         Input componentLocatorInput = new Input(projectSrcDir.getAbsolutePath(), new JsonObject(), componentsSet);
-        String outputFilepath = scanOutputFolder + "/" + LOCATOR_OUTPUT_FILE_NAME;
+        String outputFilepath = scanOutputFolder + File.separator + LOCATOR_OUTPUT_FILE_NAME;
         if (logger.isDebugEnabled()) {
             serializeInputToJson(scanOutputFolder, componentLocatorInput);
         }
@@ -90,14 +90,18 @@ public class GenerateComponentLocationAnalysisOperation {
 
     public QuackPatchResult runQuackPatch(File scanOutputFolder, File rapidFullResultsFile, DetectConfigurationFactory configFactory) {
         logger.info("Attempting Quack Patch.");
-
-            Map<String, List<String>> relevantDetectorsAndFiles = loadDetectorsAndFiles(scanOutputFolder.getAbsolutePath() + "/" + QUACKPATCH_SUBDIRECTORY_NAME + "/" + INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON);
+            Map<String, List<String>> relevantDetectorsAndFiles = loadDetectorsAndFiles(getQuackPatchOutputDirectory(scanOutputFolder) + File.separator + INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON);
             String llmKey = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_KEY);
             String llmName = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_NAME);
             String llmURL = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_ENDPOINT);
 
             ComponentLocator.runQuackPatch(rapidFullResultsFile, relevantDetectorsAndFiles, llmKey, llmName, llmURL, scanOutputFolder.getPath());
-        return new QuackPatchResult();
+        return new QuackPatchResult(getQuackPatchOutputDirectory(scanOutputFolder));
+    }
+
+
+    public static String getQuackPatchOutputDirectory(File scanOutputFolder) {
+        return scanOutputFolder.getAbsolutePath() + File.separator + QUACKPATCH_SUBDIRECTORY_NAME;
     }
 
     public ComponentLocatorResult locateComponentsForOnlineIntelligentScan() throws ComponentLocatorException {
@@ -119,14 +123,6 @@ public class GenerateComponentLocationAnalysisOperation {
         publishComponentLocatorFailureIfEnabled();
         throw new ComponentLocatorException("Failed to generate Component Location Analysis file.");
     }
-
-    public String getQuackPatchOutputPath() {
-        Path relevantDetectorsAndFilesInfoPath = Paths.get(DirectoryManager.getScanDirectoryName())
-                .resolve(QUACKPATCH_SUBDIRECTORY_NAME)
-                .resolve(INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON);
-        return relevantDetectorsAndFilesInfoPath.toString();
-    }
-
 
     private void publishComponentLocatorSuccessIfEnabled() {
         if (detectConfigurationFactory.doesComponentLocatorAffectStatus()) {

@@ -110,7 +110,7 @@ public class DetectorTool {
             List<ExtractedDetectorRuleReport> extractions = report.getExtractedDetectors();
             for (ExtractedDetectorRuleReport extractedDetectorReport : extractions) {
                 String detectableName = extractedDetectorReport.getExtractedDetectable().getDetectable().getName();
-                // Skip Git because it has no relevant files, and NuGet because the inspector will do this already
+                // Skip Git because Git has no relevant files, and NuGet because the inspector will do this already
                 if (detectableName.equals("Git") || detectableName.contains("NuGet")) continue;
                 List<File> relevantFiles = extractedDetectorReport.getExtractedDetectable().getRelevantFiles();
                 List<String> relevantFilesAbsolutePaths = relevantFiles.stream()
@@ -162,7 +162,7 @@ public class DetectorTool {
         detectorEventPublisher.publishDetectorsComplete(toolResult);
 
         try {
-        saveExtractedDetectorsAndTheirRelevantFilePaths(directoryManager, toolResult);
+            saveExtractedDetectorsAndTheirRelevantFilePaths(directoryManager, toolResult);
         } catch (IOException e) {
             throw new RuntimeException("something went wrong writing relevant files");
         }

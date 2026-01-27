@@ -148,15 +148,11 @@ public class CargoLockBomComponentCountTest extends DetectableFunctionalTest {
         graphAssert.hasRootDependency("serde", "1.0.77");
         graphAssert.hasRootDependency("cc", "1.2.29");
 
-        // Orphans bucket + chain
-        graphAssert.hasRootDependency("Additional_Components", "none");
-        graphAssert.hasParentChildRelationship("Additional_Components", "none", "errno", "0.3.13");
-
         // Verify a transitive edge from lock
         graphAssert.hasParentChildRelationship("bstr", "1.7.0", "regex", "1.10.0");
         graphAssert.hasParentChildRelationship("cc", "1.2.29", "shlex", "1.3.0");
 
-        // Root size: 5 ([dependencies]) + 1 (target) + 2 (dev/build) + 1 (orphan/synthetic) = 9
-        graphAssert.hasRootSize(9);
+        // Root size: 5 ([dependencies]) + 1 (target) + 2 (dev/build) = 8
+        graphAssert.hasRootSize(8);
     }
 }

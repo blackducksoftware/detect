@@ -1,6 +1,25 @@
 <!-- Check the support matrix to determine supported, non-current major version releases -->
 # Release notes for previous [detect_product_short] versions
 
+## Version 11.1.0
+
+### New features
+
+* The [Component Location Analysis](runningdetect/component-location-analysis.md) feature has been extended to support the Cargo package manager.
+
+### Changed features
+
+* When using the `detect.excluded.detectors` property, any fallback Detectors will now we executed if the primary Detector is excluded. Previously, entire sets of Detectors would be excluded.
+
+### Resolved issues
+
+* (IDETECT-4874) Improved support for multibyte characters in project names, version names, and code location names during package manager scans.
+* (IDETECT-4880) The `.bridge` directory will now be excluded by default from Detector and Signature Scans.
+* (IDETECT-4897) [detect_product_short] now looks for headers in a case-insensitive fashion when performing multipart binary uploads.
+* (IDETECT-4707) The PIP Native Inspector now appropriately handles package names containing a dot character.
+* (IDETECT-4864) The UV Detector now appropriately runs even if the optional field `[tool.uv] manage = true` is not specified.
+* (IDETECT-4760) Any dependencies listed in a Gradle dependency tree as a `(c)` dependency constraint will no longer be identified as dependencies unless they also appear elsewhere in the tree.
+
 ## Version 11.0.0
 
 ### New features
