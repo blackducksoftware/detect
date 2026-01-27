@@ -45,12 +45,14 @@ public class CargoCliExtractor {
         Set<String> workspaceMemberPaths = new HashSet<>();
         Set<String> allWorkspaceMembers = new HashSet<>();
         Set<String> activeWorkspaceMembers = new HashSet<>();
+        boolean isVirtualWorkspace = false;
 
         if (cargoTomlFile != null) {
             File workspaceRoot = cargoTomlFile.getParentFile();
             String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
 
             projectNameVersion = cargoTomlParser.parseNameVersionFromCargoToml(cargoTomlContents);
+            isVirtualWorkspace = cargoTomlParser.isVirtualWorkspace(cargoTomlContents);
 
             // Get workspace member paths
             workspaceMemberPaths = cargoTomlParser.parseAllWorkspaceMembers(cargoTomlContents, workspaceRoot);
@@ -69,7 +71,14 @@ public class CargoCliExtractor {
         EnumListFilter<CargoDependencyType> dependencyTypeFilter = Optional.ofNullable(cargoDetectableOptions.getDependencyTypeFilter())
             .orElse(EnumListFilter.excludeNone());
 
-        List<String> fullTreeOutput = runCargoTreeCommand(directory, cargoExe, cargoDetectableOptions, dependencyTypeFilter, activeWorkspaceMembers);
+        List<String> fullTreeOutput = runCargoTreeCommand(
+            directory,
+            cargoExe,
+            cargoDetectableOptions,
+            dependencyTypeFilter,
+            activeWorkspaceMembers,
+            isVirtualWorkspace
+        );
 
         List<CodeLocation> codeLocations = cargoDependencyTransformer.transform(fullTreeOutput, workspaceMemberPaths);
 
@@ -122,7 +131,8 @@ public class CargoCliExtractor {
         ExecutableTarget cargoExe,
         CargoDetectableOptions cargoDetectableOptions,
         EnumListFilter<CargoDependencyType> dependencyTypeFilter,
-        Set<String> activeWorkspaceMembers
+        Set<String> activeWorkspaceMembers,
+        boolean isVirtualWorkspace
     ) throws ExecutableFailedException {
 
         boolean shouldIgnoreAllWorkspaceMembers = cargoDetectableOptions.getCargoIgnoreAllWorkspacesMode();
@@ -133,8 +143,17 @@ public class CargoCliExtractor {
         boolean hasExclusions = excludedWorkspaces != null && !excludedWorkspaces.isEmpty();
         boolean noActiveWorkspaceMembers = hasExclusions && activeWorkspaceMembers.isEmpty();
 
-        // If all members are excluded, return empty list (0 components)
-        if (noActiveWorkspaceMembers) {
+        // Case 1: User wants to ignore all workspace members for virtual workspace
+        if (shouldIgnoreAllWorkspaceMembers && isVirtualWorkspace) {
+            logger.warn(
+                "Cannot exclude all workspace members for virtual manifest. At least one workspace member must remain active " +
+                    "to build a dependency graph with components. Zero components will be reported in SBOM."
+            );
+            return new LinkedList<>();
+        }
+
+        // Case 2: User excluded all members via exclude property for virtual workspace
+        if (noActiveWorkspaceMembers && isVirtualWorkspace) {
             logger.warn(
                 "Cannot exclude all workspace members for virtual manifest. At least one workspace member must remain active " +
                     "to build a dependency graph with components. Zero components will be reported in SBOM."

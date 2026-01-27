@@ -480,4 +480,11 @@ public class CargoTomlParser {
         }
         return key;
     }
+
+    public boolean isVirtualWorkspace(String tomlFileContents) {
+        TomlParseResult toml = Toml.parse(tomlFileContents);
+        boolean hasWorkspace = toml.contains(WORKSPACE_KEY);
+        boolean hasPackage = toml.contains(PACKAGE_KEY);
+        return hasWorkspace && !hasPackage;
+    }
 }
