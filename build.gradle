@@ -84,6 +84,10 @@ repositories {
         content { includeModule(locatorGroup, locatorModule) }
     }
     maven {
+        url = uri("${externalRepoHost}/bds-integration-placeholder-release")
+        content { includeModule(quackPatchGroup, quackPatchModule) }
+    }
+    maven {
         url "${internalRepoHost}/artifactory/bds-bdio-release"
         content { excludeModule(locatorGroup, locatorModule) }
     }
@@ -180,7 +184,7 @@ dependencies {
     implementation "com.blackduck.integration:blackduck-common:${blackDuckCommonVersion}"
     implementation 'com.blackduck.integration:blackduck-upload-common:4.1.4'
     implementation 'com.blackducksoftware:method-analyzer-core:1.0.7'
-    implementation "${locatorGroup}:${locatorModule}:2.3.3"
+    implementation "${locatorGroup}:${locatorModule}:2.3.1"
 
     implementation 'org.apache.maven.shared:maven-invoker:3.0.0'
 
