@@ -20,4 +20,7 @@ public class YarnPackageJson {
 
     @SerializedName("peerDependencies")
     public Map<String, String> peerDependencies = new HashMap<>();
+
+    @SerializedName("optionalDependencies")
+    public Map<String, String> optionalDependencies = new HashMap<>();
 }

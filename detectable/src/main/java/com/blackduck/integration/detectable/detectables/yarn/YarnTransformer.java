@@ -291,8 +291,10 @@ public class YarnTransformer {
         }
     }
     
-    private void addRootDependenciesForProject(YarnLockResult yarnLockResult, NullSafePackageJson projectPackageJson, LazyExternalIdDependencyGraphBuilder graphBuilder) throws MissingExternalIdException {
+    private void addRootDependenciesForProject(YarnLockResult yarnLockResult, NullSafePackageJson projectPackageJson, LazyExternalIdDependencyGraphBuilder graphBuilder) {
         addRootDependenciesToGraph(graphBuilder, projectPackageJson.getDependencies(), yarnLockResult.getWorkspaceData());
+        addRootDependenciesToGraph(graphBuilder, projectPackageJson.getOptionalDependencies(), yarnLockResult.getWorkspaceData());
+        addRootDependenciesToGraph(graphBuilder, projectPackageJson.getPeerDependencies(), yarnLockResult.getWorkspaceData());
         if (yarnDependencyTypeFilter.shouldInclude(YarnDependencyType.NON_PRODUCTION)) {
             addRootDependenciesToGraph(graphBuilder, projectPackageJson.getDevDependencies(), yarnLockResult.getWorkspaceData());
         }
@@ -300,6 +302,8 @@ public class YarnTransformer {
 
     private void addRootDependenciesForProjectOrWorkspace(LazyExternalIdDependencyGraphBuilder graphBuilder, NullSafePackageJson rootPackageJson, YarnWorkspaces workspaceData) {
         addRootDependenciesToGraph(graphBuilder, rootPackageJson.getDependencies(), workspaceData);
+        addRootDependenciesToGraph(graphBuilder, rootPackageJson.getOptionalDependencies(), workspaceData);
+        addRootDependenciesToGraph(graphBuilder, rootPackageJson.getPeerDependencies(), workspaceData);
         if (yarnDependencyTypeFilter.shouldInclude(YarnDependencyType.NON_PRODUCTION)) {
             addRootDependenciesToGraph(graphBuilder, rootPackageJson.getDevDependencies(), workspaceData);
         }

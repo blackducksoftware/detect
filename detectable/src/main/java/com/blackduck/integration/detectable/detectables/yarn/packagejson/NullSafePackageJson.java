@@ -48,4 +48,18 @@ public class NullSafePackageJson {
         }
         return rawPackageJson.devDependencies;
     }
+
+    public Map<String, String> getOptionalDependencies() {
+        if (rawPackageJson.optionalDependencies == null) {
+            return new HashMap<>();
+        }
+        return rawPackageJson.optionalDependencies;
+    }
+
+    public Map<String, String> getPeerDependencies() {
+        if (rawPackageJson.peerDependencies == null) {
+            return new HashMap<>();
+        }
+        return rawPackageJson.peerDependencies;
+    }
 }
