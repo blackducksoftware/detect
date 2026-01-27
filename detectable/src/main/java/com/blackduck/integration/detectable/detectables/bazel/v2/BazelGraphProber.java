@@ -1,6 +1,6 @@
 package com.blackduck.integration.detectable.detectables.bazel.v2;
 
-import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
+import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelCommandExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,12 +31,12 @@ public class BazelGraphProber {
     }
 
     /**
-     * Probes the Bazel dependency graph to decide which pipelines (rules) are enabled for the given target.
-     * @return Set of enabled WorkspaceRule
+     * Probes the Bazel dependency graph to decide which pipelines (dependency sources) are enabled for the given target.
+     * @return Set of enabled DependencySource
      */
-    public Set<WorkspaceRule> decidePipelines() {
+    public Set<DependencySource> decidePipelines() {
         logger.info("Starting Bazel graph probing for target: {}", target);
-        Set<WorkspaceRule> enabled = new HashSet<>();
+        Set<DependencySource> enabled = new HashSet<>();
 
         boolean mavenInstall = false;
         boolean mavenJar = false;
@@ -71,18 +71,18 @@ public class BazelGraphProber {
 
         // Prefer maven_install over maven_jar if both are detected
         if (mavenInstall) {
-            enabled.add(WorkspaceRule.MAVEN_INSTALL);
+            enabled.add(DependencySource.MAVEN_INSTALL);
             if (mavenJar) {
                 logger.info("Both MAVEN_INSTALL and MAVEN_JAR indicated; preferring MAVEN_INSTALL and suppressing MAVEN_JAR.");
             }
         } else if (mavenJar) {
-            enabled.add(WorkspaceRule.MAVEN_JAR);
+            enabled.add(DependencySource.MAVEN_JAR);
         }
         if (haskell) {
-            enabled.add(WorkspaceRule.HASKELL_CABAL_LIBRARY);
+            enabled.add(DependencySource.HASKELL_CABAL_LIBRARY);
         }
         if (httpFamily) {
-            enabled.add(WorkspaceRule.HTTP_ARCHIVE);
+            enabled.add(DependencySource.HTTP_ARCHIVE);
         }
 
         logger.info("Probing completed. Enabled pipelines: {}", enabled);

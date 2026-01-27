@@ -52,7 +52,7 @@ import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMo
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedIndividualFileMatchingMode;
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedReducedPersistanceMode;
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedSnippetMode;
-import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
+import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDependencyType;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
 import com.blackduck.integration.detectable.detectables.conan.cli.config.ConanDependencyType;
@@ -231,12 +231,12 @@ public class DetectProperties {
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();
 
-    public static final AllNoneEnumListProperty<WorkspaceRule> DETECT_BAZEL_WORKSPACE_RULES =
-        AllNoneEnumListProperty.newBuilder("detect.bazel.workspace.rules", AllNoneEnum.NONE, WorkspaceRule.class)
-            .setInfo("Bazel workspace rules", DetectPropertyFromVersion.VERSION_7_12_0)
+    public static final AllNoneEnumListProperty<DependencySource> DETECT_BAZEL_DEPENDENCY_SOURCES =
+        AllNoneEnumListProperty.newBuilder("detect.bazel.dependency.sources", AllNoneEnum.NONE, DependencySource.class)
+            .setInfo("Bazel dependency sources", DetectPropertyFromVersion.VERSION_7_12_0)
             .setHelp(
-                "By default Detect discovers Bazel dependencies using all of the supported Bazel workspace rules that it finds in the WORKSPACE file. Alternatively you can use this property to specify the list of Bazel workspace rules Detect should use.",
-                "Setting this property (or letting it default) to NONE tells Detect to use supported rules that it finds in the WORKSPACE file."
+                "By default Detect discovers Bazel dependencies from all supported dependency sources (maven_install, maven_jar, http_archive, haskell_cabal_library) found in the WORKSPACE/MODULE.bazel file. Use this property to limit which dependency sources Detect should process.",
+                "Setting this property (or letting it default) to NONE tells Detect to use all supported dependency sources found in the Bazel workspace."
             )
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();

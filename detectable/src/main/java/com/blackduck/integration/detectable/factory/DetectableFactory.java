@@ -41,7 +41,7 @@ import com.blackduck.integration.detectable.detectables.bazel.BazelDetectableOpt
 import com.blackduck.integration.detectable.detectables.bazel.BazelExtractor;
 import com.blackduck.integration.detectable.detectables.bazel.BazelProjectNameGenerator;
 import com.blackduck.integration.detectable.detectables.bazel.BazelWorkspaceFileParser;
-import com.blackduck.integration.detectable.detectables.bazel.pipeline.WorkspaceRuleChooser;
+import com.blackduck.integration.detectable.detectables.bazel.pipeline.DependencySourceChooser;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelVariableSubstitutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.HaskellCabalLibraryJsonProtoParser;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectable;
@@ -779,7 +779,7 @@ public class DetectableFactory {
     //#region Utility
 
     private BazelExtractor bazelExtractor(BazelDetectableOptions bazelDetectableOptions) {
-        WorkspaceRuleChooser workspaceRuleChooser = new WorkspaceRuleChooser();
+        DependencySourceChooser dependencySourceChooser = new DependencySourceChooser();
         BazelWorkspaceFileParser bazelWorkspaceFileParser = new BazelWorkspaceFileParser();
         HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser = new HaskellCabalLibraryJsonProtoParser(gson);
         BazelVariableSubstitutor bazelVariableSubstitutor = new BazelVariableSubstitutor(
@@ -791,11 +791,11 @@ public class DetectableFactory {
             executableRunner,
             externalIdFactory,
             bazelWorkspaceFileParser,
-            workspaceRuleChooser,
+            dependencySourceChooser,
             toolVersionLogger,
             haskellCabalLibraryJsonProtoParser,
             bazelDetectableOptions.getTargetName().orElse(null),
-            bazelDetectableOptions.getWorkspaceRulesFromProperty(),
+            bazelDetectableOptions.getDependencySourcesFromProperty(),
             bazelVariableSubstitutor,
             bazelProjectNameGenerator
         );

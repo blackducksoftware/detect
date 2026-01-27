@@ -18,7 +18,7 @@ import com.blackduck.integration.detectable.detectable.result.PassedDetectableRe
 import com.blackduck.integration.detectable.detectable.result.PropertyInsufficientDetectableResult;
 import com.blackduck.integration.detectable.detectables.bazel.BazelDetectableOptions;
 import com.blackduck.integration.detectable.detectables.bazel.BazelProjectNameGenerator;
-import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
+import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelCommandExecutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelVariableSubstitutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.HaskellCabalLibraryJsonProtoParser;
@@ -163,12 +163,12 @@ public class BazelV2Detectable extends Detectable {
             logger.info("Using Bazel mode from auto-detection: {}", mode);
         }
 
-        Set<WorkspaceRule> pipelines;
-        // Check if workspace rules are provided via property; if not, probe the Bazel graph
-        Set<WorkspaceRule> rulesFromProperty = options.getWorkspaceRulesFromProperty();
-        if (rulesFromProperty != null && !rulesFromProperty.isEmpty()) {
-            logger.info("Using detect.bazel.workspace.rules override; skipping graph probing. Pipelines: {}", rulesFromProperty);
-            pipelines = rulesFromProperty;
+        Set<DependencySource> pipelines;
+        // Check if dependency sources are provided via property; if not, probe the Bazel graph
+        Set<DependencySource> sourcesFromProperty = options.getDependencySourcesFromProperty();
+        if (sourcesFromProperty != null && !sourcesFromProperty.isEmpty()) {
+            logger.info("Using detect.bazel.dependency.sources override; skipping graph probing. Pipelines: {}", sourcesFromProperty);
+            pipelines = sourcesFromProperty;
         } else {
             // Probe the Bazel dependency graph to determine enabled pipelines
             BazelGraphProber prober = bazelGraphProberFactory.create(bazelCmd, target, mode, options.getHttpProbeLimit());
@@ -177,7 +177,7 @@ public class BazelV2Detectable extends Detectable {
 
         // Fail if no supported pipelines are found
         if (pipelines == null || pipelines.isEmpty()) {
-            throw new DetectableException("No supported Bazel dependency sources found for target '" + target + "'. To override, use detect.bazel.workspace.rules property.");
+            throw new DetectableException("No supported Bazel dependency sources found for target '" + target + "'. To override, use detect.bazel.dependency.sources property.");
         }
 
         // Run the extraction using the determined pipelines

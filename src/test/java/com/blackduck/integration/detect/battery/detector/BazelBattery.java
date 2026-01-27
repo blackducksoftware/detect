@@ -34,7 +34,7 @@ class BazelBattery {
         DetectorBatteryTestRunner test = new DetectorBatteryTestRunner("bazel-maven-install", "bazel/maven-install");
         test.withToolsValue("BAZEL");
         test.property("detect.bazel.target", "//tests/integration:ArtifactExclusionsTest");
-        test.property("detect.bazel.workspace.rules", "MAVEN_INSTALL");
+        test.property("detect.bazel.dependency.sources", "MAVEN_INSTALL");
         test.property("detect.bazel.mode", "WORKSPACE");
         test.executableFromResourceFiles(DetectProperties.DETECT_BAZEL_PATH, BAZEL_MAVEN_INSTALL_OUTPUT_RESOURCE);
         test.sourceDirectoryNamed("bazel-maven-install");
@@ -48,7 +48,7 @@ class BazelBattery {
         DetectorBatteryTestRunner test = new DetectorBatteryTestRunner("bazel-maven-install-complex", "bazel/maven-install-complex");
         test.withToolsValue("BAZEL");
         test.property("detect.bazel.target", "//tests/integration:ArtifactExclusionsTest");
-        test.property("detect.bazel.workspace.rules", "MAVEN_INSTALL");
+        test.property("detect.bazel.dependency.sources", "MAVEN_INSTALL");
         test.property("detect.bazel.mode", "WORKSPACE");
         test.executableFromResourceFiles(DetectProperties.DETECT_BAZEL_PATH, BAZEL_MAVEN_INSTALL_OUTPUT_RESOURCE);
         test.sourceDirectoryNamed("bazel-maven-install-complex");
@@ -62,7 +62,7 @@ class BazelBattery {
         DetectorBatteryTestRunner test = new DetectorBatteryTestRunner("bazel-haskell-cabal-library", "bazel/haskell-cabal-library");
         test.withToolsValue("BAZEL");
         test.property("detect.bazel.target", "//cat_hs/lib/args:args");
-        test.property("detect.bazel.workspace.rules", "HASKELL_CABAL_LIBRARY");
+        test.property("detect.bazel.dependency.sources", "HASKELL_CABAL_LIBRARY");
         test.property("detect.bazel.mode", "WORKSPACE");
         test.executableFromResourceFiles(DetectProperties.DETECT_BAZEL_PATH, BAZEL_HASKELL_CABAL_LIBRARY_OUTPUT_RESOURCE);
         test.sourceDirectoryNamed("bazel-haskell-cabal-library");
@@ -76,7 +76,7 @@ class BazelBattery {
         DetectorBatteryTestRunner test = new DetectorBatteryTestRunner("bazel-maven-jar", "bazel/maven-jar");
         test.withToolsValue("BAZEL");
         test.property("detect.bazel.target", "//:ProjectRunner");
-        test.property("detect.bazel.workspace.rules", "MAVEN_JAR");
+        test.property("detect.bazel.dependency.sources", "MAVEN_JAR");
         test.property("detect.bazel.mode", "WORKSPACE");
         test.executableFromResourceFiles(DetectProperties.DETECT_BAZEL_PATH, BAZEL_MAVEN_JAR_OUTPUT1_RESOURCE, BAZEL_MAVEN_JAR_OUTPUT2_RESOURCE, BAZEL_MAVEN_JAR_OUTPUT3_RESOURCE);
         test.sourceDirectoryNamed("bazel-maven-jar");
@@ -90,7 +90,7 @@ class BazelBattery {
         DetectorBatteryTestRunner test = new DetectorBatteryTestRunner("bazel-haskell-cabal-library-all", "bazel/haskell-cabal-library-all");
         test.withToolsValue("BAZEL");
         test.property("detect.bazel.target", "//cat_hs/lib/args:args");
-        test.property("detect.bazel.workspace.rules", "ALL");
+        test.property("detect.bazel.dependency.sources", "ALL");
         test.property("detect.bazel.mode", "WORKSPACE");
         test.executableFromResourceFiles(
             DetectProperties.DETECT_BAZEL_PATH,
@@ -110,7 +110,7 @@ class BazelBattery {
         DetectorBatteryTestRunner test = new DetectorBatteryTestRunner("bazel-http-archive-github", "bazel/http-archive-github");
         test.withToolsValue("BAZEL");
         test.property("detect.bazel.target", "//:bd_bazel");
-        test.property("detect.bazel.workspace.rules", "HTTP_ARCHIVE");
+        test.property("detect.bazel.dependency.sources", "HTTP_ARCHIVE");
         test.property("detect.bazel.mode", "WORKSPACE");
         test.executableFromResourceFiles(
             DetectProperties.DETECT_BAZEL_PATH,

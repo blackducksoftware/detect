@@ -12,7 +12,7 @@ import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.functional.DetectableFunctionalTest;
 import com.blackduck.integration.executable.ExecutableOutput;
 import com.blackduck.integration.detectable.detectables.bazel.BazelDetectableOptions;
-import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
+import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelV2Detectable;
 import com.blackduck.integration.bdio.model.Forge;
 import com.blackduck.integration.detectable.util.graph.GraphAssert;
@@ -36,8 +36,8 @@ public class BazelV2DetectableFunctionalTest extends DetectableFunctionalTest {
 
     @Override
     public BazelV2Detectable create(DetectableEnvironment detectableEnvironment) {
-        // Set workspace rules override so the detectable does not attempt probing (we provide outputs directly)
-        Set<WorkspaceRule> rules = Collections.singleton(WorkspaceRule.HASKELL_CABAL_LIBRARY);
+        // Set dependency sources override so the detectable does not attempt probing (we provide outputs directly)
+        Set<DependencySource> rules = Collections.singleton(DependencySource.HASKELL_CABAL_LIBRARY);
         BazelDetectableOptions options = new BazelDetectableOptions("//:test", rules, null, null, 30);
         // Use the factory to create the detectable so we get correct configured helpers
         return detectableFactory.createBazelV2Detectable(detectableEnvironment, options, () -> com.blackduck.integration.detectable.ExecutableTarget.forCommand("bazel"));

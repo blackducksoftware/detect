@@ -11,20 +11,20 @@ import org.slf4j.LoggerFactory;
 public class BazelDetectableOptions {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final String targetName;
-    private final Set<WorkspaceRule> workspaceRulesFromProperty;
+    private final Set<DependencySource> dependencySourcesFromProperty;
     private final List<String> bazelCqueryAdditionalOptions;
     private final String modeOverride;
     private final int httpProbeLimit;
 
     public BazelDetectableOptions(
         String targetName,
-        Set<WorkspaceRule> workspaceRulesFromProperty,
+        Set<DependencySource> dependencySourcesFromProperty,
         List<String> bazelCqueryAdditionalOptions,
         String modeOverride,
         int httpProbeLimit
     ) {
         this.targetName = targetName;
-        this.workspaceRulesFromProperty = workspaceRulesFromProperty;
+        this.dependencySourcesFromProperty = dependencySourcesFromProperty;
         this.bazelCqueryAdditionalOptions = bazelCqueryAdditionalOptions;
         this.modeOverride = modeOverride;
         this.httpProbeLimit = httpProbeLimit;
@@ -38,8 +38,8 @@ public class BazelDetectableOptions {
         return bazelCqueryAdditionalOptions;
     }
 
-    public Set<WorkspaceRule> getWorkspaceRulesFromProperty() {
-        return workspaceRulesFromProperty;
+    public Set<DependencySource> getDependencySourcesFromProperty() {
+        return dependencySourcesFromProperty;
     }
 
     public int getHttpProbeLimit() {

@@ -21,7 +21,6 @@ import com.blackduck.integration.detectable.detectable.executable.DetectableExec
 import com.blackduck.integration.detectable.detectable.executable.resolver.BazelResolver;
 import com.blackduck.integration.detectable.detectables.bazel.BazelDetectableOptions;
 import com.blackduck.integration.detectable.detectables.bazel.BazelProjectNameGenerator;
-import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelVariableSubstitutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.HaskellCabalLibraryJsonProtoParser;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelV2Detectable;

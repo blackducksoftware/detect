@@ -5,7 +5,7 @@ import java.util.EnumMap;
 
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.exception.DetectableException;
-import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
+import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelCommandExecutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelVariableSubstitutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.HaskellCabalLibraryJsonProtoParser;
@@ -16,7 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Manages and constructs dependency extraction pipelines for each supported Bazel WorkspaceRule.
+ * Manages and constructs dependency extraction pipelines for each supported Bazel DependencySource.
  * Each pipeline defines a sequence of Bazel commands and parsing steps to extract dependencies for a rule.
  * Pipelines are selected and constructed based on the Bazel environment (workspace or bzlmod).
  */
@@ -28,8 +28,8 @@ public class Pipelines {
     private static final String CQUERY_COMMAND = "cquery";
     // Output flag for Bazel commands
     private static final String OUTPUT_FLAG = "--output";
-    // Map of available pipelines by WorkspaceRule
-    private final EnumMap<WorkspaceRule, Pipeline> availablePipelines = new EnumMap<>(WorkspaceRule.class);
+    // Map of available pipelines by DependencySource
+    private final EnumMap<DependencySource, Pipeline> availablePipelines = new EnumMap<>(DependencySource.class);
     // Logger for this class
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -62,7 +62,7 @@ public class Pipelines {
     }
 
     /**
-     * Initializes and registers all supported pipelines for each WorkspaceRule.
+     * Initializes and registers all supported pipelines for each DependencySource.
      * Pipelines are constructed as sequences of Bazel commands and parsing steps.
      * The HTTP_ARCHIVE pipeline is selected based on the Bazel mode (bzlmod or WORKSPACE).
      */
@@ -84,7 +84,7 @@ public class Pipelines {
             .parseValuesFromXml("/query/rule[@class='maven_jar']/string[@name='artifact']", "value")
             .transformToMavenDependencies()
             .build();
-        availablePipelines.put(WorkspaceRule.MAVEN_JAR, mavenJarPipeline);
+        availablePipelines.put(DependencySource.MAVEN_JAR, mavenJarPipeline);
 
         // Pipeline for rules_jvm_external (maven_install): extracts Maven dependencies from j.*import rules
         Pipeline mavenInstallPipeline = (new PipelineBuilder(externalIdFactory, bazelCommandExecutor, bazelVariableSubstitutor, haskellCabalLibraryJsonProtoParser))
@@ -102,7 +102,7 @@ public class Pipelines {
             .parseReplaceInEachLine("\".*", "")
             .transformToMavenDependencies()
             .build();
-        availablePipelines.put(WorkspaceRule.MAVEN_INSTALL, mavenInstallPipeline);
+        availablePipelines.put(DependencySource.MAVEN_INSTALL, mavenInstallPipeline);
 
         // Pipeline for haskell_cabal_library: extracts Hackage dependencies from Haskell cabal library rules
         Pipeline haskellCabalLibraryPipeline = (new PipelineBuilder(externalIdFactory, bazelCommandExecutor, bazelVariableSubstitutor, haskellCabalLibraryJsonProtoParser))
@@ -116,7 +116,7 @@ public class Pipelines {
             ), false)
             .transformToHackageDependencies()
             .build();
-        availablePipelines.put(WorkspaceRule.HASKELL_CABAL_LIBRARY, haskellCabalLibraryPipeline);
+        availablePipelines.put(DependencySource.HASKELL_CABAL_LIBRARY, haskellCabalLibraryPipeline);
 
         // Select HTTP_ARCHIVE pipeline variant based on Bazel mode
         boolean bzlmodActive = (mode == BazelEnvironmentAnalyzer.Mode.BZLMOD);
@@ -141,7 +141,7 @@ public class Pipelines {
                 .parseShowRepoToUrlCandidates()
                 .transformGithubUrl()
                 .build();
-            availablePipelines.put(WorkspaceRule.HTTP_ARCHIVE, httpArchiveBzlmodPipeline);
+            availablePipelines.put(DependencySource.HTTP_ARCHIVE, httpArchiveBzlmodPipeline);
         } else {
             // WORKSPACE: Use XML parsing pipeline for HTTP pipeline
             Pipeline httpArchiveGithubUrlPipeline = (new PipelineBuilder(externalIdFactory, bazelCommandExecutor, bazelVariableSubstitutor, haskellCabalLibraryJsonProtoParser))
@@ -156,17 +156,17 @@ public class Pipelines {
                     .parseValuesFromXml(HttpArchiveXpath.QUERY, "value")
                     .transformGithubUrl()
                     .build();
-            availablePipelines.put(WorkspaceRule.HTTP_ARCHIVE, httpArchiveGithubUrlPipeline); // add the pipeline to the available pipelines
+            availablePipelines.put(DependencySource.HTTP_ARCHIVE, httpArchiveGithubUrlPipeline); // add the pipeline to the available pipelines
         }
     }
 
     /**
-     * Returns the pipeline for the given WorkspaceRule, or throws if not found.
-     * @param bazelDependencyType The WorkspaceRule to get the pipeline for
-     * @return The Pipeline for the given rule
-     * @throws DetectableException if no pipeline is found for the rule
+     * Returns the pipeline for the given DependencySource, or throws if not found.
+     * @param bazelDependencyType The DependencySource to get the pipeline for
+     * @return The Pipeline for the given source
+     * @throws DetectableException if no pipeline is found for the source
      */
-    public Pipeline get(WorkspaceRule bazelDependencyType) throws DetectableException {
+    public Pipeline get(DependencySource bazelDependencyType) throws DetectableException {
         if (!availablePipelines.containsKey(bazelDependencyType)) {
             throw new DetectableException(String.format("No pipeline found for dependency type %s", bazelDependencyType.getName()));
         }

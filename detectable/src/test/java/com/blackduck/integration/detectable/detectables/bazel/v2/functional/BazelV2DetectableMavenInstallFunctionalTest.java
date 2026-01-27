@@ -12,7 +12,7 @@ import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.functional.DetectableFunctionalTest;
 import com.blackduck.integration.executable.ExecutableOutput;
 import com.blackduck.integration.detectable.detectables.bazel.BazelDetectableOptions;
-import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
+import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelV2Detectable;
 import com.blackduck.integration.bdio.model.Forge;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
@@ -38,7 +38,7 @@ public class BazelV2DetectableMavenInstallFunctionalTest extends DetectableFunct
 
     @Override
     public BazelV2Detectable create(DetectableEnvironment detectableEnvironment) {
-        Set<WorkspaceRule> rules = Collections.singleton(WorkspaceRule.MAVEN_INSTALL);
+        Set<DependencySource> rules = Collections.singleton(DependencySource.MAVEN_INSTALL);
         BazelDetectableOptions options = new BazelDetectableOptions("//:test", rules, null, null, 30);
         return detectableFactory.createBazelV2Detectable(detectableEnvironment, options, () -> com.blackduck.integration.detectable.ExecutableTarget.forCommand("bazel"));
     }

@@ -26,7 +26,7 @@ import com.blackduck.integration.detectable.detectable.exception.DetectableExcep
 import com.blackduck.integration.detectable.detectable.executable.DetectableExecutableRunner;
 import com.blackduck.integration.detectable.detectable.executable.ExecutableFailedException;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.Pipelines;
-import com.blackduck.integration.detectable.detectables.bazel.pipeline.WorkspaceRuleChooser;
+import com.blackduck.integration.detectable.detectables.bazel.pipeline.DependencySourceChooser;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelCommandExecutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelVariableSubstitutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.HaskellCabalLibraryJsonProtoParser;
@@ -39,11 +39,11 @@ public class BazelExtractor {
     private final DetectableExecutableRunner executableRunner;
     private final ExternalIdFactory externalIdFactory;
     private final BazelWorkspaceFileParser bazelWorkspaceFileParser;
-    private final WorkspaceRuleChooser workspaceRuleChooser;
+    private final DependencySourceChooser dependencySourceChooser;
     private final ToolVersionLogger toolVersionLogger;
     private final HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser;
     private final String bazelTarget;
-    private final Set<WorkspaceRule> workspaceRulesFromProperty;
+    private final Set<DependencySource> dependencySourcesFromProperty;
     private final BazelVariableSubstitutor bazelVariableSubstitutor;
     private final BazelProjectNameGenerator bazelProjectNameGenerator;
 
@@ -51,22 +51,22 @@ public class BazelExtractor {
         DetectableExecutableRunner executableRunner,
         ExternalIdFactory externalIdFactory,
         BazelWorkspaceFileParser bazelWorkspaceFileParser,
-        WorkspaceRuleChooser workspaceRuleChooser,
+        DependencySourceChooser dependencySourceChooser,
         ToolVersionLogger toolVersionLogger,
         HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser,
         String bazelTarget,
-        Set<WorkspaceRule> workspaceRulesFromProperty,
+        Set<DependencySource> dependencySourcesFromProperty,
         BazelVariableSubstitutor bazelVariableSubstitutor,
         BazelProjectNameGenerator bazelProjectNameGenerator
     ) {
         this.executableRunner = executableRunner;
         this.externalIdFactory = externalIdFactory;
-        this.workspaceRuleChooser = workspaceRuleChooser;
+        this.dependencySourceChooser = dependencySourceChooser;
         this.bazelWorkspaceFileParser = bazelWorkspaceFileParser;
         this.toolVersionLogger = toolVersionLogger;
         this.haskellCabalLibraryJsonProtoParser = haskellCabalLibraryJsonProtoParser;
         this.bazelTarget = bazelTarget;
-        this.workspaceRulesFromProperty = workspaceRulesFromProperty;
+        this.dependencySourcesFromProperty = dependencySourcesFromProperty;
         this.bazelVariableSubstitutor = bazelVariableSubstitutor;
         this.bazelProjectNameGenerator = bazelProjectNameGenerator;
     }
@@ -77,17 +77,17 @@ public class BazelExtractor {
         // Detect Bazel mode once and pass it to Pipelines for correct HTTP variant selection.
         BazelEnvironmentAnalyzer.Mode mode = new BazelEnvironmentAnalyzer(bazelCommandExecutor).getMode();
         Pipelines pipelines = new Pipelines(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, mode);
-        Set<WorkspaceRule> workspaceRulesFromFile = parseWorkspaceRulesFromFile(workspaceFile);
-        Set<WorkspaceRule> workspaceRulesToQuery = workspaceRuleChooser.choose(workspaceRulesFromFile, workspaceRulesFromProperty);
-        CodeLocation codeLocation = generateCodelocation(pipelines, workspaceRulesToQuery);
+        Set<DependencySource> dependencySourcesFromFile = parseDependencySourcesFromFile(workspaceFile);
+        Set<DependencySource> dependencySourcesToQuery = dependencySourceChooser.choose(dependencySourcesFromFile, dependencySourcesFromProperty);
+        CodeLocation codeLocation = generateCodelocation(pipelines, dependencySourcesToQuery);
         return buildResults(codeLocation, bazelProjectNameGenerator.generateFromBazelTarget(bazelTarget));
     }
 
-    private Set<WorkspaceRule> parseWorkspaceRulesFromFile(File workspaceFile) {
+    private Set<DependencySource> parseDependencySourcesFromFile(File workspaceFile) {
         List<String> workspaceFileLines;
         try {
             workspaceFileLines = FileUtils.readLines(workspaceFile, StandardCharsets.UTF_8);
-            return bazelWorkspaceFileParser.parseWorkspaceRuleTypes(workspaceFileLines);
+            return bazelWorkspaceFileParser.parseDependencySources(workspaceFileLines);
         } catch (IOException e) {
             logger.warn("Unable to read WORKSPACE file {}: {}", workspaceFile.getAbsolutePath(), e.getMessage());
             return new HashSet<>(0);
@@ -103,18 +103,18 @@ public class BazelExtractor {
     }
 
     @NotNull
-    private CodeLocation generateCodelocation(Pipelines pipelines, Set<WorkspaceRule> workspaceRules) throws DetectableException, ExecutableFailedException {
+    private CodeLocation generateCodelocation(Pipelines pipelines, Set<DependencySource> dependencySources) throws DetectableException, ExecutableFailedException {
         List<Dependency> aggregatedDependencies = new ArrayList<>();
         // Make sure the order of processing deterministic
-        List<WorkspaceRule> sortedWorkspaceRules = workspaceRules.stream()
+        List<DependencySource> sortedDependencySources = dependencySources.stream()
             .sorted(Comparator.naturalOrder())
             .collect(Collectors.toList());
 
-        for (WorkspaceRule workspaceRule : sortedWorkspaceRules) {
-            logger.info("Running processing pipeline for rule {}", workspaceRule);
-            List<Dependency> ruleDependencies = pipelines.get(workspaceRule).run();
-            logger.info("Number of dependencies discovered for rule {}: {}", workspaceRule, ruleDependencies.size());
-            logger.debug("Dependencies discovered for rule {}: {}", workspaceRule, ruleDependencies);
+        for (DependencySource dependencySource : sortedDependencySources) {
+            logger.info("Running processing pipeline for dependency source {}", dependencySource);
+            List<Dependency> ruleDependencies = pipelines.get(dependencySource).run();
+            logger.info("Number of dependencies discovered for dependency source {}: {}", dependencySource, ruleDependencies.size());
+            logger.debug("Dependencies discovered for dependency source {}: {}", dependencySource, ruleDependencies);
             aggregatedDependencies.addAll(ruleDependencies);
         }
 

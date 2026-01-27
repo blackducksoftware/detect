@@ -15,7 +15,7 @@ import com.google.gson.Gson;
 import com.blackduck.integration.bdio.model.dependency.Dependency;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.executable.ExecutableFailedException;
-import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
+import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.Pipeline;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.Pipelines;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelCommandExecutor;
@@ -193,7 +193,7 @@ class PipelinesTest {
     void testMavenInstall() throws IntegrationException, ExecutableFailedException {
         Assumptions.assumeFalse(SystemUtils.IS_OS_WINDOWS);
 
-        List<Dependency> dependencies = doTest(WorkspaceRule.MAVEN_INSTALL, MAVEN_INSTALL_STANDARD_BAZEL_COMMAND_ARGS, null, MAVEN_INSTALL_CQUERY_OUTPUT_SIMPLE);
+        List<Dependency> dependencies = doTest(DependencySource.MAVEN_INSTALL, MAVEN_INSTALL_STANDARD_BAZEL_COMMAND_ARGS, null, MAVEN_INSTALL_CQUERY_OUTPUT_SIMPLE);
         assertEquals(8, dependencies.size());
         int foundCount = 0;
         for (Dependency dependency : dependencies) {
@@ -215,7 +215,7 @@ class PipelinesTest {
     void testMavenInstallMixedTags() throws IntegrationException, ExecutableFailedException {
         Assumptions.assumeFalse(SystemUtils.IS_OS_WINDOWS);
 
-        List<Dependency> dependencies = doTest(WorkspaceRule.MAVEN_INSTALL, MAVEN_INSTALL_STANDARD_BAZEL_COMMAND_ARGS, null, MAVEN_INSTALL_OUTPUT_MIXED_TAGS);
+        List<Dependency> dependencies = doTest(DependencySource.MAVEN_INSTALL, MAVEN_INSTALL_STANDARD_BAZEL_COMMAND_ARGS, null, MAVEN_INSTALL_OUTPUT_MIXED_TAGS);
         assertEquals(2, dependencies.size());
         int foundCount = 0;
         for (Dependency dependency : dependencies) { //TODO: Factor out into a assertDependency();
@@ -237,7 +237,7 @@ class PipelinesTest {
     void testMavenInstallMixedTagsReversedOrder() throws IntegrationException, ExecutableFailedException {
         Assumptions.assumeFalse(SystemUtils.IS_OS_WINDOWS);
 
-        List<Dependency> dependencies = doTest(WorkspaceRule.MAVEN_INSTALL, MAVEN_INSTALL_STANDARD_BAZEL_COMMAND_ARGS, null, MAVEN_INSTALL_OUTPUT_MIXED_TAGS_REVERSED_ORDER);
+        List<Dependency> dependencies = doTest(DependencySource.MAVEN_INSTALL, MAVEN_INSTALL_STANDARD_BAZEL_COMMAND_ARGS, null, MAVEN_INSTALL_OUTPUT_MIXED_TAGS_REVERSED_ORDER);
         assertEquals(1, dependencies.size());
         int foundCount = 0;
         for (Dependency dependency : dependencies) {
@@ -265,7 +265,7 @@ class PipelinesTest {
             "build"
         );
 
-        List<Dependency> dependencies = doTest(WorkspaceRule.MAVEN_INSTALL, expectedBazelCommandArgs, userProvidedCqueryAdditionalOptions, MAVEN_INSTALL_CQUERY_OUTPUT_SIMPLE);
+        List<Dependency> dependencies = doTest(DependencySource.MAVEN_INSTALL, expectedBazelCommandArgs, userProvidedCqueryAdditionalOptions, MAVEN_INSTALL_CQUERY_OUTPUT_SIMPLE);
         assertEquals(8, dependencies.size());
         int foundCount = 0;
         for (Dependency dependency : dependencies) {
@@ -288,7 +288,7 @@ class PipelinesTest {
         Assumptions.assumeFalse(SystemUtils.IS_OS_WINDOWS);
 
         List<Dependency> dependencies = doTest(
-            WorkspaceRule.HASKELL_CABAL_LIBRARY,
+            DependencySource.HASKELL_CABAL_LIBRARY,
             HASKELL_CABAL_LIBRARY_STANDARD_BAZEL_COMMAND_ARGS,
             null,
             HASKELL_CABAL_LIBRARY_JSONPROTO
@@ -304,7 +304,7 @@ class PipelinesTest {
         assertEquals(1, foundCount);
     }
 
-    private List<Dependency> doTest(WorkspaceRule workspaceRule, List<String> expectedBazelCommandArgs, List<String> userProvidedCqueryAdditionalOptions, String input)
+    private List<Dependency> doTest(DependencySource dependencySource, List<String> expectedBazelCommandArgs, List<String> userProvidedCqueryAdditionalOptions, String input)
         throws IntegrationException, ExecutableFailedException {
         BazelCommandExecutor bazelCommandExecutor = Mockito.mock(BazelCommandExecutor.class);
         Mockito.when(bazelCommandExecutor.executeToString(expectedBazelCommandArgs)).thenReturn(Optional.of(input));
@@ -313,7 +313,7 @@ class PipelinesTest {
         ExternalIdFactory externalIdFactory = new ExternalIdFactory();
         HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser = new HaskellCabalLibraryJsonProtoParser(new Gson());
         Pipelines pipelines = new Pipelines(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser);
-        Pipeline pipeline = pipelines.get(workspaceRule);
+        Pipeline pipeline = pipelines.get(dependencySource);
         return pipeline.run();
     }
 

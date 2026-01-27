@@ -6,7 +6,7 @@ import com.blackduck.integration.bdio.model.dependency.Dependency;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.exception.DetectableException;
 import com.blackduck.integration.detectable.detectable.executable.ExecutableFailedException;
-import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
+import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.Pipelines;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelCommandExecutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelVariableSubstitutor;
@@ -51,10 +51,10 @@ public class BazelV2Extractor {
     }
 
     /**
-     * Runs the extraction process for the given Bazel target and set of workspace rules.
+     * Runs the extraction process for the given Bazel target and set of dependency sources.
      * Executes each pipeline in a deterministic order, aggregates dependencies, and builds the Extraction result.
      * @param bazelCmd Bazel command executor
-     * @param rules Set of workspace rules to execute
+     * @param sources Set of dependency sources to execute
      * @param bazelTarget Bazel target to analyze
      * @param mode Bazel environment mode (for HTTP variant selection)
      * @return Extraction result containing discovered dependencies and project name
@@ -62,24 +62,24 @@ public class BazelV2Extractor {
      * @throws DetectableException if extraction fails
      */
     public Extraction run(BazelCommandExecutor bazelCmd,
-                          Set<WorkspaceRule> rules,
+                          Set<DependencySource> sources,
                           String bazelTarget,
                           BazelEnvironmentAnalyzer.Mode mode) throws ExecutableFailedException, DetectableException {
-        logger.info("Starting Bazel V2 extraction. Target: {}. Pipelines: {}", bazelTarget, rules);
-        // Create pipelines for each workspace rule
+        logger.info("Starting Bazel V2 extraction. Target: {}. Pipelines: {}", bazelTarget, sources);
+        // Create pipelines for each dependency source
         Pipelines pipelines = new Pipelines(bazelCmd, bazelVariableSubstitutor, externalIdFactory, haskellParser, mode);
 
-        // Sort rules by priority for deterministic execution
-        List<WorkspaceRule> ordered = rules.stream()
+        // Sort sources by priority for deterministic execution
+        List<DependencySource> ordered = sources.stream()
             .sorted(Comparator.comparingInt(this::priority))
             .collect(Collectors.toList());
 
         List<Dependency> aggregated = new ArrayList<>();
         // Execute each pipeline and aggregate discovered dependencies
-        for (WorkspaceRule rule : ordered) {
-            logger.info("Executing pipeline for rule: {}", rule);
-            List<Dependency> deps = pipelines.get(rule).run();
-            logger.info("Number of dependencies discovered for rule {}: {}", rule, deps.size());
+        for (DependencySource source : ordered) {
+            logger.info("Executing pipeline for dependency source: {}", source);
+            List<Dependency> deps = pipelines.get(source).run();
+            logger.info("Number of dependencies discovered for source {}: {}", source, deps.size());
             aggregated.addAll(deps);
         }
 
@@ -97,14 +97,14 @@ public class BazelV2Extractor {
     }
 
     /**
-     * Determines the execution priority for each workspace rule.
+     * Determines the execution priority for each dependency source.
      * Lower number means earlier execution.
-     * @param rule WorkspaceRule to prioritize
+     * @param source DependencySource to prioritize
      * @return Priority value
      */
-    private int priority(WorkspaceRule rule) {
+    private int priority(DependencySource source) {
         // Lower number = earlier execution
-        switch (rule) {
+        switch (source) {
             case MAVEN_INSTALL:
                 return 0;
             case MAVEN_JAR:

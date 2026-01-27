@@ -47,11 +47,11 @@ bash <(curl -s -L https://detect.blackduck.com/detect11.sh) \
 
 ### Optional Properties
 
-#### `detect.bazel.workspace.rules`
+#### `detect.bazel.dependency.sources`
 - **Description:** Manually specify which dependency sources to extract. By default (NONE), the detector automatically probes the dependency graph to determine which sources are present.
 - **Default:** `NONE` (auto-detection enabled)
 - **Valid Values:** `MAVEN_INSTALL`, `MAVEN_JAR`, `HASKELL_CABAL_LIBRARY`, `HTTP_ARCHIVE`, `ALL`, `NONE`
-- **Example:** `--detect.bazel.workspace.rules=MAVEN_INSTALL,HTTP_ARCHIVE`
+- **Example:** `--detect.bazel.dependency.sources=MAVEN_INSTALL,HTTP_ARCHIVE`
 - **Note:** This property works for both BZLMOD and WORKSPACE projects despite the name. Setting explicit values bypasses graph probing for faster execution.
 
 #### `detect.bazel.mode`
@@ -215,7 +215,7 @@ bash <(curl -s -L https://detect.blackduck.com/detect11.sh) --detect.bazel.targe
 
 **Solution:** 
 1. Verify your target has dependencies: `bazel query 'deps(//your:target)'`
-2. Manually specify dependency sources: `--detect.bazel.workspace.rules=MAVEN_INSTALL,HTTP_ARCHIVE`
+2. Manually specify dependency sources: `--detect.bazel.dependency.sources=MAVEN_INSTALL,HTTP_ARCHIVE`
 3. Check that your Bazel target builds successfully: `bazel build //your:target`
 
 #### Old Bazel Version Warning
@@ -285,7 +285,7 @@ The detector automatically determines your Bazel mode through the following proc
 - Runs targeted Bazel queries for each potential source type
 - More flexible but slower (multiple Bazel command executions)
 
-**Manual Override (`detect.bazel.workspace.rules`):**
+**Manual Override (`detect.bazel.dependency.sources`):**
 - Skips graph probing
 - Directly runs pipelines for specified sources
 - Faster execution if you know your dependency types
@@ -294,14 +294,14 @@ The detector automatically determines your Bazel mode through the following proc
 **Example for known dependencies:**
 ```sh
 # Skip probing, directly extract Maven and HTTP dependencies
---detect.bazel.workspace.rules=MAVEN_INSTALL,HTTP_ARCHIVE
+--detect.bazel.dependency.sources=MAVEN_INSTALL,HTTP_ARCHIVE
 ```
 
 ### Performance Considerations
 
 - **HTTP Probe Limit:** Default limit of 100 repositories prevents excessive command execution on large monorepos. Adjust if needed.
 - **Target Specificity:** More specific targets (e.g., `//module:specific-target`) are faster than broad targets (e.g., `//:all`)
-- **Manual Override:** Setting `detect.bazel.workspace.rules` explicitly can significantly speed up detection
+- **Manual Override:** Setting `detect.bazel.dependency.sources` explicitly can significantly speed up detection
 
 ### Supported Bazel Versions
 
@@ -314,4 +314,4 @@ The detector automatically determines your Bazel mode through the following proc
 1. **Use Specific Targets:** Analyze specific build targets rather than workspace-wide targets for better performance
 2. **Enable Debug Logging:** Use `--logging.level.detect=DEBUG` when troubleshooting
 3. **Set Mode Explicitly in CI/CD:** For consistent builds, set `--detect.bazel.mode=WORKSPACE` or `BZLMOD` explicitly
-4. **Override Pipeline Selection in CI/CD:** If dependency types are known, set `--detect.bazel.workspace.rules` to avoid probing overhead
+4. **Override Pipeline Selection in CI/CD:** If dependency types are known, set `--detect.bazel.dependency.sources` to avoid probing overhead
