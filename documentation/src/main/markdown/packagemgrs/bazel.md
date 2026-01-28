@@ -66,10 +66,9 @@ bash <(curl -s -L https://detect.blackduck.com/detect11.sh) \
 - **When to Use:** Only set this if auto-detection fails or for testing purposes. Incorrect values may cause extraction to fail.
 
 #### `detect.bazel.http.probe.limit`
-- **Description:** Maximum number of external repositories to probe when detecting HTTP-family dependencies (http_archive, git_repository, etc.). Each probe involves executing Bazel commands, so this limit prevents performance issues on targets with many dependencies.
+- **Purpose:** A safety cap on how many external repositories the detector will probe for HTTP-family rules (`http_archive`, `git_repository`, `go_repository`). Each probe runs Bazel subprocesses and can be costly.
 - **Default:** `100`
-- **Example:** `--detect.bazel.http.probe.limit=50`
-- **When to Increase:** If HTTP dependencies are being missed on large targets with many external repositories, increase this value. A warning will be logged if the limit is reached.
+- **Example (advanced use):** `--detect.bazel.http.probe.limit=200`
 
 #### `detect.bazel.cquery.options`
 - **Description:** Additional options to pass to Bazel cquery commands
