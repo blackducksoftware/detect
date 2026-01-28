@@ -58,6 +58,7 @@ public class CargoLockfileExtractor {
         CargoLockData cargoLockData = new Toml().read(cargoLockFile).to(CargoLockData.class);
         List<CargoLockPackageData> cargoLockPackageDataList = cargoLockData.getPackages().orElse(new ArrayList<>());
         boolean exclusionEnabled = isDependencyExclusionEnabled(cargoDetectableOptions);
+        boolean isVirtualWorkspace = false;
 
         if (exclusionEnabled && cargoDetectableOptions.getDependencyTypeFilter().shouldExclude(CargoDependencyType.PROC_MACRO)) {
             logger.warn(
@@ -81,11 +82,37 @@ public class CargoLockfileExtractor {
         if(cargoTomlFile != null) {
             String cargoTomlContents = FileUtils.readFileToString(cargoTomlFile, StandardCharsets.UTF_8);
             File workspaceRoot = cargoTomlFile.getParentFile();
+
+            projectNameVersion = cargoTomlParser.parseNameVersionFromCargoToml(cargoTomlContents);
+            isVirtualWorkspace = cargoTomlParser.isVirtualWorkspace(cargoTomlContents);
+
+            // Early exit for virtual workspace with all members excluded
+            if (shouldReturnZeroComponents(cargoDetectableOptions, cargoTomlContents, workspaceRoot, isVirtualWorkspace)) {
+                logger.warn(
+                    "Cannot exclude all workspace members for virtual manifest. " +
+                        "Please check your workspace configuration (detect.cargo.ignore.all.workspaces or exclude properties). " +
+                        "Zero components will be reported in SBOM."
+                );
+                return new Extraction.Builder().success(new ArrayList<>()).nameVersionIfPresent(projectNameVersion).build();
+            }
+
+            // Setting of workspace dependencies (lookup table) is done once at the start
+            // So, the parsing of workspace inheritance syntax version resolved correctly
+            cargoTomlParser.setWorkspaceDependencies(cargoTomlContents);
+
             Set<String> workspaceMembers = cargoTomlParser.parseActiveWorkspaceMembers(cargoTomlContents, workspaceRoot);
 
             if(cargoDetectableOptions != null) {
                 // Step-1: Process all workspace members and their Cargo.toml first
-                processWorkspaceMembers(workspaceMembers, cargoDetectableOptions, workspaceRoot, cargoLockPackageDataList, packageLookupMap, filter, codeLocations);
+                processWorkspaceMembers(
+                    workspaceMembers,
+                    cargoDetectableOptions,
+                    workspaceRoot,
+                    cargoLockPackageDataList,
+                    packageLookupMap,
+                    filter,
+                    codeLocations
+                );
             }
 
             // Step-2: Process single root Cargo.toml. Only filter if Cargo.toml defines dependency sections.
@@ -100,7 +127,6 @@ public class CargoLockfileExtractor {
                 );
                 codeLocations.add(rootCodeLocation);
             }
-            projectNameVersion = cargoTomlParser.parseNameVersionFromCargoToml(cargoTomlContents);
         }
 
         // Fallback: if no Cargo.toml found or CodeLocations were created, treat all Cargo.lock packages as direct dependencies
@@ -136,6 +162,36 @@ public class CargoLockfileExtractor {
 
         EnumListFilter<CargoDependencyType> filter = options.getDependencyTypeFilter();
         return filter != null && !filter.shouldIncludeAll();
+    }
+
+    private boolean shouldReturnZeroComponents(
+        CargoDetectableOptions cargoDetectableOptions,
+        String cargoTomlContents,
+        File workspaceRoot,
+        boolean isVirtualWorkspace
+    ) {
+        if (!isVirtualWorkspace || cargoDetectableOptions == null) {
+            return false;
+        }
+
+        // This ensures that the workspace is virtual and exclusion options are provided
+        boolean ignoreAllWorkspaceMembers = cargoDetectableOptions.getCargoIgnoreAllWorkspacesMode();
+
+        // Case 1: User explicitly wants to ignore all workspace members
+        if (ignoreAllWorkspaceMembers) {
+            return true;
+        }
+
+        // Case 2: User excluded all members via exclude configuration
+        Set<String> allWorkspaceMembers = cargoTomlParser.parseActiveWorkspaceMembers(cargoTomlContents, workspaceRoot);
+        Set<String> effectiveWorkspaces = getEffectiveWorkspaces(
+            allWorkspaceMembers,
+            cargoDetectableOptions.getIncludedWorkspaces(),
+            cargoDetectableOptions.getExcludedWorkspaces(),
+            workspaceRoot
+        );
+
+        return effectiveWorkspaces.isEmpty();
     }
 
     private List<CargoLockPackageData> resolveDirectAndTransitiveDependencies(
