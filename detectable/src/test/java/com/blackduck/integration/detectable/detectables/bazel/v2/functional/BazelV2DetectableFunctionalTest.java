@@ -32,6 +32,10 @@ public class BazelV2DetectableFunctionalTest extends DetectableFunctionalTest {
         ExecutableOutput haskellProto = createStandardOutputFromResource("/bazel/jsonProtoForHaskellCabalLibraries.txt");
         // The Haskell pipeline expects a specific cquery invocation; register that exact command so the functional runner returns our resource
         addExecutableOutput(haskellProto, "bazel", "cquery", "--noimplicit_deps", "kind(haskell_cabal_library, deps(//:test))", "--output", "jsonproto");
+
+        // Mock Bazel mode detection to return BZLMOD (non-empty stdout, return code 0)
+        ExecutableOutput modShowRepoOutput = createStandardOutput("bazel_tools repo info");
+        addExecutableOutput(modShowRepoOutput, "bazel", "mod", "show_repo", "bazel_tools");
     }
 
     @Override

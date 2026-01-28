@@ -50,8 +50,10 @@ public class BazelCommandExecutor {
         try {
             return executableRunner.execute(ExecutableUtils.createFromTarget(workspaceDir, bazelExe, args));
         } catch (Exception e) {
-            logger.error("Failed to execute Bazel command: {}", e.getMessage());
-            throw new RuntimeException("Bazel execution failed", e);
+            String command = (bazelExe != null ? bazelExe.toCommand() : "bazel") + " " + String.join(" ", args == null ? java.util.Collections.emptyList() : args);
+            String msg = String.format("Failed to execute Bazel command '%s': %s", command, e.getMessage());
+            logger.error(msg, e);
+            throw new RuntimeException(msg, e);
         }
     }
 }

@@ -34,6 +34,10 @@ public class BazelV2DetectableMavenInstallFunctionalTest extends DetectableFunct
         ExecutableOutput mavenInstallOutput = createStandardOutput(outputLine);
         // Register the exact cquery command the maven_install pipeline uses
         addExecutableOutput(mavenInstallOutput, "bazel", "cquery", "--noimplicit_deps", "kind(j.*import, deps(//:test))", "--output", "build");
+
+        // Mock Bazel mode detection to return BZLMOD (non-empty stdout, return code 0)
+        ExecutableOutput modShowRepoOutput = createStandardOutput("bazel_tools repo info");
+        addExecutableOutput(modShowRepoOutput, "bazel", "mod", "show_repo", "bazel_tools");
     }
 
     @Override

@@ -67,7 +67,7 @@ public class IntermediateStepParseShowRepoToUrlCandidates implements Intermediat
                 if (mImport.find()) {
                     String importPath = mImport.group(1).trim();
                     // For well-known hosts, synthesize an https URL so downstream can normalize (e.g., GitHub)
-                    if (looksLikeHttpHost(importPath)) {
+                    if (checkForHttpGithubOnly(importPath)) {
                         results.add("https://" + importPath);
                     }
                 }
@@ -84,8 +84,8 @@ public class IntermediateStepParseShowRepoToUrlCandidates implements Intermediat
         return Optional.empty();
     }
 
-    private boolean looksLikeHttpHost(String importPath) {
-        // Conservative: treat github.com/* as synthesize-able. Avoid making up URLs for non-HTTP-style hosts.
-        return importPath.startsWith("github.com/");
+    private boolean checkForHttpGithubOnly(String importPath) {
+        // Intentionally GitHub-only synthesis: treat only github.com/* as synthesize-able.
+        return importPath != null && importPath.startsWith("github.com/");
     }
 }

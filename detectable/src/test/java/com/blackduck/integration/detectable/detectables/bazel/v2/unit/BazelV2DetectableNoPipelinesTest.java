@@ -4,10 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collections;
-import java.util.Optional;
-import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -27,11 +24,12 @@ import com.blackduck.integration.detectable.detectables.bazel.v2.BazelV2Detectab
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelV2Detectable.BazelGraphProberFactory;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelGraphProber;
 import com.blackduck.integration.detectable.detectable.exception.DetectableException;
+import com.blackduck.integration.detectable.detectables.bazel.v2.BazelEnvironmentAnalyzer;
 
 public class BazelV2DetectableNoPipelinesTest {
 
     @Test
-    public void extract_whenProberReturnsNoPipelines_throwsDetectableException() throws IOException, DetectableException {
+    public void extract_whenProberReturnsNoPipelines_throwsDetectableException() {
         // Arrange
         DetectableEnvironment environment = new DetectableEnvironment(new File("."));
         FileFinder fileFinder = new SimpleFileFinder();
@@ -44,10 +42,11 @@ public class BazelV2DetectableNoPipelinesTest {
 
         // Mock a prober that returns empty set
         BazelGraphProberFactory proberFactory = (bazelCmd, target, mode, httpProbeLimit) -> Mockito.mock(BazelGraphProber.class);
-        BazelGraphProber mockProber = proberFactory.create(null, "//:test", null, 30);
+        BazelGraphProber mockProber = proberFactory.create(null, "//:test", BazelEnvironmentAnalyzer.Mode.UNKNOWN, 30);
         when(mockProber.decidePipelines()).thenReturn(Collections.emptySet());
 
-        BazelDetectableOptions options = new BazelDetectableOptions("//:test", null, null, null, 30);
+        // Use mode override UNKNOWN to avoid auto-detection which would execute Bazel
+        BazelDetectableOptions options = new BazelDetectableOptions("//:test", null, null, "UNKNOWN", 30);
 
         BazelV2Detectable detectable = new BazelV2Detectable(environment, fileFinder, executableRunner, externalIdFactory, bazelResolver, options, substitutor, haskellParser, projectNameGenerator, (bazelCmd, target, mode, httpProbeLimit) -> mockProber);
 
@@ -55,4 +54,3 @@ public class BazelV2DetectableNoPipelinesTest {
         assertThrows(DetectableException.class, () -> detectable.extract(new com.blackduck.integration.detectable.extraction.ExtractionEnvironment(new File("out"))));
     }
 }
-

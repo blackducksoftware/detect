@@ -244,7 +244,7 @@ public class DetectProperties {
     public static final NullableStringProperty DETECT_BAZEL_MODE =
         NullableStringProperty.newBuilder("detect.bazel.mode")
             .setInfo("Bazel Mode Override", DetectPropertyFromVersion.VERSION_11_0_0)
-            .setHelp("Override Bazel environment mode detection. By default, Detect automatically determines whether the Bazel project uses BZLMOD or WORKSPACE-based dependency management. Only set this property if auto-detection fails or for testing purposes. Incorrect values may cause extraction to fail. Valid values: WORKSPACE, BZLMOD, UNKNOWN")
+            .setHelp("Override Bazel environment mode detection. By default, Detect automatically determines whether the Bazel project uses BZLMOD or WORKSPACE-based dependency management. Only set this property if auto-detection fails or for testing purposes. Incorrect values may cause extraction to fail. Valid values: WORKSPACE, BZLMOD")
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();
 
