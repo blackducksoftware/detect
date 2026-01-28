@@ -28,7 +28,7 @@ Quack Patch assists developers in automatically generating code patches for pack
 ## Configuration
 
 * Set the scan mode to RAPID or STATELESS using the detect.blackduck.scan.mode property: `--detect.blackduck.scan.mode=RAPID`.
-* Enable Quack Patch with the detect.blackduck.quack.patch.enabled property: `--detect.blackduck.quack.patch.enabled=true`.
+* Enable Quack Patch with the detect.quack.patch.enabled property: `--detect.quack.patch.enabled=true`.
 * Set the LLM Gateway URL with the detect.llm.api.endpoint property: `--detect.llm.api.endpoint=https://your-llm-gateway.com`.
 * Set the LLM Gateway API key with the detect.llm.api.key property: `--detect.llm.api.key=your-llm-api-key`.
 * Set the LLM model with the detect.llm.name property: `--detect.llm.name=gpt-4`.
@@ -41,7 +41,7 @@ Using detect.sh script:
 ./detect.sh --blackduck.url=https://your-blackduck-url.com \
     --blackduck.api.token=your-api-token \
     --detect.blackduck.scan.mode=RAPID \
-    --detect.blackduck.quack.patch.enabled=true \
+    --detect.quack.patch.enabled=true \
     --detect.llm.api.endpoint=https://your-llm-gateway.com \
     --detect.llm.api.key=your-llm-api-key \
     --detect.llm.name=gpt-4
@@ -53,7 +53,7 @@ Using detect jar distribution:
 java -jar detect.jar --blackduck.url=https://your-blackduck-url.com \
     --blackduck.api.token=your-api-token \
     --detect.blackduck.scan.mode=RAPID \
-    --detect.blackduck.quack.patch.enabled=true \
+    --detect.quack.patch.enabled=true \
     --detect.llm.api.endpoint=https://your-llm-gateway.com \
     --detect.llm.api.key=your-llm-api-key \
     --detect.llm.name=gpt-4
