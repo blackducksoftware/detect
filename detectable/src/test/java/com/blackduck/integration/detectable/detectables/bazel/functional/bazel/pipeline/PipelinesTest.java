@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import com.blackduck.integration.detectable.detectables.bazel.v2.BazelEnvironmentAnalyzer;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -312,7 +313,13 @@ class PipelinesTest {
 
         ExternalIdFactory externalIdFactory = new ExternalIdFactory();
         HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser = new HaskellCabalLibraryJsonProtoParser(new Gson());
-        Pipelines pipelines = new Pipelines(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser);
+        Pipelines pipelines = new Pipelines(
+            bazelCommandExecutor,
+            bazelVariableSubstitutor,
+            externalIdFactory,
+            haskellCabalLibraryJsonProtoParser,
+            BazelEnvironmentAnalyzer.Mode.WORKSPACE
+        );
         Pipeline pipeline = pipelines.get(dependencySource);
         return pipeline.run();
     }
