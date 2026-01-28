@@ -21,6 +21,7 @@
 ### New features
 
 * [detect_product_short] now supports Rush Package Manager. For details and configuration information, see: [Rush Detector](packagemgrs/rush.md)
+* Introducing Quack Patch: An AI-assisted code patching tool integrated into [detect_product_short] to help developers generate code patches for vulnerable components. For more information, see: [Quack Patch Documentation](runningdetect/quack-patch.md)
 * Control over which workspace members are included or excluded during scanning is made possible by the new `detect.cargo.included.workspaces` and `detect.cargo.excluded.workspaces` properties for Cargo Detector. See [Cargo](properties/detectors/cargo.md) for details.
 * When set to true (default: false), the new `detect.cargo.ignore.all.workspaces` property allows you to completely disable workspace support. See [Cargo](properties/detectors/cargo.md) for more information.
 
@@ -36,4 +37,5 @@
 ### Dependency Updates
 
 * Updated method-analyzer-core to 1.0.7.
+* Upgraded and released Nuget Inspector version 2.5.0.
 
