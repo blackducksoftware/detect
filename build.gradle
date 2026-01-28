@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '11.2.0-SIGQA13-shanty.IDETECT-4900-SNAPSHOT'
+version = '11.2.0-SIGQA14-SNAPSHOT'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
@@ -82,6 +82,10 @@ repositories {
     maven {
         url = uri("${externalRepoHost}/bds-integration-placeholder-release")
         content { includeModule(locatorGroup, locatorModule) }
+    }
+    maven {
+        url = uri("${externalRepoHost}/bds-integration-placeholder-release")
+        content { includeModule(quackPatchGroup, quackPatchModule) }
     }
     maven {
         url "${internalRepoHost}/artifactory/bds-bdio-release"
