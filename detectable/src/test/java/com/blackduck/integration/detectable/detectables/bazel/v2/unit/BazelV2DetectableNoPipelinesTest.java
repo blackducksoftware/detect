@@ -46,7 +46,11 @@ public class BazelV2DetectableNoPipelinesTest {
         when(mockProber.decidePipelines()).thenReturn(Collections.emptySet());
 
         // Use mode override UNKNOWN to avoid auto-detection which would execute Bazel
-        BazelDetectableOptions options = new BazelDetectableOptions("//:test", null, null, "UNKNOWN", 30);
+        BazelDetectableOptions options = BazelDetectableOptionsTestBuilder.builder()
+            .target("//:test")
+            .modeOverride("UNKNOWN")
+            .httpProbeLimit(30)
+            .build();
 
         BazelV2Detectable detectable = new BazelV2Detectable(environment, fileFinder, executableRunner, externalIdFactory, bazelResolver, options, substitutor, haskellParser, projectNameGenerator, (bazelCmd, target, mode, httpProbeLimit) -> mockProber);
 
