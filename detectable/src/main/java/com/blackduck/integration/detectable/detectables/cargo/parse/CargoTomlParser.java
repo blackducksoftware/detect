@@ -27,9 +27,16 @@ public class CargoTomlParser {
     private static final String WORKSPACE_KEY = "workspace";
     private static final String WORKSPACE_MEMBER_KEY = "members";
     private static final String WORKSPACE_EXCLUSION_KEY = "exclude";
+    private static final String WORKSPACE_PATH_SEPARATOR = "/";
     private static final String NORMAL_DEPENDENCIES_KEY = "dependencies";
     private static final String BUILD_DEPENDENCIES_KEY = "build-dependencies";
     private static final String DEV_DEPENDENCIES_KEY = "dev-dependencies";
+
+    private Map<String, String> workspaceDependencies = new HashMap<>();
+
+    public void setWorkspaceDependencies(String tomlFileContents) {
+        this.workspaceDependencies = parseRootWorkspaceDependencies(tomlFileContents);
+    }
 
     public Optional<NameVersion> parseNameVersionFromCargoToml(String tomlFileContents) {
         TomlParseResult cargoTomlObject = Toml.parse(tomlFileContents);
@@ -180,7 +187,7 @@ public class CargoTomlParser {
             return;
         }
 
-        String relativePath = prefix + "/" + subDir.getName();
+        String relativePath = prefix + WORKSPACE_PATH_SEPARATOR + subDir.getName();
         expandedMembers.add(relativePath);
     }
 
@@ -196,7 +203,7 @@ public class CargoTomlParser {
         Map<NameVersion, EnumSet<CargoDependencyType>> dependencyTypeMap = new HashMap<>();
 
         parseDependenciesFromTomlTable(toml, NORMAL_DEPENDENCIES_KEY, CargoDependencyType.NORMAL, dependencyTypeMap);
-        parseDependenciesFromTomlTable(toml, BUILD_DEPENDENCIES_KEY, CargoDependencyType.BUILD, dependencyTypeMap);
+        parseDependenciesFromTomlTable(toml, BUILD_DEPENDENCIES_KEY, CargoDependencyType.BUILD, dependencyTypeMap );
         parseDependenciesFromTomlTable(toml, DEV_DEPENDENCIES_KEY, CargoDependencyType.DEV, dependencyTypeMap);
 
         Set<NameVersion> dependenciesToInclude = new HashSet<>();
@@ -219,6 +226,48 @@ public class CargoTomlParser {
         return dependenciesToInclude;
     }
 
+    /**
+     * Parses workspace-level dependency versions from the root Cargo.toml file.
+     *
+     * In Cargo workspace projects, dependencies can be defined once in [workspace.dependencies],
+     * [workspace.build-dependencies], or [workspace.dev-dependencies] sections of the root Cargo.toml.
+     * Workspace members can then reference these dependencies using `.workspace = true` syntax instead
+     * of specifying versions directly. This method extracts all workspace-level dependencies and their
+     * versions, which are later used to resolve dependencies in member crates that use workspace inheritance.
+     *
+     * @param tomlFileContents The content of the root Cargo.toml file
+     * @return A map of dependency names to their versions defined at the workspace level
+     */
+    public Map<String, String> parseRootWorkspaceDependencies(String tomlFileContents) {
+        TomlParseResult toml = Toml.parse(tomlFileContents);
+        Map<String, String> rootWorkspaceDependencies = new HashMap<>();
+        TomlTable workspace = toml.getTable(WORKSPACE_KEY);
+
+        if (workspace != null) {
+            // Parse [workspace.dependencies]
+            extractWorkspaceDependencies(workspace, NORMAL_DEPENDENCIES_KEY, rootWorkspaceDependencies);
+
+            // Parse [workspace.build-dependencies]
+            extractWorkspaceDependencies(workspace, BUILD_DEPENDENCIES_KEY, rootWorkspaceDependencies);
+
+            // Parse [workspace.dev-dependencies]
+            extractWorkspaceDependencies(workspace, DEV_DEPENDENCIES_KEY, rootWorkspaceDependencies);
+        }
+        return rootWorkspaceDependencies;
+    }
+
+    private void extractWorkspaceDependencies(TomlTable workspace, String sectionKey, Map<String, String> rootWorkspaceDependencies) {
+        TomlTable dependencies = workspace.getTable(sectionKey);
+        if (dependencies != null) {
+            for (String key : dependencies.keySet()) {
+                String version = extractVersion(dependencies.get(key));
+                if (version != null) {
+                    rootWorkspaceDependencies.put(key, version);
+                }
+            }
+        }
+    }
+
     private void parseDependenciesFromTomlTable(
         TomlParseResult toml,
         String sectionKey,
@@ -236,7 +285,13 @@ public class CargoTomlParser {
                 if (value instanceof String) {
                     version = (String) value;
                 } else if (value instanceof TomlTable) {
-                    version = ((TomlTable) value).getString(VERSION_KEY); // may be null
+                    TomlTable depTable = (TomlTable) value;
+                    // Check if this is a workspace reference
+                    if (Boolean.TRUE.equals(depTable.getBoolean(WORKSPACE_KEY))) {
+                        version = this.workspaceDependencies.get(key);
+                    } else {
+                        version = depTable.getString(VERSION_KEY);
+                    }
                 }
 
                 NameVersion nv = new NameVersion(key, version);
@@ -330,6 +385,9 @@ public class CargoTomlParser {
             TomlTable depsTable = (TomlTable) value;
             for (String depName : depsTable.keySet()) {
                 String version = extractVersion(depsTable.get(depName));
+                if(version == null) {
+                    version = extractVersionWithWorkspace(depsTable.get(depName), depName);
+                }
                 addDependency(depName, version, cargoDependencyType, dependencyTypeMap);
             }
         } else if (value instanceof Map) {
@@ -337,6 +395,9 @@ public class CargoTomlParser {
             for (Map.Entry<?, ?> depEntry : depsMap.entrySet()) {
                 String depName = depEntry.getKey().toString();
                 String version = extractVersion(depEntry.getValue());
+                if(version == null) {
+                    version = extractVersionWithWorkspace(depEntry.getValue(), depName);
+                }
                 addDependency(depName, version, cargoDependencyType, dependencyTypeMap);
             }
         }
@@ -378,6 +439,37 @@ public class CargoTomlParser {
         return null;
     }
 
+    private String extractVersionWithWorkspace(Object depValue, String depName) {
+        if (depValue == null) return null;
+        if (depValue instanceof String) return (String) depValue;
+
+        if (depValue instanceof TomlTable) {
+            TomlTable table = (TomlTable) depValue;
+            if (Boolean.TRUE.equals(table.getBoolean(WORKSPACE_KEY))) {
+                return this.workspaceDependencies.get(depName);
+            }
+            if (table.contains(VERSION_KEY)) {
+                Object versionObj = table.get(VERSION_KEY);
+                if (versionObj instanceof String) {
+                    return (String) versionObj;
+                }
+            }
+        }
+
+        if (depValue instanceof Map) {
+            Map<?, ?> map = (Map<?, ?>) depValue;
+            if (Boolean.TRUE.equals(map.get(WORKSPACE_KEY))) {
+                return this.workspaceDependencies.get(depName);
+            }
+            Object version = map.get(VERSION_KEY);
+            if (version instanceof String) {
+                return (String) version;
+            }
+        }
+
+        return null;
+    }
+
     // Helper method to sanitize TOML keys for getTable()
     private String sanitizeKey(String key) {
         // Escape double quotes inside the key
@@ -387,5 +479,12 @@ public class CargoTomlParser {
             return "\"" + escaped + "\"";
         }
         return key;
+    }
+
+    public boolean isVirtualWorkspace(String tomlFileContents) {
+        TomlParseResult toml = Toml.parse(tomlFileContents);
+        boolean hasWorkspace = toml.contains(WORKSPACE_KEY);
+        boolean hasPackage = toml.contains(PACKAGE_KEY);
+        return hasWorkspace && !hasPackage;
     }
 }

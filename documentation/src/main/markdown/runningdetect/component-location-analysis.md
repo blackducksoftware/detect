@@ -20,7 +20,7 @@ Enable this feature by adding the `--detect.component.location.analysis.enabled=
 
 Each component is uniquely identified by a name and version. Components may optionally have a higher-level grouping identifier, commonly referred to as a groupId, organization, or vendor. The declaration location of each component is included in the results if found. When not found, no declarationLocation field will be present for that component in the output file. 
 
-<note type="note">The metadata field is only populated in the case of a Rapid Scan. See [Rapid or Stateless Scan Mode Results](#rapid-or-stateless-scan-mode-results)</note>
+<note type="note">The metadata field is only populated in the case of a Rapid or Stateless Scan. See [Rapid or Stateless Scan Mode Results](#rapid-or-stateless-scan-mode-results)</note>
 
 **Example results BODY:**
 ```
@@ -64,4 +64,4 @@ Each component is uniquely identified by a name and version. Components may opti
 
 ## Rapid or Stateless Scan Mode Results
 
-When [detect_product_short] runs a Rapid or Stateless scan, the output file includes policy violation vulnerabilities, component violating policies and remediation guidance (short term, long term and transitive upgrade guidance) when available. This information is contained within the metadata field of each component.
+When [detect_product_short] runs a Rapid or Stateless scan, the output file includes policy violation vulnerabilities, component violating policies, dependency trees for individual components and remediation guidance (short term, long term and transitive upgrade guidance) when available. This information is contained within the metadata field of each component.

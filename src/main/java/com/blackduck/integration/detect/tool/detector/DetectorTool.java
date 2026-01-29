@@ -1,18 +1,20 @@
 package com.blackduck.integration.detect.tool.detector;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import com.blackduck.integration.detect.tool.detector.report.detectable.ExtractedDetectableReport;
+import com.blackduck.integration.detect.workflow.file.DirectoryManager;
 import com.blackduck.integration.detector.base.DetectorStatusCode;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +23,6 @@ import com.blackduck.integration.common.util.finder.FileFinder;
 import com.blackduck.integration.detect.configuration.ExcludeIncludeEnumFilter;
 import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
 import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodePublisher;
-import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodeRequest;
 import com.blackduck.integration.detect.tool.detector.report.DetectorDirectoryReport;
 import com.blackduck.integration.detect.tool.detector.report.rule.EvaluatedDetectorRuleReport;
 import com.blackduck.integration.detect.tool.detector.report.rule.ExtractedDetectorRuleReport;
@@ -49,6 +50,9 @@ import com.blackduck.integration.detector.rule.DetectableDefinition;
 import com.blackduck.integration.detector.rule.DetectorRule;
 import com.blackduck.integration.detector.rule.DetectorRuleSet;
 import com.blackduck.integration.util.NameVersion;
+
+import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON;
+import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.QUACKPATCH_SUBDIRECTORY_NAME;
 
 public class DetectorTool {
     private static final String THREE_TABS = "\t\t\t";
@@ -82,8 +86,49 @@ public class DetectorTool {
         this.directoryEvaluator = directoryEvaluator;
     }
 
+    public void saveExtractedDetectorsAndTheirRelevantFilePaths(DirectoryManager directoryManager, DetectorToolResult toolResult) throws IOException {
+        // Create map of extracted detectors and their relevant files
+        Map<String, List<String>> detectorsAndFiles = new HashMap<>();
+        Path workingDir = directoryManager.getScanOutputDirectory().toPath();
+        Path quackDir = workingDir.resolve(QUACKPATCH_SUBDIRECTORY_NAME);
+        ObjectMapper mapper = new ObjectMapper();
+        Path jsonFile = quackDir.resolve(INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON);
+
+        // Read existing content if file exists
+        if (Files.exists(jsonFile)) {
+            try (InputStream is = Files.newInputStream(jsonFile)) {
+                detectorsAndFiles = mapper.readValue(is, new TypeReference<Map<String, List<String>>>() {});
+            }
+        }
+
+        try {
+            Files.createDirectories(quackDir);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        for (DetectorDirectoryReport report : toolResult.getReports()) {
+            List<ExtractedDetectorRuleReport> extractions = report.getExtractedDetectors();
+            for (ExtractedDetectorRuleReport extractedDetectorReport : extractions) {
+                String detectableName = extractedDetectorReport.getExtractedDetectable().getDetectable().getName();
+                // Skip Git because Git has no relevant files, and NuGet because the inspector will do this already
+                if (detectableName.equals("Git") || detectableName.contains("NuGet")) continue;
+                List<File> relevantFiles = extractedDetectorReport.getExtractedDetectable().getRelevantFiles();
+                List<String> relevantFilesAbsolutePaths = relevantFiles.stream()
+                        .map(File::getAbsolutePath)
+                        .collect(Collectors.toList());
+                detectorsAndFiles.put(detectableName, relevantFilesAbsolutePaths);
+            }
+        }
+        try {
+            mapper.writeValue(jsonFile.toFile(), detectorsAndFiles);
+            logger.debug("Done writing detectors and their relevant files to: " + jsonFile);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public DetectorToolResult performDetectors(
-        File directory,
+        DirectoryManager directoryManager,
         DetectorRuleSet detectorRuleSet,
         DirectoryFinderOptions directoryFinderOptions,
         String projectDetector,
@@ -92,6 +137,7 @@ public class DetectorTool {
         FileFinder fileFinder
     ) {
         logger.debug("Starting detector file system traversal.");
+        File directory = directoryManager.getSourceDirectory();
         Optional<DirectoryFindResult> findResultOptional = directoryFinder.findDirectories(directory, directoryFinderOptions, fileFinder);
 
         if (!findResultOptional.isPresent()) {
@@ -115,6 +161,11 @@ public class DetectorTool {
         logger.debug("Finished running detectors.");
         detectorEventPublisher.publishDetectorsComplete(toolResult);
 
+        try {
+            saveExtractedDetectorsAndTheirRelevantFilePaths(directoryManager, toolResult);
+        } catch (IOException e) {
+            throw new RuntimeException("something went wrong writing relevant files");
+        }
         return toolResult;
     }
 

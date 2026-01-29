@@ -375,7 +375,7 @@ public class OperationRunner {
                 directoryEvaluator
             );
             return detectorTool.performDetectors(
-                directoryManager.getSourceDirectory(),
+                directoryManager,
                 detectRuleSet,
                 detectConfigurationFactory.createDetectorFinderOptions(),
                 detectorToolOptions.getProjectBomTool(),
@@ -724,7 +724,7 @@ public class OperationRunner {
             int fibonacciSequenceIndex = getFibonacciSequenceIndex();
 
             try {
-                return new RapidModeWaitOperation(blackDuckServicesFactory.getBlackDuckApiClient()).waitForScans(
+                return new RapidModeWaitOperation(blackDuckServicesFactory.getBlackDuckApiClient()).waitForRegularScans(
                         rapidScans,
                         detectConfigurationFactory.findTimeoutInSeconds(),
                         RapidModeWaitOperation.DEFAULT_WAIT_INTERVAL_IN_SECONDS,
@@ -740,6 +740,29 @@ public class OperationRunner {
             }
         });
     }
+
+    public List<Response> waitForRapidFullResults(BlackDuckRunData blackDuckRunData, List<HttpUrl> rapidScans, BlackduckScanMode mode) throws OperationException {
+        return auditLog.namedInternal("Rapid Full Wait", () -> {
+            BlackDuckServicesFactory blackDuckServicesFactory = blackDuckRunData.getBlackDuckServicesFactory();
+            int fibonacciSequenceIndex = getFibonacciSequenceIndex();
+
+            try {
+                return new RapidModeWaitOperation(blackDuckServicesFactory.getBlackDuckApiClient()).waitForFullScans(
+                        rapidScans,
+                        detectConfigurationFactory.findTimeoutInSeconds(),
+                        mode,
+                        calculateMaxWaitInSeconds(fibonacciSequenceIndex)
+                );
+            } catch (InterruptedException e) {
+                throw e;
+            } catch (IntegrationRestException e) {
+                throw handleRapidScanException(e);
+            } catch (Exception e) {
+                throw new OperationException(e);
+            }
+        });
+    }
+
 
     private OperationException handleRapidScanException(IntegrationRestException e) {
         RapidCompareMode rapidCompareMode = detectConfigurationFactory.createRapidScanOptions().getCompareMode();
@@ -778,9 +801,35 @@ public class OperationRunner {
         return auditLog.namedPublic(
             "Generate Rapid Json File",
             "RapidScan",
-            () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFile(projectNameVersion, scanResults)
+            () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFile(projectNameVersion, scanResults, "")
         );
     }
+
+    public final File generateFullRapidJsonFile(List<Response> scanResults) throws OperationException {
+        return auditLog.namedPublic(
+                "Generate Rapid Full Json File",
+                "RapidScan",
+                () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFileFromString(scanResults.get(0).getContentString())
+        );
+    }
+
+    public boolean shouldAttemptQuackPatchFullResults() {
+        return detectConfigurationFactory.isQuackPatchPossible();
+    }
+
+    public void runQuackPatch(File rapidFullResultsJson) throws OperationException {
+        auditLog.namedPublic(
+                "Quack Patch",
+                () -> {
+                    publishResult(
+                            new GenerateComponentLocationAnalysisOperation(detectConfigurationFactory, statusEventPublisher, exitCodePublisher)
+                                    .runQuackPatch(directoryManager.getScanOutputDirectory(), rapidFullResultsJson, detectConfigurationFactory)
+                    );
+                }
+        );
+
+    }
+
 
     public final void publishRapidResults(File jsonFile, RapidScanResultSummary summary, BlackduckScanMode mode) throws OperationException {
         auditLog.namedInternal("Publish Rapid Results", () -> statusEventPublisher.publishDetectResult(new RapidScanDetectResult(jsonFile.getCanonicalPath(), summary, mode, detectConfigurationFactory.getPoliciesToFailOn())));
