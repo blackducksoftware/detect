@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -21,7 +20,6 @@ import com.blackduck.integration.log.Slf4jIntLogger;
 import com.blackduck.integration.util.IntegrationEscapeUtil;
 import com.blackduck.integration.util.NameVersion;
 
-import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON;
 import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.QUACKPATCH_SUBDIRECTORY_NAME;
 
 public class RapidModeGenerateJsonOperation { //TODO: extends Operation<File>
@@ -47,7 +45,7 @@ public class RapidModeGenerateJsonOperation { //TODO: extends Operation<File>
             Files.write(filePath, jsonRapidFullResults.getBytes(StandardCharsets.UTF_8));
             return jsonFile;
         } catch (IOException e) {
-            throw new RuntimeException("Something went wrong creating Rapid scan full results JSON file.", e);
+            throw new RuntimeException("Something went wrong creating Rapid scan full results JSON file:", e);
         }
     }
 
