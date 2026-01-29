@@ -374,7 +374,7 @@ public class OperationRunner {
                 detectorEventPublisher,
                 directoryEvaluator
             );
-            return detectorTool.performDetectors(
+            DetectorToolResult toolResult =  detectorTool.performDetectors(
                 directoryManager,
                 detectRuleSet,
                 detectConfigurationFactory.createDetectorFinderOptions(),
@@ -383,6 +383,15 @@ public class OperationRunner {
                 detectorToolOptions.getRequiredAccuracyTypes(),
                 fileFinder
             );
+
+            if (detectConfigurationFactory.isQuackPatchPossible()) {
+                try {
+                    detectorTool.saveExtractedDetectorsAndTheirRelevantFilePaths(directoryManager, toolResult);
+                } catch (IOException e) {
+                    throw new RuntimeException("Something went wrong writing relevant files: " + e.getMessage());
+                }
+            }
+            return toolResult;
         });
     }
 
