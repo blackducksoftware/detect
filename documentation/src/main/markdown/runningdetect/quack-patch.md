@@ -63,6 +63,7 @@ java -jar detect.jar --blackduck.url=https://your-blackduck-url.com \
 
 Output patches appear in the quack-patch folder inside the scan output directory, for example, runs/<timestamped-directory>/scan/quack-patch/.
 
+```
 /runs/2026-01-22-15-40-43-082
 ├── scan
 │   └── quack-patch
@@ -72,6 +73,7 @@ Output patches appear in the quack-patch folder inside the scan output directory
 │       ├── invokedDetectorsAndTheirRelevantFiles.json      # List of invoked package managers and associated source files
 │       ├── rapidFullResults.json                           # Full rapid scan results
 │       └── summary.json                                    # Summary of the patches generated through Quack Patch
+```
 
 ## Steps to apply the patch
 
