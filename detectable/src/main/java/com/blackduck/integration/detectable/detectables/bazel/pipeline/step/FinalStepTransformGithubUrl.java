@@ -32,6 +32,10 @@ public class FinalStepTransformGithubUrl implements FinalStep {
                 String organization = githubUrlParser.parseOrganization(potentialGithubUrl);
                 String repo = githubUrlParser.parseRepo(potentialGithubUrl);
                 String version = githubUrlParser.parseVersion(potentialGithubUrl);
+                // Normalize GitHub archive ref tags like `refs/tags/<tag>` to `<tag>`
+                if (version != null && version.startsWith("refs/tags/")) {
+                    version = version.substring("refs/tags/".length());
+                }
                 Dependency dep = Dependency.FACTORY.createNameVersionDependency(Forge.GITHUB, organization + "/" + repo, version);
                 dependencies.add(dep);
             } catch (MalformedURLException e) {

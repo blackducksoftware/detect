@@ -39,4 +39,21 @@ public class BazelCommandExecutor {
         }
         return Optional.of(cmdStdOut);
     }
+
+    /**
+     * Executes a Bazel command without throwing on failure, allowing caller to inspect exit code and error output.
+     * Used for probing commands where we need to distinguish different failure modes.
+     * @param args Bazel command arguments
+     * @return ExecutableOutput containing return code, stdout, and stderr
+     */
+    public ExecutableOutput executeWithoutThrowing(List<String> args) {
+        try {
+            return executableRunner.execute(ExecutableUtils.createFromTarget(workspaceDir, bazelExe, args));
+        } catch (Exception e) {
+            String command = (bazelExe != null ? bazelExe.toCommand() : "bazel") + " " + String.join(" ", args == null ? java.util.Collections.emptyList() : args);
+            String msg = String.format("Failed to execute Bazel command '%s': %s", command, e.getMessage());
+            logger.error(msg, e);
+            throw new RuntimeException(msg, e);
+        }
+    }
 }
