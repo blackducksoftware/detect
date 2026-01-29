@@ -818,7 +818,7 @@ public class OperationRunner {
         return auditLog.namedPublic(
                 "Generate Rapid Full Json File",
                 "RapidScan",
-                () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFileFromString(scanResults.get(0).getContentString()) // TODO when would List<Response> have more than one item?
+                () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFileFromString(scanResults.get(0).getContentString())
         );
     }
 
