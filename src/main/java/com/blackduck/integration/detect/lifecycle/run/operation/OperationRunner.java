@@ -446,9 +446,7 @@ public class OperationRunner {
                 // Validate that the URI points to a .tar file before processing
                 if (!containerImageUri.toLowerCase().endsWith(".tar")) {
                     throw new DetectUserFriendlyException(
-                        String.format("The container scan file path '%s' must point to a .tar file. " +
-                            "The .tar file must conform to either Docker Image Specification v1.2.0 (produced by 'docker save' command) " +
-                            "or Open Container Initiative (OCI) Image Format Specification.",
+                        String.format("The container scan file path '%s' must point to a .tar file.",
                             containerImageUri),
                         ExitCodeType.FAILURE_CONFIGURATION
                     );

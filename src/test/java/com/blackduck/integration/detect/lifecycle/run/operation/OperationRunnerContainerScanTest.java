@@ -136,7 +136,6 @@ public class OperationRunnerContainerScanTest {
         );
         Assertions.assertTrue(exception.getCause() instanceof DetectUserFriendlyException);
         Assertions.assertTrue(exception.getMessage().contains("must point to a .tar file"));
-        Assertions.assertTrue(exception.getMessage().contains("Docker Image Specification"));
     }
 
     @Test
@@ -149,7 +148,6 @@ public class OperationRunnerContainerScanTest {
         );
         Assertions.assertTrue(exception.getCause() instanceof DetectUserFriendlyException);
         Assertions.assertTrue(exception.getMessage().contains("must point to a .tar file"));
-        Assertions.assertTrue(exception.getMessage().contains("Docker Image Specification"));
     }
 
 }

@@ -4,10 +4,6 @@ Container Scan is a way of running [detect_product_long] against any type of con
 
 [detect_product_short] will accept either a user provided local .tar file path, or remote HTTP/HTTPS URL to fetch a container image .tar file for scanning.
 
-The .tar file must conform to either of the following image format specifications:
-1. [Docker Image Specification v1.2.0](https://github.com/moby/docker-image-spec/blob/main/v1.2.md) (the format produced by the `docker save` command).
-2. [Open Container Initiative (OCI) Image Format Specification](https://github.com/opencontainers/image-spec/blob/main/spec.md).
-
 Container scan supports both persistent (Intelligent) and Stateless scan modes in [bd_product_short], but must be run independently of other scan types.
 
 Execute Container Scan by adding the following to a run of [bd_product_short]:
