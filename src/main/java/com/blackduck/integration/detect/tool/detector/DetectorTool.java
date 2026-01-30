@@ -160,12 +160,6 @@ public class DetectorTool {
         //Completed.
         logger.debug("Finished running detectors.");
         detectorEventPublisher.publishDetectorsComplete(toolResult);
-
-        try {
-            saveExtractedDetectorsAndTheirRelevantFilePaths(directoryManager, toolResult);
-        } catch (IOException e) {
-            throw new RuntimeException("something went wrong writing relevant files");
-        }
         return toolResult;
     }
 
