@@ -1,6 +1,7 @@
 package com.blackduck.integration.detectable.detectables.bazel.pipeline.step;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,6 +20,7 @@ public class BazelCommandExecutor {
     private final DetectableExecutableRunner executableRunner;
     private final File workspaceDir;
     private final ExecutableTarget bazelExe;
+    private static final String BAZEL = "bazel";
 
     public BazelCommandExecutor(DetectableExecutableRunner executableRunner, File workspaceDir, ExecutableTarget bazelExe) {
         this.executableRunner = executableRunner;
@@ -50,7 +52,7 @@ public class BazelCommandExecutor {
         try {
             return executableRunner.execute(ExecutableUtils.createFromTarget(workspaceDir, bazelExe, args));
         } catch (Exception e) {
-            String command = (bazelExe != null ? bazelExe.toCommand() : "bazel") + " " + String.join(" ", args == null ? java.util.Collections.emptyList() : args);
+            String command = (bazelExe != null ? bazelExe.toCommand() : BAZEL) + " " + String.join(" ", args == null ? Collections.emptyList() : args);
             String msg = String.format("Failed to execute Bazel command '%s': %s", command, e.getMessage());
             logger.error(msg, e);
             throw new RuntimeException(msg, e);

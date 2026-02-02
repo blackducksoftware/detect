@@ -49,6 +49,12 @@ public class HttpFamilyProber {
 
     private final int maxReposToProbe;
 
+    // Extracted string constants for repo prefix markers
+    private static final String REPO_PREFIX_SINGLE = "@";
+    private static final String REPO_PREFIX_CANONICAL = "@@";
+    // Repo path separator used in Bazel labels
+    private static final String REPO_PATH_SEPARATOR = "//";
+
 
     /**
      * Constructor for HttpFamilyProber with configurable probe limit
@@ -82,9 +88,9 @@ public class HttpFamilyProber {
         Map<String, LinkedHashSet<String>> repoLabels = new HashMap<>();
         for (String line : lines) {
             // Look for external repository labels (start with @ or @@)
-            if (line.startsWith("@") && line.contains("//")) {
-                int start = line.startsWith("@@") ? 2 : 1; // Support canonical names starting with @@
-                String repo = line.substring(start, line.indexOf("//"));
+            if (line.startsWith(REPO_PREFIX_SINGLE) && line.contains(REPO_PATH_SEPARATOR)) {
+                int start = line.startsWith(REPO_PREFIX_CANONICAL) ? 2 : 1; // Support canonical names starting with @@
+                String repo = line.substring(start, line.indexOf(REPO_PATH_SEPARATOR));
                 if (isExcludedRepo(repo)) {
                     continue;
                 }
@@ -100,7 +106,7 @@ public class HttpFamilyProber {
         // Probe each repository for HTTP family characteristics
         for (Map.Entry<String, LinkedHashSet<String>> entry : repoLabels.entrySet()) {
             if (checkedRepos++ >= maxReposToProbe) {
-                logger.warn("Repository probe limit reached ({} repos checked). " +
+                logger.warn("Repository probe limit reached ({}} repos checked). " +
                            "If HTTP dependencies are missed, this target may have unusually many external repos. " +
                            "Consider analyzing a more specific target or increase the limit via detect.bazel.http.probe.limit property.",
                            maxReposToProbe);
@@ -155,7 +161,7 @@ public class HttpFamilyProber {
      */
     private boolean probeLegacyRepo(String repo, Set<String> labels) {
         // Strategy 1: Check if root package has build targets
-        if (probeRepoWithLabelKind(repo, "@" + repo + "//:all", "root package")) {
+        if (probeRepoWithLabelKind(repo, REPO_PREFIX_SINGLE + repo + REPO_PATH_SEPARATOR + ":all", "root package")) {
             return true;
         }
 
@@ -210,7 +216,7 @@ public class HttpFamilyProber {
      * @throws Exception if Bazel command execution fails
      */
     private boolean classifyRepoByModShowRepo(String repo, boolean canonical) throws Exception {
-        String at = canonical ? "@@" : "@";
+        String at = canonical ? REPO_PREFIX_CANONICAL : REPO_PREFIX_SINGLE;
         Optional<String> modOut = bazel.executeToString(Arrays.asList(
             "mod", "show_repo", at + repo
         ));

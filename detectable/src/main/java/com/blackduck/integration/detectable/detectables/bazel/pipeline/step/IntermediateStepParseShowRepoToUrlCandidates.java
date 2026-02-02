@@ -27,6 +27,11 @@ public class IntermediateStepParseShowRepoToUrlCandidates implements Intermediat
     private static final Pattern REMOTE_PATTERN = Pattern.compile("(?i)\\bremote\\s*=\\s*\"(https?://[^\"]+)\"");
     private static final Pattern IMPORTPATH_PATTERN = Pattern.compile("(?i)\\bimportpath\\s*=\\s*\"([^\"]+)\"");
 
+    // Named constants for rule class and URL/host pieces
+    private static final String RULE_CLASS_GO_REPOSITORY = "go_repository";
+    private static final String HTTPS_SCHEME = "https://";
+    private static final String GITHUB_HOST_PREFIX = "github.com/";
+
     @Override
     public List<String> process(List<String> input) throws DetectableException {
         List<String> results = new ArrayList<>();
@@ -39,41 +44,54 @@ public class IntermediateStepParseShowRepoToUrlCandidates implements Intermediat
             }
 
             // 1) Extract explicit url(s)
-            // Single url
-            Matcher mUrl = URL_ATTR_PATTERN.matcher(block);
-            while (mUrl.find()) {
-                results.add(mUrl.group(1));
-            }
-            // urls list
-            Matcher mUrlsList = URLS_LIST_PATTERN.matcher(block);
-            while (mUrlsList.find()) {
-                String listBody = mUrlsList.group(1);
-                Matcher mQuoted = QUOTED_URL_PATTERN.matcher(listBody);
-                while (mQuoted.find()) {
-                    results.add(mQuoted.group(1));
-                }
-            }
+            addExplicitUrlAttributes(block, results);
 
             // 2) git_repository: remote (only http/https)
-            Matcher mRemote = REMOTE_PATTERN.matcher(block);
-            while (mRemote.find()) {
-                results.add(mRemote.group(1));
-            }
+            addRemoteUrls(block, results);
 
             // 3) go_repository: synthesize from importpath if rule class is go_repository and no urls present
-            String ruleClass = extractRuleClass(block).orElse("");
-            if (results.isEmpty() && ruleClass.equalsIgnoreCase("go_repository")) {
-                Matcher mImport = IMPORTPATH_PATTERN.matcher(block);
-                if (mImport.find()) {
-                    String importPath = mImport.group(1).trim();
-                    // For well-known hosts, synthesize an https URL so downstream can normalize (e.g., GitHub)
-                    if (checkForHttpGithubOnly(importPath)) {
-                        results.add("https://" + importPath);
-                    }
+            addSynthesizedGoUrlIfNoExplicit(block, results);
+        }
+        return results;
+    }
+
+    // Extract 'url' and 'urls' attribute values into results
+    private void addExplicitUrlAttributes(String block, List<String> results) {
+        Matcher mUrl = URL_ATTR_PATTERN.matcher(block);
+        while (mUrl.find()) {
+            results.add(mUrl.group(1));
+        }
+        Matcher mUrlsList = URLS_LIST_PATTERN.matcher(block);
+        while (mUrlsList.find()) {
+            String listBody = mUrlsList.group(1);
+            Matcher mQuoted = QUOTED_URL_PATTERN.matcher(listBody);
+            while (mQuoted.find()) {
+                results.add(mQuoted.group(1));
+            }
+        }
+    }
+
+    // Extract 'remote' attribute values into results
+    private void addRemoteUrls(String block, List<String> results) {
+        Matcher mRemote = REMOTE_PATTERN.matcher(block);
+        while (mRemote.find()) {
+            results.add(mRemote.group(1));
+        }
+    }
+
+    // Synthesize a https://<importpath> URL for go_repository only when no explicit URLs were found so far
+    private void addSynthesizedGoUrlIfNoExplicit(String block, List<String> results) {
+        String ruleClass = extractRuleClass(block).orElse("");
+        if (results.isEmpty() && ruleClass.equalsIgnoreCase(RULE_CLASS_GO_REPOSITORY)) {
+            Matcher mImport = IMPORTPATH_PATTERN.matcher(block);
+            if (mImport.find()) {
+                String importPath = mImport.group(1).trim();
+                // For well-known hosts, synthesize a https URL so downstream can normalize (e.g., GitHub)
+                if (checkForHttpGithubOnly(importPath)) {
+                    results.add(HTTPS_SCHEME + importPath);
                 }
             }
         }
-        return results;
     }
 
     private Optional<String> extractRuleClass(String block) {
@@ -86,6 +104,6 @@ public class IntermediateStepParseShowRepoToUrlCandidates implements Intermediat
 
     private boolean checkForHttpGithubOnly(String importPath) {
         // Intentionally GitHub-only synthesis: treat only github.com/* as synthesize-able.
-        return importPath != null && importPath.startsWith("github.com/");
+        return importPath != null && importPath.startsWith(GITHUB_HOST_PREFIX);
     }
 }

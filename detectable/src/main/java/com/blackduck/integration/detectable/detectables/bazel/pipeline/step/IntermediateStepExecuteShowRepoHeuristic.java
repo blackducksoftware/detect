@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,6 +24,10 @@ public class IntermediateStepExecuteShowRepoHeuristic implements IntermediateSte
 
     // Bazel command executor dependency
     private final BazelCommandExecutor bazel;
+
+    // Extracted string constants for repo prefix markers
+    private static final String REPO_PREFIX_SINGLE = "@";
+    private static final String REPO_PREFIX_CANONICAL = "@@";
 
     /**
      * Constructor for IntermediateStepExecuteShowRepoHeuristic
@@ -49,20 +54,13 @@ public class IntermediateStepExecuteShowRepoHeuristic implements IntermediateSte
             String token = raw.trim();
             if (token.isEmpty()) continue;
 
-            // Determine if the repo name is canonical (starts with @@) or synthetic (contains +/~)
-            boolean sawCanonical = token.startsWith("@@");
-            String bare = stripAt(token);
-            boolean synthetic = looksSynthetic(bare);
-
-            boolean success;
-            if (sawCanonical || synthetic) {
-                // Only try canonical form; '@' is invalid for synthetic names
-                success = tryShowRepoAddOutput("@@" + bare, out);
-            } else {
-                // Try apparent then canonical fallback
-                success = tryShowRepoAddOutput("@" + bare, out);
-                if (!success) {
-                    success = tryShowRepoAddOutput("@@" + bare, out);
+            // Generate candidate repo arguments according to heuristic and try them in order
+            List<String> candidates = candidateRepoArgs(token);
+            boolean success = false;
+            for (String candidate : candidates) {
+                if (tryShowRepoAddOutput(candidate, out)) {
+                    success = true;
+                    break;
                 }
             }
 
@@ -73,13 +71,30 @@ public class IntermediateStepExecuteShowRepoHeuristic implements IntermediateSte
     }
 
     /**
+     * Given a token (may include leading @/@@), return the list of repo arguments to try, in order.
+     * Example: "@org/repo" -> ["@org/repo", "@@org/repo"]
+     *          "@@org/repo" -> ["@@org/repo"]
+     *          "org+synthetic" -> ["@@org+synthetic"]
+     */
+    private List<String> candidateRepoArgs(String token) {
+        boolean sawCanonical = token.startsWith(REPO_PREFIX_CANONICAL);
+        String bare = stripAt(token);
+        boolean synthetic = looksSynthetic(bare);
+
+        if (sawCanonical || synthetic) {
+            return Collections.singletonList(REPO_PREFIX_CANONICAL + bare);
+        }
+        return java.util.Arrays.asList(REPO_PREFIX_SINGLE + bare, REPO_PREFIX_CANONICAL + bare);
+    }
+
+    /**
      * Removes all leading '@' characters from a repo token.
      * @param token Repo name (may start with @ or @@)
      * @return Bare repo name without leading @
      */
     private String stripAt(String token) {
         String t = token;
-        while (t.startsWith("@")) t = t.substring(1);
+        while (t.startsWith(REPO_PREFIX_SINGLE)) t = t.substring(REPO_PREFIX_SINGLE.length());
         return t;
     }
 

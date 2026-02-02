@@ -5,6 +5,7 @@ import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.Baze
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -95,7 +96,7 @@ public class BazelGraphProber {
      */
     private boolean detectMavenInstall() throws Exception {
         // Query j.*import rules under deps(target) and look for maven_coordinates tags in build output.
-        Optional<String> out = bazel.executeToString(java.util.Arrays.asList(
+        Optional<String> out = bazel.executeToString(Arrays.asList(
             "cquery", "--noimplicit_deps", "kind(j.*import, deps(" + target + "))", "--output", "build"
         ));
         if (!out.isPresent()) {
@@ -113,7 +114,7 @@ public class BazelGraphProber {
      * @return true if maven_jar is detected, false otherwise
      */
     private boolean detectMavenJar() throws Exception {
-        Optional<String> out = bazel.executeToString(java.util.Arrays.asList(
+        Optional<String> out = bazel.executeToString(Arrays.asList(
             "cquery", "filter('@.*:jar', deps(" + target + "))"
         ));
         boolean found = out.isPresent() && !out.get().trim().isEmpty();
@@ -128,7 +129,7 @@ public class BazelGraphProber {
      * @return true if haskell_cabal_library is detected, false otherwise
      */
     private boolean detectHaskellCabal() throws Exception {
-        Optional<String> out = bazel.executeToString(java.util.Arrays.asList(
+        Optional<String> out = bazel.executeToString(Arrays.asList(
             "cquery", "--noimplicit_deps", "kind(haskell_cabal_library, deps(" + target + "))", "--output", "label_kind"
         ));
         boolean found = out.isPresent() && out.get().contains("haskell_cabal_library");

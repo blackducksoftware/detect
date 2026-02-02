@@ -17,10 +17,7 @@ import com.blackduck.integration.detectable.extraction.Extraction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -90,7 +87,7 @@ public class BazelV2Extractor {
         // Generate project name from Bazel target
         String projectName = projectNameGenerator.generateFromBazelTarget(bazelTarget);
         Extraction.Builder builder = new Extraction.Builder()
-            .success(java.util.Collections.singletonList(cl))
+            .success(Collections.singletonList(cl))
             .projectName(projectName);
         logger.info("Bazel V2 extraction complete. Project name: {}. Total dependencies: {}", projectName, aggregated.size());
         return builder.build();
