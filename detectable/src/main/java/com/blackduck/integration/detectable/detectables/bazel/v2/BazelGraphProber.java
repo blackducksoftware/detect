@@ -2,16 +2,24 @@ package com.blackduck.integration.detectable.detectables.bazel.v2;
 
 import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelCommandExecutor;
+import com.blackduck.integration.detectable.detectables.bazel.query.BazelQueryBuilder;
+import com.blackduck.integration.detectable.detectables.bazel.query.OutputFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 public class BazelGraphProber {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+    // Bazel rule kind patterns for dependency detection
+    private static final String JAVA_IMPORT_RULE_PATTERN = "j.*import";
+    private static final String MAVEN_JAR_FILTER_PATTERN = "'@.*:jar'";
+    private static final String HASKELL_CABAL_RULE_PATTERN = "haskell_cabal_library";
+
     private final BazelCommandExecutor bazel;
     private final String target;
     private final BazelEnvironmentAnalyzer.Mode mode;
@@ -96,9 +104,13 @@ public class BazelGraphProber {
      */
     private boolean detectMavenInstall() throws Exception {
         // Query j.*import rules under deps(target) and look for maven_coordinates tags in build output.
-        Optional<String> out = bazel.executeToString(Arrays.asList(
-            "cquery", "--noimplicit_deps", "kind(j.*import, deps(" + target + "))", "--output", "build"
-        ));
+        List<String> queryArgs = BazelQueryBuilder.cquery()
+            .kind(JAVA_IMPORT_RULE_PATTERN, BazelQueryBuilder.deps(target))
+            .withNoImplicitDeps()
+            .withOutput(OutputFormat.BUILD)
+            .build();
+
+        Optional<String> out = bazel.executeToString(queryArgs);
         if (!out.isPresent()) {
             return false;
         }
@@ -114,9 +126,11 @@ public class BazelGraphProber {
      * @return true if maven_jar is detected, false otherwise
      */
     private boolean detectMavenJar() throws Exception {
-        Optional<String> out = bazel.executeToString(Arrays.asList(
-            "cquery", "filter('@.*:jar', deps(" + target + "))"
-        ));
+        List<String> queryArgs = BazelQueryBuilder.cquery()
+            .filter(MAVEN_JAR_FILTER_PATTERN, BazelQueryBuilder.deps(target))
+            .build();
+
+        Optional<String> out = bazel.executeToString(queryArgs);
         boolean found = out.isPresent() && !out.get().trim().isEmpty();
         if (found) {
             logger.info("Detected maven_jar artifacts via @repo//jar:jar labels.");
@@ -129,9 +143,13 @@ public class BazelGraphProber {
      * @return true if haskell_cabal_library is detected, false otherwise
      */
     private boolean detectHaskellCabal() throws Exception {
-        Optional<String> out = bazel.executeToString(Arrays.asList(
-            "cquery", "--noimplicit_deps", "kind(haskell_cabal_library, deps(" + target + "))", "--output", "label_kind"
-        ));
+        List<String> queryArgs = BazelQueryBuilder.cquery()
+            .kind(HASKELL_CABAL_RULE_PATTERN, BazelQueryBuilder.deps(target))
+            .withNoImplicitDeps()
+            .withOutput(OutputFormat.LABEL_KIND)
+            .build();
+
+        Optional<String> out = bazel.executeToString(queryArgs);
         boolean found = out.isPresent() && out.get().contains("haskell_cabal_library");
         if (found) {
             logger.info("Detected haskell_cabal_library rules.");

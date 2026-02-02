@@ -1,6 +1,8 @@
 package com.blackduck.integration.detectable.detectables.bazel.v2;
 
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelCommandExecutor;
+import com.blackduck.integration.detectable.detectables.bazel.query.BazelQueryBuilder;
+import com.blackduck.integration.detectable.detectables.bazel.query.OutputFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +17,10 @@ public class HttpFamilyProber {
     private final BazelCommandExecutor bazel;
     // Bazel environment mode (e.g., BZLMOD)
     private final BazelEnvironmentAnalyzer.Mode mode;
+
+    // Bazel rule kind patterns for queries
+    private static final String LIBRARY_RULE_PATTERN = ".*library";
+    private static final String RULE_PATTERN = "'rule'";
 
     // Classification keyword constants
     private static final List<String> MAVEN_KEYWORDS = Arrays.asList(
@@ -77,9 +83,11 @@ public class HttpFamilyProber {
      */
     public boolean detect(String target) throws Exception {
         // Query for all library dependencies of the target
-        Optional<String> depsOut = bazel.executeToString(Arrays.asList(
-            "query", "kind(.*library, deps(" + target + "))"
-        ));
+        List<String> queryArgs = BazelQueryBuilder.query()
+            .kind(LIBRARY_RULE_PATTERN, BazelQueryBuilder.deps(target))
+            .build();
+
+        Optional<String> depsOut = bazel.executeToString(queryArgs);
         if (!depsOut.isPresent()) {
             return false;
         }
@@ -187,9 +195,12 @@ public class HttpFamilyProber {
      */
     private boolean probeRepoWithLabelKind(String repo, String queryTarget, String strategyName) {
         try {
-            Optional<String> result = bazel.executeToString(Arrays.asList(
-                "query", "kind('rule', " + queryTarget + ")", "--output", "label_kind"
-            ));
+            List<String> queryArgs = BazelQueryBuilder.query()
+                .kind(RULE_PATTERN, queryTarget)
+                .withOutput(OutputFormat.LABEL_KIND)
+                .build();
+
+            Optional<String> result = bazel.executeToString(queryArgs);
             if (result.isPresent() && !result.get().trim().isEmpty()) {
                 logger.info("HTTP pipeline enabled for repo {}: {} probe found build targets", repo, strategyName);
                 return true;
@@ -216,10 +227,11 @@ public class HttpFamilyProber {
      * @throws Exception if Bazel command execution fails
      */
     private boolean classifyRepoByModShowRepo(String repo, boolean canonical) throws Exception {
-        String at = canonical ? REPO_PREFIX_CANONICAL : REPO_PREFIX_SINGLE;
-        Optional<String> modOut = bazel.executeToString(Arrays.asList(
-            "mod", "show_repo", at + repo
-        ));
+        List<String> modArgs = BazelQueryBuilder.mod()
+            .showRepo(repo, canonical)
+            .build();
+
+        Optional<String> modOut = bazel.executeToString(modArgs);
         if (!modOut.isPresent()) {
             return false;
         }

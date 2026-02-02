@@ -1,11 +1,12 @@
 package com.blackduck.integration.detectable.detectables.bazel.v2;
 
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelCommandExecutor;
+import com.blackduck.integration.detectable.detectables.bazel.query.BazelQueryBuilder;
 import com.blackduck.integration.executable.ExecutableOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
+import java.util.List;
 
 /**
  * Detects the active Bazel environment mode for this invocation: BZLMOD vs WORKSPACE.
@@ -28,7 +29,11 @@ public class BazelEnvironmentAnalyzer {
     }
 
     private Mode detectMode() {
-        ExecutableOutput output = bazel.executeWithoutThrowing(Arrays.asList("mod", "graph"));
+        List<String> modGraphCommand = BazelQueryBuilder.mod()
+            .graph()
+            .build();
+
+        ExecutableOutput output = bazel.executeWithoutThrowing(modGraphCommand);
 
         if (output.getReturnCode() == 0) {
             String stdout = output.getStandardOutput().trim();

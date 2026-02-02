@@ -1,7 +1,7 @@
 package com.blackduck.integration.detectable.detectables.bazel.pipeline;
 
-import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.List;
 
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.exception.DetectableException;
@@ -11,6 +11,8 @@ import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.Baze
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.HaskellCabalLibraryJsonProtoParser;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.IntermediateStepExecuteShowRepoHeuristic;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.xpathquery.HttpArchiveXpath;
+import com.blackduck.integration.detectable.detectables.bazel.query.BazelQueryBuilder;
+import com.blackduck.integration.detectable.detectables.bazel.query.OutputFormat;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelEnvironmentAnalyzer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,17 +25,16 @@ import org.slf4j.LoggerFactory;
 public class Pipelines {
     // Placeholder for cquery options in command templates
     private static final String CQUERY_OPTIONS_PLACEHOLDER = "${detect.bazel.cquery.options}";
-    // Bazel query and cquery command names
-    private static final String QUERY_COMMAND = "query";
-    private static final String CQUERY_COMMAND = "cquery";
-    // Output flag for Bazel commands
-    private static final String OUTPUT_FLAG = "--output";
 
-    // Common Bazel/parse literals extracted as named constants for clarity and reuse
-    private static final String NO_IMPLICIT_DEPS = "--noimplicit_deps";
-    private static final String OUTPUT_JSONPROTO = "jsonproto";
-    private static final String OUTPUT_XML = "xml";
-    private static final String OUTPUT_BUILD = "build";
+    // Bazel rule kind patterns for pipeline queries
+    private static final String JAVA_IMPORT_RULE_PATTERN = "j.*import";
+    private static final String MAVEN_JAR_FILTER_PATTERN = "'@.*:jar'";
+    private static final String HASKELL_CABAL_RULE_PATTERN = "haskell_cabal_library";
+    private static final String LIBRARY_RULE_PATTERN = ".*library";
+    private static final String ANY_RULE_PATTERN = ".*";
+    private static final String MAVEN_JAR_RULE_PATTERN = "maven_jar";
+
+    // Parse/regex literals for pipeline processing
     private static final String SPLIT_NEWLINE_REGEX = "\\r?\\n";
     private static final String SPLIT_WHITESPACE_REGEX = "\\s+";
     private static final String MAVEN_COORDINATES_FILTER = ".*maven_coordinates=.*";
@@ -95,30 +96,40 @@ public class Pipelines {
                       HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser,
                       BazelEnvironmentAnalyzer.Mode mode) {
         // Pipeline for maven_jar: extracts Maven dependencies from maven_jar rules
+        List<String> mavenJarCquery = BazelQueryBuilder.cquery()
+            .filter(MAVEN_JAR_FILTER_PATTERN, BazelQueryBuilder.deps("${detect.bazel.target}"))
+            .withOptions(CQUERY_OPTIONS_PLACEHOLDER)
+            .build();
+
         Pipeline mavenJarPipeline = (new PipelineBuilder(externalIdFactory, bazelCommandExecutor, bazelVariableSubstitutor, haskellCabalLibraryJsonProtoParser))
-            .executeBazelOnEachLine(Arrays.asList(CQUERY_COMMAND, CQUERY_OPTIONS_PLACEHOLDER, "filter('@.*:jar', deps(${detect.bazel.target}))"), false)
+            .executeBazelOnEachLine(mavenJarCquery, false)
             // The trailing parens may contain a hex number, or "null"; the pattern below handles either
             .parseReplaceInEachLine(TRAILING_PARENS_REGEX, "")
             .parseSplitEachLine(SPLIT_WHITESPACE_REGEX)
             .parseReplaceInEachLine(STRIP_SINGLE_AT_REGEX, "")
             .parseReplaceInEachLine(STRIP_REPO_PATH_REGEX, "")
             .parseReplaceInEachLine("^", PREPEND_EXTERNAL)
-            .executeBazelOnEachLine(Arrays.asList(QUERY_COMMAND, "kind(maven_jar, ${input.item})", OUTPUT_FLAG, OUTPUT_XML), true)
+            .executeBazelOnEachLine(
+                BazelQueryBuilder.query()
+                    .kind(MAVEN_JAR_RULE_PATTERN, "${input.item}")
+                    .withOutput(OutputFormat.XML)
+                    .build(),
+                true)
             .parseValuesFromXml("/query/rule[@class='maven_jar']/string[@name='artifact']", "value")
             .transformToMavenDependencies()
             .build();
         availablePipelines.put(DependencySource.MAVEN_JAR, mavenJarPipeline);
 
         // Pipeline for rules_jvm_external (maven_install): extracts Maven dependencies from j.*import rules
+        List<String> mavenInstallCquery = BazelQueryBuilder.cquery()
+            .kind(JAVA_IMPORT_RULE_PATTERN, BazelQueryBuilder.deps("${detect.bazel.target}"))
+            .withNoImplicitDeps()
+            .withOptions(CQUERY_OPTIONS_PLACEHOLDER)
+            .withOutput(OutputFormat.BUILD)
+            .build();
+
         Pipeline mavenInstallPipeline = (new PipelineBuilder(externalIdFactory, bazelCommandExecutor, bazelVariableSubstitutor, haskellCabalLibraryJsonProtoParser))
-            .executeBazelOnEachLine(Arrays.asList(
-                CQUERY_COMMAND,
-                NO_IMPLICIT_DEPS,
-                CQUERY_OPTIONS_PLACEHOLDER,
-                "kind(j.*import, deps(${detect.bazel.target}))",
-                OUTPUT_FLAG,
-                OUTPUT_BUILD
-            ), false)
+            .executeBazelOnEachLine(mavenInstallCquery, false)
             .parseSplitEachLine(SPLIT_NEWLINE_REGEX)
             .parseFilterLines(MAVEN_COORDINATES_FILTER)
             .parseReplaceInEachLine(MAVEN_COORDINATES_PREFIX_REMOVE, "")
@@ -128,15 +139,15 @@ public class Pipelines {
         availablePipelines.put(DependencySource.MAVEN_INSTALL, mavenInstallPipeline);
 
         // Pipeline for haskell_cabal_library: extracts Hackage dependencies from Haskell cabal library rules
+        List<String> haskellCquery = BazelQueryBuilder.cquery()
+            .kind(HASKELL_CABAL_RULE_PATTERN, BazelQueryBuilder.deps("${detect.bazel.target}"))
+            .withNoImplicitDeps()
+            .withOptions(CQUERY_OPTIONS_PLACEHOLDER)
+            .withOutput(OutputFormat.JSONPROTO)
+            .build();
+
         Pipeline haskellCabalLibraryPipeline = (new PipelineBuilder(externalIdFactory, bazelCommandExecutor, bazelVariableSubstitutor, haskellCabalLibraryJsonProtoParser))
-            .executeBazelOnEachLine(Arrays.asList(
-                CQUERY_COMMAND,
-                NO_IMPLICIT_DEPS,
-                CQUERY_OPTIONS_PLACEHOLDER,
-                "kind(haskell_cabal_library, deps(${detect.bazel.target}))",
-                OUTPUT_FLAG,
-                OUTPUT_JSONPROTO
-            ), false)
+            .executeBazelOnEachLine(haskellCquery, false)
             .transformToHackageDependencies()
             .build();
         availablePipelines.put(DependencySource.HASKELL_CABAL_LIBRARY, haskellCabalLibraryPipeline);
@@ -148,8 +159,13 @@ public class Pipelines {
         if (bzlmodActive) {
             // bzlmod: Use robust show_repo parser for HTTP pipeline
             logger.info("Using robust show_repo parser for bzlmod HTTP pipeline.");
+
+            List<String> httpLibraryQuery = BazelQueryBuilder.query()
+                .kind(LIBRARY_RULE_PATTERN, BazelQueryBuilder.deps("${detect.bazel.target}"))
+                .build();
+
             Pipeline httpArchiveBzlmodPipeline = (new PipelineBuilder(externalIdFactory, bazelCommandExecutor, bazelVariableSubstitutor, haskellCabalLibraryJsonProtoParser))
-                .executeBazelOnEachLine(Arrays.asList(QUERY_COMMAND, "kind(.*library, deps(${detect.bazel.target}))"), false)
+                .executeBazelOnEachLine(httpLibraryQuery, false)
                 .parseSplitEachLine(SPLIT_NEWLINE_REGEX)
                 .parseFilterLines(HTTP_REPO_FILTER_REGEX)
                 .parseReplaceInEachLine(STRIP_LEADING_ATS_REGEX, "")
@@ -167,15 +183,24 @@ public class Pipelines {
             availablePipelines.put(DependencySource.HTTP_ARCHIVE, httpArchiveBzlmodPipeline);
         } else {
             // WORKSPACE: Use XML parsing pipeline for HTTP pipeline
+            List<String> httpLibraryQuery = BazelQueryBuilder.query()
+                .kind(LIBRARY_RULE_PATTERN, BazelQueryBuilder.deps("${detect.bazel.target}"))
+                .build();
+
             Pipeline httpArchiveGithubUrlPipeline = (new PipelineBuilder(externalIdFactory, bazelCommandExecutor, bazelVariableSubstitutor, haskellCabalLibraryJsonProtoParser))
-                    .executeBazelOnEachLine(Arrays.asList(QUERY_COMMAND, "kind(.*library, deps(${detect.bazel.target}))"), false)
+                    .executeBazelOnEachLine(httpLibraryQuery, false)
                     .parseSplitEachLine(SPLIT_NEWLINE_REGEX)
                     .parseFilterLines(HTTP_REPO_FILTER_REGEX)
                     .parseReplaceInEachLine(STRIP_SINGLE_AT_REGEX, "")
                     .parseReplaceInEachLine(STRIP_REPO_PATH_REGEX, "")
                     .deDupLines()
                     .parseReplaceInEachLine("^", PREPEND_EXTERNAL)
-                    .executeBazelOnEachLine(Arrays.asList(QUERY_COMMAND, "kind(.*, ${input.item})", OUTPUT_FLAG, OUTPUT_XML), true)
+                    .executeBazelOnEachLine(
+                        BazelQueryBuilder.query()
+                            .kind(ANY_RULE_PATTERN, "${input.item}")
+                            .withOutput(OutputFormat.XML)
+                            .build(),
+                        true)
                     .parseValuesFromXml(HttpArchiveXpath.QUERY, "value")
                     .transformGithubUrl()
                     .build();
