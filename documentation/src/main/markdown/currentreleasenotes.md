@@ -33,7 +33,7 @@
 * (IDETECT-4919) Added Cargo workspace support in Cargo detectors. [detect_product_short] now identifies `[workspace]` in the root `Cargo.toml` and resolves dependencies across all members using the shared `Cargo.lock`. The "Additional_components" section has been removed from SBOMs for completeness.
 * (IDETECT-4860) When Component Location Analysis is enabled, the metadata section of `component-source.json` will now contain a "dependencyTrees" field from Rapid/Stateless scan results.
 * (IDETECT-4923) Fixed a bug during `pyproject.toml` parsing when project name could not be derived.
-* (IDETECT-4903) Resolved an issue with failing to capture transitive dependencies for the npm package `pdfjs-dist@4.8.69`.
+* (IDETECT-4903) Resolved an issue with [detect_product_short] failing to capture transitive dependencies for the npm package `pdfjs-dist@4.8.69`.
 
 ### Dependency Updates
 
