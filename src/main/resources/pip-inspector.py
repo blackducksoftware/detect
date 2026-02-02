@@ -110,7 +110,7 @@ def populate_dependency_tree(project_root_node, requirements_path):
                 # re matches from left to right, so subsets (e.g. ===) should be before supersets (e.g. ==)
                 # See: https://docs.python.org/3/library/re.html
                 # --rotte NOV 2020
-                package_name = split('===|<=|!=|==|>=|~=|<|>', parsed_requirement.requirement)[0]
+                package_name = split('===|<=|!=|==|>=|~=|<|>|@', parsed_requirement.requirement)[0]
 
             dependency_node = recursively_resolve_dependencies(package_name, [])
 
