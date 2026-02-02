@@ -114,7 +114,7 @@ public class HttpFamilyProber {
         // Probe each repository for HTTP family characteristics
         for (Map.Entry<String, LinkedHashSet<String>> entry : repoLabels.entrySet()) {
             if (checkedRepos++ >= maxReposToProbe) {
-                logger.warn("Repository probe limit reached ({}} repos checked). " +
+                logger.warn("Repository probe limit reached {} repos checked). " +
                            "If HTTP dependencies are missed, this target may have unusually many external repos. " +
                            "Consider analyzing a more specific target or increase the limit via detect.bazel.http.probe.limit property.",
                            maxReposToProbe);
