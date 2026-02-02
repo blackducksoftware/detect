@@ -29,18 +29,24 @@ public class BazelEnvironmentAnalyzer {
 
     private Mode detectMode() {
         ExecutableOutput output = bazel.executeWithoutThrowing(Arrays.asList("mod", "graph"));
-        int returnCode = output.getReturnCode();
-        if (returnCode == 0) {
+
+        if (output.getReturnCode() == 0) {
+            String stdout = output.getStandardOutput().trim();
+            // If the graph only contains the root module, Bzlmod is active but empty.
+            // Look for typical empty signals like "<root> (@_)" or just a single line.
+            if (isGraphEmpty(stdout)) {
+                logger.info("Bzlmod is enabled but graph is empty; falling back to WORKSPACE.");
+                return Mode.WORKSPACE;
+            }
             return Mode.BZLMOD;
-        } else if (returnCode >= 2 && returnCode <= 7) {
-            // Covers: Disabled (2), Unknown Command (3), and Missing MODULE.bazel (7)
+        } else if (output.getReturnCode() >= 2 && output.getReturnCode() <= 7) {
             return Mode.WORKSPACE;
-        } else {
-            return Mode.UNKNOWN;
         }
+        return Mode.UNKNOWN;
     }
 
-
-
+    private boolean isGraphEmpty(String stdout) {
+        // A single line usually means only the root module is present
+        return stdout.isEmpty() || !stdout.contains("\n") || stdout.contains("<root> (@_)");
+    }
 }
-

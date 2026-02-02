@@ -35,6 +35,7 @@ public class Pipelines {
 
     /**
      * Constructs pipelines and auto-detects Bazel mode for legacy callers.
+     * Deprecated in favor of the mode-aware constructor.
      */
     public Pipelines(
         BazelCommandExecutor bazelCommandExecutor,

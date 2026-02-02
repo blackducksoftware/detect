@@ -30,7 +30,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 import java.util.Set;
+import java.io.File;
 
+/**
+ * Detectable implementation for Bazel projects using Bazel CLI V2.
+ */
 @DetectableInfo(name = "Bazel CLI V2", language = "various", forge = "Maven Central", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "Executable: bazel. Property: detect.bazel.target.")
 public class BazelV2Detectable extends Detectable {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -147,8 +151,18 @@ public class BazelV2Detectable extends Detectable {
             logger.info("Using Bazel mode from property override: {}", mode);
         } else {
             // Auto-detect mode if not overridden
-            BazelEnvironmentAnalyzer envAnalyzer = new BazelEnvironmentAnalyzer(bazelCmd);
-            mode = envAnalyzer.getMode();
+            // When there's no MODULE.bazel in the workspace root, avoid running 'bazel mod' commands
+            // which can create MODULE.bazel files in workspaces that are legacy. In that case,
+            // assume WORKSPACE mode.
+            File workspaceDir = environment.getDirectory();
+            File moduleFile = new File(workspaceDir, "MODULE.bazel");
+            if (!moduleFile.exists()) {
+                logger.info("No MODULE.bazel found at {}. Skipping 'bazel mod graph' to avoid file generation; assuming WORKSPACE mode.", workspaceDir.getAbsolutePath());
+                mode = BazelEnvironmentAnalyzer.Mode.WORKSPACE;
+            } else {
+                BazelEnvironmentAnalyzer envAnalyzer = new BazelEnvironmentAnalyzer(bazelCmd);
+                mode = envAnalyzer.getMode();
+            }
 
             // Fail fast if mode detection returned UNKNOWN
             if (mode == BazelEnvironmentAnalyzer.Mode.UNKNOWN) {
