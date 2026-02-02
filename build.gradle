@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '11.2.0-SIGQA20-zahidblackduck.IDETECT-4919-workspace-exclusion-bugfix-SNAPSHOT'
+version = '11.2.0-SIGQA20'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
