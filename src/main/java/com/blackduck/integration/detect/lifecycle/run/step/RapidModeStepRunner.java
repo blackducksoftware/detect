@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.Set;
 
+import com.blackduck.integration.rest.response.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +46,8 @@ public class RapidModeStepRunner {
     private final Gson gson;
     private final String detectRunUuid;
     private final DirectoryManager directoryManager;
+    public static final String RAPID_SCAN_ENDPOINT = "/api/developer-scans";
+
 
     public RapidModeStepRunner(OperationRunner operationRunner, StepHelper stepHelper, Gson gson, String detectRunUuid, DirectoryManager directoryManager) {
         this.operationRunner = operationRunner;
@@ -66,7 +69,6 @@ public class RapidModeStepRunner {
         Set<FormattedCodeLocation> formattedCodeLocations = new HashSet<>();
 
         List<HttpUrl> uploadResultsUrls = operationRunner.performRapidUpload(blackDuckRunData, bdioResult, rapidScanConfig.orElse(null));
-        
         if (uploadResultsUrls != null && uploadResultsUrls.size() > 0) {
             processScanResults(uploadResultsUrls, parsedUrls, formattedCodeLocations, DetectTool.DETECTOR.name());
         }
@@ -95,9 +97,7 @@ public class RapidModeStepRunner {
             }
         });
         
-        stepHelper.runToolIfIncluded(
-            DetectTool.CONTAINER_SCAN, "Container Scanner",
-            () -> {
+        stepHelper.runToolIfIncluded(DetectTool.CONTAINER_SCAN, "Container Scanner", () -> {
                 logger.debug("Stateless container scan detected.");
                 // Check if this is an SCA environment.
                 if (scaaasFilePath.isPresent()) {
@@ -116,17 +116,23 @@ public class RapidModeStepRunner {
                         formattedCodeLocations.add(new FormattedCodeLocation(containerScanStepRunner.getCodeLocationName(), scanId.get(), DetectTool.CONTAINER_SCAN.name()));
                     }
                 }
-            }
-        );
+            });
 
         // Get info about any scans that were done
         BlackduckScanMode mode = blackDuckRunData.getScanMode();
         List<DeveloperScansScanView> rapidResults = operationRunner.waitForRapidResults(blackDuckRunData, parsedUrls, mode);
 
-        operationRunner.generateComponentLocationAnalysisIfEnabled(rapidResults, bdioResult);
+
+        if (operationRunner.shouldAttemptQuackPatchFullResults()) {
+            logger.info("Quack Patch is enabled, attempting to retrieve full Rapid scan results.");
+            List<Response> rapidFullResults = operationRunner.waitForRapidFullResults(blackDuckRunData, parsedUrls, mode);
+            File jsonFileFULL = operationRunner.generateFullRapidJsonFile(rapidFullResults);
+            operationRunner.runQuackPatch(jsonFileFULL);
+        }
 
         // Generate a report, even an empty one if no scans were done as that is what previous detect versions did.
         File jsonFile = operationRunner.generateRapidJsonFile(projectVersion, rapidResults);
+        operationRunner.generateComponentLocationAnalysisIfEnabled(rapidResults, bdioResult);
         RapidScanResultSummary summary = operationRunner.logRapidReport(rapidResults, mode);
 
         operationRunner.publishRapidResults(jsonFile, summary, mode);
@@ -168,7 +174,7 @@ public class RapidModeStepRunner {
         operationRunner.uploadBdioEntries(blackDuckRunData, bdScanId);
 
         // add this scan to the URLs to wait for
-        parsedUrls.add(new HttpUrl(blackDuckUrl + "/api/developer-scans/" + bdScanId.toString()));
+        parsedUrls.add(new HttpUrl(blackDuckUrl + String.format(RAPID_SCAN_ENDPOINT + "/" + bdScanId.toString())));
     }
 
     /**
@@ -200,7 +206,7 @@ public class RapidModeStepRunner {
                     Set<String> parsedIds = result.parseScanIds();
 
                     for (String id : parsedIds) {
-                        HttpUrl url = new HttpUrl(blackDuckUrl + "/api/developer-scans/" + id);
+                        HttpUrl url = new HttpUrl(blackDuckUrl + RAPID_SCAN_ENDPOINT + "/" + id);
 
                         logger.info(scanMode + " mode signature scan URL: {}", url);
                         parsedUrls.add(url);

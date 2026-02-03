@@ -622,6 +622,37 @@ public class DetectProperties {
             .setGroups(DetectGroup.CARGO, DetectGroup.DETECTOR, DetectGroup.GLOBAL)
             .build();
 
+    public static final BooleanProperty DETECT_CARGO_IGNORE_ALL_WORKSPACES_MODE =
+        BooleanProperty.newBuilder("detect.cargo.ignore.all.workspaces", false)
+            .setInfo("Ignore All Workspaces", DetectPropertyFromVersion.VERSION_11_2_0)
+            .setHelp("All workspaces are ignored by the Cargo detector.")
+            .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
+            .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_CARGO_INCLUDED_WORKSPACES =
+        CaseSensitiveStringListProperty.newBuilder("detect.cargo.included.workspaces")
+            .setInfo("Cargo Include Workspaces", DetectPropertyFromVersion.VERSION_11_2_0)
+            .setHelp(
+                "A comma-separated list of Cargo workspaces (specified by the workspace directory's relative path) to exclude.",
+                "By default, Detect includes all workspaces, but will skip any Cargo workspaces specified via this property."
+            )
+            .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
+            .setCategory(DetectCategory.Advanced)
+            .setExample("crates/workspace-a,crates/workspace-b")
+            .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_CARGO_EXCLUDED_WORKSPACES =
+        CaseSensitiveStringListProperty.newBuilder("detect.cargo.excluded.workspaces")
+            .setInfo("Cargo Exclude Workspaces", DetectPropertyFromVersion.VERSION_11_2_0)
+            .setHelp(
+                "A comma-separated list of Cargo workspaces (specified by the workspace directory's relative path) to exclude.",
+                "By default, Detect includes all workspaces, but will skip any Cargo workspaces specified via this property."
+            )
+            .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
+            .setCategory(DetectCategory.Advanced)
+            .setExample("crates/workspace-a,crates/workspace-b")
+            .build();
+
     public static final NoneEnumListProperty<PipenvDependencyType> DETECT_PIPFILE_DEPENDENCY_TYPES_EXCLUDED =
         NoneEnumListProperty.newBuilder("detect.pipfile.dependency.types.excluded", NoneEnum.NONE, PipenvDependencyType.class)
             .setInfo("Pipfile Dependency Types Excluded", DetectPropertyFromVersion.VERSION_7_13_0)
@@ -1044,6 +1075,40 @@ public class DetectProperties {
             .setGroups(DetectGroup.IMPACT_ANALYSIS, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
 
+    public static final BooleanProperty DETECT_QUACK_PATCH_ENABLED =
+            BooleanProperty.newBuilder("detect.quack.patch.enabled", false)
+                    .setInfo("Quack Patch Enabled", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "If set to true, Detect will invoke Quack Patch -- a tool that uses LLMs to generate code patches for vulnerable transitive components.",
+                            "Only supported for Rapid and Stateless Scan modes. detect.llm.api.key, detect.llm.api.endpoint, and detect.llm.name must also be set. See <xref href=\\\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/runningdetect/quack-patch%2Ehtml\\\" scope=\\\"external\\\" outputclass=\\\"external\\\" format=\\\"html\\\" target=\\\"_blank\\\">Quack Patch</xref>\n for further details.")
+                    .setGroups(DetectGroup.QUACKPATCH)
+                    .build();
+
+    public static final StringProperty DETECT_LLM_API_KEY =
+            StringProperty.newBuilder("detect.llm.api.key", "")
+                    .setInfo("LLM Gateway API key", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "Provides the API key used to authenticate with the configured LLM Gateway.\n")
+                    .setGroups(DetectGroup.QUACKPATCH)
+                    .build();
+
+    public static final StringProperty DETECT_LLM_API_ENDPOINT =
+            StringProperty.newBuilder("detect.llm.api.endpoint", "")
+                    .setInfo("LLM API URL", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "Specifies the base URL of the LLM Gateway that the Quack Patch tool will send requests to.")
+                    .setGroups(DetectGroup.QUACKPATCH)
+                    .build();
+
+    public static final StringProperty DETECT_LLM_NAME =
+            StringProperty.newBuilder("detect.llm.name", "")
+                    .setInfo("LLM Model Name", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "Defines which LLM model Quack Patch should use when performing analysis.",
+                            "Quack Patch has been verified with the following model names: Claude Sonnet 4, GPT-4 and Gemini 2.5 Pro. You may use other OpenAI API standard compatible models supported by your LLM Gateway.")
+                    .setGroups(DetectGroup.QUACKPATCH)
+                    .build();
+
     public static final BooleanProperty DETECT_COMPONENT_LOCATION_ANALYSIS_ENABLED =
         BooleanProperty.newBuilder("detect.component.location.analysis.enabled", false)
             .setInfo("Component Location Analysis Enabled", DetectPropertyFromVersion.VERSION_8_11_0)
@@ -1223,6 +1288,16 @@ public class DetectProperties {
             .setHelp("The path to the Npm executable.")
             .setGroups(DetectGroup.NPM, DetectGroup.GLOBAL)
             .build();
+
+    public static final NullablePathProperty DETECT_NUGET_INSPECTOR_PATH =
+            NullablePathProperty.newBuilder("detect.nuget.inspector.path")
+                    .setInfo("NuGet Inspector Path", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "Use this property to point Detect to a local NuGet Inspector executable, instead of the default that Detect downloads from the binary repository."
+                    )
+                    .setGroups(DetectGroup.NUGET, DetectGroup.GLOBAL)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
 
     public static final NullablePathProperty DETECT_NUGET_CONFIG_PATH =
         NullablePathProperty.newBuilder("detect.nuget.config.path")
