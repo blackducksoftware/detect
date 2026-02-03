@@ -12,7 +12,6 @@ import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import com.google.gson.Gson;
 import com.blackduck.integration.bdio.graph.BasicDependencyGraph;
 import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.Forge;
@@ -24,6 +23,7 @@ import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.detectable.detectable.util.SemVerComparator;
 import com.blackduck.integration.detectable.detectables.npm.NpmDependencyType;
 import com.blackduck.integration.detectable.extraction.Extraction;
+import com.google.gson.Gson;
 
 public class PackageJsonExtractor {
     private final Gson gson;
@@ -81,9 +81,53 @@ public class PackageJsonExtractor {
     }
     
     private Dependency entryToDependency(String key, String value) {
+        // Handle npm aliases: "alias-name": "npm:actual-package@version"
+        if (value.startsWith("npm:")) {
+            String[] parsed = parseNpmAlias(value);
+            key = parsed[0];
+            value = parsed[1];
+        }
+
         String version = extractLowestVersion(value);
         ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.NPMJS, key, version);
         return new Dependency(externalId);
+    }
+
+    /**
+     * Parses an npm alias string to extract the actual package name and version specifier.
+     *
+     * Npm aliases have the format: "npm:package@version" or "npm:@scope/package@version"
+     * For scoped packages (starting with @), there are two @ symbols:
+     *   - First @ is part of the scope name
+     *   - Second @ (after the /) separates the package name from the version
+     *
+     * @param aliasValue The full alias string (e.g., "npm:package@^1.0.0" or "npm:@scope/package@^7.0.0")
+     * @return Array with [0] = package name, [1] = version specifier
+     */
+    private String[] parseNpmAlias(String aliasValue) {
+        String normalizedPackage = aliasValue.substring(4); // Remove "npm:" prefix
+        int versionAtIndex = -1;
+
+        // For scoped packages (e.g., @scope/package@^7.0.0), find the @ after the /
+        // For non-scoped packages (e.g., package@^1.0.0), find the first @
+        if (normalizedPackage.startsWith("@")) {
+            int slashIndex = normalizedPackage.indexOf('/');
+            if (slashIndex > 0) {
+                versionAtIndex = normalizedPackage.indexOf('@', slashIndex + 1);
+            }
+        } else {
+            versionAtIndex = normalizedPackage.indexOf('@');
+        }
+
+        if (versionAtIndex > 0) {
+            return new String[] {
+                normalizedPackage.substring(0, versionAtIndex),
+                normalizedPackage.substring(versionAtIndex + 1)
+            };
+        } else {
+            // No version specified (e.g., "npm:package" or "npm:@scope/package")
+            return new String[] { normalizedPackage, normalizedPackage };
+        }
     }
 
     public String extractLowestVersion(String value) {
