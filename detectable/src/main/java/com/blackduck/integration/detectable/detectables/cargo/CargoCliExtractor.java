@@ -157,6 +157,13 @@ public class CargoCliExtractor {
         // This ensures we get root package + included packages
         if (hasInclusions && !hasExclusions) {
 
+            // For virtual workspaces, only run the included packages command
+            // Virtual workspaces have no root package dependencies
+            if (isVirtualWorkspace) {
+                List<String> includedCommand = buildPackageCommand(includedWorkspaces, dependencyTypeFilter, cargoDetectableOptions);
+                return runCargoTreeCommand(directory, cargoExe, includedCommand);
+            }
+
             // Command 1: Get root package dependencies
             List<String> rootCommand = new LinkedList<>(CARGO_TREE_COMMAND);
             if (!dependencyTypeFilter.shouldIncludeAll()) {

@@ -126,8 +126,12 @@ public class RapidModeStepRunner {
         if (operationRunner.shouldAttemptQuackPatchFullResults()) {
             logger.info("Quack Patch is enabled, attempting to retrieve full Rapid scan results.");
             List<Response> rapidFullResults = operationRunner.waitForRapidFullResults(blackDuckRunData, parsedUrls, mode);
-            File jsonFileFULL = operationRunner.generateFullRapidJsonFile(rapidFullResults);
-            operationRunner.runQuackPatch(jsonFileFULL);
+            if (rapidFullResults.isEmpty()) {
+                logger.info("Quack Patch requires non-empty Rapid Scan results. Skipping Quack Patch.");
+            } else {
+                File jsonFileFULL = operationRunner.generateFullRapidJsonFile(rapidFullResults);
+                operationRunner.runQuackPatch(jsonFileFULL);
+            }
         }
 
         // Generate a report, even an empty one if no scans were done as that is what previous detect versions did.
