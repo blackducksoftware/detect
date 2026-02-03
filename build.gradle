@@ -48,6 +48,8 @@ def createBatteryPath() {
 
 def final locatorGroup = "com.blackduck.integration"
 def final locatorModule = "component-locator"
+def final quackPatchGroup = "com.blackduck.integration"
+def final quackPatchModule = "quack-patch"
 final def externalRepoHost = "https://repo.blackduck.com"
 final def internalRepoHost = System.getenv('SNPS_INTERNAL_ARTIFACTORY')
 
@@ -66,8 +68,24 @@ repositories {
         content { includeModule(locatorGroup, locatorModule) }
     }
     maven {
+        url = uri("${internalRepoHost}/artifactory/bds-integrations-release-not-mirrored")
+        content { includeModule(quackPatchGroup, quackPatchModule) }
+    }
+    maven {
+        url = uri("${internalRepoHost}/artifactory/bds-integrations-snapshot-not-mirrored")
+        content { includeModule(quackPatchGroup, quackPatchModule) }
+    }
+    maven {
+        url = uri("${internalRepoHost}/artifactory/bds-integration-placeholder-release")
+        content { includeModule(quackPatchGroup, quackPatchModule) }
+    }
+    maven {
         url = uri("${externalRepoHost}/bds-integration-placeholder-release")
         content { includeModule(locatorGroup, locatorModule) }
+    }
+    maven {
+        url = uri("${externalRepoHost}/bds-integration-placeholder-release")
+        content { includeModule(quackPatchGroup, quackPatchModule) }
     }
     maven {
         url "${internalRepoHost}/artifactory/bds-bdio-release"
@@ -166,7 +184,7 @@ dependencies {
     implementation "com.blackduck.integration:blackduck-common:${blackDuckCommonVersion}"
     implementation 'com.blackduck.integration:blackduck-upload-common:4.1.4'
     implementation 'com.blackducksoftware:method-analyzer-core:1.0.7'
-    implementation "${locatorGroup}:${locatorModule}:2.2.0"
+    implementation "${locatorGroup}:${locatorModule}:2.3.4"
 
     implementation 'org.apache.maven.shared:maven-invoker:3.0.0'
 
