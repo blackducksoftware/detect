@@ -136,7 +136,14 @@ public class HttpFamilyProber {
     private boolean probeRepo(String repo, Set<String> labels) {
         switch (mode) {
             case BZLMOD:
-                return probeBzlmodRepo(repo);
+                // In BZLMOD-capable environments, mod show_repo is allowed but may not classify
+                // repos wired via legacy WORKSPACE in hybrid setups. A controlled fallback to
+                // a lightweight label_kind probe prevents false negatives without adding new
+                // global environment detection.
+                if (probeBzlmodRepo(repo)) {
+                    return true;
+                }
+                return probeLegacyRepo(repo, labels);
             case WORKSPACE:
                 return probeLegacyRepo(repo, labels);
             default:

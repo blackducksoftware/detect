@@ -159,59 +159,58 @@ public class Pipelines {
         boolean bzlmodActive = (mode == BazelEnvironmentAnalyzer.Mode.BZLMOD);
         logger.info("HTTP pipeline variant: {}", bzlmodActive ? "bzlmod" : "workspace");
 
-        if (bzlmodActive) {
-            // bzlmod: Use robust show_repo parser for HTTP pipeline
-            logger.info("Using robust show_repo parser for bzlmod HTTP pipeline.");
+        // Build both HTTP pipelines; dispatch will decide which to use per run.
+        List<String> httpLibraryQuery = BazelQueryBuilder.query()
+            .kind(LIBRARY_RULE_PATTERN, BazelQueryBuilder.deps("${detect.bazel.target}"))
+            .withOptions(QUERY_OPTIONS_PLACEHOLDER)
+            .build();
 
-            List<String> httpLibraryQuery = BazelQueryBuilder.query()
-                .kind(LIBRARY_RULE_PATTERN, BazelQueryBuilder.deps("${detect.bazel.target}"))
-                .withOptions(QUERY_OPTIONS_PLACEHOLDER)
-                .build();
+        Pipeline httpArchiveBzlmodPipeline = (new PipelineBuilder(externalIdFactory, bazelCommandExecutor, bazelVariableSubstitutor, haskellCabalLibraryJsonProtoParser))
+            .executeBazelOnEachLine(httpLibraryQuery, false)
+            .parseSplitEachLine(SPLIT_NEWLINE_REGEX)
+            .parseFilterLines(HTTP_REPO_FILTER_REGEX)
+            .parseReplaceInEachLine(STRIP_LEADING_ATS_REGEX, "")
+            .parseReplaceInEachLine(STRIP_REPO_PATH_REGEX, "")
+            .deDupLines()
+            .parseFilterLines(EXCLUDE_BUILTINS_REGEX)
+            .parseReplaceInEachLine("^", PREPEND_AT)
+            // Add intermediate step to run 'bazel mod show_repo' for each repo
+            .addIntermediateStep(new IntermediateStepExecuteShowRepoHeuristic(
+                bazelCommandExecutor
+            ))
+            .parseShowRepoToUrlCandidates()
+            .transformGithubUrl()
+            .build();
 
-            Pipeline httpArchiveBzlmodPipeline = (new PipelineBuilder(externalIdFactory, bazelCommandExecutor, bazelVariableSubstitutor, haskellCabalLibraryJsonProtoParser))
-                .executeBazelOnEachLine(httpLibraryQuery, false)
-                .parseSplitEachLine(SPLIT_NEWLINE_REGEX)
-                .parseFilterLines(HTTP_REPO_FILTER_REGEX)
-                .parseReplaceInEachLine(STRIP_LEADING_ATS_REGEX, "")
-                .parseReplaceInEachLine(STRIP_REPO_PATH_REGEX, "")
-                .deDupLines()
-                .parseFilterLines(EXCLUDE_BUILTINS_REGEX)
-                .parseReplaceInEachLine("^", PREPEND_AT)
-                // Add intermediate step to run 'bazel mod show_repo' for each repo
-                .addIntermediateStep(new IntermediateStepExecuteShowRepoHeuristic(
-                    bazelCommandExecutor
-                ))
-                .parseShowRepoToUrlCandidates()
-                .transformGithubUrl()
-                .build();
-            availablePipelines.put(DependencySource.HTTP_ARCHIVE, httpArchiveBzlmodPipeline);
-        } else {
-            // WORKSPACE: Use XML parsing pipeline for HTTP pipeline
-            List<String> httpLibraryQuery = BazelQueryBuilder.query()
-                .kind(LIBRARY_RULE_PATTERN, BazelQueryBuilder.deps("${detect.bazel.target}"))
-                .withOptions(QUERY_OPTIONS_PLACEHOLDER)
-                .build();
+        Pipeline httpArchiveWorkspacePipeline = (new PipelineBuilder(externalIdFactory, bazelCommandExecutor, bazelVariableSubstitutor, haskellCabalLibraryJsonProtoParser))
+            .executeBazelOnEachLine(httpLibraryQuery, false)
+            .parseSplitEachLine(SPLIT_NEWLINE_REGEX)
+            .parseFilterLines(HTTP_REPO_FILTER_REGEX)
+            .parseReplaceInEachLine(STRIP_SINGLE_AT_REGEX, "")
+            .parseReplaceInEachLine(STRIP_REPO_PATH_REGEX, "")
+            .deDupLines()
+            .parseReplaceInEachLine("^", PREPEND_EXTERNAL)
+            .executeBazelOnEachLine(
+                BazelQueryBuilder.query()
+                    .kind(ANY_RULE_PATTERN, "${input.item}")
+                    .withOptions(QUERY_OPTIONS_PLACEHOLDER)
+                    .withOutput(OutputFormat.XML)
+                    .build(),
+                true)
+            .parseValuesFromXml(HttpArchiveXpath.QUERY, "value")
+            .transformGithubUrl()
+            .build();
 
-            Pipeline httpArchiveGithubUrlPipeline = (new PipelineBuilder(externalIdFactory, bazelCommandExecutor, bazelVariableSubstitutor, haskellCabalLibraryJsonProtoParser))
-                    .executeBazelOnEachLine(httpLibraryQuery, false)
-                    .parseSplitEachLine(SPLIT_NEWLINE_REGEX)
-                    .parseFilterLines(HTTP_REPO_FILTER_REGEX)
-                    .parseReplaceInEachLine(STRIP_SINGLE_AT_REGEX, "")
-                    .parseReplaceInEachLine(STRIP_REPO_PATH_REGEX, "")
-                    .deDupLines()
-                    .parseReplaceInEachLine("^", PREPEND_EXTERNAL)
-                    .executeBazelOnEachLine(
-                        BazelQueryBuilder.query()
-                            .kind(ANY_RULE_PATTERN, "${input.item}")
-                            .withOptions(QUERY_OPTIONS_PLACEHOLDER)
-                            .withOutput(OutputFormat.XML)
-                            .build(),
-                        true)
-                    .parseValuesFromXml(HttpArchiveXpath.QUERY, "value")
-                    .transformGithubUrl()
-                    .build();
-            availablePipelines.put(DependencySource.HTTP_ARCHIVE, httpArchiveGithubUrlPipeline); // add the pipeline to the available pipelines
-        }
+        // Dispatch pipeline: uses mode as capability gate; attempts bzlmod first when allowed, then falls back.
+        // Rationale: Even if global env detection indicates bzlmod is available (mod graph), individual external
+        // repositories for a given target may still be defined via WORKSPACE in hybrid repos. Thus, bzlmod capability
+        // does not guarantee HTTP deps are resolvable via bzlmod; when bzlmod yields no deps or fails, we fallback.
+        Pipeline httpDispatchPipeline = new HttpArchiveDispatchPipeline(
+            httpArchiveBzlmodPipeline,
+            httpArchiveWorkspacePipeline,
+            mode
+        );
+        availablePipelines.put(DependencySource.HTTP_ARCHIVE, httpDispatchPipeline);
     }
 
     /**
