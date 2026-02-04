@@ -2,7 +2,7 @@
 
 ## Bazel V2 Detector Overview
 
-[detect_product_short] provides robust support for Bazel projects using a new V2 detector. The V2 detector is mode-agnostic and works seamlessly with both **BZLMOD** (MODULE.bazel) and **WORKSPACE**-based projects.
+[detect_product_short] provides support for Bazel projects using a new V2 detector. The V2 detector is mode-agnostic and works seamlessly with both **BZLMOD** (MODULE.bazel) and **WORKSPACE**-based projects.
 
 The V2 detector discovers dependencies from the following dependency sources:
 
@@ -15,13 +15,30 @@ It also discovers library dependencies that have a GitHub released artifact loca
 
 ### Key Features
 - **Mode-Agnostic:** Automatically detects whether your project uses BZLMOD or WORKSPACE and adapts accordingly
-- **Intelligent Mode Detection:** Uses `bazel mod show_repo` to detect BZLMOD support; falls back to WORKSPACE mode for older Bazel versions (< 6.0)
+- **Intelligent Mode Detection:** Uses `bazel mod graph` to detect BZLMOD support; falls back to WORKSPACE mode for older Bazel versions (< 6.0)
 - **Automatic Pipeline Selection:** Probes your Bazel dependency graph to determine which dependency sources are present and automatically runs the correct extraction pipelines
-- **No WORKSPACE File Required:** Unlike the legacy detector, V2 works with BZLMOD-only projects that don't have a WORKSPACE file
 - **Enhanced HTTP Detection:** 
   - For BZLMOD projects: Uses `bazel mod show_repo` to robustly extract dependency URLs from external repositories
   - For WORKSPACE projects: Uses XML parsing to extract URLs from repository rules
 - **Configurable Probing:** Control the depth of dependency graph probing with the `detect.bazel.http.probe.limit` property
+
+### Supported Bazel Versions
+
+- Bazel 8.x: Fully supported
+- Bazel 7.x: Fully supported; Bzlmod is default and `bazel mod` commands are stable
+- Bazel 6.4–6.9: Supported; Bzlmod supported with mature `mod` subcommands
+- Bazel 6.0–6.3: Limited support for Bzlmod (see note below)
+- Bazel 5.x and earlier: WORKSPACE mode only; Bzlmod features unavailable
+- Minimum version for Haskell Cabal: Bazel 2.1.0+
+
+> Important note for Bazel 6.0–6.3 with Bzlmod enabled
+>
+> - In Bazel 6.x, Bzlmod analysis often requires the `--enable_bzlmod` flag on query/cquery commands.
+> - The `bazel mod` subcommands (for example, `mod show_repo`) were introduced around 6.3 and are not consistently available or stable in 6.0–6.2.
+> - As a result, the Bazel V2 detector’s HTTP/BCR probing (which relies on `bazel mod show_repo` in Bzlmod mode) can fail on 6.0–6.3 even if a plain `bazel build` succeeds.
+>
+> Recommended actions:
+> - Upgrade Bazel to 6.4+ (preferably 7.x or 8.x), where `bazel mod` is stable and Bzlmod is the default.
 
 ## Usage
 
@@ -73,6 +90,10 @@ bash <(curl -s -L https://detect.blackduck.com/detect11.sh) \
 #### `detect.bazel.cquery.options`
 - **Description:** Additional options to pass to Bazel cquery commands
 - **Example:** `--detect.bazel.cquery.options='--repository_cache=/path/to/cache'`
+
+#### `detect.bazel.query.options` 
+- **Description:** Additional options to pass to Bazel query commands
+- **Example:** `--detect.bazel.cquery.options='--enable_bzlmod'` (if needed for Bazel 6.x Bzlmod projects)
 
 ## Pipeline Details
 
@@ -222,12 +243,14 @@ bash <(curl -s -L https://detect.blackduck.com/detect11.sh) --detect.bazel.targe
 3. Check that your Bazel target builds successfully: `bazel build //your:target`
 
 #### Old Bazel Version Warning
-**Problem:** You see a warning: "Bazel does not support 'mod' command (likely version < 6.0)"
+**Problem:** You see a warning like: "Bazel does not support 'mod' command (likely version < 6.0)" or "show repo command not found".
 
 **Solution:** 
 - The detector will assume WORKSPACE mode and continue. This is expected behavior for Bazel versions before 6.0.
-- To use BZLMOD features, upgrade to Bazel 6.0 or later.
+- To use BZLMOD features, upgrade to Bazel 6.4+ (preferably 7.x or 8.x).
 - To suppress the warning, explicitly set: `--detect.bazel.mode=WORKSPACE`
+
+> Note: For Bazel 6.0–6.3 with Bzlmod enabled (via `--enable_bzlmod`), the detector may fail to probe HTTP/BCR repositories because `bazel mod show_repo` is unavailable or unstable. Upgrade or use WORKSPACE path as a workaround.
 
 #### HTTP Dependencies Missing
 **Problem:** Some http_archive or git_repository dependencies are not detected.
@@ -305,12 +328,6 @@ The detector automatically determines your Bazel mode through the following proc
 - **HTTP Probe Limit:** Default limit of 100 repositories prevents excessive command execution on large monorepos. Adjust if needed.
 - **Target Specificity:** More specific targets (e.g., `//module:specific-target`) are faster than broad targets (e.g., `//:all`)
 - **Manual Override:** Setting `detect.bazel.dependency.sources` explicitly can significantly speed up detection
-
-### Supported Bazel Versions
-
-- **Bazel 6.0+:** Full BZLMOD support with optimal detection
-- **Bazel 5.x and earlier:** WORKSPACE mode only; BZLMOD features unavailable
-- **Minimum Version:** Bazel 2.1.0+ required for haskell_cabal_library support
 
 ### Best Practices
 
