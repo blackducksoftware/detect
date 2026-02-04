@@ -13,6 +13,7 @@ public final class BazelDetectableOptionsTestBuilder {
     private String targetName = null;
     private Set<DependencySource> dependencySourcesFromProperty = null;
     private List<String> bazelCqueryAdditionalOptions = null;
+    private List<String> bazelQueryAdditionalOptions = null;
     private String modeOverride = null;
     private int httpProbeLimit = 30; // sensible default used across tests
 
@@ -38,6 +39,11 @@ public final class BazelDetectableOptionsTestBuilder {
         return this;
     }
 
+    public BazelDetectableOptionsTestBuilder bazelQueryAdditionalOptions(List<String> bazelQueryAdditionalOptions) {
+        this.bazelQueryAdditionalOptions = bazelQueryAdditionalOptions;
+        return this;
+    }
+
     public BazelDetectableOptionsTestBuilder modeOverride(String modeOverride) {
         this.modeOverride = modeOverride;
         return this;
@@ -53,6 +59,7 @@ public final class BazelDetectableOptionsTestBuilder {
             targetName,
             dependencySourcesFromProperty,
             bazelCqueryAdditionalOptions,
+            bazelQueryAdditionalOptions,
             modeOverride,
             httpProbeLimit
         );
@@ -63,4 +70,3 @@ public final class BazelDetectableOptionsTestBuilder {
         return builder().target(target).build();
     }
 }
-

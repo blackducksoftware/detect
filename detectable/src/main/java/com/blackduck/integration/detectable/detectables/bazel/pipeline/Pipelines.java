@@ -25,6 +25,8 @@ import org.slf4j.LoggerFactory;
 public class Pipelines {
     // Placeholder for cquery options in command templates
     private static final String CQUERY_OPTIONS_PLACEHOLDER = "${detect.bazel.cquery.options}";
+    // Placeholder for query options in command templates
+    private static final String QUERY_OPTIONS_PLACEHOLDER = "${detect.bazel.query.options}";
 
     // Bazel rule kind patterns for pipeline queries
     private static final String JAVA_IMPORT_RULE_PATTERN = "j.*import";
@@ -112,6 +114,7 @@ public class Pipelines {
             .executeBazelOnEachLine(
                 BazelQueryBuilder.query()
                     .kind(MAVEN_JAR_RULE_PATTERN, "${input.item}")
+                    .withOptions(QUERY_OPTIONS_PLACEHOLDER)
                     .withOutput(OutputFormat.XML)
                     .build(),
                 true)
@@ -162,6 +165,7 @@ public class Pipelines {
 
             List<String> httpLibraryQuery = BazelQueryBuilder.query()
                 .kind(LIBRARY_RULE_PATTERN, BazelQueryBuilder.deps("${detect.bazel.target}"))
+                .withOptions(QUERY_OPTIONS_PLACEHOLDER)
                 .build();
 
             Pipeline httpArchiveBzlmodPipeline = (new PipelineBuilder(externalIdFactory, bazelCommandExecutor, bazelVariableSubstitutor, haskellCabalLibraryJsonProtoParser))
@@ -185,6 +189,7 @@ public class Pipelines {
             // WORKSPACE: Use XML parsing pipeline for HTTP pipeline
             List<String> httpLibraryQuery = BazelQueryBuilder.query()
                 .kind(LIBRARY_RULE_PATTERN, BazelQueryBuilder.deps("${detect.bazel.target}"))
+                .withOptions(QUERY_OPTIONS_PLACEHOLDER)
                 .build();
 
             Pipeline httpArchiveGithubUrlPipeline = (new PipelineBuilder(externalIdFactory, bazelCommandExecutor, bazelVariableSubstitutor, haskellCabalLibraryJsonProtoParser))
@@ -198,6 +203,7 @@ public class Pipelines {
                     .executeBazelOnEachLine(
                         BazelQueryBuilder.query()
                             .kind(ANY_RULE_PATTERN, "${input.item}")
+                            .withOptions(QUERY_OPTIONS_PLACEHOLDER)
                             .withOutput(OutputFormat.XML)
                             .build(),
                         true)

@@ -231,6 +231,13 @@ public class DetectProperties {
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();
 
+    public static final StringListProperty DETECT_BAZEL_QUERY_OPTIONS =
+        StringListProperty.newBuilder("detect.bazel.query.options", emptyList())
+            .setInfo("Bazel query additional options", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setHelp("A comma-separated list of additional options to pass to the bazel query command.")
+            .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
+            .build();
+
     public static final AllNoneEnumListProperty<DependencySource> DETECT_BAZEL_DEPENDENCY_SOURCES =
         AllNoneEnumListProperty.newBuilder("detect.bazel.dependency.sources", AllNoneEnum.NONE, DependencySource.class)
             .setInfo("Bazel dependency sources", DetectPropertyFromVersion.VERSION_7_12_0)
@@ -1848,7 +1855,7 @@ public class DetectProperties {
 
     public static final EnumProperty<DetectTargetType> DETECT_TARGET_TYPE =
         EnumProperty.newBuilder("detect.target.type", DetectTargetType.SOURCE, DetectTargetType.class)
-            .setInfo("Detect Target", DetectPropertyFromVersion.VERSION_7_0_0)
+            .setInfo("Detect Scan Mode", DetectPropertyFromVersion.VERSION_7_0_0)
             .setHelp(
                 "Informs detect of what is being scanned which allows improved user experience when scanning different types of targets.",
                 "Changes the behaviour of detect to better suite what is being scanned. For example, when IMAGE is selected and the DOCKER tool applies and has not been excluded, detect will not pick a source directory, will automatically disable the DETECTOR tool and run BINARY/SIGNATURE SCAN on the provided image."

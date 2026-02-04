@@ -1,7 +1,6 @@
 package com.blackduck.integration.detectable.detectables.bazel.v2.unit;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.util.Collections;
@@ -36,14 +35,14 @@ public class BazelV2DetectableNoPipelinesTest {
         DetectableExecutableRunner executableRunner = Mockito.mock(DetectableExecutableRunner.class);
         ExternalIdFactory externalIdFactory = new ExternalIdFactory();
         BazelResolver bazelResolver = () -> ExecutableTarget.forCommand("bazel");
-        BazelVariableSubstitutor substitutor = new BazelVariableSubstitutor("//:test", Collections.emptyList());
+        BazelVariableSubstitutor substitutor = new BazelVariableSubstitutor("//:test", Collections.emptyList(), Collections.emptyList());
         HaskellCabalLibraryJsonProtoParser haskellParser = new HaskellCabalLibraryJsonProtoParser(new com.google.gson.Gson());
         BazelProjectNameGenerator projectNameGenerator = new BazelProjectNameGenerator();
 
         // Mock a prober that returns empty set
         BazelGraphProberFactory proberFactory = (bazelCmd, target, mode, httpProbeLimit) -> Mockito.mock(BazelGraphProber.class);
         BazelGraphProber mockProber = proberFactory.create(null, "//:test", BazelEnvironmentAnalyzer.Mode.UNKNOWN, 30);
-        when(mockProber.decidePipelines()).thenReturn(Collections.emptySet());
+        Mockito.when(mockProber.decidePipelines()).thenReturn(Collections.emptySet());
 
         // Use mode override UNKNOWN to avoid auto-detection which would execute Bazel
         BazelDetectableOptions options = BazelDetectableOptionsTestBuilder.builder()

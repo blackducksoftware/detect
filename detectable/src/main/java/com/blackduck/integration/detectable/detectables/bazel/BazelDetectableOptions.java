@@ -13,6 +13,7 @@ public class BazelDetectableOptions {
     private final String targetName;
     private final Set<DependencySource> dependencySourcesFromProperty;
     private final List<String> bazelCqueryAdditionalOptions;
+    private final List<String> bazelQueryAdditionalOptions;
     private final String modeOverride;
     private final int httpProbeLimit;
 
@@ -20,12 +21,14 @@ public class BazelDetectableOptions {
         String targetName,
         Set<DependencySource> dependencySourcesFromProperty,
         List<String> bazelCqueryAdditionalOptions,
+        List<String> bazelQueryAdditionalOptions,
         String modeOverride,
         int httpProbeLimit
     ) {
         this.targetName = targetName;
         this.dependencySourcesFromProperty = dependencySourcesFromProperty;
         this.bazelCqueryAdditionalOptions = bazelCqueryAdditionalOptions;
+        this.bazelQueryAdditionalOptions = bazelQueryAdditionalOptions;
         this.modeOverride = modeOverride;
         this.httpProbeLimit = httpProbeLimit;
     }
@@ -36,6 +39,10 @@ public class BazelDetectableOptions {
 
     public List<String> getBazelCqueryAdditionalOptions() {
         return bazelCqueryAdditionalOptions;
+    }
+
+    public List<String> getBazelQueryAdditionalOptions() {
+        return bazelQueryAdditionalOptions;
     }
 
     public Set<DependencySource> getDependencySourcesFromProperty() {

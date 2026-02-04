@@ -83,6 +83,21 @@ public class QueryBuilder {
     }
 
     /**
+     * Adds options to the query command, such as placeholders to be substituted
+     * (e.g., "${detect.bazel.query.options}") or explicit flags (e.g., "--enable_bzlmod").
+     * The provided string is added as a single argument if non-empty.
+     *
+     * @param options Arbitrary options string to append
+     * @return This builder for chaining
+     */
+    public QueryBuilder withOptions(String options) {
+        if (options != null && !options.trim().isEmpty()) {
+            this.args.add(options);
+        }
+        return this;
+    }
+
+    /**
      * Specifies the output format for the query results.
      *
      * @param format Output format (BUILD, XML, JSONPROTO, LABEL_KIND)

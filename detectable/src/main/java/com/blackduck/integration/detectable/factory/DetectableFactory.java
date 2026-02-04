@@ -343,7 +343,8 @@ public class DetectableFactory {
     public BazelV2Detectable createBazelV2Detectable(DetectableEnvironment environment, BazelDetectableOptions options, BazelResolver bazelResolver) {
         BazelVariableSubstitutor substitutor = new BazelVariableSubstitutor(
             options.getTargetName().orElse(null),
-            options.getBazelCqueryAdditionalOptions()
+            options.getBazelCqueryAdditionalOptions(),
+            options.getBazelQueryAdditionalOptions()
         );
         HaskellCabalLibraryJsonProtoParser haskellParser = new HaskellCabalLibraryJsonProtoParser(gson);
         BazelProjectNameGenerator projectNameGenerator = new BazelProjectNameGenerator();
@@ -784,7 +785,8 @@ public class DetectableFactory {
         HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser = new HaskellCabalLibraryJsonProtoParser(gson);
         BazelVariableSubstitutor bazelVariableSubstitutor = new BazelVariableSubstitutor(
             bazelDetectableOptions.getTargetName().orElse(null),
-            bazelDetectableOptions.getBazelCqueryAdditionalOptions()
+            bazelDetectableOptions.getBazelCqueryAdditionalOptions(),
+            bazelDetectableOptions.getBazelQueryAdditionalOptions()
         );
         BazelProjectNameGenerator bazelProjectNameGenerator = new BazelProjectNameGenerator();
         return new BazelExtractor(
