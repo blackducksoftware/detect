@@ -43,6 +43,20 @@ public class CargoLockfileExtractor {
     private final CargoTomlParser cargoTomlParser;
     private final CargoLockPackageDataTransformer cargoLockPackageDataTransformer;
     private final CargoLockPackageTransformer cargoLockPackageTransformer;
+    private static final String FEATURE_FLAGS_NOT_SUPPORTED_WARNING =
+        "Feature inclusion or exclusion (detect.cargo.included.features, detect.cargo.disable.default.features) " +
+            "are not supported by the Cargo Lockfile Detector and will be ignored. " +
+            "Use Cargo CLI Detector for accurate feature-based dependency resolution. " +
+            "Cargo CLI Detector requires the 'cargo' executable to be available in PATH.";
+
+    private static final String PROC_MACRO_EXCLUSION_NOT_SUPPORTED_WARNING =
+        "PROC_MACRO exclusion is not supported by the Cargo Lockfile Detector and will be ignored. " +
+            "Supported exclusions for Cargo Lockfile Detector: [NORMAL, BUILD, DEV].";
+
+    private static final String VIRTUAL_WORKSPACE_ALL_MEMBERS_EXCLUDED_WARNING =
+        "Cannot exclude all workspace members for virtual manifest. " +
+            "Please check your workspace configuration (detect.cargo.ignore.all.workspaces or exclude properties). " +
+            "Zero components will be reported in SBOM.";
 
     public CargoLockfileExtractor(
         CargoTomlParser cargoTomlParser,
@@ -55,16 +69,14 @@ public class CargoLockfileExtractor {
     }
 
     public Extraction extract(File cargoLockFile, @Nullable File cargoTomlFile, CargoDetectableOptions cargoDetectableOptions) throws IOException, DetectableException, MissingExternalIdException {
+        logFeatureFlagWarningIfApplicable(cargoDetectableOptions);
         CargoLockData cargoLockData = new Toml().read(cargoLockFile).to(CargoLockData.class);
         List<CargoLockPackageData> cargoLockPackageDataList = cargoLockData.getPackages().orElse(new ArrayList<>());
         boolean exclusionEnabled = isDependencyExclusionEnabled(cargoDetectableOptions);
         boolean isVirtualWorkspace = false;
 
         if (exclusionEnabled && cargoDetectableOptions.getDependencyTypeFilter().shouldExclude(CargoDependencyType.PROC_MACRO)) {
-            logger.warn(
-                "PROC_MACRO exclusion is not supported by the Cargo Lockfile Detector and will be ignored. " +
-                    "Supported exclusions for Cargo Lockfile Detector: [NORMAL, BUILD, DEV]. "
-            );
+            logger.warn(PROC_MACRO_EXCLUSION_NOT_SUPPORTED_WARNING);
         }
 
         if (cargoTomlFile == null && exclusionEnabled) {
@@ -88,11 +100,7 @@ public class CargoLockfileExtractor {
 
             // Early exit for virtual workspace with all members excluded
             if (shouldReturnZeroComponents(cargoDetectableOptions, cargoTomlContents, workspaceRoot, isVirtualWorkspace)) {
-                logger.warn(
-                    "Cannot exclude all workspace members for virtual manifest. " +
-                        "Please check your workspace configuration (detect.cargo.ignore.all.workspaces or exclude properties). " +
-                        "Zero components will be reported in SBOM."
-                );
+                logger.warn(VIRTUAL_WORKSPACE_ALL_MEMBERS_EXCLUDED_WARNING);
                 return new Extraction.Builder().success(new ArrayList<>()).nameVersionIfPresent(projectNameVersion).build();
             }
 
@@ -153,6 +161,20 @@ public class CargoLockfileExtractor {
             .success(codeLocations)
             .nameVersionIfPresent(projectNameVersion)
             .build();
+    }
+
+    private void logFeatureFlagWarningIfApplicable(CargoDetectableOptions cargoDetectableOptions) {
+        if (cargoDetectableOptions == null) {
+            return;
+        }
+
+        boolean hasIncludedFeatures = cargoDetectableOptions.getIncludedFeatures() != null &&
+            !cargoDetectableOptions.getIncludedFeatures().isEmpty();
+        boolean hasDisabledDefaultFeatures = cargoDetectableOptions.isDefaultFeaturesDisabled();
+
+        if (hasIncludedFeatures || hasDisabledDefaultFeatures) {
+            logger.warn(FEATURE_FLAGS_NOT_SUPPORTED_WARNING);
+        }
     }
 
     private boolean isDependencyExclusionEnabled(CargoDetectableOptions options) {
