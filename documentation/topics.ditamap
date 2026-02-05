@@ -73,14 +73,13 @@
 	<topicref href="runningdetect/intro.md" format="markdown">
 			<topicref href="runningdetect/basics/decidinghowtouse.md" format="markdown"/>
 			<topicref href="runningdetect/basics/positioning.md" format="markdown"/>
+			<topicref href="runningdetect/basics/manual.md" format="markdown"/>
 			<topicref href="runningdetect/basics/choosingworkingdir.md" format="markdown"/>
 			<topicref href="runningdetect/basics/choosingrunmethod.md" format="markdown"/>
-			<topicref href="runningdetect/basics/manual.md" format="markdown"/>
 			<topicref href="runningdetect/basics/runningscript.md" format="markdown"/>
 			<topicref href="runningdetect/basics/runningjar.md" format="markdown"/>
 			<topicref href="runningdetect/basics/choosingtargettype.md" format="markdown"/>
 			<topicref href="runningdetect/basics/runningwithblackduck.md" format="markdown"/>
-		
 		<topicref href="runningdetect/includingexcluding/intro.md" format="markdown">
 			<topicref href="runningdetect/includingexcluding/tools.md" format="markdown"/>
 			<topicref href="runningdetect/includingexcluding/detectors.md" format="markdown"/>

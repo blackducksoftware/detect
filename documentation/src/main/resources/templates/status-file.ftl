@@ -1,4 +1,4 @@
-# Status File
+# Output Status File
 
 [detect_product_long] creates an output status file in the run folder with the name "status.json" which contains a summary of the [detect_product_short] run in a machine readable format.
 
@@ -46,7 +46,7 @@ The file includes status codes, issues encountered and results produced. As addi
 <path>". ]
 }
 ```
-## #Detector Status Codes
+## Detector Status Codes
 | Status Code | Description |
 | --- | --- |
 <#list statusCodes as statusCode>
