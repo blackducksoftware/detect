@@ -1,4 +1,4 @@
-# Getting started with [detect_product_long]
+# Getting started with [detect_product_short]
 
 Before you start using [detect_product_short], it is recommended that you become familiar with the makeup of [detect_product_short] and how it works. Review the 'Getting started with [detect_product_short]' pages listed in the left-hand menu, to learn about, and prepare to start using [detect_product_short].
 

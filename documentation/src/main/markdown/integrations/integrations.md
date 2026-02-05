@@ -1,6 +1,6 @@
-# [detect_product_long] Integrations
+# [detect_product_short] Integrations
 
-The [detect_product_long] integrations allow users to install and run [detect_product_short] in various environments.
+The [detect_product_short] integrations allow users to install and run [detect_product_short] in various environments.
 
 [detect_product_short] scans code bases in your projects and folders to perform compositional analysis and functions as a [bd_product_short] intelligent scan client. [detect_product_short] sends scan results to [bd_product_short], which generates risk analysis when identifying open source components, licenses, and security vulnerabilities.
 

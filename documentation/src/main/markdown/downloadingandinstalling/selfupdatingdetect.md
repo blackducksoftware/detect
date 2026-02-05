@@ -1,4 +1,4 @@
-# [detect_product_long] Version Management
+# [detect_product_short] Version Management
 
 [detect_product_short] self-updating feature will allow customers who choose to enable Centralized [detect_product_short] Version Management in [bd_product_short] to automate the update of [detect_product_short] across their pipelines.
 

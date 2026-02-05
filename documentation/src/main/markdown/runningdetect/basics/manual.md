@@ -1,6 +1,6 @@
 # Installation Best Practices
 
-Manually installing [detect_product_long] ensures that the running version is compatible with your environment. Invoking [detect_product_short] with the bash and powershell scripts is easy but automatically downloaded updates may not be compatible with your environment.  
+Manually installing [detect_product_short] ensures that the running version is compatible with your environment. Invoking [detect_product_short] with the bash and powershell scripts is easy but automatically downloaded updates may not be compatible with your environment.  
 
 The best practice for resilience is to add [detect_product_short] on the path, allowing for an easier invocation than even the bash and powershell scripts. It still allows easy updating without modifying commands just as the bash and powershell scripts do. This is the recommended best practice approach when resiliency is required.  
 
