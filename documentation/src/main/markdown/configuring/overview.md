@@ -1,4 +1,4 @@
-# Configuring [detect_product_long]
+# Configuring [detect_product_short]
 
 [detect_product_short] is generally configured by assigning values to properties. See the left-hand documentation menu for further information including additional configuration means and methods.
 
