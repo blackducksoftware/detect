@@ -1,4 +1,4 @@
-# Running [detect_product_long] in air gap mode
+# Running [detect_product_short] in air gap mode
 
 Running [detect_product_long] in air gap mode requires adding scanners, inspectors, and associated libraries to a jar file such that they can be executed without network access.
 
