@@ -1,6 +1,6 @@
 # Running [detect_product_short] within a Docker container
 
-[detect_product_long] publishes Docker images which can be used to run [detect_product_short] from within a Docker container.
+[detect_product_short] publishes Docker images which can be used to run [detect_product_short] from within a Docker container.
 
 [detect_product_short] Docker images are published to `hub.docker.com` and `repo.blackduck.com`.
 

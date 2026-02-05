@@ -1,6 +1,6 @@
 # [detect_product_short] configuration overview
 
-What [detect_product_long] looks at and how it performs analysis depends on how it is configured.
+What [detect_product_short] looks at and how it performs analysis depends on how it is configured.
 
 <note type="note">For accurate SCA analysis, [detect_product_short] should typically be executed as a post-build step in the native build environment.</note>
 

@@ -1,6 +1,6 @@
 # User role requirements when running with [blackduck_product_name]
 
-Any user can download [detect_product_long] and run a scan, however you must configure a user/API token in [bd_product_short] for the [detect_product_short] scan to be analyzed by [bd_product_short].  
+Any user can download [detect_product_short] and run a scan, however you must configure a user/API token in [bd_product_short] for the [detect_product_short] scan to be analyzed by [bd_product_short].  
  
 For more information on creating a [bd_product_short] user token, please consult the documentation provided by [bd_product_short] under the topic:
 <xref href="MyAccessTokens.dita" scope="peer"> Managing user access tokens.

@@ -1,4 +1,4 @@
-# Positioning [detect_product_long] in the build process
+# Positioning [detect_product_short] in the build process
 
 For best results, execute [detect_product_short] post-build step in the build environment of the project.
 Building your project prior to running [detect_product_short] is required for many detectors to run successfully,

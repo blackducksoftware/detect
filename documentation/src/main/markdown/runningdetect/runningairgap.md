@@ -1,6 +1,6 @@
 # Running [detect_product_short] in air gap mode
 
-Running [detect_product_long] in air gap mode requires adding scanners, inspectors, and associated libraries to a jar file such that they can be executed without network access.
+Running [detect_product_short] in air gap mode requires adding scanners, inspectors, and associated libraries to a jar file such that they can be executed without network access.
 
 <note type="note">Air gap mode is not the same as running in Offline mode. Air gap mode allows for scanning when operating in an air gapped environment and relies on a jar file that contains the required scanning libraries. Offline mode is used when you do not wish to download scanners or upload results files directly to [bd_product_short], but still supports the use of a local signature scanner instance.</note>
 

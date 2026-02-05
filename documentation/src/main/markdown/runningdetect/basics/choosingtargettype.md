@@ -1,6 +1,6 @@
 # Choosing the Detect target type
 
-[detect_product_long] will select a workflow based in part on the target type you select via the [detect.target.type](../../properties/all-properties.md) property.
+[detect_product_short] will select a workflow based in part on the target type you select via the [detect.target.type](../../properties/all-properties.md) property.
 
 When running [detect_product_short] on project source code, you can set *detect.target.type* to *SOURCE*, or leave *detect.target.type* unset (since *SOURCE* is the default value).
 
