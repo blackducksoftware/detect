@@ -16,7 +16,15 @@
 	* eu.store.scass.blackduck.com - 34.54.213.11
 	* eu.scass.blackduck.com - 34.54.38.252
 
-## Version 11.2.1
+## Version 11.3.0
+
+### New features
+
+* With the addition of new properties `detect.cargo.included.features` and `detect.cargo.disable.default.features` [detect_product_short] now supports cargo features and optional dependencies inclusion or exclusion. Feature support is only available for Cargo CLI Detector; Cargo Lockfile Detector will log a warning if feature properties are provided. See [Cargo](properties/detectors/cargo.md) for details.
+
+### Resolved issues
+
+* (IDETECT-4960) Added support for Cargo features and optional dependencies in Cargo CLI Detector, allowing precise control over which features are included in the SBOM through cargo tree command flags. See [Cargo](properties/detectors/cargo.md) for details.
 
 ### Dependency Updates
 
