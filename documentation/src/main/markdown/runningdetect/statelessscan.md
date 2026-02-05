@@ -43,7 +43,7 @@ Enable this feature by adding [--detect.blackduck.scan.mode=STATELESS](../proper
     * --detect.tools=BAZEL,SIGNATURE_SCAN --detect.blackduck.scan.mode=STATELESS
     * --detect.tools=DETECTOR,DOCKER --detect.blackduck.scan.mode=RAPID
  * To invoke a stateless container scan that analyzes all container layers:
-    * --detect.tools=CONTAINER_SCAN --detect.blackduck.scan.mode=STATELESS --detect.container.scan.file.path=\<Path to local or URL for remote container\>
+    * --detect.tools=CONTAINER_SCAN --detect.blackduck.scan.mode=STATELESS --detect.container.scan.file.path=\<Path to local .tar file or HTTP/HTTPS URL for remote .tar file\>
 
 ## Results
 
