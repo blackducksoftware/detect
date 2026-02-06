@@ -33,6 +33,11 @@ public class CargoCliExtractor {
     private final DetectableExecutableRunner executableRunner;
     private final CargoDependencyGraphTransformer cargoDependencyTransformer;
     private final CargoTomlParser cargoTomlParser;
+    public static final String CARGO_TOML_FILENAME = "Cargo.toml";
+    private static final String VIRTUAL_WORKSPACE_EXCLUSION_WARNING =
+        "Cannot exclude all workspace members for virtual manifest. " +
+            "Please check your workspace configuration (detect.cargo.ignore.all.workspaces or exclude properties). " +
+            "Zero components will be reported in SBOM.";
 
     public CargoCliExtractor(DetectableExecutableRunner executableRunner, CargoDependencyGraphTransformer cargoDependencyTransformer, CargoTomlParser cargoTomlParser) {
         this.executableRunner = executableRunner;
@@ -111,7 +116,7 @@ public class CargoCliExtractor {
 
         for (String memberPath : workspaceMemberPaths) {
             File memberDir = new File(workspaceRoot, memberPath);
-            File memberCargoToml = new File(memberDir, "Cargo.toml");
+            File memberCargoToml = new File(memberDir, CARGO_TOML_FILENAME);
 
             if (memberCargoToml.exists()) {
                 String memberTomlContents = FileUtils.readFileToString(memberCargoToml, StandardCharsets.UTF_8);
@@ -144,12 +149,8 @@ public class CargoCliExtractor {
         boolean noActiveWorkspaceMembers = hasExclusions && activeWorkspaceMembers.isEmpty();
 
         // Case: User excluded all workspace members (via property or exclude config) for virtual workspace
-        if (isVirtualWorkspace && (shouldIgnoreAllWorkspaceMembers || noActiveWorkspaceMembers)) {
-            logger.warn(
-                "Cannot exclude all workspace members for virtual manifest. " +
-                    "Please check your workspace configuration (detect.cargo.ignore.all.workspaces or exclude properties). " +
-                    "Zero components will be reported in SBOM."
-            );
+        if (shouldSkipVirtualWorkspace(isVirtualWorkspace, shouldIgnoreAllWorkspaceMembers, noActiveWorkspaceMembers)) {
+            logger.warn(VIRTUAL_WORKSPACE_EXCLUSION_WARNING);
             return new LinkedList<>();
         }
 
@@ -213,6 +214,10 @@ public class CargoCliExtractor {
             ExecutableUtils.createFromTarget(directory, cargoExe, commandArgs)
         );
         return output.getStandardOutputAsList();
+    }
+
+    private boolean shouldSkipVirtualWorkspace(boolean isVirtualWorkspace, boolean shouldIgnoreAllWorkspaceMembers, boolean noActiveWorkspaceMembers) {
+        return isVirtualWorkspace && (shouldIgnoreAllWorkspaceMembers || noActiveWorkspaceMembers);
     }
 
     private List<String> buildPackageCommand(
