@@ -20,7 +20,8 @@
 
 ### New features
 
-* With the addition of new properties `detect.cargo.included.features` and `detect.cargo.disable.default.features` [detect_product_short] now supports cargo features and optional dependencies inclusion or exclusion. Feature support is only available for Cargo CLI Detector; Cargo Lockfile Detector will log a warning if feature properties are provided. See [Cargo](properties/detectors/cargo.md) for details.
+* With the addition of the `detect.cargo.included.features` and `detect.cargo.disable.default.features` properties, [detect_product_short] now supports Cargo features and the inclusion or exclusion of dependencies as options. See [Cargo](properties/detectors/cargo.md) for details.
+  <note type="note">This feature is supported for Cargo CLI Detector. Cargo Lockfile Detector will log a warning if these properties are provided.</note>
 
 ### Resolved issues
 
