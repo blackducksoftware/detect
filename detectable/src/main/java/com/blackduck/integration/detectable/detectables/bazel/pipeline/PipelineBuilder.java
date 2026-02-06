@@ -16,6 +16,7 @@ import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.Inte
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.IntermediateStepExecuteBazelOnEachLine;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.IntermediateStepParseFilterLines;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.IntermediateStepParseReplaceInEachLine;
+import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.IntermediateStepParseShowRepoToUrlCandidates;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.IntermediateStepParseSplitEach;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.IntermediateStepParseValuesFromXml;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.parse.GithubUrlParser;
@@ -93,5 +94,9 @@ public class PipelineBuilder {
 
     public PipelineBuilder transformGithubUrl() {
         return setFinalStep(new FinalStepTransformGithubUrl(externalIdFactory, new GithubUrlParser()));
+    }
+
+    public PipelineBuilder parseShowRepoToUrlCandidates() {
+        return addIntermediateStep(new IntermediateStepParseShowRepoToUrlCandidates());
     }
 }

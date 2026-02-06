@@ -17,6 +17,7 @@ public class FinalStepTransformGithubUrl implements FinalStep {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final ExternalIdFactory externalIdFactory;
     private final GithubUrlParser githubUrlParser;
+    private static final String REFS_TAGS_PREFIX = "refs/tags/";
 
     public FinalStepTransformGithubUrl(ExternalIdFactory externalIdFactory, GithubUrlParser githubUrlParser) {
         this.externalIdFactory = externalIdFactory;
@@ -32,6 +33,10 @@ public class FinalStepTransformGithubUrl implements FinalStep {
                 String organization = githubUrlParser.parseOrganization(potentialGithubUrl);
                 String repo = githubUrlParser.parseRepo(potentialGithubUrl);
                 String version = githubUrlParser.parseVersion(potentialGithubUrl);
+                // Normalize GitHub archive ref tags like `refs/tags/<tag>` to `<tag>`
+                if (version != null && version.startsWith(REFS_TAGS_PREFIX)) {
+                    version = version.substring(REFS_TAGS_PREFIX.length());
+                }
                 Dependency dep = Dependency.FACTORY.createNameVersionDependency(Forge.GITHUB, organization + "/" + repo, version);
                 dependencies.add(dep);
             } catch (MalformedURLException e) {
