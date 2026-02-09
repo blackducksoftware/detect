@@ -53,6 +53,7 @@ public class HttpFamilyProber {
         "rules_jvm_external"
     );
 
+    // Special value: when value is -1, we remove the cap (unlimited probes)
     private final int maxReposToProbe;
 
     // Extracted string constants for repo prefix markers
@@ -111,10 +112,11 @@ public class HttpFamilyProber {
         }
 
         int checkedRepos = 0;
+        boolean removeCap = maxReposToProbe == -1; // remove cap when maxReposToProbe is -1.
         // Probe each repository for HTTP family characteristics
         for (Map.Entry<String, LinkedHashSet<String>> entry : repoLabels.entrySet()) {
-            if (checkedRepos++ >= maxReposToProbe) {
-                logger.warn("Repository probe limit reached {} repos checked). " +
+            if (!removeCap && checkedRepos++ >= maxReposToProbe) {
+                logger.warn("Repository probe limit reached ({} repos checked). " +
                            "If HTTP dependencies are missed, this target may have unusually many external repos. " +
                            "Consider analyzing a more specific target or increase the limit via detect.bazel.http.probe.limit property.",
                            maxReposToProbe);

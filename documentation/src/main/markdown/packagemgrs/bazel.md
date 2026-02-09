@@ -85,6 +85,7 @@ bash <(curl -s -L https://detect.blackduck.com/detect11.sh) \
 #### `detect.bazel.http.probe.limit`
 - **Purpose:** A safety cap on how many external repositories the detector will probe for HTTP-family rules (`http_archive`, `git_repository`, `go_repository`). Each probe runs Bazel subprocesses and can be costly.
 - **Default:** `100`
+- **Unlimited:** Set to `-1` to remove the cap and probe all discovered repositories. Use with care on large monorepos.
 - **Example (advanced use):** `--detect.bazel.http.probe.limit=200`
 
 #### `detect.bazel.cquery.options`
@@ -259,6 +260,7 @@ bash <(curl -s -L https://detect.blackduck.com/detect11.sh) --detect.bazel.targe
 1. Increase the probe limit: `--detect.bazel.http.probe.limit=200`
 2. Check the logs for the warning: "Repository probe limit reached"
 3. Consider analyzing a more specific target with fewer total dependencies
+4. Unlimited mode: set `--detect.bazel.http.probe.limit=-1` to remove the cap (may be slow on large repos).
 
 #### Bazel Executable Not Found
 **Problem:** Error indicates Bazel executable cannot be located.
@@ -326,6 +328,7 @@ The detector automatically determines your Bazel mode through the following proc
 ### Performance Considerations
 
 - **HTTP Probe Limit:** Default limit of 100 repositories prevents excessive command execution on large monorepos. Adjust if needed.
+- **Unlimited Mode:** Set `--detect.bazel.http.probe.limit=-1` to remove the cap and probe all discovered repositories.
 - **Target Specificity:** More specific targets (e.g., `//module:specific-target`) are faster than broad targets (e.g., `//:all`)
 - **Manual Override:** Setting `detect.bazel.dependency.sources` explicitly can significantly speed up detection
 
