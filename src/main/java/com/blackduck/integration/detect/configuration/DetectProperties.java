@@ -335,8 +335,8 @@ public class DetectProperties {
         NullableStringProperty.newBuilder("detect.container.scan.file.path")
             .setInfo("Container Scan Target", DetectPropertyFromVersion.VERSION_9_1_0)
             .setHelp(
-                "If specified, this file and this file only will be uploaded for container scan analysis.",
-                "Detect will accept either a user provided local file path, or remote HTTP/HTTPS URL to fetch a container image for scanning. The CONTAINER_SCAN tool does not provide project and version name defaults to Detect, so you need to set project and version names via properties when only the CONTAINER_SCAN tool is invoked."
+                "If it is specified, only this .tar file will be uploaded for Container Scan analysis.",
+                "Detect will accept either a user provided local .tar file path, or remote HTTP/HTTPS URL to fetch a container image .tar file for scanning. The CONTAINER_SCAN tool does not provide project and version name defaults to Detect, so you need to set project and version names via properties when only the CONTAINER_SCAN tool is invoked."
             )
             .setGroups(DetectGroup.CONTAINER_SCANNER, DetectGroup.SOURCE_PATH)
             .build();
@@ -651,6 +651,25 @@ public class DetectProperties {
             .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
             .setExample("crates/workspace-a,crates/workspace-b")
+            .build();
+
+    public static final BooleanProperty DETECT_CARGO_DISABLE_DEFAULT_FEATURES =
+        BooleanProperty.newBuilder("detect.cargo.disable.default.features", false)
+            .setInfo("Disable Default Features", DetectPropertyFromVersion.VERSION_11_3_0)
+            .setHelp("All default features are disabled by the Cargo detector.")
+            .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
+            .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_CARGO_INCLUDED_FEATURES =
+        CaseSensitiveStringListProperty.newBuilder("detect.cargo.included.features")
+            .setInfo("Cargo Include Features", DetectPropertyFromVersion.VERSION_11_3_0)
+            .setHelp(
+                "A comma-separated list of Cargo features (specified by the `[feature]` manifest in Cargo.toml) to include.",
+                "By default, Detect only includes default features, but will include additional features or all features specified via this property."
+            )
+            .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
+            .setCategory(DetectCategory.Advanced)
+            .setExample("feature-a,feature-b")
             .build();
 
     public static final NoneEnumListProperty<PipenvDependencyType> DETECT_PIPFILE_DEPENDENCY_TYPES_EXCLUDED =
