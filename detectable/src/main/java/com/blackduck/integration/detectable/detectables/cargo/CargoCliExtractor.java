@@ -33,6 +33,11 @@ public class CargoCliExtractor {
     private final DetectableExecutableRunner executableRunner;
     private final CargoDependencyGraphTransformer cargoDependencyTransformer;
     private final CargoTomlParser cargoTomlParser;
+    public static final String CARGO_TOML_FILENAME = "Cargo.toml";
+    private static final String VIRTUAL_WORKSPACE_EXCLUSION_WARNING =
+        "Cannot exclude all workspace members for virtual manifest. " +
+            "Please check your workspace configuration (detect.cargo.ignore.all.workspaces or exclude properties). " +
+            "Zero components will be reported in SBOM.";
 
     public CargoCliExtractor(DetectableExecutableRunner executableRunner, CargoDependencyGraphTransformer cargoDependencyTransformer, CargoTomlParser cargoTomlParser) {
         this.executableRunner = executableRunner;
@@ -111,7 +116,7 @@ public class CargoCliExtractor {
 
         for (String memberPath : workspaceMemberPaths) {
             File memberDir = new File(workspaceRoot, memberPath);
-            File memberCargoToml = new File(memberDir, "Cargo.toml");
+            File memberCargoToml = new File(memberDir, CARGO_TOML_FILENAME);
 
             if (memberCargoToml.exists()) {
                 String memberTomlContents = FileUtils.readFileToString(memberCargoToml, StandardCharsets.UTF_8);
@@ -144,12 +149,8 @@ public class CargoCliExtractor {
         boolean noActiveWorkspaceMembers = hasExclusions && activeWorkspaceMembers.isEmpty();
 
         // Case: User excluded all workspace members (via property or exclude config) for virtual workspace
-        if (isVirtualWorkspace && (shouldIgnoreAllWorkspaceMembers || noActiveWorkspaceMembers)) {
-            logger.warn(
-                "Cannot exclude all workspace members for virtual manifest. " +
-                    "Please check your workspace configuration (detect.cargo.ignore.all.workspaces or exclude properties). " +
-                    "Zero components will be reported in SBOM."
-            );
+        if (shouldSkipVirtualWorkspace(isVirtualWorkspace, shouldIgnoreAllWorkspaceMembers, noActiveWorkspaceMembers)) {
+            logger.warn(VIRTUAL_WORKSPACE_EXCLUSION_WARNING);
             return new LinkedList<>();
         }
 
@@ -176,6 +177,13 @@ public class CargoCliExtractor {
 
             // Command 2: Get included packages dependencies
             List<String> includedCommand = buildPackageCommand(includedWorkspaces, dependencyTypeFilter, cargoDetectableOptions);
+
+            // Add features flags if required
+            addFeatureFlags(includedCommand, cargoDetectableOptions);
+
+            if (!dependencyTypeFilter.shouldIncludeAll()) {
+                addEdgeExclusions(includedCommand, cargoDetectableOptions);
+            }
             combinedOutput.addAll(runCargoTreeCommand(directory, cargoExe, includedCommand));
 
             return combinedOutput;
@@ -191,6 +199,9 @@ public class CargoCliExtractor {
             addWorkspaceFlags(command, cargoDetectableOptions);
         }
 
+        // Add features flags if required
+        addFeatureFlags(command, cargoDetectableOptions);
+
         if (!dependencyTypeFilter.shouldIncludeAll()) {
             addEdgeExclusions(command, cargoDetectableOptions);
         }
@@ -203,6 +214,10 @@ public class CargoCliExtractor {
             ExecutableUtils.createFromTarget(directory, cargoExe, commandArgs)
         );
         return output.getStandardOutputAsList();
+    }
+
+    private boolean shouldSkipVirtualWorkspace(boolean isVirtualWorkspace, boolean shouldIgnoreAllWorkspaceMembers, boolean noActiveWorkspaceMembers) {
+        return isVirtualWorkspace && (shouldIgnoreAllWorkspaceMembers || noActiveWorkspaceMembers);
     }
 
     private List<String> buildPackageCommand(
@@ -251,6 +266,42 @@ public class CargoCliExtractor {
             for (String excludedWorkspace : excludedWorkspaces) {
                 command.add("--exclude");
                 command.add(excludedWorkspace);
+            }
+        }
+    }
+
+    private void addFeatureFlags(List<String> command, CargoDetectableOptions options) {
+        List<String> features = options.getIncludedFeatures();
+        boolean isDefaultFeaturesDisabled = options.isDefaultFeaturesDisabled();
+
+        // Handle --no-default-features flag (independent of specific features)
+        if (isDefaultFeaturesDisabled) {
+            command.add("--no-default-features");
+        }
+
+        // Handle feature specifications
+        if (features != null && !features.isEmpty()) {
+            // Check for special keywords (case-insensitive)
+            boolean includeAllFeatures = features.stream()
+                .anyMatch(feature -> "ALL".equalsIgnoreCase(feature.trim()));
+            boolean includeNoFeatures = features.stream()
+                .anyMatch(feature -> "NONE".equalsIgnoreCase(feature.trim()));
+
+            if (includeNoFeatures) {
+                // NONE keyword: skip all feature processing
+                return;
+            } else if (includeAllFeatures) {
+                command.add("--all-features");
+            } else {
+                // Add each feature with its own --features flag
+                // This handles edge cases like features starting with digits (e.g., "2d", "3d")
+                for (String feature : features) {
+                    String trimmedFeature = feature.trim();
+                    if (!trimmedFeature.isEmpty()) {
+                        command.add("--features");
+                        command.add(trimmedFeature);
+                    }
+                }
             }
         }
     }

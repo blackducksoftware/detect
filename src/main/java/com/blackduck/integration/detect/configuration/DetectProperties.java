@@ -653,6 +653,25 @@ public class DetectProperties {
             .setExample("crates/workspace-a,crates/workspace-b")
             .build();
 
+    public static final BooleanProperty DETECT_CARGO_DISABLE_DEFAULT_FEATURES =
+        BooleanProperty.newBuilder("detect.cargo.disable.default.features", false)
+            .setInfo("Disable Default Features", DetectPropertyFromVersion.VERSION_11_3_0)
+            .setHelp("All default features are disabled by the Cargo detector.")
+            .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
+            .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_CARGO_INCLUDED_FEATURES =
+        CaseSensitiveStringListProperty.newBuilder("detect.cargo.included.features")
+            .setInfo("Cargo Include Features", DetectPropertyFromVersion.VERSION_11_3_0)
+            .setHelp(
+                "A comma-separated list of Cargo features (specified by the [feature] manifest in Cargo.toml) to include.",
+                "By default, Detect only includes default features, but will include additional features or all features specified via this property."
+            )
+            .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
+            .setCategory(DetectCategory.Advanced)
+            .setExample("feature-a,feature-b")
+            .build();
+
     public static final NoneEnumListProperty<PipenvDependencyType> DETECT_PIPFILE_DEPENDENCY_TYPES_EXCLUDED =
         NoneEnumListProperty.newBuilder("detect.pipfile.dependency.types.excluded", NoneEnum.NONE, PipenvDependencyType.class)
             .setInfo("Pipfile Dependency Types Excluded", DetectPropertyFromVersion.VERSION_7_13_0)
