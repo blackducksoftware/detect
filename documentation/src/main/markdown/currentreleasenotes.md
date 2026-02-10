@@ -22,11 +22,8 @@
 
 * With the addition of the `detect.cargo.included.features` and `detect.cargo.disable.default.features` properties, [detect_product_short] now supports Cargo features and the inclusion or exclusion of dependencies as options. See [Cargo](properties/detectors/cargo.md) for details.
   <note type="note">This feature is supported for Cargo CLI Detector. Cargo Lockfile Detector will log a warning if these properties are provided.</note>
+* (IDETECT-4937) Add support for `environment.yaml` in [detect_product_short] Conda CLI Detector.
 
 ### Resolved issues
 
 * (IDETECT-4960) Added support for Cargo features and optional dependencies in Cargo CLI Detector, allowing precise control over which features are included in the SBOM through cargo tree command flags. See [Cargo](properties/detectors/cargo.md) for details.
-
-### Dependency Updates
-
-* Project Inspector version updated to 2024.12.2
