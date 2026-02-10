@@ -38,7 +38,7 @@ public class CondaDetectableTest  extends DetectableFunctionalTest {
                     "       \"platform\": null,",
                     "       \"version\": \"2017.0.3\",",
                     "       \"with_features_depends\": null",
-                    "   },",
+                    "   }",
                     "]"
             );
             addExecutableOutput(condaListOutput, "conda", "list", "-n", "conda-env", "--json");
