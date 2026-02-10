@@ -2,14 +2,14 @@
 
 Container Scan is a way of running [detect_product_long] against any type of container image (including any non-Linux, non-Docker image) and providing component risk details for each layer of the image.
 
-[detect_product_short] will accept either a user provided local file path, or remote HTTP/HTTPS URL to fetch a container image for scanning.
+[detect_product_short] will accept either a user provided local .tar file path, or remote HTTP/HTTPS URL to fetch a container image .tar file for scanning.
 
 Container scan supports both persistent (Intelligent) and Stateless scan modes in [bd_product_short], but must be run independently of other scan types.
 
 Execute Container Scan by adding the following to a run of [bd_product_short]:
 ````
 --detect.tools=CONTAINER_SCAN
---detect.container.scan.file.path=<Path to local or HTTP/HTTPS URL for remote image>
+--detect.container.scan.file.path=<Path to local .tar file or HTTP/HTTPS URL for remote .tar file>
 ````
 
 ## Requirements and Limitations
@@ -27,16 +27,16 @@ Execute Container Scan by adding the following to a run of [bd_product_short]:
  * Container scanning is not supported when running [bd_product_short] with an on-prem KB. For additional information see [hosted versus on-prem KB functionality ](https://documentation.blackduck.com/bundle/bd-hub/page/General/hostedKbVsOnPremKb.html).
  
 ## Invocation
- * To invoke a container scan, which executes in "Intelligent" mode by default, the following must be provided at a minimum:   
+ * To invoke a container scan, which executes in "Intelligent" mode by default, the following must be provided at a minimum:
  ```
 --detect.tools=CONTAINER_SCAN
---detect.container.scan.file.path=<Path to local or URL for remote container>
+--detect.container.scan.file.path=<Path to local .tar file or HTTP/HTTPS URL for remote .tar file>
 ```
-	
-* To invoke a stateless container scan the following must be provided at a minimum:   
+
+* To invoke a stateless container scan the following must be provided at a minimum:
 ```
 --detect.tools=CONTAINER_SCAN
---detect.container.scan.file.path=<Path to local or URL for remote container>
+--detect.container.scan.file.path=<Path to local .tar file or HTTP/HTTPS URL for remote .tar file>
 --detect.blackduck.scan.mode=STATELESS
 ```
 

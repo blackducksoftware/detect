@@ -5,6 +5,7 @@ import static com.blackduck.integration.componentlocator.ComponentLocator.SUPPOR
 import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.OPERATION_NAME;
 import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.SUPPORTED_DETECTORS_LOG_MSG;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,6 +30,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.compress.archivers.ArchiveException;
+import org.apache.commons.compress.archivers.ArchiveStreamFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.http.HttpStatus;
@@ -438,7 +441,32 @@ public class OperationRunner {
     public Optional<String> getContainerScanFilePath() {
         return detectConfigurationFactory.getContainerScanFilePath();
     }
-    
+
+    /**
+     * Checks if the given file is a tar archive.
+     * This properly detects tar files conforming to Docker and OCI image specifications.
+     *
+     * @param file the file to check
+     * @return true if the file is a valid tar archive, false otherwise
+     */
+    private boolean isTarFile(File file) {
+        if (file == null || !file.exists() || !file.isFile()) {
+            return false;
+        }
+
+        try (FileInputStream fis = new FileInputStream(file);
+             BufferedInputStream bis = new BufferedInputStream(fis)) {
+            String detectedType = ArchiveStreamFactory.detect(bis);
+            return ArchiveStreamFactory.TAR.equals(detectedType);
+        } catch (ArchiveException e) {
+            // Not a recognized archive format
+            return false;
+        } catch (IOException e) {
+            logger.warn("Unable to read file to verify tar format: {}", file.getAbsolutePath(), e);
+            return false;
+        }
+    }
+
     public File downloadContainerImage(Gson gson, File downloadDirectory, String containerImageUri) throws DetectUserFriendlyException, IntegrationException, IOException {
         ConnectionFactory connectionFactory = new ConnectionFactory(detectConfigurationFactory.createConnectionDetails());
         ArtifactResolver artifactResolver = new ArtifactResolver(connectionFactory, gson);
@@ -456,6 +484,18 @@ public class OperationRunner {
                     containerImageFile = downloadContainerImage(gson, downloadDirectory, containerImageUri);
                 } else {
                     containerImageFile = new File(containerImageUri);
+                }
+
+                // Verify the file is a tar archive conforming to Docker/OCI specifications
+                if (containerImageFile != null && containerImageFile.exists()) {
+                    if (!isTarFile(containerImageFile)) {
+                        logger.warn(
+                            "The container scan file '{}' does not appear to be a tar archive or does not conform to " +
+                            "expected Docker/OCI image specifications. Processing will continue, but a full container scan " +
+                            "will likely not be possible.",
+                            containerImageFile.getAbsolutePath()
+                        );
+                    }
                 }
             }
             return containerImageFile;
