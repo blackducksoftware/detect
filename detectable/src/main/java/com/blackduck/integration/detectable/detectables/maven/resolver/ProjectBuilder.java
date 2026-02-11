@@ -16,8 +16,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.commons.text.StringSubstitutor;
 
+/**
+ * ProjectBuilder is responsible for constructing a complete {@link MavenProject} from a POM file.
+ * It parses POMs into {@link PartialMavenProject}, resolves properties (including those inherited
+ * from parent POMs), processes imported BOMs (Bill of Materials), merges parent/child models,
+ * applies dependency management, and converts POM dependency entries into {@link JavaDependency}
+ * objects suitable for downstream processing.
+ *
+ * Responsibilities:
+ * - Parse and interpolate POM files using {@link PomParser} and {@link PropertiesResolverProvider}.
+ * - Download parent and BOM POMs via {@link MavenDownloader} when local parent POMs are not available.
+ * - Merge properties, repositories, dependency management, and dependencies from parent/BOM models.
+ * - Apply dependency management to resolve missing versions/scopes and produce the final dependency list.
+ *
+ * The implementation caches partially-built projects to avoid duplicate work and detects parent
+ * cycles to prevent infinite recursion. Instances are not thread-safe due to internal mutable state
+ * (cache and resolver provider).
+ *
+ * Usage example:
+ *   ProjectBuilder builder = new ProjectBuilder(downloadDir);
+ *   MavenProject project = builder.buildProject(pomFile);
+ */
 public class ProjectBuilder {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final PomParser pomParser;
@@ -336,14 +356,14 @@ public class ProjectBuilder {
             partialModel.setDependencyManagement(new ArrayList<>(depMgmtMap.values()));
 
             // Merge dependencies: Child overrides parent by G:A
-            Map<String, PomXmlDependency> depsMap = new HashMap<>();
+            Map<String, PomXmlDependency> dependenciesMap = new HashMap<>();
             if (parentModel.getDependencies() != null) {
-                parentModel.getDependencies().forEach(dep -> depsMap.put(dep.getGroupId() + ":" + dep.getArtifactId(), dep));
+                parentModel.getDependencies().forEach(dep -> dependenciesMap.put(dep.getGroupId() + ":" + dep.getArtifactId(), dep));
             }
             if (partialModel.getDependencies() != null) {
-                partialModel.getDependencies().forEach(dep -> depsMap.put(dep.getGroupId() + ":" + dep.getArtifactId(), dep));
+                partialModel.getDependencies().forEach(dep -> dependenciesMap.put(dep.getGroupId() + ":" + dep.getArtifactId(), dep));
             }
-            partialModel.setDependencies(new ArrayList<>(depsMap.values()));
+            partialModel.setDependencies(new ArrayList<>(dependenciesMap.values()));
         }
         pomCache.put(path, partialModel);
         return partialModel;

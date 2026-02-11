@@ -26,6 +26,35 @@ import org.eclipse.aether.util.graph.selector.AndDependencySelector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * MavenDependencyResolver is responsible for turning a resolved {@link MavenProject} model into
+ * an Aether dependency collection request and executing the dependency collection to produce
+ * a resolved dependency graph ({@link CollectResult}).
+ *
+ * Key responsibilities:
+ * - Map project dependencies and dependency management entries from {@link JavaDependency}
+ *   into Aether {@link org.eclipse.aether.artifact.Artifact} and {@link Dependency} objects,
+ *   applying managed versions (BOM/dependencyManagement) when a declared version is missing.
+ * - Convert exclusion rules into Aether {@link Exclusion} instances.
+ * - Build a RepositorySystem and RepositorySystemSession (with optional test-scope support)
+ *   for use by Aether, including local repository configuration.
+ * - Attempt dependency collection using a fallback strategy: a union of declared repositories
+ *   (plus Maven Central if missing), declared repositories only, and finally Maven Central only.
+ * - Provide diagnostic logging for repository health and collection attempts.
+ *
+ * The resolver prefers explicit, resolved versions. If a dependency's version cannot be
+ * determined (null, empty, or containing unresolved property expressions like "${...}"),
+ * that dependency will be skipped during collection to avoid Aether failures.
+ *
+ * Thread-safety: instances create and hold a RepositorySystem but do not maintain mutable
+ * per-request state; however, RepositorySystem implementations may not be fully thread-safe
+ * depending on their configuration, so callers should treat the resolver as not guaranteed
+ * thread-safe unless the underlying components are known to be.
+ *
+ * Usage example:
+ *   MavenDependencyResolver resolver = new MavenDependencyResolver();
+ *   CollectResult result = resolver.resolveDependencies(pomFile, mavenProject, localRepoDir, "compile");
+ */
 public class MavenDependencyResolver {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final RepositorySystem repositorySystem;
