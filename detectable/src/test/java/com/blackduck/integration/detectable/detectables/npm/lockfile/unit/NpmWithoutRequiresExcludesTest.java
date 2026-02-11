@@ -42,14 +42,14 @@ public class NpmWithoutRequiresExcludesTest {
         // Test with packages for v2/v3 lockfile
         packageLock.packages = new HashMap<>();
         
-        DependencyGraph graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), null);
+        DependencyGraph graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), null, Collections.emptyMap());
 
         GraphAssert graphAssert = new GraphAssert(Forge.NPMJS, graph);
         graphAssert.hasRootSize(0);
         
         // Test with dependencies for v1 lockfile
         packageLock.dependencies = new HashMap<>();
-        graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), null);
+        graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), null, Collections.emptyMap());
 
         graphAssert = new GraphAssert(Forge.NPMJS, graph);
         graphAssert.hasRootSize(0);
@@ -78,21 +78,21 @@ public class NpmWithoutRequiresExcludesTest {
         // Test with packages for v2/v3 lockfile
         packageLock.packages = new HashMap<>();
         
-        DependencyGraph graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), null);
+        DependencyGraph graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), null, Collections.emptyMap());
 
         GraphAssert graphAssert = new GraphAssert(Forge.NPMJS, graph);
         graphAssert.hasRootSize(0);
         
         // Test with dependencies for v1 lockfile
         packageLock.dependencies = new HashMap<>();
-        graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), null);
+        graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), null, Collections.emptyMap());
 
         graphAssert = new GraphAssert(Forge.NPMJS, graph);
         graphAssert.hasRootSize(0);
         
         // Clear filtering and check we get a dependency
         graphTransformer = new NpmLockfileGraphTransformer(EnumListFilter.fromExcluded());
-        graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), null);
+        graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), null, Collections.emptyMap());
         
         graphAssert = new GraphAssert(Forge.NPMJS, graph);
         graphAssert.hasRootSize(1);
