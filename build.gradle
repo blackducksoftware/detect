@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '11.3.0-SIGQA7-dterry.IDETECT-4990-case-insensitive-headers'
+version = '11.3.0-SIGQA8-dterry.IDETECT-4990-case-insensitive-headers-SNAPSHOT'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
