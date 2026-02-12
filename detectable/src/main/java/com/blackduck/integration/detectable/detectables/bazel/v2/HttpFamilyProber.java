@@ -83,7 +83,10 @@ public class HttpFamilyProber {
      * @throws Exception if Bazel command execution fails
      */
     public boolean detect(String target) throws Exception {
-        // Query for all library dependencies of the target
+        // We use `query` here because HTTP detection is primarily a static inspection of rule declarations
+        // (we are looking for external repository labels and rule kinds). `query` provides convenient outputs
+        // like label_kind and XML that are easy to parse for attributes; it's also lighter-weight for these
+        // workspace-style heuristics compared to cquery's action-graph outputs.
         List<String> queryArgs = BazelQueryBuilder.query()
             .kind(LIBRARY_RULE_PATTERN, BazelQueryBuilder.deps(target))
             .build();
@@ -204,6 +207,8 @@ public class HttpFamilyProber {
      */
     private boolean probeRepoWithLabelKind(String repo, String queryTarget, String strategyName) {
         try {
+            // Label_kind is a query-specific output that lists rule kinds for targets; it's convenient and
+            // lightweight to use `query` + label_kind when checking whether a repository contains build targets.
             List<String> queryArgs = BazelQueryBuilder.query()
                 .kind(RULE_PATTERN, queryTarget)
                 .withOutput(OutputFormat.LABEL_KIND)
@@ -247,20 +252,20 @@ public class HttpFamilyProber {
         String info = modOut.get();
         // Check for known Maven extension
         if (checkForKnownMavenExtension(info)) {
-            logger.info("Repo {} classified as Maven-related by mod show_repo; skipping HTTP.", repo);
+            logger.debug("Repo {} classified as Maven-related by mod show_repo; skipping HTTP.", repo);
             return false;
         }
         // Check for HTTP archive family rule class/source
         if (checkForSourceArchive(info)) {
-            logger.info("Repo {} classified as HTTP family by mod show_repo (rule class/source).", repo);
+            logger.debug("Repo {} classified as HTTP family by mod show_repo (rule class/source).", repo);
             return true;
         }
         // Check for module extension or direct Bazel dependency
         if (checkForModuleExtension(info) || checkForDirectBazelDep(info)) {
-            logger.info("Repo {} classified as extension/direct dep by mod show_repo; enabling HTTP.", repo);
+            logger.debug("Repo {} classified as extension/direct dep by mod show_repo; enabling HTTP.", repo);
             return true;
         }
-        logger.info("Repo {} mod show_repo returned unrecognized classification; trying fallback.", repo);
+        logger.debug("Repo {} mod show_repo returned unrecognized classification; trying fallback.", repo);
         return false;
     }
 

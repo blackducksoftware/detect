@@ -1,7 +1,7 @@
 package com.blackduck.integration.detectable.detectables.bazel.pipeline.step;
 
 import java.net.MalformedURLException;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -9,24 +9,21 @@ import org.slf4j.LoggerFactory;
 
 import com.blackduck.integration.bdio.model.Forge;
 import com.blackduck.integration.bdio.model.dependency.Dependency;
-import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.exception.DetectableException;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.parse.GithubUrlParser;
 
 public class FinalStepTransformGithubUrl implements FinalStep {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
-    private final ExternalIdFactory externalIdFactory;
     private final GithubUrlParser githubUrlParser;
     private static final String REFS_TAGS_PREFIX = "refs/tags/";
 
-    public FinalStepTransformGithubUrl(ExternalIdFactory externalIdFactory, GithubUrlParser githubUrlParser) {
-        this.externalIdFactory = externalIdFactory;
+    public FinalStepTransformGithubUrl(GithubUrlParser githubUrlParser) {
         this.githubUrlParser = githubUrlParser;
     }
 
     @Override
     public List<Dependency> finish(List<String> input) throws DetectableException {
-        List<Dependency> dependencies = new LinkedList<>();
+        List<Dependency> dependencies = new ArrayList<>();
         for (String potentialGithubUrl : input) {
             logger.debug("bazel URL (potentially a github URL): {}", potentialGithubUrl);
             try {

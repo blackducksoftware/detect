@@ -93,7 +93,7 @@ public class PipelineBuilder {
     }
 
     public PipelineBuilder transformGithubUrl() {
-        return setFinalStep(new FinalStepTransformGithubUrl(externalIdFactory, new GithubUrlParser()));
+        return setFinalStep(new FinalStepTransformGithubUrl(new GithubUrlParser()));
     }
 
     public PipelineBuilder parseShowRepoToUrlCandidates() {

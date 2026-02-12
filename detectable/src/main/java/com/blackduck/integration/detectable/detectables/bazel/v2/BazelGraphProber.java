@@ -56,26 +56,26 @@ public class BazelGraphProber {
         try {
             mavenInstall = detectMavenInstall();
         } catch (Exception e) {
-            logger.info("MAVEN_INSTALL probe failed: {}", e.getMessage());
+            logger.debug("MAVEN_INSTALL probe failed: {}", e.getMessage());
         }
         // Probe for maven_jar
         try {
             mavenJar = detectMavenJar();
         } catch (Exception e) {
-            logger.info("MAVEN_JAR probe failed: {}", e.getMessage());
+            logger.debug("MAVEN_JAR probe failed: {}", e.getMessage());
         }
         // Probe for haskell_cabal_library
         try {
             haskell = detectHaskellCabal();
         } catch (Exception e) {
-            logger.info("HASKELL_CABAL_LIBRARY probe failed: {}", e.getMessage());
+            logger.debug("HASKELL_CABAL_LIBRARY probe failed: {}", e.getMessage());
         }
         // Probe for http_archive and related rules
         try {
             HttpFamilyProber httpProber = new HttpFamilyProber(bazel, mode, httpProbeLimit);
             httpFamily = httpProber.detect(target);
         } catch (Exception e) {
-            logger.info("HTTP_ARCHIVE family probe failed: {}", e.getMessage());
+            logger.debug("HTTP_ARCHIVE family probe failed: {}", e.getMessage());
         }
 
         // Prefer maven_install over maven_jar if both are detected
@@ -103,7 +103,8 @@ public class BazelGraphProber {
      * @return true if maven_install is detected, false otherwise
      */
     private boolean detectMavenInstall() throws Exception {
-        // Query j.*import rules under deps(target) and look for maven_coordinates tags in build output.
+        // Use cquery for rules_jvm_external detection --- we need build-output fidelity (maven_coordinates)
+        // because this information comes from the action graph and reflects resolved artifact coordinates.
         List<String> queryArgs = BazelQueryBuilder.cquery()
             .kind(JAVA_IMPORT_RULE_PATTERN, BazelQueryBuilder.deps(target))
             .withNoImplicitDeps()
@@ -116,7 +117,7 @@ public class BazelGraphProber {
         }
         boolean found = out.get().contains("maven_coordinates=");
         if (found) {
-            logger.info("Detected rules_jvm_external via j.*import with maven_coordinates.");
+            logger.debug("Detected rules_jvm_external via j.*import with maven_coordinates.");
         }
         return found;
     }
@@ -126,14 +127,17 @@ public class BazelGraphProber {
      * @return true if maven_jar is detected, false otherwise
      */
     private boolean detectMavenJar() throws Exception {
+        // Use cquery here too: we want to inspect the action graph for actual jar labels
+        // (cquery reduces false positives from statically-declared but not-built labels).
         List<String> queryArgs = BazelQueryBuilder.cquery()
             .filter(MAVEN_JAR_FILTER_PATTERN, BazelQueryBuilder.deps(target))
+            .withNoImplicitDeps()
             .build();
 
         Optional<String> out = bazel.executeToString(queryArgs);
         boolean found = out.isPresent() && !out.get().trim().isEmpty();
         if (found) {
-            logger.info("Detected maven_jar artifacts via @repo//jar:jar labels.");
+            logger.debug("Detected maven_jar artifacts via @repo//jar:jar labels.");
         }
         return found;
     }
@@ -143,6 +147,8 @@ public class BazelGraphProber {
      * @return true if haskell_cabal_library is detected, false otherwise
      */
     private boolean detectHaskellCabal() throws Exception {
+        // cquery with label kind / JSONPROTO used here because the action graph contains
+        // the relevant proto/json information needed to extract library details.
         List<String> queryArgs = BazelQueryBuilder.cquery()
             .kind(HASKELL_CABAL_RULE_PATTERN, BazelQueryBuilder.deps(target))
             .withNoImplicitDeps()
@@ -152,7 +158,7 @@ public class BazelGraphProber {
         Optional<String> out = bazel.executeToString(queryArgs);
         boolean found = out.isPresent() && out.get().contains("haskell_cabal_library");
         if (found) {
-            logger.info("Detected haskell_cabal_library rules.");
+            logger.debug("Detected haskell_cabal_library rules.");
         }
         return found;
     }

@@ -98,9 +98,11 @@ public class Pipelines {
                       HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser,
                       BazelEnvironmentAnalyzer.Mode mode) {
         // Pipeline for maven_jar: extracts Maven dependencies from maven_jar rules
+        // Use cquery here because we want action-graph / build-time labels (what Bazel will actually use at build time).
+        // cquery gives higher fidelity for detecting repo labels like @repo//jar:jar and avoids some declared-but-not-built noise.
         List<String> mavenJarCquery = BazelQueryBuilder.cquery()
             .filter(MAVEN_JAR_FILTER_PATTERN, BazelQueryBuilder.deps("${detect.bazel.target}"))
-            .withOptions(CQUERY_OPTIONS_PLACEHOLDER)
+            .withOptions(CQUERY_OPTIONS_PLACEHOLDER).withNoImplicitDeps()
             .build();
 
         Pipeline mavenJarPipeline = (new PipelineBuilder(externalIdFactory, bazelCommandExecutor, bazelVariableSubstitutor, haskellCabalLibraryJsonProtoParser))
@@ -111,6 +113,8 @@ public class Pipelines {
             .parseReplaceInEachLine(STRIP_SINGLE_AT_REGEX, "")
             .parseReplaceInEachLine(STRIP_REPO_PATH_REGEX, "")
             .parseReplaceInEachLine("^", PREPEND_EXTERNAL)
+            // For per-candidate attribute extraction we switch to `query` because XML output is convenient to parse
+            // and `query` exposes rule attributes in stable XML form (used to extract artifact strings from maven_jar rules).
             .executeBazelOnEachLine(
                 BazelQueryBuilder.query()
                     .kind(MAVEN_JAR_RULE_PATTERN, "${input.item}")
@@ -124,6 +128,8 @@ public class Pipelines {
         availablePipelines.put(DependencySource.MAVEN_JAR, mavenJarPipeline);
 
         // Pipeline for rules_jvm_external (maven_install): extracts Maven dependencies from j.*import rules
+        // Use cquery because we need build-output fidelity (maven_coordinates) that reflects resolved coordinates
+        // from the action graph rather than declared-only information.
         List<String> mavenInstallCquery = BazelQueryBuilder.cquery()
             .kind(JAVA_IMPORT_RULE_PATTERN, BazelQueryBuilder.deps("${detect.bazel.target}"))
             .withNoImplicitDeps()
@@ -160,6 +166,9 @@ public class Pipelines {
         logger.info("HTTP pipeline variant: {}", bzlmodActive ? "bzlmod" : "workspace");
 
         // Build both HTTP pipelines; dispatch will decide which to use per run.
+        // For HTTP-style repository detection we use `query` (not `cquery`) because we are statically
+        // inspecting rule declarations and labels, and we need outputs (XML/label_kind) that are convenient
+        // for attribute extraction and lightweight classification heuristics in workspace-mode.
         List<String> httpLibraryQuery = BazelQueryBuilder.query()
             .kind(LIBRARY_RULE_PATTERN, BazelQueryBuilder.deps("${detect.bazel.target}"))
             .withOptions(QUERY_OPTIONS_PLACEHOLDER)
