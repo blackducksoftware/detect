@@ -207,7 +207,7 @@
 							<entry>Python</entry>
 							<entry>Anaconda</entry>
 							<entry>
-								<p>File: environment.yml</p>
+								<p>File: environment.yml or environment.yaml</p>
 								<p>Executable: conda</p>
 							</entry>
 							<entry>HIGH</entry>
