@@ -20,7 +20,7 @@ It also discovers library dependencies that have a GitHub released artifact loca
 - **Enhanced HTTP Detection:** 
   - For BZLMOD projects: Uses `bazel mod show_repo` to robustly extract dependency URLs from external repositories
   - For WORKSPACE projects: Uses XML parsing to extract URLs from repository rules
-- **Configurable Probing:** Control the depth of dependency graph probing with the `detect.bazel.http.probe.limit` property
+- **HTTP Detection Strategy:** Small/medium targets (≤150 external repos) are fully probed for precise detection. Large projects (>150 repos) automatically enable the HTTP pipeline to ensure completeness without probing overhead.
 
 ### Supported Bazel Versions
 
@@ -82,11 +82,6 @@ bash <(curl -s -L https://detect.blackduck.com/detect11.sh) \
 - **Example:** `--detect.bazel.mode=BZLMOD`
 - **When to Use:** Only set this if auto-detection fails or for testing purposes. Incorrect values may cause extraction to fail.
 
-#### `detect.bazel.http.probe.limit`
-- **Purpose:** A safety cap on how many external repositories the detector will probe for HTTP-family rules (`http_archive`, `git_repository`, `go_repository`). Each probe runs Bazel subprocesses and can be costly.
-- **Default:** `100`
-- **Unlimited:** Set to `-1` to remove the cap and probe all discovered repositories. Use with care on large monorepos.
-- **Example (advanced use):** `--detect.bazel.http.probe.limit=200`
 
 #### `detect.bazel.cquery.options`
 - **Description:** Additional options to pass to Bazel cquery commands
@@ -256,11 +251,17 @@ bash <(curl -s -L https://detect.blackduck.com/detect11.sh) --detect.bazel.targe
 #### HTTP Dependencies Missing
 **Problem:** Some http_archive or git_repository dependencies are not detected.
 
-**Solutions:**
-1. Increase the probe limit: `--detect.bazel.http.probe.limit=200`
-2. Check the logs for the warning: "Repository probe limit reached"
-3. Consider analyzing a more specific target with fewer total dependencies
-4. Unlimited mode: set `--detect.bazel.http.probe.limit=-1` to remove the cap (may be slow on large repos).
+**Note:** The detector uses a smart detection strategy that should prevent this issue:
+- **Small/medium projects (≤150 repos):** All repositories are probed, so HTTP dependencies should always be found
+- **Large projects (>150 repos):** HTTP pipeline is automatically enabled without probing, so all HTTP dependencies are extracted
+
+**If you still encounter missing HTTP dependencies:**
+1. Check the logs to verify the HTTP pipeline was enabled
+2. Verify the dependencies are actually reachable from your specified target: `bazel query 'deps(//your:target)'`
+3. For very small projects where you know HTTP deps don't exist, manually exclude them: `--detect.bazel.dependency.sources=MAVEN_INSTALL`
+4. Report the issue - this shouldn't happen with the current strategy
+
+> **Detection Strategy:** Projects with ≤150 external repositories are fully probed to precisely detect HTTP dependencies. Larger projects (>150 repos) skip probing and automatically enable the HTTP extraction pipeline to ensure completeness while avoiding the overhead of probing hundreds of repositories.
 
 #### Bazel Executable Not Found
 **Problem:** Error indicates Bazel executable cannot be located.
@@ -328,7 +329,7 @@ The detector automatically determines your Bazel mode through the following proc
 ### Performance Considerations
 
 - **HTTP Probe Limit:** Default limit of 100 repositories prevents excessive command execution on large monorepos. Adjust if needed.
-- **Unlimited Mode:** Set `--detect.bazel.http.probe.limit=-1` to remove the cap and probe all discovered repositories.
+- **Smart HTTP Detection:** The detector automatically determines the best strategy based on project size. Small/medium projects (≤150 repos) are fully probed for precise detection. Large projects skip probing and always enable HTTP extraction for guaranteed completeness.
 - **Target Specificity:** More specific targets (e.g., `//module:specific-target`) are faster than broad targets (e.g., `//:all`)
 - **Manual Override:** Setting `detect.bazel.dependency.sources` explicitly can significantly speed up detection
 

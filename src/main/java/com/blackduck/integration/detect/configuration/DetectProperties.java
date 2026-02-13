@@ -255,16 +255,6 @@ public class DetectProperties {
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();
 
-    public static final IntegerProperty DETECT_BAZEL_HTTP_PROBE_LIMIT =
-        IntegerProperty.newBuilder("detect.bazel.http.probe.limit", 100)
-            .setInfo("Bazel HTTP Repository Probe Limit", DetectPropertyFromVersion.VERSION_11_0_0)
-            .setHelp(
-                "Maximum number of external repositories to probe when detecting HTTP-family dependencies (http_archive, git_repository, etc.). " +
-                "Each probe involves subprocess execution, so this limit prevents performance issues on targets with many dependencies. " +
-                "Increase this value if HTTP dependencies are being missed on large targets."
-            )
-            .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
-            .build();
 
     public static final NullablePathProperty DETECT_CONAN_PATH =
         NullablePathProperty.newBuilder("detect.conan.path")

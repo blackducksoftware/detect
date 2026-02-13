@@ -46,7 +46,6 @@ public class BazelV2DetectableFunctionalTest extends DetectableFunctionalTest {
         BazelDetectableOptions options = BazelDetectableOptionsTestBuilder.builder()
             .target("//:test")
             .dependencySources(rules)
-            .httpProbeLimit(30)
             .build();
         // Use the factory to create the detectable so we get correct configured helpers
         return detectableFactory.createBazelV2Detectable(detectableEnvironment, options, () -> com.blackduck.integration.detectable.ExecutableTarget.forCommand("bazel"));

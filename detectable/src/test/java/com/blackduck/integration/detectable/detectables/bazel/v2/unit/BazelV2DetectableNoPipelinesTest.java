@@ -40,18 +40,17 @@ public class BazelV2DetectableNoPipelinesTest {
         BazelProjectNameGenerator projectNameGenerator = new BazelProjectNameGenerator();
 
         // Mock a prober that returns empty set
-        BazelGraphProberFactory proberFactory = (bazelCmd, target, mode, httpProbeLimit) -> Mockito.mock(BazelGraphProber.class);
-        BazelGraphProber mockProber = proberFactory.create(null, "//:test", BazelEnvironmentAnalyzer.Mode.UNKNOWN, 30);
+        BazelGraphProberFactory proberFactory = (bazelCmd, target, mode) -> Mockito.mock(BazelGraphProber.class);
+        BazelGraphProber mockProber = proberFactory.create(null, "//:test", BazelEnvironmentAnalyzer.Mode.UNKNOWN);
         Mockito.when(mockProber.decidePipelines()).thenReturn(Collections.emptySet());
 
         // Use mode override UNKNOWN to avoid auto-detection which would execute Bazel
         BazelDetectableOptions options = BazelDetectableOptionsTestBuilder.builder()
             .target("//:test")
             .modeOverride("UNKNOWN")
-            .httpProbeLimit(30)
             .build();
 
-        BazelV2Detectable detectable = new BazelV2Detectable(environment, fileFinder, executableRunner, externalIdFactory, bazelResolver, options, substitutor, haskellParser, projectNameGenerator, (bazelCmd, target, mode, httpProbeLimit) -> mockProber);
+        BazelV2Detectable detectable = new BazelV2Detectable(environment, fileFinder, executableRunner, externalIdFactory, bazelResolver, options, substitutor, haskellParser, projectNameGenerator, (bazelCmd, target, mode) -> mockProber);
 
         // Act & Assert
         assertThrows(DetectableException.class, () -> detectable.extract(new com.blackduck.integration.detectable.extraction.ExtractionEnvironment(new File("out"))));

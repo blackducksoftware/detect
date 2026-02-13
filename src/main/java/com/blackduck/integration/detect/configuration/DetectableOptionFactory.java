@@ -80,8 +80,7 @@ public class DetectableOptionFactory {
         List<String> bazelQueryAdditionalOptions = detectConfiguration.getValue(DetectProperties.DETECT_BAZEL_QUERY_OPTIONS);
         Set<DependencySource> dependencySourcesFromProperty = detectConfiguration.getValue(DetectProperties.DETECT_BAZEL_DEPENDENCY_SOURCES).representedValueSet();
         String modeOverride = detectConfiguration.getNullableValue(DetectProperties.DETECT_BAZEL_MODE);
-        int httpProbeLimit = detectConfiguration.getValue(DetectProperties.DETECT_BAZEL_HTTP_PROBE_LIMIT);
-        return new BazelDetectableOptions(targetName, dependencySourcesFromProperty, bazelCqueryAdditionalOptions, bazelQueryAdditionalOptions, modeOverride, httpProbeLimit);
+        return new BazelDetectableOptions(targetName, dependencySourcesFromProperty, bazelCqueryAdditionalOptions, bazelQueryAdditionalOptions, modeOverride);
     }
 
     public BitbakeDetectableOptions createBitbakeDetectableOptions() {

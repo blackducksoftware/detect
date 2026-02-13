@@ -15,22 +15,19 @@ public class BazelDetectableOptions {
     private final List<String> bazelCqueryAdditionalOptions;
     private final List<String> bazelQueryAdditionalOptions;
     private final String modeOverride;
-    private final int httpProbeLimit;
 
     public BazelDetectableOptions(
         String targetName,
         Set<DependencySource> dependencySourcesFromProperty,
         List<String> bazelCqueryAdditionalOptions,
         List<String> bazelQueryAdditionalOptions,
-        String modeOverride,
-        int httpProbeLimit
+        String modeOverride
     ) {
         this.targetName = targetName;
         this.dependencySourcesFromProperty = dependencySourcesFromProperty;
         this.bazelCqueryAdditionalOptions = bazelCqueryAdditionalOptions;
         this.bazelQueryAdditionalOptions = bazelQueryAdditionalOptions;
         this.modeOverride = modeOverride;
-        this.httpProbeLimit = httpProbeLimit;
     }
 
     public Optional<String> getTargetName() {
@@ -49,9 +46,6 @@ public class BazelDetectableOptions {
         return dependencySourcesFromProperty;
     }
 
-    public int getHttpProbeLimit() {
-        return httpProbeLimit;
-    }
 
     public Optional<BazelEnvironmentAnalyzer.Mode> getModeOverride() {
         if (modeOverride == null || modeOverride.trim().isEmpty()) {

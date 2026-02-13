@@ -53,8 +53,10 @@ public class HttpFamilyProber {
         "rules_jvm_external"
     );
 
-    // Special value: when value is -1, we remove the cap (unlimited probes)
-    private final int maxReposToProbe;
+    // TODO: Consider making this configurable if customers report performance issues on very large
+    //       targets (500+ external repos). For now, hardcoded threshold with automatic HTTP pipeline
+    //       enablement for large targets provides the best balance of performance and completeness.
+    private static final int LARGE_TARGET_THRESHOLD = 150;
 
     // Extracted string constants for repo prefix markers
     private static final String REPO_PREFIX_SINGLE = "@";
@@ -64,20 +66,19 @@ public class HttpFamilyProber {
 
 
     /**
-     * Constructor for HttpFamilyProber with configurable probe limit
+     * Constructor for HttpFamilyProber
      * @param bazel Bazel command executor
      * @param mode Bazel environment mode
-     * @param maxReposToProbe Maximum number of repositories to probe
      */
-    public HttpFamilyProber(BazelCommandExecutor bazel, BazelEnvironmentAnalyzer.Mode mode, int maxReposToProbe) {
+    public HttpFamilyProber(BazelCommandExecutor bazel, BazelEnvironmentAnalyzer.Mode mode) {
         this.bazel = bazel;
         this.mode = mode;
-        this.maxReposToProbe = maxReposToProbe;
     }
 
     /**
      * Probes the Bazel dependency graph for HTTP archive family repositories (http_archive, git_repository, etc.).
      * Uses different probing strategies depending on the Bazel mode (BZLMOD or WORKSPACE).
+     * For large projects, skips probing and enables HTTP pipeline to ensure completeness.
      * @param target Bazel target to analyze
      * @return true if HTTP family repository is detected, false otherwise
      * @throws Exception if Bazel command execution fails
@@ -114,23 +115,37 @@ public class HttpFamilyProber {
             return false;
         }
 
+        int totalRepos = repoLabels.size();
+
+        // Strategy: Large targets (>150 repos) can't be probed exhaustively within reasonable time,
+        // so we enable HTTP pipeline unconditionally to ensure completeness.
+        // Small/medium targets are fully probed for precise detection.
+        if (totalRepos > LARGE_TARGET_THRESHOLD) {
+            logger.info("Large project detected with {} external repositories (>{}). " +
+                       "Enabling HTTP pipeline to ensure completeness without probing overhead.",
+                       totalRepos, LARGE_TARGET_THRESHOLD);
+            return true;
+        }
+
+        // Small/medium project: probe all repositories for precise HTTP detection
+        logger.debug("Project has {} external repositories (≤{}). Probing all repositories for HTTP dependencies.",
+                    totalRepos, LARGE_TARGET_THRESHOLD);
+
         int checkedRepos = 0;
-        boolean removeCap = maxReposToProbe == -1; // remove cap when maxReposToProbe is -1.
         // Probe each repository for HTTP family characteristics
         for (Map.Entry<String, LinkedHashSet<String>> entry : repoLabels.entrySet()) {
-            if (!removeCap && checkedRepos++ >= maxReposToProbe) {
-                logger.warn("Repository probe limit reached ({} repos checked). " +
-                           "If HTTP dependencies are missed, this target may have unusually many external repos. " +
-                           "Consider analyzing a more specific target or increase the limit via detect.bazel.http.probe.limit property.",
-                           maxReposToProbe);
-                break;
-            }
+            checkedRepos++;
             if (probeRepo(entry.getKey(), entry.getValue())) {
+                logger.info("HTTP repository '{}' detected at probe #{} of {}. Enabling HTTP pipeline.",
+                           entry.getKey(), checkedRepos, totalRepos);
                 return true;
             }
         }
+
+        logger.debug("Probed all {} repositories, no HTTP dependencies detected.", checkedRepos);
         return false;
     }
+
 
     /**
      * Dispatches repository probing based on the Bazel environment mode.
