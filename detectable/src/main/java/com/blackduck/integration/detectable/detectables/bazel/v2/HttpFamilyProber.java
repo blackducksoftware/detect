@@ -117,18 +117,18 @@ public class HttpFamilyProber {
 
         int totalRepos = repoLabels.size();
 
-        // Strategy: Large targets (>150 repos) can't be probed exhaustively within reasonable time,
-        // so we enable HTTP pipeline unconditionally to ensure completeness.
+        // Strategy: Large targets (>150 repos in dependency graph) can't be probed exhaustively
+        // within reasonable time, so we enable HTTP pipeline unconditionally to ensure completeness.
         // Small/medium targets are fully probed for precise detection.
         if (totalRepos > LARGE_TARGET_THRESHOLD) {
-            logger.info("Large project detected with {} external repositories (>{}). " +
+            logger.info("Target has {} external repository dependencies (>{}). " +
                        "Enabling HTTP pipeline to ensure completeness without probing overhead.",
                        totalRepos, LARGE_TARGET_THRESHOLD);
             return true;
         }
 
-        // Small/medium project: probe all repositories for precise HTTP detection
-        logger.debug("Project has {} external repositories (≤{}). Probing all repositories for HTTP dependencies.",
+        // Small/medium target: probe all repositories for precise HTTP detection
+        logger.debug("Target has {} external repository dependencies (≤{}). Probing all repositories for HTTP dependencies.",
                     totalRepos, LARGE_TARGET_THRESHOLD);
 
         int checkedRepos = 0;
