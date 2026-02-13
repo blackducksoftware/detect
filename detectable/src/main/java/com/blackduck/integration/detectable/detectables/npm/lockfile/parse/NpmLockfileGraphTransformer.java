@@ -178,9 +178,9 @@ public class NpmLockfileGraphTransformer {
     }
 
     private boolean shouldIncludeDependency(NpmDependency packageLockDependency) {
-        return (!packageLockDependency.isDevDependency() && !packageLockDependency.isPeerDependency() && !packageLockDependency.isOptionalDependency()) // If the type is not dev or peer, we always want to include it.
+        return !packageLockDependency.getName().contains("@rush-temp") && ((!packageLockDependency.isDevDependency() && !packageLockDependency.isPeerDependency() && !packageLockDependency.isOptionalDependency()) // If the type is not dev or peer, we always want to include it.
             || (packageLockDependency.isDevDependency() && npmDependencyTypeFilter.shouldInclude(NpmDependencyType.DEV))
             || (packageLockDependency.isPeerDependency() && npmDependencyTypeFilter.shouldInclude(NpmDependencyType.PEER))
-            || (packageLockDependency.isOptionalDependency() && npmDependencyTypeFilter.shouldInclude(NpmDependencyType.OPTIONAL));
+            || (packageLockDependency.isOptionalDependency() && npmDependencyTypeFilter.shouldInclude(NpmDependencyType.OPTIONAL)));
     }
 }
