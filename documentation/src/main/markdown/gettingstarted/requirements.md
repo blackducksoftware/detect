@@ -26,7 +26,7 @@
 	* eu.store.scass.blackduck.com - 34.54.213.11
 	* eu.scass.blackduck.com - 34.54.38.252
 
-* The following IP address is required to be whitelisted to successfully collect phone home metrics:
+* Collection of phone home metrics requires the following IP address to be allowlisted:
 	* static-content.app.blackduck.com - 34.117.80.109
 	
 ## Running [detect_product_short] in a container
