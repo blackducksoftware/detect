@@ -1186,6 +1186,33 @@ public class DetectProperties {
                     .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
                     .build();
 
+    public static final BooleanProperty DETECT_MAVEN_DOWNLOAD_ARTIFACT_JARS =
+            BooleanProperty.newBuilder("detect.maven.download.artifact.jars", false)
+                    .setInfo("Download Artifact JARs", DetectPropertyFromVersion.VERSION_9_8_0)
+                    .setHelp(
+                            "If set to true, Detect will download and cache artifact JAR files in addition to POMs during Maven dependency resolution.",
+                            "This is an opt-in feature that enables the Maven Resolver to download actual JAR artifacts from Maven repositories. " +
+                            "When enabled, the resolver will check local Maven repository (.m2) first, then download from Maven Central if needed. " +
+                            "Downloaded JARs are cached for subsequent runs. This feature may significantly increase scan time and disk usage for large projects."
+                    )
+                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
+                    .build();
+
+    public static final NullablePathProperty DETECT_MAVEN_JAR_REPOSITORY_PATH =
+            NullablePathProperty.newBuilder("detect.maven.jar.repository.path")
+                    .setInfo("Maven JAR Repository Path", DetectPropertyFromVersion.VERSION_9_8_0)
+                    .setHelp(
+                            "Path to check for existing Maven artifact JARs when detect.maven.download.artifact.jars is enabled.",
+                            "Specifies a custom location to CHECK for existing JARs before downloading. " +
+                            "Can be either: (1) A repository directory using standard Maven layout (groupId/artifactId/version/artifact-version.jar), or " +
+                            "(2) A direct path to a specific JAR file. " +
+                            "Downloaded JARs are ALWAYS saved to ~/.m2/repository regardless of this setting. " +
+                            "Lookup order: custom path (if set) → ~/.m2/repository → Maven Central. " +
+                            "This property only has effect when detect.maven.download.artifact.jars is set to true."
+                    )
+                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
+                    .build();
+
     public static final BooleanProperty DETECT_NOTICES_REPORT =
         BooleanProperty.newBuilder("detect.notices.report", false)
             .setInfo("Generate Notices Report", DetectPropertyFromVersion.VERSION_3_0_0)

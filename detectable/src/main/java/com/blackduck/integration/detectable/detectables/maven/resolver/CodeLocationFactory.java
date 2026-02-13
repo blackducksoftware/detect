@@ -4,6 +4,7 @@ import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
+import com.blackduck.integration.detectable.detectables.maven.resolver.model.JavaCoordinates;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,6 +86,40 @@ class CodeLocationFactory {
             return new CodeLocation(dependencyGraph, externalId, sourcePath);
         } catch (Exception e) {
             logger.debug("Failed to create external id for '{}:{}:{}': {}", groupId, artifactId, version, e.getMessage());
+            return new CodeLocation(dependencyGraph);
+        }
+    }
+
+    /**
+     * Creates a CodeLocation from a dependency graph with JavaCoordinates and scope.
+     *
+     * <p>This method is used when creating code locations for Maven projects with
+     * specific scopes (compile, test, etc).
+     *
+     * @param dependencyGraph The dependency graph for this code location
+     * @param coordinates JavaCoordinates containing groupId, artifactId, and version
+     * @param scope The Maven scope (e.g., "compile", "test")
+     * @return A CodeLocation with external ID if possible, otherwise without
+     */
+    public CodeLocation createCodeLocation(DependencyGraph dependencyGraph,
+                                          JavaCoordinates coordinates,
+                                          String scope) {
+        try {
+            ExternalId externalId = externalIdFactory.createMavenExternalId(
+                coordinates.getGroupId(),
+                coordinates.getArtifactId(),
+                coordinates.getVersion()
+            );
+            // Note: scope is included in the method signature for future use if needed
+            // Currently, the CodeLocation doesn't use scope directly
+            return new CodeLocation(dependencyGraph, externalId);
+        } catch (Exception e) {
+            logger.debug("Failed to create external id for '{}:{}:{}' (scope: {}): {}",
+                safeGet(() -> coordinates.getGroupId()),
+                safeGet(() -> coordinates.getArtifactId()),
+                safeGet(() -> coordinates.getVersion()),
+                scope,
+                e.getMessage());
             return new CodeLocation(dependencyGraph);
         }
     }

@@ -35,6 +35,7 @@ import com.blackduck.integration.detectable.detectables.gradle.inspection.inspec
 import com.blackduck.integration.detectable.detectables.lerna.LernaOptions;
 import com.blackduck.integration.detectable.detectables.lerna.LernaPackageType;
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenCliExtractorOptions;
+import com.blackduck.integration.detectable.detectables.maven.resolver.MavenResolverOptions;
 import com.blackduck.integration.detectable.detectables.npm.NpmDependencyType;
 import com.blackduck.integration.detectable.detectables.npm.cli.NpmCliExtractorOptions;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.NpmLockfileOptions;
@@ -205,6 +206,12 @@ public class DetectableOptionFactory {
         List<String> mavenIncludedModules = detectConfiguration.getValue(DetectProperties.DETECT_MAVEN_INCLUDED_MODULES);
         Boolean includeShadedDependencies = detectConfiguration.getValue(DetectProperties.DETECT_MAVEN_INCLUDE_SHADED_DEPENDENCIES);
         return new MavenCliExtractorOptions(mavenBuildCommand, mavenExcludedScopes, mavenIncludedScopes, mavenExcludedModules, mavenIncludedModules, includeShadedDependencies);
+    }
+
+    public MavenResolverOptions createMavenResolverOptions() {
+        Boolean downloadArtifactJars = detectConfiguration.getValue(DetectProperties.DETECT_MAVEN_DOWNLOAD_ARTIFACT_JARS);
+        Path jarRepositoryPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_MAVEN_JAR_REPOSITORY_PATH);
+        return new MavenResolverOptions(downloadArtifactJars, jarRepositoryPath);
     }
 
     public ConanCliOptions createConanCliOptions() {

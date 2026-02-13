@@ -172,6 +172,7 @@ import com.blackduck.integration.detectable.detectables.maven.cli.MavenPomDetect
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenPomWrapperDetectable;
 import com.blackduck.integration.detectable.detectables.maven.parsing.MavenProjectInspectorDetectable;
 import com.blackduck.integration.detectable.detectables.maven.resolver.MavenResolverDetectable;
+import com.blackduck.integration.detectable.detectables.maven.resolver.MavenResolverOptions;
 import com.blackduck.integration.detectable.detectables.npm.cli.NpmCliDetectable;
 import com.blackduck.integration.detectable.detectables.npm.cli.NpmCliExtractor;
 import com.blackduck.integration.detectable.detectables.npm.cli.NpmCliExtractorOptions;
@@ -503,12 +504,17 @@ public class DetectableFactory {
             MavenResolver mavenResolver,
             MavenCliExtractorOptions mavenCliExtractorOptions,
             ProjectInspectorOptions projectInspectorOptions,
-            ProjectInspectorResolver projectInspectorResolver
+            ProjectInspectorResolver projectInspectorResolver,
+            MavenResolverOptions mavenResolverOptions
+
+
+
     ) {
         return new MavenResolverDetectable(
                 environment,
                 fileFinder,
-                externalIdFactory
+                externalIdFactory,
+                mavenResolverOptions
         );
     }
 
