@@ -34,7 +34,7 @@ public class IntermediateStepExecuteBazelOnEachLineTest {
         Mockito.when(bazelCmdExecutableOutput.getStandardOutput()).thenReturn("@org_apache_commons_commons_io//jar:jar\n@com_google_guava_guava//jar:jar");
         Mockito.when(executableRunner.executeSuccessfully(Mockito.any(Executable.class))).thenReturn(bazelCmdExecutableOutput);
         BazelCommandExecutor bazelCommandExecutor = new BazelCommandExecutor(executableRunner, workspaceDir, bazelExe);
-        BazelVariableSubstitutor bazelVariableSubstitutor = new BazelVariableSubstitutor("//:ProjectRunner", null);
+        BazelVariableSubstitutor bazelVariableSubstitutor = new BazelVariableSubstitutor("//:ProjectRunner", null, null);
         IntermediateStep executor = new IntermediateStepExecuteBazelOnEachLine(
             bazelCommandExecutor,
             bazelVariableSubstitutor,

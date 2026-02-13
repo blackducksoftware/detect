@@ -4,7 +4,7 @@ dependencies {
     implementation 'com.blackduck.integration:integration-bdio'
     implementation 'com.blackduck.integration:integration-rest'
 
-    implementation 'org.tomlj:tomlj:1.0.0'
+    implementation 'org.tomlj:tomlj:1.1.0'
     implementation 'com.moandjiezana.toml:toml4j:0.7.2'
     implementation 'com.paypal.digraph:digraph-parser:1.0'
     implementation 'guru.nidi:graphviz-java:0.18.1'

@@ -9,14 +9,16 @@ public class BazelVariableSubstitutor {
     private final Map<String, String> stringSubstitutions;
     private final Map<String, List<String>> listInsertions;
 
-    public BazelVariableSubstitutor(String bazelTarget, List<String> cqueryAdditionalOptions) {
+    public BazelVariableSubstitutor(String bazelTarget, List<String> cqueryAdditionalOptions, List<String> queryAdditionalOptions) {
         // the keys are regex's, requiring regex special character escaping
         stringSubstitutions = new HashMap<>(1);
         stringSubstitutions.put("\\$\\{detect.bazel.target}", bazelTarget);
 
         // the keys are plain strings
-        listInsertions = new HashMap<>(1);
+        listInsertions = new HashMap<>(2);
         listInsertions.put("${detect.bazel.cquery.options}", cqueryAdditionalOptions);
+        // Map query options placeholder to the separate query list
+        listInsertions.put("${detect.bazel.query.options}", queryAdditionalOptions);
     }
 
     public List<String> substitute(List<String> origStrings, String input) {
