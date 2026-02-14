@@ -1314,6 +1314,7 @@ public class DetectProperties {
                     .setHelp(
                             "Use this property to point Detect to a local NuGet Inspector executable, instead of the default that Detect downloads from the binary repository."
                     )
+                    .setExample("/path/to/unzipped/detect-nuget-inspector")
                     .setGroups(DetectGroup.NUGET, DetectGroup.GLOBAL)
                     .setCategory(DetectCategory.Advanced)
                     .build();
