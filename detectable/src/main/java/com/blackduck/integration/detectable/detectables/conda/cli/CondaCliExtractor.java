@@ -1,4 +1,4 @@
-package com.blackduck.integration.detectable.detectables.conda;
+package com.blackduck.integration.detectable.detectables.conda.cli;
 
 import java.io.File;
 import java.util.ArrayList;

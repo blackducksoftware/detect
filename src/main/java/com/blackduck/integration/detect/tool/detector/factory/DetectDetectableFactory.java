@@ -17,7 +17,8 @@ import com.blackduck.integration.detectable.detectables.cocoapods.PodlockDetecta
 import com.blackduck.integration.detectable.detectables.conan.cli.Conan2CliDetectable;
 import com.blackduck.integration.detectable.detectables.conan.cli.Conan1CliDetectable;
 import com.blackduck.integration.detectable.detectables.conan.lockfile.ConanLockfileDetectable;
-import com.blackduck.integration.detectable.detectables.conda.CondaCliDetectable;
+import com.blackduck.integration.detectable.detectables.conda.cli.CondaCliDetectable;
+import com.blackduck.integration.detectable.detectables.conda.tree.CondaTreeDetectable;
 import com.blackduck.integration.detectable.detectables.cpan.CpanCliDetectable;
 import com.blackduck.integration.detectable.detectables.cran.PackratLockDetectable;
 import com.blackduck.integration.detectable.detectables.dart.pubdep.DartPubDepDetectable;
@@ -143,6 +144,10 @@ public class DetectDetectableFactory {
 
     public CondaCliDetectable createCondaCliDetectable(DetectableEnvironment environment) {
         return detectableFactory.createCondaCliDetectable(environment, detectExecutableResolver, detectableOptionFactory.createCondaOptions());
+    }
+
+    public CondaTreeDetectable createCondaTreeDetectable(DetectableEnvironment environment) {
+        return detectableFactory.createCondaTreeDetectable(environment, detectExecutableResolver, detectableOptionFactory.createCondaOptions());
     }
 
     public CpanCliDetectable createCpanCliDetectable(DetectableEnvironment environment) {
