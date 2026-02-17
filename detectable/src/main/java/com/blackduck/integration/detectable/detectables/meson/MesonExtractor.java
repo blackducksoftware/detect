@@ -1,5 +1,6 @@
 package com.blackduck.integration.detectable.detectables.meson;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -46,6 +47,7 @@ public class MesonExtractor {
                 return new Extraction.Builder()
                     .failure("Could not find " + introspect_project + " in any subdirectory").build();
             }
+
             NameVersion nameVersion = determineProjectNameVersion(projectFile.getAbsolutePath());
             logger.debug("Found Meson project file: {}", projectFile.getAbsolutePath());
 
@@ -55,17 +57,18 @@ public class MesonExtractor {
                 return new Extraction.Builder()
                     .failure("Could not find " + introspect_dependencies + " in any subdirectory").build();
             }
-            String dependenciesJsonContents = Files.readString(dependencyFile.toPath(), StandardCharsets.UTF_8);
-            logger.trace("Dependencies JSON contents: {}", dependenciesJsonContents);
-            DependencyGraph dependencyGraph = mesonDependencyFileParser.parseProjectDependencies(gson, dependenciesJsonContents);
-            CodeLocation codeLocation = new CodeLocation(dependencyGraph);
-            logger.debug("Found Meson dependency file: {}", dependencyFile.getAbsolutePath());
+            try (BufferedReader reader = Files.newBufferedReader(dependencyFile.toPath(), StandardCharsets.UTF_8)) {
+                DependencyGraph dependencyGraph = mesonDependencyFileParser.parseProjectDependencies(gson, reader);
+                logger.debug("Found Meson dependency file: {}", dependencyFile.getAbsolutePath());
+                CodeLocation codeLocation = new CodeLocation(dependencyGraph);
+                
+                return new Extraction.Builder()
+                    .success(codeLocation)
+                    .projectName(nameVersion.getName())
+                    .projectVersion(nameVersion.getVersion())
+                    .build();
+            }
 
-            return new Extraction.Builder()
-                .success(codeLocation)
-                .projectName(nameVersion.getName())
-                .projectVersion(nameVersion.getVersion())
-                .build();
         } catch (Exception e) {
             logger.error("Failed to extract Meson dependencies", e);
             return new Extraction.Builder().exception(e).build();
@@ -79,9 +82,10 @@ public class MesonExtractor {
         try {
             File projectInfoFile = new File(projectFilePath);
             if (projectInfoFile != null) {
-                String projectJsonContents = Files.readString(projectInfoFile.toPath());
-                logger.debug("Found Meson project info file: {}", projectInfoFile.getAbsolutePath());
-                return mesonProjectFileParser.getProjectNameVersion(gson, projectJsonContents, defaultProjectName, defaultProjectVersion);
+                try (BufferedReader reader = Files.newBufferedReader(projectInfoFile.toPath(), StandardCharsets.UTF_8)) {
+                    logger.debug("Found Meson project info file: {}", projectInfoFile.getAbsolutePath());
+                    return mesonProjectFileParser.getProjectNameVersion(gson, reader, defaultProjectName, defaultProjectVersion);
+                }
             }
         } catch (Exception e) {
             logger.warn("Failed to parse Meson introspect, using defaults", e);

@@ -1,5 +1,7 @@
 package com.blackduck.integration.detectable.detectables.meson.parse;
 
+import java.io.BufferedReader;
+
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +15,8 @@ import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.google.gson.Gson;
 
 public class MesonDependencyFileParser {
+    private static final Forge GENERIC_FORGE = new Forge("/", "Generic");
+    
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final ExternalIdFactory externalIdFactory;
 
@@ -20,17 +24,11 @@ public class MesonDependencyFileParser {
         this.externalIdFactory = externalIdFactory;
     }
 
-    public DependencyGraph parseProjectDependencies(Gson gson, String jsonContents) {
+    public DependencyGraph parseProjectDependencies(Gson gson, BufferedReader reader) {
         DependencyGraph graph = new BasicDependencyGraph();
 
         try {
-            if (jsonContents == null || jsonContents.trim().isEmpty()) {
-                logger.warn("Empty or null JSON contents for Meson dependencies");
-                return graph;
-            }
-            
-            logger.trace("Parsing Meson dependencies JSON (length: {})", jsonContents.length());
-            MesonDependency[] dependencies = gson.fromJson(jsonContents, MesonDependency[].class);
+            MesonDependency[] dependencies = gson.fromJson(reader, MesonDependency[].class);
             
             if (dependencies == null) {
                 logger.warn("Failed to parse Meson dependencies - gson returned null");
@@ -44,18 +42,16 @@ public class MesonDependencyFileParser {
                         && StringUtils.isNotBlank(dep.getName())
                         && StringUtils.isNotBlank(dep.getVersion())) {
 
-                    //TODO: What is a forge in this instance?
-                    //TODO: What is a scope?
-                    ExternalId dependencyExternalId = externalIdFactory.createNameVersionExternalId(
-                            Forge.GITLAB ,
-                            dep.getName(),
-                            dep.getVersion());
-                    Dependency dependency = new Dependency(dep.getName(), dep.getVersion(), dependencyExternalId, null);
+                    // https://github.com/blackducksoftware/bdio/blob/master/bdio2/src/main/java/com/blackducksoftware/bdio2/Bdio.java#L570
+                    // https://github.com/blackducksoftware/integration-bdio/blob/master/src/main/java/com/blackduck/integration/bdio/model/Forge.java
+                    // Create ExternalId with generic forge to produce format: pkg:generic/boost@1.83.0
+                    ExternalId dependencyExternalId = externalIdFactory.createNameVersionExternalId(GENERIC_FORGE, dep.getName(), dep.getVersion());
+                    dependencyExternalId.createBdioId();
+                    Dependency dependency = new Dependency(dep.getName(), dep.getVersion(), dependencyExternalId, "");
                     logger.trace("Adding dependency: {}", dependency.getExternalId().toString());
                     graph.addDirectDependency(dependency);
                 } else {
-                    logger.debug("Skipping dependency - name: '{}', type: '{}', version: '{}'",
-                            dep.getName(), dep.getType(), dep.getVersion());
+                    logger.debug("Skipping dependency - name: '{}', type: '{}', version: '{}'", dep.getName(), dep.getType(), dep.getVersion());
                 }
             }
         } catch (Exception e) {
@@ -65,6 +61,7 @@ public class MesonDependencyFileParser {
         return graph;
     }
 
+    // Could have extended com.blackduck.integration.util.NameVersion with a type field
     private static class MesonDependency {
         private String name;
         private String type;

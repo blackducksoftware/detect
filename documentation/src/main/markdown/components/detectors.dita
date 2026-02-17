@@ -574,11 +574,13 @@
 						</row>
 						<row>
 							<entry> </entry>
-							<entry>meson introspect</entry>
+							<entry>Meson</entry>
 							<entry>C++</entry>
-							<entry>N/A</entry>
+							<entry>Generic</entry>
 							<entry>
-								<p>File: meson-info/intro-dependencies.json</p>
+								<p>File: meson.build</p>
+								<p>File: */meson-info/intro-project.json</p>
+								<p>File: */meson-info/intro-dependencies.json</p>
 							</entry>
 							<entry>HIGH</entry>
 						</row>

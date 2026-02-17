@@ -1,5 +1,7 @@
 package com.blackduck.integration.detectable.detectables.meson.parse;
 
+import java.io.BufferedReader;
+
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,10 +15,10 @@ public class MesonProjectFileParser {
     public MesonProjectFileParser() {
     }
 
-    public NameVersion getProjectNameVersion(Gson gson, String jsonContents, String defaultProjectName,
+    public NameVersion getProjectNameVersion(Gson gson, BufferedReader reader, String defaultProjectName,
             String defaultProjectVersion) {
         try {
-            MesonProjectInfo projectInfo = gson.fromJson(jsonContents, MesonProjectInfo.class);
+            MesonProjectInfo projectInfo = gson.fromJson(reader, MesonProjectInfo.class);
 
             String projectName = defaultProjectName;
             String projectVersion = defaultProjectVersion;
