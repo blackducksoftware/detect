@@ -16,6 +16,7 @@ import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,11 +33,24 @@ public class GoModDependencyResolver {
     private final GoModFileParser goModFileParser = new GoModFileParser();
     private GoModFileHelpers goModFileHelpers;
 
+    // Maximum depth for recursive dependency resolution to prevent infinite loops
+    private static final int MAX_RECURSION_DEPTH = 100;
+
+    // Cache resolved dependencies by module@version key to prevent re-fetching from proxy
+    // Key format: "moduleName@version"
+    private final Map<String, List<GoDependencyNode>> visitedModules = new HashMap<>();
+
+    // Track which modules have been fully processed in this traversal to prevent infinite loops
+    // Key format: "moduleName@version"
+    private final Set<String> processedInTraversal = new HashSet<>();
+
+    // Track recursion depth for each path to prevent stack overflow
+    private int currentDepth = 0;
+
     public GoModDependencyResolver(GoModFileDetectableOptions options) {
         this.goProxyModuleResolver = new GoProxyModuleResolver(options);
     }
 
-    private Map<GoDependencyNode, List<GoDependencyNode>> visitedNodes = new HashMap<>();
 
     /**
      * Resolves dependencies by applying exclude and replace directives.
@@ -109,6 +123,10 @@ public class GoModDependencyResolver {
             logger.warn("Cannot connect to Go proxy at {}. Skipping recursive dependency resolution.", goProxyModuleResolver.options.getGoProxyUrl());
             return new ResolvedDependencies(finalDirectDependencies, finalIndirectDependencies, rootNode);
         }
+
+        // Reset traversal tracking for this scan
+        processedInTraversal.clear();
+
         // Build a recursive dependency graph
         GoDependencyNode recursiveGraphNode = computeDependencyTree(rootNode, rootTransitives, externalIdFactory);
 
@@ -142,28 +160,74 @@ public class GoModDependencyResolver {
     }
 
     private GoDependencyNode computeDependencyTree(GoDependencyNode node, List<GoDependencyNode> rootTransitives, ExternalIdFactory externalIdFactory) {
-        if (!node.isRootNode()) {
-            processNonRootNode(node);
+        // Check recursion depth to prevent stack overflow
+        if (currentDepth >= MAX_RECURSION_DEPTH) {
+            logger.warn("Maximum recursion depth of {} reached. Stopping further dependency resolution to prevent infinite loop. Current node: {}",
+                       MAX_RECURSION_DEPTH, node);
+            return node;
         }
 
-        processChildNodes(node, rootTransitives, externalIdFactory);
-        return node;
+        currentDepth++;
+        try {
+            if (!node.isRootNode()) {
+                String moduleKey = getModuleKey(node.getDependency());
+
+                // Check if we've already fully processed this module in the current traversal
+                if (processedInTraversal.contains(moduleKey)) {
+                    logger.debug("Skipping already processed module in traversal: {}", moduleKey);
+                    return node;
+                }
+
+                // Mark this module as being processed
+                processedInTraversal.add(moduleKey);
+
+                // Process the node (fetch children or reuse cached)
+                processNonRootNode(node);
+            }
+
+            processChildNodes(node, rootTransitives, externalIdFactory);
+            return node;
+        } finally {
+            currentDepth--;
+        }
     }
 
     private void processNonRootNode(GoDependencyNode node) {
-        if (visitedNodes.containsKey(node)) {
-            node.appendChildren(visitedNodes.get(node));
+        String moduleKey = getModuleKey(node.getDependency());
+
+        if (visitedModules.containsKey(moduleKey)) {
+            // Already processed this module@version - reuse cached children
+            List<GoDependencyNode> cachedChildren = visitedModules.get(moduleKey);
+            node.appendChildren(cachedChildren);
+            logger.debug("Reusing cached children for already visited module: {}", moduleKey);
             return;
         }
 
         List<GoDependencyNode> children = fetchAndParseChildren(node);
-        visitedNodes.put(node, children);
+        visitedModules.put(moduleKey, children);
         node.appendChildren(children);
     }
 
+    /**
+     * Creates a unique key for a dependency to use in the visited modules cache.
+     * Format: "moduleName@version"
+     */
+    private String getModuleKey(Dependency dependency) {
+        if (dependency == null) {
+            return "null";
+        }
+        String name = dependency.getName() != null ? dependency.getName() : "unknown";
+        String version = dependency.getVersion() != null ? dependency.getVersion() : "unknown";
+        return name + "@" + version;
+    }
+
     private List<GoDependencyNode> fetchAndParseChildren(GoDependencyNode node) {
+        String moduleKey = getModuleKey(node.getDependency());
+        logger.debug("Fetching and parsing children for module: {} (depth: {})", moduleKey, currentDepth);
+
         String goModFileContent = goProxyModuleResolver.getGoModFileOfTheDependency(node.getDependency());
         if (goModFileContent == null) {
+            logger.debug("No go.mod file content retrieved for module: {}", moduleKey);
             return new ArrayList<>();
         }
 
@@ -176,6 +240,8 @@ public class GoModDependencyResolver {
             GoDependencyNode childNode = new GoDependencyNode(false, childDep, new ArrayList<>());
             children.add(childNode);
         }
+
+        logger.debug("Found {} direct dependencies for module: {}", children.size(), moduleKey);
         return children;
     }
 
