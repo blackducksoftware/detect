@@ -49,6 +49,7 @@ public enum DetectGroup implements Group {
     GO("go", DETECTORS),
     GRADLE("gradle", DETECTORS),
     HEX("hex", DETECTORS),
+    IVY("ivy", DETECTORS),
     LERNA("lerna", DETECTORS),
     MAVEN("maven", DETECTORS),
     NPM("npm", DETECTORS),
