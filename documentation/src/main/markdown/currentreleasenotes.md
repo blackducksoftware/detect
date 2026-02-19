@@ -16,20 +16,15 @@
 	* eu.store.scass.blackduck.com - 34.54.213.11
 	* eu.scass.blackduck.com - 34.54.38.252
 
-## Version 11.2.0
+## Version 11.3.0
 
 ### New features
 
-
-### Changed features
-
+* With the addition of the `detect.cargo.included.features` and `detect.cargo.disable.default.features` properties, [detect_product_short] now supports Cargo features and the inclusion or exclusion of dependencies as options. See [Cargo](properties/detectors/cargo.md) for details.
+  <note type="note">This feature is supported for Cargo CLI Detector. Cargo Lockfile Detector will log a warning if these properties are provided.</note>
+* (IDETECT-4937) Add support for `environment.yaml` in [detect_product_short] Conda CLI Detector.
 
 ### Resolved issues
 
-* (IDETECT-4924) Resolved an issue where Impact Analysis Scan threw errors on malformed classes; it now handles them gracefully by logging a warning, skipping the affected classes, and adding them to the scan output.
-* (IDETECT-4921) Fixed upload failures in proxied environments when SCASS is enabled. 
-
-### Dependency Updates
-
-* Updated method-analyzer-core to 1.0.7.
-
+* (IDETECT-4960) Added support for Cargo features and optional dependencies in Cargo CLI Detector, allowing precise control over which features are included in the SBOM through cargo tree command flags. See [Cargo](properties/detectors/cargo.md) for details.
+* (IDETECT-4847) Clarified that the value of `detect.container.scan.file.path` should be a path to local .tar file or a HTTP/HTTPS URL for remote .tar file.

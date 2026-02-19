@@ -43,7 +43,7 @@ public class RapidModeGenerateJsonOperationTest {
         String mockedResultsJsonString = "mocked json string for results";
         Mockito.when(gson.toJson(results)).thenReturn(mockedResultsJsonString);
 
-        File generatedFile = op.generateJsonFile(projectNameVersion, results);
+        File generatedFile = op.generateJsonFile(projectNameVersion, results, "");
 
         String expectedFilename = String.format("%s_%s_BlackDuck_DeveloperMode_Result.json", projectNameVersion.getName(), projectNameVersion.getVersion());
         String expectedPath = new File(scanDir, expectedFilename).getAbsolutePath();

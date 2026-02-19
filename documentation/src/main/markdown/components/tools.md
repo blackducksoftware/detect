@@ -1,6 +1,6 @@
 # Tools
 
-Each [detect_product_long] run consists of running any applicable [detect_product_short] tools.
+Each [detect_product_short] run consists of running any applicable [detect_product_short] tools.
 
 The available [detect_product_short] tools in order of potential execution, with the corresponding [detect tools property](../properties/configuration/paths.md#detect-tools-included)
 value specified in parentheses are:
