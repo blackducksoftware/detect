@@ -31,7 +31,6 @@ public class IvyDependencyTreeParser {
     public DependencyGraph parse(List<String> dependencyTreeOutput) {
         DependencyGraph graph = new BasicDependencyGraph();
         Deque<Dependency> dependencyStack = new ArrayDeque<>();
-        int previousLevel = 0;
 
         for (String line : dependencyTreeOutput) {
             if (StringUtils.isBlank(line)) {
@@ -46,7 +45,11 @@ public class IvyDependencyTreeParser {
             String indentation = matcher.group(1);
             String dependencyString = matcher.group(3);
 
-            int currentLevel = indentation.length() / 3;
+            // Calculate the level: count '|' characters in the indentation
+            // Level 0 = direct dependency (no '|')
+            // Level 1 = one '|' (transitive of direct)
+            // Level 2 = two '|' (transitive of transitive), etc.
+            int currentLevel = calculateLevel(indentation);
 
             Dependency dependency = parseDependency(dependencyString);
             if (dependency == null) {
@@ -54,41 +57,46 @@ public class IvyDependencyTreeParser {
                 continue;
             }
 
-            // Handle level changes similar to Maven's approach
+            updateDependencyStack(dependencyStack, currentLevel);
+
             if (currentLevel == 0) {
                 // Direct dependency (top-level)
-                dependencyStack.clear();
                 graph.addDirectDependency(dependency);
+                dependencyStack.clear();
                 dependencyStack.push(dependency);
+                logger.debug("Added direct dependency at level {}: {}", currentLevel, dependency.getExternalId());
             } else {
-                // Transitive dependency - adjust stack based on level changes
-                if (currentLevel == previousLevel) {
-                    // Sibling of previous dependency - pop previous and use same parent
-                    dependencyStack.pop();
-                } else if (currentLevel < previousLevel) {
-                    // Moving back up the tree - pop back to correct parent level
-                    for (int i = previousLevel; i >= currentLevel; i--) {
-                        dependencyStack.pop();
-                    }
-                }
-                // For currentLevel > previousLevel, previous dependency becomes the parent (already on stack)
-
+                // Transitive dependency - parent is at top of stack
                 if (!dependencyStack.isEmpty()) {
                     Dependency parent = dependencyStack.peek();
                     graph.addParentWithChild(parent, dependency);
                     dependencyStack.push(dependency);
+                    logger.debug("Added transitive dependency at level {}: {} -> {}", currentLevel, parent.getExternalId(), dependency.getExternalId());
                 } else {
-                    // Shouldn't happen, but handle gracefully
-                    logger.warn("Found transitive dependency without parent: {}", dependencyString);
-                    graph.addDirectDependency(dependency);
-                    dependencyStack.push(dependency);
+                    logger.warn("Found transitive dependency at level {} without parent: {}", currentLevel, dependencyString);
                 }
             }
-
-            previousLevel = currentLevel;
         }
 
         return graph;
+    }
+
+    private int calculateLevel(String indentation) {
+        int level = 0;
+        for (char c : indentation.toCharArray()) {
+            if (c == '|') {
+                level++;
+            }
+        }
+        return level;
+    }
+
+    private void updateDependencyStack(Deque<Dependency> dependencyStack, int currentLevel) {
+        // Keep the stack size at currentLevel
+        // This ensures the parent at currentLevel - 1 is at the top
+        while (dependencyStack.size() > currentLevel) {
+            dependencyStack.pop();
+        }
     }
 
     private Dependency parseDependency(String dependencyString) {
