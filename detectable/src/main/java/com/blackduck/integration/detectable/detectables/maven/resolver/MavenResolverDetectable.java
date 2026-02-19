@@ -308,14 +308,36 @@ public class MavenResolverDetectable extends Detectable {
                     logger.info("Lookup order: 1) .m2/repository → 2) Maven Central");
                 }
 
-                // Create artifact downloader with both custom and default paths
-                ArtifactDownloader artifactDownloader = new ArtifactDownloader(customRepositoryPath, defaultM2Repository);
+                // Extract POM-declared repositories for Tier-2 resolution
+                // These repositories come from the effective POM after inheritance and import resolution
+                List<com.blackduck.integration.detectable.detectables.maven.resolver.model.JavaRepository> pomRepositories =
+                    mavenProject.getRepositories();
+
+                if (pomRepositories != null && !pomRepositories.isEmpty()) {
+                    logger.info("Found {} POM-declared repositories for Tier-2 resolution:", pomRepositories.size());
+                    for (int i = 0; i < pomRepositories.size(); i++) {
+                        com.blackduck.integration.detectable.detectables.maven.resolver.model.JavaRepository repo = pomRepositories.get(i);
+                        logger.info("  {}. {} - {}", i + 1, repo.getId(), repo.getUrl());
+                    }
+                } else {
+                    logger.info("No POM-declared repositories found - will use 2-tier resolution (local + Maven Central)");
+                }
+
+                // Create enhanced artifact downloader with full configuration including POM repositories
+                ArtifactDownloaderV2 artifactDownloader = new ArtifactDownloaderV2(
+                    customRepositoryPath,
+                    defaultM2Repository,
+                    pomRepositories != null ? pomRepositories : new ArrayList<>(),  // Pass POM repositories for Tier-2
+                    mavenResolverOptions
+                );
+
+                logger.info("Starting artifact downloads with 3-tier resolution strategy...");
                 artifactDownloader.downloadArtifacts(allDependencies);
 
                 logger.info("JAR download phase completed, continuing with code location generation...");
             } else {
                 logger.info("╔════════════════════════════════════════════════════════════╗");
-                logger.info("║       ARTIFACT JAR DOWNLOAD FEATURE: DISABLED             ║");
+                logger.info("║       ARTIFACT JAR DOWNLOAD FEATURE: DISABLED              ║");
                 logger.info("╚════════════════════════════════════════════════════════════╝");
 
                 // Check for configuration issue: custom path provided but feature disabled

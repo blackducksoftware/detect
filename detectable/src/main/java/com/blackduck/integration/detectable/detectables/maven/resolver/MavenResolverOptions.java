@@ -3,61 +3,89 @@ package com.blackduck.integration.detectable.detectables.maven.resolver;
 import java.nio.file.Path;
 
 /**
- * Options for configuring the Maven Resolver Detectable.
- *
- * <p>This class bridges configuration settings from Detect properties to the Maven Resolver Detectable,
- * providing options that control the behavior of Maven dependency resolution.
+ * Configuration options for Maven resolver operations.
+ * Includes settings for artifact downloads, timeouts, parallel processing, and retry logic.
  */
 public class MavenResolverOptions {
-
-    private final boolean downloadArtifactJars;
+    // Core features
+    private final boolean downloadArtifactJarsEnabled;
     private final Path jarRepositoryPath;
 
+    // HTTP timeout configuration
+    private final Integer connectTimeoutMs;
+    private final Integer readTimeoutMs;
+
+    // Parallel download configuration
+    private final Integer downloadThreads;
+
+    // Retry configuration
+    private final Integer retryCount;
+    private final Long retryBackoffInitialMs;
+    private final Long retryBackoffMaxMs;
+
     /**
-     * Constructs Maven Resolver Options.
-     *
-     * @param downloadArtifactJars If true, enables downloading and caching of artifact JARs in addition to POMs.
-     *                            This is an opt-in feature that may increase scan time and disk usage.
-     * @param jarRepositoryPath Optional custom path to check for existing JARs. Can be either:
-     *                         (1) A repository directory using Maven layout, or
-     *                         (2) A direct path to a specific JAR file.
-     *                         If null, only ~/.m2/repository is checked. Note: downloads always go to ~/.m2/repository.
+     * Full constructor with all configuration options.
      */
-    public MavenResolverOptions(boolean downloadArtifactJars, Path jarRepositoryPath) {
-        this.downloadArtifactJars = downloadArtifactJars;
+    public MavenResolverOptions(boolean downloadArtifactJarsEnabled, Path jarRepositoryPath,
+                               Integer connectTimeoutMs, Integer readTimeoutMs,
+                               Integer downloadThreads, Integer retryCount,
+                               Long retryBackoffInitialMs, Long retryBackoffMaxMs) {
+        this.downloadArtifactJarsEnabled = downloadArtifactJarsEnabled;
         this.jarRepositoryPath = jarRepositoryPath;
+        this.connectTimeoutMs = connectTimeoutMs;
+        this.readTimeoutMs = readTimeoutMs;
+        this.downloadThreads = downloadThreads;
+        this.retryCount = retryCount;
+        this.retryBackoffInitialMs = retryBackoffInitialMs;
+        this.retryBackoffMaxMs = retryBackoffMaxMs;
     }
 
     /**
-     * Returns whether artifact JAR downloads are enabled.
-     *
-     * <p>When enabled, the Maven Resolver will:
-     * <ul>
-     *   <li>Check local Maven repository (.m2) for cached JARs</li>
-     *   <li>Download missing JARs from Maven Central</li>
-     *   <li>Cache downloaded JARs for subsequent runs</li>
-     * </ul>
-     *
-     * @return true if JAR downloads should be performed, false for POM-only mode
+     * Legacy constructor for backward compatibility.
      */
+    public MavenResolverOptions(boolean downloadArtifactJarsEnabled, Path jarRepositoryPath) {
+        this(downloadArtifactJarsEnabled, jarRepositoryPath, null, null, null, null, null, null);
+    }
+
+    /**
+     * Constructor with basic timeout configuration.
+     */
+    public MavenResolverOptions(boolean downloadArtifactJarsEnabled, Path jarRepositoryPath,
+                               Integer connectTimeoutMs, Integer readTimeoutMs) {
+        this(downloadArtifactJarsEnabled, jarRepositoryPath, connectTimeoutMs, readTimeoutMs,
+             null, null, null, null);
+    }
+
+    // Getters for all fields
     public boolean isDownloadArtifactJarsEnabled() {
-        return downloadArtifactJars;
+        return downloadArtifactJarsEnabled;
     }
 
-    /**
-     * Returns the custom JAR repository path if configured, or null to use only default (~/.m2/repository).
-     *
-     * <p>This path is used to CHECK for existing JARs before downloading. It can be either:
-     * <ul>
-     *   <li>A repository directory using Maven layout (groupId/artifactId/version/artifact-version.jar)</li>
-     *   <li>A direct path to a specific JAR file</li>
-     * </ul>
-     *
-     * <p><strong>Important:</strong> All downloads are saved to ~/.m2/repository regardless of this setting.
-     *
-     * @return Path to custom location for JAR lookup, or null to skip custom lookup
-     */
     public Path getJarRepositoryPath() {
         return jarRepositoryPath;
+    }
+
+    public Integer getConnectTimeoutMs() {
+        return connectTimeoutMs;
+    }
+
+    public Integer getReadTimeoutMs() {
+        return readTimeoutMs;
+    }
+
+    public Integer getDownloadThreads() {
+        return downloadThreads;
+    }
+
+    public Integer getRetryCount() {
+        return retryCount;
+    }
+
+    public Long getRetryBackoffInitialMs() {
+        return retryBackoffInitialMs;
+    }
+
+    public Long getRetryBackoffMaxMs() {
+        return retryBackoffMaxMs;
     }
 }

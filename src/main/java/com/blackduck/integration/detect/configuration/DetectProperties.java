@@ -37,6 +37,7 @@ import com.blackduck.integration.configuration.property.types.enums.EnumProperty
 import com.blackduck.integration.configuration.property.types.integer.IntegerProperty;
 import com.blackduck.integration.configuration.property.types.integer.NullableIntegerProperty;
 import com.blackduck.integration.configuration.property.types.longs.LongProperty;
+import com.blackduck.integration.configuration.property.types.longs.NullableLongProperty;
 import com.blackduck.integration.configuration.property.types.path.NullablePathProperty;
 import com.blackduck.integration.configuration.property.types.path.PathListProperty;
 import com.blackduck.integration.configuration.property.types.string.CaseSensitiveStringListProperty;
@@ -72,7 +73,7 @@ import com.blackduck.integration.detector.base.DetectorType;
 import com.blackduck.integration.log.LogLevel;
 
 // java:S1192: Sonar wants constants defined for fromVersion when setting property info.
-// java:S1123: Warning about deprecations not having Java doc.
+// java:S1123: Warning about deprecations not having Javadoc.
 @SuppressWarnings({ "java:S1123", "java:S1192" })
 public class DetectProperties {
     private DetectProperties() {
@@ -1208,6 +1209,82 @@ public class DetectProperties {
                             "(2) A direct path to a specific JAR file. " +
                             "Downloaded JARs are ALWAYS saved to ~/.m2/repository regardless of this setting. " +
                             "Lookup order: custom path (if set) → ~/.m2/repository → Maven Central. " +
+                            "This property only has effect when detect.maven.download.artifact.jars is set to true."
+                    )
+                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
+                    .build();
+
+    public static final NullableIntegerProperty DETECT_MAVEN_TIMEOUT_CONNECT =
+            NullableIntegerProperty.newBuilder("detect.maven.timeout.connect")
+                    .setInfo("Maven Download Connect Timeout", DetectPropertyFromVersion.VERSION_9_8_0)
+                    .setHelp(
+                            "HTTP connection timeout in milliseconds for Maven artifact downloads.",
+                            "Specifies the maximum time to wait when establishing a connection to Maven Central. " +
+                            "Default is 30000ms (30 seconds). Must be a positive integer between 1 and 600000 (10 minutes). " +
+                            "Increase this value if experiencing connection timeouts in slow network environments. " +
+                            "This property only has effect when detect.maven.download.artifact.jars is set to true."
+                    )
+                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
+                    .build();
+
+    public static final NullableIntegerProperty DETECT_MAVEN_TIMEOUT_READ =
+            NullableIntegerProperty.newBuilder("detect.maven.timeout.read")
+                    .setInfo("Maven Download Read Timeout", DetectPropertyFromVersion.VERSION_9_8_0)
+                    .setHelp(
+                            "HTTP read timeout in milliseconds for Maven artifact downloads.",
+                            "Specifies the maximum time to wait when reading data from Maven Central after connection is established. " +
+                            "Default is 30000ms (30 seconds). Must be a positive integer between 1 and 600000 (10 minutes). " +
+                            "Increase this value if experiencing read timeouts when downloading large artifacts. " +
+                            "This property only has effect when detect.maven.download.artifact.jars is set to true."
+                    )
+                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
+                    .build();
+
+    public static final NullableIntegerProperty DETECT_MAVEN_DOWNLOAD_THREADS =
+            NullableIntegerProperty.newBuilder("detect.maven.download.threads")
+                    .setInfo("Maven Download Thread Count", DetectPropertyFromVersion.VERSION_9_8_0)
+                    .setHelp(
+                            "Number of concurrent threads for downloading Maven artifacts.",
+                            "Specifies the maximum number of parallel downloads when downloading Maven JARs. " +
+                            "Default is 5. Valid range is 1-20. Higher values may improve download speed but increase " +
+                            "resource usage and may trigger rate limiting on some repositories. " +
+                            "This property only has effect when detect.maven.download.artifact.jars is set to true."
+                    )
+                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
+                    .build();
+
+    public static final NullableIntegerProperty DETECT_MAVEN_RETRY_COUNT =
+            NullableIntegerProperty.newBuilder("detect.maven.retry.count")
+                    .setInfo("Maven Download Retry Count", DetectPropertyFromVersion.VERSION_9_8_0)
+                    .setHelp(
+                            "Maximum number of retry attempts for failed Maven downloads.",
+                            "Specifies how many times to retry a failed download. Default is 3. " +
+                            "Valid range is 0-10. Only network errors, timeouts, and 5xx server errors are retried. " +
+                            "Client errors (4xx) except 408 and 429 are not retried. " +
+                            "This property only has effect when detect.maven.download.artifact.jars is set to true."
+                    )
+                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
+                    .build();
+
+    public static final NullableLongProperty DETECT_MAVEN_RETRY_BACKOFF_INITIAL =
+            NullableLongProperty.newBuilder("detect.maven.retry.backoff.initial")
+                    .setInfo("Maven Retry Initial Backoff", DetectPropertyFromVersion.VERSION_9_8_0)
+                    .setHelp(
+                            "Initial backoff delay in milliseconds for Maven download retries.",
+                            "Specifies the initial wait time before the first retry. Default is 1000ms (1 second). " +
+                            "The delay increases exponentially with each retry. Valid range is 0-60000ms. " +
+                            "This property only has effect when detect.maven.download.artifact.jars is set to true."
+                    )
+                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
+                    .build();
+
+    public static final NullableLongProperty DETECT_MAVEN_RETRY_BACKOFF_MAX =
+            NullableLongProperty.newBuilder("detect.maven.retry.backoff.max")
+                    .setInfo("Maven Retry Maximum Backoff", DetectPropertyFromVersion.VERSION_9_8_0)
+                    .setHelp(
+                            "Maximum backoff delay in milliseconds for Maven download retries.",
+                            "Specifies the maximum wait time between retry attempts. Default is 30000ms (30 seconds). " +
+                            "Valid range is initial backoff to 300000ms (5 minutes). Jitter is added to avoid thundering herd. " +
                             "This property only has effect when detect.maven.download.artifact.jars is set to true."
                     )
                     .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)

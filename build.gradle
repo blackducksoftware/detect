@@ -121,7 +121,7 @@ allprojects {
         implementation 'org.apache.httpcomponents:httpclient-osgi:4.5.14'
 
         testImplementation 'org.junit.jupiter:junit-jupiter-params:5.4.2'
-        testImplementation 'org.mockito:mockito-core:2.+'
+        testImplementation 'org.mockito:mockito-core:3.12.4'
     }
 }
 
@@ -222,7 +222,7 @@ dependencies {
     // spring-boot-starter-test *can* provide these, but we choose to be more explicit about the dependencies we ACTUALLY use
     testImplementation 'org.assertj:assertj-core:3.13.2'
     testImplementation 'org.skyscreamer:jsonassert:1.5.0'
-    testImplementation 'org.mockito:mockito-inline:2.+'
+    testImplementation 'org.mockito:mockito-inline:3.12.4'
 
     testImplementation project(':configuration').sourceSets.test.output
     testImplementation project(':common-test')

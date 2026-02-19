@@ -31,7 +31,7 @@ public class GradleReportParserFunctionalTest {
 
     @Test
     void extractCodeLocationTest() throws JSONException, IOException {
-        Assumptions.assumeFalse(SystemUtils.IS_OS_WINDOWS); //Does not work on windows due to path issues.
+        Assumptions.assumeFalse(SystemUtils.IS_OS_WINDOWS); //Does not work on Microsoft Windows due to path issues.
 
         GradleReportParser gradleReportParser = new GradleReportParser();
         Optional<GradleReport> gradleReport = gradleReportParser.parseReport(FunctionalTestFiles.asFile("/gradle/projectname_depth0_dependencyGraph.txt"));
