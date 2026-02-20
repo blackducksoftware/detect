@@ -47,7 +47,7 @@ If `cargo tree` is unavailable, [detect_product_short] will default to the Cargo
 * Use `detect.cargo.included.workspaces` to specify a comma-separated list of workspaces to include (by workspace name).
 * Use `detect.cargo.excluded.workspaces` to specify a comma-separated list of workspaces to exclude (by workspace name).
 
-## Cargo Features and Optional Dependencies (11.3.0+)
+## Cargo Features and Optional Dependencies
 
 [detect_product_short] supports Cargo features and optional dependencies for the Cargo CLI Detector since 11.3.0 release. These properties control which features are enabled when running `cargo tree`.
 
