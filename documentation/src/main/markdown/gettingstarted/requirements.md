@@ -1,4 +1,4 @@
-# [detect_product_long] requirements and release information
+# [detect_product_short] requirements and release information
 
 ## General requirements
      
@@ -25,6 +25,9 @@
 	* na.store.scass.blackduck.com - 34.54.95.139
 	* eu.store.scass.blackduck.com - 34.54.213.11
 	* eu.scass.blackduck.com - 34.54.38.252
+
+* To collect [phone home metrics](../troubleshooting/usage-metrics.md),  the following IP address must be allowlisted:
+	* static-content.app.blackduck.com - 34.117.80.109
 	
 ## Running [detect_product_short] in a container
 

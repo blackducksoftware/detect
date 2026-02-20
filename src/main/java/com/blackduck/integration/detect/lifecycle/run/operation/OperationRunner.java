@@ -5,6 +5,7 @@ import static com.blackduck.integration.componentlocator.ComponentLocator.SUPPOR
 import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.OPERATION_NAME;
 import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.SUPPORTED_DETECTORS_LOG_MSG;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,6 +30,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.compress.archivers.ArchiveException;
+import org.apache.commons.compress.archivers.ArchiveStreamFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.http.HttpStatus;
@@ -377,8 +380,8 @@ public class OperationRunner {
                 detectorEventPublisher,
                 directoryEvaluator
             );
-            return detectorTool.performDetectors(
-                directoryManager.getSourceDirectory(),
+            DetectorToolResult toolResult =  detectorTool.performDetectors(
+                directoryManager,
                 detectRuleSet,
                 detectConfigurationFactory.createDetectorFinderOptions(),
                 detectorToolOptions.getProjectBomTool(),
@@ -386,6 +389,15 @@ public class OperationRunner {
                 detectorToolOptions.getRequiredAccuracyTypes(),
                 fileFinder
             );
+
+            if (detectConfigurationFactory.isQuackPatchPossible()) {
+                try {
+                    detectorTool.saveExtractedDetectorsAndTheirRelevantFilePaths(directoryManager, toolResult);
+                } catch (IOException e) {
+                    throw new RuntimeException("Something went wrong writing relevant files: " + e.getMessage());
+                }
+            }
+            return toolResult;
         });
     }
 
@@ -432,7 +444,32 @@ public class OperationRunner {
     public Optional<String> getContainerScanFilePath() {
         return detectConfigurationFactory.getContainerScanFilePath();
     }
-    
+
+    /**
+     * Checks if the given file is a tar archive.
+     * This properly detects tar files conforming to Docker and OCI image specifications.
+     *
+     * @param file the file to check
+     * @return true if the file is a valid tar archive, false otherwise
+     */
+    private boolean isTarFile(File file) {
+        if (file == null || !file.exists() || !file.isFile()) {
+            return false;
+        }
+
+        try (FileInputStream fis = new FileInputStream(file);
+             BufferedInputStream bis = new BufferedInputStream(fis)) {
+            String detectedType = ArchiveStreamFactory.detect(bis);
+            return ArchiveStreamFactory.TAR.equals(detectedType);
+        } catch (ArchiveException e) {
+            // Not a recognized archive format
+            return false;
+        } catch (IOException e) {
+            logger.warn("Unable to read file to verify tar format: {}", file.getAbsolutePath(), e);
+            return false;
+        }
+    }
+
     public File downloadContainerImage(Gson gson, File downloadDirectory, String containerImageUri) throws DetectUserFriendlyException, IntegrationException, IOException {
         ConnectionFactory connectionFactory = new ConnectionFactory(detectConfigurationFactory.createConnectionDetails());
         ArtifactResolver artifactResolver = new ArtifactResolver(connectionFactory, gson);
@@ -450,6 +487,18 @@ public class OperationRunner {
                     containerImageFile = downloadContainerImage(gson, downloadDirectory, containerImageUri);
                 } else {
                     containerImageFile = new File(containerImageUri);
+                }
+
+                // Verify the file is a tar archive conforming to Docker/OCI specifications
+                if (containerImageFile != null && containerImageFile.exists()) {
+                    if (!isTarFile(containerImageFile)) {
+                        logger.warn(
+                            "The container scan file '{}' does not appear to be a tar archive or does not conform to " +
+                            "expected Docker/OCI image specifications. Processing will continue, but a full container scan " +
+                            "will likely not be possible.",
+                            containerImageFile.getAbsolutePath()
+                        );
+                    }
                 }
             }
             return containerImageFile;
@@ -727,7 +776,7 @@ public class OperationRunner {
             int fibonacciSequenceIndex = getFibonacciSequenceIndex();
 
             try {
-                return new RapidModeWaitOperation(blackDuckServicesFactory.getBlackDuckApiClient()).waitForScans(
+                return new RapidModeWaitOperation(blackDuckServicesFactory.getBlackDuckApiClient()).waitForRegularScans(
                         rapidScans,
                         detectConfigurationFactory.findTimeoutInSeconds(),
                         RapidModeWaitOperation.DEFAULT_WAIT_INTERVAL_IN_SECONDS,
@@ -743,6 +792,29 @@ public class OperationRunner {
             }
         });
     }
+
+    public List<Response> waitForRapidFullResults(BlackDuckRunData blackDuckRunData, List<HttpUrl> rapidScans, BlackduckScanMode mode) throws OperationException {
+        return auditLog.namedInternal("Rapid Full Wait", () -> {
+            BlackDuckServicesFactory blackDuckServicesFactory = blackDuckRunData.getBlackDuckServicesFactory();
+            int fibonacciSequenceIndex = getFibonacciSequenceIndex();
+
+            try {
+                return new RapidModeWaitOperation(blackDuckServicesFactory.getBlackDuckApiClient()).waitForFullScans(
+                        rapidScans,
+                        detectConfigurationFactory.findTimeoutInSeconds(),
+                        mode,
+                        calculateMaxWaitInSeconds(fibonacciSequenceIndex)
+                );
+            } catch (InterruptedException e) {
+                throw e;
+            } catch (IntegrationRestException e) {
+                throw handleRapidScanException(e);
+            } catch (Exception e) {
+                throw new OperationException(e);
+            }
+        });
+    }
+
 
     private OperationException handleRapidScanException(IntegrationRestException e) {
         RapidCompareMode rapidCompareMode = detectConfigurationFactory.createRapidScanOptions().getCompareMode();
@@ -781,9 +853,35 @@ public class OperationRunner {
         return auditLog.namedPublic(
             "Generate Rapid Json File",
             "RapidScan",
-            () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFile(projectNameVersion, scanResults)
+            () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFile(projectNameVersion, scanResults, "")
         );
     }
+
+    public final File generateFullRapidJsonFile(List<Response> scanResults) throws OperationException {
+        return auditLog.namedPublic(
+                "Generate Rapid Full Json File",
+                "RapidScan",
+                () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFileFromString(scanResults.get(0).getContentString())
+        );
+    }
+
+    public boolean shouldAttemptQuackPatchFullResults() {
+        return detectConfigurationFactory.isQuackPatchPossible();
+    }
+
+    public void runQuackPatch(File rapidFullResultsJson) throws OperationException {
+        auditLog.namedPublic(
+                "Quack Patch",
+                () -> {
+                    publishResult(
+                            new GenerateComponentLocationAnalysisOperation(detectConfigurationFactory, statusEventPublisher, exitCodePublisher)
+                                    .runQuackPatch(directoryManager.getScanOutputDirectory(), rapidFullResultsJson, detectConfigurationFactory)
+                    );
+                }
+        );
+
+    }
+
 
     public final void publishRapidResults(File jsonFile, RapidScanResultSummary summary, BlackduckScanMode mode) throws OperationException {
         auditLog.namedInternal("Publish Rapid Results", () -> statusEventPublisher.publishDetectResult(new RapidScanDetectResult(jsonFile.getCanonicalPath(), summary, mode, detectConfigurationFactory.getPoliciesToFailOn())));

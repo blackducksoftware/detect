@@ -7,7 +7,7 @@
 		<prodinfo>
 			<prodname>Black Duck Detect</prodname>
 			<vrmlist>
-				<vrm version="11.2.0"/>
+				<vrm version="11.3.0"/>
 			</vrmlist>
 		</prodinfo>
 		<!-- zoomin bundle name -->
@@ -73,14 +73,13 @@
 	<topicref href="runningdetect/intro.md" format="markdown">
 			<topicref href="runningdetect/basics/decidinghowtouse.md" format="markdown"/>
 			<topicref href="runningdetect/basics/positioning.md" format="markdown"/>
+			<topicref href="runningdetect/basics/manual.md" format="markdown"/>
 			<topicref href="runningdetect/basics/choosingworkingdir.md" format="markdown"/>
 			<topicref href="runningdetect/basics/choosingrunmethod.md" format="markdown"/>
-			<topicref href="runningdetect/basics/manual.md" format="markdown"/>
 			<topicref href="runningdetect/basics/runningscript.md" format="markdown"/>
 			<topicref href="runningdetect/basics/runningjar.md" format="markdown"/>
 			<topicref href="runningdetect/basics/choosingtargettype.md" format="markdown"/>
 			<topicref href="runningdetect/basics/runningwithblackduck.md" format="markdown"/>
-		
 		<topicref href="runningdetect/includingexcluding/intro.md" format="markdown">
 			<topicref href="runningdetect/includingexcluding/tools.md" format="markdown"/>
 			<topicref href="runningdetect/includingexcluding/detectors.md" format="markdown"/>
@@ -99,6 +98,7 @@
 		<topicref href="runningdetect/iacscan.md" format="markdown"/>
 		<topicref href="runningdetect/rapidscan.md" format="markdown"/>
 		<topicref href="runningdetect/statelessscan.md" format="markdown"/>
+		<topicref href="runningdetect/quack-patch.md" format="markdown"/>
 	</topicref>
 	<topicref href="components/overview.md" format="markdown">
 		<topicref href="components/tools.md" format="markdown"/>
@@ -153,15 +153,21 @@
 			<topicref href="properties/configuration/binary-scanner.md" format="markdown"/>
 			<topicref href="properties/configuration/blackduck-server.md" format="markdown"/>
 			<topicref href="properties/configuration/cleanup.md" format="markdown"/>
+			<topicref href="properties/configuration/container-scanner.md" format="markdown"/>
 			<topicref href="properties/configuration/debug.md" format="markdown"/>
 			<topicref href="properties/configuration/default.md" format="markdown"/>
 			<topicref href="properties/configuration/detector.md" format="markdown"/>
 			<topicref href="properties/configuration/general.md" format="markdown"/>
+			<topicref href="properties/configuration/global.md" format="markdown"/>
+			<topicref href="properties/configuration/iac-scan.md" format="markdown"/>
 			<topicref href="properties/configuration/impact-analysis.md" format="markdown"/>
 			<topicref href="properties/configuration/logging.md" format="markdown"/>
 			<topicref href="properties/configuration/paths.md" format="markdown"/>
 			<topicref href="properties/configuration/project.md" format="markdown"/>
+			<topicref href="properties/configuration/project-inspector.md" format="markdown"/>
 			<topicref href="properties/configuration/proxy.md" format="markdown"/>
+			<topicref href="properties/configuration/quack-patch.md" format="markdown"/>
+			<topicref href="properties/configuration/rapid-scan.md" format="markdown"/>
 			<topicref href="properties/configuration/report.md" format="markdown"/>
 			<topicref href="properties/configuration/signature-scanner.md" format="markdown"/>
 		</topicref>
