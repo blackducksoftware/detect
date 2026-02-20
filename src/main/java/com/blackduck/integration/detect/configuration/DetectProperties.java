@@ -679,8 +679,8 @@ public class DetectProperties {
         CaseSensitiveStringListProperty.newBuilder("detect.cargo.included.features")
             .setInfo("Cargo Include Features", DetectPropertyFromVersion.VERSION_11_3_0)
             .setHelp(
-                "A comma-separated list of Cargo features (specified by the `[feature]` manifest in Cargo.toml) to include.",
-                "By default, Detect only includes default features, but will include additional features or all features specified via this property."
+                "A comma-separated list of Cargo features (specified by the `[feature]` manifest in Cargo.toml) to include, or special values ALL or NONE. By default, Detect only includes default features. Use ALL to enable all features, NONE to generate BOM with no features, or provide a comma-separated list of specific features (e.g., feature-a,feature-b) to include.",
+                "This property applies only to the Cargo CLI Detector and is ignored by the Cargo Lockfile Detector."
             )
             .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
