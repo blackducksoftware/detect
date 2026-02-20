@@ -52,7 +52,7 @@ import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMo
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedIndividualFileMatchingMode;
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedReducedPersistanceMode;
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedSnippetMode;
-import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
+import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDependencyType;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
 import com.blackduck.integration.detectable.detectables.conan.cli.config.ConanDependencyType;
@@ -231,15 +231,30 @@ public class DetectProperties {
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();
 
-    public static final AllNoneEnumListProperty<WorkspaceRule> DETECT_BAZEL_WORKSPACE_RULES =
-        AllNoneEnumListProperty.newBuilder("detect.bazel.workspace.rules", AllNoneEnum.NONE, WorkspaceRule.class)
-            .setInfo("Bazel workspace rules", DetectPropertyFromVersion.VERSION_7_12_0)
+    public static final StringListProperty DETECT_BAZEL_QUERY_OPTIONS =
+        StringListProperty.newBuilder("detect.bazel.query.options", emptyList())
+            .setInfo("Bazel query additional options", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setHelp("A comma-separated list of additional options to pass to the bazel query command.")
+            .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
+            .build();
+
+    public static final AllNoneEnumListProperty<DependencySource> DETECT_BAZEL_DEPENDENCY_SOURCES =
+        AllNoneEnumListProperty.newBuilder("detect.bazel.dependency.sources", AllNoneEnum.NONE, DependencySource.class)
+            .setInfo("Bazel dependency sources", DetectPropertyFromVersion.VERSION_7_12_0)
             .setHelp(
-                "By default Detect discovers Bazel dependencies using all of the supported Bazel workspace rules that it finds in the WORKSPACE file. Alternatively you can use this property to specify the list of Bazel workspace rules Detect should use.",
-                "Setting this property (or letting it default) to NONE tells Detect to use supported rules that it finds in the WORKSPACE file."
+                "By default Detect discovers Bazel dependencies from all supported dependency sources (maven_install, maven_jar, http_archive, haskell_cabal_library) found in the WORKSPACE/MODULE.bazel file. Use this property to limit which dependency sources Detect should process.",
+                "Setting this property (or letting it default) to NONE tells Detect to use all supported dependency sources found in the Bazel workspace."
             )
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();
+
+    public static final NullableStringProperty DETECT_BAZEL_MODE =
+        NullableStringProperty.newBuilder("detect.bazel.mode")
+            .setInfo("Bazel Mode Override", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setHelp("Override Bazel environment mode detection. By default, Detect automatically determines whether the Bazel project uses BZLMOD or WORKSPACE-based dependency management. Only set this property if auto-detection fails or for testing purposes. Incorrect values may cause extraction to fail. Valid values: WORKSPACE, BZLMOD")
+            .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
+            .build();
+
 
     public static final NullablePathProperty DETECT_CONAN_PATH =
         NullablePathProperty.newBuilder("detect.conan.path")
@@ -1925,7 +1940,7 @@ public class DetectProperties {
 
     public static final EnumProperty<DetectTargetType> DETECT_TARGET_TYPE =
         EnumProperty.newBuilder("detect.target.type", DetectTargetType.SOURCE, DetectTargetType.class)
-            .setInfo("Detect Target", DetectPropertyFromVersion.VERSION_7_0_0)
+            .setInfo("Detect Scan Mode", DetectPropertyFromVersion.VERSION_7_0_0)
             .setHelp(
                 "Informs detect of what is being scanned which allows improved user experience when scanning different types of targets.",
                 "Changes the behaviour of detect to better suite what is being scanned. For example, when IMAGE is selected and the DOCKER tool applies and has not been excluded, detect will not pick a source directory, will automatically disable the DETECTOR tool and run BINARY/SIGNATURE SCAN on the provided image."

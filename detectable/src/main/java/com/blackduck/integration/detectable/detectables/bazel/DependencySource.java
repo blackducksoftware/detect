@@ -1,6 +1,6 @@
 package com.blackduck.integration.detectable.detectables.bazel;
 
-public enum WorkspaceRule {
+public enum DependencySource {
     MAVEN_JAR("maven_jar"),
     MAVEN_INSTALL("maven_install"),
     HASKELL_CABAL_LIBRARY("haskell_cabal_library"),
@@ -8,7 +8,7 @@ public enum WorkspaceRule {
 
     private final String name;
 
-    WorkspaceRule(String name) {
+    DependencySource(String name) {
         this.name = name;
     }
 

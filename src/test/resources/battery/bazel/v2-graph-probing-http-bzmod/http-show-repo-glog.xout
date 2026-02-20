@@ -1,0 +1,13 @@
+## @glog:
+# <builtin>
+http_archive(
+  name = "_main~_repo_rules~glog",
+  urls = ["https://github.com/google/glog/archive/refs/tags/v0.4.0.tar.gz"],
+  strip_prefix = "glog-0.4.0",
+  build_file_content = "\ncc_library(\n    name = \"glog\",\n    visibility = [\"//visibility:public\"],\n)\n",
+)
+# Rule _main~_repo_rules~glog instantiated at (most recent call last):
+#   <builtin> in <toplevel>
+# Rule http_archive defined at (most recent call last):
+#   /private/var/tmp/_bazel_samratmuk/03463ff55d164b140ed8615faa064a5d/external/bazel_tools/tools/build_defs/repo/http.bzl:382:31 in <toplevel>
+

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Collections;
 
 import org.junit.jupiter.api.Test;
 
@@ -14,7 +15,7 @@ public class BazelVariableSubstitutorTest {
 
     @Test
     public void testTargetOnly() {
-        BazelVariableSubstitutor substitutor = new BazelVariableSubstitutor("//foo:foolib", new ArrayList<>(0));
+        BazelVariableSubstitutor substitutor = new BazelVariableSubstitutor("//foo:foolib", new ArrayList<>(0), new ArrayList<>(0));
         List<String> origArgs = new ArrayList<>();
         origArgs.add("query");
         origArgs.add("filter(\"@.*:jar\", deps(${detect.bazel.target}))");
@@ -27,7 +28,7 @@ public class BazelVariableSubstitutorTest {
 
     @Test
     public void testInput() {
-        BazelVariableSubstitutor substitutor = new BazelVariableSubstitutor("//foo:foolib", null);
+        BazelVariableSubstitutor substitutor = new BazelVariableSubstitutor("//foo:foolib", null, null);
         List<String> origArgs = new ArrayList<>();
         origArgs.add("query");
         origArgs.add("filter(\"@.*:jar\", deps(${detect.bazel.target}))");
@@ -42,7 +43,7 @@ public class BazelVariableSubstitutorTest {
 
     @Test
     public void testListInsertion() {
-        BazelVariableSubstitutor substitutor = new BazelVariableSubstitutor("//foo:foolib", Arrays.asList("--define=a=b", "--define=c=d"));
+        BazelVariableSubstitutor substitutor = new BazelVariableSubstitutor("//foo:foolib", Arrays.asList("--define=a=b", "--define=c=d"), Collections.singletonList("--some_query_opt"));
         List<String> origArgs = new ArrayList<>();
         origArgs.add("cquery");
         origArgs.add("${detect.bazel.cquery.options}");
