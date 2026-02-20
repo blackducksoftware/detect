@@ -31,10 +31,43 @@ If `cargo tree` is unavailable, [detect_product_short] will default to the Cargo
 * If `Cargo.lock` is missing, the detector prompts the user to generate it using `cargo generate-lockfile`.  
 * Extracts the project’s name and version from `Cargo.toml`. If missing, it derives values from Git or the project directory.
 
-## Orphan Dependencies in Cargo Lockfile Detector
+## Cargo Workspaces
 
-In Cargo projects, it is possible for `Cargo.lock` to contain packages that are not explicitly declared in `Cargo.toml`. These are referred to as **orphan dependencies**.
+[detect_product_short] supports Cargo workspaces since 11.2.0 release, which allow multiple related Rust crates to be managed together under a single root. All workspace members share a single `Cargo.lock` file and a common `target/` directory. For more information, see the [Cargo Workspaces documentation](https://doc.rust-lang.org/cargo/reference/workspaces.html).
 
-Since orphan dependencies cannot be mapped to a specific dependency path in the graph, the **Cargo Lockfile Detector** does not discard them. Instead, they are grouped under a placeholder component named **`Additional_Components`**, which appears as a direct dependency in the graph.
+**Behavior:**
+* [detect_product_short] identifies Cargo workspaces declared via `[workspace]` in the root `Cargo.toml`.
+* Virtual workspaces (root with `[workspace]` but no `[package]`) include dependencies from all workspace members by default.
+* Non-virtual workspaces (root with both `[workspace]` and `[package]`) include only root package dependencies by default.
+* Additional configuration enables inclusion of workspace member dependencies in both cases.
+* Reads and interprets the shared `Cargo.lock` at the workspace root for Cargo Lockfile Detector.
 
-This approach ensures that all components listed in `Cargo.lock` are included in the BOM, even if their exact relationship within the dependency tree cannot be determined.
+**Configuration Options:**
+* Use `detect.cargo.ignore.all.workspaces = true` to ignore all workspaces.
+* Use `detect.cargo.included.workspaces` to specify a comma-separated list of workspaces to include (by workspace name).
+* Use `detect.cargo.excluded.workspaces` to specify a comma-separated list of workspaces to exclude (by workspace name).
+
+## Cargo Features and Optional Dependencies (11.3.0+)
+
+[detect_product_short] supports Cargo features and optional dependencies for the Cargo CLI Detector since 11.3.0 release. These properties control which features are enabled when running `cargo tree`.
+
+**Configuration Options:**
+* `detect.cargo.included.features` - Specify which features to include. Accepts:
+    * A comma-separated list of specific features (e.g., `feature-a,feature-b`)
+    * `ALL` to enable all features
+    * `NONE` to disable all features
+    * Unset/blank (default) to use only default features
+* `detect.cargo.disable.default.features` - Set to `true` to disable default features.
+
+**Note:** Feature control is supported only by the Cargo CLI Detector. The Cargo Lockfile Detector cannot accurately honor features because `Cargo.lock` does not record which features were enabled. If these properties are provided when using the Cargo Lockfile Detector, they will be ignored and a warning will be logged.
+
+## Orphan Dependencies in Cargo Lockfile Detector (pre-11.2.0)
+
+**Note:** This behavior applies to versions prior to 11.2.0. In 11.2.0+, workspace support resolves most orphan dependency scenarios.
+
+In older versions of Cargo projects, it was possible for `Cargo.lock` to contain packages that were not explicitly declared in `Cargo.toml`. These were referred to as **orphan dependencies**.
+
+Since orphan dependencies could not be mapped to a specific dependency path in the graph, the **Cargo Lockfile Detector** did not discard them. Instead, they were grouped under a placeholder component named **`Additional_Components`**, which appeared as a direct dependency in the graph.
+
+This approach ensured that all components listed in `Cargo.lock` were included in the BOM, even if their exact relationship within the dependency tree could not be determined.
+
