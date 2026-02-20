@@ -648,24 +648,24 @@ public class DetectProperties {
         CaseSensitiveStringListProperty.newBuilder("detect.cargo.included.workspaces")
             .setInfo("Cargo Include Workspaces", DetectPropertyFromVersion.VERSION_11_2_0)
             .setHelp(
-                "A comma-separated list of Cargo workspaces (specified by the workspace directory's relative path) to exclude.",
-                "By default, Detect includes all workspaces, but will skip any Cargo workspaces specified via this property."
+                "A comma-separated list of Cargo workspace names to include.",
+                "By default, Detect includes all workspaces, but will only include the Cargo workspaces specified via this property when set. Workspace names are defined in the workspace member's Cargo.toml file, not their directory paths."
             )
             .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
-            .setExample("crates/workspace-a,crates/workspace-b")
+            .setExample("workspace-a,workspace-b")
             .build();
 
     public static final CaseSensitiveStringListProperty DETECT_CARGO_EXCLUDED_WORKSPACES =
         CaseSensitiveStringListProperty.newBuilder("detect.cargo.excluded.workspaces")
             .setInfo("Cargo Exclude Workspaces", DetectPropertyFromVersion.VERSION_11_2_0)
             .setHelp(
-                "A comma-separated list of Cargo workspaces (specified by the workspace directory's relative path) to exclude.",
-                "By default, Detect includes all workspaces, but will skip any Cargo workspaces specified via this property."
+                "A comma-separated list of Cargo workspace names to exclude.",
+                "By default, Detect includes all workspaces, but will skip any Cargo workspaces specified via this property. Workspace names are defined in the workspace member's Cargo.toml file, not their directory paths."
             )
             .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
-            .setExample("crates/workspace-a,crates/workspace-b")
+            .setExample("workspace-a,workspace-b")
             .build();
 
     public static final BooleanProperty DETECT_CARGO_DISABLE_DEFAULT_FEATURES =
