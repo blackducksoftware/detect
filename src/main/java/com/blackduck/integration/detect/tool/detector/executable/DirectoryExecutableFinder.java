@@ -36,9 +36,18 @@ public class DirectoryExecutableFinder {
     private List<String> executablesFromName(String name) {
         if (extensions.isEmpty()) {
             return Collections.singletonList(name);
-        } else {
-            return extensions.stream().map(ext -> name + ext).collect(Collectors.toList());
         }
+
+        // If the name already has an extension (like "ant.bat"), don't add more extensions
+        // This allows explicit specification of the exact executable file
+        for (String ext : extensions) {
+            if (name.endsWith(ext)) {
+                return Collections.singletonList(name);
+            }
+        }
+
+        // Otherwise, add all possible extensions
+        return extensions.stream().map(ext -> name + ext).collect(Collectors.toList());
     }
 
     @Nullable

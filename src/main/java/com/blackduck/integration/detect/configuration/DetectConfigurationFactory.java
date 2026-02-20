@@ -531,6 +531,7 @@ public class DetectConfigurationFactory {
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_FLUTTER_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_GRADLE_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_MAVEN_PATH),
+            detectConfiguration.getPathOrNull(DetectProperties.DETECT_ANT_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_NPM_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_PEAR_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_PIP_PATH),
