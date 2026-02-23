@@ -1,6 +1,6 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver;
 
-import com.blackduck.integration.detectable.detectables.maven.resolver.download.*;
+import com.blackduck.integration.detectable.detectables.maven.resolver.artifactdownload.*;
 import com.blackduck.integration.detectable.detectables.maven.resolver.exception.ArtifactDownloadException;
 import com.blackduck.integration.detectable.detectables.maven.resolver.model.JavaRepository;
 import org.eclipse.aether.artifact.Artifact;
