@@ -59,11 +59,11 @@ If `cargo tree` is unavailable, [detect_product_short] will default to the Cargo
     * Unset/blank (default) to use only default features
 * `detect.cargo.disable.default.features` - Set to `true` to disable default features.
 
-`<note type="note">Feature control is only supported by the Cargo CLI Detector. The Cargo Lockfile Detector does not support this feature and will log a warning if the parameter is specified.</note>`
+<note type="note">Feature control is only supported by the Cargo CLI Detector. The Cargo Lockfile Detector does not support this feature and will log a warning if the parameter is specified.</note>
 
 ## Orphan Dependencies in Cargo Lockfile Detector (pre-11.2.0)
 
-`<note type="note">This behavior applies to versions prior to 11.2.0. As of 11.2.0 workspace support resolves most orphan dependency scenarios.</note>`
+<note type="note">This behavior applies to versions prior to 11.2.0. As of 11.2.0 workspace support resolves most orphan dependency scenarios.</note>
 
 In older versions of Cargo projects, it was possible for `Cargo.lock` to contain packages that were not explicitly declared in `Cargo.toml`. These were referred to as **orphan dependencies**.
 
