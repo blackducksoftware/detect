@@ -45,7 +45,7 @@ class ArtifactDownloaderV2Test {
         mockLogger = mock(Logger.class);
     }
 
-    // ========== Configuration Validation Tests (Fix #1) ==========
+    // ========== Configuration Validation Tests ==========
 
     @Test
     void constructor_ValidPaths_InitializesSuccessfully() {
