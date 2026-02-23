@@ -33,7 +33,7 @@ If `cargo tree` is unavailable, [detect_product_short] will default to the Cargo
 
 ## Cargo Workspaces
 
-[detect_product_short] supports Cargo workspaces since 11.2.0 release, which allow multiple related Rust crates to be managed together under a single root. All workspace members share a single `Cargo.lock` file and a common `target/` directory. For more information, see the [Cargo Workspaces documentation](https://doc.rust-lang.org/cargo/reference/workspaces.html).
+[detect_product_short] supports Cargo workspaces allowing multiple related Rust crates to be managed together under a single root. All workspace members share a single `Cargo.lock` file and a common `target/` directory. For more information, see the [Cargo Workspaces documentation](https://doc.rust-lang.org/cargo/reference/workspaces.html).
 
 **Behavior:**
 * [detect_product_short] identifies Cargo workspaces declared via `[workspace]` in the root `Cargo.toml`.
@@ -49,7 +49,7 @@ If `cargo tree` is unavailable, [detect_product_short] will default to the Cargo
 
 ## Cargo Features and Optional Dependencies
 
-[detect_product_short] supports Cargo features and optional dependencies for the Cargo CLI Detector since 11.3.0 release. These properties control which features are enabled when running `cargo tree`.
+[detect_product_short] supports Cargo features and optional dependencies for the Cargo CLI Detector. These properties control which features are enabled when running `cargo tree`.
 
 **Configuration Options:**
 * `detect.cargo.included.features` - Specify which features to include. Accepts:
@@ -59,15 +59,14 @@ If `cargo tree` is unavailable, [detect_product_short] will default to the Cargo
     * Unset/blank (default) to use only default features
 * `detect.cargo.disable.default.features` - Set to `true` to disable default features.
 
-**Note:** Feature control is supported only by the Cargo CLI Detector. The Cargo Lockfile Detector cannot accurately honor features because `Cargo.lock` does not record which features were enabled. If these properties are provided when using the Cargo Lockfile Detector, they will be ignored and a warning will be logged.
+`<note type="note">Feature control is only supported by the Cargo CLI Detector. The Cargo Lockfile Detector does not support this feature and will log a warning if the parameter is specified.</note>`
 
 ## Orphan Dependencies in Cargo Lockfile Detector (pre-11.2.0)
 
-**Note:** This behavior applies to versions prior to 11.2.0. In 11.2.0+, workspace support resolves most orphan dependency scenarios.
+`<note type="note">This behavior applies to versions prior to 11.2.0. As of 11.2.0 workspace support resolves most orphan dependency scenarios.</note>`
 
 In older versions of Cargo projects, it was possible for `Cargo.lock` to contain packages that were not explicitly declared in `Cargo.toml`. These were referred to as **orphan dependencies**.
 
 Since orphan dependencies could not be mapped to a specific dependency path in the graph, the **Cargo Lockfile Detector** did not discard them. Instead, they were grouped under a placeholder component named **`Additional_Components`**, which appeared as a direct dependency in the graph.
 
 This approach ensured that all components listed in `Cargo.lock` were included in the BOM, even if their exact relationship within the dependency tree could not be determined.
-
