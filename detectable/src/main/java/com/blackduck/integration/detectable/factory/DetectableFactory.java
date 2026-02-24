@@ -9,6 +9,7 @@ import javax.xml.parsers.SAXParserFactory;
 import com.blackduck.integration.detectable.detectable.executable.resolver.*;
 import com.blackduck.integration.detectable.detectables.cargo.*;
 import com.blackduck.integration.detectable.detectables.cargo.transform.CargoDependencyGraphTransformer;
+import com.blackduck.integration.detectable.detectables.conda.parser.CondaTreeParser;
 import com.blackduck.integration.detectable.detectables.conda.tree.CondaTreeDetectable;
 import com.blackduck.integration.detectable.detectables.conda.tree.CondaTreeExtractor;
 import com.blackduck.integration.detectable.detectables.pip.inspector.parser.PipInspectorTomlParser;
@@ -408,8 +409,8 @@ public class DetectableFactory {
         return new CondaCliDetectable(environment, fileFinder, condaResolver, condaCliExtractor(), condaCliDetectableOptions);
     }
 
-    public CondaTreeDetectable createCondaTreeDetectable(DetectableEnvironment environment, CondaTreeResolver condaTreeResolver, CondaCliDetectableOptions condaCliDetectableOptions) {
-        return new CondaTreeDetectable(environment, fileFinder, condaTreeResolver, condaTreeExtractor(), condaCliDetectableOptions);
+    public CondaTreeDetectable createCondaTreeDetectable(DetectableEnvironment environment, CondaTreeResolver condaTreeResolver, CondaResolver condaResolver, CondaCliDetectableOptions condaCliDetectableOptions) {
+        return new CondaTreeDetectable(environment, fileFinder, condaTreeResolver, condaResolver, condaTreeExtractor(), condaCliDetectableOptions);
     }
 
     public CpanCliDetectable createCpanCliDetectable(DetectableEnvironment environment, CpanResolver cpanResolver, CpanmResolver cpanmResolver) {
@@ -845,7 +846,11 @@ public class DetectableFactory {
     }
 
     private CondaTreeExtractor condaTreeExtractor() {
-        return new CondaTreeExtractor(executableRunner, toolVersionLogger);
+        return new CondaTreeExtractor(executableRunner, condaTreeParser(), condaListParser());
+    }
+
+    private CondaTreeParser condaTreeParser() {
+        return new CondaTreeParser(condaDependencyCreator());
     }
 
     private CpanListParser cpanListParser() {

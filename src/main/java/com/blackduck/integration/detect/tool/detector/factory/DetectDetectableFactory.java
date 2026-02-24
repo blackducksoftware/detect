@@ -147,7 +147,7 @@ public class DetectDetectableFactory {
     }
 
     public CondaTreeDetectable createCondaTreeDetectable(DetectableEnvironment environment) {
-        return detectableFactory.createCondaTreeDetectable(environment, detectExecutableResolver, detectableOptionFactory.createCondaOptions());
+        return detectableFactory.createCondaTreeDetectable(environment, detectExecutableResolver, detectExecutableResolver, detectableOptionFactory.createCondaOptions());
     }
 
     public CpanCliDetectable createCpanCliDetectable(DetectableEnvironment environment) {
