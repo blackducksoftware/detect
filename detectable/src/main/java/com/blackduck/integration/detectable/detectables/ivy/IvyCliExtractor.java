@@ -25,6 +25,7 @@ import com.blackduck.integration.util.NameVersion;
 
 public class IvyCliExtractor {
     private static final Logger logger = LoggerFactory.getLogger(IvyCliExtractor.class);
+    private static final String IVY_DEPENDENCY_TREE_MARKER = "[ivy:dependencytree]";
 
     private final DetectableExecutableRunner executableRunner;
     private final IvyDependencyTreeParser ivyDependencyTreeParser;
@@ -51,49 +52,22 @@ public class IvyCliExtractor {
     ) throws IOException {
         toolVersionLogger.log(directory, antExe);
 
-        ExecutableOutput antOutput;
-        try {
-            // Execute the ant target that contains ivy:dependencytree
-            List<String> antCommand = Collections.singletonList(targetName);
-            antOutput = executableRunner.execute(ExecutableUtils.createFromTarget(directory, antExe, antCommand));
-        } catch (ExecutableRunnerException e) {
-            return new Extraction.Builder()
-                .failure(String.format("Failed to execute ant %s: %s", targetName, e.getMessage()))
-                .build();
+        ExecutableOutput antOutput = executeAntTarget(directory, antExe, targetName);
+        if (antOutput == null) {
+            return createFailure(String.format("Failed to execute ant %s", targetName));
         }
 
-        // Check if we got output even if there was a non-zero exit code
+        Optional<Extraction> validationFailure = validateAntOutput(antOutput, targetName);
+        if (validationFailure.isPresent()) {
+            return validationFailure.get();
+        }
+
+        // Parse dependency graph
         List<String> dependencyTreeOutput = antOutput.getStandardOutputAsList();
-
-        if (dependencyTreeOutput.isEmpty()) {
-            String errorOutput = antOutput.getErrorOutputAsList().isEmpty()
-                ? "No output produced"
-                : String.join("\n", antOutput.getErrorOutputAsList());
-            return new Extraction.Builder()
-                .failure(String.format("Ant %s produced no output. Exit code: %d. Error: %s",
-                    targetName, antOutput.getReturnCode(), errorOutput))
-                .build();
-        }
-
-        // Check if we have dependency tree output (look for the characteristic [ivy:dependencytree] lines)
-        boolean hasDependencyTree = dependencyTreeOutput.stream()
-            .anyMatch(line -> line.contains("[ivy:dependencytree]"));
-
-        if (!hasDependencyTree) {
-            logger.warn("Ant command completed with exit code {} but no dependency tree found in output", antOutput.getReturnCode());
-            return new Extraction.Builder()
-                .failure(String.format("No dependency tree found in ant %s output. Ensure the target contains <ivy:dependencytree /> task.", targetName))
-                .build();
-        }
-
-        if (antOutput.getReturnCode() != 0) {
-            logger.warn("Ant command returned non-zero exit code {} but produced valid output, continuing...", antOutput.getReturnCode());
-        }
-
         DependencyGraph graph = ivyDependencyTreeParser.parse(dependencyTreeOutput);
-
         CodeLocation codeLocation = new CodeLocation(graph);
 
+        // Extract project name and version if available
         Optional<NameVersion> projectNameVersion = Optional.empty();
         if (buildXmlFile != null) {
             projectNameVersion = ivyProjectNameParser.parseProjectName(buildXmlFile);
@@ -102,6 +76,54 @@ public class IvyCliExtractor {
         return new Extraction.Builder()
             .success(codeLocation)
             .nameVersionIfPresent(projectNameVersion)
+            .build();
+    }
+
+    @Nullable
+    private ExecutableOutput executeAntTarget(File directory, ExecutableTarget antExe, String targetName) {
+        try {
+            List<String> antCommand = Collections.singletonList(targetName);
+            return executableRunner.execute(ExecutableUtils.createFromTarget(directory, antExe, antCommand));
+        } catch (ExecutableRunnerException e) {
+            logger.error("Failed to execute ant {}: {}", targetName, e.getMessage());
+            return null;
+        }
+    }
+
+    private Optional<Extraction> validateAntOutput(ExecutableOutput antOutput, String targetName) {
+        List<String> dependencyTreeOutput = antOutput.getStandardOutputAsList();
+
+        if (dependencyTreeOutput.isEmpty()) {
+            String errorOutput = antOutput.getErrorOutputAsList().isEmpty()
+                ? "No output produced"
+                : String.join("\n", antOutput.getErrorOutputAsList());
+            return Optional.of(createFailure(String.format(
+                "Ant %s produced no output. Exit code: %d. Error: %s",
+                targetName, antOutput.getReturnCode(), errorOutput
+            )));
+        }
+
+        boolean hasDependencyTree = dependencyTreeOutput.stream()
+            .anyMatch(line -> line.contains(IVY_DEPENDENCY_TREE_MARKER));
+
+        if (!hasDependencyTree) {
+            logger.warn("Ant command completed with exit code {} but no dependency tree found in output", antOutput.getReturnCode());
+            return Optional.of(createFailure(String.format(
+                "No dependency tree found in ant %s output. Ensure the target contains <ivy:dependencytree /> task.",
+                targetName
+            )));
+        }
+
+        if (antOutput.getReturnCode() != 0) {
+            logger.warn("Ant command returned non-zero exit code {} but produced valid output, continuing...", antOutput.getReturnCode());
+        }
+
+        return Optional.empty();
+    }
+
+    private Extraction createFailure(String message) {
+        return new Extraction.Builder()
+            .failure(message)
             .build();
     }
 }
