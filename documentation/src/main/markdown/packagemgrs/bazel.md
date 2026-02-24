@@ -196,11 +196,10 @@ bash <(curl -s -L https://detect.blackduck.com/detect11.sh) --detect.bazel.targe
 ### Common Issues and Solutions
 
 #### Unable to determine Bazel mode automatically
-**Problem:** The detector cannot determine if your project uses BZLMOD or WORKSPACE mode.
+**Problem:** The detector cannot determine if your project uses BZLMOD or WORKSPACE mode. Usually occurs when the `bazel mod show_repo` command fails unexpectedly (not due to old Bazel version).
 
 **Possible Solutions:**
 - Manually specify the mode using `--detect.bazel.mode=WORKSPACE` or `--detect.bazel.mode=BZLMOD`
-- Usually occurs when the `bazel mod show_repo` command fails unexpectedly (not due to old Bazel version)
 
 #### No supported Bazel dependency sources found
 **Problem:** The automatic graph probing did not detect any dependency sources.
@@ -237,11 +236,6 @@ Expected behavior for Bazel versions before 6.0: the detector assumes WORKSPACE 
 - Verify Bazel is on your PATH: `which bazel`
 - Specify the path explicitly: `--detect.bazel.path=/path/to/bazel`
 
-#### Duplicate Dependencies Detected
-**Problem:** The same dependencies appear multiple times in the results.
-
-**Solution:** You may have both the legacy detector (V1) and V2 running simultaneously. Use `--detect.tools=BAZEL` to run only V2.
-
 ### Debug Mode
 For detailed logging to diagnose issues:
 ```sh
@@ -255,23 +249,38 @@ bash <(curl -s -L https://detect.blackduck.com/detect11.sh) \
 - Verify your Bazel setup works: `bazel build //your:target`
 - For further assistance, contact Black Duck support with your Detect logs
 
+## Migrating from earlier versions of [detect_product_short]
+
+### Upgrading to [detect_product_short] 11.3.0
+
+The Bazel detector was replaced entirely in [detect_product_short] 11.3.0. The following changes are required if you are upgrading from an earlier version.
+
+**Property rename:**
+
+The `detect.bazel.workspace.rules` property has been removed and replaced by `detect.bazel.dependency.sources`. The new property accepts the same source names (MAVEN_INSTALL, MAVEN_JAR, HASKELL_CABAL_LIBRARY, HTTP_ARCHIVE). NONE retains the auto-detect behaviour.
+
+<note type="note">The old `detect.bazel.workspace.rules` property is no longer recognised. If it is present in your configuration it will be silently ignored. Replace it with `detect.bazel.dependency.sources`.</note>
+
+**Tool invocation:**
+
+The Bazel V2 detector runs as a tool. Ensure your configuration includes `--detect.tools=BAZEL`. Setting `--detect.tools=DETECTOR` will not run the Bazel detector.
+
 ## Notes
 
-### Bazel V2 vs V1 (Legacy) Detector
+### Bazel detector
 
-- **V2 (Recommended):** Enabled via `--detect.tools=BAZEL`. Supports both BZLMOD and WORKSPACE projects. Does not require a WORKSPACE file.
-- **V1 (Legacy):** Part of the detector framework (`--detect.tools=DETECTOR`). Only works with WORKSPACE projects. Requires WORKSPACE file to be present.
-- **Default Behavior:** If you set `detect.bazel.target` without specifying tools, you may need to explicitly enable the BAZEL tool: `--detect.tools=BAZEL`
-- **Recommendation:** Use V2 for all projects. V1 is maintained for backward compatibility but has limitations with modern Bazel projects.
+The Bazel V2 detector is the only supported Bazel detector as of [detect_product_short] 11.3.0. The prior Bazel detector, which was limited to WORKSPACE-only projects and required a WORKSPACE file to be present, has been replaced by the V2 detector. The V2 detector supports both BZLMOD and WORKSPACE projects and does not require a WORKSPACE file.
+
+To run the Bazel V2 detector, set `--detect.tools=BAZEL` and provide a target via `--detect.bazel.target`.
 
 ### Mode Detection Behavior
 
 The detector automatically determines your Bazel mode through the following process:
 
-- **Attempts BZLMOD Detection:** Runs `bazel mod graph`
-- **Success with dependencies → BZLMOD Mode:** Uses BZLMOD-specific pipelines
-- **Empty graph → WORKSPACE Mode:** Common in hybrid repos that declare MODULE.bazel for compatibility but manage dependencies via WORKSPACE
-- **"Command not found" → WORKSPACE Mode:** Bazel version < 6.0; assumes WORKSPACE mode with a warning
+1. **Attempts BZLMOD Detection:** Runs `bazel mod graph`
+2. **Success with dependencies → BZLMOD Mode:** Uses BZLMOD-specific pipelines
+3. **Empty graph → WORKSPACE Mode:** Common in hybrid repos that declare MODULE.bazel for compatibility but manage dependencies via WORKSPACE
+4. **"Command not found" → WORKSPACE Mode:** Bazel version < 6.0; assumes WORKSPACE mode with a warning
 
 ### Auto-Detection vs Manual Override
 
