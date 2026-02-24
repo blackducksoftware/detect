@@ -15,7 +15,7 @@ The V2 detector discovers dependencies from the following dependency sources:
 - *haskell_cabal_library* - Haskell Cabal packages
 - *http_archive* - Source archives from HTTP, Git, and other sources
 
-V2 detector discovers library dependencies that have a GitHub released artifact location (URL) specified in an *http_archive*, *go_repository*, or *git_repository* rule.
+The V2 detector discovers library dependencies that have a GitHub released artifact location (URL) specified in an *http_archive*, *go_repository*, or *git_repository* rule.
 
 ### Key Features
 - **Mode-Agnostic:** Automatically detects whether your project uses BZLMOD or WORKSPACE and adapts accordingly
@@ -109,7 +109,7 @@ Requires Bazel 2.1.0 or later.
 
 [detect_product_short]'s Bazel detector extracts artifact project and version for dependencies by running a bazel cquery on the given target.
 
-Bazel detector uses a command similar to the following to discover *haskell_cabal_library* dependencies:
+The Bazel detector uses a command similar to the following to discover *haskell_cabal_library* dependencies:
 ```sh
 $ bazel cquery --noimplicit_deps 'kind(haskell_cabal_library, deps(//cat_hs/lib/args:args))' --output jsonproto
 {
@@ -135,10 +135,10 @@ $ bazel cquery --noimplicit_deps 'kind(haskell_cabal_library, deps(//cat_hs/lib/
 }, {
 ...
 ```
-Then uses Gson to parse the JSON output into a parse tree, extracting the name and version from the corresponding rule attributes.
+It then uses Gson to parse the JSON output into a parse tree, extracting the name and version from the corresponding rule attributes.
 
 ### Processing for the *http_archive* workspace rule
-The V2 detector is agnostic to WORKSPACE or MODULE.bazel files, probing the Bazel dependency graph to determine if http_archive dependencies are present then triggering the appropriate pipeline based on the Bazel era:
+The V2 detector is agnostic to WORKSPACE or MODULE.bazel files, probing the Bazel dependency graph to determine if http_archive dependencies are present and then triggers the appropriate pipeline based on the Bazel era:
 
 <note type="note">
 Projects with ≤150 external repositories are fully probed to precisely detect HTTP dependencies. Larger projects (>150 repos) skip probing and automatically enable the HTTP extraction pipeline to ensure completeness while avoiding the overhead of probing hundreds of repositories.
@@ -257,9 +257,9 @@ The Bazel detector was replaced entirely in [detect_product_short] 11.3.0. The f
 
 **Property rename:**
 
-The `detect.bazel.workspace.rules` property has been removed and replaced by `detect.bazel.dependency.sources`. The new property accepts the same source names (MAVEN_INSTALL, MAVEN_JAR, HASKELL_CABAL_LIBRARY, HTTP_ARCHIVE). NONE retains the auto-detect behaviour.
+The `detect.bazel.workspace.rules` property has been removed and replaced by `detect.bazel.dependency.sources`. The new property accepts the same source names (MAVEN_INSTALL, MAVEN_JAR, HASKELL_CABAL_LIBRARY, HTTP_ARCHIVE). NONE retains the auto-detect behavior.
 
-<note type="note">The old `detect.bazel.workspace.rules` property is no longer recognised. If it is present in your configuration it will be silently ignored. Replace it with `detect.bazel.dependency.sources`.</note>
+<note type="note">The old `detect.bazel.workspace.rules` property is no longer recognized. If it is present in your configuration it will be silently ignored. Replace it with `detect.bazel.dependency.sources`.</note>
 
 **Tool invocation:**
 

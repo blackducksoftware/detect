@@ -29,4 +29,4 @@
 
 * The `detect.bazel.workspace.rules` property has been removed and replaced by `detect.bazel.dependency.sources`. If present in your configuration, the old property will be silently ignored. See [Bazel support](packagemgrs/bazel.md) for migration details.
 * (IDETECT-4960) Added support for Cargo features and optional dependencies in Cargo CLI Detector, allowing precise control over which features are included in the SBOM through cargo tree command flags. See [Cargo](properties/detectors/cargo.md) for details.
-* (IDETECT-4847) Clarified that the value of `detect.container.scan.file.path` should be a path to local .tar file or a HTTP/HTTPS URL for remote .tar file.
+* (IDETECT-4847) Clarified that the value of `detect.container.scan.file.path` should be a path to a local .tar file or an HTTP/HTTPS URL for remote .tar file.
