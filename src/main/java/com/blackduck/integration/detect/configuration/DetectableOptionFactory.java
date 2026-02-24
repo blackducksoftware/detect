@@ -355,12 +355,9 @@ public class DetectableOptionFactory {
         Path nugetConfigPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_CONFIG_PATH);
         Set<NugetDependencyType> nugetExcludedDependencyTypes = detectConfiguration.getValue(DetectProperties.DETECT_NUGET_DEPENDENCY_TYPES_EXCLUDED).representedValueSet();
         Path nugetArtifactsPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_ARTIFACTS_PATH);
-        Path relevantDetectorsAndFilesInfoPath = null;
-        if (detectConfiguration.getValue(DetectProperties.DETECT_QUACK_PATCH_ENABLED)) {
-            relevantDetectorsAndFilesInfoPath = Paths.get(DirectoryManager.getScanDirectoryName())
-                    .resolve(QUACKPATCH_SUBDIRECTORY_NAME)
-                    .resolve(INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON);
-        }
+        Path relevantDetectorsAndFilesInfoPath = Paths.get(DirectoryManager.getScanDirectoryName())
+                .resolve(QUACKPATCH_SUBDIRECTORY_NAME)
+                .resolve(INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON);
         Path nugetInspectorPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_INSPECTOR_PATH);
         File nugetInspectorPathFile = null;
         if (nugetInspectorPath != null) {
