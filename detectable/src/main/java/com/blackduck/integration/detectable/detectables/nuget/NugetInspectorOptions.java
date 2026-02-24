@@ -19,7 +19,7 @@ public class NugetInspectorOptions {
     private final Path inspectedFilesInfoPath;
     private final File nugetInspectorPath;
 
-    public NugetInspectorOptions(boolean ignoreFailures, List<String> excludedModules, List<String> includedModules, List<String> packagesRepoUrl, @Nullable Path nugetConfigPath, Set<NugetDependencyType> nugetExcludedDependencyTypes, @Nullable Path nugetArtifactsPath, Path inspectedFilesInfoPath, @Nullable File nugetInspectorPath) {
+    public NugetInspectorOptions(boolean ignoreFailures, List<String> excludedModules, List<String> includedModules, List<String> packagesRepoUrl, @Nullable Path nugetConfigPath, Set<NugetDependencyType> nugetExcludedDependencyTypes, @Nullable Path nugetArtifactsPath, @Nullable Path inspectedFilesInfoPath, @Nullable File nugetInspectorPath) {
         this.ignoreFailures = ignoreFailures;
         this.excludedModules = excludedModules;
         this.includedModules = includedModules;
