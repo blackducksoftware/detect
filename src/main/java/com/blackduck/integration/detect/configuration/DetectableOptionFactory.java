@@ -366,7 +366,17 @@ public class DetectableOptionFactory {
         if (nugetInspectorPath != null) {
             nugetInspectorPathFile = nugetInspectorPath.toFile();
         }
-        return new NugetInspectorOptions(ignoreFailures, excludedModules, includedModules, packagesRepoUrl, nugetConfigPath, nugetExcludedDependencyTypes, nugetArtifactsPath, relevantDetectorsAndFilesInfoPath, nugetInspectorPathFile);
+        return new NugetInspectorOptions.Builder()
+                .ignoreFailures(ignoreFailures)
+                .excludedModules(excludedModules)
+                .includedModules(includedModules)
+                .packagesRepoUrl(packagesRepoUrl)
+                .nugetConfigPath(nugetConfigPath)
+                .nugetExcludedDependencyTypes(nugetExcludedDependencyTypes)
+                .nugetArtifactsPath(nugetArtifactsPath)
+                .inspectedFilesInfoPath(relevantDetectorsAndFilesInfoPath)
+                .nugetInspectorPath(nugetInspectorPathFile)
+                .build();
     }
 
     private boolean getFollowSymLinks() {
