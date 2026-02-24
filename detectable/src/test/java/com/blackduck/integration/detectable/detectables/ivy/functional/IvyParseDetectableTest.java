@@ -1,4 +1,4 @@
-package com.blackduck.integration.detectable.detectables.ivy;
+package com.blackduck.integration.detectable.detectables.ivy.functional;
 
 import java.io.IOException;
 import java.nio.file.Paths;
