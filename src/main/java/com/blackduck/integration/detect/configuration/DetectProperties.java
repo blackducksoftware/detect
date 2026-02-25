@@ -233,7 +233,7 @@ public class DetectProperties {
 
     public static final StringListProperty DETECT_BAZEL_QUERY_OPTIONS =
         StringListProperty.newBuilder("detect.bazel.query.options", emptyList())
-            .setInfo("Bazel query additional options", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setInfo("Bazel query additional options", DetectPropertyFromVersion.VERSION_11_3_0)
             .setHelp("A comma-separated list of additional options to pass to the bazel query command.")
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();
@@ -254,7 +254,7 @@ public class DetectProperties {
 
     public static final NullableStringProperty DETECT_BAZEL_MODE =
         NullableStringProperty.newBuilder("detect.bazel.mode")
-            .setInfo("Bazel Mode Override", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setInfo("Bazel Mode Override", DetectPropertyFromVersion.VERSION_11_3_0)
             .setHelp(
                 "Override Bazel mode detection. By default, Detect automatically determines whether the Bazel project uses BZLMOD or WORKSPACE-based dependency management " +
                 "by running bazel mod graph. Valid values: WORKSPACE, BZLMOD.",

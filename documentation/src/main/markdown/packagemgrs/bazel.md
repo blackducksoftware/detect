@@ -17,15 +17,15 @@ The Bazel tool discovers dependencies from the following dependency sources:
 
 The Bazel tool discovers library dependencies that have a GitHub released artifact location (URL) specified in an *http_archive*, *go_repository*, or *git_repository* rule.
 
-### Key Features
+### Features
 
 - **Mode-Agnostic:** Automatically detects whether your project uses BZLMOD or WORKSPACE and adapts accordingly
-- **Intelligent Mode Detection:** Uses `bazel mod graph` to detect BZLMOD support; falls back to WORKSPACE mode for older Bazel versions (< 6.0)
+- **Mode Detection Strategy:** Uses `bazel mod graph` to detect BZLMOD support; falls back to WORKSPACE mode for older Bazel versions (< 6.0)
 - **Automatic Pipeline Selection:** Probes your Bazel dependency graph to determine which dependency sources are present and automatically runs the correct extraction pipelines
-- **Enhanced HTTP Detection:**
+- **HTTP Detection Strategy:**
   - For BZLMOD projects: Uses `bazel mod show_repo` to robustly extract dependency URLs from external repositories
   - For WORKSPACE projects: Uses XML parsing to extract URLs from repository rules
-- **Smart HTTP Detection:** Small/medium targets (≤150 external repos) are fully probed for precise detection. Large projects (>150 repos) automatically enable the HTTP pipeline to ensure completeness without probing overhead.
+- **HTTP Detection Strategy:** Small/medium targets (≤150 external repos) are fully probed for precise detection. Large projects (>150 repos) automatically enable the HTTP pipeline to ensure completeness without probing overhead.
 
 ### Supported Bazel Versions
 
@@ -64,7 +64,7 @@ The following example shows command-line invocations equivalent to those the Baz
 
 ### Processing for the *maven_install* workspace rule
 
-The Bazel tool runs a bazel cquery on the given target to produce output from which it can parse artifact details such as group, artifact, and version for dependencies.
+The Bazel tool runs a Bazel cquery on the given target to produce output from which it can parse artifact details such as group, artifact, and version for dependencies.
 
 [detect_product_short]'s Bazel tool uses commands similar to the following for discovery of *maven_install* dependencies:
 ```sh
@@ -82,7 +82,7 @@ Then, it parses the group/artifact/version details from the values of the maven_
 
 ### Processing for the *maven_jar* workspace rule
 
-The Bazel tool runs a bazel query on the given target to get a list of jar dependencies. On each jar dependency, the Bazel tool runs another bazel query to get its artifact details: group, artifact, and version.
+The Bazel tool runs a Bazel query on the given target to get a list of jar dependencies. On each jar dependency, the Bazel tool runs another Bazel query to get its artifact details: group, artifact, and version.
 
 Get list of dependencies:
 ```sh
@@ -108,9 +108,10 @@ Loading: 0 packages loaded
 Finally, it parses the group/artifact/version details from the value of the string element using the name of artifact.
 
 ### Processing for the *haskell_cabal_library* workspace rule
+
 Requires Bazel 2.1.0 or later.
 
-[detect_product_short]'s Bazel tool extracts artifact project and version for dependencies by running a bazel cquery on the given target.
+[detect_product_short]'s Bazel tool extracts artifact project and version for dependencies by running a Bazel cquery on the given target.
 
 The Bazel tool uses a command similar to the following to discover *haskell_cabal_library* dependencies:
 ```sh
@@ -141,7 +142,8 @@ $ bazel cquery --noimplicit_deps 'kind(haskell_cabal_library, deps(//cat_hs/lib/
 It then uses Gson to parse the JSON output into a parse tree, extracting the name and version from the corresponding rule attributes.
 
 ### Processing for the *http_archive* workspace rule
-The Bazel tool is agnostic to WORKSPACE or MODULE.bazel files, probing the Bazel dependency graph to determine if http_archive dependencies are present and then triggers the appropriate pipeline based on the Bazel era:
+
+The Bazel tool probes the Bazel dependency graph to determine if http_archive dependencies are present and then triggers the appropriate pipeline based on the Bazel era:
 
 <note type="note">
 Projects with ≤150 external repositories are fully probed to precisely detect HTTP dependencies. Larger projects (>150 repos) skip probing and automatically enable the HTTP extraction pipeline to ensure completeness while avoiding the overhead of probing hundreds of repositories.
@@ -266,7 +268,7 @@ The `detect.bazel.workspace.rules` property has been removed and replaced by `de
 
 **Tool invocation:**
 
-The bazel tool runs as a tool. Ensure your configuration includes `--detect.tools=BAZEL`. Setting `--detect.tools=tool` will not run the Bazel tool.
+The Bazel tool runs as a tool. Ensure your configuration includes `--detect.tools=BAZEL`. Setting `--detect.tools=tool` will not run the Bazel tool.
 
 ### Mode Detection Behavior
 
