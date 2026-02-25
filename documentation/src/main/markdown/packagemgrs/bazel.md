@@ -198,58 +198,10 @@ bash <(curl -s -L https://detect.blackduck.com/detect11.sh) --detect.bazel.targe
 
 ## Troubleshooting
 
-### Common Issues and Solutions
 
-#### Unable to determine Bazel mode automatically
-**Problem:** The tool cannot determine if your project uses BZLMOD or WORKSPACE mode. Usually occurs when the `bazel mod show_repo` command fails unexpectedly (not due to old Bazel version).
-
-**Possible Solutions:**
-- Manually specify the mode using `--detect.bazel.mode=WORKSPACE` or `--detect.bazel.mode=BZLMOD`
-
-#### No supported Bazel dependency sources found
-**Problem:** The automatic graph probing did not detect any dependency sources.
-
-**Possible Solutions:**
-- Verify your target has dependencies: `bazel query 'deps(//your:target)'`
-- Manually specify dependency sources: `--detect.bazel.dependency.sources=MAVEN_INSTALL,HTTP_ARCHIVE`
-- Check that your Bazel target builds successfully: `bazel build //your:target`
-
-#### Old Bazel Version Warning
-**Problem:** You see a warning like "Bazel does not support 'mod' command (likely version < 6.0)" or "show repo command not found".
-
-Expected behavior for Bazel versions before 6.0: the tool assumes WORKSPACE mode and continues.
-
-**Possible Solutions:**
-- To use BZLMOD features, upgrade to Bazel 6.4+ (preferably 7.x or 8.x)
-- To suppress the warning, explicitly set: `--detect.bazel.mode=WORKSPACE`
-
-<note type="note">For Bazel 6.0–6.3 with Bzlmod enabled (via --enable_bzlmod), the tool may fail to probe HTTP/BCR repositories because bazel mod show_repo is unavailable or unstable. Upgrade or use WORKSPACE mode as a workaround.</note>
-
-#### HTTP Dependencies Missing
-**Problem:** Some http_archive or git_repository dependencies are not detected.
-
-**Possible Solutions:**
-- Check the logs to verify the HTTP pipeline was enabled
-- Verify the dependencies are actually reachable from your specified target: `bazel query 'deps(//your:target)'`
-- For projects where HTTP dependencies are known to be absent, exclude the pipeline explicitly: `--detect.bazel.dependency.sources=MAVEN_INSTALL`
-
-#### Bazel Executable Not Found
-**Problem:** Error indicates Bazel executable cannot be located.
-
-**Possible Solutions:**
-- Ensure Bazel is installed: `bazel version`
-- Verify Bazel is on your PATH: `which bazel`
-- Specify the path explicitly: `--detect.bazel.path=/path/to/bazel`
-
-### Debug Mode
-For detailed logging to diagnose issues:
-```sh
-bash <(curl -s -L https://detect.blackduck.com/detect11.sh) \
-  --logging.level.detect=DEBUG \
-  --detect.bazel.target='//your:target'
-```
 
 ### Getting Help
+- Refer to the [Bazel Troubleshooting Guide](../troubleshooting/solutions.md) 
 - Check the Detect logs in the `runs/` directory for detailed error messages
 - Verify your Bazel setup works: `bazel build //your:target`
 - For further assistance, contact Black Duck support with your Detect logs
