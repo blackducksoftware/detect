@@ -9,6 +9,7 @@ import java.util.Set;
 
 import com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation;
 import com.blackduck.integration.detect.workflow.file.DirectoryManager;
+import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDetectableOptions;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
 import com.blackduck.integration.detectable.detectables.nuget.NugetDependencyType;
@@ -87,7 +88,8 @@ public class DetectableOptionFactory {
         List<String> bazelQueryAdditionalOptions = detectConfiguration.getValue(DetectProperties.DETECT_BAZEL_QUERY_OPTIONS);
         Set<DependencySource> dependencySourcesFromProperty = detectConfiguration.getValue(DetectProperties.DETECT_BAZEL_DEPENDENCY_SOURCES).representedValueSet();
         String modeOverride = detectConfiguration.getNullableValue(DetectProperties.DETECT_BAZEL_MODE);
-        return new BazelDetectableOptions(targetName, dependencySourcesFromProperty, bazelCqueryAdditionalOptions, bazelQueryAdditionalOptions, modeOverride);
+        Set<WorkspaceRule> workspaceRulesFromProperty = detectConfiguration.getValue(DetectProperties.DETECT_BAZEL_WORKSPACE_RULES).representedValueSet();
+        return new BazelDetectableOptions(targetName, dependencySourcesFromProperty, bazelCqueryAdditionalOptions, bazelQueryAdditionalOptions, modeOverride, workspaceRulesFromProperty);
     }
 
     public BitbakeDetectableOptions createBitbakeDetectableOptions() {
@@ -355,15 +357,28 @@ public class DetectableOptionFactory {
         Path nugetConfigPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_CONFIG_PATH);
         Set<NugetDependencyType> nugetExcludedDependencyTypes = detectConfiguration.getValue(DetectProperties.DETECT_NUGET_DEPENDENCY_TYPES_EXCLUDED).representedValueSet();
         Path nugetArtifactsPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_ARTIFACTS_PATH);
-        Path relevantDetectorsAndFilesInfoPath = Paths.get(DirectoryManager.getScanDirectoryName())
-                .resolve(QUACKPATCH_SUBDIRECTORY_NAME)
-                .resolve(INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON);
+        Path relevantDetectorsAndFilesInfoPath = null;
+        if (detectConfiguration.getValue(DetectProperties.DETECT_QUACK_PATCH_ENABLED)) {
+            relevantDetectorsAndFilesInfoPath = Paths.get(DirectoryManager.getScanDirectoryName())
+                    .resolve(QUACKPATCH_SUBDIRECTORY_NAME)
+                    .resolve(INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON);
+        }
         Path nugetInspectorPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_INSPECTOR_PATH);
         File nugetInspectorPathFile = null;
         if (nugetInspectorPath != null) {
             nugetInspectorPathFile = nugetInspectorPath.toFile();
         }
-        return new NugetInspectorOptions(ignoreFailures, excludedModules, includedModules, packagesRepoUrl, nugetConfigPath, nugetExcludedDependencyTypes, nugetArtifactsPath, relevantDetectorsAndFilesInfoPath, nugetInspectorPathFile);
+        return new NugetInspectorOptions.Builder()
+                .ignoreFailures(ignoreFailures)
+                .excludedModules(excludedModules)
+                .includedModules(includedModules)
+                .packagesRepoUrl(packagesRepoUrl)
+                .nugetConfigPath(nugetConfigPath)
+                .nugetExcludedDependencyTypes(nugetExcludedDependencyTypes)
+                .nugetArtifactsPath(nugetArtifactsPath)
+                .inspectedFilesInfoPath(relevantDetectorsAndFilesInfoPath)
+                .nugetInspectorPath(nugetInspectorPathFile)
+                .build();
     }
 
     private boolean getFollowSymLinks() {

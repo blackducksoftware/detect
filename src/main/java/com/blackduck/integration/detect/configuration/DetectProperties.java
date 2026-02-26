@@ -52,6 +52,7 @@ import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMo
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedIndividualFileMatchingMode;
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedReducedPersistanceMode;
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedSnippetMode;
+import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
 import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDependencyType;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
@@ -233,25 +234,44 @@ public class DetectProperties {
 
     public static final StringListProperty DETECT_BAZEL_QUERY_OPTIONS =
         StringListProperty.newBuilder("detect.bazel.query.options", emptyList())
-            .setInfo("Bazel query additional options", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setInfo("Bazel query additional options", DetectPropertyFromVersion.VERSION_11_3_0)
             .setHelp("A comma-separated list of additional options to pass to the bazel query command.")
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();
 
     public static final AllNoneEnumListProperty<DependencySource> DETECT_BAZEL_DEPENDENCY_SOURCES =
         AllNoneEnumListProperty.newBuilder("detect.bazel.dependency.sources", AllNoneEnum.NONE, DependencySource.class)
-            .setInfo("Bazel dependency sources", DetectPropertyFromVersion.VERSION_7_12_0)
+            .setInfo("Bazel dependency sources", DetectPropertyFromVersion.VERSION_11_3_0)
             .setHelp(
-                "By default Detect discovers Bazel dependencies from all supported dependency sources (maven_install, maven_jar, http_archive, haskell_cabal_library) found in the WORKSPACE/MODULE.bazel file. Use this property to limit which dependency sources Detect should process.",
-                "Setting this property (or letting it default) to NONE tells Detect to use all supported dependency sources found in the Bazel workspace."
+                "Replaces the deprecated detect.bazel.workspace.rules property. Manually specify which dependency sources to extract. Valid values: MAVEN_INSTALL, MAVEN_JAR, HTTP_ARCHIVE, HASKELL_CABAL_LIBRARY, ALL, NONE. " +
+                "By default (NONE), Detect automatically probes the Bazel dependency graph to determine which sources are present and runs the appropriate pipelines. " +
+                "This property works for both BZLMOD and WORKSPACE projects.",
+                "Set this property when you know which dependency sources are present in your target to skip the probing step and improve performance, especially in CI/CD environments. " +
+                "Use ALL to extract from all supported sources without probing. " +
+                "Example: MAVEN_INSTALL,HTTP_ARCHIVE extracts only Maven and HTTP archive dependencies."
             )
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();
 
+    public static final AllNoneEnumListProperty<WorkspaceRule> DETECT_BAZEL_WORKSPACE_RULES =
+            AllNoneEnumListProperty.newBuilder("detect.bazel.workspace.rules", AllNoneEnum.NONE, WorkspaceRule.class)
+                    .setInfo("Bazel workspace rules", DetectPropertyFromVersion.VERSION_7_12_0)
+                    .setHelp(
+                            "This property is deprecated and will be removed in the next major release. Please use detect.bazel.dependency.sources instead.",
+                            "By default Detect discovers Bazel dependencies using all of the supported Bazel workspace rules that it finds in the WORKSPACE file. Alternatively you can use this property to specify the list of Bazel workspace rules Detect should use. Setting this property (or letting it default) to NONE tells Detect to use supported rules that it finds in the WORKSPACE file."
+                    )
+                    .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
+                    .build();
+
     public static final NullableStringProperty DETECT_BAZEL_MODE =
         NullableStringProperty.newBuilder("detect.bazel.mode")
-            .setInfo("Bazel Mode Override", DetectPropertyFromVersion.VERSION_11_0_0)
-            .setHelp("Override Bazel environment mode detection. By default, Detect automatically determines whether the Bazel project uses BZLMOD or WORKSPACE-based dependency management. Only set this property if auto-detection fails or for testing purposes. Incorrect values may cause extraction to fail. Valid values: WORKSPACE, BZLMOD")
+            .setInfo("Bazel Mode Override", DetectPropertyFromVersion.VERSION_11_3_0)
+            .setHelp(
+                "Override Bazel mode detection. By default, Detect automatically determines whether the Bazel project uses BZLMOD or WORKSPACE-based dependency management " +
+                "by running bazel mod graph. Valid values: WORKSPACE, BZLMOD.",
+                "Only set this property if auto-detection produces incorrect results or for testing purposes. Incorrect values may cause extraction to fail. " +
+                "Auto-detection falls back to WORKSPACE mode if the project is on Bazel 5.x or earlier, or if bazel mod graph returns an empty graph (common in hybrid repos that declare MODULE.bazel for compatibility but manage dependencies via WORKSPACE)."
+            )
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();
 
@@ -648,24 +668,24 @@ public class DetectProperties {
         CaseSensitiveStringListProperty.newBuilder("detect.cargo.included.workspaces")
             .setInfo("Cargo Include Workspaces", DetectPropertyFromVersion.VERSION_11_2_0)
             .setHelp(
-                "A comma-separated list of Cargo workspaces (specified by the workspace directory's relative path) to exclude.",
-                "By default, Detect includes all workspaces, but will skip any Cargo workspaces specified via this property."
+                "A comma-separated list of Cargo workspace names to include.",
+                "By default, Detect includes all workspaces, but will only include the Cargo workspaces specified via this property when set. Workspace names are defined in the workspace member's Cargo.toml file, not their directory paths."
             )
             .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
-            .setExample("crates/workspace-a,crates/workspace-b")
+            .setExample("workspace-a,workspace-b")
             .build();
 
     public static final CaseSensitiveStringListProperty DETECT_CARGO_EXCLUDED_WORKSPACES =
         CaseSensitiveStringListProperty.newBuilder("detect.cargo.excluded.workspaces")
             .setInfo("Cargo Exclude Workspaces", DetectPropertyFromVersion.VERSION_11_2_0)
             .setHelp(
-                "A comma-separated list of Cargo workspaces (specified by the workspace directory's relative path) to exclude.",
-                "By default, Detect includes all workspaces, but will skip any Cargo workspaces specified via this property."
+                "A comma-separated list of Cargo workspace names to exclude.",
+                "By default, Detect includes all workspaces, but will skip any Cargo workspaces specified via this property. Workspace names are defined in the workspace member's Cargo.toml file, not their directory paths."
             )
             .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
-            .setExample("crates/workspace-a,crates/workspace-b")
+            .setExample("workspace-a,workspace-b")
             .build();
 
     public static final BooleanProperty DETECT_CARGO_DISABLE_DEFAULT_FEATURES =
@@ -679,8 +699,8 @@ public class DetectProperties {
         CaseSensitiveStringListProperty.newBuilder("detect.cargo.included.features")
             .setInfo("Cargo Include Features", DetectPropertyFromVersion.VERSION_11_3_0)
             .setHelp(
-                "A comma-separated list of Cargo features (specified by the `[feature]` manifest in Cargo.toml) to include.",
-                "By default, Detect only includes default features, but will include additional features or all features specified via this property."
+                "A comma-separated list of Cargo features (specified by the `[feature]` manifest in Cargo.toml) to include, or special values ALL or NONE. By default, Detect only includes default features. Use ALL to enable all features, NONE to generate BOM with no features, or provide a comma-separated list of specific features (e.g., feature-a,feature-b) to include.",
+                "This property applies only to the Cargo CLI Detector and is ignored by the Cargo Lockfile Detector."
             )
             .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
@@ -1114,7 +1134,7 @@ public class DetectProperties {
                     .setInfo("Quack Patch Enabled", DetectPropertyFromVersion.VERSION_11_2_0)
                     .setHelp(
                             "If set to true, Detect will invoke Quack Patch -- a tool that uses LLMs to generate code patches for vulnerable transitive components.",
-                            "Only supported for Rapid and Stateless Scan modes. detect.llm.api.key, detect.llm.api.endpoint, and detect.llm.name must also be set. See <xref href=\\\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/runningdetect/quack-patch%2Ehtml\\\" scope=\\\"external\\\" outputclass=\\\"external\\\" format=\\\"html\\\" target=\\\"_blank\\\">Quack Patch</xref>\n for further details.")
+                            "Only supported for Rapid and Stateless Scan modes. detect.llm.api.key, detect.llm.api.endpoint, and detect.llm.name must also be set. See <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/runningdetect/quack%2Dpatch%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Quack Patch</xref> for further details.")
                     .setGroups(DetectGroup.QUACKPATCH)
                     .build();
 
@@ -1122,7 +1142,7 @@ public class DetectProperties {
             StringProperty.newBuilder("detect.llm.api.key", "")
                     .setInfo("LLM Gateway API key", DetectPropertyFromVersion.VERSION_11_2_0)
                     .setHelp(
-                            "Provides the API key used to authenticate with the configured LLM Gateway.\n")
+                            "Provides the API key used to authenticate with the configured LLM Gateway.")
                     .setGroups(DetectGroup.QUACKPATCH)
                     .build();
 

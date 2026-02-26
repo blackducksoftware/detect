@@ -1,6 +1,12 @@
 <!-- Check the support matrix to determine supported, non-current major version releases -->
 # Release notes for previous [detect_product_short] versions
 
+## Version 11.2.1
+
+### Dependency Updates
+
+* Project Inspector version updated to 2024.12.2
+
 ## Version 11.2.0
 
 ### New features
