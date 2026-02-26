@@ -19,6 +19,7 @@ import com.blackduck.integration.detectable.detectable.result.PropertyInsufficie
 import com.blackduck.integration.detectable.detectables.bazel.BazelDetectableOptions;
 import com.blackduck.integration.detectable.detectables.bazel.BazelProjectNameGenerator;
 import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
+import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelCommandExecutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelVariableSubstitutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.HaskellCabalLibraryJsonProtoParser;
@@ -31,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Optional;
 import java.util.Set;
 import java.io.File;
+import java.util.stream.Collectors;
 
 /**
  * Detectable implementation for Bazel projects using Bazel CLI V2.
@@ -179,7 +181,32 @@ public class BazelV2Detectable extends Detectable {
 
         Set<DependencySource> pipelines;
         // Check if dependency sources are provided via property; if not, probe the Bazel graph
-        Set<DependencySource> sourcesFromProperty = options.getDependencySourcesFromProperty();
+        Set<WorkspaceRule> workspaceRulesFromProperty = options.getWorkspaceRulesFromProperty();
+        Set<DependencySource> sourcesFromProperty;
+        sourcesFromProperty = options.getDependencySourcesFromProperty();
+
+        //TODO - remove support for detect.bazel.workspace.rules property in favor of detect.bazel.dependency.sources, which is more flexible and can support non-workspace rules if needed. For now, if workspace rules are provided and dependency sources are not, convert the workspace rules to dependency sources with a warning.
+        if(!workspaceRulesFromProperty.isEmpty() && (sourcesFromProperty == null || sourcesFromProperty.isEmpty())) {
+            logger.warn("Deprecated property `detect.bazel.workspace.rules` detected. Mapped to `detect.bazel.dependency.sources`. Please migrate to the new property. Alias will be removed in a future release.");
+            sourcesFromProperty = workspaceRulesFromProperty.stream()
+                .map(rule -> {
+                    switch (rule) {
+                        case MAVEN_JAR:
+                            return DependencySource.MAVEN_JAR;
+                        case MAVEN_INSTALL:
+                            return DependencySource.MAVEN_INSTALL;
+                        case HASKELL_CABAL_LIBRARY:
+                            return DependencySource.HASKELL_CABAL_LIBRARY;
+                        case HTTP_ARCHIVE:
+                            return DependencySource.HTTP_ARCHIVE;
+                        default:
+                            logger.warn("Unrecognized workspace rule '{}' in detect.bazel.workspace.rules; skipping.", rule.getName());
+                            return null;
+                    }
+                })
+                .filter(source -> source != null)
+                .collect(Collectors.toSet());
+        }
         if (sourcesFromProperty != null && !sourcesFromProperty.isEmpty()) {
             logger.info("Using detect.bazel.dependency.sources override; skipping graph probing. Pipelines: {}", sourcesFromProperty);
             pipelines = sourcesFromProperty;
