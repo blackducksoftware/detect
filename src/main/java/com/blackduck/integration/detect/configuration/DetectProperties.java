@@ -1122,7 +1122,7 @@ public class DetectProperties {
             StringProperty.newBuilder("detect.llm.api.key", "")
                     .setInfo("LLM Gateway API key", DetectPropertyFromVersion.VERSION_11_2_0)
                     .setHelp(
-                            "Provides the API key used to authenticate with the configured LLM Gateway.\n")
+                            "Provides the API key used to authenticate with the configured LLM Gateway.")
                     .setGroups(DetectGroup.QUACKPATCH)
                     .build();
 
