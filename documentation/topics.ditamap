@@ -142,6 +142,7 @@
 		<topicref href="packagemgrs/opam.md" format="markdown"/>
 		<topicref href="packagemgrs/pnpm.md" format="markdown"/>
 		<topicref href="packagemgrs/python.md" format="markdown"/>
+		<topicref href="packagemgrs/rush.md" format="markdown"/>
 		<topicref href="packagemgrs/sbt.md" format="markdown"/>
 		<topicref href="packagemgrs/swift.md" format="markdown"/>
 		<topicref href="packagemgrs/yarn.md" format="markdown"/>
