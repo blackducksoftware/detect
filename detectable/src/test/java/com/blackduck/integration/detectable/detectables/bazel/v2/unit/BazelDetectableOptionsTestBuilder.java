@@ -2,19 +2,22 @@ package com.blackduck.integration.detectable.detectables.bazel.v2.unit;
 
 import java.util.List;
 import java.util.Set;
+import java.util.Collections;
 
 import com.blackduck.integration.detectable.detectables.bazel.BazelDetectableOptions;
 import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
+import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
 
 /**
  * Test-only builder to make creating BazelDetectableOptions in tests more readable.
  */
 public final class BazelDetectableOptionsTestBuilder {
     private String targetName = null;
-    private Set<DependencySource> dependencySourcesFromProperty = null;
-    private List<String> bazelCqueryAdditionalOptions = null;
-    private List<String> bazelQueryAdditionalOptions = null;
+    private Set<DependencySource> dependencySourcesFromProperty = Collections.emptySet();
+    private List<String> bazelCqueryAdditionalOptions = Collections.emptyList();
+    private List<String> bazelQueryAdditionalOptions = Collections.emptyList();
     private String modeOverride = null;
+    private Set<WorkspaceRule> workspaceRulesFromProperty = Collections.emptySet();
 
     private BazelDetectableOptionsTestBuilder() {
     }
@@ -30,6 +33,11 @@ public final class BazelDetectableOptionsTestBuilder {
 
     public BazelDetectableOptionsTestBuilder dependencySources(Set<DependencySource> dependencySourcesFromProperty) {
         this.dependencySourcesFromProperty = dependencySourcesFromProperty;
+        return this;
+    }
+
+    public BazelDetectableOptionsTestBuilder workspaceRules(Set<WorkspaceRule> workspaceRulesFromProperty) {
+        this.workspaceRulesFromProperty = workspaceRulesFromProperty;
         return this;
     }
 
@@ -54,7 +62,8 @@ public final class BazelDetectableOptionsTestBuilder {
             dependencySourcesFromProperty,
             bazelCqueryAdditionalOptions,
             bazelQueryAdditionalOptions,
-            modeOverride
+            modeOverride,
+            workspaceRulesFromProperty
         );
     }
 
