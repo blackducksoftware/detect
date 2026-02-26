@@ -83,7 +83,6 @@ public class CondaTreeParser {
                 return null;
             }
         } else {
-            logger.warn("Unable to parse dependency from line: {}", line);
             return null;
         }
     }
@@ -99,7 +98,7 @@ public class CondaTreeParser {
             dependencyGraph.addChildWithParent(dependency, dependencyStack.peek().dependency);
         } else if (!dependencyStack.isEmpty() && dependencyStack.peek().depth > depth) {
             // Moving up in the tree - adjust stack
-            while (!dependencyStack.isEmpty() && dependencyStack.peek().depth > depth) {
+            while (!dependencyStack.isEmpty() && dependencyStack.peek().depth >= depth) {
                 dependencyStack.pop();
             }
             dependencyGraph.addChildWithParent(dependency, dependencyStack.peek().dependency);

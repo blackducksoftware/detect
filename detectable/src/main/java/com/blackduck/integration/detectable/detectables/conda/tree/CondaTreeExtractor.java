@@ -52,7 +52,7 @@ public class CondaTreeExtractor {
                 condaTreeListOptions.add(condaEnvironmentName);
             }
             condaTreeListOptions.add("deptree");
-            condaTreeListOptions.add("--small");
+            condaTreeListOptions.add("--full");
 
             ExecutableOutput executableOutput = executableRunner.execute(ExecutableUtils.createFromTarget(workingDirectory, condaTreeExe, condaTreeListOptions));
             List<String> condaTreeOutput = executableOutput.getStandardOutputAsList();
