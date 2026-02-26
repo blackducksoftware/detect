@@ -45,7 +45,9 @@ Recommended action: Upgrade Bazel to 6.4+ (preferably 7.x or 8.x), where `bazel 
 
 ## Usage
 
-The Bazel tool runs automatically when enabled via the `detect.tools` property.
+**Tool invocation:**
+
+The Bazel tool runs automatically when enabled via the `detect.tools` property. Ensure your configuration includes `--detect.tools=BAZEL`.
 
 Requirements:
 - The `--detect.bazel.target` property to specify the Bazel build target
@@ -196,11 +198,8 @@ cd example-bazel-project
 bash <(curl -s -L https://detect.blackduck.com/detect11.sh) --detect.bazel.target='//:mytarget'
 ```
 
-## Troubleshooting
-
-
-
 ### Getting Help
+
 - Refer to the [Bazel Troubleshooting Guide](../troubleshooting/solutions.md) 
 - Check the Detect logs in the `runs/` directory for detailed error messages
 - Verify your Bazel setup works: `bazel build //your:target`
@@ -212,15 +211,9 @@ bash <(curl -s -L https://detect.blackduck.com/detect11.sh) --detect.bazel.targe
 
 The Bazel tool was replaced entirely in [detect_product_short] 11.3.0. The following changes are required if you are upgrading from an earlier version.
 
-**Property rename:**
+**Property:**
 
-The `detect.bazel.workspace.rules` property has been removed and replaced by `detect.bazel.dependency.sources`. The new property accepts the same source names (MAVEN_INSTALL, MAVEN_JAR, HASKELL_CABAL_LIBRARY, HTTP_ARCHIVE). NONE retains the auto-detect behavior.
-
-<note type="note">The old `detect.bazel.workspace.rules` property is no longer recognized. If it is present in your configuration it will be silently ignored. Replace it with `detect.bazel.dependency.sources`.</note>
-
-**Tool invocation:**
-
-The Bazel tool runs as a tool. Ensure your configuration includes `--detect.tools=BAZEL`. Setting `--detect.tools=tool` will not run the Bazel tool.
+The `detect.bazel.workspace.rules` property has been deprecated and replaced by `detect.bazel.dependency.sources`. The new property accepts the same source names (MAVEN_INSTALL, MAVEN_JAR, HASKELL_CABAL_LIBRARY, HTTP_ARCHIVE). NONE retains the auto-detect behavior.
 
 ### Mode Detection Behavior
 
