@@ -52,6 +52,7 @@ import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMo
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedIndividualFileMatchingMode;
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedReducedPersistanceMode;
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedSnippetMode;
+import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
 import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDependencyType;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
@@ -233,25 +234,44 @@ public class DetectProperties {
 
     public static final StringListProperty DETECT_BAZEL_QUERY_OPTIONS =
         StringListProperty.newBuilder("detect.bazel.query.options", emptyList())
-            .setInfo("Bazel query additional options", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setInfo("Bazel query additional options", DetectPropertyFromVersion.VERSION_11_3_0)
             .setHelp("A comma-separated list of additional options to pass to the bazel query command.")
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();
 
     public static final AllNoneEnumListProperty<DependencySource> DETECT_BAZEL_DEPENDENCY_SOURCES =
         AllNoneEnumListProperty.newBuilder("detect.bazel.dependency.sources", AllNoneEnum.NONE, DependencySource.class)
-            .setInfo("Bazel dependency sources", DetectPropertyFromVersion.VERSION_7_12_0)
+            .setInfo("Bazel dependency sources", DetectPropertyFromVersion.VERSION_11_3_0)
             .setHelp(
-                "By default Detect discovers Bazel dependencies from all supported dependency sources (maven_install, maven_jar, http_archive, haskell_cabal_library) found in the WORKSPACE/MODULE.bazel file. Use this property to limit which dependency sources Detect should process.",
-                "Setting this property (or letting it default) to NONE tells Detect to use all supported dependency sources found in the Bazel workspace."
+                "Replaces the deprecated detect.bazel.workspace.rules property. Manually specify which dependency sources to extract. Valid values: MAVEN_INSTALL, MAVEN_JAR, HTTP_ARCHIVE, HASKELL_CABAL_LIBRARY, ALL, NONE. " +
+                "By default (NONE), Detect automatically probes the Bazel dependency graph to determine which sources are present and runs the appropriate pipelines. " +
+                "This property works for both BZLMOD and WORKSPACE projects.",
+                "Set this property when you know which dependency sources are present in your target to skip the probing step and improve performance, especially in CI/CD environments. " +
+                "Use ALL to extract from all supported sources without probing. " +
+                "Example: MAVEN_INSTALL,HTTP_ARCHIVE extracts only Maven and HTTP archive dependencies."
             )
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();
 
+    public static final AllNoneEnumListProperty<WorkspaceRule> DETECT_BAZEL_WORKSPACE_RULES =
+            AllNoneEnumListProperty.newBuilder("detect.bazel.workspace.rules", AllNoneEnum.NONE, WorkspaceRule.class)
+                    .setInfo("Bazel workspace rules", DetectPropertyFromVersion.VERSION_7_12_0)
+                    .setHelp(
+                            "This property is deprecated and will be removed in the next major release. Please use detect.bazel.dependency.sources instead.",
+                            "By default Detect discovers Bazel dependencies using all of the supported Bazel workspace rules that it finds in the WORKSPACE file. Alternatively you can use this property to specify the list of Bazel workspace rules Detect should use. Setting this property (or letting it default) to NONE tells Detect to use supported rules that it finds in the WORKSPACE file."
+                    )
+                    .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
+                    .build();
+
     public static final NullableStringProperty DETECT_BAZEL_MODE =
         NullableStringProperty.newBuilder("detect.bazel.mode")
-            .setInfo("Bazel Mode Override", DetectPropertyFromVersion.VERSION_11_0_0)
-            .setHelp("Override Bazel environment mode detection. By default, Detect automatically determines whether the Bazel project uses BZLMOD or WORKSPACE-based dependency management. Only set this property if auto-detection fails or for testing purposes. Incorrect values may cause extraction to fail. Valid values: WORKSPACE, BZLMOD")
+            .setInfo("Bazel Mode Override", DetectPropertyFromVersion.VERSION_11_3_0)
+            .setHelp(
+                "Override Bazel mode detection. By default, Detect automatically determines whether the Bazel project uses BZLMOD or WORKSPACE-based dependency management " +
+                "by running bazel mod graph. Valid values: WORKSPACE, BZLMOD.",
+                "Only set this property if auto-detection produces incorrect results or for testing purposes. Incorrect values may cause extraction to fail. " +
+                "Auto-detection falls back to WORKSPACE mode if the project is on Bazel 5.x or earlier, or if bazel mod graph returns an empty graph (common in hybrid repos that declare MODULE.bazel for compatibility but manage dependencies via WORKSPACE)."
+            )
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();
 

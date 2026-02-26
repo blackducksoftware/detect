@@ -9,6 +9,7 @@ import java.util.Set;
 
 import com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation;
 import com.blackduck.integration.detect.workflow.file.DirectoryManager;
+import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDetectableOptions;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
 import com.blackduck.integration.detectable.detectables.nuget.NugetDependencyType;
@@ -87,7 +88,8 @@ public class DetectableOptionFactory {
         List<String> bazelQueryAdditionalOptions = detectConfiguration.getValue(DetectProperties.DETECT_BAZEL_QUERY_OPTIONS);
         Set<DependencySource> dependencySourcesFromProperty = detectConfiguration.getValue(DetectProperties.DETECT_BAZEL_DEPENDENCY_SOURCES).representedValueSet();
         String modeOverride = detectConfiguration.getNullableValue(DetectProperties.DETECT_BAZEL_MODE);
-        return new BazelDetectableOptions(targetName, dependencySourcesFromProperty, bazelCqueryAdditionalOptions, bazelQueryAdditionalOptions, modeOverride);
+        Set<WorkspaceRule> workspaceRulesFromProperty = detectConfiguration.getValue(DetectProperties.DETECT_BAZEL_WORKSPACE_RULES).representedValueSet();
+        return new BazelDetectableOptions(targetName, dependencySourcesFromProperty, bazelCqueryAdditionalOptions, bazelQueryAdditionalOptions, modeOverride, workspaceRulesFromProperty);
     }
 
     public BitbakeDetectableOptions createBitbakeDetectableOptions() {
