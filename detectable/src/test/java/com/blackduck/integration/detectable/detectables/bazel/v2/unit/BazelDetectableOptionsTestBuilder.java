@@ -1,5 +1,6 @@
 package com.blackduck.integration.detectable.detectables.bazel.v2.unit;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -16,7 +17,7 @@ public final class BazelDetectableOptionsTestBuilder {
     private List<String> bazelCqueryAdditionalOptions = null;
     private List<String> bazelQueryAdditionalOptions = null;
     private String modeOverride = null;
-    private Set<WorkspaceRule> workspaceRulesFromProperty = null;
+    private Set<WorkspaceRule> workspaceRulesFromProperty = new HashSet<>();
 
     private BazelDetectableOptionsTestBuilder() {
     }
