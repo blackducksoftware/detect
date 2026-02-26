@@ -5,6 +5,7 @@ import java.util.Set;
 
 import com.blackduck.integration.detectable.detectables.bazel.BazelDetectableOptions;
 import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
+import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
 
 /**
  * Test-only builder to make creating BazelDetectableOptions in tests more readable.
@@ -15,6 +16,7 @@ public final class BazelDetectableOptionsTestBuilder {
     private List<String> bazelCqueryAdditionalOptions = null;
     private List<String> bazelQueryAdditionalOptions = null;
     private String modeOverride = null;
+    private Set<WorkspaceRule> workspaceRulesFromProperty = null;
 
     private BazelDetectableOptionsTestBuilder() {
     }
@@ -48,13 +50,19 @@ public final class BazelDetectableOptionsTestBuilder {
         return this;
     }
 
+    public BazelDetectableOptionsTestBuilder workspaceRulesFromProperty(Set<WorkspaceRule> workspaceRulesFromProperty) {
+        this.workspaceRulesFromProperty = workspaceRulesFromProperty;
+        return this;
+    }
+
     public BazelDetectableOptions build() {
         return new BazelDetectableOptions(
             targetName,
             dependencySourcesFromProperty,
             bazelCqueryAdditionalOptions,
             bazelQueryAdditionalOptions,
-            modeOverride
+            modeOverride,
+            workspaceRulesFromProperty
         );
     }
 
