@@ -24,7 +24,10 @@ public class CqueryBuilder {
     private OutputFormat outputFormat;
     private String optionsPlaceholder;
 
-    private static final String FUNCTION_FORMAT = "%s(%s, %s)";
+    // Format for functions with two arguments, e.g. kind(pattern, expression)
+    private static final String FUNCTION_FORMAT_TWO_ARGS = "%s(%s, %s)";
+    // Format for functions with a single argument, e.g. deps(target)
+    private static final String FUNCTION_FORMAT_SINGLE_ARG = "%s(%s)";
     private static final String QUERY_EXPRESSION_MUST_BE_SET = "Query expression must be set before building";
     private static final String PARAM_RULE_PATTERN = "rulePattern";
     private static final String PARAM_EXPRESSION = "expression";
@@ -61,7 +64,7 @@ public class CqueryBuilder {
     public CqueryBuilder kind(String rulePattern, String expression) {
         validateNotNull(rulePattern, PARAM_RULE_PATTERN);
         validateNotNull(expression, PARAM_EXPRESSION);
-        this.queryExpression = String.format(FUNCTION_FORMAT,
+        this.queryExpression = String.format(FUNCTION_FORMAT_TWO_ARGS,
             BazelCommandArguments.KIND_FUNCTION, rulePattern, expression);
         return this;
     }
@@ -77,7 +80,7 @@ public class CqueryBuilder {
     public CqueryBuilder filter(String pattern, String expression) {
         validateNotNull(pattern, PARAM_PATTERN);
         validateNotNull(expression, PARAM_EXPRESSION);
-        this.queryExpression = String.format(FUNCTION_FORMAT,
+        this.queryExpression = String.format(FUNCTION_FORMAT_TWO_ARGS,
             BazelCommandArguments.FILTER_FUNCTION, pattern, expression);
         return this;
     }
@@ -174,7 +177,7 @@ public class CqueryBuilder {
      */
     public static String deps(String target) {
         validateNotNull(target, PARAM_TARGET);
-        return String.format(FUNCTION_FORMAT, BazelCommandArguments.DEPS_FUNCTION, target, "");
+        return String.format(FUNCTION_FORMAT_SINGLE_ARG, BazelCommandArguments.DEPS_FUNCTION, target);
     }
 
     /**

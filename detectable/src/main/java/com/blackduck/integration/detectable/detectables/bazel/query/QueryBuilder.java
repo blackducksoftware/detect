@@ -21,13 +21,12 @@ public class QueryBuilder {
     private String queryExpression;
     private OutputFormat outputFormat;
 
-    private static final String FUNCTION_FORMAT_TWO = "%s(%s, %s)";
-    private static final String FUNCTION_FORMAT_ONE = "%s(%s)";
+    private static final String FUNCTION_FORMAT_TWO_ARGS = "%s(%s, %s)";
+    private static final String FUNCTION_FORMAT_SINGLE_ARG = "%s(%s)";
     private static final String QUERY_EXPRESSION_MUST_BE_SET = "Query expression must be set before building";
     private static final String PARAM_RULE_PATTERN = "rulePattern";
     private static final String PARAM_EXPRESSION = "expression";
     private static final String PARAM_PATTERN = "pattern";
-    private static final String PARAM_OPTIONS = "options";
     private static final String PARAM_TARGET = "target";
     private static final String PARAM_FORMAT = "format";
 
@@ -58,7 +57,7 @@ public class QueryBuilder {
     public QueryBuilder kind(String rulePattern, String expression) {
         validateNotNull(rulePattern, PARAM_RULE_PATTERN);
         validateNotNull(expression, PARAM_EXPRESSION);
-        this.queryExpression = String.format(FUNCTION_FORMAT_TWO,
+        this.queryExpression = String.format(FUNCTION_FORMAT_TWO_ARGS,
             BazelCommandArguments.KIND_FUNCTION, rulePattern, expression);
         return this;
     }
@@ -74,7 +73,7 @@ public class QueryBuilder {
     public QueryBuilder filter(String pattern, String expression) {
         validateNotNull(pattern, PARAM_PATTERN);
         validateNotNull(expression, PARAM_EXPRESSION);
-        this.queryExpression = String.format(FUNCTION_FORMAT_TWO,
+        this.queryExpression = String.format(FUNCTION_FORMAT_TWO_ARGS,
             BazelCommandArguments.FILTER_FUNCTION, pattern, expression);
         return this;
     }
@@ -151,7 +150,7 @@ public class QueryBuilder {
      */
     public static String deps(String target) {
         validateNotNull(target, PARAM_TARGET);
-        return String.format(FUNCTION_FORMAT_ONE, BazelCommandArguments.DEPS_FUNCTION, target);
+        return String.format(FUNCTION_FORMAT_SINGLE_ARG, BazelCommandArguments.DEPS_FUNCTION, target);
     }
 
     /**
