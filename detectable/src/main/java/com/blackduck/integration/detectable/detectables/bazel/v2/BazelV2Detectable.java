@@ -133,14 +133,14 @@ public class BazelV2Detectable extends Detectable {
     }
 
     /**
-     * Main extraction logic for Bazel V2 detectable.
+     * Main extraction logic for Bazel V2 detectable (updated bazel tool).
      * Probes the Bazel environment, determines which dependency pipelines to use, and runs extraction.
      */
     @Override
     public Extraction extract(ExtractionEnvironment extractionEnvironment) throws DetectableException, ExecutableFailedException {
         // Get the Bazel target from options or throw if missing
         String target = options.getTargetName().orElseThrow(() -> new DetectableException("Missing detect.bazel.target"));
-        logger.info("Bazel V2 detectable starting. Target: {}", target);
+        logger.info("The Bazel tool starting. Target: {}", target);
         // Log Bazel tool version similar to v1 behavior
         new ToolVersionLogger(executableRunner).log(environment.getDirectory(), bazelExe, "version");
 
@@ -161,7 +161,7 @@ public class BazelV2Detectable extends Detectable {
         // Run the extraction using the determined pipelines
         BazelV2Extractor extractor = new BazelV2Extractor(externalIdFactory, bazelVariableSubstitutor, haskellParser, projectNameGenerator);
         Extraction extraction = extractor.run(bazelCmd, pipelines, target, mode);
-        logger.info("Bazel V2 detectable finished.");
+        logger.info("The Bazel tool actions finished.");
         return extraction;
     }
 

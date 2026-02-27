@@ -334,12 +334,12 @@ public class OperationRunner {
                 extractionEnvironmentProvider, codeLocationConverter, "BAZEL", DetectTool.BAZEL,
                 statusEventPublisher, exitCodePublisher
             );
-            logger.info("Initializing Bazel V2 detectable.");
+            logger.info("Initializing the Bazel tool.");
             if (detectableTool.initializeAndCheckForApplicable(directoryManager.getSourceDirectory())) {
-                logger.info("Bazel V2 detectable is applicable. Proceeding with extraction.");
+                logger.info("The Bazel tool is applicable. Proceeding with extraction.");
                 return Optional.of(detectableTool);
             } else {
-                logger.info("Bazel V2 detectable not applicable.");
+                logger.info("The Bazel tool not applicable.");
                 return Optional.empty();
             }
         });
