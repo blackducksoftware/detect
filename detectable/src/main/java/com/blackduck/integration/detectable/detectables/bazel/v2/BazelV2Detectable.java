@@ -203,23 +203,26 @@ public class BazelV2Detectable extends Detectable {
             return Collections.emptySet();
         }
         return workspaceRules.stream()
-            .map(rule -> {
-                switch (rule) {
-                    case MAVEN_JAR:
-                        return DependencySource.MAVEN_JAR;
-                    case MAVEN_INSTALL:
-                        return DependencySource.MAVEN_INSTALL;
-                    case HASKELL_CABAL_LIBRARY:
-                        return DependencySource.HASKELL_CABAL_LIBRARY;
-                    case HTTP_ARCHIVE:
-                        return DependencySource.HTTP_ARCHIVE;
-                    default:
-                        logger.warn("Unrecognized workspace rule '{}' in detect.bazel.workspace.rules; skipping.", rule.getName());
-                        return null;
-                }
-            })
+            .map(this::mapWorkspaceRuleToSource)
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
+    }
+
+    // Extracted helper: map a single WorkspaceRule to its DependencySource (or null if unrecognized)
+    private DependencySource mapWorkspaceRuleToSource(WorkspaceRule rule) {
+        switch (rule) {
+            case MAVEN_JAR:
+                return DependencySource.MAVEN_JAR;
+            case MAVEN_INSTALL:
+                return DependencySource.MAVEN_INSTALL;
+            case HASKELL_CABAL_LIBRARY:
+                return DependencySource.HASKELL_CABAL_LIBRARY;
+            case HTTP_ARCHIVE:
+                return DependencySource.HTTP_ARCHIVE;
+            default:
+                logger.warn("Unrecognized workspace rule '{}' in detect.bazel.workspace.rules; skipping.", rule.getName());
+                return null;
+        }
     }
 
     // Helper to resolve pipelines either from properties or by probing

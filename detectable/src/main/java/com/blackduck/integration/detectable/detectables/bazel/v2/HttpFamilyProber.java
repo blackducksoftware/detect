@@ -102,7 +102,6 @@ public class HttpFamilyProber {
             return true;
         }
 
-        // Complexity Reduction: The loop and its nested 'if' are moved to a helper
         return probeRepositories(repoLabels);
     }
 

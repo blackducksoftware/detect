@@ -24,18 +24,6 @@ public class CqueryBuilder {
     private OutputFormat outputFormat;
     private String optionsPlaceholder;
 
-    // Format for functions with two arguments, e.g. kind(pattern, expression)
-    private static final String FUNCTION_FORMAT_TWO_ARGS = "%s(%s, %s)";
-    // Format for functions with a single argument, e.g. deps(target)
-    private static final String FUNCTION_FORMAT_SINGLE_ARG = "%s(%s)";
-    private static final String QUERY_EXPRESSION_MUST_BE_SET = "Query expression must be set before building";
-    private static final String PARAM_RULE_PATTERN = "rulePattern";
-    private static final String PARAM_EXPRESSION = "expression";
-    private static final String PARAM_PATTERN = "pattern";
-    private static final String PARAM_PLACEHOLDER = "placeholder";
-    private static final String PARAM_TARGET = "target";
-    private static final String PARAM_FORMAT = "format";
-
     /**
      * Private constructor - use create() factory method
      */
@@ -62,9 +50,9 @@ public class CqueryBuilder {
      * @return This builder for chaining
      */
     public CqueryBuilder kind(String rulePattern, String expression) {
-        validateNotNull(rulePattern, PARAM_RULE_PATTERN);
-        validateNotNull(expression, PARAM_EXPRESSION);
-        this.queryExpression = String.format(FUNCTION_FORMAT_TWO_ARGS,
+        validateNotNull(rulePattern, QueryParam.RULE_PATTERN);
+        validateNotNull(expression, QueryParam.EXPRESSION);
+        this.queryExpression = String.format(QueryParam.FUNCTION_FORMAT_TWO_ARGS,
             BazelCommandArguments.KIND_FUNCTION, rulePattern, expression);
         return this;
     }
@@ -78,9 +66,9 @@ public class CqueryBuilder {
      * @return This builder for chaining
      */
     public CqueryBuilder filter(String pattern, String expression) {
-        validateNotNull(pattern, PARAM_PATTERN);
-        validateNotNull(expression, PARAM_EXPRESSION);
-        this.queryExpression = String.format(FUNCTION_FORMAT_TWO_ARGS,
+        validateNotNull(pattern, QueryParam.PATTERN);
+        validateNotNull(expression, QueryParam.EXPRESSION);
+        this.queryExpression = String.format(QueryParam.FUNCTION_FORMAT_TWO_ARGS,
             BazelCommandArguments.FILTER_FUNCTION, pattern, expression);
         return this;
     }
@@ -93,7 +81,7 @@ public class CqueryBuilder {
      * @return This builder for chaining
      */
     public CqueryBuilder expression(String expression) {
-        validateNotNull(expression, PARAM_EXPRESSION);
+        validateNotNull(expression, QueryParam.EXPRESSION);
         this.queryExpression = expression;
         return this;
     }
@@ -116,7 +104,7 @@ public class CqueryBuilder {
      * @return This builder for chaining
      */
     public CqueryBuilder withOptions(String placeholder) {
-        validateNotNull(placeholder, PARAM_PLACEHOLDER);
+        validateNotNull(placeholder, QueryParam.PLACEHOLDER);
         this.optionsPlaceholder = placeholder;
         return this;
     }
@@ -128,7 +116,7 @@ public class CqueryBuilder {
      * @return This builder for chaining
      */
     public CqueryBuilder withOutput(OutputFormat format) {
-        validateNotNull(format, PARAM_FORMAT);
+        validateNotNull(format, QueryParam.FORMAT);
         this.outputFormat = format;
         return this;
     }
@@ -142,7 +130,7 @@ public class CqueryBuilder {
      */
     public List<String> build() {
         if (queryExpression == null || queryExpression.isEmpty()) {
-            throw new IllegalStateException(QUERY_EXPRESSION_MUST_BE_SET);
+            throw new IllegalStateException(QueryParam.QUERY_EXPRESSION_MUST_BE_SET);
         }
 
         List<String> result = new ArrayList<>(args);
@@ -176,16 +164,16 @@ public class CqueryBuilder {
      * @return deps() expression string
      */
     public static String deps(String target) {
-        validateNotNull(target, PARAM_TARGET);
-        return String.format(FUNCTION_FORMAT_SINGLE_ARG, BazelCommandArguments.DEPS_FUNCTION, target);
+        validateNotNull(target, QueryParam.TARGET);
+        return String.format(QueryParam.FUNCTION_FORMAT_SINGLE_ARG, BazelCommandArguments.DEPS_FUNCTION, target);
     }
 
     /**
      * Validates that a parameter is not null.
      */
-    private static void validateNotNull(Object value, String paramName) {
+    private static void validateNotNull(Object value, QueryParam param) {
         if (value == null) {
-            throw new IllegalArgumentException(paramName + " cannot be null");
+            throw new IllegalArgumentException(param.getName() + " cannot be null");
         }
     }
 }
