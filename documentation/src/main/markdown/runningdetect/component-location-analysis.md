@@ -72,17 +72,16 @@ Component Location Analysis supports locating dependency declarations that use v
 
 ### Supported Package Managers
 
-* **NPM/YARN**: Fully supported with all semantic versioning operators (`=`, `!=`, `>`, `<`, `>=`, `<=`, `~`, `^`, `-`).
-* **PIP**: Partially supported with comparison operators (`==`, `!=`, `>`, `<`, `>=`, `<=`). Note that Python's `~=` operator has different semantics than npm's `~` operator and is not currently supported.
+* **npm / yarn**: Fully supported with all semantic versioning operators (`=`, `>`, `<`, `>=`, `<=`, `~`, `^`, `-`).
+* **PIP**: Partially supported with comparison operators (`==`, `!=`, `>`, `<`, `>=`, `<=`). <note type="note"> Python&apos;s <codeph>~=</codeph> operator has different semantics than npm <codeph>~</codeph> operator and is not currently supported. </note>
 
 ### Supported Operators
 
-The following version range operators are supported for NPM and YARN:
+The following version range operators are supported for npm and yarn:
 
 | Operator | Description | Example |
 |----------|-------------|---------|
 | `=` | Equal | `=1.2.3` |
-| `!=` | Not equal | `!=1.2.3` |
 | `>` | Greater than | `>1.2.3` |
 | `<` | Less than | `<2.0.0` |
 | `>=` | Greater than or equal | `>=1.2.3` |
@@ -110,5 +109,5 @@ When a version range operator is detected, the `operator` field appears in the `
 }
 ```
 
-<note type="note">Version range operators are not supported for Maven, Gradle, and NuGet at this time. These package managers use bracket notation for version ranges, which requires different parsing logic.</note>
+<note type="note">Version range operators are not supported for Maven, Gradle, or NuGet at this time. These package managers use bracket notation for version ranges, which requires different parsing logic.</note>
 
