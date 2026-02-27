@@ -1275,6 +1275,13 @@ public class DetectProperties {
             .setGroups(DetectGroup.MAVEN, DetectGroup.GLOBAL)
             .build();
 
+    public static final NullablePathProperty DETECT_ANT_PATH =
+        NullablePathProperty.newBuilder("detect.ant.path")
+            .setInfo("Ant Executable", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setHelp("The path to the Ant executable.", "If set, Detect will use the given Ant executable instead of searching for one.")
+            .setGroups(DetectGroup.IVY, DetectGroup.GLOBAL)
+            .build();
+
     public static final CaseSensitiveStringListProperty DETECT_MAVEN_INCLUDED_SCOPES =
         CaseSensitiveStringListProperty.newBuilder("detect.maven.included.scopes")
             .setInfo("Dependency Scope Included", DetectPropertyFromVersion.VERSION_6_0_0)
