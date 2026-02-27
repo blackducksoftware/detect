@@ -62,7 +62,7 @@ public class BazelV2Extractor {
                           Set<DependencySource> sources,
                           String bazelTarget,
                           BazelEnvironmentAnalyzer.Mode mode) throws ExecutableFailedException, DetectableException {
-        logger.info("Starting Bazel V2 extraction. Target: {}. Pipelines: {}", bazelTarget, sources);
+        logger.info("Starting the Bazel tool extraction. Target: {}. Pipelines: {}", bazelTarget, sources);
         // Create pipelines for each dependency source
         Pipelines pipelines = new Pipelines(bazelCmd, bazelVariableSubstitutor, externalIdFactory, haskellParser, mode);
 
@@ -89,7 +89,7 @@ public class BazelV2Extractor {
         Extraction.Builder builder = new Extraction.Builder()
             .success(Collections.singletonList(cl))
             .projectName(projectName);
-        logger.info("Bazel V2 extraction complete. Project name: {}. Total dependencies: {}", projectName, aggregated.size());
+        logger.info("The Bazel tool extraction complete. Project name: {}. Total dependencies: {}", projectName, aggregated.size());
         return builder.build();
     }
 

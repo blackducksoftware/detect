@@ -35,7 +35,7 @@ public class HttpFamilyProber {
         "module_extension", "module extension", "origin: module extension"
     );
 
-    private static final List<String> BAZEL_DEP_KEYWORDS = Arrays.asList(
+    private static final List<String> BAZEL_DEP_KEYWORDS = Collections.singletonList(
         "bazel_dep"
     );
 
@@ -84,65 +84,81 @@ public class HttpFamilyProber {
      * @throws Exception if Bazel command execution fails
      */
     public boolean detect(String target) throws Exception {
-        // We use `query` here because HTTP detection is primarily a static inspection of rule declarations
-        // (we are looking for external repository labels and rule kinds). `query` provides convenient outputs
-        // like label_kind and XML that are easy to parse for attributes; it's also lighter-weight for these
-        // workspace-style heuristics compared to cquery's action-graph outputs.
         List<String> queryArgs = BazelQueryBuilder.query()
-            .kind(LIBRARY_RULE_PATTERN, BazelQueryBuilder.deps(target))
-            .build();
+                .kind(LIBRARY_RULE_PATTERN, BazelQueryBuilder.deps(target))
+                .build();
 
         Optional<String> depsOut = bazel.executeToString(queryArgs);
         if (!depsOut.isPresent()) {
             return false;
         }
-        // Split output into lines and process repository labels
-        String[] lines = depsOut.get().split("\r?\n");
+
+        Map<String, LinkedHashSet<String>> repoLabels = parseRepoLabels(depsOut.get());
+        if (repoLabels.isEmpty()) {
+            return false;
+        }
+
+        if (shouldEnableHttpForLargeTargets(repoLabels)) {
+            return true;
+        }
+
+        return probeRepositories(repoLabels);
+    }
+
+    /**
+     * Performs the actual probing logic.
+     */
+    private boolean probeRepositories(Map<String, LinkedHashSet<String>> repoLabels) throws Exception {
+        logger.debug("Target has {} external repository dependencies (≤{}). Probing for HTTP characteristics.",
+                repoLabels.size(), LARGE_TARGET_THRESHOLD);
+
+        int checkedRepos = 0;
+        for (Map.Entry<String, LinkedHashSet<String>> entry : repoLabels.entrySet()) {
+            checkedRepos++;
+            if (probeRepo(entry.getKey(), entry.getValue())) {
+                logger.info("HTTP repository '{}' detected at probe #{} of {}. Enabling HTTP pipeline.",
+                        entry.getKey(), checkedRepos, repoLabels.size());
+                return true;
+            }
+        }
+
+        logger.debug("Probed all {} repositories, no HTTP dependencies detected.", checkedRepos);
+        return false;
+    }
+
+
+    /**
+     * Parses the deps() output and extracts external repository labels grouped by repository name.
+     * Preserves label insertion order per repo using LinkedHashSet.
+     */
+    private Map<String, LinkedHashSet<String>> parseRepoLabels(String depsOutput) {
+        String[] lines = depsOutput.split("\r?\n");
         Map<String, LinkedHashSet<String>> repoLabels = new HashMap<>();
         for (String line : lines) {
-            // Look for external repository labels (start with @ or @@)
             if (line.startsWith(REPO_PREFIX_SINGLE) && line.contains(REPO_PATH_SEPARATOR)) {
                 int start = line.startsWith(REPO_PREFIX_CANONICAL) ? 2 : 1; // Support canonical names starting with @@
                 String repo = line.substring(start, line.indexOf(REPO_PATH_SEPARATOR));
                 if (isExcludedRepo(repo)) {
                     continue;
                 }
-                // Track all labels for each repo
                 repoLabels.computeIfAbsent(repo, r -> new LinkedHashSet<>()).add(line.trim());
             }
         }
-        if (repoLabels.isEmpty()) {
-            return false;
-        }
+        return repoLabels;
+    }
 
+    /**
+     * Returns true and logs info if the repoLabels indicate a large target (over threshold).
+     * For large targets, HTTP pipeline is enabled unconditionally.
+     */
+    private boolean shouldEnableHttpForLargeTargets(Map<String, LinkedHashSet<String>> repoLabels) {
         int totalRepos = repoLabels.size();
-
-        // Strategy: Large targets (>150 repos in dependency graph) can't be probed exhaustively
-        // within reasonable time, so we enable HTTP pipeline unconditionally to ensure completeness.
-        // Small/medium targets are fully probed for precise detection.
         if (totalRepos > LARGE_TARGET_THRESHOLD) {
             logger.info("Target has {} external repository dependencies (>{}). " +
                        "Enabling HTTP pipeline to ensure completeness without probing overhead.",
                        totalRepos, LARGE_TARGET_THRESHOLD);
             return true;
         }
-
-        // Small/medium target: probe all repositories for precise HTTP detection
-        logger.debug("Target has {} external repository dependencies (≤{}). Probing all repositories for HTTP dependencies.",
-                    totalRepos, LARGE_TARGET_THRESHOLD);
-
-        int checkedRepos = 0;
-        // Probe each repository for HTTP family characteristics
-        for (Map.Entry<String, LinkedHashSet<String>> entry : repoLabels.entrySet()) {
-            checkedRepos++;
-            if (probeRepo(entry.getKey(), entry.getValue())) {
-                logger.info("HTTP repository '{}' detected at probe #{} of {}. Enabling HTTP pipeline.",
-                           entry.getKey(), checkedRepos, totalRepos);
-                return true;
-            }
-        }
-
-        logger.debug("Probed all {} repositories, no HTTP dependencies detected.", checkedRepos);
         return false;
     }
 
@@ -203,14 +219,7 @@ public class HttpFamilyProber {
         // Strategy 2: Query all discovered labels to avoid false negatives from sampling
         // Since repos are capped at DEFAULT_MAX_REPOS_TO_PROBE, querying all labels per repo
         // is acceptable (typically 10-100 labels from dependency graph)
-        if (!labels.isEmpty()) {
-            String targets = "set(" + String.join(" ", labels) + ")";
-            if (probeRepoWithLabelKind(repo, targets, "all discovered labels")) {
-                return true;
-            }
-        }
-
-        return false;
+        return !labels.isEmpty() && probeRepoWithLabelKind(repo, "set(" + String.join(" ", labels) + ")", "all discovered labels");
     }
 
     /**

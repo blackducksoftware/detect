@@ -46,9 +46,9 @@ public class QueryBuilder {
      * @return This builder for chaining
      */
     public QueryBuilder kind(String rulePattern, String expression) {
-        validateNotNull(rulePattern, "rulePattern");
-        validateNotNull(expression, "expression");
-        this.queryExpression = String.format("%s(%s, %s)",
+        validateNotNull(rulePattern, QueryParam.RULE_PATTERN);
+        validateNotNull(expression, QueryParam.EXPRESSION);
+        this.queryExpression = String.format(QueryParam.FUNCTION_FORMAT_TWO_ARGS,
             BazelCommandArguments.KIND_FUNCTION, rulePattern, expression);
         return this;
     }
@@ -62,9 +62,9 @@ public class QueryBuilder {
      * @return This builder for chaining
      */
     public QueryBuilder filter(String pattern, String expression) {
-        validateNotNull(pattern, "pattern");
-        validateNotNull(expression, "expression");
-        this.queryExpression = String.format("%s(%s, %s)",
+        validateNotNull(pattern, QueryParam.PATTERN);
+        validateNotNull(expression, QueryParam.EXPRESSION);
+        this.queryExpression = String.format(QueryParam.FUNCTION_FORMAT_TWO_ARGS,
             BazelCommandArguments.FILTER_FUNCTION, pattern, expression);
         return this;
     }
@@ -77,7 +77,7 @@ public class QueryBuilder {
      * @return This builder for chaining
      */
     public QueryBuilder expression(String expression) {
-        validateNotNull(expression, "expression");
+        validateNotNull(expression, QueryParam.EXPRESSION);
         this.queryExpression = expression;
         return this;
     }
@@ -104,7 +104,7 @@ public class QueryBuilder {
      * @return This builder for chaining
      */
     public QueryBuilder withOutput(OutputFormat format) {
-        validateNotNull(format, "format");
+        validateNotNull(format, QueryParam.FORMAT);
         this.outputFormat = format;
         return this;
     }
@@ -117,7 +117,7 @@ public class QueryBuilder {
      */
     public List<String> build() {
         if (queryExpression == null || queryExpression.isEmpty()) {
-            throw new IllegalStateException("Query expression must be set before building");
+            throw new IllegalStateException(QueryParam.QUERY_EXPRESSION_MUST_BE_SET);
         }
 
         List<String> result = new ArrayList<>(args);
@@ -140,27 +140,16 @@ public class QueryBuilder {
      * @return deps() expression string
      */
     public static String deps(String target) {
-        validateNotNull(target, "target");
-        return String.format("%s(%s)", BazelCommandArguments.DEPS_FUNCTION, target);
+        validateNotNull(target, QueryParam.TARGET);
+        return String.format(QueryParam.FUNCTION_FORMAT_SINGLE_ARG, BazelCommandArguments.DEPS_FUNCTION, target);
     }
 
     /**
      * Validates that a parameter is not null.
      */
-    private static void validateNotNull(Object value, String paramName) {
+    private static void validateNotNull(Object value, QueryParam param) {
         if (value == null) {
-            throw new IllegalArgumentException(paramName + " cannot be null");
-        }
-    }
-
-    /**
-     * Validates that a string parameter is not null or empty.
-     */
-    private void validateNotEmpty(String value, String paramName) {
-        validateNotNull(value, paramName);
-        if (value.trim().isEmpty()) {
-            throw new IllegalArgumentException(paramName + " cannot be empty");
+            throw new IllegalArgumentException(param.getName() + " cannot be null");
         }
     }
 }
-
