@@ -72,12 +72,12 @@ Component Location Analysis supports locating dependency declarations that use v
 
 ### Supported Package Managers
 
-* **npm / yarn**: Fully supported with all semantic versioning operators (`=`, `>`, `<`, `>=`, `<=`, `~`, `^`, `-`).
+* **npm / Yarn**: Fully supported with all semantic versioning operators (`=`, `>`, `<`, `>=`, `<=`, `~`, `^`, `-`).
 * **PIP**: Partially supported with comparison operators (`==`, `!=`, `>`, `<`, `>=`, `<=`). <note type="note"> Python&apos;s <codeph>~=</codeph> operator has different semantics than npm <codeph>~</codeph> operator and is not currently supported. </note>
 
 ### Supported Operators
 
-The following version range operators are supported for npm and yarn:
+The following version range operators are supported for npm and Yarn:
 
 | Operator | Description | Example |
 |----------|-------------|---------|
