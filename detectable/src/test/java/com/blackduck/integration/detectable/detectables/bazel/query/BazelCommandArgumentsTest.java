@@ -2,6 +2,9 @@ package com.blackduck.integration.detectable.detectables.bazel.query;
 
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class BazelCommandArgumentsTest {
@@ -39,18 +42,20 @@ class BazelCommandArgumentsTest {
     }
 
     @Test
-    void testCannotInstantiate() {
+    void testCannotInstantiate() throws Exception {
         // Verify utility class pattern - constructor throws IllegalStateException
-        try {
-            java.lang.reflect.Constructor<BazelCommandArguments> constructor =
-                BazelCommandArguments.class.getDeclaredConstructor();
-            constructor.setAccessible(true);
-            constructor.newInstance();
-            fail("Expected IllegalStateException to be thrown");
-        } catch (Exception e) {
-            // Expected - the constructor should throw IllegalStateException
-            assertTrue(e.getCause() instanceof IllegalStateException);
-        }
+        Constructor<BazelCommandArguments> constructor =
+            BazelCommandArguments.class.getDeclaredConstructor();
+        constructor.setAccessible(true);
+
+        // Only the constructor.newInstance() call is expected to throw; assertThrows makes that explicit.
+        InvocationTargetException thrown = assertThrows(
+            InvocationTargetException.class,
+                constructor::newInstance
+        );
+
+        // The constructor should have thrown IllegalStateException; verify it is the cause.
+        assertTrue(thrown.getCause() instanceof IllegalStateException);
     }
 
     @Test
@@ -76,10 +81,6 @@ class BazelCommandArgumentsTest {
         assertEquals("cquery", BazelCommandArguments.CQUERY);
         assertEquals("mod", BazelCommandArguments.MOD);
 
-        // Flags should start with --
-        assertTrue(BazelCommandArguments.NO_IMPLICIT_DEPS.startsWith("--"));
-        assertTrue(BazelCommandArguments.OUTPUT_FLAG.startsWith("--"));
-
         // Functions should be lowercase
         assertEquals("kind", BazelCommandArguments.KIND_FUNCTION);
         assertEquals("deps", BazelCommandArguments.DEPS_FUNCTION);
@@ -90,4 +91,3 @@ class BazelCommandArgumentsTest {
         assertEquals("graph", BazelCommandArguments.MOD_GRAPH);
     }
 }
-

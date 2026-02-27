@@ -2,6 +2,8 @@ package com.blackduck.integration.detectable.detectables.bazel.query;
 
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -72,18 +74,17 @@ class BazelQueryBuilderTest {
     }
 
     @Test
-    void testCannotInstantiate() {
+    void testCannotInstantiate() throws Exception {
         // Verify utility class pattern - constructor throws IllegalStateException
-        try {
-            java.lang.reflect.Constructor<BazelQueryBuilder> constructor =
-                BazelQueryBuilder.class.getDeclaredConstructor();
-            constructor.setAccessible(true);
-            constructor.newInstance();
-            fail("Expected IllegalStateException to be thrown");
-        } catch (Exception e) {
-            // Expected - the constructor should throw IllegalStateException
-            assertTrue(e.getCause() instanceof IllegalStateException);
-        }
+        Constructor<BazelQueryBuilder> constructor =
+            BazelQueryBuilder.class.getDeclaredConstructor();
+        constructor.setAccessible(true);
+
+        InvocationTargetException thrown = assertThrows(
+            InvocationTargetException.class,
+            constructor::newInstance
+        );
+        assertTrue(thrown.getCause() instanceof IllegalStateException);
     }
 
     // ===== Real-world usage examples from the codebase =====
