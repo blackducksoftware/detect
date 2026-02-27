@@ -153,7 +153,7 @@ public class BazelGraphProber {
             .build();
 
         Optional<String> out = bazel.executeToString(queryArgs);
-        boolean found = out.isPresent() && out.get().contains("haskell_cabal_library");
+        boolean found = out.isPresent() && out.get().contains(HASKELL_CABAL_RULE_PATTERN);
         if (found) {
             logger.debug("Detected haskell_cabal_library rules.");
         }

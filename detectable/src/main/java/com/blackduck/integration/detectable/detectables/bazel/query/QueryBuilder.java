@@ -21,6 +21,16 @@ public class QueryBuilder {
     private String queryExpression;
     private OutputFormat outputFormat;
 
+    private static final String FUNCTION_FORMAT_TWO = "%s(%s, %s)";
+    private static final String FUNCTION_FORMAT_ONE = "%s(%s)";
+    private static final String QUERY_EXPRESSION_MUST_BE_SET = "Query expression must be set before building";
+    private static final String PARAM_RULE_PATTERN = "rulePattern";
+    private static final String PARAM_EXPRESSION = "expression";
+    private static final String PARAM_PATTERN = "pattern";
+    private static final String PARAM_OPTIONS = "options";
+    private static final String PARAM_TARGET = "target";
+    private static final String PARAM_FORMAT = "format";
+
     /**
      * Private constructor - use create() factory method
      */
@@ -46,9 +56,9 @@ public class QueryBuilder {
      * @return This builder for chaining
      */
     public QueryBuilder kind(String rulePattern, String expression) {
-        validateNotNull(rulePattern, "rulePattern");
-        validateNotNull(expression, "expression");
-        this.queryExpression = String.format("%s(%s, %s)",
+        validateNotNull(rulePattern, PARAM_RULE_PATTERN);
+        validateNotNull(expression, PARAM_EXPRESSION);
+        this.queryExpression = String.format(FUNCTION_FORMAT_TWO,
             BazelCommandArguments.KIND_FUNCTION, rulePattern, expression);
         return this;
     }
@@ -62,9 +72,9 @@ public class QueryBuilder {
      * @return This builder for chaining
      */
     public QueryBuilder filter(String pattern, String expression) {
-        validateNotNull(pattern, "pattern");
-        validateNotNull(expression, "expression");
-        this.queryExpression = String.format("%s(%s, %s)",
+        validateNotNull(pattern, PARAM_PATTERN);
+        validateNotNull(expression, PARAM_EXPRESSION);
+        this.queryExpression = String.format(FUNCTION_FORMAT_TWO,
             BazelCommandArguments.FILTER_FUNCTION, pattern, expression);
         return this;
     }
@@ -77,7 +87,7 @@ public class QueryBuilder {
      * @return This builder for chaining
      */
     public QueryBuilder expression(String expression) {
-        validateNotNull(expression, "expression");
+        validateNotNull(expression, PARAM_EXPRESSION);
         this.queryExpression = expression;
         return this;
     }
@@ -104,7 +114,7 @@ public class QueryBuilder {
      * @return This builder for chaining
      */
     public QueryBuilder withOutput(OutputFormat format) {
-        validateNotNull(format, "format");
+        validateNotNull(format, PARAM_FORMAT);
         this.outputFormat = format;
         return this;
     }
@@ -117,7 +127,7 @@ public class QueryBuilder {
      */
     public List<String> build() {
         if (queryExpression == null || queryExpression.isEmpty()) {
-            throw new IllegalStateException("Query expression must be set before building");
+            throw new IllegalStateException(QUERY_EXPRESSION_MUST_BE_SET);
         }
 
         List<String> result = new ArrayList<>(args);
@@ -140,8 +150,8 @@ public class QueryBuilder {
      * @return deps() expression string
      */
     public static String deps(String target) {
-        validateNotNull(target, "target");
-        return String.format("%s(%s)", BazelCommandArguments.DEPS_FUNCTION, target);
+        validateNotNull(target, PARAM_TARGET);
+        return String.format(FUNCTION_FORMAT_ONE, BazelCommandArguments.DEPS_FUNCTION, target);
     }
 
     /**
@@ -163,4 +173,3 @@ public class QueryBuilder {
         }
     }
 }
-
