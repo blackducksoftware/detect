@@ -564,6 +564,28 @@
 						</row>
 						<row>
 							<entry>
+								<b>MESON</b>
+							</entry>
+							<entry> </entry>
+							<entry> </entry>
+							<entry> </entry>
+							<entry> </entry>
+							<entry> </entry>
+						</row>
+						<row>
+							<entry> </entry>
+							<entry>Meson</entry>
+							<entry>C++</entry>
+							<entry>Generic</entry>
+							<entry>
+								<p>File: meson.build</p>
+								<p>File: */meson-info/intro-project.json</p>
+								<p>File: */meson-info/intro-dependencies.json</p>
+							</entry>
+							<entry>HIGH</entry>
+						</row>
+						<row>
+							<entry>
 								<b>NPM</b>
 							</entry>
 							<entry> </entry>

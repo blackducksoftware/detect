@@ -39,6 +39,7 @@ import com.blackduck.integration.detectable.detectables.gradle.parsing.GradlePro
 import com.blackduck.integration.detectable.detectables.ivy.IvyParseDetectable;
 import com.blackduck.integration.detectable.detectables.lerna.LernaDetectable;
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenPomDetectable;
+import com.blackduck.integration.detectable.detectables.meson.MesonDetectable;
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenPomWrapperDetectable;
 import com.blackduck.integration.detectable.detectables.maven.parsing.MavenProjectInspectorDetectable;
 import com.blackduck.integration.detectable.detectables.npm.cli.NpmCliDetectable;
@@ -142,6 +143,10 @@ public class DetectDetectableFactory {
 
     public ClangDetectable createClangDetectable(DetectableEnvironment environment) {
         return detectableFactory.createClangDetectable(environment, detectableOptionFactory.createClangDetectableOptions());
+    }
+
+    public MesonDetectable createMesonDetectable(DetectableEnvironment environment) {
+        return detectableFactory.createMesonDetectable(environment);
     }
 
     public ComposerLockDetectable createComposerDetectable(DetectableEnvironment environment) {

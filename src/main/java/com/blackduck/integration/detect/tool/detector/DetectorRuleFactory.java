@@ -29,6 +29,7 @@ import com.blackduck.integration.detectable.detectables.ivy.IvyParseDetectable;
 import com.blackduck.integration.detectable.detectables.lerna.LernaDetectable;
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenPomDetectable;
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenPomWrapperDetectable;
+import com.blackduck.integration.detectable.detectables.meson.MesonDetectable;
 import com.blackduck.integration.detectable.detectables.maven.parsing.MavenProjectInspectorDetectable;
 import com.blackduck.integration.detectable.detectables.npm.cli.NpmCliDetectable;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.NpmPackageLockDetectable;
@@ -301,6 +302,11 @@ public class DetectorRuleFactory {
 
         rules.addDetector(DetectorType.CLANG, detector -> {
             detector.entryPoint(ClangDetectable.class)
+                .search().defaults();
+        });
+
+        rules.addDetector(DetectorType.MESON, detector -> {
+            detector.entryPoint(MesonDetectable.class)
                 .search().defaults();
         });
 
