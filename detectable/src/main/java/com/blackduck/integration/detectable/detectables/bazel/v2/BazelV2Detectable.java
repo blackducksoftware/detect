@@ -33,6 +33,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.io.File;
 import java.util.stream.Collectors;
+import java.util.Collections;
+import java.util.Objects;
 
 /**
  * Detectable implementation for Bazel projects using Bazel CLI V2.
@@ -80,7 +82,7 @@ public class BazelV2Detectable extends Detectable {
                               HaskellCabalLibraryJsonProtoParser haskellParser,
                               BazelProjectNameGenerator projectNameGenerator) {
         this(environment, fileFinder, executableRunner, externalIdFactory, bazelResolver, options, bazelVariableSubstitutor, haskellParser, projectNameGenerator,
-            (bazelCmd, target, mode) -> new BazelGraphProber(bazelCmd, target, mode)
+            BazelGraphProber::new
         );
     }
 
@@ -144,77 +146,12 @@ public class BazelV2Detectable extends Detectable {
 
         // Set up Bazel command executor and determine environment mode
         BazelCommandExecutor bazelCmd = new BazelCommandExecutor(executableRunner, environment.getDirectory(), bazelExe);
-        BazelEnvironmentAnalyzer.Mode mode;
 
-        // Check for mode override property first
-        Optional<BazelEnvironmentAnalyzer.Mode> modeOverride = options.getModeOverride();
-        if (modeOverride.isPresent()) {
-            mode = modeOverride.get();
-            logger.info("Using Bazel mode from property override: {}", mode);
-        } else {
-            // Auto-detect mode if not overridden
-            // When there's no MODULE.bazel in the workspace root, avoid running 'bazel mod' commands
-            // which can create MODULE.bazel files in workspaces that are legacy. In that case,
-            // assume WORKSPACE mode.
-            File workspaceDir = environment.getDirectory();
-            File moduleFile = new File(workspaceDir, "MODULE.bazel");
-            if (!moduleFile.exists()) {
-                logger.info("No MODULE.bazel found at {}. Skipping 'bazel mod graph' to avoid file generation; assuming WORKSPACE mode.", workspaceDir.getAbsolutePath());
-                mode = BazelEnvironmentAnalyzer.Mode.WORKSPACE;
-            } else {
-                BazelEnvironmentAnalyzer envAnalyzer = new BazelEnvironmentAnalyzer(bazelCmd);
-                mode = envAnalyzer.getMode();
-            }
+        // Determine mode (either via override or auto-detection)
+        BazelEnvironmentAnalyzer.Mode mode = determineMode(bazelCmd);
 
-            // Fail fast if mode detection returned UNKNOWN
-            if (mode == BazelEnvironmentAnalyzer.Mode.UNKNOWN) {
-                throw new DetectableException(
-                    "Unable to determine Bazel mode automatically. " +
-                    "The 'bazel mod show_repo' command failed with an unexpected error. " +
-                    "Please set the 'detect.bazel.mode' property to either 'WORKSPACE' or 'BZLMOD' to proceed. " +
-                    "Example: --detect.bazel.mode=WORKSPACE"
-                );
-            }
-
-            logger.info("Using Bazel mode from auto-detection: {}", mode);
-        }
-
-        Set<DependencySource> pipelines;
-        // Check if dependency sources are provided via property; if not, probe the Bazel graph
-        Set<WorkspaceRule> workspaceRulesFromProperty = options.getWorkspaceRulesFromProperty();
-        Set<DependencySource> sourcesFromProperty;
-        sourcesFromProperty = options.getDependencySourcesFromProperty();
-
-        //TODO - remove support for detect.bazel.workspace.rules property in favor of detect.bazel.dependency.sources, which is more flexible and can support non-workspace rules if needed. For now, if workspace rules are provided and dependency sources are not, convert the workspace rules to dependency sources with a warning.
-        if(!workspaceRulesFromProperty.isEmpty() && (sourcesFromProperty == null || sourcesFromProperty.isEmpty())) {
-            logger.warn("Deprecated property `detect.bazel.workspace.rules` detected. Mapped to `detect.bazel.dependency.sources`. Please migrate to the new property. Alias will be removed in a future release.");
-            sourcesFromProperty = workspaceRulesFromProperty.stream()
-                .map(rule -> {
-                    switch (rule) {
-                        case MAVEN_JAR:
-                            return DependencySource.MAVEN_JAR;
-                        case MAVEN_INSTALL:
-                            return DependencySource.MAVEN_INSTALL;
-                        case HASKELL_CABAL_LIBRARY:
-                            return DependencySource.HASKELL_CABAL_LIBRARY;
-                        case HTTP_ARCHIVE:
-                            return DependencySource.HTTP_ARCHIVE;
-                        default:
-                            logger.warn("Unrecognized workspace rule '{}' in detect.bazel.workspace.rules; skipping.", rule.getName());
-                            return null;
-                    }
-                })
-                .filter(source -> source != null)
-                .collect(Collectors.toSet());
-        }
-        if (sourcesFromProperty != null && !sourcesFromProperty.isEmpty()) {
-            logger.info("Using detect.bazel.dependency.sources override; skipping graph probing. Pipelines: {}", sourcesFromProperty);
-            pipelines = sourcesFromProperty;
-        } else {
-            // Probe the Bazel dependency graph to determine enabled pipelines
-            BazelGraphProber prober = bazelGraphProberFactory.create(bazelCmd, target, mode);
-            pipelines = prober.decidePipelines();
-        }
+        // Determine pipelines (either from properties or by probing)
+        Set<DependencySource> pipelines = resolvePipelines(bazelCmd, target, mode);
 
         // Fail if no supported pipelines are found
         if (pipelines == null || pipelines.isEmpty()) {
@@ -226,5 +163,81 @@ public class BazelV2Detectable extends Detectable {
         Extraction extraction = extractor.run(bazelCmd, pipelines, target, mode);
         logger.info("Bazel V2 detectable finished.");
         return extraction;
+    }
+
+    // Helper to determine Bazel mode; extracted to reduce cognitive complexity in extract().
+    private BazelEnvironmentAnalyzer.Mode determineMode(BazelCommandExecutor bazelCmd) throws DetectableException {
+        Optional<BazelEnvironmentAnalyzer.Mode> modeOverride = options.getModeOverride();
+        if (modeOverride.isPresent()) {
+            BazelEnvironmentAnalyzer.Mode mode = modeOverride.get();
+            logger.info("Using Bazel mode from property override: {}", mode);
+            return mode;
+        }
+
+        File workspaceDir = environment.getDirectory();
+        File moduleFile = new File(workspaceDir, "MODULE.bazel");
+        if (!moduleFile.exists()) {
+            logger.info("No MODULE.bazel found at {}. Skipping 'bazel mod graph' to avoid file generation; assuming WORKSPACE mode.", workspaceDir.getAbsolutePath());
+            return BazelEnvironmentAnalyzer.Mode.WORKSPACE;
+        }
+
+        BazelEnvironmentAnalyzer envAnalyzer = new BazelEnvironmentAnalyzer(bazelCmd);
+        BazelEnvironmentAnalyzer.Mode mode = envAnalyzer.getMode();
+
+        if (mode == BazelEnvironmentAnalyzer.Mode.UNKNOWN) {
+            throw new DetectableException(
+                "Unable to determine Bazel mode automatically. " +
+                "The 'bazel mod show_repo' command failed with an unexpected error. " +
+                "Please set the 'detect.bazel.mode' property to either 'WORKSPACE' or 'BZLMOD' to proceed. " +
+                "Example: --detect.bazel.mode=WORKSPACE"
+            );
+        }
+
+        logger.info("Using Bazel mode from auto-detection: {}", mode);
+        return mode;
+    }
+
+    // Helper to map legacy workspace rules to DependencySource
+    private Set<DependencySource> mapWorkspaceRulesToSources(Set<WorkspaceRule> workspaceRules) {
+        if (workspaceRules == null || workspaceRules.isEmpty()) {
+            return Collections.emptySet();
+        }
+        return workspaceRules.stream()
+            .map(rule -> {
+                switch (rule) {
+                    case MAVEN_JAR:
+                        return DependencySource.MAVEN_JAR;
+                    case MAVEN_INSTALL:
+                        return DependencySource.MAVEN_INSTALL;
+                    case HASKELL_CABAL_LIBRARY:
+                        return DependencySource.HASKELL_CABAL_LIBRARY;
+                    case HTTP_ARCHIVE:
+                        return DependencySource.HTTP_ARCHIVE;
+                    default:
+                        logger.warn("Unrecognized workspace rule '{}' in detect.bazel.workspace.rules; skipping.", rule.getName());
+                        return null;
+                }
+            })
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+    }
+
+    // Helper to resolve pipelines either from properties or by probing
+    private Set<DependencySource> resolvePipelines(BazelCommandExecutor bazelCmd, String target, BazelEnvironmentAnalyzer.Mode mode) {
+        Set<WorkspaceRule> workspaceRulesFromProperty = options.getWorkspaceRulesFromProperty();
+        Set<DependencySource> sourcesFromProperty = options.getDependencySourcesFromProperty();
+
+        if (!workspaceRulesFromProperty.isEmpty() && (sourcesFromProperty == null || sourcesFromProperty.isEmpty())) {
+            logger.warn("Deprecated property `detect.bazel.workspace.rules` detected. Mapped to `detect.bazel.dependency.sources`. Please migrate to the new property. Alias will be removed in a future release.");
+            sourcesFromProperty = mapWorkspaceRulesToSources(workspaceRulesFromProperty);
+        }
+
+        if (sourcesFromProperty != null && !sourcesFromProperty.isEmpty()) {
+            logger.info("Using detect.bazel.dependency.sources override; skipping graph probing. Pipelines: {}", sourcesFromProperty);
+            return sourcesFromProperty;
+        }
+
+        BazelGraphProber prober = bazelGraphProberFactory.create(bazelCmd, target, mode);
+        return prober.decidePipelines();
     }
 }

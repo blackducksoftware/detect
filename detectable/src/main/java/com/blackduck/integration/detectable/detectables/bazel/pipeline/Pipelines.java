@@ -166,7 +166,7 @@ public class Pipelines {
 
         // Select HTTP_ARCHIVE pipeline variant based on Bazel mode
         boolean bzlmodActive = (mode == BazelEnvironmentAnalyzer.Mode.BZLMOD);
-        logger.info("HTTP pipeline variant: {}", bzlmodActive ? "bzlmod" : "workspace");
+        logger.debug("HTTP pipeline variant: {}", bzlmodActive ? "bzlmod" : "workspace");
 
         // Build both HTTP pipelines; dispatch will decide which to use per run.
         // For HTTP-style repository detection we use `query` (not `cquery`) because we are statically
