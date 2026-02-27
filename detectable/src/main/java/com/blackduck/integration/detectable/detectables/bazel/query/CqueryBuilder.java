@@ -24,6 +24,15 @@ public class CqueryBuilder {
     private OutputFormat outputFormat;
     private String optionsPlaceholder;
 
+    private static final String FUNCTION_FORMAT = "%s(%s, %s)";
+    private static final String QUERY_EXPRESSION_MUST_BE_SET = "Query expression must be set before building";
+    private static final String PARAM_RULE_PATTERN = "rulePattern";
+    private static final String PARAM_EXPRESSION = "expression";
+    private static final String PARAM_PATTERN = "pattern";
+    private static final String PARAM_PLACEHOLDER = "placeholder";
+    private static final String PARAM_TARGET = "target";
+    private static final String PARAM_FORMAT = "format";
+
     /**
      * Private constructor - use create() factory method
      */
@@ -50,9 +59,9 @@ public class CqueryBuilder {
      * @return This builder for chaining
      */
     public CqueryBuilder kind(String rulePattern, String expression) {
-        validateNotNull(rulePattern, "rulePattern");
-        validateNotNull(expression, "expression");
-        this.queryExpression = String.format("%s(%s, %s)",
+        validateNotNull(rulePattern, PARAM_RULE_PATTERN);
+        validateNotNull(expression, PARAM_EXPRESSION);
+        this.queryExpression = String.format(FUNCTION_FORMAT,
             BazelCommandArguments.KIND_FUNCTION, rulePattern, expression);
         return this;
     }
@@ -66,9 +75,9 @@ public class CqueryBuilder {
      * @return This builder for chaining
      */
     public CqueryBuilder filter(String pattern, String expression) {
-        validateNotNull(pattern, "pattern");
-        validateNotNull(expression, "expression");
-        this.queryExpression = String.format("%s(%s, %s)",
+        validateNotNull(pattern, PARAM_PATTERN);
+        validateNotNull(expression, PARAM_EXPRESSION);
+        this.queryExpression = String.format(FUNCTION_FORMAT,
             BazelCommandArguments.FILTER_FUNCTION, pattern, expression);
         return this;
     }
@@ -81,7 +90,7 @@ public class CqueryBuilder {
      * @return This builder for chaining
      */
     public CqueryBuilder expression(String expression) {
-        validateNotNull(expression, "expression");
+        validateNotNull(expression, PARAM_EXPRESSION);
         this.queryExpression = expression;
         return this;
     }
@@ -104,7 +113,7 @@ public class CqueryBuilder {
      * @return This builder for chaining
      */
     public CqueryBuilder withOptions(String placeholder) {
-        validateNotNull(placeholder, "placeholder");
+        validateNotNull(placeholder, PARAM_PLACEHOLDER);
         this.optionsPlaceholder = placeholder;
         return this;
     }
@@ -116,7 +125,7 @@ public class CqueryBuilder {
      * @return This builder for chaining
      */
     public CqueryBuilder withOutput(OutputFormat format) {
-        validateNotNull(format, "format");
+        validateNotNull(format, PARAM_FORMAT);
         this.outputFormat = format;
         return this;
     }
@@ -130,7 +139,7 @@ public class CqueryBuilder {
      */
     public List<String> build() {
         if (queryExpression == null || queryExpression.isEmpty()) {
-            throw new IllegalStateException("Query expression must be set before building");
+            throw new IllegalStateException(QUERY_EXPRESSION_MUST_BE_SET);
         }
 
         List<String> result = new ArrayList<>(args);
@@ -164,8 +173,8 @@ public class CqueryBuilder {
      * @return deps() expression string
      */
     public static String deps(String target) {
-        validateNotNull(target, "target");
-        return String.format("%s(%s)", BazelCommandArguments.DEPS_FUNCTION, target);
+        validateNotNull(target, PARAM_TARGET);
+        return String.format(FUNCTION_FORMAT, BazelCommandArguments.DEPS_FUNCTION, target, "");
     }
 
     /**
@@ -177,4 +186,3 @@ public class CqueryBuilder {
         }
     }
 }
-
