@@ -184,7 +184,7 @@ dependencies {
     implementation "com.blackduck.integration:blackduck-common:${blackDuckCommonVersion}"
     implementation 'com.blackduck.integration:blackduck-upload-common:4.1.5'
     implementation 'com.blackducksoftware:method-analyzer-core:1.0.7'
-    implementation "${locatorGroup}:${locatorModule}:2.3.4"
+    implementation "${locatorGroup}:${locatorModule}:2.4.1"
 
     implementation 'org.apache.maven.shared:maven-invoker:3.0.0'
 

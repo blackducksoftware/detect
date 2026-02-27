@@ -24,6 +24,7 @@
 * With the addition of the `detect.cargo.included.features` and `detect.cargo.disable.default.features` properties, [detect_product_short] now supports Cargo features and the inclusion or exclusion of dependencies as options. See [Cargo](properties/detectors/cargo.md) for details.
   <note type="note">This feature is supported for Cargo CLI Detector. Cargo Lockfile Detector will log a warning if these properties are provided.</note>
 * (IDETECT-4937) Add support for `environment.yaml` in [detect_product_short] Conda CLI Detector.
+* (IDETECT-4168) Component Location Analysis now supports locating dependency declarations that use version range operators for npm, Yarn, and PIP. See [Component Location Analysis](runningdetect/component-location-analysis.md) for details.
 
 ### Resolved issues
 
@@ -31,3 +32,7 @@
 * (IDETECT-4960) Added support for Cargo features and optional dependencies in Cargo CLI Detector, allowing precise control over which features are included in the SBOM through cargo tree command flags. See [Cargo](properties/detectors/cargo.md) for details.
 * (IDETECT-4847) Clarified that the value of `detect.container.scan.file.path` should be a local .tar file path or HTTP/HTTPS URL for a remote .tar file.
 * (IDETECT-4970) Fixed an issue where a `quack-patch` output directory was created despite the feature not being enabled.
+
+### Dependency Updates
+
+* Released and upgraded Component Locator version 2.4.1
