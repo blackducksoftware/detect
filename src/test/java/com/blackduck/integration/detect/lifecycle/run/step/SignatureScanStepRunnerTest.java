@@ -9,6 +9,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.apache.http.HttpHost;
 import org.apache.http.conn.HttpHostConnectException;
@@ -56,7 +58,7 @@ public class SignatureScanStepRunnerTest {
     @Test
     public void testRunSignatureScannerOnlineRetriesOnHttpHostConnectException() throws Exception {
         DockerTargetData dockerTargetData = mock(DockerTargetData.class);
-        Set<String> scanIdsToWaitFor = new HashSet<>();
+        Queue<String> scanIdsToWaitFor = new ConcurrentLinkedQueue<>();
         List<SignatureScanPath> scanPaths = Collections.singletonList(mock(SignatureScanPath.class));
         ScanBatch scanBatch = mock(ScanBatch.class);
 
@@ -82,7 +84,7 @@ public class SignatureScanStepRunnerTest {
     @Test
     public void testRunSignatureScannerOnlineExecutesOnceWithoutException() throws Exception {
         DockerTargetData dockerTargetData = mock(DockerTargetData.class);
-        Set<String> scanIdsToWaitFor = new HashSet<>();
+        Queue<String> scanIdsToWaitFor = new ConcurrentLinkedQueue<>();
         List<SignatureScanPath> scanPaths = Collections.singletonList(mock(SignatureScanPath.class));
         ScanBatch scanBatch = mock(ScanBatch.class);
 

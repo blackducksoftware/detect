@@ -53,7 +53,7 @@ public class DiagnosticLogger {
         LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
         PatternLayoutEncoder ple = new PatternLayoutEncoder();
 
-        ple.setPattern("%date{\"yyyy-MM-dd'T'HH:mm:ss,SSSXXX\", UTC} %level [%file:%line] %msg%n");
+        ple.setPattern("%date{\"yyyy-MM-dd'T'HH:mm:ss,SSSXXX\", UTC} %level [%thread] [%file:%line] %msg%n");
         ple.setContext(lc);
         ple.start();
 
