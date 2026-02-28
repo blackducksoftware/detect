@@ -546,7 +546,8 @@ public class DetectConfigurationFactory {
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_LERNA_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_OPAM_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_CARGO_PATH),
-            detectConfiguration.getPathOrNull(DetectProperties.DETECT_UV_PATH)
+            detectConfiguration.getPathOrNull(DetectProperties.DETECT_UV_PATH),
+            detectConfiguration.getPathOrNull(DetectProperties.DETECT_CONDA_TREE_PATH)
         );
     }
 

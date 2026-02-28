@@ -611,6 +611,13 @@ public class DetectProperties {
             .setGroups(DetectGroup.CONDA, DetectGroup.GLOBAL)
             .build();
 
+    public static final NullablePathProperty DETECT_CONDA_TREE_PATH =
+            NullablePathProperty.newBuilder("detect.conda.tree.path")
+                    .setInfo("Conda Tree Executable", DetectPropertyFromVersion.VERSION_11_4_0)
+                    .setHelp("The path to the conda tree executable.")
+                    .setGroups(DetectGroup.CONDA, DetectGroup.GLOBAL)
+                    .build();
+
     public static final NullablePathProperty DETECT_CARGO_PATH =
         NullablePathProperty.newBuilder("detect.cargo.path")
             .setInfo("Cargo Executable", DetectPropertyFromVersion.VERSION_10_4_0)

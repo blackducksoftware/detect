@@ -2,6 +2,8 @@ package com.blackduck.integration.detectable.detectables.conda.parser;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 
 import com.google.gson.Gson;
@@ -33,6 +35,20 @@ public class CondaListParser {
             .forEach(graph::addChildToRoot);
 
         return graph;
+    }
+
+    public Map<String, CondaListElement> getDependencies(String listJsonText) {
+        Type listType = new TypeToken<ArrayList<CondaListElement>>() {
+        }.getType();
+        List<CondaListElement> condaList = gson.fromJson(listJsonText, listType);
+
+        HashMap<String, CondaListElement> dependencies = new HashMap<>();
+
+        condaList.forEach(element  -> {
+              dependencies.put(element.name, element);
+        });
+
+       return dependencies;
     }
 
 }

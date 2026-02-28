@@ -10,6 +10,9 @@ import com.blackduck.integration.detectable.detectable.executable.resolver.*;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelV2Detectable;
 import com.blackduck.integration.detectable.detectables.cargo.*;
 import com.blackduck.integration.detectable.detectables.cargo.transform.CargoDependencyGraphTransformer;
+import com.blackduck.integration.detectable.detectables.conda.parser.CondaTreeParser;
+import com.blackduck.integration.detectable.detectables.conda.tree.CondaTreeDetectable;
+import com.blackduck.integration.detectable.detectables.conda.tree.CondaTreeExtractor;
 import com.blackduck.integration.detectable.detectables.pip.inspector.parser.PipInspectorTomlParser;
 import com.blackduck.integration.detectable.detectables.rush.RushDetectable;
 import com.blackduck.integration.detectable.detectables.rush.RushExtractor;
@@ -98,9 +101,9 @@ import com.blackduck.integration.detectable.detectables.conan.lockfile.ConanLock
 import com.blackduck.integration.detectable.detectables.conan.lockfile.ConanLockfileExtractor;
 import com.blackduck.integration.detectable.detectables.conan.lockfile.ConanLockfileExtractorOptions;
 import com.blackduck.integration.detectable.detectables.conan.lockfile.parser.ConanLockfileParser;
-import com.blackduck.integration.detectable.detectables.conda.CondaCliDetectable;
+import com.blackduck.integration.detectable.detectables.conda.cli.CondaCliDetectable;
 import com.blackduck.integration.detectable.detectables.conda.CondaCliDetectableOptions;
-import com.blackduck.integration.detectable.detectables.conda.CondaCliExtractor;
+import com.blackduck.integration.detectable.detectables.conda.cli.CondaCliExtractor;
 import com.blackduck.integration.detectable.detectables.conda.parser.CondaDependencyCreator;
 import com.blackduck.integration.detectable.detectables.conda.parser.CondaListParser;
 import com.blackduck.integration.detectable.detectables.cpan.CpanCliDetectable;
@@ -418,6 +421,10 @@ public class DetectableFactory {
 
     public CondaCliDetectable createCondaCliDetectable(DetectableEnvironment environment, CondaResolver condaResolver, CondaCliDetectableOptions condaCliDetectableOptions) {
         return new CondaCliDetectable(environment, fileFinder, condaResolver, condaCliExtractor(), condaCliDetectableOptions);
+    }
+
+    public CondaTreeDetectable createCondaTreeDetectable(DetectableEnvironment environment, CondaTreeResolver condaTreeResolver, CondaResolver condaResolver, CondaCliDetectableOptions condaCliDetectableOptions) {
+        return new CondaTreeDetectable(environment, fileFinder, condaTreeResolver, condaResolver, condaTreeExtractor(), condaCliDetectableOptions);
     }
 
     public CpanCliDetectable createCpanCliDetectable(DetectableEnvironment environment, CpanResolver cpanResolver, CpanmResolver cpanmResolver) {
@@ -851,6 +858,14 @@ public class DetectableFactory {
 
     private CondaCliExtractor condaCliExtractor() {
         return new CondaCliExtractor(condaListParser(), executableRunner, toolVersionLogger);
+    }
+
+    private CondaTreeExtractor condaTreeExtractor() {
+        return new CondaTreeExtractor(executableRunner, condaTreeParser(), condaListParser());
+    }
+
+    private CondaTreeParser condaTreeParser() {
+        return new CondaTreeParser(condaDependencyCreator());
     }
 
     private CpanListParser cpanListParser() {
