@@ -24,6 +24,15 @@ import java.util.stream.Collectors;
  * Executes selected Bazel dependency pipelines deterministically and produces an Extraction.
  */
 public class BazelV2Extractor {
+    private static final String JSON_KEY_NAME = "\"name\"";
+    private static final String JSON_KEY_VERSION = "\"version\"";
+    private static final String JSON_KEY_EXTERNAL_ID = "\"externalId\"";
+    private static final String JSON_KEY_FORGE = "\"forge\"";
+    private static final String JSON_KEY_PIECES = "\"pieces\"";
+    private static final String JSON_KEY_PREFIX = "\"prefix\"";
+    private static final String JSON_KEY_SUFFIX = "\"suffix\"";
+    private static final String JSON_KEY_SCOPE = "\"scope\"";
+
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final ExternalIdFactory externalIdFactory;
     private final BazelVariableSubstitutor bazelVariableSubstitutor;
@@ -77,6 +86,9 @@ public class BazelV2Extractor {
             logger.info("Executing pipeline for dependency source: {}", source);
             List<Dependency> deps = pipelines.get(source).run();
             logger.info("Number of dependencies discovered for source {}: {}", source, deps.size());
+            if (logger.isDebugEnabled()) {
+                logger.debug("Dependencies discovered for rule {}: {}", source, dependenciesToDebugString(deps));
+            }
             aggregated.addAll(deps);
         }
 
@@ -89,8 +101,40 @@ public class BazelV2Extractor {
         Extraction.Builder builder = new Extraction.Builder()
             .success(Collections.singletonList(cl))
             .projectName(projectName);
-        logger.info("The Bazel tool extraction complete. Project name: {}. Total dependencies: {}", projectName, aggregated.size());
+        int uniqueDependencies = graph.getRootDependencies().size();
+        logger.info("Bazel V2 extraction complete. Project name: {}. Total dependencies: {}", projectName, uniqueDependencies);
         return builder.build();
+    }
+
+    /**
+     * Formats a list of dependencies as a JSON array string for debug logging.
+     */
+    private String dependenciesToDebugString(List<Dependency> deps) {
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < deps.size(); i++) {
+            Dependency dep = deps.get(i);
+            String forge = dep.getExternalId().getForge() != null ? dep.getExternalId().getForge().getName() : "null";
+            String[] pieces = dep.getExternalId().getExternalIdPieces();
+            String piecesJson = pieces != null && pieces.length > 0
+                ? "[" + Arrays.stream(pieces).map(p -> "\"" + p + "\"").collect(Collectors.joining(",")) + "]"
+                : "[]";
+            sb.append("{")
+                .append(JSON_KEY_NAME).append(":\"").append(dep.getName()).append("\",")
+                .append(JSON_KEY_VERSION).append(":\"").append(dep.getVersion()).append("\",")
+                .append(JSON_KEY_EXTERNAL_ID).append(":{")
+                .append(JSON_KEY_FORGE).append(":\"").append(forge).append("\",")
+                .append(JSON_KEY_PIECES).append(":").append(piecesJson).append(",")
+                .append(JSON_KEY_PREFIX).append(":null,")
+                .append(JSON_KEY_SUFFIX).append(":null")
+                .append("},")
+                .append(JSON_KEY_SCOPE).append(":null")
+                .append("}");
+            if (i < deps.size() - 1) {
+                sb.append(", ");
+            }
+        }
+        sb.append("]");
+        return sb.toString();
     }
 
     /**
