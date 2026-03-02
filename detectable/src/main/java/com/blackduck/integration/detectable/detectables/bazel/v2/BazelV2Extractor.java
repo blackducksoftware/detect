@@ -101,8 +101,6 @@ public class BazelV2Extractor {
         Extraction.Builder builder = new Extraction.Builder()
             .success(Collections.singletonList(cl))
             .projectName(projectName);
-        int uniqueDependencies = graph.getRootDependencies().size();
-        logger.info("Bazel V2 extraction complete. Project name: {}. Total dependencies: {}", projectName, uniqueDependencies);
         return builder.build();
     }
 
