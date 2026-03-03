@@ -21,6 +21,7 @@ import com.blackduck.integration.blackduck.codelocation.signaturescanner.command
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.SnippetMatching;
 import com.blackduck.integration.configuration.property.Properties;
 import com.blackduck.integration.configuration.property.Property;
+import com.blackduck.integration.configuration.util.ProductMajorVersion;
 import com.blackduck.integration.configuration.property.base.PassthroughProperty;
 import com.blackduck.integration.configuration.property.base.TypedProperty;
 import com.blackduck.integration.configuration.property.types.bool.BooleanProperty;
@@ -261,6 +262,7 @@ public class DetectProperties {
                             "By default Detect discovers Bazel dependencies using all of the supported Bazel workspace rules that it finds in the WORKSPACE file. Alternatively you can use this property to specify the list of Bazel workspace rules Detect should use. Setting this property (or letting it default) to NONE tells Detect to use supported rules that it finds in the WORKSPACE file."
                     )
                     .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
+                    .setDeprecated("This property has been deprecated. Please use detect.bazel.dependency.sources instead.", new ProductMajorVersion(12))
                     .build();
 
     public static final NullableStringProperty DETECT_BAZEL_MODE =
