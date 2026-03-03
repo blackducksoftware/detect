@@ -20,11 +20,11 @@
 
 ### New features
 
-* (IDETECT-4697) The Bazel tool has been updated to support Bzlmod. It now supports both BZLMOD (MODULE.bazel) and WORKSPACE-based projects, performs automatic mode detection, and probes the dependency graph to determine which dependency sources are present. See [Bazel support](packagemgrs/bazel.md) for details.
+* The Bazel tool has been updated to support Bzlmod. It now supports both BZLMOD (MODULE.bazel) and WORKSPACE-based projects, performs automatic mode detection, and probes the dependency graph to determine which dependency sources are present. See [Bazel support](packagemgrs/bazel.md) for details.
 * With the addition of the `detect.cargo.included.features` and `detect.cargo.disable.default.features` properties, [detect_product_short] now supports Cargo features and the inclusion or exclusion of dependencies as options. See [Cargo](properties/detectors/cargo.md) for details.
   <note type="note">This feature is supported for Cargo CLI Detector. Cargo Lockfile Detector will log a warning if these properties are provided.</note>
-* (IDETECT-4937) Add support for `environment.yaml` in [detect_product_short] Conda CLI Detector.
-* (IDETECT-4168) Component Location Analysis now supports locating dependency declarations that use version range operators for npm, Yarn, and PIP. See [Component Location Analysis](runningdetect/component-location-analysis.md) for details.
+* Add support for `environment.yaml` in [detect_product_short] Conda CLI Detector.
+* Component Location Analysis now supports locating dependency declarations that use version range operators for npm, Yarn, and PIP. See [Component Location Analysis](runningdetect/component-location-analysis.md) for details.
 
 ### Resolved issues
 
