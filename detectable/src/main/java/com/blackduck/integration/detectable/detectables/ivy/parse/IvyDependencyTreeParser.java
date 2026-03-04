@@ -19,6 +19,10 @@ import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 public class IvyDependencyTreeParser {
     private static final Logger logger = LoggerFactory.getLogger(IvyDependencyTreeParser.class);
 
+    private static final String OPEN_BRACKET = "[";
+    private static final String OPEN_PARENTHESIS = "(";
+    private static final String IVY_DEPENDENCY_TREE_PREFIX = "[ivy:dependencytree] ";
+
     // Match exactly 1 space after [ivy:dependencytree], then capture indentation (pipes/spaces) before tree connector
     private static final Pattern DEPENDENCY_PATTERN = Pattern.compile("^\\[ivy:dependencytree] ([|\\s]*)(\\+-|\\\\-)\\s+(.+)$");
     private static final Pattern IVY_DEPENDENCY_FORMAT = Pattern.compile("^([^#]+)#([^;]+);(.+)$");
@@ -63,16 +67,12 @@ public class IvyDependencyTreeParser {
                 graph.addDirectDependency(dependency);
                 dependencyStack.clear();
                 dependencyStack.push(dependency);
-                logger.debug("Added direct dependency at level {}: {}", currentLevel, dependency.getExternalId());
             } else {
                 // Transitive dependency - parent is at top of stack
                 if (!dependencyStack.isEmpty()) {
                     Dependency parent = dependencyStack.peek();
                     graph.addParentWithChild(parent, dependency);
                     dependencyStack.push(dependency);
-                    logger.debug("Added transitive dependency at level {}: {} -> {}", currentLevel, parent.getExternalId(), dependency.getExternalId());
-                } else {
-                    logger.warn("Found transitive dependency at level {} without parent: {}", currentLevel, dependencyString);
                 }
             }
         }
@@ -94,11 +94,11 @@ public class IvyDependencyTreeParser {
         // The pattern: after "[ivy:dependencytree] " (22 chars), each level adds 3 characters
         // So: (connector_position - 22) / 3 = level
 
-        int prefixLength = "[ivy:dependencytree] ".length();
+        int prefixLength = IVY_DEPENDENCY_TREE_PREFIX.length();
         int connectorPosition = line.indexOf(connector, prefixLength);
 
+        // If connector is not found, return level 0 as a fallback (though this should not happen since the regex matched)
         if (connectorPosition == -1) {
-            logger.warn("Could not find connector '{}' in line: {}", connector, line);
             return 0;
         }
 
@@ -148,7 +148,7 @@ public class IvyDependencyTreeParser {
         }
 
         // Check if it's a version range (starts with [ or ()
-        if (versionString.startsWith("[") || versionString.startsWith("(")) {
+        if (versionString.startsWith(OPEN_BRACKET) || versionString.startsWith(OPEN_PARENTHESIS)) {
             // Find the comma that separates the lower and upper bounds
             int commaIndex = versionString.indexOf(',');
             if (commaIndex > 0) {

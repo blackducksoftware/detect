@@ -32,6 +32,7 @@ import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 public class IvyCliDetectable extends Detectable {
     private static final String IVY_XML_FILENAME = "ivy.xml";
     private static final String BUILD_XML_FILENAME = "build.xml";
+    private static final String ANT_EXECUTABLE = "ant";
 
     private final FileFinder fileFinder;
     private final AntResolver antResolver;
@@ -69,7 +70,7 @@ public class IvyCliDetectable extends Detectable {
     @Override
     public DetectableResult extractable() throws DetectableException {
         Requirements requirements = new Requirements(fileFinder, environment);
-        antExe = requirements.executable(antResolver::resolveAnt, "ant");
+        antExe = requirements.executable(antResolver::resolveAnt, ANT_EXECUTABLE);
         DetectableResult result = requirements.result();
 
         // If ant executable not found, return early

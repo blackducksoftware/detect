@@ -29,11 +29,9 @@ public class IvyDependencyTreeTargetParser {
 
     public Optional<String> parseTargetWithDependencyTree(@Nullable File buildXmlFile) throws IOException {
         if (buildXmlFile == null) {
-            logger.debug("No build.xml file provided");
+            logger.debug("No build.xml file provided.");
             return Optional.empty();
-        }
-
-        if (!buildXmlFile.exists()) {
+        } else if (!buildXmlFile.exists()) {
             logger.debug("build.xml file does not exist: {}", buildXmlFile.getAbsolutePath());
             return Optional.empty();
         }
@@ -42,12 +40,8 @@ public class IvyDependencyTreeTargetParser {
         try (InputStream buildXmlInputStream = Files.newInputStream(buildXmlFile.toPath())) {
             saxParser.parse(buildXmlInputStream, handler);
         } catch (SAXException e) {
-            // Check if this was our early exit marker (not an actual error)
-            if (!"Found target".equals(e.getMessage())) {
-                logger.debug("Failed to parse build.xml for ivy:dependencytree task: {}", e.getMessage());
-                return Optional.empty();
-            }
-            // If it was our marker, continue - handler already has the target name
+            logger.debug("Failed to parse build.xml for ivy:dependencytree task: {}", e.getMessage());
+            return Optional.empty();
         }
 
         // Check if we found a target (either through normal parsing or early exit)
@@ -62,36 +56,33 @@ public class IvyDependencyTreeTargetParser {
     }
 
     private static class DependencyTreeTargetHandler extends DefaultHandler {
+        private static final String ELEMENT_TARGET = "target";
+        private static final String ATTRIBUTE_NAME = "name";
+        private static final String ELEMENT_IVY_DEPENDENCYTREE = "ivy:dependencytree";
+        private static final String ELEMENT_DEPENDENCYTREE = "dependencytree";
+        private static final String ELEMENT_DEPENDENCYTREE_SUFFIX = ":dependencytree";
+
         private String currentTargetName = null;
         private String foundTargetName = null;
 
         @Override
         public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
-            // When we enter a <target> element, store its name
-            // Example: <target name="tree">
-            if ("target".equalsIgnoreCase(qName)) {
-                currentTargetName = attributes.getValue("name");
+            if (ELEMENT_TARGET.equalsIgnoreCase(qName)) {
+                currentTargetName = attributes.getValue(ATTRIBUTE_NAME);
             }
 
-            // When we find <ivy:dependencytree> or <dependencytree> element,
-            // capture the name of the parent <target> that contains it
-            // The parent target name is stored in currentTargetName
             if (foundTargetName == null && currentTargetName != null) {
-                if ("ivy:dependencytree".equalsIgnoreCase(qName) ||
-                    "dependencytree".equalsIgnoreCase(qName) ||
-                    qName.endsWith(":dependencytree")) {
-                    // Found ivy:dependencytree inside a target - save the target's name
+                if (ELEMENT_IVY_DEPENDENCYTREE.equalsIgnoreCase(qName) ||
+                    ELEMENT_DEPENDENCYTREE.equalsIgnoreCase(qName) ||
+                    qName.endsWith(ELEMENT_DEPENDENCYTREE_SUFFIX)) {
                     foundTargetName = currentTargetName;
-                    throw new SAXException("Found target"); // Early exit optimization
                 }
             }
         }
 
         @Override
         public void endElement(String uri, String localName, String qName) throws SAXException {
-            // When we exit a <target> element, clear the current target name
-            // This ensures we only capture tasks within the current target scope
-            if ("target".equalsIgnoreCase(qName)) {
+            if (ELEMENT_TARGET.equalsIgnoreCase(qName)) {
                 currentTargetName = null;
             }
         }

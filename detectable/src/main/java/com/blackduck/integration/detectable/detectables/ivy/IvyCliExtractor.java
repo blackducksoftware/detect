@@ -94,9 +94,7 @@ public class IvyCliExtractor {
         List<String> dependencyTreeOutput = antOutput.getStandardOutputAsList();
 
         if (dependencyTreeOutput.isEmpty()) {
-            String errorOutput = antOutput.getErrorOutputAsList().isEmpty()
-                ? "No output produced"
-                : String.join("\n", antOutput.getErrorOutputAsList());
+            String errorOutput = getErrorOutput(antOutput);
             return Optional.of(createFailure(String.format(
                 "Ant %s produced no output. Exit code: %d. Error: %s",
                 targetName, antOutput.getReturnCode(), errorOutput
@@ -119,6 +117,14 @@ public class IvyCliExtractor {
         }
 
         return Optional.empty();
+    }
+
+    private String getErrorOutput(ExecutableOutput antOutput) {
+        List<String> errorOutputAsList = antOutput.getErrorOutputAsList();
+        if (errorOutputAsList.isEmpty()) {
+            return "No output produced";
+        }
+        return String.join("\n", errorOutputAsList);
     }
 
     private Extraction createFailure(String message) {

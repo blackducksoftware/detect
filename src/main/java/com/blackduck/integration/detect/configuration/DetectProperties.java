@@ -1158,7 +1158,7 @@ public class DetectProperties {
 
     public static final NullablePathProperty DETECT_ANT_PATH =
         NullablePathProperty.newBuilder("detect.ant.path")
-            .setInfo("Ant Executable", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setInfo("Ant Executable", DetectPropertyFromVersion.VERSION_11_4_0)
             .setHelp("The path to the Ant executable.", "If set, Detect will use the given Ant executable instead of searching for one.")
             .setGroups(DetectGroup.IVY, DetectGroup.GLOBAL)
             .build();

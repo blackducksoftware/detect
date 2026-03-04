@@ -38,8 +38,8 @@ public class DirectoryExecutableFinder {
             return Collections.singletonList(name);
         }
 
-        // If the name already has an extension (like "ant.bat"), don't add more extensions
-        // This allows explicit specification of the exact executable file
+        // If the name already has an extension (like "ant.bat")
+        // No need to add more extensions, just check for the specified name as-is.
         for (String ext : extensions) {
             if (name.endsWith(ext)) {
                 return Collections.singletonList(name);
