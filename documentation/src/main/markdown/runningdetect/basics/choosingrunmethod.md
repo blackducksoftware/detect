@@ -1,6 +1,6 @@
 # Choosing a run method (script, .jar, or Docker container)
 
-There are three ways to run [detect_product_long]:
+There are three ways to run [detect_product_short]:
 
 1. Download and run a [detect_product_short] [script](runningscript.md).
 1. Download and run a [detect_product_short] [.jar file](runningjar.md).

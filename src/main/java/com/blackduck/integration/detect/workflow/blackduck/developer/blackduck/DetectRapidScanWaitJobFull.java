@@ -6,10 +6,8 @@ import java.util.List;
 
 import org.apache.http.HttpStatus;
 
-import com.blackduck.integration.blackduck.api.generated.view.DeveloperScansScanView;
 import com.blackduck.integration.blackduck.exception.BlackDuckIntegrationException;
 import com.blackduck.integration.blackduck.service.BlackDuckApiClient;
-import com.blackduck.integration.blackduck.service.request.BlackDuckMultipleRequest;
 import com.blackduck.integration.blackduck.service.request.BlackDuckResponseRequest;
 import com.blackduck.integration.detect.configuration.enumeration.BlackduckScanMode;
 import com.blackduck.integration.exception.IntegrationException;
@@ -21,7 +19,7 @@ import com.blackduck.integration.wait.ResilientJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DetectRapidScanWaitJobFull implements ResilientJob<List<DeveloperScansScanView>> {
+public class DetectRapidScanWaitJobFull implements ResilientJob<List<Response>> {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final BlackDuckApiClient blackDuckApiClient;
     private final List<HttpUrl> remainingUrls;
@@ -78,25 +76,23 @@ public class DetectRapidScanWaitJobFull implements ResilientJob<List<DeveloperSc
     }
 
     @Override
-    public List<DeveloperScansScanView> onTimeout() throws IntegrationTimeoutException {
-        throw new IntegrationTimeoutException("Error getting developer scan result. Timeout may have occurred.");
+    public List<Response> onTimeout() throws IntegrationTimeoutException {
+        throw new IntegrationTimeoutException("Error getting full rapid scan result. Timeout may have occurred.");
     }
 
     @Override
-    public List<DeveloperScansScanView> onCompletion() throws IntegrationException {
-        List<DeveloperScansScanView> allComponents = new ArrayList<>();
+    public List<Response> onCompletion() throws IntegrationException {
+        List<Response> allScanResponses = new ArrayList<>();
         for (HttpUrl url : completedUrls) {
-            allComponents.addAll(getScanResultsForUrl(url));
+            allScanResponses.add(getScanResultsForFullUrl(url));
         }
-        return allComponents;
+        return allScanResponses;
     }
 
-    private List<DeveloperScansScanView> getScanResultsForUrl(HttpUrl url) throws IntegrationException {
-        logger.debug("Fetching scan results from endpoint: {}", url.string());
-        BlackDuckMultipleRequest<DeveloperScansScanView> request =
-            new DetectRapidScanRequestBuilder()
-                .createFullRequest(url);
-        return blackDuckApiClient.getAllResponses(request);
+    private Response getScanResultsForFullUrl(HttpUrl url) throws IntegrationException {
+        logger.debug("Fetching full rapid scan results from endpoint: {}/full-result", url.string());
+        Response newResponse =  blackDuckApiClient.get(url.appendRelativeUrl("full-result"));
+        return newResponse;
     }
 
     @Override

@@ -63,23 +63,23 @@ public class GradleInspectorDetectable extends Detectable {
         // Legacy check: Look for build files in current directory
         File buildGradle = fileFinder.findFile(environment.getDirectory(), BUILD_GRADLE_FILENAME);
         if (buildGradle != null) {
-            return new PassedDetectableResult(new FoundFile(buildGradle));
+            return new PassedDetectableResult(new FoundFile(buildGradle), buildGradle);
         }
 
         File kotlinBuildGradle = fileFinder.findFile(environment.getDirectory(), KOTLIN_BUILD_GRADLE_FILENAME);
         if (kotlinBuildGradle != null) {
-            return new PassedDetectableResult(new FoundFile(kotlinBuildGradle));
+            return new PassedDetectableResult(new FoundFile(kotlinBuildGradle), kotlinBuildGradle);
         }
 
         // Modern multi-project check: Look for settings files
         File settingsGradle = fileFinder.findFile(environment.getDirectory(), SETTINGS_GRADLE_FILENAME);
         if (settingsGradle != null) {
-            return new PassedDetectableResult(new FoundFile(settingsGradle));
+            return new PassedDetectableResult(new FoundFile(settingsGradle), settingsGradle);
         }
 
         File kotlinSettingsGradle = fileFinder.findFile(environment.getDirectory(), KOTLIN_SETTINGS_GRADLE_FILENAME);
         if (kotlinSettingsGradle != null) {
-            return new PassedDetectableResult(new FoundFile(kotlinSettingsGradle));
+            return new PassedDetectableResult(new FoundFile(kotlinSettingsGradle), kotlinSettingsGradle);
         }
 
         return new FilesNotFoundDetectableResult(BUILD_GRADLE_FILENAME, KOTLIN_BUILD_GRADLE_FILENAME, SETTINGS_GRADLE_FILENAME, KOTLIN_SETTINGS_GRADLE_FILENAME);

@@ -207,7 +207,7 @@
 							<entry>Python</entry>
 							<entry>Anaconda</entry>
 							<entry>
-								<p>File: environment.yml</p>
+								<p>File: environment.yml or environment.yaml</p>
 								<p>Executable: conda</p>
 							</entry>
 							<entry>HIGH</entry>
@@ -855,6 +855,26 @@
 							</entry>
 							<entry>LOW</entry>
 						</row>
+						<row>
+                            <entry>
+                                <b>Rush</b>
+                            </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                        </row>
+                        <row>
+                            <entry> </entry>
+                            <entry>Rush Lock</entry>
+                            <entry>Node JS</entry>
+                            <entry>npmjs</entry>
+                            <entry>
+                                <p>Files: rush.json file, pnpm-lock.yaml, npm-shrinkwrap.json, or yarn.lock </p>
+                            </entry>
+                            <entry>HIGH</entry>
+                        </row>
 						<row>
 							<entry>
 								<b>SBT</b>

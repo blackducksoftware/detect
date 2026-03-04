@@ -1,4 +1,4 @@
-# [detect_product_long] Components
+# [detect_product_short] Components
 
 This topic introduces the components in [detect_product_short] that are used to examine your code and produce analyzable output.
 

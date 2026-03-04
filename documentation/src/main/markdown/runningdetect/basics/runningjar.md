@@ -1,4 +1,4 @@
-# Running the [detect_product_long] .jar
+# Running the [detect_product_short] .jar
 
 Recent versions of the [detect_product_short] .jar file are available for download from the location specified in [download locations](../../downloadingandinstalling/downloadlocations.md).
 
@@ -11,8 +11,8 @@ java -jar {path to .jar file}
 For example:
 
 ````
-curl -O https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/detect/11.0.0/detect-11.0.0.jar
-java -jar detect-11.0.0.jar
+curl -O https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/detect/11.3.0/detect-11.3.0.jar
+java -jar detect-11.3.0.jar
 ````
 
 You can use the [detect_product_short] Bash script ([bash_script_name]) to download the [detect_product_short] .jar file:

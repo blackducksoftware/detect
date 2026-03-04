@@ -1,0 +1,13 @@
+## @com_github_gflags_gflags:
+# <builtin>
+http_archive(
+  name = "_main~_repo_rules~com_github_gflags_gflags",
+  urls = ["https://github.com/gflags/gflags/archive/refs/tags/v2.2.2.tar.gz"],
+  strip_prefix = "gflags-2.2.2",
+  build_file_content = "\ncc_library(\n    name = \"gflags\",\n    visibility = [\"//visibility:public\"],\n)\n",
+)
+# Rule _main~_repo_rules~com_github_gflags_gflags instantiated at (most recent call last):
+#   <builtin> in <toplevel>
+# Rule http_archive defined at (most recent call last):
+#   /private/var/tmp/_bazel_samratmuk/03463ff55d164b140ed8615faa064a5d/external/bazel_tools/tools/build_defs/repo/http.bzl:382:31 in <toplevel>
+

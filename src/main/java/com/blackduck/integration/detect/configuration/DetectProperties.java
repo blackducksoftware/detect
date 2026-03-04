@@ -53,6 +53,7 @@ import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedIndi
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedReducedPersistanceMode;
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedSnippetMode;
 import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
+import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDependencyType;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
 import com.blackduck.integration.detectable.detectables.conan.cli.config.ConanDependencyType;
@@ -231,15 +232,49 @@ public class DetectProperties {
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();
 
-    public static final AllNoneEnumListProperty<WorkspaceRule> DETECT_BAZEL_WORKSPACE_RULES =
-        AllNoneEnumListProperty.newBuilder("detect.bazel.workspace.rules", AllNoneEnum.NONE, WorkspaceRule.class)
-            .setInfo("Bazel workspace rules", DetectPropertyFromVersion.VERSION_7_12_0)
+    public static final StringListProperty DETECT_BAZEL_QUERY_OPTIONS =
+        StringListProperty.newBuilder("detect.bazel.query.options", emptyList())
+            .setInfo("Bazel query additional options", DetectPropertyFromVersion.VERSION_11_3_0)
+            .setHelp("A comma-separated list of additional options to pass to the bazel query command.")
+            .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
+            .build();
+
+    public static final AllNoneEnumListProperty<DependencySource> DETECT_BAZEL_DEPENDENCY_SOURCES =
+        AllNoneEnumListProperty.newBuilder("detect.bazel.dependency.sources", AllNoneEnum.NONE, DependencySource.class)
+            .setInfo("Bazel dependency sources", DetectPropertyFromVersion.VERSION_11_3_0)
             .setHelp(
-                "By default Detect discovers Bazel dependencies using all of the supported Bazel workspace rules that it finds in the WORKSPACE file. Alternatively you can use this property to specify the list of Bazel workspace rules Detect should use.",
-                "Setting this property (or letting it default) to NONE tells Detect to use supported rules that it finds in the WORKSPACE file."
+                "Replaces the deprecated detect.bazel.workspace.rules property. Manually specify which dependency sources to extract. Valid values: MAVEN_INSTALL, MAVEN_JAR, HTTP_ARCHIVE, HASKELL_CABAL_LIBRARY, ALL, NONE. " +
+                "By default (NONE), Detect automatically probes the Bazel dependency graph to determine which sources are present and runs the appropriate pipelines. " +
+                "This property works for both BZLMOD and WORKSPACE projects.",
+                "Set this property when you know which dependency sources are present in your target to skip the probing step and improve performance, especially in CI/CD environments. " +
+                "Use ALL to extract from all supported sources without probing. " +
+                "Example: MAVEN_INSTALL,HTTP_ARCHIVE extracts only Maven and HTTP archive dependencies."
             )
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();
+
+    public static final AllNoneEnumListProperty<WorkspaceRule> DETECT_BAZEL_WORKSPACE_RULES =
+            AllNoneEnumListProperty.newBuilder("detect.bazel.workspace.rules", AllNoneEnum.NONE, WorkspaceRule.class)
+                    .setInfo("Bazel workspace rules", DetectPropertyFromVersion.VERSION_7_12_0)
+                    .setHelp(
+                            "This property is deprecated and will be removed in the next major release. Please use detect.bazel.dependency.sources instead.",
+                            "By default Detect discovers Bazel dependencies using all of the supported Bazel workspace rules that it finds in the WORKSPACE file. Alternatively you can use this property to specify the list of Bazel workspace rules Detect should use. Setting this property (or letting it default) to NONE tells Detect to use supported rules that it finds in the WORKSPACE file."
+                    )
+                    .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
+                    .build();
+
+    public static final NullableStringProperty DETECT_BAZEL_MODE =
+        NullableStringProperty.newBuilder("detect.bazel.mode")
+            .setInfo("Bazel Mode Override", DetectPropertyFromVersion.VERSION_11_3_0)
+            .setHelp(
+                "Override Bazel mode detection. By default, Detect automatically determines whether the Bazel project uses BZLMOD or WORKSPACE-based dependency management " +
+                "by running bazel mod graph. Valid values: WORKSPACE, BZLMOD.",
+                "Only set this property if auto-detection produces incorrect results or for testing purposes. Incorrect values may cause extraction to fail. " +
+                "Auto-detection falls back to WORKSPACE mode if the project is on Bazel 5.x or earlier, or if bazel mod graph returns an empty graph (common in hybrid repos that declare MODULE.bazel for compatibility but manage dependencies via WORKSPACE)."
+            )
+            .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
+            .build();
+
 
     public static final NullablePathProperty DETECT_CONAN_PATH =
         NullablePathProperty.newBuilder("detect.conan.path")
@@ -335,8 +370,8 @@ public class DetectProperties {
         NullableStringProperty.newBuilder("detect.container.scan.file.path")
             .setInfo("Container Scan Target", DetectPropertyFromVersion.VERSION_9_1_0)
             .setHelp(
-                "If specified, this file and this file only will be uploaded for container scan analysis.",
-                "Detect will accept either a user provided local file path, or remote HTTP/HTTPS URL to fetch a container image for scanning. The CONTAINER_SCAN tool does not provide project and version name defaults to Detect, so you need to set project and version names via properties when only the CONTAINER_SCAN tool is invoked."
+                "If it is specified, only this .tar file will be uploaded for Container Scan analysis.",
+                "Detect will accept either a user provided local .tar file path, or remote HTTP/HTTPS URL to fetch a container image .tar file for scanning. The CONTAINER_SCAN tool does not provide project and version name defaults to Detect, so you need to set project and version names via properties when only the CONTAINER_SCAN tool is invoked."
             )
             .setGroups(DetectGroup.CONTAINER_SCANNER, DetectGroup.SOURCE_PATH)
             .build();
@@ -620,6 +655,56 @@ public class DetectProperties {
             )
             .setExample(CargoDependencyType.DEV.name())
             .setGroups(DetectGroup.CARGO, DetectGroup.DETECTOR, DetectGroup.GLOBAL)
+            .build();
+
+    public static final BooleanProperty DETECT_CARGO_IGNORE_ALL_WORKSPACES_MODE =
+        BooleanProperty.newBuilder("detect.cargo.ignore.all.workspaces", false)
+            .setInfo("Ignore All Workspaces", DetectPropertyFromVersion.VERSION_11_2_0)
+            .setHelp("All workspaces are ignored by the Cargo detector.")
+            .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
+            .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_CARGO_INCLUDED_WORKSPACES =
+        CaseSensitiveStringListProperty.newBuilder("detect.cargo.included.workspaces")
+            .setInfo("Cargo Include Workspaces", DetectPropertyFromVersion.VERSION_11_2_0)
+            .setHelp(
+                "A comma-separated list of Cargo workspace names to include.",
+                "By default, Detect includes all workspaces, but will only include the Cargo workspaces specified via this property when set. Workspace names are defined in the workspace member's Cargo.toml file, not their directory paths."
+            )
+            .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
+            .setCategory(DetectCategory.Advanced)
+            .setExample("workspace-a,workspace-b")
+            .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_CARGO_EXCLUDED_WORKSPACES =
+        CaseSensitiveStringListProperty.newBuilder("detect.cargo.excluded.workspaces")
+            .setInfo("Cargo Exclude Workspaces", DetectPropertyFromVersion.VERSION_11_2_0)
+            .setHelp(
+                "A comma-separated list of Cargo workspace names to exclude.",
+                "By default, Detect includes all workspaces, but will skip any Cargo workspaces specified via this property. Workspace names are defined in the workspace member's Cargo.toml file, not their directory paths."
+            )
+            .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
+            .setCategory(DetectCategory.Advanced)
+            .setExample("workspace-a,workspace-b")
+            .build();
+
+    public static final BooleanProperty DETECT_CARGO_DISABLE_DEFAULT_FEATURES =
+        BooleanProperty.newBuilder("detect.cargo.disable.default.features", false)
+            .setInfo("Disable Default Features", DetectPropertyFromVersion.VERSION_11_3_0)
+            .setHelp("All default features are disabled by the Cargo detector.")
+            .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
+            .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_CARGO_INCLUDED_FEATURES =
+        CaseSensitiveStringListProperty.newBuilder("detect.cargo.included.features")
+            .setInfo("Cargo Include Features", DetectPropertyFromVersion.VERSION_11_3_0)
+            .setHelp(
+                "A comma-separated list of Cargo features (specified by the `[feature]` manifest in Cargo.toml) to include, or special values ALL or NONE. By default, Detect only includes default features. Use ALL to enable all features, NONE to generate BOM with no features, or provide a comma-separated list of specific features (e.g., feature-a,feature-b) to include.",
+                "This property applies only to the Cargo CLI Detector and is ignored by the Cargo Lockfile Detector."
+            )
+            .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
+            .setCategory(DetectCategory.Advanced)
+            .setExample("feature-a,feature-b")
             .build();
 
     public static final NoneEnumListProperty<PipenvDependencyType> DETECT_PIPFILE_DEPENDENCY_TYPES_EXCLUDED =
@@ -1044,6 +1129,40 @@ public class DetectProperties {
             .setGroups(DetectGroup.IMPACT_ANALYSIS, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
 
+    public static final BooleanProperty DETECT_QUACK_PATCH_ENABLED =
+            BooleanProperty.newBuilder("detect.quack.patch.enabled", false)
+                    .setInfo("Quack Patch Enabled", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "If set to true, Detect will invoke Quack Patch -- a tool that uses LLMs to generate code patches for vulnerable transitive components.",
+                            "Only supported for Rapid and Stateless Scan modes. detect.llm.api.key, detect.llm.api.endpoint, and detect.llm.name must also be set. See <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/runningdetect/quack%2Dpatch%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Quack Patch</xref> for further details.")
+                    .setGroups(DetectGroup.QUACKPATCH)
+                    .build();
+
+    public static final StringProperty DETECT_LLM_API_KEY =
+            StringProperty.newBuilder("detect.llm.api.key", "")
+                    .setInfo("LLM Gateway API key", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "Provides the API key used to authenticate with the configured LLM Gateway.")
+                    .setGroups(DetectGroup.QUACKPATCH)
+                    .build();
+
+    public static final StringProperty DETECT_LLM_API_ENDPOINT =
+            StringProperty.newBuilder("detect.llm.api.endpoint", "")
+                    .setInfo("LLM API URL", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "Specifies the base URL of the LLM Gateway that the Quack Patch tool will send requests to.")
+                    .setGroups(DetectGroup.QUACKPATCH)
+                    .build();
+
+    public static final StringProperty DETECT_LLM_NAME =
+            StringProperty.newBuilder("detect.llm.name", "")
+                    .setInfo("LLM Model Name", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "Defines which LLM model Quack Patch should use when performing analysis.",
+                            "Quack Patch has been verified with the following model names: Claude Sonnet 4, GPT-4 and Gemini 2.5 Pro. You may use other OpenAI API standard compatible models supported by your LLM Gateway.")
+                    .setGroups(DetectGroup.QUACKPATCH)
+                    .build();
+
     public static final BooleanProperty DETECT_COMPONENT_LOCATION_ANALYSIS_ENABLED =
         BooleanProperty.newBuilder("detect.component.location.analysis.enabled", false)
             .setInfo("Component Location Analysis Enabled", DetectPropertyFromVersion.VERSION_8_11_0)
@@ -1230,6 +1349,17 @@ public class DetectProperties {
             .setHelp("The path to the Npm executable.")
             .setGroups(DetectGroup.NPM, DetectGroup.GLOBAL)
             .build();
+
+    public static final NullablePathProperty DETECT_NUGET_INSPECTOR_PATH =
+            NullablePathProperty.newBuilder("detect.nuget.inspector.path")
+                    .setInfo("NuGet Inspector Path", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "Use this property to point Detect to a local NuGet Inspector executable, instead of the default that Detect downloads from the binary repository."
+                    )
+                    .setExample("/path/to/unzipped/detect-nuget-inspector")
+                    .setGroups(DetectGroup.NUGET, DetectGroup.GLOBAL)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
 
     public static final NullablePathProperty DETECT_NUGET_CONFIG_PATH =
         NullablePathProperty.newBuilder("detect.nuget.config.path")
@@ -1653,7 +1783,7 @@ public class DetectProperties {
             .setHelp("If project version phase is specified, your project version will be created with this phase. For updates, see detect.project.version.update.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
             .build()
-            .deprecateValue(ProjectVersionPhaseType.ARCHIVED, "The ARCHIVED option will be removed in a future release as it is no longer supported by newer Black Duck SCA servers.");
+            .deprecateValue(ProjectVersionPhaseType.ARCHIVED, "With the Black Duck SCA 2026.1.0 release, the ARCHIVED option was deprecated and is no longer supported. To ensure compatibility with both current and upcoming releases, please update your configuration to use a supported project version phase.");
 
     public static final BooleanProperty DETECT_PROJECT_VERSION_UPDATE =
         BooleanProperty.newBuilder("detect.project.version.update", false)
@@ -1747,6 +1877,28 @@ public class DetectProperties {
             .setGroups(DetectGroup.RUBY, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
 
+    public static final CaseSensitiveStringListProperty DETECT_RUSH_PNPM_EXCLUDED_SUBSPACES =
+            CaseSensitiveStringListProperty.newBuilder("detect.rush.pnpm.excluded.subspaces")
+                    .setInfo("Rush Projects Excluded", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "A comma-separated list of rush pnpm subspaces to exclude.",
+                            "If set, Detect will only exclude those subspaces specified via this property when examining the rush monorepo for dependencies."
+                    )
+                    .setGroups(DetectGroup.RUSH, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_RUSH_PNPM_INCLUDED_SUBSPACES =
+            CaseSensitiveStringListProperty.newBuilder("detect.rush.pnpm.included.subspaces")
+                    .setInfo("Rush Projects Included", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "A comma-separated list of rush subspaces to include.",
+                            "If set, Detect will only include those subspaces specified via this property when examining the rush monorepo for dependencies, unless the project is set for exclusion. Exclusion rules take precedence over inclusion. Leaving this property unset implies 'include all'."
+                    )
+                    .setGroups(DetectGroup.RUSH, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
+
     public static final NullablePathProperty DETECT_SBT_PATH =
         NullablePathProperty.newBuilder("detect.sbt.path")
             .setInfo("Sbt Executable", DetectPropertyFromVersion.VERSION_3_0_0)
@@ -1815,7 +1967,7 @@ public class DetectProperties {
 
     public static final EnumProperty<DetectTargetType> DETECT_TARGET_TYPE =
         EnumProperty.newBuilder("detect.target.type", DetectTargetType.SOURCE, DetectTargetType.class)
-            .setInfo("Detect Target", DetectPropertyFromVersion.VERSION_7_0_0)
+            .setInfo("Detect Scan Mode", DetectPropertyFromVersion.VERSION_7_0_0)
             .setHelp(
                 "Informs detect of what is being scanned which allows improved user experience when scanning different types of targets.",
                 "Changes the behaviour of detect to better suite what is being scanned. For example, when IMAGE is selected and the DOCKER tool applies and has not been excluded, detect will not pick a source directory, will automatically disable the DETECTOR tool and run BINARY/SIGNATURE SCAN on the provided image."

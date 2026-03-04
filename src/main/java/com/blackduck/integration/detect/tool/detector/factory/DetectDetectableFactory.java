@@ -8,6 +8,8 @@ import com.blackduck.integration.detectable.detectable.inspector.PipInspectorRes
 import com.blackduck.integration.detectable.detectable.inspector.ProjectInspectorResolver;
 import com.blackduck.integration.detectable.detectable.inspector.nuget.NugetInspectorResolver;
 import com.blackduck.integration.detectable.detectables.bazel.BazelDetectable;
+import com.blackduck.integration.detectable.detectables.bazel.BazelDetectableOptions;
+import com.blackduck.integration.detectable.detectables.bazel.v2.BazelV2Detectable;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectable;
 import com.blackduck.integration.detectable.detectables.cargo.CargoCliDetectable;
 import com.blackduck.integration.detectable.detectables.cargo.CargoLockDetectable;
@@ -60,6 +62,7 @@ import com.blackduck.integration.detectable.detectables.poetry.PoetryDetectable;
 import com.blackduck.integration.detectable.detectables.rebar.RebarDetectable;
 import com.blackduck.integration.detectable.detectables.rubygems.gemlock.GemlockDetectable;
 import com.blackduck.integration.detectable.detectables.rubygems.gemspec.GemspecParseDetectable;
+import com.blackduck.integration.detectable.detectables.rush.RushDetectable;
 import com.blackduck.integration.detectable.detectables.sbt.SbtDetectable;
 import com.blackduck.integration.detectable.detectables.setuptools.tbuild.SetupToolsBuildDetectable;
 import com.blackduck.integration.detectable.detectables.setuptools.buildless.SetupToolsBuildlessDetectable;
@@ -115,6 +118,11 @@ public class DetectDetectableFactory {
 
     public BazelDetectable createBazelDetectable(DetectableEnvironment environment) {
         return detectableFactory.createBazelDetectable(environment, detectableOptionFactory.createBazelDetectableOptions(), detectExecutableResolver);
+    }
+
+    public BazelV2Detectable createBazelV2Detectable(DetectableEnvironment environment) {
+        BazelDetectableOptions options = detectableOptionFactory.createBazelDetectableOptions();
+        return detectableFactory.createBazelV2Detectable(environment, options, detectExecutableResolver);
     }
 
     public BitbakeDetectable createBitbakeDetectable(DetectableEnvironment environment) {
@@ -325,6 +333,17 @@ public class DetectDetectableFactory {
             detectableOptionFactory.createYarnLockOptions()
         );
     }
+
+    public RushDetectable createRushDetectable(DetectableEnvironment environment) {
+        return detectableFactory.createRushDetectable(
+                environment,
+                detectableOptionFactory.createNpmLockfileOptions(),
+                detectableOptionFactory.createPnpmLockOptions(),
+                detectableOptionFactory.createYarnLockOptions(),
+                detectableOptionFactory.createRushOptions()
+        );
+    }
+
 
     public NugetProjectInspectorDetectable createNugetParseDetectable(DetectableEnvironment detectableEnvironment) {
         return detectableFactory.createNugetParseDetectable(

@@ -13,10 +13,10 @@ import com.blackduck.integration.detectable.detectable.result.DetectableResult;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 
-@DetectableInfo(name = "Conda CLI", language = "Python", forge = "Anaconda", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: environment.yml. Executable: conda.")
+@DetectableInfo(name = "Conda CLI", language = "Python", forge = "Anaconda", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: environment.yml or environment.yaml. Executable: conda.")
 public class CondaCliDetectable extends Detectable {
     public static final String ENVIRONMENT_YML = "environment.yml";
-
+    public static final String ENVIRONMENT_YAML = "environment.yaml";
     private final FileFinder fileFinder;
     private final CondaResolver condaResolver;
     private final CondaCliExtractor condaExtractor;
@@ -41,7 +41,7 @@ public class CondaCliDetectable extends Detectable {
     @Override
     public DetectableResult applicable() {
         Requirements requirements = new Requirements(fileFinder, environment);
-        requirements.file(ENVIRONMENT_YML);
+        requirements.eitherFile(ENVIRONMENT_YML, ENVIRONMENT_YAML);
         return requirements.result();
     }
 

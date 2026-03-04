@@ -26,15 +26,15 @@ public class ScanResultToComponentListTransformer {
      * @param rapidScanFullResults
      * @return set of {@link Component}s
      */
-    public Set<Component> transformScanResultToComponentList(List<DeveloperScansScanView> rapidScanFullResults) {
-        HashMap<String, ScanMetadata> componentIdWithMetadata = new HashMap<>();
+    public Set<Component> transformScanResultToComponentSet(List<DeveloperScansScanView> rapidScanFullResults) {
+        HashMap<String, ComponentMetadata> componentIdWithMetadata = new HashMap<>();
         Set<String> orderedComponentIDs = new LinkedHashSet<>();
         Set<String> componentNamesWithNullIds = new LinkedHashSet<>(rapidScanFullResults.size());
         for (DeveloperScansScanView component : rapidScanFullResults) {
             if (component.getExternalId() == null) {
                 componentNamesWithNullIds.add(component.getComponentName());
             } else {
-                componentIdWithMetadata.put(component.getExternalId(), populateMetadata(component));
+                componentIdWithMetadata.put(component.getExternalId(), new ComponentMetadata(component));
                 orderedComponentIDs.add(component.getExternalId());
             }
         }
@@ -45,11 +45,11 @@ public class ScanResultToComponentListTransformer {
         return convertExternalIDsToComponentList(componentIdWithMetadata, orderedComponentIDs);
     }
 
-    private Set<Component> convertExternalIDsToComponentList(HashMap<String, ScanMetadata> componentIdWithMetadata, Set<String> orderedComponentIDs) {
+    private Set<Component> convertExternalIDsToComponentList(HashMap<String, ComponentMetadata> componentIdWithMetadata, Set<String> orderedComponentIDs) {
         Set<Component> componentSet = new LinkedHashSet<>();
         try {
             for (String componentIdString : orderedComponentIDs) {
-                JsonObject jsonObject = getJsonObjectFromScanMetadata(componentIdWithMetadata.get(componentIdString));
+                JsonObject jsonObject = getJsonObjectFromComponentMetadata(componentIdWithMetadata.get(componentIdString));
                 String[] parts;
                 if ((parts = componentIdString.split(":")).length > 1) {
                     if (parts.length == 2) {
@@ -70,19 +70,8 @@ public class ScanResultToComponentListTransformer {
         return componentSet;
     }
     
-    private JsonObject getJsonObjectFromScanMetadata(ScanMetadata scanMeta) {
+    private JsonObject getJsonObjectFromComponentMetadata(ComponentMetadata scanMeta) {
         Gson gson = new GsonBuilder().create();
-        JsonObject object = gson.fromJson(gson.toJson(scanMeta), JsonObject.class);
-        return object;
-    }
-
-    private ScanMetadata populateMetadata(DeveloperScansScanView component) {
-        ScanMetadata remediationGuidance = new ScanMetadata();
-        remediationGuidance.setComponentViolatingPolicies(component.getComponentViolatingPolicies());
-        remediationGuidance.setPolicyViolationVulnerabilities(component.getPolicyViolationVulnerabilities());
-        remediationGuidance.setLongTermUpgradeGuidance(component.getLongTermUpgradeGuidance());
-        remediationGuidance.setShortTermUpgradeGuidance(component.getShortTermUpgradeGuidance());
-        remediationGuidance.setTransitiveUpgradeGuidance(component.getTransitiveUpgradeGuidance());
-        return remediationGuidance;
+        return gson.fromJson(gson.toJson(scanMeta), JsonObject.class);
     }
 }

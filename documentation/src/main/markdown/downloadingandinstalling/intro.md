@@ -1,4 +1,4 @@
-# Downloading and Installing [detect_product_long]
+# Downloading and Installing [detect_product_short]
 
 This section describes the process of downloading, verifying, and installing [detect_product_short].
 

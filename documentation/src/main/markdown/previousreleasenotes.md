@@ -1,6 +1,56 @@
 <!-- Check the support matrix to determine supported, non-current major version releases -->
 # Release notes for previous [detect_product_short] versions
 
+## Version 11.2.1
+
+### Dependency Updates
+
+* Project Inspector version updated to 2024.12.2
+
+## Version 11.2.0
+
+### New features
+
+* [detect_product_short] now supports Rush Package Manager. For details and configuration information, see: [Rush Detector](packagemgrs/rush.md)
+* Introducing Quack Patch: An AI-assisted code patching tool integrated into [detect_product_short] to help developers generate code patches for vulnerable components. For more information, see: [Quack Patch Documentation](runningdetect/quack-patch.md)
+* Control over which workspace members are included or excluded during scanning is made possible by the new `detect.cargo.included.workspaces` and `detect.cargo.excluded.workspaces` properties for Cargo Detector. See [Cargo](properties/detectors/cargo.md) for details.
+* When set to true (default: false), the new `detect.cargo.ignore.all.workspaces` property allows you to completely disable workspace support. See [Cargo](properties/detectors/cargo.md) for more information.
+* `detect.nuget.inspector.path` property has been added to specify a custom path to the NuGet Inspector.
+
+### Resolved issues
+
+* (IDETECT-4924) Resolved an issue where Impact Analysis Scan threw errors on malformed classes; it now handles them gracefully by logging a warning, skipping the affected classes, and adding them to the scan output.
+* (IDETECT-4921) Fixed upload failures in proxied environments when SCASS is enabled.
+* (IDETECT-4919) Added Cargo workspace support in Cargo detectors. [detect_product_short] now identifies `[workspace]` in the root `Cargo.toml` and resolves dependencies across all members using the shared `Cargo.lock`. The "Additional_components" section has been removed from SBOMs for completeness.
+* (IDETECT-4860) When Component Location Analysis is enabled, the metadata section of `component-source.json` will now contain a "dependencyTrees" field from Rapid/Stateless scan results.
+* (IDETECT-4923) Fixed a bug during `pyproject.toml` parsing when project name could not be derived.
+* (IDETECT-4903) Resolved an issue with [detect_product_short] failing to capture transitive dependencies for the npm package `pdfjs-dist@4.8.69`.
+
+### Dependency Updates
+
+* Updated method-analyzer-core to 1.0.7
+* Upgraded and released Nuget Inspector version 2.5.0
+* Upgraded [detect_product_short] Alpine Docker images to 3.23 to ensure continued security compliance.
+
+## Version 11.1.0
+
+### New features
+
+* The [Component Location Analysis](runningdetect/component-location-analysis.md) feature has been extended to support the Cargo package manager.
+
+### Changed features
+
+* When using the `detect.excluded.detectors` property, any fallback Detectors will now we executed if the primary Detector is excluded. Previously, entire sets of Detectors would be excluded.
+
+### Resolved issues
+
+* (IDETECT-4874) Improved support for multibyte characters in project names, version names, and code location names during package manager scans.
+* (IDETECT-4880) The `.bridge` directory will now be excluded by default from Detector and Signature Scans.
+* (IDETECT-4897) [detect_product_short] now looks for headers in a case-insensitive fashion when performing multipart binary uploads.
+* (IDETECT-4707) The PIP Native Inspector now appropriately handles package names containing a dot character.
+* (IDETECT-4864) The UV Detector now appropriately runs even if the optional field `[tool.uv] manage = true` is not specified.
+* (IDETECT-4760) Any dependencies listed in a Gradle dependency tree as a `(c)` dependency constraint will no longer be identified as dependencies unless they also appear elsewhere in the tree.
+
 ## Version 11.0.0
 
 ### New features

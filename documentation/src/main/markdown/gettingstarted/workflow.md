@@ -1,6 +1,6 @@
-# [detect_product_long] basic workflow
+# [detect_product_short] basic workflow
 
-Using [detect_product_long] to analyze your code typically involves the following basic steps:
+Using [detect_product_short] to analyze your code typically involves the following basic steps:
 
 1. Satisfy system and other execution requirements
 1. Download [detect_product_short]

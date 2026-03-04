@@ -1,0 +1,178 @@
+package com.blackduck.integration.detectable.detectables.rush.functional;
+
+import com.blackduck.integration.bdio.model.Forge;
+import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
+import com.blackduck.integration.common.util.finder.SimpleFileFinder;
+import com.blackduck.integration.detectable.Detectable;
+import com.blackduck.integration.detectable.DetectableEnvironment;
+import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
+import com.blackduck.integration.detectable.detectables.npm.lockfile.parse.NpmLockFileProjectIdTransformer;
+import com.blackduck.integration.detectable.detectables.npm.lockfile.parse.NpmLockfileGraphTransformer;
+import com.blackduck.integration.detectable.detectables.npm.lockfile.parse.NpmLockfilePackager;
+import com.blackduck.integration.detectable.detectables.pnpm.lockfile.PnpmLockOptions;
+import com.blackduck.integration.detectable.detectables.pnpm.lockfile.process.PnpmLockYamlParserInitial;
+import com.blackduck.integration.detectable.detectables.rush.RushDetectable;
+import com.blackduck.integration.detectable.detectables.rush.RushExtractor;
+import com.blackduck.integration.detectable.detectables.rush.RushOptions;
+import com.blackduck.integration.detectable.detectables.rush.parse.RushJsonParser;
+import com.blackduck.integration.detectable.detectables.rush.parse.RushLockFileParser;
+import com.blackduck.integration.detectable.detectables.rush.util.RushTestHelper;
+import com.blackduck.integration.detectable.detectables.yarn.YarnLockOptions;
+import com.blackduck.integration.detectable.detectables.yarn.YarnDependencyType;
+import com.blackduck.integration.detectable.detectables.yarn.YarnPackager;
+import com.blackduck.integration.detectable.detectables.yarn.YarnTransformer;
+import com.blackduck.integration.detectable.detectables.yarn.packagejson.PackageJsonFiles;
+import com.blackduck.integration.detectable.detectables.yarn.packagejson.PackageJsonReader;
+import com.blackduck.integration.detectable.detectables.yarn.parse.YarnLockParser;
+import com.blackduck.integration.detectable.extraction.Extraction;
+import com.blackduck.integration.detectable.functional.DetectableFunctionalTest;
+import com.blackduck.integration.detectable.util.graph.NameVersionGraphAssert;
+import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Assertions;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.Collections;
+
+public class RushYarnFunctionalTest extends DetectableFunctionalTest {
+
+    Gson gson = new GsonBuilder().setPrettyPrinting().setLenient().create();
+
+    protected RushYarnFunctionalTest() throws IOException {
+        super("rush-yarn");
+    }
+
+    @Override
+    protected void setup() throws IOException {
+        addFile(Paths.get("rush.json"),
+                "{\n" +
+                        "  \"$schema\": \"https://developer.microsoft.com/json-schemas/rush/v5/rush.schema.json\",\n" +
+                        "  \"rushVersion\": \"5.82.0\",\n" +
+                        "  \"yarnVersion\": \"1.22.19\",\n" +
+                        "  \"nodeSupportedVersionRange\": \">=14.15.0 <19.0.0\",\n" +
+                        "  \"projects\": [\n" +
+                        "    {\n" +
+                        "      \"packageName\": \"@example/web-app\",\n" +
+                        "      \"projectFolder\": \"apps/web-app\",\n" +
+                        "      \"reviewCategory\": \"production\"\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"packageName\": \"@example/shared-lib\",\n" +
+                        "      \"projectFolder\": \"packages/shared-lib\",\n" +
+                        "      \"reviewCategory\": \"production\"\n" +
+                        "    }\n" +
+                        "  ]\n" +
+                        "}");
+
+        addFile(Paths.get("apps", "web-app", "package.json"),
+                "{\n" +
+                        "  \"name\": \"@example/web-app\",\n" +
+                        "  \"version\": \"2.0.0\",\n" +
+                        "  \"dependencies\": {\n" +
+                        "    \"@example/shared-lib\": \"workspace:*\",\n" +
+                        "    \"react\": \"^18.2.0\",\n" +
+                        "    \"react-dom\": \"^18.2.0\"\n" +
+                        "  }\n" +
+                        "}");
+
+        addFile(Paths.get("packages", "shared-lib", "package.json"),
+                "{\n" +
+                        "  \"name\": \"@example/shared-lib\",\n" +
+                        "  \"version\": \"2.0.0\",\n" +
+                        "  \"dependencies\": {\n" +
+                        "    \"axios\": \"^1.4.0\"\n" +
+                        "  }\n" +
+                        "}");
+
+        addFile(Paths.get("common", "config", "rush", "yarn.lock"),
+                "# THIS IS AN AUTOGENERATED FILE. DO NOT EDIT THIS FILE DIRECTLY.\n" +
+                        "# yarn lockfile v1\n" +
+                        "\n" +
+                        "axios@^1.4.0:\n" +
+                        "  version \"1.4.0\"\n" +
+                        "  resolved \"https://registry.yarnpkg.com/axios/-/axios-1.4.0.tgz#38a7bf1224cd308de271146038b551d725f0669a\"\n" +
+                        "  integrity sha512-S4XCWMEmzvo64T9GfvQDOXgYRDJ/wsSZc7Jvdgx5u1sd0JwsuPLqb3SYmusag+edF6ziyMensPVqLTSc1PiSEA==\n" +
+                        "  dependencies:\n" +
+                        "    follow-redirects \"^1.15.0\"\n" +
+                        "    form-data \"^4.0.0\"\n" +
+                        "    proxy-from-env \"^1.1.0\"\n" +
+                        "\n" +
+                        "follow-redirects@^1.15.0:\n" +
+                        "  version \"1.15.2\"\n" +
+                        "  resolved \"https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.15.2.tgz#b460864144ba63f2681096f274c4e57026da2c13\"\n" +
+                        "  integrity sha512-VQLG33o04KaQ8uYi2tVNbdrWp1QWxNNea+nmIB4EVM28v0hmP17z7aG1+wAkNzVq4KeXTq3221ye5qTJP91JwA==\n" +
+                        "\n" +
+                        "form-data@^4.0.0:\n" +
+                        "  version \"4.0.0\"\n" +
+                        "  resolved \"https://registry.yarnpkg.com/form-data/-/form-data-4.0.0.tgz#93919daeaf361ee529584b9b31664dc12c9fa452\"\n" +
+                        "  integrity sha512-ETEklSGi5t0QMZuiXoA/Q6vcnxcLQP5vdugSpuAyi6SVGi2clPPp+xgEhuMaHC+zGgn31Kd235W35f7Hykkaww==\n" +
+                        "  dependencies:\n" +
+                        "    asynckit \"^0.4.0\"\n" +
+                        "    combined-stream \"^1.0.8\"\n" +
+                        "    mime-types \"^2.1.12\"\n" +
+                        "\n" +
+                        "react-dom@^18.2.0:\n" +
+                        "  version \"18.2.0\"\n" +
+                        "  resolved \"https://registry.yarnpkg.com/react-dom/-/react-dom-18.2.0.tgz#22aaf38708db2674ed9ada224ca4aa708d821e37\"\n" +
+                        "  integrity sha512-6IMTriUmvsjHUjNtEDudZfuDQUoWXVxKHhlEGSk81n4YFS+r/Kl99wXiwlVXtPBtJenozv2P+hxDsw9eA7Xo6g==\n" +
+                        "  dependencies:\n" +
+                        "    loose-envify \"^1.1.0\"\n" +
+                        "    scheduler \"^0.23.0\"\n" +
+                        "\n" +
+                        "react@^18.2.0:\n" +
+                        "  version \"18.2.0\"\n" +
+                        "  resolved \"https://registry.yarnpkg.com/react/-/react-18.2.0.tgz#555bd98592883255fa00de14f1151a917b5d77d5\"\n" +
+                        "  integrity sha512-/3IjMdb2L9QbBdWiW5e3P2/npwMBaU9mHCSCUzNln0ZCYbcfTsGbTJrU/kGemdH2IWmB2ioZ+zkxtmq6g09fGQ==\n" +
+                        "  dependencies:\n" +
+                        "    loose-envify \"^1.1.0\"\n");
+    }
+
+    @NotNull
+    @Override
+    public Detectable create(@NotNull DetectableEnvironment detectableEnvironment) {
+        RushJsonParser rushJsonParser = new RushJsonParser(gson);
+        PnpmLockOptions pnpmLockOptions = new PnpmLockOptions(EnumListFilter.excludeNone(), Collections.emptyList(), Collections.emptyList());
+
+        PnpmLockYamlParserInitial pnpmLockYamlParser = new PnpmLockYamlParserInitial(pnpmLockOptions);
+
+        // Create NPM dependencies
+        ExternalIdFactory externalIdFactory = new ExternalIdFactory();
+        NpmLockfilePackager npmLockfilePackager = RushTestHelper.createNpmPackager(externalIdFactory, gson);
+
+
+        YarnPackager yarnPackager = RushTestHelper.createYarnPackager(externalIdFactory);
+        YarnLockParser yarnLockParser = RushTestHelper.createYarnLockParser();
+
+        // Create shared dependencies
+        PackageJsonFiles packageJsonFiles = new PackageJsonFiles(new PackageJsonReader(gson));
+        RushOptions rushOptions = new RushOptions(Collections.emptyList(), Collections.emptyList());
+
+        RushLockFileParser rushLockFileParser = new RushLockFileParser(
+                npmLockfilePackager,
+                pnpmLockYamlParser,
+                yarnPackager,
+                packageJsonFiles,
+                yarnLockParser,
+                rushOptions
+        );
+        RushExtractor rushExtractor = new RushExtractor(rushJsonParser, rushLockFileParser);
+
+        return new RushDetectable(detectableEnvironment, new SimpleFileFinder(), rushExtractor);
+    }
+
+    @Override
+    public void assertExtraction(@NotNull Extraction extraction) {
+        Assertions.assertEquals(2, extraction.getCodeLocations().size(), "A code location should have been generated.");
+
+        NameVersionGraphAssert graphAssert = new NameVersionGraphAssert(Forge.NPMJS, extraction.getCodeLocations().get(0).getDependencyGraph());
+        graphAssert.hasRootSize(3);
+        
+        graphAssert.hasDependency("axios", "1.4.0");
+        graphAssert.hasRootDependency("react", "18.2.0");
+        graphAssert.hasDependency("react-dom", "18.2.0");
+        graphAssert.hasDependency("follow-redirects", "1.15.2");
+    }
+}

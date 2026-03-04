@@ -25,6 +25,10 @@ public class DetectorToolResult {
     private final Set<DetectorType> applicableDetectorTypes;
     private final Set<DetectorType> failedDetectorTypes;
 
+    public List<DetectorDirectoryReport> getReports() {
+        return reports;
+    }
+
     private final List<DetectorDirectoryReport> reports;
     private final Map<CodeLocation, DetectCodeLocation> codeLocationMap;
 

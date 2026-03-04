@@ -66,6 +66,7 @@ public enum DetectGroup implements Group {
     YARN("yarn", DETECTORS),
     OPAM("opam", DETECTORS),
     UV("uv", DETECTORS),
+    RUSH("rush", DETECTORS),
 
     //Additional groups (should not be used as a primary group
     BLACKDUCK("blackduck"),
@@ -76,7 +77,8 @@ public enum DetectGroup implements Group {
     PROJECT_SETTING("project setting"),
     REPORT_SETTING("report setting"),
     SEARCH("search"),
-    DEFAULT("default");
+    DEFAULT("default"),
+    QUACKPATCH("quack patch");
 
     private final String name;
     private final Group superGroup;

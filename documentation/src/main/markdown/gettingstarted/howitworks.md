@@ -1,4 +1,4 @@
-# How [detect_product_long] Works
+# How [detect_product_short] Works
 
 This page provides an overview of how [detect_product_long] works.
 

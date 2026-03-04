@@ -1,13 +1,10 @@
-# Choosing the target type
+# Choosing the Detect target type
 
-[detect_product_long] will select a workflow based in part on the target type you select via the *detect.target.type* property.
+[detect_product_short] will select a workflow based in part on the target type you select via the [detect.target.type](../../properties/all-properties.md) property.
 
-When running [detect_product_short] on project source code, you'll probably want to
-set *detect.target.type* to *SOURCE*, or leave *detect.target.type* unset (since
-*SOURCE* is the default value).
+When running [detect_product_short] on project source code, you can set *detect.target.type* to *SOURCE*, or leave *detect.target.type* unset (since *SOURCE* is the default value).
 
-When running [detect_product_short] on a Docker image, you'll probably want to
-set *detect.target.type* to *IMAGE*.
+When running [detect_product_short] on a Docker image, you will want to set *detect.target.type* to *IMAGE*.
 
 ## Common workflows
 

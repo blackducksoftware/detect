@@ -1,6 +1,6 @@
-# Upgrading [detect_product_long]
+# Upgrading [detect_product_short]
 
-We recommend reading the release notes for each new [detect_product_long] version.
+We recommend reading the release notes for each new [detect_product_short] version.
 
 [detect_product_short] version names follow [semantic versioning](https://semver.org/). Version strings follow the pattern MAJOR.MINOR.PATCH, with the following implications:
 

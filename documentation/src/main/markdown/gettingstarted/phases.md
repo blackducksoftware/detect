@@ -1,4 +1,4 @@
-# [detect_product_long] Processing
+# [detect_product_short] Processing
 
 [detect_product_short] processing can be broken into the following phases:
 

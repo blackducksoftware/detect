@@ -6,6 +6,7 @@ import com.blackduck.integration.util.NameVersion;
 import org.junit.jupiter.api.Test;
 
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
