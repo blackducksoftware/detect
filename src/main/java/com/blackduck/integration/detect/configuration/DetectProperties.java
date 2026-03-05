@@ -258,8 +258,8 @@ public class DetectProperties {
             AllNoneEnumListProperty.newBuilder("detect.bazel.workspace.rules", AllNoneEnum.NONE, WorkspaceRule.class)
                     .setInfo("Bazel workspace rules", DetectPropertyFromVersion.VERSION_7_12_0)
                     .setHelp(
-                            "This property is deprecated and will be removed in the next major release. Please use detect.bazel.dependency.sources instead.",
-                            "By default Detect discovers Bazel dependencies using all of the supported Bazel workspace rules that it finds in the WORKSPACE file. Alternatively you can use this property to specify the list of Bazel workspace rules Detect should use. Setting this property (or letting it default) to NONE tells Detect to use supported rules that it finds in the WORKSPACE file."
+                            "By default Detect discovers Bazel dependencies using all of the supported Bazel workspace rules that it finds in the WORKSPACE file. Alternatively you can use this property to specify the list of Bazel workspace rules Detect should use.",
+                            "Setting this property (or letting it default) to NONE tells Detect to use supported rules that it finds in the WORKSPACE file."
                     )
                     .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
                     .setDeprecated("This property has been deprecated. Please use detect.bazel.dependency.sources instead.", new ProductMajorVersion(12))
