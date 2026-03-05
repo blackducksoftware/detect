@@ -32,29 +32,11 @@ public class CondaTreeExtractor {
 
     public Extraction extract(File directory, ExecutableTarget condaTreeExe, ExecutableTarget condaExe, File workingDirectory, String condaEnvironmentName) throws ExecutableRunnerException {
         try {
-            List<String> condaListOptions = new ArrayList<>();
-            condaListOptions.add("list");
-            if (StringUtils.isNotBlank(condaEnvironmentName)) {
-                condaListOptions.add("-n");
-                condaListOptions.add(condaEnvironmentName);
-            }
-            condaListOptions.add("--json");
-            ExecutableOutput condaListOutput = executableRunner.execute(ExecutableUtils.createFromTarget(directory, condaExe, condaListOptions));
-
-            String listJsonText = condaListOutput.getStandardOutput();
+            String listJsonText = runCondaListCommand(condaExe, directory, condaEnvironmentName);
 
             Map<String, CondaListElement> dependencies = condaListParser.getDependencies(listJsonText);
 
-            List<String> condaTreeListOptions = new ArrayList<>();
-
-            if (StringUtils.isNotBlank(condaEnvironmentName)) {
-                condaTreeListOptions.add("-n");
-                condaTreeListOptions.add(condaEnvironmentName);
-            }
-            condaTreeListOptions.add("deptree");
-            condaTreeListOptions.add("--full");
-
-            ExecutableOutput executableOutput = executableRunner.execute(ExecutableUtils.createFromTarget(workingDirectory, condaTreeExe, condaTreeListOptions));
+            ExecutableOutput executableOutput = runCondaTreeCommand(condaTreeExe, workingDirectory, condaEnvironmentName);
             List<String> condaTreeOutput = executableOutput.getStandardOutputAsList();
 
             if (executableOutput.getReturnCode() == 0) {
@@ -69,5 +51,30 @@ public class CondaTreeExtractor {
         } catch (Exception e) {
             return new Extraction.Builder().exception(e).build();
         }
+    }
+
+    private String runCondaListCommand(ExecutableTarget condaExe, File directory, String condaEnvironmentName) throws ExecutableRunnerException {
+        List<String> condaListOptions = new ArrayList<>();
+        condaListOptions.add("list");
+        if (StringUtils.isNotBlank(condaEnvironmentName)) {
+            condaListOptions.add("-n");
+            condaListOptions.add(condaEnvironmentName);
+        }
+        condaListOptions.add("--json");
+        ExecutableOutput condaListOutput = executableRunner.execute(ExecutableUtils.createFromTarget(directory, condaExe, condaListOptions));
+        return condaListOutput.getStandardOutput();
+    }
+
+    private ExecutableOutput runCondaTreeCommand(ExecutableTarget condaTreeExe, File directory, String condaEnvironmentName) throws ExecutableRunnerException {
+        List<String> condaTreeListOptions = new ArrayList<>();
+
+        if (StringUtils.isNotBlank(condaEnvironmentName)) {
+            condaTreeListOptions.add("-n");
+            condaTreeListOptions.add(condaEnvironmentName);
+        }
+        condaTreeListOptions.add("deptree");
+        condaTreeListOptions.add("--full");
+
+        return executableRunner.execute(ExecutableUtils.createFromTarget(directory, condaTreeExe, condaTreeListOptions));
     }
 }
