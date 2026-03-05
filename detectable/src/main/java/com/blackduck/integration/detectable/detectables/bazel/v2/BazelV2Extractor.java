@@ -111,16 +111,16 @@ public class BazelV2Extractor {
         StringBuilder sb = new StringBuilder("[");
         for (int i = 0; i < deps.size(); i++) {
             Dependency dep = deps.get(i);
-            String forge = dep.getExternalId().getForge() != null ? dep.getExternalId().getForge().getName() : "null";
+            String forge = dep.getExternalId().getForge() != null ? dep.getExternalId().getForge().getName() : null;
             String[] pieces = dep.getExternalId().getExternalIdPieces();
             String piecesJson = pieces != null && pieces.length > 0
-                ? "[" + Arrays.stream(pieces).map(p -> "\"" + p + "\"").collect(Collectors.joining(",")) + "]"
+                ? "[" + Arrays.stream(pieces).map(BazelV2Extractor::jsonEscape).collect(Collectors.joining(",")) + "]"
                 : "[]";
             sb.append("{")
-                .append(JSON_KEY_NAME).append(":\"").append(dep.getName()).append("\",")
-                .append(JSON_KEY_VERSION).append(":\"").append(dep.getVersion()).append("\",")
+                .append(JSON_KEY_NAME).append(":").append(jsonEscape(dep.getName())).append(",")
+                .append(JSON_KEY_VERSION).append(":").append(jsonEscape(dep.getVersion())).append(",")
                 .append(JSON_KEY_EXTERNAL_ID).append(":{")
-                .append(JSON_KEY_FORGE).append(":\"").append(forge).append("\",")
+                .append(JSON_KEY_FORGE).append(":").append(jsonEscape(forge)).append(",")
                 .append(JSON_KEY_PIECES).append(":").append(piecesJson).append(",")
                 .append(JSON_KEY_PREFIX).append(":null,")
                 .append(JSON_KEY_SUFFIX).append(":null")
@@ -133,6 +133,17 @@ public class BazelV2Extractor {
         }
         sb.append("]");
         return sb.toString();
+    }
+
+    /**
+     * Escapes a string value for safe inclusion in JSON output.
+     * Returns literal null (unquoted) if the value is null.
+     */
+    private static String jsonEscape(String value) {
+        if (value == null) {
+            return "null";
+        }
+        return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
     }
 
     /**
