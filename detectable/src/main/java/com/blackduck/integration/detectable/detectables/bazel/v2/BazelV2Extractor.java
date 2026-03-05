@@ -87,7 +87,7 @@ public class BazelV2Extractor {
             List<Dependency> deps = pipelines.get(source).run();
             logger.info("Number of dependencies discovered for source {}: {}", source, deps.size());
             if (logger.isDebugEnabled()) {
-                logger.debug("Dependencies discovered for rule {}: {}", source, dependenciesToDebugString(deps));
+                logger.debug("Dependencies discovered for source {}: {}", source, dependenciesToDebugString(deps));
             }
             aggregated.addAll(deps);
         }
