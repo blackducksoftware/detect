@@ -96,7 +96,7 @@ public class CondaTreeParser {
         } else if (!dependencyStack.isEmpty() && dependencyStack.peek().depth == depth) {
             // Sibling dependency - same level as previous
             dependencyStack.pop();
-            if(dependencyStack.isEmpty()) {
+            if(!dependencyStack.isEmpty()) {
                 dependencyGraph.addChildWithParent(dependency, dependencyStack.peek().dependency);
             }
         } else if (!dependencyStack.isEmpty() && dependencyStack.peek().depth > depth) {
