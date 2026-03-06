@@ -1,6 +1,9 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver;
 
 import com.blackduck.integration.bdio.graph.DependencyGraph;
+import com.blackduck.integration.bdio.model.Forge;
+import com.blackduck.integration.bdio.model.dependency.Dependency;
+import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.common.util.finder.FileFinder;
 import com.blackduck.integration.detectable.Detectable;
@@ -11,13 +14,14 @@ import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation
 import com.blackduck.integration.detectable.detectable.result.DetectableResult;
 import com.blackduck.integration.detectable.detectable.result.FileNotFoundDetectableResult;
 import com.blackduck.integration.detectable.detectable.result.PassedDetectableResult;
+import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.model.DiscoveredDependency;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 import com.blackduck.integration.detectable.detectables.maven.resolver.result.MavenParseResult;
 import com.blackduck.integration.util.NameVersion;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.collection.CollectResult;
-import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.graph.DependencyNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -277,21 +281,21 @@ public class MavenResolverDetectable extends Detectable {
                 logger.info("║       ARTIFACT JAR DOWNLOAD FEATURE: ENABLED               ║");
                 logger.info("Starting JAR download phase for Maven dependencies...");
 
-                // Collect all dependencies from both compile and test scopes
-                List<Dependency> allDependencies = new ArrayList<>();
+                // Collect all Aether dependencies from both compile and test scopes
+                List<org.eclipse.aether.graph.Dependency> aetherDependencies = new ArrayList<org.eclipse.aether.graph.Dependency>();
 
                 if (collectResultCompile != null && collectResultCompile.getRoot() != null) {
-                    extractDependenciesFromNode(collectResultCompile.getRoot(), allDependencies);
-                    logger.debug("Extracted {} dependencies from compile scope", allDependencies.size());
+                    extractAetherDependenciesFromNode(collectResultCompile.getRoot(), aetherDependencies);
+                    logger.debug("Extracted {} dependencies from compile scope", aetherDependencies.size());
                 }
 
-                int compileCount = allDependencies.size();
+                int compileCount = aetherDependencies.size();
                 if (includeTestScope && collectResultTest != null && collectResultTest.getRoot() != null) {
-                    extractDependenciesFromNode(collectResultTest.getRoot(), allDependencies);
-                    logger.debug("Extracted {} additional dependencies from test scope", allDependencies.size() - compileCount);
+                    extractAetherDependenciesFromNode(collectResultTest.getRoot(), aetherDependencies);
+                    logger.debug("Extracted {} additional dependencies from test scope", aetherDependencies.size() - compileCount);
                 }
 
-                logger.info("Total unique dependencies collected for JAR download: {}", allDependencies.size());
+                logger.info("Total unique dependencies collected for JAR download: {}", aetherDependencies.size());
 
                 // Set up repository paths for JAR checking and downloading
                 Path detectRunDirectory = extractionEnvironment.getOutputDirectory().toPath();
@@ -331,13 +335,42 @@ public class MavenResolverDetectable extends Detectable {
                     mavenResolverOptions
                 );
 
-                //the path of downloaded or located JARs for all dependencies, keyed by their artifact coordinates
+                // The path of downloaded or located JARs for all dependencies, keyed by their artifact coordinates
                 Map<Artifact, Path> locatedOrDownloadedArtifactJars = Collections.emptyMap();
 
                 logger.info("Starting artifact downloads...");
-                locatedOrDownloadedArtifactJars  = artifactDownloader.downloadArtifacts(allDependencies);
+                locatedOrDownloadedArtifactJars = artifactDownloader.downloadArtifacts(aetherDependencies);
 
-                logger.info("JAR download phase completed, continuing with code location generation...");
+                // PHASE 4.6: Scan JARs for shaded dependencies
+                logger.info("JAR download phase completed, continuing with shaded JAR inspection...");
+
+                ShadedDependencyScanner shadedDependencyScanner = new ShadedDependencyScanner();
+
+                // Scan all JARs and get discovered shaded dependencies
+                Map<Artifact, List<DiscoveredDependency>> shadedDependenciesMap =
+                        shadedDependencyScanner.scanJarsForShadedDependencies(locatedOrDownloadedArtifactJars);
+
+                logger.info("Shaded dependency inspection phase completed. Found {} JARs with shaded dependencies.",
+                        shadedDependenciesMap.size());
+
+                // PHASE 4.7: Add shaded dependencies to dependency graphs
+                if (!shadedDependenciesMap.isEmpty()) {
+                    logger.info("Adding shaded dependencies to dependency graphs...");
+
+                    int addedToCompile = addShadedDependenciesToGraph(dependencyGraphCompile, shadedDependenciesMap);
+                    logger.info("Added {} shaded dependencies to compile dependency graph.", addedToCompile);
+
+                    if (includeTestScope && dependencyGraphTest != null) {
+                        int addedToTest = addShadedDependenciesToGraph(dependencyGraphTest, shadedDependenciesMap);
+                        logger.info("Added {} shaded dependencies to test dependency graph.", addedToTest);
+                    }
+
+                    logger.info("Successfully integrated shaded dependencies into dependency graphs.");
+                } else {
+                    logger.info("No shaded dependencies found to add to dependency graphs.");
+                }
+
+                logger.info("Shaded JAR inspection phase completed, continuing with code location generation...");
             } else {
                 logger.info("ARTIFACT JAR DOWNLOAD FEATURE: DISABLED");
 
@@ -393,45 +426,125 @@ public class MavenResolverDetectable extends Detectable {
     }
 
     /**
-     * Recursively extracts all dependencies from a dependency node tree.
+     * Adds discovered shaded dependencies to the dependency graph as children of the root.
+     *
+     * <p>Converts DiscoveredDependency objects (containing GAV strings) into DependencyGraph nodes
+     * and adds them as direct children of the root project node. This ensures shaded dependencies
+     * appear in the final BDIO output for Black Duck analysis.
+     *
+     * @param graph The dependency graph to add shaded dependencies to
+     * @param shadedDepsMap Map of parent artifact to list of shaded dependencies found in it
+     * @return The number of shaded dependencies successfully added to the graph
+     */
+    private int addShadedDependenciesToGraph(
+            DependencyGraph graph,
+            Map<Artifact, List<DiscoveredDependency>> shadedDepsMap) {
+
+        int addedCount = 0;
+
+        for (Map.Entry<Artifact, List<DiscoveredDependency>> entry : shadedDepsMap.entrySet()) {
+            Artifact parentArtifact = entry.getKey();
+            List<DiscoveredDependency> shadedDeps = entry.getValue();
+
+            String parentGav = parentArtifact.getGroupId() + ":" + parentArtifact.getArtifactId() + ":" + parentArtifact.getVersion();
+            logger.debug("Processing {} shaded dependencies from parent: {}", shadedDeps.size(), parentGav);
+
+            for (DiscoveredDependency shadedDep : shadedDeps) {
+                try {
+                    String identifier = shadedDep.getIdentifier();
+
+                    if (identifier == null || identifier.isEmpty()) {
+                        logger.warn("Skipping shaded dependency with null/empty identifier from parent: {}", parentGav);
+                        continue;
+                    }
+
+                    // Parse GAV from identifier (format: "groupId:artifactId:version")
+                    String[] gavParts = identifier.split(":");
+
+                    if (gavParts.length < 3) {
+                        logger.warn("Skipping shaded dependency with invalid GAV format: {} (expected groupId:artifactId:version)", identifier);
+                        continue;
+                    }
+
+                    String groupId = gavParts[0];
+                    String artifactId = gavParts[1];
+                    String version = gavParts[2];
+
+                    // Skip if any part is empty or marked as UNKNOWN
+                    if (groupId.isEmpty() || artifactId.isEmpty() || version.isEmpty() || "UNKNOWN".equals(version)) {
+                        logger.warn("Skipping shaded dependency with incomplete GAV: {}", identifier);
+                        continue;
+                    }
+
+                    // Create ExternalId for the shaded dependency
+                    ExternalId externalId = externalIdFactory.createMavenExternalId(groupId, artifactId, version);
+
+                    // Create Dependency object (using BDIO Dependency)
+                    Dependency dependency = new Dependency(artifactId, version, externalId);
+
+                    // Add as child of root
+                    graph.addChildToRoot(dependency);
+                    addedCount++;
+
+                    logger.debug("  Added shaded dependency to graph: {} (detected via: {})",
+                        identifier, shadedDep.getDetectionSource());
+
+                } catch (Exception e) {
+                    logger.warn("Failed to add shaded dependency to graph: {} - Error: {}",
+                        shadedDep.getIdentifier(), e.getMessage());
+                }
+            }
+        }
+
+        return addedCount;
+    }
+
+    /**
+     * Recursively extracts all Aether dependencies from a dependency node tree.
      * This traverses the Aether dependency graph and collects all unique dependencies.
      *
      * @param node The root dependency node to traverse
-     * @param dependencies The list to collect dependencies into
+     * @param aetherDependencies The list to collect Aether dependencies into
      */
-    private void extractDependenciesFromNode(org.eclipse.aether.graph.DependencyNode node, List<Dependency> dependencies) {
+    private void extractAetherDependenciesFromNode(DependencyNode node,
+                                                    List<org.eclipse.aether.graph.Dependency> aetherDependencies) {
         if (node == null) {
             return;
         }
 
         // Add current node's dependency if it exists
-        Dependency dependency = node.getDependency();
+        org.eclipse.aether.graph.Dependency dependency = node.getDependency();
         if (dependency != null && dependency.getArtifact() != null) {
             // Avoid duplicates by checking if already added
-            boolean alreadyExists = dependencies.stream()
-                .anyMatch(d -> isSameArtifact(d.getArtifact(), dependency.getArtifact()));
+            boolean alreadyExists = false;
+            for (org.eclipse.aether.graph.Dependency existing : aetherDependencies) {
+                if (isSameArtifact(existing.getArtifact(), dependency.getArtifact())) {
+                    alreadyExists = true;
+                    break;
+                }
+            }
 
             if (!alreadyExists) {
-                dependencies.add(dependency);
+                aetherDependencies.add(dependency);
             }
         }
 
         // Recursively process children
         if (node.getChildren() != null) {
-            for (org.eclipse.aether.graph.DependencyNode child : node.getChildren()) {
-                extractDependenciesFromNode(child, dependencies);
+            for (DependencyNode child : node.getChildren()) {
+                extractAetherDependenciesFromNode(child, aetherDependencies);
             }
         }
     }
 
     /**
-     * Checks if two artifacts represent the same artifact (same coordinates).
+     * Checks if two Aether artifacts represent the same artifact (same coordinates).
      *
      * @param a1 First artifact
      * @param a2 Second artifact
      * @return true if they have the same groupId, artifactId, and version
      */
-    private boolean isSameArtifact(org.eclipse.aether.artifact.Artifact a1, org.eclipse.aether.artifact.Artifact a2) {
+    private boolean isSameArtifact(Artifact a1, Artifact a2) {
         return a1.getGroupId().equals(a2.getGroupId()) &&
                a1.getArtifactId().equals(a2.getArtifactId()) &&
                a1.getVersion().equals(a2.getVersion());
