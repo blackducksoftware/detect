@@ -209,38 +209,17 @@ public class DetectableOptionFactory {
     }
 
     /**
-     * Creates Maven resolver options with all enhanced configuration.
-     * Collects all Maven-related properties from DetectProperties and passes them
-     * to MavenResolverOptions for use by ArtifactDownloaderV2.
+     * Creates Maven resolver options with user-facing configuration only.
+     * Internal download tuning (timeouts, threads, retries) is handled
+     * by {@link com.blackduck.integration.detectable.detectables.maven.resolver.MavenDownloadConstants}.
      *
-     * Properties collected:
-     * - Core: download enable flag, custom JAR repository path
-     * - HTTP: connection timeout, read timeout
-     * - Parallel: download thread count
-     * - Retry: retry count, initial backoff, max backoff
-     *
-     * @return Fully configured MavenResolverOptions with all enhancements
+     * @return MavenResolverOptions with user-facing settings
      */
     public MavenResolverOptions createMavenResolverOptions() {
-        // Core JAR download configuration
         Boolean downloadArtifactJars = detectConfiguration.getValue(DetectProperties.DETECT_MAVEN_DOWNLOAD_ARTIFACT_JARS);
         Path jarRepositoryPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_MAVEN_JAR_REPOSITORY_PATH);
 
-        // HTTP timeout configuration (nullable - defaults handled in ArtifactDownloaderV2)
-        Integer connectTimeoutMs = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_TIMEOUT_CONNECT);
-        Integer readTimeoutMs = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_TIMEOUT_READ);
-
-        // Parallel download configuration (nullable - single-threaded if not specified)
-        Integer downloadThreads = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_DOWNLOAD_THREADS);
-
-        // Retry configuration (nullable - defaults handled in ArtifactDownloaderV2)
-        Integer retryCount = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_RETRY_COUNT);
-        Long retryBackoffInitialMs = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_RETRY_BACKOFF_INITIAL);
-        Long retryBackoffMaxMs = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_RETRY_BACKOFF_MAX);
-
-        // Pass all configuration to MavenResolverOptions
-        return new MavenResolverOptions(downloadArtifactJars, jarRepositoryPath, connectTimeoutMs, readTimeoutMs,
-                downloadThreads, retryCount, retryBackoffInitialMs, retryBackoffMaxMs);
+        return new MavenResolverOptions(downloadArtifactJars, jarRepositoryPath);
     }
 
     public ConanCliOptions createConanCliOptions() {

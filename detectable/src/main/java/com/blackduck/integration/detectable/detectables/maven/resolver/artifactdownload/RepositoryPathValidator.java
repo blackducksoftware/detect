@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Validates Maven repository paths for security and accessibility.
@@ -41,7 +42,7 @@ public class RepositoryPathValidator {
             if (originalPath.contains("..") || originalPath.contains("./")) {
                 // Additional check: ensure the normalized path doesn't escape expected boundaries
                 // This catches attempts like "../../../etc/passwd"
-                Path currentDir = Path.of("").toAbsolutePath();
+                Path currentDir = Paths.get("").toAbsolutePath();
                 Path parentDir = currentDir.getParent();
 
                 if (parentDir != null && !normalizedPath.startsWith(currentDir) &&

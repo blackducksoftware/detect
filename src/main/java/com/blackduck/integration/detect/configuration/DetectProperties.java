@@ -1200,91 +1200,18 @@ public class DetectProperties {
                     .build();
 
     public static final NullablePathProperty DETECT_MAVEN_JAR_REPOSITORY_PATH =
-            NullablePathProperty.newBuilder("detect.maven.jar.repository.path")
+            NullablePathProperty.newBuilder("detect.maven.path.jar.repository")
                     .setInfo("Maven JAR Repository Path", DetectPropertyFromVersion.VERSION_9_8_0)
                     .setHelp(
-                            "Path to check for existing Maven artifact JARs when detect.maven.download.artifact.jars is enabled.",
-                            "Specifies a custom location to CHECK for existing JARs before downloading. " +
-                            "Can be either: (1) A repository directory using standard Maven layout (groupId/artifactId/version/artifact-version.jar), or " +
-                            "(2) A direct path to a specific JAR file. " +
-                            "Downloaded JARs are ALWAYS saved to ~/.m2/repository regardless of this setting. " +
-                            "Lookup order: custom path (if set) → ~/.m2/repository → Maven Central. " +
-                            "This property only has effect when detect.maven.download.artifact.jars is set to true."
-                    )
-                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
-                    .build();
-
-    public static final NullableIntegerProperty DETECT_MAVEN_TIMEOUT_CONNECT =
-            NullableIntegerProperty.newBuilder("detect.maven.timeout.connect")
-                    .setInfo("Maven Download Connect Timeout", DetectPropertyFromVersion.VERSION_9_8_0)
-                    .setHelp(
-                            "HTTP connection timeout in milliseconds for Maven artifact downloads.",
-                            "Specifies the maximum time to wait when establishing a connection to Maven Central. " +
-                            "Default is 30000ms (30 seconds). Must be a positive integer between 1 and 600000 (10 minutes). " +
-                            "Increase this value if experiencing connection timeouts in slow network environments. " +
-                            "This property only has effect when detect.maven.download.artifact.jars is set to true."
-                    )
-                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
-                    .build();
-
-    public static final NullableIntegerProperty DETECT_MAVEN_TIMEOUT_READ =
-            NullableIntegerProperty.newBuilder("detect.maven.timeout.read")
-                    .setInfo("Maven Download Read Timeout", DetectPropertyFromVersion.VERSION_9_8_0)
-                    .setHelp(
-                            "HTTP read timeout in milliseconds for Maven artifact downloads.",
-                            "Specifies the maximum time to wait when reading data from Maven Central after connection is established. " +
-                            "Default is 30000ms (30 seconds). Must be a positive integer between 1 and 600000 (10 minutes). " +
-                            "Increase this value if experiencing read timeouts when downloading large artifacts. " +
-                            "This property only has effect when detect.maven.download.artifact.jars is set to true."
-                    )
-                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
-                    .build();
-
-    public static final NullableIntegerProperty DETECT_MAVEN_DOWNLOAD_THREADS =
-            NullableIntegerProperty.newBuilder("detect.maven.download.threads")
-                    .setInfo("Maven Download Thread Count", DetectPropertyFromVersion.VERSION_9_8_0)
-                    .setHelp(
-                            "Number of concurrent threads for downloading Maven artifacts.",
-                            "Specifies the maximum number of parallel downloads when downloading Maven JARs. " +
-                            "Default is 5. Valid range is 1-20. Higher values may improve download speed but increase " +
-                            "resource usage and may trigger rate limiting on some repositories. " +
-                            "This property only has effect when detect.maven.download.artifact.jars is set to true."
-                    )
-                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
-                    .build();
-
-    public static final NullableIntegerProperty DETECT_MAVEN_RETRY_COUNT =
-            NullableIntegerProperty.newBuilder("detect.maven.retry.count")
-                    .setInfo("Maven Download Retry Count", DetectPropertyFromVersion.VERSION_9_8_0)
-                    .setHelp(
-                            "Maximum number of retry attempts for failed Maven downloads.",
-                            "Specifies how many times to retry a failed download. Default is 3. " +
-                            "Valid range is 0-10. Only network errors, timeouts, and 5xx server errors are retried. " +
-                            "Client errors (4xx) except 408 and 429 are not retried. " +
-                            "This property only has effect when detect.maven.download.artifact.jars is set to true."
-                    )
-                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
-                    .build();
-
-    public static final NullableLongProperty DETECT_MAVEN_RETRY_BACKOFF_INITIAL =
-            NullableLongProperty.newBuilder("detect.maven.retry.backoff.initial")
-                    .setInfo("Maven Retry Initial Backoff", DetectPropertyFromVersion.VERSION_9_8_0)
-                    .setHelp(
-                            "Initial backoff delay in milliseconds for Maven download retries.",
-                            "Specifies the initial wait time before the first retry. Default is 1000ms (1 second). " +
-                            "The delay increases exponentially with each retry. Valid range is 0-60000ms. " +
-                            "This property only has effect when detect.maven.download.artifact.jars is set to true."
-                    )
-                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
-                    .build();
-
-    public static final NullableLongProperty DETECT_MAVEN_RETRY_BACKOFF_MAX =
-            NullableLongProperty.newBuilder("detect.maven.retry.backoff.max")
-                    .setInfo("Maven Retry Maximum Backoff", DetectPropertyFromVersion.VERSION_9_8_0)
-                    .setHelp(
-                            "Maximum backoff delay in milliseconds for Maven download retries.",
-                            "Specifies the maximum wait time between retry attempts. Default is 30000ms (30 seconds). " +
-                            "Valid range is initial backoff to 300000ms (5 minutes). Jitter is added to avoid thundering herd. " +
+                            "Path to a custom local Maven repository (.m2) location to check for existing artifact JARs when detect.maven.download.artifact.jars is enabled.",
+                            "Specifies a custom location of the Maven local repository (.m2/repository) to CHECK for existing JARs before downloading from remote repositories. " +
+                            "The path is automatically resolved to the .m2/repository root regardless of the format provided. " +
+                            "Accepted formats: (1) '/custom/path/.m2/repository' — used as-is, " +
+                            "(2) '/custom/path' — if .m2/repository exists inside, it will be detected, " +
+                            "(3) '/custom/path/.m2/repository/org/example/...' — truncated back to .m2/repository. " +
+                            "JARs are looked up using standard Maven repository layout: <groupId>/<artifactId>/<version>/<artifactId>-<version>.jar. " +
+                            "Downloaded JARs are saved to the Detect output directory. " +
+                            "Lookup order: custom repository (if set) → ~/.m2/repository → Maven Central. " +
                             "This property only has effect when detect.maven.download.artifact.jars is set to true."
                     )
                     .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
@@ -1912,7 +1839,7 @@ public class DetectProperties {
 
     public static final EnumProperty<DetectTargetType> DETECT_TARGET_TYPE =
         EnumProperty.newBuilder("detect.target.type", DetectTargetType.SOURCE, DetectTargetType.class)
-            .setInfo("Detect Target", DetectPropertyFromVersion.VERSION_7_0_0)
+            .setInfo("Detect Scan Mode", DetectPropertyFromVersion.VERSION_7_0_0)
             .setHelp(
                 "Informs detect of what is being scanned which allows improved user experience when scanning different types of targets.",
                 "Changes the behaviour of detect to better suite what is being scanned. For example, when IMAGE is selected and the DOCKER tool applies and has not been excluded, detect will not pick a source directory, will automatically disable the DETECTOR tool and run BINARY/SIGNATURE SCAN on the provided image."

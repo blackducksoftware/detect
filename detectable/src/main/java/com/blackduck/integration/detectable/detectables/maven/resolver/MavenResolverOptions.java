@@ -4,88 +4,46 @@ import java.nio.file.Path;
 
 /**
  * Configuration options for Maven resolver operations.
- * Includes settings for artifact downloads, timeouts, parallel processing, and retry logic.
+ *
+ * <p>Only user-facing options are exposed here:
+ * <ul>
+ *   <li>{@code downloadArtifactJarsEnabled} — opt-in flag to download JARs</li>
+ *   <li>{@code jarRepositoryPath} — custom .m2 location to check for existing JARs</li>
+ * </ul>
+ *
+ * <p>Internal download tuning (timeouts, threads, retries) is handled by
+ * {@link MavenDownloadConstants}.
  */
 public class MavenResolverOptions {
-    // Core features
     private final boolean downloadArtifactJarsEnabled;
     private final Path jarRepositoryPath;
 
-    // HTTP timeout configuration
-    private final Integer connectTimeoutMs;
-    private final Integer readTimeoutMs;
-
-    // Parallel download configuration
-    private final Integer downloadThreads;
-
-    // Retry configuration
-    private final Integer retryCount;
-    private final Long retryBackoffInitialMs;
-    private final Long retryBackoffMaxMs;
-
     /**
-     * Full constructor with all configuration options.
-     */
-    public MavenResolverOptions(boolean downloadArtifactJarsEnabled, Path jarRepositoryPath,
-                               Integer connectTimeoutMs, Integer readTimeoutMs,
-                               Integer downloadThreads, Integer retryCount,
-                               Long retryBackoffInitialMs, Long retryBackoffMaxMs) {
-        this.downloadArtifactJarsEnabled = downloadArtifactJarsEnabled;
-        this.jarRepositoryPath = jarRepositoryPath;
-        this.connectTimeoutMs = connectTimeoutMs;
-        this.readTimeoutMs = readTimeoutMs;
-        this.downloadThreads = downloadThreads;
-        this.retryCount = retryCount;
-        this.retryBackoffInitialMs = retryBackoffInitialMs;
-        this.retryBackoffMaxMs = retryBackoffMaxMs;
-    }
-
-    /**
-     * Legacy constructor for backward compatibility.
+     * @param downloadArtifactJarsEnabled whether to download artifact JARs
+     * @param jarRepositoryPath optional path to a custom local Maven repository (.m2 location).
+     *                          The path is resolved automatically by {@link M2RepositoryPathResolver}
+     *                          at download time, so users can provide it in any of these forms:
+     *                          <ul>
+     *                            <li>{@code /custom/path/.m2/repository}</li>
+     *                            <li>{@code /custom/path} (if .m2/repository exists inside)</li>
+     *                            <li>{@code /custom/path/.m2/repository/org/example/...} (truncated)</li>
+     *                          </ul>
      */
     public MavenResolverOptions(boolean downloadArtifactJarsEnabled, Path jarRepositoryPath) {
-        this(downloadArtifactJarsEnabled, jarRepositoryPath, null, null, null, null, null, null);
+        this.downloadArtifactJarsEnabled = downloadArtifactJarsEnabled;
+        this.jarRepositoryPath = jarRepositoryPath;
     }
 
-    /**
-     * Constructor with basic timeout configuration.
-     */
-    public MavenResolverOptions(boolean downloadArtifactJarsEnabled, Path jarRepositoryPath,
-                               Integer connectTimeoutMs, Integer readTimeoutMs) {
-        this(downloadArtifactJarsEnabled, jarRepositoryPath, connectTimeoutMs, readTimeoutMs,
-             null, null, null, null);
-    }
-
-    // Getters for all fields
     public boolean isDownloadArtifactJarsEnabled() {
         return downloadArtifactJarsEnabled;
     }
 
+    /**
+     * @return the raw user-provided path to the custom Maven repository location,
+     *         or null if not configured. This path will be resolved by
+     *         {@link M2RepositoryPathResolver} before use.
+     */
     public Path getJarRepositoryPath() {
         return jarRepositoryPath;
-    }
-
-    public Integer getConnectTimeoutMs() {
-        return connectTimeoutMs;
-    }
-
-    public Integer getReadTimeoutMs() {
-        return readTimeoutMs;
-    }
-
-    public Integer getDownloadThreads() {
-        return downloadThreads;
-    }
-
-    public Integer getRetryCount() {
-        return retryCount;
-    }
-
-    public Long getRetryBackoffInitialMs() {
-        return retryBackoffInitialMs;
-    }
-
-    public Long getRetryBackoffMaxMs() {
-        return retryBackoffMaxMs;
     }
 }

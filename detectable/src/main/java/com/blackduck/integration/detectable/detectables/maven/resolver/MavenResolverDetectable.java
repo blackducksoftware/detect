@@ -15,6 +15,7 @@ import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 import com.blackduck.integration.detectable.detectables.maven.resolver.result.MavenParseResult;
 import com.blackduck.integration.util.NameVersion;
+import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.graph.Dependency;
 import org.slf4j.Logger;
@@ -24,7 +25,9 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Maven Resolver Detectable - Detects and resolves Maven project dependencies.
@@ -271,15 +274,12 @@ public class MavenResolverDetectable extends Detectable {
 
             // PHASE 4.5: Download artifact JARs if enabled
             if (mavenResolverOptions.isDownloadArtifactJarsEnabled()) {
-                logger.info("╔════════════════════════════════════════════════════════════╗");
                 logger.info("║       ARTIFACT JAR DOWNLOAD FEATURE: ENABLED               ║");
-                logger.info("╚════════════════════════════════════════════════════════════╝");
                 logger.info("Starting JAR download phase for Maven dependencies...");
 
                 // Collect all dependencies from both compile and test scopes
                 List<Dependency> allDependencies = new ArrayList<>();
 
-                // Extract dependencies from the collect results
                 if (collectResultCompile != null && collectResultCompile.getRoot() != null) {
                     extractDependenciesFromNode(collectResultCompile.getRoot(), allDependencies);
                     logger.debug("Extracted {} dependencies from compile scope", allDependencies.size());
@@ -294,59 +294,59 @@ public class MavenResolverDetectable extends Detectable {
                 logger.info("Total unique dependencies collected for JAR download: {}", allDependencies.size());
 
                 // Set up repository paths for JAR checking and downloading
-                Path userHome = java.nio.file.Paths.get(System.getProperty("user.home"));
-                Path defaultM2Repository = userHome.resolve(".m2").resolve("repository");
+                Path detectRunDirectory = extractionEnvironment.getOutputDirectory().toPath();
+                Path defaultDownloadJarRepository = detectRunDirectory.resolve(DOWNLOADS_DIR_NAME);
+                Files.createDirectories(defaultDownloadJarRepository);
 
                 Path customRepositoryPath = mavenResolverOptions.getJarRepositoryPath();
 
                 if (customRepositoryPath != null) {
-                    logger.info("Custom JAR repository configured: {}", customRepositoryPath);
-                    logger.info("Default Maven repository (.m2): {}", defaultM2Repository);
-                    logger.info("Lookup order: 1) Custom repository → 2) .m2/repository → 3) Maven Central");
+                    logger.info("Custom .m2 repository location configured: {}", customRepositoryPath);
+                    logger.info("  (Path will be resolved to .m2/repository root automatically)");
+                    logger.info("Lookup order: 1) Custom .m2 -> 2) Home ~/.m2/repository -> 3) Download cache -> 4) POM repos -> 5) Maven Central");
                 } else {
-                    logger.info("Using default Maven repository: {}", defaultM2Repository);
-                    logger.info("Lookup order: 1) .m2/repository → 2) Maven Central");
+                    logger.info("No custom .m2 repository configured.");
+                    logger.info("Lookup order: 1) Home ~/.m2/repository -> 2) Download cache -> 3) POM repos -> 4) Maven Central");
                 }
 
                 // Extract POM-declared repositories for Tier-2 resolution
-                // These repositories come from the effective POM after inheritance and import resolution
                 List<com.blackduck.integration.detectable.detectables.maven.resolver.model.JavaRepository> pomRepositories =
                     mavenProject.getRepositories();
 
                 if (pomRepositories != null && !pomRepositories.isEmpty()) {
                     logger.info("Found {} POM-declared repositories for Tier-2 resolution:", pomRepositories.size());
-                    for (int i = 0; i < pomRepositories.size(); i++) {
-                        com.blackduck.integration.detectable.detectables.maven.resolver.model.JavaRepository repo = pomRepositories.get(i);
-                        logger.info("  {}. {} - {}", i + 1, repo.getId(), repo.getUrl());
+                    for (int idx = 0; idx < pomRepositories.size(); idx++) {
+                        com.blackduck.integration.detectable.detectables.maven.resolver.model.JavaRepository repo = pomRepositories.get(idx);
+                        logger.info("  {}. {} - {}", idx + 1, repo.getId(), repo.getUrl());
                     }
                 } else {
-                    logger.info("No POM-declared repositories found - will use 2-tier resolution (local + Maven Central)");
+                    logger.info("No POM-declared repositories found - will use local + Maven Central resolution");
                 }
 
-                // Create enhanced artifact downloader with full configuration including POM repositories
-                ArtifactDownloaderV2 artifactDownloader = new ArtifactDownloaderV2(
+                // Create artifact downloader — it internally resolves the custom path
+                ArtifactDownloader artifactDownloader = new ArtifactDownloader(
                     customRepositoryPath,
-                    defaultM2Repository,
-                    pomRepositories != null ? pomRepositories : new ArrayList<>(),  // Pass POM repositories for Tier-2
+                    defaultDownloadJarRepository,
+                    pomRepositories != null ? pomRepositories : new ArrayList<>(),
                     mavenResolverOptions
                 );
 
-                logger.info("Starting artifact downloads with 3-tier resolution strategy...");
-                artifactDownloader.downloadArtifacts(allDependencies);
+                //the path of downloaded or located JARs for all dependencies, keyed by their artifact coordinates
+                Map<Artifact, Path> locatedOrDownloadedArtifactJars = Collections.emptyMap();
+
+                logger.info("Starting artifact downloads...");
+                locatedOrDownloadedArtifactJars  = artifactDownloader.downloadArtifacts(allDependencies);
 
                 logger.info("JAR download phase completed, continuing with code location generation...");
             } else {
-                logger.info("╔════════════════════════════════════════════════════════════╗");
-                logger.info("║       ARTIFACT JAR DOWNLOAD FEATURE: DISABLED              ║");
-                logger.info("╚════════════════════════════════════════════════════════════╝");
+                logger.info("ARTIFACT JAR DOWNLOAD FEATURE: DISABLED");
 
-                // Check for configuration issue: custom path provided but feature disabled
                 Path customRepositoryPath = mavenResolverOptions.getJarRepositoryPath();
                 if (customRepositoryPath != null) {
-                    logger.warn("⚠ Configuration Issue Detected:");
+                    logger.warn("Configuration Issue Detected:");
                     logger.warn("  detect.maven.jar.repository.path is set to: {}", customRepositoryPath);
                     logger.warn("  BUT detect.maven.download.artifact.jars is DISABLED (false)");
-                    logger.warn("  The custom JAR repository path will be IGNORED.");
+                    logger.warn("  The custom .m2 repository path will be IGNORED.");
                     logger.warn("  To use the custom repository, enable JAR downloads:");
                     logger.warn("  --detect.maven.download.artifact.jars=true");
                 } else {
