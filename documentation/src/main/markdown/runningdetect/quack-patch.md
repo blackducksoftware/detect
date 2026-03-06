@@ -1,4 +1,4 @@
-# Quack Patch (Beta)
+# Quack Patch (Early Access)
 
 An artificial intelligence tool that creates package manager code fixes to address security flaws identified by Black Duck SCA.
 
