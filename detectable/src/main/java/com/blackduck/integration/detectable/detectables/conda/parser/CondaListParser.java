@@ -22,6 +22,19 @@ public class CondaListParser {
         this.dependencyCreator = dependencyCreator;
     }
 
+    /**
+     * Parses conda list and info JSON text into a dependency graph.
+     * <p>
+     * This method deserializes conda list JSON data into CondaListElement objects and conda info JSON
+     * into a CondaInfo object. It then extracts the platform information and creates a dependency graph
+     * by mapping each conda list element to a dependency, using the platform to ensure correct dependency
+     * resolution.
+     * </p>
+     *
+     * @param listJsonText the JSON text containing the list of conda packages and their details
+     * @param infoJsonText the JSON text containing conda environment information including the platform
+     * @return a DependencyGraph containing all parsed conda dependencies as root-level children
+     */
     public DependencyGraph parse(String listJsonText, String infoJsonText) {
         Type listType = new TypeToken<ArrayList<CondaListElement>>() {
         }.getType();
@@ -37,7 +50,18 @@ public class CondaListParser {
         return graph;
     }
 
-    public Map<String, CondaListElement> getDependencies(String listJsonText) {
+    /**
+     * Collects conda dependencies from JSON text into a map indexed by package name.
+     * <p>
+     * This method deserializes conda list JSON data into CondaListElement objects and creates
+     * a map that indexes each package by its name. This map can be used for quick lookup of
+     * dependency information during analysis.
+     * </p>
+     *
+     * @param listJsonText the JSON text containing the list of conda packages and their details
+     * @return a Map where keys are conda package names and values are the corresponding CondaListElement objects
+     */
+    public Map<String, CondaListElement> collectDependencies(String listJsonText) {
         Type listType = new TypeToken<ArrayList<CondaListElement>>() {
         }.getType();
         List<CondaListElement> condaList = gson.fromJson(listJsonText, listType);

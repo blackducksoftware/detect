@@ -15,6 +15,12 @@
 * (IDETECT-4847) Clarified that the value of `detect.container.scan.file.path` should be a path to local .tar file or a HTTP/HTTPS URL for remote .tar file.
 
 
+## Version 11.2.1
+
+### Dependency Updates
+
+* Project Inspector version updated to 2024.12.2
+
 ## Version 11.2.0
 
 ### New features

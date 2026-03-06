@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.ArrayDeque;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -58,14 +59,14 @@ public class CondaTreeParser {
     private void parseLine(String line, Deque<DependencyDepth> dependencyStack, Map<String, CondaListElement> dependencies) {
         String cleanedLine = calculateDepthAndCleanLine(line);
         // Dependency line
-        Dependency dependency = parseDependency(cleanedLine, dependencies);
-        if (dependency != null) {
-            addDependencyToGraph(dependency, dependencyStack);
-            dependencyStack.push(new DependencyDepth(dependency, depth));
+        Optional<Dependency> dependency = parseDependency(cleanedLine, dependencies);
+        if (dependency.isPresent()) {
+            addDependencyToGraph(dependency.get(), dependencyStack);
+            dependencyStack.push(new DependencyDepth(dependency.get(), depth));
         }
     }
 
-    private Dependency parseDependency(String line, Map<String, CondaListElement> dependencies) {
+    private Optional<Dependency> parseDependency(String line, Map<String, CondaListElement> dependencies) {
         // Remove requirement specifications in brackets like [required: >=3.5]
         String cleanLine = line.replaceAll(PACKAGE_SUFFIX.pattern(), "");
         
@@ -77,13 +78,13 @@ public class CondaTreeParser {
 
             if (!dependencies.isEmpty() && dependencies.containsKey(packageName)) {
                 CondaListElement condaListElement = dependencies.get(packageName);
-                return condaDependencyCreator.createFromCondaListElement(condaListElement, condaListElement.platform);
+                return Optional.of(condaDependencyCreator.createFromCondaListElement(condaListElement, condaListElement.platform));
             } else {
                 logger.warn("Not able to find dependency info properly: {}", packageName);
-                return null;
+                return Optional.empty();
             }
         } else {
-            return null;
+            return Optional.empty();
         }
     }
 
@@ -95,13 +96,17 @@ public class CondaTreeParser {
         } else if (!dependencyStack.isEmpty() && dependencyStack.peek().depth == depth) {
             // Sibling dependency - same level as previous
             dependencyStack.pop();
-            dependencyGraph.addChildWithParent(dependency, dependencyStack.peek().dependency);
+            if(dependencyStack.isEmpty()) {
+                dependencyGraph.addChildWithParent(dependency, dependencyStack.peek().dependency);
+            }
         } else if (!dependencyStack.isEmpty() && dependencyStack.peek().depth > depth) {
             // Moving up in the tree - adjust stack
             while (!dependencyStack.isEmpty() && dependencyStack.peek().depth >= depth) {
                 dependencyStack.pop();
             }
-            dependencyGraph.addChildWithParent(dependency, dependencyStack.peek().dependency);
+            if (!dependencyStack.isEmpty()) {
+                dependencyGraph.addChildWithParent(dependency, dependencyStack.peek().dependency);
+            }
         } else {
             // Child of the previous dependency
             dependencyGraph.addChildWithParent(dependency, dependencyStack.peek().dependency);

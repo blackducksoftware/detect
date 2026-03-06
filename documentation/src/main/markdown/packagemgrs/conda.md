@@ -10,7 +10,7 @@ The Conda detector discovers dependencies of python projects utilizing the Conda
 
 ### Conda Tree Detector
 
-The [detect_product_short] detector will automatically run the Conda Tree scanner whenever your project contains an `environment.yml` or `environment.yaml` file.
+[detect_product_short] will automatically run the Conda Tree scanner whenever your project contains an `environment.yml` or `environment.yaml` file.
 For the Conda Tree detector to work, both the conda and conda-tree executables must be available on your system’s PATH. If they are not, you can manually provide their locations using the `--detect.conda.path` and `--detect.conda.tree.path` options.
 
 During the scan, the detector executes the following commands to gather dependency information:

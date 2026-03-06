@@ -1,0 +1,9 @@
+module(
+    name = "bd_bazel_bzlmod",
+    version = "1.0.0",
+)
+
+# This is a placeholder MODULE.bazel file for battery testing.
+# The actual dependencies are defined via http_archive in the real project,
+# but for battery tests we only need this file to exist to indicate a BZLMOD project.
+

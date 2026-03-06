@@ -65,3 +65,49 @@ Each component is uniquely identified by a name and version. Components may opti
 ## Rapid or Stateless Scan Mode Results
 
 When [detect_product_short] runs a Rapid or Stateless scan, the output file includes policy violation vulnerabilities, component violating policies, dependency trees for individual components and remediation guidance (short term, long term and transitive upgrade guidance) when available. This information is contained within the metadata field of each component.
+
+## Version Range Operator Support
+
+Component Location Analysis supports locating dependency declarations that use version range operators. When a version declaration uses a supported operator, an optional `operator` field is included in the `columnLocations` entry to indicate the specific operator used in the declaration.
+
+### Supported Package Managers
+
+* **npm / Yarn**: Fully supported with all semantic versioning operators (`=`, `>`, `<`, `>=`, `<=`, `~`, `^`, `-`).
+* **PIP**: Partially supported with comparison operators (`==`, `!=`, `>`, `<`, `>=`, `<=`). <note type="note"> Python&apos;s <codeph>~=</codeph> operator has different semantics than npm <codeph>~</codeph> operator and is not currently supported. </note>
+
+### Supported Operators
+
+The following version range operators are supported for npm and Yarn:
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `=` | Equal | `=1.2.3` |
+| `>` | Greater than | `>1.2.3` |
+| `<` | Less than | `<2.0.0` |
+| `>=` | Greater than or equal | `>=1.2.3` |
+| `<=` | Less than or equal | `<=2.0.0` |
+| `~` | Tilde range (patch updates) | `~1.2.3` (≥1.2.3, <1.3.0) |
+| `^` | Caret range (minor updates) | `^1.2.3` (≥1.2.3, <2.0.0) |
+| `-` | Hyphen range | `1.2 - 1.4.5` (≥1.2.0, ≤1.4.5) |
+
+For PIP, the comparison operators (`==`, `!=`, `>`, `<`, `>=`, `<=`) are supported.
+
+### Output Format
+
+When a version range operator is detected, the `operator` field appears in the `columnLocations` entry:
+
+```json
+{
+    "lineNumber": 3753,
+    "columnLocations": [
+        {
+            "colStart": 22,
+            "colEnd": 27,
+            "operator": "^"
+        }
+    ]
+}
+```
+
+<note type="note">Version range operators are not supported for Maven, Gradle, or NuGet at this time. These package managers use bracket notation for version ranges, which requires different parsing logic.</note>
+

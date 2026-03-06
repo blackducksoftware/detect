@@ -329,14 +329,17 @@ public class OperationRunner {
 
     public final Optional<DetectableTool> checkForBazel() throws OperationException {//TODO: refactor bazel+docker out of detectable
         return auditLog.namedInternal("Check For Bazel", () -> {
-            DetectableTool detectableTool = new DetectableTool(detectDetectableFactory::createBazelDetectable,
+            // Use Bazel V2 detectable (supports both BZLMOD and WORKSPACE modes)
+            DetectableTool detectableTool = new DetectableTool(detectDetectableFactory::createBazelV2Detectable,
                 extractionEnvironmentProvider, codeLocationConverter, "BAZEL", DetectTool.BAZEL,
                 statusEventPublisher, exitCodePublisher
             );
-
+            logger.info("Initializing the Bazel tool.");
             if (detectableTool.initializeAndCheckForApplicable(directoryManager.getSourceDirectory())) {
+                logger.info("The Bazel tool is applicable. Proceeding with extraction.");
                 return Optional.of(detectableTool);
             } else {
+                logger.info("The Bazel tool not applicable.");
                 return Optional.empty();
             }
         });
