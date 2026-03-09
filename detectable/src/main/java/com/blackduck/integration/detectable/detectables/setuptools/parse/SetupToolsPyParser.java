@@ -90,11 +90,8 @@ public class SetupToolsPyParser implements SetupToolsParser {
     }
 
     public Map<String, List<String>> loadExtrasRequire(String setupFile) throws IOException {
-        Pattern patternSingleQuotes = Pattern.compile("'(.*?)'");
-        Pattern patternDoubleQuotes = Pattern.compile("\"(.*?)\"");
         // Pattern for group key lines like "security": [ or 'http2': [
-        Pattern groupKeyDoubleQuotes = Pattern.compile("\"(.*?)\"\\s*:");
-        Pattern groupKeySingleQuotes = Pattern.compile("'(.*?)'\\s*:");
+        Pattern groupKeyPattern = Pattern.compile("[\"'](.*?)[\"']\\s*:");
 
         try (BufferedReader reader = new BufferedReader(new FileReader(setupFile))) {
             String line;
@@ -109,95 +106,93 @@ public class SetupToolsPyParser implements SetupToolsParser {
                     continue;
                 }
 
-                if (isExtrasRequireSection) {
-                    // Skip lines that are just { or contain only whitespace
-                    if (trimmedLine.equals("{")) {
-                        continue;
-                    }
-
-                    // End of extras_require section
-                    if (trimmedLine.equals("}") || trimmedLine.equals("},")) {
-                        break;
-                    }
-
-                    // Check if this line is a group key like "security": [ or "http2": ["dep1"]
-                    Matcher groupMatcherDouble = groupKeyDoubleQuotes.matcher(trimmedLine);
-                    Matcher groupMatcherSingle = groupKeySingleQuotes.matcher(trimmedLine);
-
-                    if (groupMatcherDouble.find()) {
-                        currentGroup = groupMatcherDouble.group(1);
-                        // After the colon, there may be dependencies on the same line
-                        String afterColon = trimmedLine.substring(trimmedLine.indexOf(':') + 1).trim();
-                        extractDepsFromExtrasLine(afterColon, currentGroup, patternDoubleQuotes, patternSingleQuotes);
-
-                        // If the line contains ], the group ends on this line
-                        if (afterColon.contains("]")) {
-                            currentGroup = null;
-                        }
-                    } else if (groupMatcherSingle.find()) {
-                        currentGroup = groupMatcherSingle.group(1);
-                        String afterColon = trimmedLine.substring(trimmedLine.indexOf(':') + 1).trim();
-                        extractDepsFromExtrasLine(afterColon, currentGroup, patternDoubleQuotes, patternSingleQuotes);
-
-                        if (afterColon.contains("]")) {
-                            currentGroup = null;
-                        }
-                    } else if (currentGroup != null) {
-                        // Continuation line within a group's dependency list
-                        extractDepsFromExtrasLine(trimmedLine, currentGroup, patternDoubleQuotes, patternSingleQuotes);
-
-                        // If the line ends with ] or ], the current group ends
-                        if (trimmedLine.endsWith("]") || trimmedLine.endsWith("],")) {
-                            currentGroup = null;
-                        }
-                    }
+                if (!isExtrasRequireSection) {
+                    continue;
                 }
+
+                if (trimmedLine.equals("{")) {
+                    continue;
+                }
+
+                if (trimmedLine.equals("}") || trimmedLine.equals("},")) {
+                    break;
+                }
+
+                currentGroup = processExtrasLine(trimmedLine, currentGroup, groupKeyPattern);
             }
         }
 
         return extrasRequireMap;
     }
 
-    private void extractDepsFromExtrasLine(String line, String group, Pattern patternDoubleQuotes, Pattern patternSingleQuotes) {
-        // Try double quotes first, then single quotes
+    private String processExtrasLine(String trimmedLine, String currentGroup, Pattern groupKeyPattern) {
+        Matcher groupMatcher = groupKeyPattern.matcher(trimmedLine);
+
+        if (groupMatcher.find()) {
+            currentGroup = groupMatcher.group(1);
+            String afterColon = trimmedLine.substring(trimmedLine.indexOf(':') + 1).trim();
+            addExtrasLineDeps(afterColon, currentGroup);
+            if (afterColon.contains("]")) {
+                return null;
+            }
+        } else if (currentGroup != null) {
+            addExtrasLineDeps(trimmedLine, currentGroup);
+            if (trimmedLine.endsWith("]") || trimmedLine.endsWith("],")) {
+                return null;
+            }
+        }
+
+        return currentGroup;
+    }
+
+    private void addExtrasLineDeps(String line, String group) {
+        List<String> deps = extractQuotedStrings(line);
+        for (String dep : deps) {
+            extrasRequireMap.computeIfAbsent(group, k -> new ArrayList<>()).add(dep);
+        }
+    }
+
+    /**
+     * Extracts the first quoted string from a line, trying double quotes first,
+     * then single quotes. Used by both install_requires and extras_require parsing.
+     */
+    private List<String> extractQuotedStrings(String line) {
+        List<String> results = new ArrayList<>();
+        Pattern patternDoubleQuotes = Pattern.compile("\"(.*?)\"");
+        Pattern patternSingleQuotes = Pattern.compile("'(.*?)'");
+
         Matcher matcherDouble = patternDoubleQuotes.matcher(line);
         boolean found = false;
         while (matcherDouble.find()) {
-            String dep = matcherDouble.group(1);
-            if (!dep.isEmpty()) {
-                extrasRequireMap.computeIfAbsent(group, k -> new ArrayList<>()).add(dep);
+            String value = matcherDouble.group(1);
+            if (!value.isEmpty()) {
+                results.add(value);
                 found = true;
             }
         }
         if (!found) {
             Matcher matcherSingle = patternSingleQuotes.matcher(line);
             while (matcherSingle.find()) {
-                String dep = matcherSingle.group(1);
-                if (!dep.isEmpty()) {
-                    extrasRequireMap.computeIfAbsent(group, k -> new ArrayList<>()).add(dep);
+                String value = matcherSingle.group(1);
+                if (!value.isEmpty()) {
+                    results.add(value);
                 }
             }
         }
+        return results;
     }
 
     private void checkLineForDependency(String line, Pattern patternSingleQuotes, Pattern patternDoubleQuotes) {
-        // Using the pattern for double quotes to match the dependencies in the current line.
+        // Try double quotes first, then fall back to single quotes.
+        // Double quotes are preferred as lines sometimes use double quotes with
+        // single quotes inside them to specify conditionals.
         Matcher matcherDoubleQuotes = patternDoubleQuotes.matcher(line);
         if (matcherDoubleQuotes.find()) {
-            // Extracting the dependency from the matched group.
-            String dependency = matcherDoubleQuotes.group(1);
-            // Adding the dependency to the list.
-            dependencies.add(dependency);
+            dependencies.add(matcherDoubleQuotes.group(1));
         } else {
-            // Fallback to use the pattern for single quotes to match the dependencies in the current
-            // line. We do this second as there are sometimes lines that use double quotes and then
-            // single quotes inside them to specify conditionals
             Matcher matcherSingleQuotes = patternSingleQuotes.matcher(line);
             if (matcherSingleQuotes.find()) {
-                // Extracting the dependency from the matched group.
-                String dependency = matcherSingleQuotes.group(1);
-                // Adding the dependency to the list.
-                dependencies.add(dependency);
+                dependencies.add(matcherSingleQuotes.group(1));
             }
         }
     }
