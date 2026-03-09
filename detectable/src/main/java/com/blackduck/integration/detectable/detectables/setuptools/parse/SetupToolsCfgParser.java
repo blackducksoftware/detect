@@ -15,6 +15,8 @@ import org.tomlj.TomlParseResult;
 import com.blackduck.integration.detectable.python.util.PythonDependency;
 import com.blackduck.integration.detectable.python.util.PythonDependencyTransformer;
 
+import static com.blackduck.integration.detectable.detectables.setuptools.parse.SetupToolsExtrasUtils.buildExtrasTransitives;
+
 public class SetupToolsCfgParser implements SetupToolsParser {
 
     private TomlParseResult parsedToml;
@@ -40,28 +42,9 @@ public class SetupToolsCfgParser implements SetupToolsParser {
         // I've only seen version information in the toml so use that.
         String finalProjectName = (tomlProjectName != null && !tomlProjectName.isEmpty()) ? tomlProjectName : projectName;
 
-        PythonDependencyTransformer dependencyTransformer = new PythonDependencyTransformer();
         List<PythonDependency> parsedDirectDependencies = parseDirectDependencies();
 
-        // Build extras transitives map: base package name -> list of transitive deps
-        Map<String, List<PythonDependency>> extrasTransitives = new HashMap<>();
-        for (String rawDep : dependencies) {
-            String extrasName = extractExtrasName(rawDep);
-            if (extrasName != null && extrasRequireMap.containsKey(extrasName)) {
-                // Extract the base package name (everything before '[')
-                int bracketIndex = rawDep.indexOf('[');
-                String baseName = rawDep.substring(0, bracketIndex).trim();
-
-                List<PythonDependency> transitives = new LinkedList<>();
-                for (String transitiveLine : extrasRequireMap.get(extrasName)) {
-                    PythonDependency dep = dependencyTransformer.transformLine(transitiveLine);
-                    if (dep != null) {
-                        transitives.add(dep);
-                    }
-                }
-                extrasTransitives.put(baseName, transitives);
-            }
-        }
+        Map<String, List<PythonDependency>> extrasTransitives = buildExtrasTransitives(dependencies, extrasRequireMap);
 
         return new SetupToolsParsedResult(finalProjectName, projectVersion, parsedDirectDependencies, extrasTransitives);
     }
@@ -200,20 +183,6 @@ public class SetupToolsCfgParser implements SetupToolsParser {
         }
 
         return extrasRequireMap;
-    }
-
-    /**
-     * Extracts the extras specifier name from a raw dependency string.
-     * For example, "requests[security]==2.28.2" returns "security".
-     * Returns null if no extras specifier is present.
-     */
-    private String extractExtrasName(String rawDep) {
-        int openBracket = rawDep.indexOf('[');
-        int closeBracket = rawDep.indexOf(']');
-        if (openBracket >= 0 && closeBracket > openBracket) {
-            return rawDep.substring(openBracket + 1, closeBracket).trim();
-        }
-        return null;
     }
 
     private boolean isEndofInstallRequiresSection(String line) {
