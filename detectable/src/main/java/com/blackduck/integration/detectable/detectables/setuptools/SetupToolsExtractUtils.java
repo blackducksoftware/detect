@@ -69,8 +69,9 @@ public class SetupToolsExtractUtils {
             SetupToolsPyParser pyParser = new SetupToolsPyParser(parsedToml);
 
             List<String> pyDependencies = pyParser.load(pyFile.toString());
-            
-            if (pyDependencies != null && !pyDependencies.isEmpty()) {
+            Map<String, List<String>> extrasMap = pyParser.loadExtrasRequire(pyFile.toString());
+
+            if ((pyDependencies != null && !pyDependencies.isEmpty()) || (extrasMap != null && !extrasMap.isEmpty())) {
                 return pyParser;
             }
         }
