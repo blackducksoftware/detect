@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.tomlj.Toml;
@@ -12,6 +14,7 @@ import org.tomlj.TomlParseResult;
 
 import com.blackduck.integration.detectable.detectables.setuptools.parse.SetupToolsParsedResult;
 import com.blackduck.integration.detectable.detectables.setuptools.parse.SetupToolsTomlParser;
+import com.blackduck.integration.detectable.python.util.PythonDependency;
 
 class PyprojectTomlParserTest {
 
@@ -83,6 +86,15 @@ class PyprojectTomlParserTest {
         // Assertions for optional dependencies
         assertTrue(result.contains("project.optional-dependencies.dev"));
         assertTrue(result.contains("project.optional-dependencies.docs"));
+
+        // Verify extras transitives: requests[security,socks] references "security" and "socks" extras,
+        // but neither exists as an optional-dependencies group (only "dev" and "docs" exist).
+        // Similarly, pandas[all] references "all" which also doesn't exist as a group.
+        // So the extras transitives map should be empty.
+        Map<String, List<PythonDependency>> extrasTransitives = parsedResult.getExtrasTransitives();
+        assertNotNull(extrasTransitives);
+        assertTrue(extrasTransitives.isEmpty(),
+                "No extras transitives expected because no dependency extras names match any optional-dependencies group");
 
         Files.delete(pyProjectFile); // Clean up the temporary file
     }

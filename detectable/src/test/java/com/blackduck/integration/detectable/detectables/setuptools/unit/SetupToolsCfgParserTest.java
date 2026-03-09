@@ -198,6 +198,49 @@ public class SetupToolsCfgParserTest {
     }
 
     @Test
+    public void testParseWithMultiExtrasTransitives() throws IOException {
+        String cfgContent = "[metadata]\n" +
+                "name = sample\n" +
+                "\n" +
+                "[options]\n" +
+                "install_requires =\n" +
+                "    requests[security,socks]==2.28.2\n" +
+                "\n" +
+                "[options.extras_require]\n" +
+                "security =\n" +
+                "    pyOpenSSL>=23.0\n" +
+                "    cryptography>=41.0\n" +
+                "socks =\n" +
+                "    PySocks>=1.5.6\n";
+        Path tempFile = Files.createTempFile("setup", ".cfg");
+        Files.write(tempFile, cfgContent.getBytes());
+
+        TomlParseResult result = Toml.parse("[build-system]\nrequires = [\"setuptools\"]");
+
+        SetupToolsCfgParser cfgParser = new SetupToolsCfgParser(result);
+        cfgParser.load(tempFile.toString());
+        cfgParser.loadExtrasRequire(tempFile.toString());
+        SetupToolsParsedResult parsedResult = cfgParser.parse();
+
+        // Direct dependencies
+        assertEquals(1, parsedResult.getDirectDependencies().size());
+
+        // Extras transitives: both security and socks groups should be merged under "requests"
+        Map<String, List<PythonDependency>> extrasTransitives = parsedResult.getExtrasTransitives();
+        assertNotNull(extrasTransitives);
+        assertEquals(1, extrasTransitives.size());
+        assertTrue(extrasTransitives.containsKey("requests"));
+
+        List<PythonDependency> requestsTransitives = extrasTransitives.get("requests");
+        assertEquals(3, requestsTransitives.size());
+        assertEquals("pyOpenSSL", requestsTransitives.get(0).getName());
+        assertEquals("cryptography", requestsTransitives.get(1).getName());
+        assertEquals("PySocks", requestsTransitives.get(2).getName());
+
+        Files.delete(tempFile);
+    }
+
+    @Test
     public void testLoadExtrasRequireStopsAtNextSection() throws IOException {
         String cfgContent = "[options.extras_require]\n" +
                 "dev =\n" +
