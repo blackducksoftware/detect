@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.tomlj.Toml;
@@ -77,13 +78,14 @@ public class SetupToolsExtractUtils {
         // Step 3: Check the setup.cfg
         fileResolver = new Requirements(fileFinder, environment);
         File cfgFile = fileResolver.file(SETUP_CFG);
-        
+
         if (cfgFile != null) {
             SetupToolsCfgParser cfgParser = new SetupToolsCfgParser(parsedToml);
 
             List<String> cfgDependencies = cfgParser.load(cfgFile.toString());
+            Map<String, List<String>> extrasMap = cfgParser.loadExtrasRequire(cfgFile.toString());
 
-            if (cfgDependencies != null && !cfgDependencies.isEmpty()) {
+            if ((cfgDependencies != null && !cfgDependencies.isEmpty()) || (extrasMap != null && !extrasMap.isEmpty())) {
                 return cfgParser;
             }
         }
