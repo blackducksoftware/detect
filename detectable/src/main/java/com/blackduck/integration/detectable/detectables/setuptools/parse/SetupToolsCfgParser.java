@@ -19,13 +19,26 @@ import static com.blackduck.integration.detectable.detectables.setuptools.parse.
 
 public class SetupToolsCfgParser implements SetupToolsParser {
 
-    private TomlParseResult parsedToml;
+    private static final String TOML_PROJECT_NAME_KEY = "project.name";
+    private static final String TOML_PROJECT_VERSION_KEY = "project.version";
+
+    private static final String CFG_NAME_PREFIX = "name";
+    private static final String CFG_INSTALL_REQUIRES_PREFIX = "install_requires=";
+    private static final String CFG_EXTRAS_REQUIRE_SECTION = "[options.extras_require]";
+
+    private static final String CONDITIONAL_MARKER = ";";
+    private static final String KEY_VALUE_SEPARATOR = "=";
+
+    // Matches a new cfg key line: e.g. "python_requires = >=3.10"
+    private static final String NEW_KEY_LINE_REGEX = "^\\s*[a-zA-Z0-9_.-]+\\s*=\\s*(?![=!<>~]).*$";
+
+    private final TomlParseResult parsedToml;
 
     private String projectName;
 
-    private List<String> dependencies;
+    private final List<String> dependencies;
 
-    private Map<String, List<String>> extrasRequireMap;
+    private final Map<String, List<String>> extrasRequireMap;
 
     public SetupToolsCfgParser(TomlParseResult parsedToml) {
         this.parsedToml = parsedToml;
@@ -35,8 +48,8 @@ public class SetupToolsCfgParser implements SetupToolsParser {
 
     @Override
     public SetupToolsParsedResult parse() throws IOException {
-        String tomlProjectName = parsedToml.getString("project.name");
-        String projectVersion = parsedToml.getString("project.version");
+        String tomlProjectName = parsedToml.getString(TOML_PROJECT_NAME_KEY);
+        String projectVersion = parsedToml.getString(TOML_PROJECT_VERSION_KEY);
 
         // If we have multiple project names the name from the toml wins
         // I've only seen version information in the toml so use that.
@@ -68,7 +81,7 @@ public class SetupToolsCfgParser implements SetupToolsParser {
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
 
-                if (line.startsWith("name")) {
+                if (line.startsWith(CFG_NAME_PREFIX)) {
                     parseProjectName(line);
                 }
 
@@ -76,9 +89,9 @@ public class SetupToolsCfgParser implements SetupToolsParser {
                 String keySearch = line.replaceAll("\\s", "");
 
                 // If the line starts with "install_requires=", we've found the key we're interested in
-                if (keySearch.startsWith("install_requires=")) {
+                if (keySearch.startsWith(CFG_INSTALL_REQUIRES_PREFIX)) {
                     isInstallRequiresSection = true;
-                    String[] parts = line.split("=", 2);
+                    String[] parts = line.split(KEY_VALUE_SEPARATOR, 2);
 
                     // If there is a value and it's not empty, add it to the dependencies list
                     if (parts.length > 1 && !parts[1].trim().isEmpty()) {
@@ -111,7 +124,7 @@ public class SetupToolsCfgParser implements SetupToolsParser {
             // If we have a ; in our requirements line then there is a condition on this dependency.
             // We want to know this so we don't consider it a failure later if we try to run pip show
             // on it and we don't find it.
-            if (dependencyLine.contains(";")) {
+            if (dependencyLine.contains(CONDITIONAL_MARKER)) {
                 dependency.setConditional(true);
             }
 
@@ -124,7 +137,7 @@ public class SetupToolsCfgParser implements SetupToolsParser {
     }
 
     public void parseProjectName(String line) {
-        String[] parts = line.split("=", 2);
+        String[] parts = line.split(KEY_VALUE_SEPARATOR, 2);
         if (parts.length > 1 && !parts[1].trim().isEmpty()) {
             projectName = parts[1].trim();
         }
@@ -148,7 +161,7 @@ public class SetupToolsCfgParser implements SetupToolsParser {
             while ((line = reader.readLine()) != null) {
                 String trimmedLine = line.trim();
 
-                if (trimmedLine.equals("[options.extras_require]")) {
+                if (trimmedLine.equals(CFG_EXTRAS_REQUIRE_SECTION)) {
                     isExtrasRequireSection = true;
                     continue;
                 }
@@ -197,10 +210,6 @@ public class SetupToolsCfgParser implements SetupToolsParser {
          * character that is not another =, !, <, >, or ~ which would indicate a requirement
          * operator and not a new key.
          */
-        if (line.startsWith("[") || line.matches("^\\s*[a-zA-Z0-9_.-]+\\s*=\\s*(?![=!<>~]).*$")) {
-            return true;
-        } else {
-            return false;
-        }
+        return line.startsWith("[") || line.matches(NEW_KEY_LINE_REGEX);
     }
 }

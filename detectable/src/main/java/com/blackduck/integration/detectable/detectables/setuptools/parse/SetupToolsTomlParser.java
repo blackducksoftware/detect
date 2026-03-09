@@ -18,8 +18,15 @@ import static com.blackduck.integration.detectable.detectables.setuptools.parse.
 
 public class SetupToolsTomlParser implements SetupToolsParser {
 
-    private TomlParseResult parsedToml;
-    private List<String> rawDependencyLines;
+    private static final String TOML_PROJECT_NAME_KEY = "project.name";
+    private static final String TOML_PROJECT_VERSION_KEY = "project.version";
+    private static final String TOML_PROJECT_DEPENDENCIES_KEY = "project.dependencies";
+    private static final String TOML_OPTIONAL_DEPENDENCIES_KEY = "project.optional-dependencies";
+
+    private static final String CONDITIONAL_MARKER = ";";
+
+    private final TomlParseResult parsedToml;
+    private final List<String> rawDependencyLines;
 
     public SetupToolsTomlParser(TomlParseResult parsedToml) {
         this.parsedToml = parsedToml;
@@ -29,8 +36,8 @@ public class SetupToolsTomlParser implements SetupToolsParser {
     @Override
     public SetupToolsParsedResult parse() throws IOException {
         List<PythonDependency> parsedDirectDependencies = parseDirectDependencies(parsedToml);
-        String projectName = parsedToml.getString("project.name");
-        String projectVersion = parsedToml.getString("project.version");
+        String projectName = parsedToml.getString(TOML_PROJECT_NAME_KEY);
+        String projectVersion = parsedToml.getString(TOML_PROJECT_VERSION_KEY);
 
         // Parse optional-dependencies and build extras transitives
         Map<String, List<String>> optionalDepsMap = parseOptionalDependencies(parsedToml);
@@ -43,7 +50,7 @@ public class SetupToolsTomlParser implements SetupToolsParser {
         List<PythonDependency> results = new LinkedList<>();
         PythonDependencyTransformer dependencyTransformer = new PythonDependencyTransformer();
 
-        TomlArray dependencies = tomlParseResult.getArray("project.dependencies");
+        TomlArray dependencies = tomlParseResult.getArray(TOML_PROJECT_DEPENDENCIES_KEY);
 
         for (int i = 0; i < dependencies.size(); i++) {
             String dependencyLine = dependencies.getString(i);
@@ -54,7 +61,7 @@ public class SetupToolsTomlParser implements SetupToolsParser {
             // If we have a ; in our requirements line then there is a condition on this dependency.
             // We want to know this so we don't consider it a failure later if we try to run pip show
             // on it and we don't find it.
-            if (dependencyLine.contains(";")) {
+            if (dependencyLine.contains(CONDITIONAL_MARKER)) {
                 dependency.setConditional(true);
             }
 
@@ -69,7 +76,7 @@ public class SetupToolsTomlParser implements SetupToolsParser {
     private Map<String, List<String>> parseOptionalDependencies(TomlParseResult tomlParseResult) {
         Map<String, List<String>> optionalDepsMap = new HashMap<>();
 
-        TomlTable optionalDepsTable = tomlParseResult.getTable("project.optional-dependencies");
+        TomlTable optionalDepsTable = tomlParseResult.getTable(TOML_OPTIONAL_DEPENDENCIES_KEY);
         if (optionalDepsTable == null) {
             return optionalDepsMap;
         }

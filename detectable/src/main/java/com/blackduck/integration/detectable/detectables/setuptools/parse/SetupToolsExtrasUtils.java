@@ -11,6 +11,12 @@ import com.blackduck.integration.detectable.python.util.PythonDependencyTransfor
 
 public class SetupToolsExtrasUtils {
 
+    private static final char OPEN_BRACKET = '[';
+    private static final char CLOSE_BRACKET = ']';
+    private static final String EXTRAS_DELIMITER = ",";
+
+    private SetupToolsExtrasUtils() {}
+
     /**
      * Extracts the extras specifier names from a raw dependency string.
      * For example, "requests[security,socks]==2.28.2" returns ["security", "socks"].
@@ -18,11 +24,11 @@ public class SetupToolsExtrasUtils {
      */
     public static List<String> extractExtrasNames(String rawDep) {
         List<String> names = new ArrayList<>();
-        int openBracket = rawDep.indexOf('[');
-        int closeBracket = rawDep.indexOf(']');
+        int openBracket = rawDep.indexOf(OPEN_BRACKET);
+        int closeBracket = rawDep.indexOf(CLOSE_BRACKET);
         if (openBracket >= 0 && closeBracket > openBracket) {
             String extrasContent = rawDep.substring(openBracket + 1, closeBracket);
-            for (String name : extrasContent.split(",")) {
+            for (String name : extrasContent.split(EXTRAS_DELIMITER)) {
                 String trimmed = name.trim();
                 if (!trimmed.isEmpty()) {
                     names.add(trimmed);
@@ -54,22 +60,35 @@ public class SetupToolsExtrasUtils {
             }
 
             // Extract the base package name (everything before '[')
-            int bracketIndex = rawDep.indexOf('[');
+            int bracketIndex = rawDep.indexOf(OPEN_BRACKET);
             String baseName = rawDep.substring(0, bracketIndex).trim();
 
-            for (String extrasName : extrasNames) {
-                if (extrasGroupMap.containsKey(extrasName)) {
-                    List<PythonDependency> transitives = extrasTransitives.computeIfAbsent(baseName, k -> new LinkedList<>());
-                    for (String transitiveLine : extrasGroupMap.get(extrasName)) {
-                        PythonDependency dep = dependencyTransformer.transformLine(transitiveLine);
-                        if (dep != null) {
-                            transitives.add(dep);
-                        }
-                    }
-                }
-            }
+            resolveExtrasForDependency(baseName, extrasNames, extrasGroupMap, extrasTransitives, dependencyTransformer);
         }
 
         return extrasTransitives;
     }
+
+    private static void resolveExtrasForDependency(
+            String baseName,
+            List<String> extrasNames,
+            Map<String, List<String>> extrasGroupMap,
+            Map<String, List<PythonDependency>> extrasTransitives,
+            PythonDependencyTransformer dependencyTransformer) {
+
+        for (String extrasName : extrasNames) {
+            List<String> groupLines = extrasGroupMap.get(extrasName);
+            if (groupLines == null) {
+                continue;
+            }
+            List<PythonDependency> transitives = extrasTransitives.computeIfAbsent(baseName, k -> new LinkedList<>());
+            for (String transitiveLine : groupLines) {
+                PythonDependency dep = dependencyTransformer.transformLine(transitiveLine);
+                if (dep != null) {
+                    transitives.add(dep);
+                }
+            }
+        }
+    }
 }
+

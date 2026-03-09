@@ -19,12 +19,40 @@ import com.blackduck.integration.detectable.python.util.PythonDependencyTransfor
 import static com.blackduck.integration.detectable.detectables.setuptools.parse.SetupToolsExtrasUtils.buildExtrasTransitives;
 
 public class SetupToolsPyParser implements SetupToolsParser {
-    
-    private TomlParseResult parsedToml;
-    
-    private List<String> dependencies;
 
-    private Map<String, List<String>> extrasRequireMap;
+    // Regex pattern for dependencies enclosed in single quotes: ['requests==2.31.0'],
+    private static final Pattern PATTERN_SINGLE_QUOTES = Pattern.compile("\\[?'(.*)'\\s*\\]?,?");
+
+    // Regex pattern for dependencies enclosed in double quotes: ["requests==2.31.0"],
+    private static final Pattern PATTERN_DOUBLE_QUOTES = Pattern.compile("\\[?\"(.*)\"\\s*\\]?,?");
+
+    // Regex pattern for extras_require group key lines like "security": [ or 'http2': [
+    private static final Pattern EXTRAS_GROUP_KEY_PATTERN = Pattern.compile("[\"'](.*?)[\"']\\s*:");
+
+    // Regex pattern for extracting any double-quoted string value
+    private static final Pattern EXTRACT_DOUBLE_QUOTES = Pattern.compile("\"(.*?)\"");
+
+    // Regex pattern for extracting any single-quoted string value
+    private static final Pattern EXTRACT_SINGLE_QUOTES = Pattern.compile("'(.*?)'");
+
+    private static final String INSTALL_REQUIRES_PREFIX = "install_requires=";
+    private static final String EXTRAS_REQUIRE_PREFIX = "extras_require=";
+
+    private static final String TOML_PROJECT_NAME_KEY = "project.name";
+    private static final String TOML_PROJECT_VERSION_KEY = "project.version";
+
+    private static final String OPEN_BRACKET = "[";
+    private static final String OPEN_BRACE = "{";
+    private static final String CLOSE_BRACE = "}";
+    private static final String CLOSE_BRACE_COMMA = "},";
+    private static final String CLOSE_BRACKET = "]";
+    private static final String CLOSE_BRACKET_COMMA = "],";
+
+    private final TomlParseResult parsedToml;
+
+    private final List<String> dependencies;
+
+    private final Map<String, List<String>> extrasRequireMap;
 
     public SetupToolsPyParser(TomlParseResult parsedToml) {
         this.parsedToml = parsedToml;
@@ -36,9 +64,9 @@ public class SetupToolsPyParser implements SetupToolsParser {
     public SetupToolsParsedResult parse() throws IOException {
         // Use a name from the toml if we have it. Do not parse names and versions from the setup.py
         // as the project will not always have a string (it could have variables or method calls)
-        String tomlProjectName = parsedToml.getString("project.name");
-        String projectVersion = parsedToml.getString("project.version");
-        
+        String tomlProjectName = parsedToml.getString(TOML_PROJECT_NAME_KEY);
+        String projectVersion = parsedToml.getString(TOML_PROJECT_VERSION_KEY);
+
         List<PythonDependency> parsedDirectDependencies = parseDirectDependencies();
 
         Map<String, List<PythonDependency>> extrasTransitives = buildExtrasTransitives(dependencies, extrasRequireMap);
@@ -51,35 +79,30 @@ public class SetupToolsPyParser implements SetupToolsParser {
         // - "\\[?'(.*)'\\s*\\]?,?" matches dependencies that start with an optional '[' followed by a mandatory single quote,
         //   then any characters (the dependency name), ending with a single quote followed by optional whitespace and an optional ',' or ']'.
         // - "\\[?\"(.*)\"\\s*\\]?,?" is similar to the first part but for dependencies enclosed in double quotes.
-        // Pattern for single quotes
-        Pattern patternSingleQuotes = Pattern.compile("\\[?'(.*)'\\s*\\]?,?");
-
-        // Pattern for double quotes
-        Pattern patternDoubleQuotes = Pattern.compile("\\[?\"(.*)\"\\s*\\]?,?");
 
         try (BufferedReader reader = new BufferedReader(new FileReader(setupFile))) {
             String line;
             boolean isInstallRequiresSection = false;
 
             while ((line = reader.readLine()) != null) {
-                line = line.trim();                
-                
+                line = line.trim();
+
                 // If after removing all whitespace the line starts with install_requires=
                 // then we have found the section we are after.
-                if (line.replaceAll("\\s+","").startsWith("install_requires=")) {
+                if (line.replaceAll("\\s+", "").startsWith(INSTALL_REQUIRES_PREFIX)) {
                     isInstallRequiresSection = true;
                     continue;
                 }
                 if (isInstallRequiresSection) {
                     // If the [ is on its own line skip it, it doesn't contain a dependency
-                    if (line.equals("[")) {
+                    if (line.equals(OPEN_BRACKET)) {
                         continue;
                     }
-                    
-                    checkLineForDependency(line, patternSingleQuotes, patternDoubleQuotes);
-                    
+
+                    checkLineForDependency(line);
+
                     // If the line ends with ] or ], it means we have reached the end of the dependencies list.
-                    if (line.endsWith("]") || line.endsWith("],")) {
+                    if (line.endsWith(CLOSE_BRACKET) || line.endsWith(CLOSE_BRACKET_COMMA)) {
                         break;
                     }
                 }
@@ -90,9 +113,6 @@ public class SetupToolsPyParser implements SetupToolsParser {
     }
 
     public Map<String, List<String>> loadExtrasRequire(String setupFile) throws IOException {
-        // Pattern for group key lines like "security": [ or 'http2': [
-        Pattern groupKeyPattern = Pattern.compile("[\"'](.*?)[\"']\\s*:");
-
         try (BufferedReader reader = new BufferedReader(new FileReader(setupFile))) {
             String line;
             boolean isExtrasRequireSection = false;
@@ -101,7 +121,7 @@ public class SetupToolsPyParser implements SetupToolsParser {
             while ((line = reader.readLine()) != null) {
                 String trimmedLine = line.trim();
 
-                if (trimmedLine.replaceAll("\\s+", "").startsWith("extras_require=")) {
+                if (trimmedLine.replaceAll("\\s+", "").startsWith(EXTRAS_REQUIRE_PREFIX)) {
                     isExtrasRequireSection = true;
                     continue;
                 }
@@ -110,34 +130,34 @@ public class SetupToolsPyParser implements SetupToolsParser {
                     continue;
                 }
 
-                if (trimmedLine.equals("{")) {
+                if (trimmedLine.equals(OPEN_BRACE)) {
                     continue;
                 }
 
-                if (trimmedLine.equals("}") || trimmedLine.equals("},")) {
+                if (trimmedLine.equals(CLOSE_BRACE) || trimmedLine.equals(CLOSE_BRACE_COMMA)) {
                     break;
                 }
 
-                currentGroup = processExtrasLine(trimmedLine, currentGroup, groupKeyPattern);
+                currentGroup = processExtrasLine(trimmedLine, currentGroup);
             }
         }
 
         return extrasRequireMap;
     }
 
-    private String processExtrasLine(String trimmedLine, String currentGroup, Pattern groupKeyPattern) {
-        Matcher groupMatcher = groupKeyPattern.matcher(trimmedLine);
+    private String processExtrasLine(String trimmedLine, String currentGroup) {
+        Matcher groupMatcher = EXTRAS_GROUP_KEY_PATTERN.matcher(trimmedLine);
 
         if (groupMatcher.find()) {
             currentGroup = groupMatcher.group(1);
             String afterColon = trimmedLine.substring(trimmedLine.indexOf(':') + 1).trim();
             addExtrasLineDeps(afterColon, currentGroup);
-            if (afterColon.contains("]")) {
+            if (afterColon.contains(CLOSE_BRACKET)) {
                 return null;
             }
         } else if (currentGroup != null) {
             addExtrasLineDeps(trimmedLine, currentGroup);
-            if (trimmedLine.endsWith("]") || trimmedLine.endsWith("],")) {
+            if (trimmedLine.endsWith(CLOSE_BRACKET) || trimmedLine.endsWith(CLOSE_BRACKET_COMMA)) {
                 return null;
             }
         }
@@ -158,10 +178,8 @@ public class SetupToolsPyParser implements SetupToolsParser {
      */
     private List<String> extractQuotedStrings(String line) {
         List<String> results = new ArrayList<>();
-        Pattern patternDoubleQuotes = Pattern.compile("\"(.*?)\"");
-        Pattern patternSingleQuotes = Pattern.compile("'(.*?)'");
 
-        Matcher matcherDouble = patternDoubleQuotes.matcher(line);
+        Matcher matcherDouble = EXTRACT_DOUBLE_QUOTES.matcher(line);
         boolean found = false;
         while (matcherDouble.find()) {
             String value = matcherDouble.group(1);
@@ -171,7 +189,7 @@ public class SetupToolsPyParser implements SetupToolsParser {
             }
         }
         if (!found) {
-            Matcher matcherSingle = patternSingleQuotes.matcher(line);
+            Matcher matcherSingle = EXTRACT_SINGLE_QUOTES.matcher(line);
             while (matcherSingle.find()) {
                 String value = matcherSingle.group(1);
                 if (!value.isEmpty()) {
@@ -182,15 +200,15 @@ public class SetupToolsPyParser implements SetupToolsParser {
         return results;
     }
 
-    private void checkLineForDependency(String line, Pattern patternSingleQuotes, Pattern patternDoubleQuotes) {
+    private void checkLineForDependency(String line) {
         // Try double quotes first, then fall back to single quotes.
         // Double quotes are preferred as lines sometimes use double quotes with
         // single quotes inside them to specify conditionals.
-        Matcher matcherDoubleQuotes = patternDoubleQuotes.matcher(line);
+        Matcher matcherDoubleQuotes = PATTERN_DOUBLE_QUOTES.matcher(line);
         if (matcherDoubleQuotes.find()) {
             dependencies.add(matcherDoubleQuotes.group(1));
         } else {
-            Matcher matcherSingleQuotes = patternSingleQuotes.matcher(line);
+            Matcher matcherSingleQuotes = PATTERN_SINGLE_QUOTES.matcher(line);
             if (matcherSingleQuotes.find()) {
                 dependencies.add(matcherSingleQuotes.group(1));
             }
