@@ -20,16 +20,15 @@ During the scan, the detector executes the following commands to gather dependen
 It then parses the outputs to identify all dependencies.
 
 **Prerequisite**:
-Make sure the conda-tree package is installed in the conda environment you intend to scan. You must also activate that environment before running the [detect_product_short] scan.
+Ensure the conda-tree package is installed in the conda environment you intend to scan and [activate the environment](https://www.anaconda.com/docs/getting-started/working-with-conda/environments#activating-an-environment) before running the [detect_product_short] scan.
 
 **Optional environment selection**:
 
-If you want the detector to target a specific conda environment, you can supply its name using --detect.conda.environment.name. If you do not provide this option, the detector runs without the -n flag.
-Refer to [Properties](../properties/detectors/conda.md) for details.
+To target a specific conda environment with the detector, supply the environment name using --detect.conda.environment.name. If you do not provide this option, the detector runs without the -n flag.
 
 ### Conda CLI Detector
 
-[detect_product_short] runs the Conda CLI detector if an environment.yml or environment.yaml file is found in your project.
+[detect_product_short] runs the Conda CLI Detector if an environment.yml or environment.yaml file is found in your project.
 
 The Conda CLI detector requires that the *conda* executable is on the PATH, or that its path is passed in via `--detect.conda.path`.
 
