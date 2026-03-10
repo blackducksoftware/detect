@@ -5,6 +5,8 @@ import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinsp
 import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.methods.RecursiveMetadataInspector;
 import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.model.DiscoveredDependency;
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.collection.CollectResult;
+import com.blackduck.integration.detectable.detectables.maven.resolver.ProjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
@@ -53,8 +55,9 @@ public class ShadedDependencyScanner {
      */
     public Map<Artifact, List<DiscoveredDependency>> scanJarsForShadedDependencies(
             Map<Artifact, Path> artifactJarPaths,
-            org.eclipse.aether.collection.CollectResult compileResult,
-            org.eclipse.aether.collection.CollectResult testResult) {
+            CollectResult compileResult,
+            CollectResult testResult,
+            ProjectBuilder projectBuilder) {
 
         Map<Artifact, List<DiscoveredDependency>> results = new LinkedHashMap<Artifact, List<DiscoveredDependency>>();
 
@@ -76,7 +79,7 @@ public class ShadedDependencyScanner {
         }
 
         // Initialize inspectors
-        List<ShadedDependencyInspector> inspectors = createInspectors(aetherDirectChildrenByGa);
+        List<ShadedDependencyInspector> inspectors = createInspectors(aetherDirectChildrenByGa, projectBuilder);
         logger.debug("Registered {} inspector(s) for shaded dependency detection.", inspectors.size());
 
         int processedCount = 0;
@@ -121,10 +124,12 @@ public class ShadedDependencyScanner {
      *
      * @return List of initialized inspectors
      */
-    private List<ShadedDependencyInspector> createInspectors(Map<String, java.util.Set<String>> aetherDirectChildrenByGa) {
+    private List<ShadedDependencyInspector> createInspectors(
+            Map<String, java.util.Set<String>> aetherDirectChildrenByGa,
+            ProjectBuilder projectBuilder) {
         List<ShadedDependencyInspector> inspectors = new ArrayList<ShadedDependencyInspector>();
 //        inspectors.add(new DeltaAnalysisInspector());        // Method 1: Delta analysis of POM files
-        inspectors.add(new DeltaAnalysisInspector(aetherDirectChildrenByGa));        // Method 1: Delta analysis of POM files
+        inspectors.add(new DeltaAnalysisInspector(aetherDirectChildrenByGa, projectBuilder));        // Method 1: Delta analysis of POM files
         inspectors.add(new RecursiveMetadataInspector());    // Method 2: Recursive metadata scanning
         return inspectors;
     }
