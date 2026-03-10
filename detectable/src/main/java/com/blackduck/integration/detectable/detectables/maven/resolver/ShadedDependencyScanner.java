@@ -4,14 +4,11 @@ import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinsp
 import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.methods.DeltaAnalysisInspector;
 import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.methods.RecursiveMetadataInspector;
 import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.model.DiscoveredDependency;
-
 import org.eclipse.aether.artifact.Artifact;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +51,11 @@ public class ShadedDependencyScanner {
      * @param artifactJarPaths Map of artifact coordinates to their JAR file paths
      * @return Map of artifacts to their discovered shaded dependencies (only includes artifacts with findings)
      */
-    public Map<Artifact, List<DiscoveredDependency>> scanJarsForShadedDependencies(Map<Artifact, Path> artifactJarPaths) {
+    public Map<Artifact, List<DiscoveredDependency>> scanJarsForShadedDependencies(
+            Map<Artifact, Path> artifactJarPaths,
+            org.eclipse.aether.collection.CollectResult compileResult,
+            org.eclipse.aether.collection.CollectResult testResult) {
+
         Map<Artifact, List<DiscoveredDependency>> results = new LinkedHashMap<Artifact, List<DiscoveredDependency>>();
 
         if (artifactJarPaths == null || artifactJarPaths.isEmpty()) {
@@ -65,8 +66,17 @@ public class ShadedDependencyScanner {
         int totalJars = artifactJarPaths.size();
         logger.info("Starting shaded dependency scan for {} JAR file(s)...", totalJars);
 
+        //Build the aether Direct Children map to pass to the inspectors
+        Map<String, java.util.Set<String>> aetherDirectChildrenByGa = new java.util.HashMap<String, java.util.Set<String>>();
+        if(compileResult != null && compileResult.getRoot() != null) {
+            buildAetherDirectChildrenMap(compileResult.getRoot(), aetherDirectChildrenByGa);
+        }
+        if(testResult != null && testResult.getRoot() != null) {
+            buildAetherDirectChildrenMap(testResult.getRoot(), aetherDirectChildrenByGa);
+        }
+
         // Initialize inspectors
-        List<ShadedDependencyInspector> inspectors = createInspectors();
+        List<ShadedDependencyInspector> inspectors = createInspectors(aetherDirectChildrenByGa);
         logger.debug("Registered {} inspector(s) for shaded dependency detection.", inspectors.size());
 
         int processedCount = 0;
@@ -111,9 +121,10 @@ public class ShadedDependencyScanner {
      *
      * @return List of initialized inspectors
      */
-    private List<ShadedDependencyInspector> createInspectors() {
+    private List<ShadedDependencyInspector> createInspectors(Map<String, java.util.Set<String>> aetherDirectChildrenByGa) {
         List<ShadedDependencyInspector> inspectors = new ArrayList<ShadedDependencyInspector>();
-        inspectors.add(new DeltaAnalysisInspector());        // Method 1: Delta analysis of POM files
+//        inspectors.add(new DeltaAnalysisInspector());        // Method 1: Delta analysis of POM files
+        inspectors.add(new DeltaAnalysisInspector(aetherDirectChildrenByGa));        // Method 1: Delta analysis of POM files
         inspectors.add(new RecursiveMetadataInspector());    // Method 2: Recursive metadata scanning
         return inspectors;
     }
@@ -185,5 +196,42 @@ public class ShadedDependencyScanner {
      */
     private String formatArtifactGav(Artifact artifact) {
         return artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion();
+    }
+
+    /**
+     * Recursively flattens the Aether DependencyNode tree into a Map for lightning-fast querying.
+     * Key: parent GA (groupId:artifactId). Value: Set of direct children GAVs (groupId:artifactId:version).
+     */
+    private void buildAetherDirectChildrenMap(org.eclipse.aether.graph.DependencyNode node, Map<String, java.util.Set<String>> map) {
+        if (node == null || node.getDependency() == null || node.getDependency().getArtifact() == null) {
+            return;
+        }
+
+        Artifact artifact = node.getDependency().getArtifact();
+        String ga = artifact.getGroupId() + ":" + artifact.getArtifactId();
+
+        java.util.Set<String> childrenGavs = new java.util.HashSet<String>();
+        if (node.getChildren() != null) {
+            for (org.eclipse.aether.graph.DependencyNode child : node.getChildren()) {
+                if (child.getDependency() != null && child.getDependency().getArtifact() != null) {
+                    Artifact childArtifact = child.getDependency().getArtifact();
+                    childrenGavs.add(childArtifact.getGroupId() + ":" +
+                            childArtifact.getArtifactId() + ":" +
+                            childArtifact.getVersion());
+                }
+            }
+        }
+
+        // Add if not present. If multiple versions exist in the graph (rare but possible), we keep the first resolved one.
+        if (!map.containsKey(ga)) {
+            map.put(ga, childrenGavs);
+        }
+
+        // Recurse down the tree
+        if (node.getChildren() != null) {
+            for (org.eclipse.aether.graph.DependencyNode child : node.getChildren()) {
+                buildAetherDirectChildrenMap(child, map);
+            }
+        }
     }
 }

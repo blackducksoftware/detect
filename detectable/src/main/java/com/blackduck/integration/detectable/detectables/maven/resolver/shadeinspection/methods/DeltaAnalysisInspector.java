@@ -1,27 +1,13 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.methods;
 
-// Method 1: Detect shaded dependencies by comparing original pom.xml with dependency-reduced-pom.xml.
-//
-// NOTE: An alternative to manual parent POM walking is to use the Eclipse Aether library
-// (maven-resolver-api + maven-resolver-impl). Aether handles property interpolation,
-// parent chain traversal, BOM imports, and version ranges automatically via
-// RepositorySystem.resolveDependencies(). The trade-off is ~10 additional JAR dependencies
-// and significant setup complexity. The manual approach implemented here covers the
-// majority of real-world cases (shallow parent chains, simple property inheritance)
-// with zero extra dependencies.
-
-
 import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.ShadedDependencyInspector;
 import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.model.DiscoveredDependency;
 import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.util.SecureXmlDocumentBuilder;
-
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -44,9 +30,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Detects shaded dependencies by performing a "delta" (set difference) between:
- *   - The original pom.xml (contains ALL declared dependencies)
- *   - The dependency-reduced-pom.xml (contains only non-shaded dependencies)
+ * Detects shaded dependencies by performing a delta (set difference) between:
+ * - The Original pom.xml hidden inside the JAR (contains ALL declared dependencies)
+ * - The Eclipse Aether Dependency Graph (contains only unshaded dependencies)
  *
  * The difference = the shaded dependencies.
  */
@@ -54,151 +40,142 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
 
     private static final Logger logger = LoggerFactory.getLogger(DeltaAnalysisInspector.class);
 
-    // Scopes that should be excluded from shaded dependency detection
-    // "test" scope: only used during testing, not included in final JAR
-    // "provided" scope: expected to be provided by the runtime environment (e.g., servlet container)
-    // Java 8 compatible: Using Collections.unmodifiableSet instead of Set.of()
     private static final Set<String> EXCLUDED_SCOPES = Collections.unmodifiableSet(
             new HashSet<String>(Arrays.asList("test", "provided"))
     );
 
-    // Regex pattern to match Maven property placeholders like ${property.name}
     private static final Pattern PROPERTY_PLACEHOLDER_PATTERN = Pattern.compile("\\$\\{([^}]+)}");
-
-    // Maximum depth for parent POM walking to prevent infinite loops
     private static final int MAX_PARENT_DEPTH = 5;
-
-    // Timeouts for Maven Central HTTP requests (milliseconds)
     private static final int CONNECT_TIMEOUT_MS = 5000;
     private static final int READ_TIMEOUT_MS = 10000;
 
-    // Cache for fetched parent POMs to avoid redundant disk/network access
-    // Key format: "groupId:artifactId:version"
-    // Java 8 compatible: explicit type parameters
     private final Map<String, Document> parentPomCache = new HashMap<String, Document>();
 
+    // A mapping of GA -> Set of exact child GAVs extracted from the Aether tree
+    private final Map<String, Set<String>> aetherDirectChildrenByGa;
+
     /**
-     * Main detection logic. Locates both POM files inside the JAR, parses them,
-     * and computes the set difference to identify shaded dependencies.
+     * Initializes the inspector with the Aether graph context.
      *
-     * @param jarFile The JAR file to analyze.
-     * @return List of discovered shaded dependencies.
+     * @param aetherDirectChildrenByGa A map of Artifact GA to a Set of its direct children GAVs.
      */
+    public DeltaAnalysisInspector(Map<String, Set<String>> aetherDirectChildrenByGa) {
+        this.aetherDirectChildrenByGa = aetherDirectChildrenByGa != null ? aetherDirectChildrenByGa : new HashMap<String, Set<String>>();
+        logger.debug("[Method 1] DeltaAnalysisInspector initialized with {} GA entries in Aether map.", this.aetherDirectChildrenByGa.size());
+    }
+
     @Override
     public List<DiscoveredDependency> detectShadedDependencies(JarFile jarFile) {
-        // Clear the cache for each new JAR analysis
         parentPomCache.clear();
-
-        List<DiscoveredDependency> discoveredDependencies = new ArrayList<>();
+        logger.debug("[Method 1] Cleared parent POM cache.");
+        List<DiscoveredDependency> discoveredDependencies = new ArrayList<DiscoveredDependency>();
 
         logger.debug("[Method 1] Starting Delta Analysis for JAR: {}", jarFile.getName());
 
         JarEntry originalPomEntry = null;
-        JarEntry reducedPomEntry = null;
 
-        // Step 1: Walk through all entries to locate the two POM files we need
-        logger.debug("[Method 1] Step 1 - Scanning JAR entries for POM files...");
+        // Step 1: Locate the Original POM inside the JAR
+        logger.debug("[Method 1] Step 1 - Scanning JAR entries for Original pom.xml...");
         Enumeration<JarEntry> entries = jarFile.entries();
 
         while (entries.hasMoreElements()) {
             JarEntry entry = entries.nextElement();
             String name = entry.getName();
 
-            // The original POM is always tucked inside META-INF/maven/<groupId>/<artifactId>/pom.xml
+            // The original POM is tucked inside META-INF/maven/<groupId>/<artifactId>/pom.xml
             if (name.startsWith("META-INF/maven/") && name.endsWith("pom.xml")) {
                 originalPomEntry = entry;
                 logger.debug("[Method 1] Step 1 - Found original POM: {}", name);
-            }
-            // The reduced POM is often placed at the root of the JAR by the shade plugin
-            else if (name.endsWith("dependency-reduced-pom.xml")) {
-                reducedPomEntry = entry;
-                logger.debug("[Method 1] Step 1 - Found reduced POM: {}", name);
+                break;
             }
         }
 
-        // If we can't find the original POM, there's nothing to compare — exit early
         if (originalPomEntry == null) {
             logger.debug("[Method 1] Step 1 - Original pom.xml not found in JAR. Delta analysis skipped.");
             return discoveredDependencies;
         }
 
-        // Step 2: Parse the original POM to get its full list of dependencies
-        logger.debug("[Method 1] Step 2 - Parsing original POM XML tree...");
-        Set<String> originalDependencies = parseDependencies(jarFile, originalPomEntry);
-        logger.debug("[Method 1] Step 2 - Original POM has {} direct dependencies (after scope filtering).", originalDependencies.size());
+        // Step 2: Parse the original POM to get its full list of dependencies and its own coordinates
+        logger.debug("[Method 1] Step 2 - Parsing original POM XML tree and resolving GAVs...");
+        OriginalPomResult pomResult = parseDependencies(jarFile, originalPomEntry);
+        Set<String> originalDependencies = pomResult.dependencies;
 
-        // Step 3: Compare with reduced POM and calculate the delta
-        if (reducedPomEntry != null) {
-            logger.debug("[Method 1] Step 3 - Parsing reduced POM and calculating strict delta...");
-            Set<String> reducedDependencies = parseDependencies(jarFile, reducedPomEntry);
-            logger.debug("[Method 1] Step 3 - Reduced POM has {} dependencies (after scope filtering).", reducedDependencies.size());
-
-            // Set Difference: Original - Reduced = Shaded dependencies
-            originalDependencies.removeAll(reducedDependencies);
-
-            logger.debug("[Method 1] Step 3 - Delta = {} shaded dependency(ies) found.", originalDependencies.size());
-
-            for (String shadedGav : originalDependencies) {
-                logger.debug("[Method 1] Step 3 - Shaded: {}", shadedGav);
-                discoveredDependencies.add(new DiscoveredDependency(shadedGav, "Delta Analysis (Exact)"));
-            }
-        } else {
-            // No reduced POM found — we can only return the full original list for external comparison
-            logger.debug("[Method 1] Step 3 - Reduced POM not found. Returning all original dependencies for external comparison.");
-
-            for (String gav : originalDependencies) {
-                logger.debug("[Method 1] Step 3 - Candidate: {}", gav);
-                discoveredDependencies.add(new DiscoveredDependency(gav, "Original POM (Needs external Delta)"));
-            }
+        logger.debug("[Method 1] Step 2 - Original POM has {} direct dependencies (after scope/optional filtering).", originalDependencies.size());
+        for (String dep : originalDependencies) {
+            logger.trace("[Method 1] Step 2 - Original POM dependency: {}", dep);
         }
 
-        // Step 4: Final summary
-        logger.debug("[Method 1] Step 4 - Delta Analysis complete. Total results: {}", discoveredDependencies.size());
+        // Step 3: Extract the host's own GA from the parsed POM to query the Aether map
+        String hostGroupId = pomResult.properties.get("project.groupId");
+        String hostArtifactId = pomResult.properties.get("project.artifactId");
 
+        logger.debug("[Method 1] Step 3 - Host artifact coordinates - GroupId: {}, ArtifactId: {}", hostGroupId, hostArtifactId);
+
+        if (hostGroupId == null || hostArtifactId == null) {
+            logger.warn("[Method 1] Step 3 - Could not extract Host GA from pom.xml. Aether delta math aborted.");
+            return discoveredDependencies;
+        }
+
+        String hostGa = hostGroupId + ":" + hostArtifactId;
+        logger.debug("[Method 1] Step 3 - Host GA: {}", hostGa);
+
+        // Step 4: Compare with Aether and calculate the strict delta
+        Set<String> aetherChildren = aetherDirectChildrenByGa.containsKey(hostGa)
+                ? aetherDirectChildrenByGa.get(hostGa)
+                : Collections.<String>emptySet();
+
+        logger.debug("[Method 1] Step 4 - Aether graph lists {} direct dependencies for host {}.", aetherChildren.size(), hostGa);
+        for (String aetherDep : aetherChildren) {
+            logger.trace("[Method 1] Step 4 - Aether dependency: {}", aetherDep);
+        }
+
+        // Set Difference: Original POM GAVs - Aether Graph GAVs = Shaded dependencies
+        int originalSize = originalDependencies.size();
+        originalDependencies.removeAll(aetherChildren);
+        int shadedCount = originalDependencies.size();
+
+        logger.debug("[Method 1] Step 4 - Delta calculation: {} original - {} aether = {} shaded dependency(ies).", originalSize, aetherChildren.size(), shadedCount);
+
+        for (String shadedGav : originalDependencies) {
+            logger.info("[Method 1] Step 4 - Shaded dependency detected: {}", shadedGav);
+            discoveredDependencies.add(new DiscoveredDependency(shadedGav, "Delta Analysis (Aether Graph)"));
+        }
+
+        logger.debug("[Method 1] Delta Analysis completed for JAR: {}", jarFile.getName());
         return discoveredDependencies;
     }
 
-    /**
-     * Creates a secure DocumentBuilder using the centralized utility.
-     * This method delegates to SecureXmlDocumentBuilder which applies
-     * fail-safe XXE protection that works across different parser implementations.
-     *
-     * @return A securely configured DocumentBuilder.
-     * @throws Exception If the DocumentBuilder cannot be created.
-     */
     private DocumentBuilder createSecureDocumentBuilder() throws Exception {
         return SecureXmlDocumentBuilder.newDocumentBuilder(logger);
     }
 
     /**
-     * Safely parses a POM file from a JAR entry and extracts direct runtime dependencies.
-     * Only considers <dependency> elements directly under <project><dependencies>,
-     * ignoring the <dependencyManagement> block.
-     * Also filters out dependencies with scope "test" or "provided" as they are not shaded.
-     * Resolves property placeholders like ${project.version} using the POM's properties section.
-     *
-     * @param jarFile The JAR containing the POM entry.
-     * @param entry   The specific JAR entry pointing to a pom.xml file.
-     * @return A set of dependency GAV strings (groupId:artifactId:version).
+     * Container to return both the extracted dependencies and the root properties.
      */
-    private Set<String> parseDependencies(JarFile jarFile, JarEntry entry) {
+    private static class OriginalPomResult {
         Set<String> dependencies = new HashSet<String>();
+        Map<String, String> properties = new HashMap<String, String>();
+    }
 
+    private OriginalPomResult parseDependencies(JarFile jarFile, JarEntry entry) {
+        OriginalPomResult result = new OriginalPomResult();
         InputStream is = null;
+
         try {
             is = jarFile.getInputStream(entry);
-
-            // Create a secure XML parser with fail-safe XXE protection
             DocumentBuilder builder = createSecureDocumentBuilder();
             Document doc = builder.parse(is);
             doc.getDocumentElement().normalize();
+            logger.debug("[Method 1] Successfully parsed POM XML document.");
 
-            // Step 2a: Extract all properties from the POM for placeholder resolution
+            // Extract all properties, including project.groupId and project.artifactId
             Map<String, String> properties = extractProperties(doc);
-            logger.debug("[Method 1] Step 2a - Extracted {} properties for placeholder resolution.", properties.size());
+            result.properties = properties;
 
-            // Find all <dependency> elements in the document
+            logger.debug("[Method 1] Extracted {} properties for placeholder resolution.", properties.size());
+
             NodeList dependencyNodes = doc.getElementsByTagName("dependency");
+            logger.debug("[Method 1] Found {} <dependency> elements in POM.", dependencyNodes.getLength());
 
             for (int i = 0; i < dependencyNodes.getLength(); i++) {
                 Node node = dependencyNodes.item(i);
@@ -206,46 +183,52 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
                 if (node.getNodeType() == Node.ELEMENT_NODE) {
                     Element element = (Element) node;
 
-                    // Only grab dependencies directly under <project><dependencies>
                     Node parent = element.getParentNode();
                     if (parent != null && "dependencies".equals(parent.getNodeName())) {
                         Node grandParent = parent.getParentNode();
                         if (grandParent != null && "project".equals(grandParent.getNodeName())) {
 
+                            // Check for optional flag - Aether ignores these, so we must ignore them too to prevent false positives
+                            String optional = getTagValue(element, "optional");
+                            if ("true".equalsIgnoreCase(optional)) {
+                                logger.trace("[Method 1] Skipping optional dependency at index {}", i);
+                                continue;
+                            }
+
                             String groupId = getTagValue(element, "groupId");
                             String artifactId = getTagValue(element, "artifactId");
                             String version = getTagValue(element, "version");
+
+                            logger.trace("[Method 1] Processing dependency {}: groupId={}, artifactId={}, version={}", i, groupId, artifactId, version);
 
                             groupId = resolvePropertyPlaceholders(groupId, properties);
                             artifactId = resolvePropertyPlaceholders(artifactId, properties);
                             version = resolvePropertyPlaceholders(version, properties);
 
+                            logger.trace("[Method 1] After placeholder resolution: groupId={}, artifactId={}, version={}", groupId, artifactId, version);
+
                             if (version == null || version.isEmpty() || "inherited".equals(version) || version.startsWith("${")) {
+                                logger.debug("[Method 1] Version needs resolution for {}:{} (current: {})", groupId, artifactId, version);
 
                                 String managed = findManagedVersion(doc, groupId, artifactId, properties);
                                 if (managed != null && !managed.isEmpty() && !managed.startsWith("${")) {
                                     version = managed;
-                                    logger.debug("[Method 1] Resolved version from dependencyManagement for {}:{} -> {}",
-                                        groupId, artifactId, version);
-
-                                } else if ((managed != null && managed.startsWith("${")) ||
-                                        (version != null && version.startsWith("${"))) {
+                                    logger.debug("[Method 1] Resolved version from dependencyManagement for {}:{} -> {}", groupId, artifactId, version);
+                                } else if ((managed != null && managed.startsWith("${")) || (version != null && version.startsWith("${"))) {
                                     String placeholderToResolve = (managed != null && managed.startsWith("${")) ? managed : version;
 
                                     logger.debug("[Method 1] Attempting parent POM walking for: {}", placeholderToResolve);
                                     String walked = resolveVersionWithParentWalking(placeholderToResolve, doc, groupId, artifactId, MAX_PARENT_DEPTH);
                                     if (walked != null && !walked.equals("UNKNOWN") && !walked.startsWith("${")) {
                                         version = walked;
-                                        logger.debug("[Method 1] Resolved '{}' -> '{}' from parent POM.", placeholderToResolve, version);
+                                        logger.debug("[Method 1] Resolved version via parent walking for {}:{} -> {}", groupId, artifactId, version);
                                     } else {
-                                        logger.warn("[Method 1] Could not resolve '{}' after walking {} parent levels. Marking as UNKNOWN.",
-                                            placeholderToResolve, MAX_PARENT_DEPTH);
                                         version = "UNKNOWN";
+                                        logger.warn("[Method 1] Could not resolve version for {}:{}, setting to UNKNOWN", groupId, artifactId);
                                     }
-
                                 } else {
-                                    logger.warn("[Method 1] Could not resolve version for {}:{} - marking as UNKNOWN", groupId, artifactId);
                                     version = "UNKNOWN";
+                                    logger.warn("[Method 1] No managed version found for {}:{}, setting to UNKNOWN", groupId, artifactId);
                                 }
                             }
 
@@ -254,71 +237,55 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
                                 scope = "compile";
                             }
 
+                            logger.trace("[Method 1] Dependency scope: {}", scope);
+
                             if (EXCLUDED_SCOPES.contains(scope.toLowerCase())) {
-                                logger.debug("[Method 1] Skipping dependency with scope '{}': {}:{}:{}",
-                                    scope, groupId, artifactId, version);
+                                logger.trace("[Method 1] Skipping dependency with excluded scope '{}': {}:{}:{}", scope, groupId, artifactId, version);
                                 continue;
                             }
 
-                            dependencies.add(groupId + ":" + artifactId + ":" + version);
+                            String gav = groupId + ":" + artifactId + ":" + version;
+                            result.dependencies.add(gav);
+                            logger.trace("[Method 1] Added dependency: {}", gav);
                         }
                     }
                 }
             }
+            logger.debug("[Method 1] Finished processing dependencies. Total valid dependencies: {}", result.dependencies.size());
         } catch (Exception e) {
-            logger.error("[Method 1] Failed to parse XML for {} - {}", entry.getName(), e.getMessage());
-            logger.debug("[Method 1] Stack trace for parse failure:", e);
+            logger.error("[Method 1] Failed to parse XML for {} - {}", entry.getName(), e.getMessage(), e);
         } finally {
             if (is != null) {
                 try {
                     is.close();
-                } catch (Exception ignored) {
-                    // Ignore close exceptions
-                }
+                } catch (Exception ignored) {}
             }
         }
 
-        return dependencies;
+        return result;
     }
 
-    /**
-     * Resolves a version placeholder by walking up the Maven parent POM chain.
-     * This method handles cases where a property like ${jsr305.version} is defined
-     * in a parent POM that is not embedded in the JAR.
-     *
-     * Resolution strategy (in priority order, short-circuit on first hit):
-     * 1. Local .m2 cache first — instant, no network
-     * 2. Maven Central fallback — if not in local cache
-     * 3. Recursive parent walking — if property not found in fetched parent
-     * 4. Depth cap at 5 — never recurse deeper than 5 levels
-     *
-     * @param placeholder     The version string (must be a ${placeholder}).
-     * @param currentPomDoc   The current POM document to extract <parent> block from.
-     * @param depGroupId      The groupId of the dependency being resolved (for dependencyManagement lookup).
-     * @param depArtifactId   The artifactId of the dependency being resolved (for dependencyManagement lookup).
-     * @param maxDepth        Maximum recursion depth (to prevent infinite loops).
-     * @return The resolved version, or "UNKNOWN" if resolution fails.
-     */
-    private String resolveVersionWithParentWalking(String placeholder, Document currentPomDoc,
-                                                   String depGroupId, String depArtifactId, int maxDepth) {
+    private String resolveVersionWithParentWalking(String placeholder, Document currentPomDoc, String depGroupId, String depArtifactId, int maxDepth) {
+        logger.debug("[Method 1] Parent walking for {}:{} at depth {} (max: {})", depGroupId, depArtifactId, MAX_PARENT_DEPTH - maxDepth + 1, MAX_PARENT_DEPTH);
         if (maxDepth <= 0) {
+            logger.debug("[Method 1] Max parent depth reached. Returning UNKNOWN.");
             return "UNKNOWN";
         }
 
         String propertyKey = null;
         if (placeholder != null && placeholder.startsWith("${") && placeholder.endsWith("}")) {
             propertyKey = placeholder.substring(2, placeholder.length() - 1);
+            logger.debug("[Method 1] Extracted property key: {}", propertyKey);
         }
 
         Element root = currentPomDoc.getDocumentElement();
         NodeList parentNodes = root.getElementsByTagName("parent");
-
         if (parentNodes.getLength() == 0) {
+            logger.debug("[Method 1] No <parent> element found. Returning UNKNOWN.");
             return "UNKNOWN";
         }
 
         Node parentNode = parentNodes.item(0);
-
         if (parentNode.getParentNode() == null || !"project".equals(parentNode.getParentNode().getNodeName())) {
             for (int i = 0; i < parentNodes.getLength(); i++) {
                 Node node = parentNodes.item(i);
@@ -330,6 +297,7 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
         }
 
         if (parentNode.getNodeType() != Node.ELEMENT_NODE) {
+            logger.debug("[Method 1] Parent node is not an Element. Returning UNKNOWN.");
             return "UNKNOWN";
         }
 
@@ -338,6 +306,8 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
         String parentArtifactId = getTagValue(parentElement, "artifactId");
         String parentVersion = getTagValue(parentElement, "version");
 
+        logger.debug("[Method 1] Found parent: {}:{}:{}", parentGroupId, parentArtifactId, parentVersion);
+
         Map<String, String> currentProperties = extractProperties(currentPomDoc);
         parentVersion = resolvePropertyPlaceholders(parentVersion, currentProperties);
 
@@ -345,14 +315,14 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
                 parentArtifactId == null || parentArtifactId.isEmpty() || "inherited".equals(parentArtifactId) ||
                 parentVersion == null || parentVersion.isEmpty() || "inherited".equals(parentVersion) ||
                 parentVersion.startsWith("${")) {
+            logger.debug("[Method 1] Parent coordinates incomplete or unresolved. Returning UNKNOWN.");
             return "UNKNOWN";
         }
 
-        logger.debug("[Method 1] Resolving '{}' - checking parent: {}:{}:{}",
-            placeholder, parentGroupId, parentArtifactId, parentVersion);
-
+        logger.debug("[Method 1] Fetching parent POM: {}:{}:{}", parentGroupId, parentArtifactId, parentVersion);
         Document parentDoc = fetchPom(parentGroupId, parentArtifactId, parentVersion);
         if (parentDoc == null) {
+            logger.debug("[Method 1] Could not fetch parent POM. Returning UNKNOWN.");
             return "UNKNOWN";
         }
 
@@ -360,67 +330,49 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
 
         if (propertyKey != null && parentProperties.containsKey(propertyKey)) {
             String resolvedValue = parentProperties.get(propertyKey);
-
+            logger.debug("[Method 1] Found property '{}' in parent with value: {}", propertyKey, resolvedValue);
             if (resolvedValue != null && resolvedValue.startsWith("${")) {
+                logger.debug("[Method 1] Property value is still a placeholder. Recursing...");
                 return resolveVersionWithParentWalking(resolvedValue, parentDoc, depGroupId, depArtifactId, maxDepth - 1);
             }
-
             return resolvedValue;
         }
 
         String managedInParent = findManagedVersion(parentDoc, depGroupId, depArtifactId, parentProperties);
         if (managedInParent != null && !managedInParent.isEmpty() && !managedInParent.startsWith("${")) {
-            logger.debug("[Method 1] Found version in parent's dependencyManagement: {}", managedInParent);
+            logger.debug("[Method 1] Found managed version in parent: {}", managedInParent);
             return managedInParent;
         }
 
         if (managedInParent != null && managedInParent.startsWith("${")) {
+            logger.debug("[Method 1] Managed version in parent is a placeholder. Recursing...");
             return resolveVersionWithParentWalking(managedInParent, parentDoc, depGroupId, depArtifactId, maxDepth - 1);
         }
 
+        logger.debug("[Method 1] No resolution found in parent. Recursing to grandparent...");
         return resolveVersionWithParentWalking(placeholder, parentDoc, depGroupId, depArtifactId, maxDepth - 1);
     }
 
-    /**
-     * Fetches a POM file by Maven coordinates.
-     * Tries local .m2 cache first, then falls back to Maven Central.
-     *
-     * @param groupId    The Maven groupId.
-     * @param artifactId The Maven artifactId.
-     * @param version    The Maven version.
-     * @return The parsed POM Document, or null if not found or on error.
-     */
     private Document fetchPom(String groupId, String artifactId, String version) {
-        // Check cache first
         String cacheKey = groupId + ":" + artifactId + ":" + version;
         if (parentPomCache.containsKey(cacheKey)) {
+            logger.debug("[Method 1] Parent POM cache hit for: {}", cacheKey);
             return parentPomCache.get(cacheKey);
         }
 
-        // Try local .m2 cache first
+        logger.debug("[Method 1] Fetching POM for: {}", cacheKey);
         Document doc = fetchPomFromLocalCache(groupId, artifactId, version);
-
-        // Fall back to Maven Central if not in local cache
         if (doc == null) {
+            logger.debug("[Method 1] Not found in local cache. Trying Maven Central...");
             doc = fetchPomFromMavenCentral(groupId, artifactId, version);
+        } else {
+            logger.debug("[Method 1] Found in local cache: {}", cacheKey);
         }
 
-        // Cache the result (including null) to prevent repeated failed lookups.
-        // Intentionally caching null: if a POM doesn't exist locally or on Maven Central,
-        // we don't want to retry the same failed fetch on every call within this JAR analysis.
         parentPomCache.put(cacheKey, doc);
-
         return doc;
     }
 
-    /**
-     * Fetches a POM from the local Maven cache (~/.m2/repository).
-     *
-     * @param groupId    The Maven groupId.
-     * @param artifactId The Maven artifactId.
-     * @param version    The Maven version.
-     * @return The parsed POM Document, or null if not found or on error.
-     */
     private Document fetchPomFromLocalCache(String groupId, String artifactId, String version) {
         String userHome = System.getProperty("user.home");
         String groupPath = groupId.replace('.', '/');
@@ -429,49 +381,36 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
 
         File pomFile = new File(localPath);
         if (!pomFile.exists()) {
+            logger.trace("[Method 1] Local POM not found: {}", localPath);
             return null;
         }
 
+        logger.debug("[Method 1] Reading local POM: {}", localPath);
         FileInputStream is = null;
         try {
             is = new FileInputStream(pomFile);
             DocumentBuilder builder = createSecureDocumentBuilder();
             Document doc = builder.parse(is);
             doc.getDocumentElement().normalize();
-
-            logger.debug("[Method 1] Parent POM found in local cache: {}", localPath);
             return doc;
-
         } catch (Exception e) {
-            logger.error("[Method 1] Failed to parse local POM {}: {}", localPath, e.getMessage());
-            logger.debug("[Method 1] Stack trace for local POM parse failure:", e);
+            logger.warn("[Method 1] Failed to parse local POM {}: {}", localPath, e.getMessage());
             return null;
         } finally {
             if (is != null) {
                 try {
                     is.close();
-                } catch (Exception ignored) {
-                    // Ignore close exceptions
-                }
+                } catch (Exception ignored) {}
             }
         }
     }
 
-    /**
-     * Fetches a POM from Maven Central repository.
-     *
-     * @param groupId    The Maven groupId.
-     * @param artifactId The Maven artifactId.
-     * @param version    The Maven version.
-     * @return The parsed POM Document, or null if not found or on error.
-     */
     private Document fetchPomFromMavenCentral(String groupId, String artifactId, String version) {
         String groupPath = groupId.replace('.', '/');
         String pomFileName = artifactId + "-" + version + ".pom";
         String urlString = "https://repo1.maven.org/maven2/" + groupPath + "/" + artifactId + "/" + version + "/" + pomFileName;
 
-        logger.debug("[Method 1] Fetching parent POM from Maven Central: {}", urlString);
-
+        logger.debug("[Method 1] Fetching from Maven Central: {}", urlString);
         HttpURLConnection connection = null;
         InputStream is = null;
         try {
@@ -484,7 +423,7 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
 
             int responseCode = connection.getResponseCode();
             if (responseCode != 200) {
-                logger.warn("[Method 1] Maven Central returned HTTP {} for {}", responseCode, urlString);
+                logger.debug("[Method 1] Maven Central returned HTTP {}", responseCode);
                 return null;
             }
 
@@ -492,19 +431,16 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
             DocumentBuilder builder = createSecureDocumentBuilder();
             Document doc = builder.parse(is);
             doc.getDocumentElement().normalize();
+            logger.debug("[Method 1] Successfully fetched and parsed POM from Maven Central.");
             return doc;
-
         } catch (Exception e) {
-            logger.error("[Method 1] Failed to fetch POM from Maven Central {}: {}", urlString, e.getMessage());
-            logger.debug("[Method 1] Stack trace for Maven Central fetch failure:", e);
+            logger.warn("[Method 1] Failed to fetch from Maven Central {}: {}", urlString, e.getMessage());
             return null;
         } finally {
             if (is != null) {
                 try {
                     is.close();
-                } catch (Exception ignored) {
-                    // Ignore close exceptions
-                }
+                } catch (Exception ignored) {}
             }
             if (connection != null) {
                 connection.disconnect();
@@ -512,93 +448,57 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
         }
     }
 
-    /**
-     * Extracts all properties from the POM document for placeholder resolution.
-     * This includes:
-     *   - User-defined properties from <properties> section
-     *   - Implicit project properties like project.version, project.groupId, project.artifactId
-     *   - Parent project properties (if parent is defined)
-     *
-     * @param doc The parsed POM document.
-     * @return A map of property names to their values.
-     */
     private Map<String, String> extractProperties(Document doc) {
         Map<String, String> properties = new HashMap<String, String>();
-
-        // Extract project-level implicit properties (project.version, project.groupId, etc.)
         Element root = doc.getDocumentElement();
 
-        // Get project's own version, groupId, artifactId
         String projectVersion = getDirectChildTagValue(root, "version");
         String projectGroupId = getDirectChildTagValue(root, "groupId");
         String projectArtifactId = getDirectChildTagValue(root, "artifactId");
 
-        // If project doesn't define its own groupId/version, inherit from parent
         NodeList parentNodes = root.getElementsByTagName("parent");
         if (parentNodes.getLength() > 0) {
             Element parentElement = (Element) parentNodes.item(0);
-
-            // If project.groupId is missing, inherit from parent
             if (projectGroupId == null || projectGroupId.isEmpty() || "inherited".equals(projectGroupId)) {
                 projectGroupId = getTagValue(parentElement, "groupId");
             }
-
-            // If project.version is missing, inherit from parent
             if (projectVersion == null || projectVersion.isEmpty() || "inherited".equals(projectVersion)) {
                 projectVersion = getTagValue(parentElement, "version");
             }
         }
 
-        // Add implicit project properties - these can be referenced as ${project.version}, etc.
         if (projectVersion != null && !"inherited".equals(projectVersion)) {
             properties.put("project.version", projectVersion);
-            properties.put("pom.version", projectVersion);  // Legacy alias
-            properties.put("version", projectVersion);      // Short form sometimes used
+            properties.put("pom.version", projectVersion);
+            properties.put("version", projectVersion);
         }
         if (projectGroupId != null && !"inherited".equals(projectGroupId)) {
             properties.put("project.groupId", projectGroupId);
-            properties.put("pom.groupId", projectGroupId);  // Legacy alias
-            properties.put("groupId", projectGroupId);      // Short form sometimes used
+            properties.put("pom.groupId", projectGroupId);
+            properties.put("groupId", projectGroupId);
         }
         if (projectArtifactId != null && !"inherited".equals(projectArtifactId)) {
             properties.put("project.artifactId", projectArtifactId);
-            properties.put("pom.artifactId", projectArtifactId);  // Legacy alias
-            properties.put("artifactId", projectArtifactId);      // Short form sometimes used
+            properties.put("pom.artifactId", projectArtifactId);
+            properties.put("artifactId", projectArtifactId);
         }
 
-        // Extract user-defined properties from <properties> section
         NodeList propertiesNodes = doc.getElementsByTagName("properties");
         if (propertiesNodes.getLength() > 0) {
             Element propertiesElement = (Element) propertiesNodes.item(0);
             NodeList children = propertiesElement.getChildNodes();
-
             for (int i = 0; i < children.getLength(); i++) {
                 Node child = children.item(i);
                 if (child.getNodeType() == Node.ELEMENT_NODE) {
-                    // Each child element is a property: <propertyName>value</propertyName>
-                    String propertyName = child.getNodeName();
-                    String propertyValue = child.getTextContent().trim();
-                    properties.put(propertyName, propertyValue);
+                    properties.put(child.getNodeName(), child.getTextContent().trim());
                 }
             }
         }
-
         return properties;
     }
 
-    /**
-     * Resolves property placeholders in a string value.
-     * Handles nested placeholders by resolving iteratively up to a maximum depth.
-     * Example: "${project.version}" -> "1.2.3" if project.version is defined.
-     *
-     * @param value      The string that may contain ${property} placeholders.
-     * @param properties The map of property names to resolved values.
-     * @return The string with all resolvable placeholders replaced.
-     */
     private String resolvePropertyPlaceholders(String value, Map<String, String> properties) {
-        if (value == null || value.isEmpty() || "inherited".equals(value)) {
-            return value;
-        }
+        if (value == null || value.isEmpty() || "inherited".equals(value)) return value;
 
         int maxIterations = 10;
         int iteration = 0;
@@ -607,48 +507,28 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
         while (resolved.contains("${") && iteration < maxIterations) {
             Matcher matcher = PROPERTY_PLACEHOLDER_PATTERN.matcher(resolved);
             StringBuffer sb = new StringBuffer();
-
             boolean foundAny = false;
             while (matcher.find()) {
                 String propertyName = matcher.group(1);
                 String replacement = properties.get(propertyName);
-
                 if (replacement != null) {
                     matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
                     foundAny = true;
                 } else {
-                    logger.debug("[Method 1] Could not resolve property: ${{}}", propertyName);
                     matcher.appendReplacement(sb, Matcher.quoteReplacement(matcher.group(0)));
                 }
             }
             matcher.appendTail(sb);
             resolved = sb.toString();
-
-            if (!foundAny) {
-                break;
-            }
+            if (!foundAny) break;
             iteration++;
         }
-
         return resolved;
     }
 
-    /**
-     * Finds the version of a dependency from the <dependencyManagement> section.
-     * This is used when a dependency doesn't declare its own version.
-     *
-     * @param doc        The parsed POM document.
-     * @param groupId    The groupId of the dependency to look up.
-     * @param artifactId The artifactId of the dependency to look up.
-     * @param properties The properties map for resolving placeholders.
-     * @return The managed version, or null if not found.
-     */
     private String findManagedVersion(Document doc, String groupId, String artifactId, Map<String, String> properties) {
-        // Find <dependencyManagement><dependencies> section
         NodeList depMgmtNodes = doc.getElementsByTagName("dependencyManagement");
-        if (depMgmtNodes.getLength() == 0) {
-            return null;
-        }
+        if (depMgmtNodes.getLength() == 0) return null;
 
         Element depMgmtElement = (Element) depMgmtNodes.item(0);
         NodeList dependencyNodes = depMgmtElement.getElementsByTagName("dependency");
@@ -657,31 +537,18 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
             Node node = dependencyNodes.item(i);
             if (node.getNodeType() == Node.ELEMENT_NODE) {
                 Element element = (Element) node;
-
                 String managedGroupId = resolvePropertyPlaceholders(getTagValue(element, "groupId"), properties);
                 String managedArtifactId = resolvePropertyPlaceholders(getTagValue(element, "artifactId"), properties);
 
-                // Check if this managed dependency matches the one we're looking for
                 if (groupId.equals(managedGroupId) && artifactId.equals(managedArtifactId)) {
                     String managedVersion = getTagValue(element, "version");
-                    // Resolve any placeholders in the managed version
                     return resolvePropertyPlaceholders(managedVersion, properties);
                 }
             }
         }
-
         return null;
     }
 
-    /**
-     * Gets the value of a direct child element (not nested deeper).
-     * This is used for getting project-level properties without accidentally
-     * grabbing values from nested elements like <parent>.
-     *
-     * @param parentElement The parent element to search within.
-     * @param tagName       The name of the direct child tag.
-     * @return The text content of the tag, or null if not found.
-     */
     private String getDirectChildTagValue(Element parentElement, String tagName) {
         NodeList children = parentElement.getChildNodes();
         for (int i = 0; i < children.getLength(); i++) {
@@ -693,20 +560,11 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
         return null;
     }
 
-    /**
-     * Helper method to safely extract text content from a child XML element.
-     *
-     * @param parentElement The parent XML element containing the tag.
-     * @param tagName       The name of the child tag to read.
-     * @return The text content of the tag, or "inherited" if the tag is missing
-     *         (some values are legitimately inherited from parent POMs).
-     */
     private String getTagValue(Element parentElement, String tagName) {
         NodeList list = parentElement.getElementsByTagName(tagName);
         if (list != null && list.getLength() > 0) {
             return list.item(0).getTextContent().trim();
         }
-        // Return "inherited" when the tag is absent — this happens when values come from a parent POM
         return "inherited";
     }
 }

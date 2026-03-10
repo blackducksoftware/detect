@@ -348,7 +348,7 @@ public class MavenResolverDetectable extends Detectable {
 
                 // Scan all JARs and get discovered shaded dependencies
                 Map<Artifact, List<DiscoveredDependency>> shadedDependenciesMap =
-                        shadedDependencyScanner.scanJarsForShadedDependencies(locatedOrDownloadedArtifactJars);
+                        shadedDependencyScanner.scanJarsForShadedDependencies(locatedOrDownloadedArtifactJars, collectResultCompile,collectResultTest);
 
                 logger.info("Shaded dependency inspection phase completed. Found {} JARs with shaded dependencies.",
                         shadedDependenciesMap.size());
