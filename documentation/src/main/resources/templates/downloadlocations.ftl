@@ -17,7 +17,7 @@ The following are download locations for the current version of [detect_product_
 
 Legacy [detect_product_short] plugins:
 * [detect_product_long] Jenkins plugin is available here: [Jenkins plugin](https://plugins.jenkins.io/blackduck-detect/)
-* The [detect_product_long] extension for Azure DevOps is available on the: [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=blackduck.blackduck-detect)
+* [detect_product_long] extension for Azure DevOps is available on the: [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=blackduck.blackduck-detect)
 
 **Note:** For certain types of projects, [detect_product_short] automatically downloads one or more [inspectors](../components/inspectors.md) as needed.
 * In air gap environments you may need to download the [var_product_sigma] scanner at the following location: [Sigma](${binary_repo_url_sigma})
