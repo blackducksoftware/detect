@@ -10,7 +10,8 @@ import com.blackduck.integration.detectable.detectables.cocoapods.PodlockDetecta
 import com.blackduck.integration.detectable.detectables.conan.cli.Conan1CliDetectable;
 import com.blackduck.integration.detectable.detectables.conan.cli.Conan2CliDetectable;
 import com.blackduck.integration.detectable.detectables.conan.lockfile.ConanLockfileDetectable;
-import com.blackduck.integration.detectable.detectables.conda.CondaCliDetectable;
+import com.blackduck.integration.detectable.detectables.conda.cli.CondaCliDetectable;
+import com.blackduck.integration.detectable.detectables.conda.tree.CondaTreeDetectable;
 import com.blackduck.integration.detectable.detectables.cpan.CpanCliDetectable;
 import com.blackduck.integration.detectable.detectables.cran.PackratLockDetectable;
 import com.blackduck.integration.detectable.detectables.dart.pubdep.DartPubDepDetectable;
@@ -121,9 +122,11 @@ public class DetectorRuleFactory {
         }).allEntryPointsFallbackToNext();
 
         rules.addDetector(DetectorType.CONDA, detector -> {
-            detector.entryPoint(CondaCliDetectable.class)
+            detector.entryPoint(CondaTreeDetectable.class)
                 .search().defaults();
-        });
+            detector.entryPoint(CondaCliDetectable.class)
+                    .search().defaults();
+        }).allEntryPointsFallbackToNext();
 
         rules.addDetector(DetectorType.CPAN, detector -> {
             detector.entryPoint(CpanCliDetectable.class)

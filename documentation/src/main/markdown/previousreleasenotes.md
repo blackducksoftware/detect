@@ -1,6 +1,20 @@
 <!-- Check the support matrix to determine supported, non-current major version releases -->
 # Release notes for previous [detect_product_short] versions
 
+## Version 11.3.0
+
+### New features
+
+* With the addition of the `detect.cargo.included.features` and `detect.cargo.disable.default.features` properties, [detect_product_short] now supports Cargo features and the inclusion or exclusion of dependencies as options. See [Cargo](properties/detectors/cargo.md) for details.
+  <note type="note">This feature is supported for Cargo CLI Detector. Cargo Lockfile Detector will log a warning if these properties are provided.</note>
+* Add support for `environment.yaml` in [detect_product_short] Conda CLI Detector.
+
+### Resolved issues
+
+* (IDETECT-4960) Added support for Cargo features and optional dependencies in Cargo CLI Detector, allowing precise control over which features are included in the SBOM through cargo tree command flags. See [Cargo](properties/detectors/cargo.md) for details.
+* (IDETECT-4847) Clarified that the value of `detect.container.scan.file.path` should be a path to local .tar file or a HTTP/HTTPS URL for remote .tar file.
+
+
 ## Version 11.2.1
 
 ### Dependency Updates

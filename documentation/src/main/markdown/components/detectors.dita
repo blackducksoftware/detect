@@ -202,6 +202,17 @@
 							<entry> </entry>
 						</row>
 						<row>
+                            <entry> </entry>
+                            <entry>Conda Tree</entry>
+                            <entry>Python</entry>
+                            <entry>Anaconda</entry>
+                            <entry>
+                                <p>File: environment.yml or environment.yaml</p>
+                                <p>Executables: conda, conda-tree</p>
+                            </entry>
+                            <entry>HIGH</entry>
+                        </row>
+						<row>
 							<entry> </entry>
 							<entry>Conda CLI</entry>
 							<entry>Python</entry>

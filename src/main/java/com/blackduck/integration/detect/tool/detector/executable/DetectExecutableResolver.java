@@ -16,7 +16,7 @@ import com.blackduck.integration.detectable.detectables.conan.cli.ConanResolver;
 public class DetectExecutableResolver implements
     JavaResolver, GradleResolver, BashResolver, ConanResolver, CondaResolver, CpanmResolver, CpanResolver, DartResolver, PearResolver, Rebar3Resolver, PythonResolver, PipResolver,
     PipenvResolver, MavenResolver, NpmResolver, BazelResolver,
-    DockerResolver, GitResolver, SwiftResolver, GoResolver, LernaResolver, SbtResolver, FlutterResolver, OpamResolver, CargoResolver, UVResolver {
+    DockerResolver, GitResolver, SwiftResolver, GoResolver, LernaResolver, SbtResolver, FlutterResolver, OpamResolver, CargoResolver, UVResolver, CondaTreeResolver {
 
     private final DirectoryExecutableFinder directoryExecutableFinder;
     private final SystemPathExecutableFinder systemPathExecutableFinder;
@@ -105,6 +105,11 @@ public class DetectExecutableResolver implements
     @Override
     public ExecutableTarget resolveConda() throws DetectableException {
         return ExecutableTarget.forFile(resolveCachedSystemExecutable("conda", detectExecutableOptions.getCondaUserPath()));
+    }
+
+    @Override
+    public ExecutableTarget resolveCondaTree() throws DetectableException {
+        return ExecutableTarget.forFile(resolveCachedSystemExecutable("conda-tree", detectExecutableOptions.getCondaTreeUserPath()));
     }
 
     @Override
