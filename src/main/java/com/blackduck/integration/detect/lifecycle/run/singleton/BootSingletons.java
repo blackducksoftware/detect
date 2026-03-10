@@ -6,6 +6,7 @@ import com.blackduck.integration.configuration.config.PropertyConfiguration;
 import com.blackduck.integration.detect.configuration.DetectConfigurationFactory;
 import com.blackduck.integration.detect.configuration.DetectInfo;
 import com.blackduck.integration.detect.configuration.DetectableOptionFactory;
+import com.blackduck.integration.detect.lifecycle.boot.decision.CorrelatedScanningDecision;
 import com.blackduck.integration.detect.lifecycle.autonomous.AutonomousManager;
 import com.blackduck.integration.detect.lifecycle.run.data.ProductRunData;
 import com.blackduck.integration.detect.tool.cache.InstalledToolLocator;
@@ -39,6 +40,7 @@ public class BootSingletons {
     private final InstalledToolManager installedToolManager;
     private final InstalledToolLocator installedToolLocator;
     private final AutonomousManager autonomousManager;
+    private final CorrelatedScanningDecision correlatedScanningDecision;
 
     public BootSingletons(
         ProductRunData productRunData,
@@ -55,7 +57,8 @@ public class BootSingletons {
         Configuration configuration,
         InstalledToolManager installedToolManager,
         InstalledToolLocator installedToolLocator,
-        AutonomousManager autonomousManager
+        AutonomousManager autonomousManager,
+        CorrelatedScanningDecision correlatedScanningDecision
     ) {
         this.productRunData = productRunData;
         this.detectRunId = detectRunId;
@@ -72,6 +75,7 @@ public class BootSingletons {
         this.installedToolManager = installedToolManager;
         this.installedToolLocator = installedToolLocator;
         this.autonomousManager = autonomousManager;
+        this.correlatedScanningDecision = correlatedScanningDecision;
     }
 
     public ProductRunData getProductRunData() {
@@ -131,4 +135,6 @@ public class BootSingletons {
     }
 
     public AutonomousManager getAutonomousManager() { return autonomousManager; }
+
+    public CorrelatedScanningDecision getCorrelatedScanningDecision() { return correlatedScanningDecision; }
 }

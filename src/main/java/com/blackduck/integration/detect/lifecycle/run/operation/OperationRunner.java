@@ -81,6 +81,8 @@ import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
 import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
 import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.autonomous.AutonomousManager;
+import com.blackduck.integration.detect.lifecycle.boot.decision.CorrelatedScanningDecision;
+import com.blackduck.integration.detect.workflow.DetectRunId;
 import com.blackduck.integration.detect.lifecycle.run.DetectFontLoaderFactory;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.data.DockerTargetData;
@@ -253,6 +255,8 @@ public class OperationRunner {
     private final ProjectEventPublisher projectEventPublisher;
     private final DetectExecutableRunner executableRunner;
     private final OperationAuditLog auditLog;
+    private final CorrelatedScanningDecision correlatedScanningDecision;
+    private final DetectRunId detectRunId;
     private static final int[] LIMITED_FIBONACCI_SEQUENCE = {0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55};
     private static final int MIN_POLLING_INTERVAL_THRESHOLD_IN_SECONDS = 5;
     private static final String DEVELOPER_SCAN_ENDPOINT = ApiDiscovery.DEVELOPER_SCANS_PATH.getPath();
@@ -292,6 +296,8 @@ public class OperationRunner {
         fileFinder = bootSingletons.getFileFinder();
         detectInfo = bootSingletons.getDetectInfo();
         executableRunner = utilitySingletons.getExecutableRunner();
+        correlatedScanningDecision = bootSingletons.getCorrelatedScanningDecision();
+        detectRunId = bootSingletons.getDetectRunId();
 
         OperationSystem operationSystem = utilitySingletons.getOperationSystem();
         codeLocationNameManager = utilitySingletons.getCodeLocationNameManager();
@@ -683,6 +689,7 @@ public class OperationRunner {
     private File createProtobufHeaderFile(String type, NameVersion projectNameVersion, String codeLocationName, File scanFile, ScassScanInitiationResult initResult, File outputDirectory) throws OperationException, IntegrationException {
         try {
             String projectGroupName = calculateProjectGroupOptions().getProjectGroup();
+            String correlationId = getCorrelationIdForScanType("BINARY");
 
             DetectProtobufBdioHeaderUtil detectProtobufBdioHeaderUtil = new DetectProtobufBdioHeaderUtil(
                     UUID.randomUUID().toString(),
@@ -690,7 +697,8 @@ public class OperationRunner {
                     projectNameVersion,
                     projectGroupName,
                     codeLocationName,
-                    scanFile.length());
+                    scanFile.length(),
+                    correlationId);
 
 
             File bdioHeaderFile = detectProtobufBdioHeaderUtil.createProtobufBdioHeader(outputDirectory);
@@ -1082,7 +1090,7 @@ public class OperationRunner {
                 blackDuckRunData.getBlackDuckServicesFactory().getBlackDuckApiClient(),
                 blackDuckRunData.getBlackDuckServicesFactory().createProjectBomService()
             );
-            BlackDuckPostOptions blackDuckPostOptions = detectConfigurationFactory.createBlackDuckPostOptions();
+            BlackDuckPostOptions blackDuckPostOptions = createBlackDuckPostOptions();
             List<PolicyRuleSeverityType> severitiesToFailPolicyCheck = blackDuckPostOptions.getSeveritiesToFailPolicyCheck();
             policyChecker.checkPolicyBySeverity(severitiesToFailPolicyCheck, projectVersionView);
         });
@@ -1095,7 +1103,7 @@ public class OperationRunner {
                 blackDuckRunData.getBlackDuckServicesFactory().getBlackDuckApiClient(),
                 blackDuckRunData.getBlackDuckServicesFactory().createProjectBomService()
             );
-            BlackDuckPostOptions blackDuckPostOptions = detectConfigurationFactory.createBlackDuckPostOptions();
+            BlackDuckPostOptions blackDuckPostOptions = createBlackDuckPostOptions();
             List<String> policyNamesToFailPolicyCheck = blackDuckPostOptions.getPolicyNamesToFailPolicyCheck();
             policyChecker.checkPolicyByName(policyNamesToFailPolicyCheck, projectVersionView);
         });
@@ -1383,7 +1391,7 @@ public class OperationRunner {
 
     public Optional<File> calculateNoticesDirectory() throws OperationException { //TODO Should be a decision in boot
         return auditLog.namedInternal("Decide Notices Report Path", () -> {
-            BlackDuckPostOptions postOptions = detectConfigurationFactory.createBlackDuckPostOptions();
+            BlackDuckPostOptions postOptions = createBlackDuckPostOptions();
             if (postOptions.shouldGenerateNoticesReport()) {
                 return Optional.of(postOptions.getNoticesReportPath().map(Path::toFile)
                     .orElse(directoryManager.getSourceDirectory()));
@@ -1394,7 +1402,7 @@ public class OperationRunner {
 
     public Optional<File> calculateRiskReportPdfFileLocation() throws OperationException { //TODO Should be a decision in boot
         return auditLog.namedInternal("Decide Risk Report Path", () -> {
-            BlackDuckPostOptions postOptions = detectConfigurationFactory.createBlackDuckPostOptions();
+            BlackDuckPostOptions postOptions = createBlackDuckPostOptions();
             if (postOptions.shouldGenerateRiskReportPdf()) {
                 return Optional.of(postOptions.getRiskReportPdfPath().map(Path::toFile)
                     .orElse(directoryManager.getSourceDirectory()));
@@ -1405,7 +1413,7 @@ public class OperationRunner {
 
     public Optional<File> calculateRiskReportJsonFileLocation() throws OperationException { //TODO Should be a decision in boot
         return auditLog.namedInternal("Decide Risk Report Path", () -> {
-            BlackDuckPostOptions postOptions = detectConfigurationFactory.createBlackDuckPostOptions();
+            BlackDuckPostOptions postOptions = createBlackDuckPostOptions();
             if (postOptions.shouldGenerateRiskReportJson()) {
                 return Optional.of(postOptions.getRiskReportJsonPath().map(Path::toFile)
                         .orElse(directoryManager.getSourceDirectory()));
@@ -1479,7 +1487,19 @@ public class OperationRunner {
     }
 
     public BlackDuckPostOptions createBlackDuckPostOptions() {
-        return detectConfigurationFactory.createBlackDuckPostOptions();
+        return detectConfigurationFactory.createBlackDuckPostOptions(correlatedScanningDecision);
+    }
+
+    /**
+     * Gets the correlation ID if correlated scanning is enabled and the scan type is supported.
+     * @param scanType The scan type to check (e.g., "BINARY", "SIGNATURE", "PACKAGE_MANAGER")
+     * @return The correlation ID string if enabled and supported, null otherwise
+     */
+    public String getCorrelationIdForScanType(String scanType) {
+        if (correlatedScanningDecision.isEnabled() && correlatedScanningDecision.isScanTypeSupported(scanType)) {
+            return detectRunId.getCorrelationId();
+        }
+        return null;
     }
 
     public BinaryScanOptions calculateBinaryScanOptions() {

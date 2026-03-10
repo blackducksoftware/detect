@@ -21,6 +21,7 @@ import com.blackduck.integration.detect.lifecycle.boot.product.version.BlackDuck
 import com.blackduck.integration.detect.lifecycle.run.data.ProductRunData;
 import com.blackduck.integration.detect.workflow.blackduck.analytics.AnalyticsConfigurationService;
 import com.blackduck.integration.detect.workflow.blackduck.analytics.AnalyticsSetting;
+import com.blackduck.integration.detect.workflow.blackduck.settings.DetectPropertiesService;
 import com.blackduck.integration.exception.IntegrationException;
 
 public class ProductBootTest {
@@ -101,9 +102,17 @@ public class ProductBootTest {
         AnalyticsConfigurationService analyticsConfigurationService = Mockito.mock(AnalyticsConfigurationService.class);
         Mockito.when(analyticsConfigurationService.fetchAnalyticsSetting(Mockito.any(), Mockito.any())).thenReturn(new AnalyticsSetting("analytics", true));
 
+        DetectPropertiesService detectPropertiesService = Mockito.mock(DetectPropertiesService.class);
+        try {
+            Mockito.when(detectPropertiesService.fetchDetectProperties(Mockito.any(), Mockito.any())).thenThrow(new IntegrationException("Endpoint not available"));
+        } catch (Exception e) {
+            // This won't happen in the mock setup
+        }
+
         ProductBoot productBoot = new ProductBoot(
             blackDuckConnectivityChecker,
             analyticsConfigurationService,
+            detectPropertiesService,
             productBootFactory,
             productBootOptions,
             blackDuckVersionChecker

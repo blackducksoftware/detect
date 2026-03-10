@@ -47,11 +47,13 @@ import com.blackduck.integration.detect.configuration.validation.DetectConfigura
 import com.blackduck.integration.detect.interactive.InteractiveManager;
 import com.blackduck.integration.detect.lifecycle.autonomous.AutonomousManager;
 import com.blackduck.integration.detect.lifecycle.boot.decision.BlackDuckDecision;
+import com.blackduck.integration.detect.lifecycle.boot.decision.CorrelatedScanningDecision;
 import com.blackduck.integration.detect.lifecycle.boot.decision.ProductDecider;
 import com.blackduck.integration.detect.lifecycle.boot.decision.RunDecision;
 import com.blackduck.integration.detect.lifecycle.boot.product.ProductBoot;
 import com.blackduck.integration.detect.lifecycle.run.data.ProductRunData;
 import com.blackduck.integration.detect.lifecycle.run.singleton.BootSingletons;
+import com.blackduck.integration.detect.workflow.blackduck.settings.DetectPropertiesSetting;
 import com.blackduck.integration.detect.tool.cache.InstalledToolLocator;
 import com.blackduck.integration.detect.tool.cache.InstalledToolManager;
 import com.blackduck.integration.detect.util.filter.DetectToolFilter;
@@ -191,7 +193,7 @@ public class DetectBoot {
 
         logger.info("");
 
-        ProductRunData productRunData;
+        ProductRunData productRunData = null;
 
         // store the result of hasImageOrTar... we will need this in more than one place.
         boolean hasImageOrTar;
@@ -210,6 +212,7 @@ public class DetectBoot {
         }
         
         Map<DetectTool, Set<String>> scanTypeEvidenceMap = autonomousManager.getScanTypeMap(hasImageOrTar);
+        BlackDuckDecision blackDuckDecision = null;
 
         try {
             boolean blackduckScanModeSpecified = detectConfiguration.wasPropertyProvided(DetectProperties.DETECT_BLACKDUCK_SCAN_MODE);
@@ -224,7 +227,7 @@ public class DetectBoot {
             }
             autonomousManager.setBlackDuckScanMode(blackduckScanMode.toString());
             ProductDecider productDecider = new ProductDecider(autonomousScanEnabled, blackduckUrlSpecified, blackduckOfflineModeSpecified);
-            BlackDuckDecision blackDuckDecision = productDecider.decideBlackDuck(
+            blackDuckDecision = productDecider.decideBlackDuck(
                 blackDuckConnectionDetails,
                 blackduckScanMode,
                 detectConfigurationFactory.createHasSignatureScan(scanTypeEvidenceMap.containsKey(DetectTool.SIGNATURE_SCAN))
@@ -252,6 +255,15 @@ public class DetectBoot {
             return Optional.of(DetectBootResult.exit(propertyConfiguration, directoryManager, diagnosticSystem));
         }
 
+        // Resolve correlated scanning decision based on user config, server settings, and offline mode
+        CorrelatedScanningDecision correlatedScanningDecision;
+        if (productRunData.shouldUseBlackDuckProduct()) {
+            Optional<DetectPropertiesSetting> serverSettings = productRunData.getBlackDuckRunData().getServerDetectProperties();
+            correlatedScanningDecision = detectConfigurationFactory.resolveCorrelatedScanningDecision(serverSettings, blackDuckDecision);
+        } else {
+            correlatedScanningDecision = CorrelatedScanningDecision.defaultDisabled();
+        }
+
         BootSingletons bootSingletons = detectBootFactory
             .createRunDependencies(
                 productRunData,
@@ -262,7 +274,8 @@ public class DetectBoot {
                 freemarkerConfiguration,
                 installedToolManager,
                 installedToolLocator,
-                autonomousManager
+                autonomousManager,
+                correlatedScanningDecision
             );
 
         return Optional.of(DetectBootResult.run(bootSingletons, propertyConfiguration, productRunData, directoryManager, diagnosticSystem));
