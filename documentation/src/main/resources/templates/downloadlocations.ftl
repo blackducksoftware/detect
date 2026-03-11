@@ -13,7 +13,7 @@ The following are download locations for the current version of [detect_product_
 * For additional integrations with [blackduck_product_name] Azure, and GitHub, see:
 [Security Scan for Black Duck SCA](https://documentation.blackduck.com/bundle/bridge-docs/page/bridge/documentation/security_scan_for_black_duck.html)
 [Bridge Azure Plugin](https://documentation.blackduck.com/bundle/bridge-docs/page/bridge/documentation/c_azure-with-blackduck.html)
-[GitHub App] (https://documentation.blackduck.com/bundle/bridge-docs/page/bridge/documentation/c_github-blackduck-security-scan-app-sca.html)
+[GitHub App](https://documentation.blackduck.com/bundle/bridge-docs/page/bridge/documentation/c_github-blackduck-security-scan-app-sca.html)
 
 Legacy [detect_product_short] plugins:
 * [detect_product_long] Jenkins plugin is available here: [Jenkins plugin](https://plugins.jenkins.io/blackduck-detect/)
