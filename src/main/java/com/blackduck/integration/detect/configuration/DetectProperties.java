@@ -229,14 +229,14 @@ public class DetectProperties {
     public static final StringListProperty DETECT_BAZEL_CQUERY_OPTIONS =
         StringListProperty.newBuilder("detect.bazel.cquery.options", emptyList())
             .setInfo("Bazel cquery additional options", DetectPropertyFromVersion.VERSION_6_1_0)
-            .setHelp("A comma-separated list of additional options to pass to the bazel cquery command.")
+            .setHelp("A comma-separated list of additional options to pass to the bazel cquery command. e.g., --enable_bzlmod, --enable_workspace")
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();
 
     public static final StringListProperty DETECT_BAZEL_QUERY_OPTIONS =
         StringListProperty.newBuilder("detect.bazel.query.options", emptyList())
             .setInfo("Bazel query additional options", DetectPropertyFromVersion.VERSION_11_3_0)
-            .setHelp("A comma-separated list of additional options to pass to the bazel query command.")
+            .setHelp("A comma-separated list of additional options to pass to the bazel query command. e.g., --enable_bzlmod, --enable_workspace")
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();
 
