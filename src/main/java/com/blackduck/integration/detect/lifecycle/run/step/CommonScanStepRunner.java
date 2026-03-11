@@ -126,7 +126,7 @@ public class CommonScanStepRunner {
     
     private UUID createFallbackScanId(OperationRunner operationRunner, String scanType, NameVersion projectNameVersion, String codeLocationName, long fileLength, BlackDuckRunData blackDuckRunData) throws IntegrationException {
         String projectGroupName = operationRunner.calculateProjectGroupOptions().getProjectGroup();
-        String correlationId = operationRunner.getCorrelationIdForScanType("BINARY");
+        String correlationId = operationRunner.getCorrelationIdForScanType(scanType);
 
         DetectProtobufBdioHeaderUtil detectProtobufBdioHeaderUtil = new DetectProtobufBdioHeaderUtil(
             UUID.randomUUID().toString(),

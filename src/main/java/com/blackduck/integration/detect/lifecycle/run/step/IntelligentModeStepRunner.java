@@ -74,14 +74,19 @@ public class IntelligentModeStepRunner {
         this.correlatedScanningDecision = correlatedScanningDecision;
     }
 
-    private String getCorrelationId() {
+    private String getCorrelationIdForSignatureScan() {
         return operationRunner.getCorrelationIdForScanType("SIGNATURE");
+    }
+
+    private String getCorrelationIdForUpload() {
+        // Upload counts for all supported scan types, so check if correlated scanning is enabled at all
+        return operationRunner.getCorrelationIdIfEnabled();
     }
 
     public void runOffline(NameVersion projectNameVersion, DockerTargetData dockerTargetData, BdioResult bdio) throws OperationException {
         stepHelper.runToolIfIncluded(DetectTool.SIGNATURE_SCAN, "Signature Scanner", () -> { //Internal: Sig scan publishes its own status.
             SignatureScanStepRunner signatureScanStepRunner = new SignatureScanStepRunner(operationRunner, null);
-            signatureScanStepRunner.runSignatureScannerOffline(getCorrelationId(), projectNameVersion, dockerTargetData);
+            signatureScanStepRunner.runSignatureScannerOffline(getCorrelationIdForSignatureScan(), projectNameVersion, dockerTargetData);
         });
         stepHelper.runToolIfIncludedWithCallbacks(
             DetectTool.IMPACT_ANALYSIS,
@@ -134,7 +139,7 @@ public class IntelligentModeStepRunner {
         stepHelper.runToolIfIncluded(DetectTool.SIGNATURE_SCAN, "Signature Scanner", () -> {
             SignatureScanStepRunner signatureScanStepRunner = new SignatureScanStepRunner(operationRunner, blackDuckRunData);
             SignatureScannerCodeLocationResult signatureScannerCodeLocationResult = signatureScanStepRunner.runSignatureScannerOnline(
-                getCorrelationId(),
+                getCorrelationIdForSignatureScan(),
                 projectNameVersion,
                 dockerTargetData,
                 scanIdsToWaitFor,
@@ -167,7 +172,8 @@ public class IntelligentModeStepRunner {
 
         stepHelper.runToolIfIncluded(DetectTool.IAC_SCAN, "IaC Scanner", () -> {
             IacScanStepRunner iacScanStepRunner = new IacScanStepRunner(operationRunner);
-            IacScanCodeLocationData iacScanCodeLocationData = iacScanStepRunner.runIacScanOnline(getCorrelationId(), projectNameVersion, blackDuckRunData);
+            // IAC is not a supported correlated scan type, so pass null for correlation ID
+            IacScanCodeLocationData iacScanCodeLocationData = iacScanStepRunner.runIacScanOnline(null, projectNameVersion, blackDuckRunData);
             codeLocationAccumulator.addNonWaitableCodeLocation(iacScanCodeLocationData.getCodeLocationNames());
             mustWaitAtBomSummaryLevel.set(true);
         });
@@ -319,7 +325,7 @@ public class IntelligentModeStepRunner {
     }
     
     public void uploadCorrelatedScanCounts(BlackDuckRunData blackDuckRunData, CodeLocationAccumulator codeLocationAccumulator) throws OperationException {
-        String correlationId = getCorrelationId();
+        String correlationId = getCorrelationIdForUpload();
         logger.debug("Uploading correlated scan counts to Black Duck SCA (correlation ID: {})", correlationId);
         ScanCountsPayload scanCountsPayload = scanCountsPayloadCreator.createPayloadFromCountsByTool(
             codeLocationAccumulator.getWaitableCodeLocations(),

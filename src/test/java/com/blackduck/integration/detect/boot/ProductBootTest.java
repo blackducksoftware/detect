@@ -106,7 +106,7 @@ public class ProductBootTest {
         try {
             Mockito.when(detectPropertiesService.fetchDetectProperties(Mockito.any(), Mockito.any())).thenThrow(new IntegrationException("Endpoint not available"));
         } catch (Exception e) {
-            // This won't happen in the mock setup
+            Assertions.fail("This should not happen in the mock setup.");
         }
 
         ProductBoot productBoot = new ProductBoot(

@@ -689,7 +689,7 @@ public class OperationRunner {
     private File createProtobufHeaderFile(String type, NameVersion projectNameVersion, String codeLocationName, File scanFile, ScassScanInitiationResult initResult, File outputDirectory) throws OperationException, IntegrationException {
         try {
             String projectGroupName = calculateProjectGroupOptions().getProjectGroup();
-            String correlationId = getCorrelationIdForScanType("BINARY");
+            String correlationId = getCorrelationIdForScanType(type);
 
             DetectProtobufBdioHeaderUtil detectProtobufBdioHeaderUtil = new DetectProtobufBdioHeaderUtil(
                     UUID.randomUUID().toString(),
@@ -1497,6 +1497,18 @@ public class OperationRunner {
      */
     public String getCorrelationIdForScanType(String scanType) {
         if (correlatedScanningDecision.isEnabled() && correlatedScanningDecision.isScanTypeSupported(scanType)) {
+            return detectRunId.getCorrelationId();
+        }
+        return null;
+    }
+
+    /**
+     * Gets the correlation ID if correlated scanning is enabled (regardless of specific scan type).
+     * Use this for operations that aggregate data across all supported scan types, like uploading scan counts.
+     * @return The correlation ID string if correlated scanning is enabled, null otherwise
+     */
+    public String getCorrelationIdIfEnabled() {
+        if (correlatedScanningDecision.isEnabled()) {
             return detectRunId.getCorrelationId();
         }
         return null;

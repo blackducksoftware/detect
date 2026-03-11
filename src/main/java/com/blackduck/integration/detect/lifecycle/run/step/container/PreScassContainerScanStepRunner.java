@@ -71,7 +71,7 @@ public class PreScassContainerScanStepRunner extends AbstractContainerScanStepRu
     }
 
     private UUID initiateScan() throws IOException, IntegrationException, OperationException {
-        String correlationId = operationRunner.getCorrelationIdForScanType("BINARY");
+        String correlationId = operationRunner.getCorrelationIdForScanType(SCAN_TYPE);
 
         DetectProtobufBdioHeaderUtil detectProtobufBdioHeaderUtil = new DetectProtobufBdioHeaderUtil(
             UUID.randomUUID().toString(),
