@@ -28,10 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Maven Resolver Detectable - Detects and resolves Maven project dependencies.
@@ -276,9 +273,9 @@ public class MavenResolverDetectable extends Detectable {
                 codeLocations.add(testCodeLocation);
             }
 
-            // PHASE 4.5: Download artifact JARs if enabled
-            if (mavenResolverOptions.isDownloadArtifactJarsEnabled()) {
-                logger.info("║       ARTIFACT JAR DOWNLOAD FEATURE: ENABLED               ║");
+            // PHASE 4.5: Download artifact JARs and check for shaded dependencies if enabled
+            if (mavenResolverOptions.isIncludeShadedDependenciesV2Enabled()) {
+                logger.info("DETECT SHADED DEPENDENCIES FEATURE: ENABLED");
                 logger.info("Starting JAR download phase for Maven dependencies...");
 
                 // Collect all Aether dependencies from both compile and test scopes
@@ -370,24 +367,29 @@ public class MavenResolverDetectable extends Detectable {
                     }
 
                     logger.info("Successfully integrated shaded dependencies into dependency graphs.");
+
+                    // Optional: Print the updated graphs for debugging
+                    logger.info("================= Updated Compile Dependency Graph with Shaded Dependencies =================");
+                    debugPrintBdioGraph(dependencyGraphCompile, dependencyGraphCompile.getRootDependencies(),0);
+                    logger.info("==============================================================================================");
                 } else {
                     logger.info("No shaded dependencies found to add to dependency graphs.");
                 }
 
                 logger.info("Shaded JAR inspection phase completed, continuing with code location generation...");
             } else {
-                logger.info("ARTIFACT JAR DOWNLOAD FEATURE: DISABLED");
+                logger.info("DETECT SHADED DEPENDENCIES FEATURE: DISABLED");
 
                 Path customRepositoryPath = mavenResolverOptions.getJarRepositoryPath();
                 if (customRepositoryPath != null) {
                     logger.warn("Configuration Issue Detected:");
                     logger.warn("  detect.maven.jar.repository.path is set to: {}", customRepositoryPath);
-                    logger.warn("  BUT detect.maven.download.artifact.jars is DISABLED (false)");
+                    logger.warn("  BUT detect.maven.include.shaded.dependenciesv2 is DISABLED (false)");
                     logger.warn("  The custom .m2 repository path will be IGNORED.");
-                    logger.warn("  To use the custom repository, enable JAR downloads:");
-                    logger.warn("  --detect.maven.download.artifact.jars=true");
+                    logger.warn("  To use the custom repository, enable the flag to include shaded dependencies for JAR downloads:");
+                    logger.warn("  --detect.maven.include.shaded.dependenciesv2=true");
                 } else {
-                    logger.debug("Skipping JAR downloads (feature not enabled via detect.maven.download.artifact.jars property)");
+                    logger.debug("Skipping JAR downloads (feature not enabled via detect.maven.include.shaded.dependenciesv2 property)");
                 }
             }
 
@@ -430,11 +432,11 @@ public class MavenResolverDetectable extends Detectable {
     }
 
     /**
-     * Adds discovered shaded dependencies to the dependency graph as children of the root.
+     * Adds discovered shaded dependencies to the dependency graph under their respective parent artifacts.
      *
      * <p>Converts DiscoveredDependency objects (containing GAV strings) into DependencyGraph nodes
-     * and adds them as direct children of the root project node. This ensures shaded dependencies
-     * appear in the final BDIO output for Black Duck analysis.
+     * and adds them as direct children of the JAR that actually shaded them. This ensures the
+     * vulnerability remediation path is accurate in the final BDIO output.
      *
      * @param graph The dependency graph to add shaded dependencies to
      * @param shadedDepsMap Map of parent artifact to list of shaded dependencies found in it
@@ -443,64 +445,58 @@ public class MavenResolverDetectable extends Detectable {
     private int addShadedDependenciesToGraph(
             DependencyGraph graph,
             Map<Artifact, List<DiscoveredDependency>> shadedDepsMap) {
-
         int addedCount = 0;
-
         for (Map.Entry<Artifact, List<DiscoveredDependency>> entry : shadedDepsMap.entrySet()) {
             Artifact parentArtifact = entry.getKey();
             List<DiscoveredDependency> shadedDeps = entry.getValue();
-
             String parentGav = parentArtifact.getGroupId() + ":" + parentArtifact.getArtifactId() + ":" + parentArtifact.getVersion();
             logger.debug("Processing {} shaded dependencies from parent: {}", shadedDeps.size(), parentGav);
-
+            // 1. RECONSTRUCT THE PARENT NODE:
+            // We create a Dependency object matching the exact ExternalId of the parent artifact
+            // that is already sitting somewhere in the BDIO graph.
+            ExternalId parentExternalId = externalIdFactory.createMavenExternalId(
+                    parentArtifact.getGroupId(),
+                    parentArtifact.getArtifactId(),
+                    parentArtifact.getVersion()
+            );
+            Dependency parentDependency = new Dependency(parentArtifact.getArtifactId(), parentArtifact.getVersion(), parentExternalId);
             for (DiscoveredDependency shadedDep : shadedDeps) {
                 try {
                     String identifier = shadedDep.getIdentifier();
-
                     if (identifier == null || identifier.isEmpty()) {
-                        logger.warn("Skipping shaded dependency with null/empty identifier from parent: {}", parentGav);
                         continue;
                     }
-
                     // Parse GAV from identifier (format: "groupId:artifactId:version")
                     String[] gavParts = identifier.split(":");
-
                     if (gavParts.length < 3) {
                         logger.warn("Skipping shaded dependency with invalid GAV format: {} (expected groupId:artifactId:version)", identifier);
                         continue;
                     }
-
                     String groupId = gavParts[0];
                     String artifactId = gavParts[1];
                     String version = gavParts[2];
-
                     // Skip if any part is empty or marked as UNKNOWN
                     if (groupId.isEmpty() || artifactId.isEmpty() || version.isEmpty() || "UNKNOWN".equals(version)) {
                         logger.warn("Skipping shaded dependency with incomplete GAV: {}", identifier);
                         continue;
                     }
-
-                    // Create ExternalId for the shaded dependency
-                    ExternalId externalId = externalIdFactory.createMavenExternalId(groupId, artifactId, version);
-
-                    // Create Dependency object (using BDIO Dependency)
-                    Dependency dependency = new Dependency(artifactId, version, externalId);
-
-                    // Add as child of root
-                    graph.addChildToRoot(dependency);
+                    // 2. CREATE THE SHADED CHILD NODE
+                    ExternalId shadedExternalId = externalIdFactory.createMavenExternalId(groupId, artifactId, version);
+                    Dependency shadedDependency = new Dependency(artifactId, version, shadedExternalId);
+                    // 3. THE FIX: Attach to the parent, NOT the root!
+                    // The underlying BasicDependencyGraph handles finding the parent node via the ExternalId
+                    // and drawing the edges correctly without us needing to traverse any trees.
+                    graph.addChildWithParent(shadedDependency, parentDependency);
                     addedCount++;
-
-                    logger.debug("  Added shaded dependency to graph: {} (detected via: {})",
-                        identifier, shadedDep.getDetectionSource());
-
+                    logger.debug("  Added shaded dependency to graph: {} (under parent: {})", identifier, parentGav);
                 } catch (Exception e) {
                     logger.warn("Failed to add shaded dependency to graph: {} - Error: {}",
-                        shadedDep.getIdentifier(), e.getMessage());
+                            shadedDep.getIdentifier(), e.getMessage());
                 }
             }
         }
-
         return addedCount;
+
     }
 
     /**
@@ -552,5 +548,17 @@ public class MavenResolverDetectable extends Detectable {
         return a1.getGroupId().equals(a2.getGroupId()) &&
                a1.getArtifactId().equals(a2.getArtifactId()) &&
                a1.getVersion().equals(a2.getVersion());
+    }
+
+    private void debugPrintBdioGraph(DependencyGraph graph, Set<Dependency> dependencies, int depth) {
+        if(dependencies.isEmpty()) {return;}
+
+        String indent = String.join("", Collections.nCopies(depth * 2, " "));
+        for(Dependency dep : dependencies) {
+            String gav = dep.getExternalId().getGroup() + ":" + dep.getName() + ":" + dep.getVersion();
+            logger.info("{}|-- {}", indent, gav);
+            Set<Dependency> children = graph.getChildrenForParent(dep);
+            debugPrintBdioGraph(graph, children, depth + 1);
+        }
     }
 }

@@ -1187,14 +1187,16 @@ public class DetectProperties {
                     .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
                     .build();
 
-    public static final BooleanProperty DETECT_MAVEN_DOWNLOAD_ARTIFACT_JARS =
-            BooleanProperty.newBuilder("detect.maven.download.artifact.jars", false)
-                    .setInfo("Download Artifact JARs", DetectPropertyFromVersion.VERSION_9_8_0)
+    public static final BooleanProperty DETECT_MAVEN_INCLUDE_SHADED_DEPENDENCIESV2 =
+            BooleanProperty.newBuilder("detect.maven.include.shaded.dependenciesv2", false)
+                    .setInfo("Include Shaded Dependencies V2", DetectPropertyFromVersion.VERSION_9_8_0)
                     .setHelp(
-                            "If set to true, Detect will download and cache artifact JAR files in addition to POMs during Maven dependency resolution.",
-                            "This is an opt-in feature that enables the Maven Resolver to download actual JAR artifacts from Maven repositories. " +
-                            "When enabled, the resolver will check local Maven repository (.m2) first, then download from Maven Central if needed. " +
-                            "Downloaded JARs are cached for subsequent runs. This feature may significantly increase scan time and disk usage for large projects."
+                            "If set to true, Detect will download artifact JAR files and scan them to detect shaded (embedded) dependencies, adding them to the BOM.",
+                            "This is an opt-in feature that enables the Maven Resolver to download actual JAR artifacts and inspect them for shaded (embedded) dependencies. " +
+                                    "When enabled, the resolver will check local Maven repository (.m2) first, then download from Maven Central if needed. " +
+                                    "Each downloaded JAR is scanned for embedded dependencies that are then added to the Bill of Materials. " +
+                                    "This feature may significantly increase scan time and disk usage for large projects."
+
                     )
                     .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
                     .build();
@@ -1203,7 +1205,7 @@ public class DetectProperties {
             NullablePathProperty.newBuilder("detect.maven.path.jar.repository")
                     .setInfo("Maven JAR Repository Path", DetectPropertyFromVersion.VERSION_9_8_0)
                     .setHelp(
-                            "Path to a custom local Maven repository (.m2) location to check for existing artifact JARs when detect.maven.download.artifact.jars is enabled.",
+                            "Path to a custom local Maven repository (.m2) location to check for existing artifact JARs when detect.maven.include.shaded.dependenciesv2 is enabled.",
                             "Specifies a custom location of the Maven local repository (.m2/repository) to CHECK for existing JARs before downloading from remote repositories. " +
                             "The path is automatically resolved to the .m2/repository root regardless of the format provided. " +
                             "Accepted formats: (1) '/custom/path/.m2/repository' — used as-is, " +

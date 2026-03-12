@@ -7,7 +7,7 @@ import java.nio.file.Path;
  *
  * <p>Only user-facing options are exposed here:
  * <ul>
- *   <li>{@code downloadArtifactJarsEnabled} — opt-in flag to download JARs</li>
+ *   <li>{@code includeShadedDependenciesV2Enabled} — opt-in flag to download JARs and detect shaded dependencies</li>
  *   <li>{@code jarRepositoryPath} — custom .m2 location to check for existing JARs</li>
  * </ul>
  *
@@ -15,11 +15,11 @@ import java.nio.file.Path;
  * {@link MavenDownloadConstants}.
  */
 public class MavenResolverOptions {
-    private final boolean downloadArtifactJarsEnabled;
+    private final boolean includeShadedDependenciesV2Enabled;
     private final Path jarRepositoryPath;
 
     /**
-     * @param downloadArtifactJarsEnabled whether to download artifact JARs
+     * @param includeShadedDependenciesV2Enabled whether to download artifact JARs and detect shaded dependencies
      * @param jarRepositoryPath optional path to a custom local Maven repository (.m2 location).
      *                          The path is resolved automatically by {@link M2RepositoryPathResolver}
      *                          at download time, so users can provide it in any of these forms:
@@ -29,13 +29,13 @@ public class MavenResolverOptions {
      *                            <li>{@code /custom/path/.m2/repository/org/example/...} (truncated)</li>
      *                          </ul>
      */
-    public MavenResolverOptions(boolean downloadArtifactJarsEnabled, Path jarRepositoryPath) {
-        this.downloadArtifactJarsEnabled = downloadArtifactJarsEnabled;
+    public MavenResolverOptions(boolean includeShadedDependenciesV2Enabled, Path jarRepositoryPath) {
+        this.includeShadedDependenciesV2Enabled = includeShadedDependenciesV2Enabled;
         this.jarRepositoryPath = jarRepositoryPath;
     }
 
-    public boolean isDownloadArtifactJarsEnabled() {
-        return downloadArtifactJarsEnabled;
+    public boolean isIncludeShadedDependenciesV2Enabled() {
+        return includeShadedDependenciesV2Enabled;
     }
 
     /**

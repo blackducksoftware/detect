@@ -216,10 +216,10 @@ public class DetectableOptionFactory {
      * @return MavenResolverOptions with user-facing settings
      */
     public MavenResolverOptions createMavenResolverOptions() {
-        Boolean downloadArtifactJars = detectConfiguration.getValue(DetectProperties.DETECT_MAVEN_DOWNLOAD_ARTIFACT_JARS);
+        Boolean includeShadedDependenciesV2 = detectConfiguration.getValue(DetectProperties.DETECT_MAVEN_INCLUDE_SHADED_DEPENDENCIESV2);
         Path jarRepositoryPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_MAVEN_JAR_REPOSITORY_PATH);
 
-        return new MavenResolverOptions(downloadArtifactJars, jarRepositoryPath);
+        return new MavenResolverOptions(includeShadedDependenciesV2, jarRepositoryPath);
     }
 
     public ConanCliOptions createConanCliOptions() {
