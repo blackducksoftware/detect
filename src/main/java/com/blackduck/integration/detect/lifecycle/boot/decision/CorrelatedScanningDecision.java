@@ -43,9 +43,13 @@ public class CorrelatedScanningDecision {
     }
 
     public static CorrelatedScanningDecision serverEnabled(List<String> supportedScanTypes) {
+        // Filter out BINARY and CONTAINER scan types - they are not supported in correlated mode
+        Set<String> filteredTypes = new HashSet<>(supportedScanTypes != null ? supportedScanTypes : Collections.emptyList());
+        filteredTypes.remove("BINARY");
+        filteredTypes.remove("CONTAINER");
         return new CorrelatedScanningDecision(
             true,
-            new HashSet<>(supportedScanTypes != null ? supportedScanTypes : Collections.emptyList()),
+            filteredTypes,
             DecisionSource.SERVER_ENABLED
         );
     }
@@ -75,10 +79,10 @@ public class CorrelatedScanningDecision {
     }
 
     private static Set<String> createAllScanTypes() {
+        // BINARY and CONTAINER scans are not supported in correlated mode
         Set<String> allTypes = new HashSet<>();
         allTypes.add("PACKAGE_MANAGER");
         allTypes.add("SIGNATURE");
-        allTypes.add("BINARY");
         return allTypes;
     }
 
