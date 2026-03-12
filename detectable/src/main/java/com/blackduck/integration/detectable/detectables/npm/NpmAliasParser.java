@@ -7,6 +7,8 @@ package com.blackduck.integration.detectable.detectables.npm;
  */
 public class NpmAliasParser {
 
+    private static final String NPM_ALIAS_PREFIX = "npm:";
+
     /**
      * Parses an npm alias string to extract the actual package name.
      * Npm aliases have the format: "npm:package@version" or "npm:@scope/package@version"
@@ -19,7 +21,7 @@ public class NpmAliasParser {
      * @return Array with [0] = package name, [1] = version specifier, or null if not an alias
      */
     public static String[] parseNpmAlias(String aliasValue) {
-        if (aliasValue == null || !aliasValue.startsWith("npm:")) {
+        if (aliasValue == null || !aliasValue.startsWith(NPM_ALIAS_PREFIX)) {
             return null;
         }
 
@@ -55,7 +57,7 @@ public class NpmAliasParser {
      * @return true if the value is an npm alias (starts with "npm:")
      */
     public static boolean isNpmAlias(String value) {
-        return value != null && value.startsWith("npm:");
+        return value != null && value.startsWith(NPM_ALIAS_PREFIX);
     }
 
     /**
