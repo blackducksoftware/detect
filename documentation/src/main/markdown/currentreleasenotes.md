@@ -38,4 +38,4 @@
 
 ### Dependency Updates
 
-* Released and upgraded Component Locator version 2.4.1
+* Released and upgraded Component Locator version 2.4.2
