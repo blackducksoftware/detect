@@ -21,5 +21,6 @@
 ### New features
 
 * Support for the Conda Tree–based detector has been added. For more details, see [Conda Tree](packagemgrs/conda.md#conda-tree-detector).
+* Ivy CLI Detector, leveraging the `ivy:dependencytree` Ant task to extract direct and transitive dependencies for Ant + Ivy projects. For further information, see [Ivy (Ant) support](packagemgrs/ivy.md).
 
 ### Resolved issues
