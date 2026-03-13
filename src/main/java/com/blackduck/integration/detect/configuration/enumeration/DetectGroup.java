@@ -51,6 +51,7 @@ public enum DetectGroup implements Group {
     HEX("hex", DETECTORS),
     LERNA("lerna", DETECTORS),
     MAVEN("maven", DETECTORS),
+    MESON("meson", DETECTORS),
     NPM("npm", DETECTORS),
     NUGET("nuget", DETECTORS),
     PACKAGIST("packagist", DETECTORS),
