@@ -39,4 +39,4 @@ To facilitate dependency tree generation, the `build.xml` must contain a target 
 If `ivy:dependencytree` is unavailable, [detect_product_short] will default to the Ivy Build Parse Detector, which extracts dependencies by parsing the `ivy.xml` file.
 
 * Parses `ivy.xml` for direct dependency declarations only. Transitive dependencies are not resolved.
-* Extracts the project's name and version from `build.xml`. If missing, it defers to values derived by git, from the project's directory, or defaults.
+* Extracts the project name and version from `build.xml`. If the project name or version is missing, the values are derived via Git from the project's directory or defaults.
