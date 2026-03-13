@@ -61,11 +61,12 @@ public class SetupToolsGraphTransformer {
 
     private void handleParsedDependencies(SetupToolsParsedResult parsedResult, DependencyGraph dependencyGraph) {
         List<PythonDependency> directDependencies = parsedResult.getDirectDependencies();
-        
+        Map<String, List<PythonDependency>> extrasTransitives = parsedResult.getExtrasTransitives();
+
         for (PythonDependency directDependency : directDependencies) {
             String name = directDependency.getName();
             String version = directDependency.getVersion();
-            
+
             Dependency currentDependency;
             if (StringUtils.isEmpty(version)) {
                 currentDependency = entryToDependency(name);
@@ -73,6 +74,20 @@ public class SetupToolsGraphTransformer {
                 currentDependency = entryToDependency(name, version);
             }
             dependencyGraph.addChildrenToRoot(currentDependency);
+
+            if (extrasTransitives.containsKey(name)) {
+                for (PythonDependency transitiveDep : extrasTransitives.get(name)) {
+                    String transName = transitiveDep.getName();
+                    String transVersion = transitiveDep.getVersion();
+                    Dependency transitiveDependency;
+                    if (StringUtils.isEmpty(transVersion)) {
+                        transitiveDependency = entryToDependency(transName);
+                    } else {
+                        transitiveDependency = entryToDependency(transName, transVersion);
+                    }
+                    dependencyGraph.addChildWithParent(transitiveDependency, currentDependency);
+                }
+            }
         }
     }
     
