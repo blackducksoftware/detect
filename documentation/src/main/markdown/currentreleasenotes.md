@@ -23,3 +23,5 @@
 * Support for the Conda Tree–based detector has been added. For more details, see [Conda Tree](packagemgrs/conda.md#conda-tree-detector).
 
 ### Resolved issues
+
+* (IDETECT-4980) Added an INFO-level log message to identify the exact project version selected as the clone source when `detect.clone.project.version.latest` is set to true.
