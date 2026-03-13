@@ -17,6 +17,8 @@ public class HttpFamilyProber {
     private final BazelCommandExecutor bazel;
     // Bazel environment mode (e.g., BZLMOD)
     private final BazelEnvironmentAnalyzer.Mode mode;
+    // Additional options for bazel query commands (from detect.bazel.query.options)
+    private final List<String> queryOptions;
 
     // Bazel rule kind patterns for queries
     private static final String LIBRARY_RULE_PATTERN = ".*library";
@@ -69,10 +71,12 @@ public class HttpFamilyProber {
      * Constructor for HttpFamilyProber
      * @param bazel Bazel command executor
      * @param mode Bazel environment mode
+     * @param queryOptions Additional options for bazel query commands (from detect.bazel.query.options)
      */
-    public HttpFamilyProber(BazelCommandExecutor bazel, BazelEnvironmentAnalyzer.Mode mode) {
+    public HttpFamilyProber(BazelCommandExecutor bazel, BazelEnvironmentAnalyzer.Mode mode, List<String> queryOptions) {
         this.bazel = bazel;
         this.mode = mode;
+        this.queryOptions = queryOptions != null ? queryOptions : Collections.emptyList();
     }
 
     /**
@@ -86,6 +90,7 @@ public class HttpFamilyProber {
     public boolean detect(String target) throws Exception {
         List<String> queryArgs = BazelQueryBuilder.query()
                 .kind(LIBRARY_RULE_PATTERN, BazelQueryBuilder.deps(target))
+                .withOptions(queryOptions)
                 .build();
 
         Optional<String> depsOut = bazel.executeToString(queryArgs);
@@ -235,6 +240,7 @@ public class HttpFamilyProber {
             // lightweight to use `query` + label_kind when checking whether a repository contains build targets.
             List<String> queryArgs = BazelQueryBuilder.query()
                 .kind(RULE_PATTERN, queryTarget)
+                .withOptions(queryOptions)
                 .withOutput(OutputFormat.LABEL_KIND)
                 .build();
 

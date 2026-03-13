@@ -8,8 +8,8 @@ public class Terms {
 
     public Terms() {
         termMap.put("solution_name", "Black Duck Detect");
-        termMap.put("script_repo_url_bash", "https://detect.blackduck.com/detect10.sh");
-        termMap.put("script_repo_url_powershell", "https://detect.blackduck.com/detect10.ps1");
+        termMap.put("script_repo_url_bash", "https://detect.blackduck.com/detect11.sh");
+        termMap.put("script_repo_url_powershell", "https://detect.blackduck.com/detect11.ps1");
         termMap.put("binary_repo_url_project", "https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/detect/");
         termMap.put("binary_repo_url_project_old", "https://repo.blackduck.com/bds-integrations-release/com/synopsys/integration/synopsys-detect/");
         termMap.put("binary_repo_ui_url_project", "https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/detect/");
