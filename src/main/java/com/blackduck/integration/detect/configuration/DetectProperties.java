@@ -21,6 +21,7 @@ import com.blackduck.integration.blackduck.codelocation.signaturescanner.command
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.SnippetMatching;
 import com.blackduck.integration.configuration.property.Properties;
 import com.blackduck.integration.configuration.property.Property;
+import com.blackduck.integration.configuration.util.ProductMajorVersion;
 import com.blackduck.integration.configuration.property.base.PassthroughProperty;
 import com.blackduck.integration.configuration.property.base.TypedProperty;
 import com.blackduck.integration.configuration.property.types.bool.BooleanProperty;
@@ -228,14 +229,14 @@ public class DetectProperties {
     public static final StringListProperty DETECT_BAZEL_CQUERY_OPTIONS =
         StringListProperty.newBuilder("detect.bazel.cquery.options", emptyList())
             .setInfo("Bazel cquery additional options", DetectPropertyFromVersion.VERSION_6_1_0)
-            .setHelp("A comma-separated list of additional options to pass to the bazel cquery command.")
+            .setHelp("A comma-separated list of additional options to pass to the bazel cquery command. e.g., --enable_bzlmod, --enable_workspace")
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();
 
     public static final StringListProperty DETECT_BAZEL_QUERY_OPTIONS =
         StringListProperty.newBuilder("detect.bazel.query.options", emptyList())
             .setInfo("Bazel query additional options", DetectPropertyFromVersion.VERSION_11_3_0)
-            .setHelp("A comma-separated list of additional options to pass to the bazel query command.")
+            .setHelp("A comma-separated list of additional options to pass to the bazel query command. e.g., --enable_bzlmod, --enable_workspace")
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();
 
@@ -257,10 +258,11 @@ public class DetectProperties {
             AllNoneEnumListProperty.newBuilder("detect.bazel.workspace.rules", AllNoneEnum.NONE, WorkspaceRule.class)
                     .setInfo("Bazel workspace rules", DetectPropertyFromVersion.VERSION_7_12_0)
                     .setHelp(
-                            "This property is deprecated and will be removed in the next major release. Please use detect.bazel.dependency.sources instead.",
-                            "By default Detect discovers Bazel dependencies using all of the supported Bazel workspace rules that it finds in the WORKSPACE file. Alternatively you can use this property to specify the list of Bazel workspace rules Detect should use. Setting this property (or letting it default) to NONE tells Detect to use supported rules that it finds in the WORKSPACE file."
+                            "By default Detect discovers Bazel dependencies using all supported Bazel workspace rules that it finds in the WORKSPACE file. Alternatively you can use this property to specify the list of Bazel workspace rules Detect should use.",
+                            "Setting this property (or letting it default) to NONE tells Detect to use supported rules that it finds in the WORKSPACE file."
                     )
                     .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
+                    .setDeprecated("This property has been deprecated. Please use detect.bazel.dependency.sources instead.", new ProductMajorVersion(12))
                     .build();
 
     public static final NullableStringProperty DETECT_BAZEL_MODE =
@@ -610,6 +612,13 @@ public class DetectProperties {
             .setHelp("The path to the conda executable.")
             .setGroups(DetectGroup.CONDA, DetectGroup.GLOBAL)
             .build();
+
+    public static final NullablePathProperty DETECT_CONDA_TREE_PATH =
+            NullablePathProperty.newBuilder("detect.conda.tree.path")
+                    .setInfo("Conda Tree Executable", DetectPropertyFromVersion.VERSION_11_4_0)
+                    .setHelp("The path to the conda tree executable.")
+                    .setGroups(DetectGroup.CONDA, DetectGroup.GLOBAL)
+                    .build();
 
     public static final NullablePathProperty DETECT_CARGO_PATH =
         NullablePathProperty.newBuilder("detect.cargo.path")

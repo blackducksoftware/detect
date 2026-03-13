@@ -1,4 +1,4 @@
-package com.blackduck.integration.detectable.detectables.conda;
+package com.blackduck.integration.detectable.detectables.conda.cli;
 
 import com.blackduck.integration.common.util.finder.FileFinder;
 import com.blackduck.integration.detectable.Detectable;
@@ -10,6 +10,7 @@ import com.blackduck.integration.detectable.detectable.annotation.DetectableInfo
 import com.blackduck.integration.detectable.detectable.exception.DetectableException;
 import com.blackduck.integration.detectable.detectable.executable.resolver.CondaResolver;
 import com.blackduck.integration.detectable.detectable.result.DetectableResult;
+import com.blackduck.integration.detectable.detectables.conda.CondaCliDetectableOptions;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 

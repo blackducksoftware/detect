@@ -1,4 +1,4 @@
-# Quack Patch (Beta)
+# Quack Patch (Early Access)
 
 An artificial intelligence tool that creates package manager code fixes to address security flaws identified by Black Duck SCA.
 
@@ -40,6 +40,7 @@ Using detect.sh script:
 ```
 ./detect.sh --blackduck.url=https://your-blackduck-url.com \
     --blackduck.api.token=your-api-token \
+    --detect.cleanup=false \
     --detect.blackduck.scan.mode=RAPID \
     --detect.quack.patch.enabled=true \
     --detect.llm.api.endpoint=https://your-llm-gateway.com \
@@ -52,6 +53,7 @@ Using detect jar distribution:
 ```
 java -jar detect.jar --blackduck.url=https://your-blackduck-url.com \
     --blackduck.api.token=your-api-token \
+    --detect.cleanup=false \
     --detect.blackduck.scan.mode=RAPID \
     --detect.quack.patch.enabled=true \
     --detect.llm.api.endpoint=https://your-llm-gateway.com \
