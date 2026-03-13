@@ -21,7 +21,6 @@
 ### New features
 
 * Support for the Conda Tree–based detector has been added. For more details, see [Conda Tree](packagemgrs/conda.md#conda-tree-detector).
+* The Setuptools Parse detector now resolves Python package extras (optional dependency groups) declared in `pyproject.toml`, `setup.cfg`, and `setup.py`. When a direct dependency references an extras group via bracket notation (e.g., `requests[security]`), the dependencies defined in the matching `[project.optional-dependencies]`, `[options.extras_require]`, or `extras_require` section are added as transitive children of the base package in the SBOM. See [Python support](packagemgrs/python.md) for details.
 
 ### Resolved issues
-
-* (IDETECT-4981) The Setuptools Parse detector now resolves Python package extras (optional dependency groups) declared in `pyproject.toml`, `setup.cfg`, and `setup.py`. When a direct dependency references an extras group via bracket notation (e.g., `requests[security]`), the dependencies defined in the matching `[project.optional-dependencies]`, `[options.extras_require]`, or `extras_require` section are added as transitive children of the base package in the SBOM. See [Python support](packagemgrs/python.md) for details.
