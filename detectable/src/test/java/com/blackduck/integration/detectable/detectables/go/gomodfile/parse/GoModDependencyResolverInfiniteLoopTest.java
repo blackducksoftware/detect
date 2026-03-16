@@ -9,16 +9,22 @@ import java.util.ArrayList;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Test to verify that the infinite loop bug is fixed.
- * This test verifies:
- * 1. The equals-hashCode contract is properly maintained in GoDependencyNode
- * 2. The visited nodes cache works correctly
- * 3. Cycle detection prevents infinite loops
+ * Unit tests for GoDependencyNode equality and hashCode behavior.
+ *
+ * These tests ensure:
+ * 1. The equals/hashCode contract is maintained for node identity
+ *    (used by caches and sets in the resolver).
+ * 2. Hash code stability when children are added or removed — this is
+ *    important because nodes may be used as keys in hash-based collections.
+ *
+ * Note: These are unit tests focused on node identity semantics. They do NOT
+ * perform network or end-to-end resolution and therefore do not prove the
+ * full resolver handles all cyclic graphs;
  */
-public class GoModDependencyResolverInfiniteLoopTest {
+class GoModDependencyResolverInfiniteLoopTest {
 
     @Test
-    public void testGoDependencyNode_EqualsHashCodeContract() {
+    void testGoDependencyNode_EqualsHashCodeContract() {
         // Create dependencies with same name/version but different children
         Dependency dep1 = createDependency("golang.org/x/text", "v0.3.7");
         Dependency dep2 = createDependency("golang.org/x/text", "v0.3.7");
@@ -26,32 +32,32 @@ public class GoModDependencyResolverInfiniteLoopTest {
         GoDependencyNode node1 = new GoDependencyNode(false, dep1, new ArrayList<>());
         GoDependencyNode node2 = new GoDependencyNode(false, dep2, new ArrayList<>());
 
-        // These should be equal
+        // These should be equal: equality is defined on the underlying Dependency
         assertEquals(node1, node2, "Nodes with same dependency should be equal");
         assertEquals(node1.hashCode(), node2.hashCode(),
                     "Equal nodes must have equal hash codes (equals-hashCode contract)");
 
-        // Add children to node1
+        // Add children to node1; this mutates traversal structure but should not
+        // affect equality/hashCode because identity is based on the dependency field only.
         Dependency childDep = createDependency("golang.org/x/tools", "v0.1.12");
         GoDependencyNode childNode = new GoDependencyNode(false, childDep, new ArrayList<>());
         node1.addChild(childNode);
 
         // Even with different children, nodes should still be equal and have same hash code
-        // because equals() only compares the dependency field
         assertEquals(node1, node2, "Nodes with same dependency but different children should be equal");
         assertEquals(node1.hashCode(), node2.hashCode(),
                     "Hash code must not change when children change (critical for HashMap)");
     }
 
     @Test
-    public void testGoDependencyNode_HashCodeStability() {
+    void testGoDependencyNode_HashCodeStability() {
         // Test that hash code doesn't change when children are added
         Dependency dep = createDependency("golang.org/x/text", "v0.3.7");
         GoDependencyNode node = new GoDependencyNode(false, dep, new ArrayList<>());
 
         int initialHashCode = node.hashCode();
 
-        // Add multiple children
+        // Add multiple children - this exercises mutation while ensuring stable hash
         for (int i = 0; i < 5; i++) {
             Dependency childDep = createDependency("test/module" + i, "v1.0.0");
             GoDependencyNode childNode = new GoDependencyNode(false, childDep, new ArrayList<>());
@@ -65,7 +71,7 @@ public class GoModDependencyResolverInfiniteLoopTest {
     }
 
     @Test
-    public void testGoDependencyNode_DifferentDependenciesNotEqual() {
+    void testGoDependencyNode_DifferentDependenciesNotEqual() {
         Dependency dep1 = createDependency("golang.org/x/text", "v0.3.7");
         Dependency dep2 = createDependency("golang.org/x/text", "v0.4.0");
         Dependency dep3 = createDependency("golang.org/x/tools", "v0.3.7");
@@ -78,6 +84,8 @@ public class GoModDependencyResolverInfiniteLoopTest {
         assertNotEquals(node1, node3, "Nodes with different names should not be equal");
         assertNotEquals(node2, node3, "Nodes with different dependencies should not be equal");
 
+        // These assertions are 'ideal' (different dependencies likely produce different hash codes),
+        // but we keep them rather than making a hard guarantee about absence of collisions.
         assertNotEquals(node1.hashCode(), node2.hashCode(),
                        "Different dependencies should have different hash codes (ideally)");
         assertNotEquals(node1.hashCode(), node3.hashCode(),
@@ -85,7 +93,8 @@ public class GoModDependencyResolverInfiniteLoopTest {
     }
 
     @Test
-    public void testGoDependencyNode_NullDependency() {
+    void testGoDependencyNode_NullDependency() {
+        // Nodes representing a root or placeholder with null dependency should still be equal
         GoDependencyNode node1 = new GoDependencyNode(true, null, new ArrayList<>());
         GoDependencyNode node2 = new GoDependencyNode(true, null, new ArrayList<>());
 
@@ -98,6 +107,3 @@ public class GoModDependencyResolverInfiniteLoopTest {
         return new Dependency(name, version, null, null);
     }
 }
-
-
-
