@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -1012,7 +1013,7 @@ public class OperationRunner {
         );
     }
 
-    public final CodeLocationWaitData calculateCodeLocationWaitData(List<WaitableCodeLocationData> codeLocationCreationDatas) throws OperationException {
+    public final CodeLocationWaitData calculateCodeLocationWaitData(Queue<WaitableCodeLocationData> codeLocationCreationDatas) throws OperationException {
         return auditLog.namedInternal("Calculate Code Location Wait Data", () -> new CodeLocationWaitCalculator().calculateWaitData(codeLocationCreationDatas));
     }
 
@@ -1827,5 +1828,9 @@ public class OperationRunner {
             initResult.setMd5Hash(encoder.encodeToString(md5Bytes));
         }
         logger.debug("Finished MD5 file computation.");
+    }
+
+    public int maxParallelProcessors() {
+        return detectConfigurationFactory.findParallelProcessors();
     }
 }

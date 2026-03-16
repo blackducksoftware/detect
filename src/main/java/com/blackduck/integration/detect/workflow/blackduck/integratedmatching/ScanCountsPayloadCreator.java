@@ -3,6 +3,7 @@ package com.blackduck.integration.detect.workflow.blackduck.integratedmatching;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -13,7 +14,7 @@ import com.blackduck.integration.detect.workflow.blackduck.integratedmatching.mo
 
 public class ScanCountsPayloadCreator {
 
-    public ScanCountsPayload create(List<WaitableCodeLocationData> createdCodelocations, Map<DetectTool, Integer> additionalCounts) {
+    public ScanCountsPayload create(Queue<WaitableCodeLocationData> createdCodelocations, Map<DetectTool, Integer> additionalCounts) {
         Map<DetectTool, Integer> countsByTool = collectCountsByTool(createdCodelocations, additionalCounts);
         return createPayloadFromCountsByTool(countsByTool);
     }
@@ -30,7 +31,7 @@ public class ScanCountsPayloadCreator {
     }
 
     @NotNull
-    private Map<DetectTool, Integer> collectCountsByTool(final List<WaitableCodeLocationData> createdCodelocations, Map<DetectTool, Integer> additionalCounts) {
+    private Map<DetectTool, Integer> collectCountsByTool(final Queue<WaitableCodeLocationData> createdCodelocations, Map<DetectTool, Integer> additionalCounts) {
         Map<DetectTool, Integer> countsByTool = new HashMap<>(additionalCounts);
         for (WaitableCodeLocationData waitableCodeLocationData : createdCodelocations) {
             int oldCount = countsByTool.getOrDefault(waitableCodeLocationData.getDetectTool(), 0);
