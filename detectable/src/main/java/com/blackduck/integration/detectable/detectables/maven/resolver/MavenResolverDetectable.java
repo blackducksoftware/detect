@@ -601,6 +601,10 @@ public class MavenResolverDetectable extends Detectable {
                             shadedPomFile, shadedProject, localRepoPath, MAVEN_SCOPE_COMPILE);
                     logger.debug("Resolved Aether tree for shaded dependency: {}", identifier);
 
+                    //TODO : FIND SHADED DEPENDENCIES OF THESE SHADED DEPENDENCIES
+                    //Aether only resolves unshaded dependencies, leaving shaded deps as gaps
+                    //in the tree which may result in false negatives for vulnerabilities.
+
                     // ==========================================
                     // STEP 4: Convert to isolated BDIO DependencyGraph
                     // ==========================================
@@ -631,15 +635,13 @@ public class MavenResolverDetectable extends Detectable {
                     // Now graft ss's transitive dependencies under ss (not under X)
                     // The isolatedShadedGraph's root dependencies are ss's direct dependencies
                     //
-                    // TODO: INTERSECTION LOGIC (Future Enhancement)
-                    // Before grafting, we should compute the intersection of isolatedShadedGraph and mainGraph.
-                    // If a dependency node (identified by GAV) already exists in mainGraph, we should:
-                    //   a) Skip adding it again to avoid duplicate nodes in BDIO output
-                    //   b) Or merge the sub-trees if the existing node has fewer transitive deps
-                    // This prevents duplicate vulnerability reports for the same component when it appears
-                    // both as a regular dependency and inside a shaded JAR.
-                    // Implementation: Iterate isolatedShadedGraph nodes, check mainGraph.hasDependency(externalId),
-                    // and filter out duplicates before calling graftSubGraph().
+                    // TODO: [STEP 4 - Graph Intersection]
+                    // Perform a logical-to-physical intersection filter before grafting.
+                    // The current sub-graph represents an "ideal" Aether tree, but the actual fat JAR
+                    // may have physically excluded certain transitives via the Maven Shade Plugin's
+                    // '<excludes>' configuration. To prevent false positives, we must cross-reference
+                    // the nodes in 'isolatedShadedGraph' against the physical 'shadedDepsMap' and
+                    // only graft nodes that are physically present in the binary.
                     int nodesAdded = graftSubGraph(isolatedShadedGraph, mainGraph, shadedDependencyNode);
                     graftedNodeCount += nodesAdded;
                     logger.debug("Grafted {} transitive nodes from shaded dependency {} under {}",
