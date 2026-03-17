@@ -33,8 +33,6 @@ public class GoModDependencyResolver {
     private final GoModFileParser goModFileParser = new GoModFileParser();
     private GoModFileHelpers goModFileHelpers;
 
-    // Maximum depth for recursive dependency resolution to prevent infinite loops
-    private static final int MAX_RECURSION_DEPTH = 100;
 
     // Cache resolved dependencies by module@version key to prevent re-fetching from proxy
     // Key format: "moduleName@version"
@@ -44,8 +42,6 @@ public class GoModDependencyResolver {
     // Key format: "moduleName@version"
     private final Set<String> processedInTraversal = new HashSet<>();
 
-    // Track recursion depth for each path to prevent stack overflow
-    private int currentDepth = 0;
 
     public GoModDependencyResolver(GoModFileDetectableOptions options) {
         this.goProxyModuleResolver = new GoProxyModuleResolver(options);
@@ -160,36 +156,24 @@ public class GoModDependencyResolver {
     }
 
     private GoDependencyNode computeDependencyTree(GoDependencyNode node, List<GoDependencyNode> rootTransitives, ExternalIdFactory externalIdFactory) {
-        // Check recursion depth to prevent stack overflow
-        if (currentDepth >= MAX_RECURSION_DEPTH) {
-            logger.warn("Maximum recursion depth of {} reached. Stopping further dependency resolution to prevent infinite loop. Current node: {}",
-                       MAX_RECURSION_DEPTH, node);
-            return node;
-        }
+        if (!node.isRootNode()) {
+            String moduleKey = getModuleKey(node.getDependency());
 
-        currentDepth++;
-        try {
-            if (!node.isRootNode()) {
-                String moduleKey = getModuleKey(node.getDependency());
-
-                // Check if we've already fully processed this module in the current traversal
-                if (processedInTraversal.contains(moduleKey)) {
-                    logger.debug("Skipping already processed module in traversal: {}", moduleKey);
-                    return node;
-                }
-
-                // Mark this module as being processed
-                processedInTraversal.add(moduleKey);
-
-                // Process the node (fetch children or reuse cached)
-                processNonRootNode(node);
+            // Check if we've already fully processed this module in the current traversal
+            if (processedInTraversal.contains(moduleKey)) {
+                logger.debug("Skipping already processed module in traversal: {}", moduleKey);
+                return node;
             }
 
-            processChildNodes(node, rootTransitives, externalIdFactory);
-            return node;
-        } finally {
-            currentDepth--;
+            // Mark this module as being processed
+            processedInTraversal.add(moduleKey);
+
+            // Process the node (fetch children or reuse cached)
+            processNonRootNode(node);
         }
+
+        processChildNodes(node, rootTransitives, externalIdFactory);
+        return node;
     }
 
     private void processNonRootNode(GoDependencyNode node) {
@@ -223,7 +207,7 @@ public class GoModDependencyResolver {
 
     private List<GoDependencyNode> fetchAndParseChildren(GoDependencyNode node) {
         String moduleKey = getModuleKey(node.getDependency());
-        logger.debug("Fetching and parsing children for module: {} (depth: {})", moduleKey, currentDepth);
+        logger.debug("Fetching and parsing children for module: {}", moduleKey);
 
         String goModFileContent = goProxyModuleResolver.getGoModFileOfTheDependency(node.getDependency());
         if (goModFileContent == null) {
