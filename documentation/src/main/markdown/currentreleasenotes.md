@@ -20,6 +20,7 @@
 
 ### New features
 
-* Support for the Conda Tree–based detector has been added. For more details, see [Conda Tree](packagemgrs/conda.md#conda-tree-detector). 
+* Support for the Conda Tree–based detector has been added. For more details, see [Conda Tree](packagemgrs/conda.md#conda-tree-detector).
+* Support for pnpm is now extend to 10.32.1.
 
 ### Resolved issues
