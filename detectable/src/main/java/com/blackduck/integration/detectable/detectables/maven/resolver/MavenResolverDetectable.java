@@ -1,6 +1,8 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver;
 
 import com.blackduck.integration.bdio.graph.DependencyGraph;
+import com.blackduck.integration.detectable.detectables.maven.resolver.model.JavaCoordinates;
+import com.blackduck.integration.detectable.detectables.maven.resolver.model.JavaRepository;
 import com.blackduck.integration.bdio.model.Forge;
 import com.blackduck.integration.bdio.model.dependency.Dependency;
 import com.blackduck.integration.bdio.model.externalid.ExternalId;
@@ -288,7 +290,7 @@ public class MavenResolverDetectable extends Detectable {
 
                 int compileCount = aetherDependencies.size();
                 if (includeTestScope && collectResultTest != null && collectResultTest.getRoot() != null) {
-                    extractAetherDependenciesFromNode(collectResultTest.getRoot(), aetherDependencies);
+//                    extractAetherDependenciesFromNode(collectResultTest.getRoot(), aetherDependencies);
                     logger.debug("Extracted {} additional dependencies from test scope", aetherDependencies.size() - compileCount);
                 }
 
@@ -354,19 +356,55 @@ public class MavenResolverDetectable extends Detectable {
                 logger.info("Shaded dependency inspection phase completed. Found {} JARs with shaded dependencies.",
                         shadedDependenciesMap.size());
 
-                // PHASE 4.7: Add shaded dependencies to dependency graphs
+                // PHASE 4.7: Add shaded dependencies to dependency graphs by resolving their sub-trees and attaching them under the correct parent artifact
+                // ========================================================================================
+                // This phase performs the following steps for each shaded dependency discovered in Phase 4.6:
+                //   1. Download the POM file for the shaded dependency from Maven repositories
+                //   2. Build a MavenProject model (resolving parent POMs, BOMs, property inheritance)
+                //   3. Resolve the full Aether dependency tree for the shaded dependency
+                //   4. Convert the Aether tree to an isolated BDIO DependencyGraph
+                //   5. Graft (attach) the isolated graph onto the main graph under the parent JAR
+                //
+                // The result is that vulnerabilities in transitive dependencies of shaded JARs
+                // are correctly attributed with an accurate remediation path in the BDIO output.
+                // ========================================================================================
                 if (!shadedDependenciesMap.isEmpty()) {
-                    logger.info("Adding shaded dependencies to dependency graphs...");
+                    logger.info("Resolving sub-trees and grafting shaded dependencies into main dependency graphs...");
 
-                    int addedToCompile = addShadedDependenciesToGraph(dependencyGraphCompile, shadedDependenciesMap);
-                    logger.info("Added {} shaded dependencies to compile dependency graph.", addedToCompile);
+                    // We pass the root POM's repositories so the downloader knows about any custom repos defined in the root
+                    List<JavaRepository> rootRepositories = mavenProject.getRepositories() != null ? mavenProject.getRepositories() : new ArrayList<>();
 
+                    // Process compile scope dependency graph
+                    int addedToCompile = addShadedDependenciesToGraph(
+                            dependencyGraphCompile,
+                            shadedDependenciesMap,
+                            projectBuilder,
+                            dependencyResolver,
+                            mavenGraphParser,
+                            mavenGraphTransformer,
+                            downloadDir.toFile(),
+                            localRepoPath.toFile(),
+                            rootRepositories
+                    );
+                    logger.info("Grafted {} sub-graph nodes into compile dependency graph.", addedToCompile);
+
+                    // Process test scope dependency graph if enabled
                     if (includeTestScope && dependencyGraphTest != null) {
-                        int addedToTest = addShadedDependenciesToGraph(dependencyGraphTest, shadedDependenciesMap);
-                        logger.info("Added {} shaded dependencies to test dependency graph.", addedToTest);
+                        int addedToTest = addShadedDependenciesToGraph(
+                                dependencyGraphTest,
+                                shadedDependenciesMap,
+                                projectBuilder,
+                                dependencyResolver,
+                                mavenGraphParser,
+                                mavenGraphTransformer,
+                                downloadDir.toFile(),
+                                localRepoPath.toFile(),
+                                rootRepositories
+                        );
+                        logger.info("Grafted {} sub-graph nodes into test dependency graph.", addedToTest);
                     }
 
-                    logger.info("Successfully integrated shaded dependencies into dependency graphs.");
+                    logger.info("Successfully integrated shaded dependency sub-trees.");
 
                     // Optional: Print the updated graphs for debugging
                     logger.info("================= Updated Compile Dependency Graph with Shaded Dependencies =================");
@@ -442,60 +480,316 @@ public class MavenResolverDetectable extends Detectable {
      * @param shadedDepsMap Map of parent artifact to list of shaded dependencies found in it
      * @return The number of shaded dependencies successfully added to the graph
      */
+    /**
+
+     * Resolves the full Aether dependency tree for each discovered shaded dependency
+
+     * and grafts the resulting sub-graph onto the parent JAR in the main BDIO graph.
+
+     */
+
     private int addShadedDependenciesToGraph(
-            DependencyGraph graph,
-            Map<Artifact, List<DiscoveredDependency>> shadedDepsMap) {
-        int addedCount = 0;
+            DependencyGraph mainGraph,
+            Map<Artifact, List<DiscoveredDependency>> shadedDepsMap,
+            ProjectBuilder projectBuilder,
+            MavenDependencyResolver dependencyResolver,
+            MavenGraphParser graphParser,
+            MavenGraphTransformer graphTransformer,
+            File downloadDir,
+            File localRepoPath,
+            List<JavaRepository> rootRepositories) {
+
+        int graftedNodeCount = 0;
+
+        // Iterate through each parent artifact that contains shaded dependencies
         for (Map.Entry<Artifact, List<DiscoveredDependency>> entry : shadedDepsMap.entrySet()) {
             Artifact parentArtifact = entry.getKey();
             List<DiscoveredDependency> shadedDeps = entry.getValue();
-            String parentGav = parentArtifact.getGroupId() + ":" + parentArtifact.getArtifactId() + ":" + parentArtifact.getVersion();
-            logger.debug("Processing {} shaded dependencies from parent: {}", shadedDeps.size(), parentGav);
-            // 1. RECONSTRUCT THE PARENT NODE:
-            // We create a Dependency object matching the exact ExternalId of the parent artifact
-            // that is already sitting somewhere in the BDIO graph.
-            ExternalId parentExternalId = externalIdFactory.createMavenExternalId(
+
+            logger.debug("Processing {} shaded dependencies for parent artifact: {}:{}:{}",
+                    shadedDeps.size(),
                     parentArtifact.getGroupId(),
                     parentArtifact.getArtifactId(),
-                    parentArtifact.getVersion()
-            );
-            Dependency parentDependency = new Dependency(parentArtifact.getArtifactId(), parentArtifact.getVersion(), parentExternalId);
+                    parentArtifact.getVersion());
+
+            // Look up the EXISTING parent node in the main graph by ExternalId
+            // This is critical: we must use the actual node from the graph, not a new Dependency object,
+            // otherwise addChildWithParent won't find the parent and shaded deps will be added at root level
+            ExternalId parentExternalId = externalIdFactory.createMavenExternalId(
+                    parentArtifact.getGroupId(), parentArtifact.getArtifactId(), parentArtifact.getVersion());
+            Dependency parentDependency = mainGraph.getDependency(parentExternalId);
+
+            // If the parent artifact is not found in the graph, skip processing its shaded dependencies
+            // This can happen if the parent artifact was excluded or filtered out during dependency resolution
+            if (parentDependency == null) {
+                logger.warn("Parent artifact {}:{}:{} not found in dependency graph. Skipping shaded dependencies for this artifact.",
+                        parentArtifact.getGroupId(), parentArtifact.getArtifactId(), parentArtifact.getVersion());
+                continue;
+            }
+
+            // Process each shaded dependency found inside this parent JAR
             for (DiscoveredDependency shadedDep : shadedDeps) {
                 try {
+                    // Validate the identifier is present
                     String identifier = shadedDep.getIdentifier();
                     if (identifier == null || identifier.isEmpty()) {
+                        logger.warn("Skipping shaded dependency with null/empty identifier in parent: {}",
+                                parentArtifact.getArtifactId());
                         continue;
                     }
-                    // Parse GAV from identifier (format: "groupId:artifactId:version")
+
+                    // Parse GAV coordinates from identifier (format: groupId:artifactId:version)
                     String[] gavParts = identifier.split(":");
                     if (gavParts.length < 3) {
-                        logger.warn("Skipping shaded dependency with invalid GAV format: {} (expected groupId:artifactId:version)", identifier);
+                        logger.warn("Skipping shaded dependency with invalid GAV format: {}", identifier);
                         continue;
                     }
+
                     String groupId = gavParts[0];
                     String artifactId = gavParts[1];
                     String version = gavParts[2];
-                    // Skip if any part is empty or marked as UNKNOWN
+
+                    // Skip dependencies with incomplete or unknown coordinates
                     if (groupId.isEmpty() || artifactId.isEmpty() || version.isEmpty() || "UNKNOWN".equals(version)) {
-                        logger.warn("Skipping shaded dependency with incomplete GAV: {}", identifier);
+                        logger.debug("Skipping shaded dependency with incomplete coordinates: {}", identifier);
                         continue;
                     }
-                    // 2. CREATE THE SHADED CHILD NODE
-                    ExternalId shadedExternalId = externalIdFactory.createMavenExternalId(groupId, artifactId, version);
-                    Dependency shadedDependency = new Dependency(artifactId, version, shadedExternalId);
-                    // 3. THE FIX: Attach to the parent, NOT the root!
-                    // The underlying BasicDependencyGraph handles finding the parent node via the ExternalId
-                    // and drawing the edges correctly without us needing to traverse any trees.
-                    graph.addChildWithParent(shadedDependency, parentDependency);
-                    addedCount++;
-                    logger.debug("  Added shaded dependency to graph: {} (under parent: {})", identifier, parentGav);
+
+                    logger.debug("Resolving sub-tree for shaded dependency: {}", identifier);
+
+                    // ==========================================
+                    // STEP 1: Download the POM for the shaded dependency
+                    // ==========================================
+                    // NOTE (Edge Case): If the POM is not in Maven Central, the download will fail.
+                    // This frequently occurs in air-gapped environments or when artifacts are hosted on
+                    // custom Nexus/Artifactory mirrors that are NOT declared in the root POM's <repositories> block.
+                    // Future enhancement: Add a fallback to attach the shaded dependency as a flat, single node
+                    // if the POM download fails, ensuring we don't lose the vulnerability finding entirely.
+                    JavaCoordinates coords = new JavaCoordinates(groupId, artifactId, version, "pom");
+                    MavenDownloader downloader = new MavenDownloader(rootRepositories, downloadDir.toPath());
+                    File shadedPomFile = downloader.downloadPom(coords);
+
+                    // Handle POM download failure with fallback behavior
+                    if (shadedPomFile == null || !shadedPomFile.exists()) {
+                        logger.warn("Could not download POM for shaded dependency {}. Sub-tree resolution aborted.", identifier);
+                        // Fallback: Attach just the single node to prevent data loss
+                        // This ensures the vulnerability is still reported, even without transitive dependencies
+                        ExternalId fallbackId = externalIdFactory.createMavenExternalId(groupId, artifactId, version);
+                        mainGraph.addChildWithParent(new Dependency(artifactId, version, fallbackId), parentDependency);
+                        graftedNodeCount++;
+                        logger.info("Added fallback single node for shaded dependency: {} (parent: {})",
+                                identifier, parentArtifact.getArtifactId());
+                        continue;
+                    }
+
+                    logger.debug("Successfully downloaded POM for shaded dependency: {}", identifier);
+
+                    // ==========================================
+                    // STEP 2: Build the MavenProject model
+                    // ==========================================
+                    // This resolves properties, BOMs, and Parent POMs to get the complete dependency list
+                    com.blackduck.integration.detectable.detectables.maven.resolver.MavenProject shadedProject =
+                            projectBuilder.buildProject(shadedPomFile);
+                    logger.debug("Built MavenProject for shaded dependency: {} with {} direct dependencies",
+                            identifier, shadedProject.getDependencies().size());
+
+                    // ==========================================
+                    // STEP 3: Resolve the Aether dependency tree
+                    // ==========================================
+                    // This performs full transitive resolution using Eclipse Aether
+                    CollectResult collectResult = dependencyResolver.resolveDependencies(
+                            shadedPomFile, shadedProject, localRepoPath, MAVEN_SCOPE_COMPILE);
+                    logger.debug("Resolved Aether tree for shaded dependency: {}", identifier);
+
+                    // ==========================================
+                    // STEP 4: Convert to isolated BDIO DependencyGraph
+                    // ==========================================
+                    MavenParseResult parseResult = graphParser.parse(collectResult);
+                    DependencyGraph isolatedShadedGraph = graphTransformer.transform(parseResult);
+                    logger.debug("Transformed shaded dependency {} to BDIO graph with {} root dependencies",
+                            identifier, isolatedShadedGraph.getRootDependencies().size());
+
+                    // ==========================================
+                    // STEP 5: Graft the shaded dependency and its sub-tree onto the main graph
+                    // ==========================================
+                    // IMPORTANT: We must first add the shaded dependency ITSELF (ss) as a child of the parent (X),
+                    // then graft ss's transitive dependencies under ss.
+                    //
+                    // Correct structure:   X -> ss -> ss-transitive-1
+                    // Wrong structure:     X -> ss-transitive-1 (missing ss node!)
+                    //
+                    // The isolatedShadedGraph.getRootDependencies() returns ss's dependencies, NOT ss itself.
+                    // So we need to explicitly create and add the ss node first.
+
+                    // Create the shaded dependency node (ss) and add it under the parent (X)
+                    ExternalId shadedDepExternalId = externalIdFactory.createMavenExternalId(groupId, artifactId, version);
+                    Dependency shadedDependencyNode = new Dependency(artifactId, version, shadedDepExternalId);
+                    mainGraph.addChildWithParent(shadedDependencyNode, parentDependency);
+                    graftedNodeCount++;
+                    logger.debug("Added shaded dependency node {} under parent {}", identifier, parentArtifact.getArtifactId());
+
+                    // Now graft ss's transitive dependencies under ss (not under X)
+                    // The isolatedShadedGraph's root dependencies are ss's direct dependencies
+                    //
+                    // TODO: INTERSECTION LOGIC (Future Enhancement)
+                    // Before grafting, we should compute the intersection of isolatedShadedGraph and mainGraph.
+                    // If a dependency node (identified by GAV) already exists in mainGraph, we should:
+                    //   a) Skip adding it again to avoid duplicate nodes in BDIO output
+                    //   b) Or merge the sub-trees if the existing node has fewer transitive deps
+                    // This prevents duplicate vulnerability reports for the same component when it appears
+                    // both as a regular dependency and inside a shaded JAR.
+                    // Implementation: Iterate isolatedShadedGraph nodes, check mainGraph.hasDependency(externalId),
+                    // and filter out duplicates before calling graftSubGraph().
+                    int nodesAdded = graftSubGraph(isolatedShadedGraph, mainGraph, shadedDependencyNode);
+                    graftedNodeCount += nodesAdded;
+                    logger.debug("Grafted {} transitive nodes from shaded dependency {} under {}",
+                            nodesAdded, identifier, identifier);
+
                 } catch (Exception e) {
-                    logger.warn("Failed to add shaded dependency to graph: {} - Error: {}",
+                    logger.error("Failed to resolve and graft sub-tree for shaded dependency: {} - Error: {}",
                             shadedDep.getIdentifier(), e.getMessage());
+                    logger.debug("Stack trace for shaded dependency resolution failure:", e);
                 }
             }
         }
-        return addedCount;
+
+        logger.debug("Total grafted node count for this graph: {}", graftedNodeCount);
+        return graftedNodeCount;
+    }
+
+    /**
+     * Grafts an isolated sub-graph onto a destination graph under a specified parent node.
+     *
+     * <p>This method performs the following operations:
+     * <ol>
+     *   <li>Takes the root dependencies of the source (isolated) graph</li>
+     *   <li>Attaches each root as a child of the specified parent in the destination graph</li>
+     *   <li>Recursively copies all child relationships from the source to the destination</li>
+     * </ol>
+     *
+     * <p><strong>Example:</strong>
+     * <pre>
+     * Source Graph (isolated shaded dependency):
+     *   root-dep-A
+     *     └── child-dep-B
+     *           └── child-dep-C
+     *
+     * Destination Graph (main BDIO graph):
+     *   parent-jar (the JAR containing shaded deps)
+     *
+     * Result after grafting:
+     *   parent-jar
+     *     └── root-dep-A
+     *           └── child-dep-B
+     *                 └── child-dep-C
+     * </pre>
+     *
+     * @param sourceGraph The isolated sub-graph to graft (source)
+     * @param destGraph The main dependency graph to graft onto (destination)
+     * @param destParent The parent node in the destination graph under which to attach source roots
+     * @return The total number of nodes added to the destination graph
+     */
+    private int graftSubGraph(DependencyGraph sourceGraph, DependencyGraph destGraph, Dependency destParent) {
+        int count = 0;
+
+        // Step A: Get the root dependencies of the isolated graph
+        // These are the top-level dependencies that will be attached to destParent
+        Set<Dependency> sourceRoots = sourceGraph.getRootDependencies();
+        if (sourceRoots == null || sourceRoots.isEmpty()) {
+            logger.debug("Source graph has no root dependencies to graft");
+            return count;
+        }
+
+        logger.debug("Grafting {} root dependencies under parent: {}", sourceRoots.size(), destParent.getName());
+
+        // Initialize visited set for cycle detection during graph traversal
+        Set<ExternalId> visitedNodes = new HashSet<>();
+
+        // Step B: Attach each source root as a child of the destination parent
+        for (Dependency sourceRoot : sourceRoots) {
+            destGraph.addChildWithParent(sourceRoot, destParent);
+            count++;
+
+            // Step C: Recursively copy all child relationships from source to destination
+            // Pass visitedNodes to detect and handle cycles gracefully
+            count += copyGraphEdges(sourceGraph, destGraph, sourceRoot, visitedNodes);
+        }
+
+        return count;
+    }
+
+    /**
+     * Recursively copies parent-child relationships from a source graph to a destination graph.
+     *
+     * <p>This method traverses the source graph starting from a given parent node and
+     * replicates all child relationships in the destination graph. The traversal is
+     * depth-first, ensuring that the entire sub-tree is copied.
+     *
+     * <p><strong>Cycle Detection:</strong> This method tracks visited nodes to detect cycles.
+     * If a cycle is detected (a node that has already been visited in the current traversal path),
+     * the method logs a warning and skips that branch to prevent infinite recursion.
+     * While Maven's dependency resolution naturally prevents cycles, malformed POMs or
+     * edge cases in shaded JARs could theoretically introduce them.
+     *
+     * @param sourceGraph The source graph to copy relationships from
+     * @param destGraph The destination graph to copy relationships to
+     * @param currentParent The current parent node being processed
+     * @param visitedNodes Set of already visited node ExternalIds for cycle detection
+     * @return The number of child nodes copied
+     */
+    private int copyGraphEdges(DependencyGraph sourceGraph, DependencyGraph destGraph, Dependency currentParent, Set<ExternalId> visitedNodes) {
+        int count = 0;
+
+        // Cycle detection: Check if we've already visited this node in the current traversal
+        ExternalId currentId = currentParent.getExternalId();
+        if (currentId != null && visitedNodes.contains(currentId)) {
+            // Cycle detected - log warning and skip this branch to prevent infinite recursion
+            logger.warn("Cycle detected in dependency graph at node: {}:{}:{}. Skipping to prevent infinite recursion.",
+                    currentId.getGroup(), currentId.getName(), currentId.getVersion());
+            return count;
+        }
+
+        // Mark current node as visited for cycle detection
+        if (currentId != null) {
+            visitedNodes.add(currentId);
+        }
+
+        try {
+            // Get all children of the current parent in the source graph
+            Set<Dependency> children = sourceGraph.getChildrenForParent(currentParent);
+
+            // Base case: no children to process
+            if (children == null || children.isEmpty()) {
+                return count;
+            }
+
+            // Copy each child relationship and recurse
+            for (Dependency child : children) {
+                // Check for cycle before processing child
+                ExternalId childId = child.getExternalId();
+                if (childId != null && visitedNodes.contains(childId)) {
+                    logger.warn("Cycle detected: {} already visited in current path. Skipping child to prevent infinite loop.",
+                            childId.getGroup() + ":" + childId.getName() + ":" + childId.getVersion());
+                    continue;
+                }
+
+                // Add the parent-child relationship to the destination graph
+                destGraph.addChildWithParent(child, currentParent);
+                count++;
+                logger.trace("Copied edge: {} -> {}", currentParent.getName(), child.getName());
+
+                // Recurse down the tree to copy grandchildren, great-grandchildren, etc.
+                count += copyGraphEdges(sourceGraph, destGraph, child, visitedNodes);
+            }
+        } finally {
+            // Remove current node from visited set when backtracking
+            // This allows the same node to appear in different branches (diamond dependency pattern)
+            if (currentId != null) {
+                visitedNodes.remove(currentId);
+            }
+        }
+
+        return count;
 
     }
 
