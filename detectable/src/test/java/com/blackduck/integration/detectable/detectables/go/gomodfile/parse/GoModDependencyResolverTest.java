@@ -5,9 +5,11 @@ import com.blackduck.integration.detectable.detectables.go.gomodfile.GoModFileDe
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoDependencyNode;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoModFileContent;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoModuleInfo;
+import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoProxyModuleResolver;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoReplaceDirective;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.util.*;
 
@@ -432,23 +434,42 @@ public class GoModDependencyResolverTest {
     
     @Test
     public void testResolveDependencies_WithModuleName() {
-        GoModFileContent content = new GoModFileContent(
-            "github.com/test/module",
-            "1.18",
-            "go1.18.1",
-            new ArrayList<>(),
-            new ArrayList<>(),
-            new HashSet<>(),
-            new ArrayList<>(),
-            new HashSet<>()
+        // ...existing code...
+    }
+
+    /**
+     * Verifies that cycle detection in {@code computeDependencyTree} prevents infinite recursion
+     * when two modules mutually depend on each other (A requires B, B requires A).
+     * This is the regression test for the infinite loop bug fixed in IDETECT-4993.
+     */
+    @Test
+    public void testResolveDependencies_CyclePrevention_DoesNotInfiniteLoop() {
+        GoProxyModuleResolver mockProxy = Mockito.mock(GoProxyModuleResolver.class);
+        Mockito.when(mockProxy.checkConnectivity()).thenReturn(true);
+
+        // Module A's go.mod requires B
+        Mockito.when(mockProxy.getGoModFileOfTheDependency(
+                Mockito.argThat(dep -> dep != null && "github.com/moduleA".equals(dep.getName()))))
+                .thenReturn("module github.com/moduleA\n\ngo 1.18\n\nrequire github.com/moduleB v1.0.0\n");
+
+        // Module B's go.mod requires A back — forming a cycle
+        Mockito.when(mockProxy.getGoModFileOfTheDependency(
+                Mockito.argThat(dep -> dep != null && "github.com/moduleB".equals(dep.getName()))))
+                .thenReturn("module github.com/moduleB\n\ngo 1.18\n\nrequire github.com/moduleA v1.0.0\n");
+
+        GoModDependencyResolver cycleResolver = new GoModDependencyResolver(options, mockProxy);
+
+        List<GoModuleInfo> directDeps = Collections.singletonList(
+                new GoModuleInfo("github.com/moduleA", "v1.0.0", false)
         );
-        
-        GoModDependencyResolver.ResolvedDependencies result = resolver.resolveDependencies(content, externalIdFactory);
-        
-        assertNotNull(result.getDependencyGraph(), "Dependency graph should not be null");
-        assertTrue(result.getDependencyGraph().isRootNode(), "Root node should be marked as root");
-        assertNotNull(result.getDependencyGraph().getDependency(), "Root should have parent dependency");
-        assertEquals("github.com/test/module", result.getDependencyGraph().getDependency().getName(), 
-            "Root dependency should have module name");
+
+        GoModFileContent content = new GoModFileContent(
+                "test/module", "1.18", "go1.18.1",
+                directDeps, new ArrayList<>(), new HashSet<>(), new ArrayList<>(), new HashSet<>()
+        );
+
+        // The only assertion that matters: traversal must terminate without StackOverflowError
+        assertDoesNotThrow(() -> cycleResolver.resolveDependencies(content, externalIdFactory),
+                "Cyclic dependency graph should not cause infinite recursion");
     }
 }

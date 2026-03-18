@@ -47,6 +47,14 @@ public class GoModDependencyResolver {
         this.goProxyModuleResolver = new GoProxyModuleResolver(options);
     }
 
+    /**
+     * Package-private constructor for testing purposes only.
+     * Allows injecting a mock or stub {@link GoProxyModuleResolver} without making a real network call.
+     */
+    GoModDependencyResolver(GoModFileDetectableOptions options, GoProxyModuleResolver goProxyModuleResolver) {
+        this.goProxyModuleResolver = goProxyModuleResolver;
+    }
+
 
     /**
      * Resolves dependencies by applying exclude and replace directives.
