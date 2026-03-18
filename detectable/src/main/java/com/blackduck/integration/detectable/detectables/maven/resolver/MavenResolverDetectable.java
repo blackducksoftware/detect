@@ -23,6 +23,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -74,6 +75,7 @@ public class MavenResolverDetectable extends Detectable {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final FileFinder fileFinder;
     private final ExternalIdFactory externalIdFactory;
+    private final MavenResolverOptions mavenResolverOptions;
 
     // Helper classes for code organization and reusability
     private final DependencyTreeFileWriter treeWriter;
@@ -90,15 +92,18 @@ public class MavenResolverDetectable extends Detectable {
      * @param environment The detectable environment providing context for detection
      * @param fileFinder Utility for locating files in the project directory
      * @param externalIdFactory Factory for creating Maven external identifiers for code locations
+     * @param mavenResolverOptions Configuration options for Maven resolution
      */
     public MavenResolverDetectable(
             DetectableEnvironment environment,
             FileFinder fileFinder,
-            ExternalIdFactory externalIdFactory
+            ExternalIdFactory externalIdFactory,
+            MavenResolverOptions mavenResolverOptions
     ) {
         super(environment);
         this.fileFinder = fileFinder;
         this.externalIdFactory = externalIdFactory;
+        this.mavenResolverOptions = mavenResolverOptions;
 
         // Initialize helper classes
         this.treeWriter = new DependencyTreeFileWriter();
@@ -206,18 +211,25 @@ public class MavenResolverDetectable extends Detectable {
             MavenDependencyResolver dependencyResolver = new MavenDependencyResolver();
             Path localRepoPath = extractionEnvironment.getOutputDirectory().toPath().resolve(LOCAL_REPO_DIR_NAME);
 
+            // Get external repositories from configuration
+            List<String> externalRepositories = mavenResolverOptions != null ? mavenResolverOptions.getExternalRepositories() : Collections.emptyList();
+            if (!externalRepositories.isEmpty()) {
+                logger.info("Using {} external repository URL(s) from configuration: {}",
+                    externalRepositories.size(), String.join(", ", externalRepositories));
+            }
+
             // TODO: expose a configuration flag `includeTestScope` later; for now we enable two-phase collection (compile + test)
             boolean includeTestScope = true; // TODO: make configurable
 
             // Perform compile-phase dependency collection
             CollectResult collectResultCompile = dependencyResolver.resolveDependencies(
-                pomFile, mavenProject, localRepoPath.toFile(), MAVEN_SCOPE_COMPILE);
+                pomFile, mavenProject, localRepoPath.toFile(), MAVEN_SCOPE_COMPILE, externalRepositories);
 
             // Perform test-phase collection (only if enabled)
             CollectResult collectResultTest = null;
             if (includeTestScope) {
                 collectResultTest = dependencyResolver.resolveDependencies(
-                    pomFile, mavenProject, localRepoPath.toFile(), MAVEN_SCOPE_TEST);
+                    pomFile, mavenProject, localRepoPath.toFile(), MAVEN_SCOPE_TEST, externalRepositories);
             }
 
             // PHASE 3: Write dependency trees to files for human inspection and debugging

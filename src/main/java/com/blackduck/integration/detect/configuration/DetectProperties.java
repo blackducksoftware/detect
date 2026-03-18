@@ -1186,6 +1186,17 @@ public class DetectProperties {
                     .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
                     .build();
 
+    public static final StringListProperty DETECT_MAVEN_INCLUDE_EXTERNAL_REPOSITORIES =
+            StringListProperty.newBuilder("detect.maven.include.external.repositories", emptyList())
+                    .setInfo("Maven Resolver External Repositories", DetectPropertyFromVersion.VERSION_9_8_0)
+                    .setHelp(
+                            "A comma-separated list of additional Maven repository URLs to use during dependency resolution.",
+                            "These external repositories will be used alongside repositories declared in pom.xml during dependency resolution. This is useful for air-gapped environments or when dependencies are hosted in private Artifactory/Nexus repositories. External repositories are prioritized over POM-declared repositories."
+                    )
+                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
+                    .setExample("https://repo1.company.com/maven2,https://nexus.internal.net/repository/maven-public")
+                    .build();
+
     public static final BooleanProperty DETECT_NOTICES_REPORT =
         BooleanProperty.newBuilder("detect.notices.report", false)
             .setInfo("Generate Notices Report", DetectPropertyFromVersion.VERSION_3_0_0)

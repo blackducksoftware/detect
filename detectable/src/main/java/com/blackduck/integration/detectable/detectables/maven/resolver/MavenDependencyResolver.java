@@ -78,6 +78,21 @@ public class MavenDependencyResolver {
 
     // New overloaded method that allows specifying the root scope (e.g., "compile" or "test")
     public CollectResult resolveDependencies(File pomFile, MavenProject mavenProject, File localRepoDir, String rootScope) throws DependencyCollectionException {
+        return resolveDependencies(pomFile, mavenProject, localRepoDir, rootScope, Collections.emptyList());
+    }
+
+    /**
+     * Resolves dependencies for a Maven project with support for external repositories.
+     *
+     * @param pomFile The POM file being resolved
+     * @param mavenProject The parsed Maven project model
+     * @param localRepoDir The local repository directory for caching artifacts
+     * @param rootScope The root scope for resolution ("compile" or "test")
+     * @param externalRepositories List of external repository URLs to use alongside POM-declared repos
+     * @return CollectResult containing the resolved dependency tree
+     * @throws DependencyCollectionException if dependency collection fails
+     */
+    public CollectResult resolveDependencies(File pomFile, MavenProject mavenProject, File localRepoDir, String rootScope, List<String> externalRepositories) throws DependencyCollectionException {
         boolean includeTestScope = "test".equalsIgnoreCase(rootScope);
         RepositorySystemSession session = newSession(localRepoDir, includeTestScope);
         // Build a map of managed versions from dependencyManagement keyed by group:artifact
@@ -189,7 +204,38 @@ public class MavenDependencyResolver {
         logger.info("------------------------------------------------------------");
         logger.info("Resolving dependency tree for: {} (scope={})", pomFile.getAbsolutePath(), rootScope);
 
-        // Map project-declared repositories into Aether RemoteRepository objects
+        // STEP 1: Convert external repository URLs to RemoteRepository objects
+        List<RemoteRepository> externalRepos = new ArrayList<>();
+        if (externalRepositories != null && !externalRepositories.isEmpty()) {
+            logger.info("Processing {} external repository URL(s)...", externalRepositories.size());
+            for (String url : externalRepositories) {
+                if (url == null || url.trim().isEmpty()) {
+                    logger.warn("Skipping empty external repository URL.");
+                    continue;
+                }
+                String trimmedUrl = url.trim();
+                // Basic URL validation
+                if (!trimmedUrl.startsWith("http://") && !trimmedUrl.startsWith("https://")) {
+                    logger.warn("Skipping invalid external repository URL (must start with http:// or https://): {}", trimmedUrl);
+                    continue;
+                }
+                try {
+                    // Generate a unique ID based on the URL
+                    String id = "external-" + trimmedUrl.replaceAll("[^a-zA-Z0-9]", "-").substring(0, Math.min(50, trimmedUrl.length()));
+                    RemoteRepository.Builder builder = new RemoteRepository.Builder(id, "default", trimmedUrl);
+                    externalRepos.add(builder.build());
+                    logger.info("Added external repository: {} (id: {})", trimmedUrl, id);
+                } catch (Exception e) {
+                    logger.warn("Failed to construct RemoteRepository for external URL: {}. Error: {}", trimmedUrl, e.getMessage());
+                }
+            }
+            if (!externalRepos.isEmpty()) {
+                logger.info("Using {} external repository(ies): {}", externalRepos.size(),
+                    externalRepos.stream().map(RemoteRepository::getUrl).collect(Collectors.joining(", ")));
+            }
+        }
+
+        // STEP 2: Map project-declared repositories into Aether RemoteRepository objects
         List<RemoteRepository> declaredRepositories;
         if (mavenProject.getRepositories() != null && !mavenProject.getRepositories().isEmpty()) {
             declaredRepositories = mavenProject.getRepositories().stream()
@@ -218,7 +264,9 @@ public class MavenDependencyResolver {
         }
 
         RemoteRepository central = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
-        boolean centralPresent = declaredRepositories.stream().anyMatch(r -> "https://repo.maven.apache.org/maven2/".equalsIgnoreCase(r.getUrl()));
+        // Check if Central is present in either external or declared repos
+        boolean centralPresent = externalRepos.stream().anyMatch(r -> "https://repo.maven.apache.org/maven2/".equalsIgnoreCase(r.getUrl()))
+            || declaredRepositories.stream().anyMatch(r -> "https://repo.maven.apache.org/maven2/".equalsIgnoreCase(r.getUrl()));
 
         CollectRequest collectRequest = new CollectRequest();
         collectRequest.setRoot(new Dependency(new DefaultArtifact(
@@ -238,12 +286,18 @@ public class MavenDependencyResolver {
 //        }
 
         // Inclusive retry strategy
-        List<RemoteRepository> unionRepos = new ArrayList<>(declaredRepositories);
+        // Repository order: External repos (user-specified) → POM-declared repos → Central (if not already present)
+        List<RemoteRepository> unionRepos = new ArrayList<>();
+        // Add external repositories first (highest priority - user intent)
+        unionRepos.addAll(externalRepos);
+        // Add POM-declared repositories
+        unionRepos.addAll(declaredRepositories);
+        // Add Central if not already present
         if (!centralPresent) {
             unionRepos.add(central);
         }
 
-        // Attempt 1: union of declared repos + Central (if not present)
+        // Attempt 1: union of external + declared repos + Central (if not present)
         try {
             collectRequest.setRepositories(unionRepos);
             logger.info("Attempting dependency collection with UNION repos: {}", unionRepos.stream().map(r -> r.getUrl()).collect(Collectors.joining(", ")));

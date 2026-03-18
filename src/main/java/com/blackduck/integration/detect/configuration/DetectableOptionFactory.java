@@ -35,6 +35,7 @@ import com.blackduck.integration.detectable.detectables.gradle.inspection.inspec
 import com.blackduck.integration.detectable.detectables.lerna.LernaOptions;
 import com.blackduck.integration.detectable.detectables.lerna.LernaPackageType;
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenCliExtractorOptions;
+import com.blackduck.integration.detectable.detectables.maven.resolver.MavenResolverOptions;
 import com.blackduck.integration.detectable.detectables.npm.NpmDependencyType;
 import com.blackduck.integration.detectable.detectables.npm.cli.NpmCliExtractorOptions;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.NpmLockfileOptions;
@@ -205,6 +206,11 @@ public class DetectableOptionFactory {
         List<String> mavenIncludedModules = detectConfiguration.getValue(DetectProperties.DETECT_MAVEN_INCLUDED_MODULES);
         Boolean includeShadedDependencies = detectConfiguration.getValue(DetectProperties.DETECT_MAVEN_INCLUDE_SHADED_DEPENDENCIES);
         return new MavenCliExtractorOptions(mavenBuildCommand, mavenExcludedScopes, mavenIncludedScopes, mavenExcludedModules, mavenIncludedModules, includeShadedDependencies);
+    }
+
+    public MavenResolverOptions createMavenResolverOptions() {
+        List<String> externalRepositories = detectConfiguration.getValue(DetectProperties.DETECT_MAVEN_INCLUDE_EXTERNAL_REPOSITORIES);
+        return new MavenResolverOptions(externalRepositories);
     }
 
     public ConanCliOptions createConanCliOptions() {
