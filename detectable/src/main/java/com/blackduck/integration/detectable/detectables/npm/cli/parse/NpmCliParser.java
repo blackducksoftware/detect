@@ -116,7 +116,10 @@ public class NpmCliParser {
 
         JsonObject children = element.getAsJsonObject(JSON_DEPENDENCIES);
 
-        if (name != null && version != null) {
+        if (name != null) {
+            if (version == null) {
+                logger.debug(String.format("Including dependency without version: %s", name));
+            }
             ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.NPMJS, name, version);
             Dependency child = new Dependency(name, version, externalId);
             
