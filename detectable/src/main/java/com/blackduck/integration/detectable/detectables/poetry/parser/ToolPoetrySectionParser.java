@@ -90,8 +90,7 @@ public class ToolPoetrySectionParser {
             }
         }
 
-        // named groups (Poetry 1.2+): probe tool.poetry.group directly — avoids dottedKeySet cycle
-        TomlTable groupsTable = parseResult.getTable(DEPENDENCY_GROUP_KEY_PREFIX);
+        TomlTable groupsTable = parseResult.getTable("tool.poetry.group");
         if (groupsTable != null) {
             for (String groupName : groupsTable.keySet()) {
                 if (!options.getExcludedGroups().contains(groupName)) {
