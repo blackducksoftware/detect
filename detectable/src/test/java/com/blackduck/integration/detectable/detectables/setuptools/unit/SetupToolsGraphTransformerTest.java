@@ -6,7 +6,9 @@ import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -84,5 +86,48 @@ public class SetupToolsGraphTransformerTest {
         NameVersionGraphAssert graphAssert = new NameVersionGraphAssert(Forge.PYPI, dependencyGraph);
 
         graphAssert.hasRootDependency("certifi", "2022.6.15");
+    }
+
+    @Test
+    public void testNoPipTransformWithExtrasTransitives() throws ExecutableRunnerException {
+        List<PythonDependency> dependencies = new ArrayList<>();
+        dependencies.add(new PythonDependency("requests", "2.28.2"));
+        dependencies.add(new PythonDependency("httpx", "0.23.3"));
+
+        Map<String, List<PythonDependency>> extrasTransitives = new HashMap<>();
+        extrasTransitives.put("requests", Arrays.asList(
+                new PythonDependency("charset-normalizer", "3.3.1"),
+                new PythonDependency("idna", "3.11")
+        ));
+        extrasTransitives.put("httpx", Arrays.asList(
+                new PythonDependency("certifi", "2025.11.12"),
+                new PythonDependency("httpcore", "1.0.9")
+        ));
+
+        SetupToolsParsedResult parsedResult = new SetupToolsParsedResult("sample", "1.0.0", dependencies, extrasTransitives);
+
+        SetupToolsGraphTransformer graphTransformer = new SetupToolsGraphTransformer(null, new ExternalIdFactory(), null);
+        DependencyGraph dependencyGraph = graphTransformer.transform(null, parsedResult);
+
+        assertNotNull(dependencyGraph);
+        assertEquals(2, dependencyGraph.getRootDependencies().size());
+
+        NameVersionGraphAssert graphAssert = new NameVersionGraphAssert(Forge.PYPI, dependencyGraph);
+
+        // Direct dependencies are at root
+        graphAssert.hasRootDependency("requests", "2.28.2");
+        graphAssert.hasRootDependency("httpx", "0.23.3");
+
+        // Transitives exist in graph
+        graphAssert.hasDependency("charset-normalizer", "3.3.1");
+        graphAssert.hasDependency("idna", "3.11");
+        graphAssert.hasDependency("certifi", "2025.11.12");
+        graphAssert.hasDependency("httpcore", "1.0.9");
+
+        // Verify parent-child relationships
+        graphAssert.hasParentChildRelationship("requests", "2.28.2", "charset-normalizer", "3.3.1");
+        graphAssert.hasParentChildRelationship("requests", "2.28.2", "idna", "3.11");
+        graphAssert.hasParentChildRelationship("httpx", "0.23.3", "certifi", "2025.11.12");
+        graphAssert.hasParentChildRelationship("httpx", "0.23.3", "httpcore", "1.0.9");
     }
 }

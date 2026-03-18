@@ -37,6 +37,12 @@ For setup.cfg and setup.py file parsing, the Setuptools detectors support direct
 
 <note type="note">The `--detect.pip.only.project.tree`, `--detect.pip.project.name`, and `--detect.pip.project.version.name` properties do not apply to the Setuptools detectors.</note>
 
+### Extras support in Setuptools Parse detector
+
+When a direct dependency uses bracket notation to reference an extras group (e.g., `requests[security]`), the Setuptools Parse detector matches the extras name against the project's own optional dependency definitions in `[project.optional-dependencies]` (pyproject.toml), `[options.extras_require]` (setup.cfg), or `extras_require` (setup.py, static dict literals only), and adds the matching group's dependencies as transitive children of the base package in the SBOM. The base package name is always used for Knowledge Base matching (e.g., `requests`, not `requests[security]`).
+
+<note type="note">Extras resolution in the buildless detector is limited to extras groups declared within the scanned project's own configuration files. Build detectors (Setuptools CLI, Pip Native Inspector, Pipenv, UV CLI) resolve upstream extras by downloading and installing packages, while other buildless detectors (Pipfile Lock, Poetry, UV Lock) read extras that were already resolved during lock file generation.</note>
+
 ## PIPENV Detectors
 
 ## Pipenv lock detector
