@@ -91,7 +91,7 @@ public class ToolPoetrySectionParser {
         }
 
         // named groups (Poetry 1.2+): probe tool.poetry.group directly — avoids dottedKeySet cycle
-        TomlTable groupsTable = parseResult.getTable("tool.poetry.group");
+        TomlTable groupsTable = parseResult.getTable(DEPENDENCY_GROUP_KEY_PREFIX);
         if (groupsTable != null) {
             for (String groupName : groupsTable.keySet()) {
                 if (!options.getExcludedGroups().contains(groupName)) {
@@ -114,28 +114,6 @@ public class ToolPoetrySectionParser {
             fileParseResults.put(tomlFile, TomlFileUtils.parseFile(tomlFile));
         }
         return fileParseResults.get(tomlFile);
-    }
-
-    private void processKeyForRootPackages(TomlParseResult parseResult, PoetryOptions options, Set<String> result, String key) {
-        if (!parseResult.isTable(key)) {
-            return;
-        }
-
-        TomlTable table = parseResult.getTable(key);
-
-        if (key.equals(MAIN_DEPENDENCY_GROUP_KEY)) {
-            addAllPackageNamesToSet(result, table);
-        } else if (key.equals(LEGACY_DEV_DEPENDENCY_GROUP_KEY)) { // in Poetry 1.0 to 1.2 this was the way of specifying dev dependencies
-            if (!options.getExcludedGroups().contains(DEFAULT_DEV_GROUP_NAME)) {
-                addAllPackageNamesToSet(result, table);
-            }
-        } else if (key.startsWith(DEPENDENCY_GROUP_KEY_PREFIX) && key.endsWith(DEPENDENCY_GROUP_KEY_SUFFIX)) {
-            String group = key.substring(DEPENDENCY_GROUP_KEY_PREFIX.length(), key.length() - DEPENDENCY_GROUP_KEY_SUFFIX.length());
-
-            if (!options.getExcludedGroups().contains(group)) {
-                addAllPackageNamesToSet(result, table);
-            }
-        }
     }
 
     private void addAllPackageNamesToSet(Set<String> set, TomlTable table) {
