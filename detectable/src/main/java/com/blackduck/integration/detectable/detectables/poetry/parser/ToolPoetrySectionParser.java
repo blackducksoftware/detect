@@ -78,8 +78,29 @@ public class ToolPoetrySectionParser {
             throw new RuntimeException("Unable to read pyproject.toml file");
         }
 
-        for (String key : parseResult.dottedKeySet(true)) {
-            processKeyForRootPackages(parseResult, options, result, key);
+        // main group (always included)
+        if (parseResult.isTable(MAIN_DEPENDENCY_GROUP_KEY)) {
+            addAllPackageNamesToSet(result, parseResult.getTable(MAIN_DEPENDENCY_GROUP_KEY));
+        }
+
+        // legacy dev group (Poetry 1.0–1.2)
+        if (parseResult.isTable(LEGACY_DEV_DEPENDENCY_GROUP_KEY)) {
+            if (!options.getExcludedGroups().contains(DEFAULT_DEV_GROUP_NAME)) {
+                addAllPackageNamesToSet(result, parseResult.getTable(LEGACY_DEV_DEPENDENCY_GROUP_KEY));
+            }
+        }
+
+        // named groups (Poetry 1.2+): probe tool.poetry.group directly — avoids dottedKeySet cycle
+        TomlTable groupsTable = parseResult.getTable("tool.poetry.group");
+        if (groupsTable != null) {
+            for (String groupName : groupsTable.keySet()) {
+                if (!options.getExcludedGroups().contains(groupName)) {
+                    String depKey = DEPENDENCY_GROUP_KEY_PREFIX + groupName + DEPENDENCY_GROUP_KEY_SUFFIX;
+                    if (parseResult.isTable(depKey)) {
+                        addAllPackageNamesToSet(result, parseResult.getTable(depKey));
+                    }
+                }
+            }
         }
 
         // Poetry 2.x support: Parse dependencies from [project] section (PEP 621 compliant)
