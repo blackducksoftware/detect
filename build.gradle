@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '11.4.0-SIGQA1-dterry.IDETECT-4817-correlated-scans'
+version = '11.4.0-SIGQA2-dterry.IDETECT-4817-correlated-scans-SNAPSHOT'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
