@@ -167,16 +167,18 @@ public class GoModDependencyResolver {
         if (!node.isRootNode()) {
             String moduleKey = getModuleKey(node.getDependency());
 
-            // Check if we've already fully processed this module in the current traversal
+            // If this module is already on the current recursion stack, we have a true cycle.
+            // Still attach any cached children so the node is not left empty, then stop descending.
             if (processedInTraversal.contains(moduleKey)) {
-                logger.debug("Skipping already processed module in traversal: {}", moduleKey);
+                logger.debug("Cycle detected for module: {} — attaching cached children and stopping recursion.", moduleKey);
+                processNonRootNode(node);
                 return node;
             }
 
-            // Mark this module as being processed
+            // Mark this module as being processed (on the recursion stack)
             processedInTraversal.add(moduleKey);
 
-            // Process the node (fetch children or reuse cached)
+            // Fetch children from proxy or reuse from visitedModules cache
             processNonRootNode(node);
         }
 
