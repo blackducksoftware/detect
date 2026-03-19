@@ -173,7 +173,9 @@ public class DetectRun {
     }
 
     private String getCorrelationId(CorrelatedScanningDecision decision, BootSingletons bootSingletons) {
-        return decision.isEnabled() ? bootSingletons.getDetectRunId().getCorrelationId() : null;
+        return decision.isEnabled() && decision.isScanTypeSupported("PACKAGE_MANAGER")
+            ? bootSingletons.getDetectRunId().getCorrelationId()
+            : null;
     }
 
     private Set<String> getDecidedTools(BootSingletons bootSingletons, Map<DetectTool, Set<String>> scanTypeEvidenceMap) {
