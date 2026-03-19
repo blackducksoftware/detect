@@ -83,8 +83,8 @@ public class PackageJsonExtractor {
     
     private Dependency entryToDependency(String key, String value) {
         // Handle npm aliases: "alias-name": "npm:actual-package@version"
-        if (NpmAliasParser.isNpmAlias(value)) {
-            String[] parsed = NpmAliasParser.parseNpmAlias(value);
+        String[] parsed = NpmAliasParser.parseNpmAlias(value);
+        if (parsed != null) {
             key = parsed[0];
             value = parsed[1];
         }
