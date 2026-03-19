@@ -123,6 +123,7 @@ import com.blackduck.integration.detect.tool.impactanalysis.ImpactAnalysisNaming
 import com.blackduck.integration.detect.tool.impactanalysis.ImpactAnalysisUploadOperation;
 import com.blackduck.integration.detect.tool.impactanalysis.service.ImpactAnalysisBatchOutput;
 import com.blackduck.integration.detect.tool.impactanalysis.service.ImpactAnalysisUploadService;
+import com.blackduck.integration.detect.tool.signaturescanner.BlackDuckSignatureScannerOptions;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScanPath;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerCodeLocationResult;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerReport;
@@ -1194,10 +1195,11 @@ public class OperationRunner {
             () -> {
                 List<String> exclusions = detectConfigurationFactory.collectSignatureScannerDirectoryExclusions();
                 DetectExcludedDirectoryFilter detectExcludedDirectoryFilter = new DetectExcludedDirectoryFilter(exclusions);
-                return new CalculateScanPathsOperation(detectConfigurationFactory.createBlackDuckSignatureScannerOptions(), directoryManager, fileFinder,
+                BlackDuckSignatureScannerOptions scannerOptions = detectConfigurationFactory.createBlackDuckSignatureScannerOptions(correlatedScanningDecision);
+                return new CalculateScanPathsOperation(scannerOptions, directoryManager, fileFinder,
                     detectExcludedDirectoryFilter::isExcluded
                 )
-                    .determinePathsAndExclusions(projectNameVersion, detectConfigurationFactory.createBlackDuckSignatureScannerOptions().getMaxDepth(), dockerTargetData);
+                    .determinePathsAndExclusions(projectNameVersion, scannerOptions.getMaxDepth(), dockerTargetData);
             }
         );
     }
@@ -1207,12 +1209,12 @@ public class OperationRunner {
         List<SignatureScanPath> scanPaths,
         NameVersion projectNameVersion,
         DockerTargetData dockerTargetData,
-        BlackDuckRunData blackDuckRunData, 
+        BlackDuckRunData blackDuckRunData,
         boolean isScassFallback
     )
         throws OperationException {
         return auditLog.namedPublic("Create Online Signature Scan Batch", "OnlineSigScan",
-            () -> new CreateScanBatchOperation(detectConfigurationFactory.createBlackDuckSignatureScannerOptions(), directoryManager, codeLocationNameManager)
+            () -> new CreateScanBatchOperation(detectConfigurationFactory.createBlackDuckSignatureScannerOptions(correlatedScanningDecision), directoryManager, codeLocationNameManager)
                 .createScanBatchWithBlackDuck(detectRunUuid, projectNameVersion, scanPaths, blackDuckRunData, dockerTargetData, isScassFallback)
         );
     }
@@ -1220,7 +1222,7 @@ public class OperationRunner {
     public ScanBatch createScanBatchOffline(String detectRunUuid, List<SignatureScanPath> scanPaths, NameVersion projectNameVersion, DockerTargetData dockerTargetData)
         throws OperationException {
         return auditLog.namedPublic("Create Offline Signature Scan Batch", "OfflineSigScan",
-            () -> new CreateScanBatchOperation(detectConfigurationFactory.createBlackDuckSignatureScannerOptions(), directoryManager, codeLocationNameManager)
+            () -> new CreateScanBatchOperation(detectConfigurationFactory.createBlackDuckSignatureScannerOptions(correlatedScanningDecision), directoryManager, codeLocationNameManager)
                 .createScanBatchWithoutBlackDuck(detectRunUuid, projectNameVersion, scanPaths, dockerTargetData)
         );
     }
@@ -1232,7 +1234,7 @@ public class OperationRunner {
     public Optional<File> calculateOnlineLocalScannerInstallPath() throws OperationException {
         return auditLog.namedInternal(
             "Calculate Online Local Scanner Path",
-            () -> detectConfigurationFactory.createBlackDuckSignatureScannerOptions().getLocalScannerInstallPath().map(Path::toFile)
+            () -> detectConfigurationFactory.createBlackDuckSignatureScannerOptions(correlatedScanningDecision).getLocalScannerInstallPath().map(Path::toFile)
         );
     }
 
@@ -1242,7 +1244,7 @@ public class OperationRunner {
 
     public ScanBatchRunner createScanBatchRunnerWithBlackDuck(BlackDuckRunData blackDuckRunData, File installDirectory) throws OperationException {
         return auditLog.namedInternal("Create Scan Batch Runner with Black Duck SCA", () -> {
-            ExecutorService executorService = Executors.newFixedThreadPool(detectConfigurationFactory.createBlackDuckSignatureScannerOptions().getParallelProcessors());
+            ExecutorService executorService = Executors.newFixedThreadPool(detectConfigurationFactory.createBlackDuckSignatureScannerOptions(correlatedScanningDecision).getParallelProcessors());
             IntEnvironmentVariables intEnvironmentVariables = IntEnvironmentVariables.includeSystemEnv();
             Optional<BlackDuckVersion> blackDuckVersion = blackDuckRunData.getBlackDuckServerVersion();
 
@@ -1313,7 +1315,7 @@ public class OperationRunner {
 
     public void publishSignatureScanReport(List<SignatureScannerReport> report) throws OperationException {
         auditLog.namedInternal("Publish Signature Scan Report", () -> {
-            Boolean treatSkippedAsFailure = detectConfigurationFactory.createBlackDuckSignatureScannerOptions().getTreatSkippedScansAsSuccess();
+            Boolean treatSkippedAsFailure = detectConfigurationFactory.createBlackDuckSignatureScannerOptions(correlatedScanningDecision).getTreatSkippedScansAsSuccess();
             new PublishSignatureScanReports(exitCodePublisher, statusEventPublisher, treatSkippedAsFailure).publishReports(report);
         });
     }
@@ -1483,7 +1485,7 @@ public class OperationRunner {
     }
 
     private ExecutorService createExecutorServiceForScanner() {
-        return Executors.newFixedThreadPool(detectConfigurationFactory.createBlackDuckSignatureScannerOptions().getParallelProcessors());
+        return Executors.newFixedThreadPool(detectConfigurationFactory.createBlackDuckSignatureScannerOptions(correlatedScanningDecision).getParallelProcessors());
     }
 
     public BlackDuckPostOptions createBlackDuckPostOptions() {

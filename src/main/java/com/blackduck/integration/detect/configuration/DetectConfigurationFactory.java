@@ -428,7 +428,7 @@ public class DetectConfigurationFactory {
         return detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_USER_GROUPS);
     }
 
-    public BlackDuckSignatureScannerOptions createBlackDuckSignatureScannerOptions() {
+    public BlackDuckSignatureScannerOptions createBlackDuckSignatureScannerOptions(CorrelatedScanningDecision correlatedScanningDecision) {
         List<Path> signatureScannerPaths = detectConfiguration.getPaths(DetectProperties.DETECT_BLACKDUCK_SIGNATURE_SCANNER_PATHS);
         List<String> exclusionPatterns = collectSignatureScannerDirectoryExclusions();
 
@@ -443,7 +443,6 @@ public class DetectConfigurationFactory {
         Integer maxDepth = detectConfiguration.getValue(DetectProperties.DETECT_EXCLUDED_DIRECTORIES_SEARCH_DEPTH);
         Boolean treatSkippedScansAsSuccess = detectConfiguration.getValue(DetectProperties.DETECT_FORCE_SUCCESS_ON_SKIP);
         Boolean isStateless = BlackduckScanMode.STATELESS.equals(detectConfiguration.getValue(DetectProperties.DETECT_BLACKDUCK_SCAN_MODE));
-        Boolean correlatedScanningEnabled = detectConfiguration.getValue(DetectProperties.DETECT_CORRELATED_SCANNING_ENABLED);
         RapidCompareMode compareMode = detectConfiguration.getValue(DetectProperties.DETECT_BLACKDUCK_RAPID_COMPARE_MODE);
         Boolean csvArchive = detectConfiguration.getValue(DetectProperties.DETECT_BLACKDUCK_SIGNATURE_SCANNER_CSV_ARCHIVE);
 
@@ -465,7 +464,7 @@ public class DetectConfigurationFactory {
             treatSkippedScansAsSuccess,
             isStateless,
             findReducedPersistence(),
-            correlatedScanningEnabled,
+            correlatedScanningDecision,
             compareMode,
             csvArchive
         );
