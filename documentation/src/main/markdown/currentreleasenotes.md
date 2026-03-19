@@ -21,5 +21,9 @@
 ### New features
 
 * Support for the Conda Tree–based detector has been added. For more details, see [Conda Tree](packagemgrs/conda.md#conda-tree-detector).
+* NuGet Solution Native Inspector now supports .slnx files. 
 
 ### Resolved issues
+
+### Dependency Updates
+* Upgraded and released Nuget Inspector version 2.6.0
