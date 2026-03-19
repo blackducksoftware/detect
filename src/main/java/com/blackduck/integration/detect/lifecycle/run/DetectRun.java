@@ -93,13 +93,12 @@ public class DetectRun {
             Boolean forceBdio = bootSingletons.getDetectConfigurationFactory().forceBdio();
             logger.debug("Integrated Matching Correlation ID: {}", bootSingletons.getDetectRunId().getCorrelationId());
             CorrelatedScanningDecision correlatedScanningDecision = bootSingletons.getCorrelatedScanningDecision();
-            String correlationId = getCorrelationId(correlatedScanningDecision, bootSingletons);
             if (!universalToolsResult.getDetectCodeLocations().isEmpty()
                     || (productRunData.shouldUseBlackDuckProduct()
                     && !productRunData.getBlackDuckRunData().isOnline()
                     && forceBdio && !universalToolsResult.didAnyFail()
                     && exitCodeManager.getWinningExitCodeRequest().getExitCodeType().isSuccess())) {
-                bdio = stepRunner.generateBdio(correlationId, universalToolsResult, nameVersion);
+                bdio = stepRunner.generateBdio(operationRunner.getCorrelationIdForScanType("PACKAGE_MANAGER"), universalToolsResult, nameVersion);
             } else {
                 bdio = BdioResult.none();
             }
@@ -127,8 +126,8 @@ public class DetectRun {
                 );
 
                 if (blackDuckRunData.isNonPersistent() && blackDuckRunData.isOnline()) {
-                    RapidModeStepRunner rapidModeSteps = new RapidModeStepRunner(operationRunner, stepHelper, bootSingletons.getGson(), correlationId, bootSingletons.getDirectoryManager());
-                    
+                    RapidModeStepRunner rapidModeSteps = new RapidModeStepRunner(operationRunner, stepHelper, bootSingletons.getGson(), bootSingletons.getDetectRunId().getCorrelationId(), bootSingletons.getDirectoryManager());
+
                     Optional<String> scaaasFilePath = bootSingletons.getDetectConfigurationFactory().getScaaasFilePath();
                     rapidModeSteps.runOnline(blackDuckRunData, nameVersion, bdio, universalToolsResult.getDockerTargetData(), scaaasFilePath);
                 } else if (blackDuckRunData.isNonPersistent()) {
@@ -170,12 +169,6 @@ public class DetectRun {
     public void phoneHomeApplicableDetectorTypes(PhoneHomeManager phoneHomeManager, Set<DetectorType> applicableDetectorTypes) {
         Map<DetectorType, Long> detectorTimes = applicableDetectorTypes.stream().collect(Collectors.toMap(detectorType -> detectorType, detectorType -> 0L));
         phoneHomeManager.savePhoneHomeDetectorTimes(detectorTimes);
-    }
-
-    private String getCorrelationId(CorrelatedScanningDecision decision, BootSingletons bootSingletons) {
-        return decision.isEnabled() && decision.isScanTypeSupported("PACKAGE_MANAGER")
-            ? bootSingletons.getDetectRunId().getCorrelationId()
-            : null;
     }
 
     private Set<String> getDecidedTools(BootSingletons bootSingletons, Map<DetectTool, Set<String>> scanTypeEvidenceMap) {
