@@ -480,12 +480,38 @@ public class MavenDependencyResolver {
             }
 
             // proxyHost is a bare hostname/IP — no http:// or https:// prefix.
-            // The Proxy type parameter ("http") tells Aether what protocol to use for the proxy tunnel.
-            Proxy proxy = new Proxy("http", proxyHost, proxyPort, auth);
-            proxySelector.add(proxy, nonProxyHosts.toString());
+            // The Proxy type parameter tells Aether what protocol to use for the proxy tunnel.
+            // We need to configure BOTH http and https to handle both HTTP and HTTPS repositories.
+            Proxy httpProxy = new Proxy("http", proxyHost, proxyPort, auth);
+            Proxy httpsProxy = new Proxy("https", proxyHost, proxyPort, auth);
+
+            proxySelector.add(httpProxy, nonProxyHosts.toString());
+            proxySelector.add(httpsProxy, nonProxyHosts.toString());
 
             builder.setProxySelector(proxySelector);
-            logger.info("Maven resolver proxy configured: {}:{} (non-proxy hosts: {})", proxyHost, proxyPort, nonProxyHosts);
+            logger.info("Maven resolver proxy configured for HTTP and HTTPS: {}:{} (non-proxy hosts: {})", proxyHost, proxyPort, nonProxyHosts);
+
+            // CRITICAL: JdkTransporterFactory uses Java's HttpClient which does NOT respect Aether's ProxySelector.
+            // We must set Java system properties for the proxy to actually work.
+            System.setProperty("http.proxyHost", proxyHost);
+            System.setProperty("http.proxyPort", String.valueOf(proxyPort));
+            System.setProperty("https.proxyHost", proxyHost);
+            System.setProperty("https.proxyPort", String.valueOf(proxyPort));
+
+            if (auth != null) {
+                System.setProperty("http.proxyUser", proxyUsername);
+                System.setProperty("http.proxyPassword", proxyPassword);
+                System.setProperty("https.proxyUser", proxyUsername);
+                System.setProperty("https.proxyPassword", proxyPassword);
+            }
+
+            // Set non-proxy hosts (Java uses pipe-delimited, same as Aether)
+            if (nonProxyHosts.length() > 0) {
+                System.setProperty("http.nonProxyHosts", nonProxyHosts.toString());
+                // Note: https uses the same nonProxyHosts property as http
+            }
+
+            logger.info("Java system proxy properties set for HTTP/HTTPS transporter");
         } catch (Exception e) {
             // Graceful degradation: log the error and continue without proxy.
             // Resolution may still succeed if repositories are directly reachable.
