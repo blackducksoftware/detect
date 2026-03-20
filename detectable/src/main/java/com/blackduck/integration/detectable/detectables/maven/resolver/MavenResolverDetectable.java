@@ -208,7 +208,22 @@ public class MavenResolverDetectable extends Detectable {
             logger.info("  Managed dependencies found: {}", mavenProject.getDependencyManagement().size());
 
             // PHASE 2: Resolve dependencies using Aether for both compile and test scopes
-            MavenDependencyResolver dependencyResolver = new MavenDependencyResolver();
+            // Create the resolver with proxy configuration from the global blackduck.proxy.* settings.
+            // If no proxy is configured, the resolver operates without one (backward compatible).
+            MavenDependencyResolver dependencyResolver;
+            if (mavenResolverOptions != null && mavenResolverOptions.hasProxyConfiguration()) {
+                logger.info("Creating Maven dependency resolver with proxy: {}:{}",
+                    mavenResolverOptions.getProxyHost(), mavenResolverOptions.getProxyPort());
+                dependencyResolver = new MavenDependencyResolver(
+                    mavenResolverOptions.getProxyHost(),
+                    mavenResolverOptions.getProxyPort(),
+                    mavenResolverOptions.getProxyUsername(),
+                    mavenResolverOptions.getProxyPassword(),
+                    mavenResolverOptions.getProxyIgnoredHosts()
+                );
+            } else {
+                dependencyResolver = new MavenDependencyResolver();
+            }
             Path localRepoPath = extractionEnvironment.getOutputDirectory().toPath().resolve(LOCAL_REPO_DIR_NAME);
 
             // Get external repositories from configuration

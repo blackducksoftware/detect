@@ -210,7 +210,23 @@ public class DetectableOptionFactory {
 
     public MavenResolverOptions createMavenResolverOptions() {
         List<String> externalRepositories = detectConfiguration.getValue(DetectProperties.DETECT_MAVEN_INCLUDE_EXTERNAL_REPOSITORIES);
-        return new MavenResolverOptions(externalRepositories);
+
+        // Extract proxy details from the global ProxyInfo (sourced from blackduck.proxy.* properties).
+        // proxyHost is a bare hostname/IP — no http:// or https:// prefix.
+        String proxyHost = proxyInfo.getHost().orElse(null);
+        int proxyPort = proxyInfo.getPort();
+        String proxyUsername = null;
+        String proxyPassword = null;
+        if (proxyInfo.getProxyCredentials().isPresent()) {
+            com.blackduck.integration.rest.credentials.Credentials creds = proxyInfo.getProxyCredentials().get();
+            proxyUsername = creds.getUsername().orElse(null);
+            proxyPassword = creds.getPassword().orElse(null);
+        }
+
+        // Read the global proxy-bypass list (blackduck.proxy.ignored.hosts).
+        List<String> proxyIgnoredHosts = detectConfiguration.getValue(DetectProperties.BLACKDUCK_PROXY_IGNORED_HOSTS);
+
+        return new MavenResolverOptions(externalRepositories, proxyHost, proxyPort, proxyUsername, proxyPassword, proxyIgnoredHosts);
     }
 
     public ConanCliOptions createConanCliOptions() {
