@@ -163,27 +163,75 @@ if use_pip_internal_to_search_packages:
 
         return DependencyNode(package_info.name, package_info.version), package_info.requires
 else:
-    from pkg_resources import working_set, Requirement
+    use_importlib_metadata = False
+    use_pkg_resources = False
 
-    def get_package_by_name(package_name):
-        """Looks up a package from the pip cache using pkg_resouces"""
-        if package_name is None:
-            return None, None
-
-        package = None
-
-        package_dict = working_set.by_key
+    # Priority 1: Try importlib.metadata (modern standard, Python 3.8+)
+    try:
+        import importlib.metadata as metadata
+        use_importlib_metadata = True
+    except ImportError:
+        # Priority 2: Fall back to pkg_resources
         try:
-            package = package_dict[Requirement.parse(package_name).key]
-        except:
-            name_variants = (package_name, package_name.lower(), package_name.replace('-', '_'), package_name.replace('_', '-'), package_name.replace('.', '-'))
-            for name_variant in name_variants:
-                if name_variant in package_dict:
-                    return package_dict[name_variant]
+            from pkg_resources import working_set, Requirement
+            use_pkg_resources = True
+        except ImportError:
+            pass
 
-        if package is None:
-            return None, None
-        return DependencyNode(package.project_name, package.version), [requirement.key for requirement in package.requires()]
+    if use_importlib_metadata:
+        def get_package_by_name(package_name):
+            """Looks up a package from the pip cache using importlib.metadata"""
+            if package_name is None:
+                return None, None
+
+            package_info = None
+            try:
+                package_info = metadata.distribution(package_name)
+            except:
+                # Try name variants
+                name_variants = (package_name, package_name.lower(), package_name.replace('-', '_'), package_name.replace('_', '-'), package_name.replace('.', '-'))
+                for name_variant in name_variants:
+                    try:
+                        package_info = metadata.distribution(name_variant)
+                        break
+                    except metadata.PackageNotFoundError:
+                        continue
+
+            if package_info is None:
+                return None, None
+
+            # Parse requires list: entries are strings like "package-name>=1.0"
+            requires = []
+            if package_info.requires:
+                for requirement in package_info.requires:
+                    # Extract just the package name from the requirement string
+                    req_name = split('===|<=|!=|==|>=|~=|<|>', requirement)[0].strip()
+                    requires.append(req_name)
+
+            return DependencyNode(package_info.metadata['Name'], package_info.metadata['Version']), requires
+
+    elif use_pkg_resources:
+        def get_package_by_name(package_name):
+            """Looks up a package from the pip cache using pkg_resources"""
+            if package_name is None:
+                return None, None
+
+            package = None
+
+            package_dict = working_set.by_key
+            try:
+                package = package_dict[Requirement.parse(package_name).key]
+            except:
+                name_variants = (package_name, package_name.lower(), package_name.replace('-', '_'), package_name.replace('_', '-'), package_name.replace('.', '-'))
+                for name_variant in name_variants:
+                    if name_variant in package_dict:
+                        package = package_dict[name_variant]
+                        break
+
+            if package is None:
+                return None, None
+            return DependencyNode(package.project_name, package.version), [requirement.key for requirement in package.requires()]
+
 
 class DependencyNode(object):
     """Represents a python dependency in a tree graph with a name, version, and array of children DependencyNodes"""
