@@ -18,16 +18,11 @@ import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyCollectionException;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.Exclusion;
-import org.eclipse.aether.repository.Authentication;
-import org.eclipse.aether.repository.Proxy;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.supplier.RepositorySystemSupplier;
 import org.eclipse.aether.supplier.SessionBuilderSupplier;
 import org.eclipse.aether.transport.jdk.JdkTransporterFactory;
-import org.eclipse.aether.util.graph.selector.AndDependencySelector;
-import org.eclipse.aether.util.repository.AuthenticationBuilder;
-import org.eclipse.aether.util.repository.DefaultProxySelector;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,16 +60,10 @@ public class MavenDependencyResolver {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final RepositorySystem repositorySystem;
 
-    // Forward-proxy configuration — sourced from global blackduck.proxy.* properties.
-    // proxyHost is a bare hostname/IP (no http:// or https:// prefix).
+    // Proxy configurator — handles all forward-proxy configuration.
+    // Null if no proxy is configured.
     @Nullable
-    private final String proxyHost;
-    private final int proxyPort;
-    @Nullable
-    private final String proxyUsername;
-    @Nullable
-    private final String proxyPassword;
-    private final List<String> proxyIgnoredHosts;
+    private final MavenProxyConfigurator proxyConfigurator;
 
     /**
      * No-arg constructor: no proxy configured.
@@ -100,11 +89,18 @@ public class MavenDependencyResolver {
         @Nullable String proxyPassword,
         List<String> proxyIgnoredHosts
     ) {
-        this.proxyHost = proxyHost;
-        this.proxyPort = proxyPort;
-        this.proxyUsername = proxyUsername;
-        this.proxyPassword = proxyPassword;
-        this.proxyIgnoredHosts = proxyIgnoredHosts != null ? proxyIgnoredHosts : Collections.emptyList();
+        // Create MavenProxyConfigurator only if proxy is configured (host is non-blank and port is valid)
+        if (proxyHost != null && !proxyHost.trim().isEmpty() && proxyPort > 0) {
+            this.proxyConfigurator = new MavenProxyConfigurator(
+                proxyHost,
+                proxyPort,
+                proxyUsername,
+                proxyPassword,
+                proxyIgnoredHosts
+            );
+        } else {
+            this.proxyConfigurator = null;
+        }
 
         this.repositorySystem = new RepositorySystemSupplier() {
             @Override
@@ -409,8 +405,12 @@ public class MavenDependencyResolver {
             .withLocalRepositoryBaseDirectories(localRepoDir.toPath())
                 .setConfigProperty("aether.remoteRepositoryFilter.prefixes", "false")
                 .setIgnoreArtifactDescriptorRepositories(true);
-//                .setArtifactDescriptorPolicy(new LenientDescriptionPolicy())
-        configureProxySelector(builder);
+
+        // Configure proxy if available
+        if (proxyConfigurator != null) {
+            proxyConfigurator.configureProxy(builder);
+        }
+
         return builder.build();
     }
 
@@ -423,103 +423,17 @@ public class MavenDependencyResolver {
                 .withLocalRepositoryBaseDirectories(localRepoDir.toPath())
                     .setConfigProperty("aether.remoteRepositoryFilter.prefixes", "false")
                     .setIgnoreArtifactDescriptorRepositories(true);
-//                    .setArtifactDescriptorPolicy(new LenientDescriptionPolicy())
-            configureProxySelector(builder);
+
+            // Configure proxy if available
+            if (proxyConfigurator != null) {
+                proxyConfigurator.configureProxy(builder);
+            }
+
             return builder.build();
         }
         return newSession(localRepoDir);
     }
 
-    /**
-     * Configures a forward-proxy on the given Aether session builder.
-     *
-     * <p>The proxy is only set when both {@code proxyHost} (non-blank) and {@code proxyPort} (&gt; 0)
-     * are present. If authentication credentials are supplied they are attached to the proxy.
-     *
-     * <p><strong>Note:</strong> {@code proxyHost} must be a bare hostname or IP — no
-     * {@code http://} or {@code https://} scheme prefix. The Aether {@link Proxy} class
-     * expects the type ({@code "http"} or {@code "https"}) as a separate parameter.
-     *
-     * <p>Non-proxy hosts are built from the {@code blackduck.proxy.ignored.hosts} property
-     * combined with the hardcoded loopback addresses {@code localhost} and {@code 127.0.0.1}.
-     *
-     * <p>If anything goes wrong during proxy configuration, a warning is logged and
-     * resolution continues <em>without</em> a proxy — the execution is never stopped.
-     *
-     * @param builder the session builder to attach the proxy selector to
-     */
-    private void configureProxySelector(SessionBuilder builder) {
-        // Guard: skip if no proxy is configured
-        if (proxyHost == null || proxyHost.trim().isEmpty() || proxyPort <= 0) {
-            return;
-        }
-
-        try {
-            DefaultProxySelector proxySelector = new DefaultProxySelector();
-
-            // Build optional authentication
-            Authentication auth = null;
-            if (proxyUsername != null && !proxyUsername.trim().isEmpty()
-                && proxyPassword != null && !proxyPassword.trim().isEmpty()) {
-                auth = new AuthenticationBuilder()
-                    .addUsername(proxyUsername)
-                    .addPassword(proxyPassword)
-                    .build();
-                logger.info("Proxy authentication configured for user: {}", proxyUsername);
-            }
-
-            // Build the non-proxy-hosts string (pipe-delimited).
-            // Always exclude loopback addresses; append user-specified patterns from blackduck.proxy.ignored.hosts.
-            StringBuilder nonProxyHosts = new StringBuilder("localhost|127.0.0.1");
-            if (proxyIgnoredHosts != null && !proxyIgnoredHosts.isEmpty()) {
-                for (String pattern : proxyIgnoredHosts) {
-                    if (pattern != null && !pattern.trim().isEmpty()) {
-                        nonProxyHosts.append("|").append(pattern.trim());
-                    }
-                }
-            }
-
-            // proxyHost is a bare hostname/IP — no http:// or https:// prefix.
-            // The Proxy type parameter tells Aether what protocol to use for the proxy tunnel.
-            // We need to configure BOTH http and https to handle both HTTP and HTTPS repositories.
-            Proxy httpProxy = new Proxy("http", proxyHost, proxyPort, auth);
-            Proxy httpsProxy = new Proxy("https", proxyHost, proxyPort, auth);
-
-            proxySelector.add(httpProxy, nonProxyHosts.toString());
-            proxySelector.add(httpsProxy, nonProxyHosts.toString());
-
-            builder.setProxySelector(proxySelector);
-            logger.info("Maven resolver proxy configured for HTTP and HTTPS: {}:{} (non-proxy hosts: {})", proxyHost, proxyPort, nonProxyHosts);
-
-            // CRITICAL: JdkTransporterFactory uses Java's HttpClient which does NOT respect Aether's ProxySelector.
-            // We must set Java system properties for the proxy to actually work.
-            System.setProperty("http.proxyHost", proxyHost);
-            System.setProperty("http.proxyPort", String.valueOf(proxyPort));
-            System.setProperty("https.proxyHost", proxyHost);
-            System.setProperty("https.proxyPort", String.valueOf(proxyPort));
-
-            if (auth != null) {
-                System.setProperty("http.proxyUser", proxyUsername);
-                System.setProperty("http.proxyPassword", proxyPassword);
-                System.setProperty("https.proxyUser", proxyUsername);
-                System.setProperty("https.proxyPassword", proxyPassword);
-            }
-
-            // Set non-proxy hosts (Java uses pipe-delimited, same as Aether)
-            if (nonProxyHosts.length() > 0) {
-                System.setProperty("http.nonProxyHosts", nonProxyHosts.toString());
-                // Note: https uses the same nonProxyHosts property as http
-            }
-
-            logger.info("Java system proxy properties set for HTTP/HTTPS transporter");
-        } catch (Exception e) {
-            // Graceful degradation: log the error and continue without proxy.
-            // Resolution may still succeed if repositories are directly reachable.
-            logger.warn("Failed to configure proxy for Maven resolver ({}:{}). Continuing without proxy. Error: {}",
-                proxyHost, proxyPort, e.getMessage());
-            logger.debug("Proxy configuration exception details:", e);
-        }
-    }
 
     private boolean isVersionResolved(JavaDependency dependency) {
         String version = dependency.getCoordinates().getVersion();
