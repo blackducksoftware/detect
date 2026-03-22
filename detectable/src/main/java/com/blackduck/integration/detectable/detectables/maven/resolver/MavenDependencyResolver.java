@@ -135,6 +135,24 @@ public class MavenDependencyResolver {
      * @throws DependencyCollectionException if dependency collection fails
      */
     public CollectResult resolveDependencies(File pomFile, MavenProject mavenProject, File localRepoDir, String rootScope, List<String> externalRepositories) throws DependencyCollectionException {
+        try {
+            // Perform the actual dependency resolution
+            return doResolveDependencies(pomFile, mavenProject, localRepoDir, rootScope, externalRepositories);
+        } finally {
+            // CRITICAL: Always restore original system proxy properties after resolution completes
+            // This ensures Maven's proxy settings don't leak to other parts of the application
+            // This runs whether resolution succeeds, fails, or throws an exception
+            if (proxyConfigurator != null) {
+                proxyConfigurator.restoreOriginalProxyProperties();
+            }
+        }
+    }
+
+    /**
+     * Internal method that performs the actual dependency resolution.
+     * Separated from the public method to allow proper try-finally cleanup.
+     */
+    private CollectResult doResolveDependencies(File pomFile, MavenProject mavenProject, File localRepoDir, String rootScope, List<String> externalRepositories) throws DependencyCollectionException {
         boolean includeTestScope = "test".equalsIgnoreCase(rootScope);
         RepositorySystemSession session = newSession(localRepoDir, includeTestScope);
         // Build a map of managed versions from dependencyManagement keyed by group:artifact

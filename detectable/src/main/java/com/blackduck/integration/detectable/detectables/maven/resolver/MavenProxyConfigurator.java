@@ -39,6 +39,18 @@ public class MavenProxyConfigurator {
     private final String proxyPassword;
     private final List<String> proxyIgnoredHosts;
 
+    // Store original system properties so we can restore them later
+    // These are captured when configureProxy() is called
+    private String originalHttpProxyHost;
+    private String originalHttpProxyPort;
+    private String originalHttpProxyUser;
+    private String originalHttpProxyPassword;
+    private String originalHttpsProxyHost;
+    private String originalHttpsProxyPort;
+    private String originalHttpsProxyUser;
+    private String originalHttpsProxyPassword;
+    private String originalHttpNonProxyHosts;
+
     /**
      * Constructs a proxy configurator with the given settings.
      *
@@ -73,8 +85,9 @@ public class MavenProxyConfigurator {
     /**
      * Configures proxy settings on the given Aether session builder.
      *
-     * <p>This method performs two critical steps:
+     * <p>This method performs three critical steps:
      * <ol>
+     *   <li>Saves original Java system proxy properties for later restoration</li>
      *   <li>Configures Aether's ProxySelector for both HTTP and HTTPS protocols</li>
      *   <li>Sets Java system properties ({@code http.proxyHost}, {@code https.proxyHost}, etc.)
      *       because JdkTransporterFactory does NOT respect Aether's ProxySelector</li>
@@ -83,6 +96,10 @@ public class MavenProxyConfigurator {
      * <p>Non-proxy hosts are built from the configured patterns combined with
      * hardcoded loopback addresses {@code localhost} and {@code 127.0.0.1}.
      *
+     * <p><strong>IMPORTANT:</strong> After Maven resolution completes, you MUST call
+     * {@link #restoreOriginalProxyProperties()} to restore the original system state,
+     * preferably in a finally block to ensure cleanup happens even if errors occur.
+     *
      * <p>If anything goes wrong during configuration, a warning is logged and
      * the method continues gracefully (no exception is thrown).
      *
@@ -90,6 +107,9 @@ public class MavenProxyConfigurator {
      */
     public void configureProxy(SessionBuilder builder) {
         try {
+            // STEP 1: Save original system properties BEFORE we modify them
+            saveOriginalProxyProperties();
+
             DefaultProxySelector proxySelector = new DefaultProxySelector();
 
             // Build optional authentication
@@ -112,7 +132,7 @@ public class MavenProxyConfigurator {
             logger.info("Maven resolver proxy configured for HTTP and HTTPS: {}:{} (non-proxy hosts: {})",
                 proxyHost, proxyPort, nonProxyHostsPattern);
 
-            // CRITICAL: Set Java system properties for JdkTransporterFactory
+            // STEP 2: Set Java system properties for JdkTransporterFactory
             setJavaSystemProxyProperties(nonProxyHostsPattern);
 
             logger.info("Java system proxy properties set for HTTP/HTTPS transporter");
@@ -169,6 +189,9 @@ public class MavenProxyConfigurator {
      * <p>This is CRITICAL because JdkTransporterFactory uses Java's HttpClient,
      * which does NOT respect Aether's ProxySelector — it only reads system properties.
      *
+     * <p><strong>Warning:</strong> This modifies JVM-wide system properties!
+     * Always call {@link #restoreOriginalProxyProperties()} after Maven resolution completes.
+     *
      * @param nonProxyHostsPattern the pipe-delimited non-proxy hosts pattern
      */
     private void setJavaSystemProxyProperties(String nonProxyHostsPattern) {
@@ -191,6 +214,95 @@ public class MavenProxyConfigurator {
         if (nonProxyHostsPattern != null && !nonProxyHostsPattern.isEmpty()) {
             System.setProperty("http.nonProxyHosts", nonProxyHostsPattern);
             // Note: https uses the same nonProxyHosts property as http
+        }
+    }
+
+    /**
+     * Saves the current Java system proxy properties so they can be restored later.
+     *
+     * <p>This method captures the current state of all proxy-related system properties
+     * BEFORE we modify them. This allows us to restore the original state after Maven
+     * resolution completes, preventing our temporary proxy settings from leaking to
+     * other parts of the application.
+     *
+     * <p>This method is called automatically by {@link #configureProxy(SessionBuilder)}.
+     */
+    private void saveOriginalProxyProperties() {
+        try {
+            originalHttpProxyHost = System.getProperty("http.proxyHost");
+            originalHttpProxyPort = System.getProperty("http.proxyPort");
+            originalHttpProxyUser = System.getProperty("http.proxyUser");
+            originalHttpProxyPassword = System.getProperty("http.proxyPassword");
+            originalHttpsProxyHost = System.getProperty("https.proxyHost");
+            originalHttpsProxyPort = System.getProperty("https.proxyPort");
+            originalHttpsProxyUser = System.getProperty("https.proxyUser");
+            originalHttpsProxyPassword = System.getProperty("https.proxyPassword");
+            originalHttpNonProxyHosts = System.getProperty("http.nonProxyHosts");
+
+            logger.debug("Original proxy properties saved for later restoration");
+        } catch (Exception e) {
+            logger.warn("Failed to save original proxy properties. Restoration may not work correctly. Error: {}", e.getMessage());
+            logger.debug("Save exception details:", e);
+        }
+    }
+
+    /**
+     * Restores the original Java system proxy properties that were saved by
+     * {@link #saveOriginalProxyProperties()}.
+     *
+     * <p><strong>MUST</strong> be called after Maven dependency resolution completes
+     * to ensure other HTTP calls in the application are not affected by Maven's
+     * proxy configuration.
+     *
+     * <p><strong>Best Practice:</strong> Call this in a finally block to guarantee
+     * cleanup happens even if Maven resolution fails:
+     * <pre>{@code
+     * MavenProxyConfigurator proxyConfig = new MavenProxyConfigurator(...);
+     * try {
+     *     proxyConfig.configureProxy(sessionBuilder);
+     *     // ... do Maven resolution ...
+     * } finally {
+     *     proxyConfig.restoreOriginalProxyProperties();
+     * }
+     * }</pre>
+     *
+     * <p>If restoration fails (which is rare), a warning is logged but no exception
+     * is thrown to prevent disrupting the main Maven resolution flow.
+     */
+    public void restoreOriginalProxyProperties() {
+        try {
+            restoreProperty("http.proxyHost", originalHttpProxyHost);
+            restoreProperty("http.proxyPort", originalHttpProxyPort);
+            restoreProperty("http.proxyUser", originalHttpProxyUser);
+            restoreProperty("http.proxyPassword", originalHttpProxyPassword);
+            restoreProperty("https.proxyHost", originalHttpsProxyHost);
+            restoreProperty("https.proxyPort", originalHttpsProxyPort);
+            restoreProperty("https.proxyUser", originalHttpsProxyUser);
+            restoreProperty("https.proxyPassword", originalHttpsProxyPassword);
+            restoreProperty("http.nonProxyHosts", originalHttpNonProxyHosts);
+
+            logger.debug("Original Java system proxy properties restored successfully");
+        } catch (Exception e) {
+            // Don't throw - just log the warning and continue
+            // Better to have a leaked proxy config than to crash the entire scan
+            logger.warn("Failed to restore original proxy properties. System proxy settings may be modified. Error: {}", e.getMessage());
+            logger.debug("Restore exception details:", e);
+        }
+    }
+
+    /**
+     * Helper method to restore a single system property.
+     * If the original value was null (property didn't exist), the property is cleared.
+     * If the original value was non-null, it's restored.
+     *
+     * @param key the system property key
+     * @param originalValue the original value to restore (may be null)
+     */
+    private void restoreProperty(String key, @Nullable String originalValue) {
+        if (originalValue == null) {
+            System.clearProperty(key);
+        } else {
+            System.setProperty(key, originalValue);
         }
     }
 }
