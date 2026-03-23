@@ -1,5 +1,7 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver;
 
+import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenMirrorConfig;
+import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenMirrorConfigurator;
 import com.blackduck.integration.detectable.detectables.maven.resolver.model.*;
 
 import java.io.File;
@@ -65,16 +67,23 @@ public class MavenDependencyResolver {
     @Nullable
     private final MavenProxyConfigurator proxyConfigurator;
 
+    // Mirror configurator — handles corporate mirror (repository manager) configuration.
+    // Null if no mirrors are configured.
+    @Nullable
+    private final MavenMirrorConfigurator mirrorConfigurator;
+
     /**
-     * No-arg constructor: no proxy configured.
+     * No-arg constructor: no proxy or mirrors configured.
      * Kept for backward compatibility with existing callers (e.g. module processor).
      */
     public MavenDependencyResolver() {
-        this(null, 0, null, null, Collections.emptyList());
+        this(null, 0, null, null, Collections.emptyList(), Collections.emptyList());
     }
 
     /**
-     * Constructs a resolver with forward-proxy support.
+     * Constructs a resolver with forward-proxy support (no mirrors).
+     *
+     * <p>This constructor is provided for backward compatibility.
      *
      * @param proxyHost         Proxy hostname or IP — plain value, <strong>no</strong> {@code http://} or {@code https://} prefix.
      * @param proxyPort         Proxy port (0 means no proxy).
@@ -89,6 +98,27 @@ public class MavenDependencyResolver {
         @Nullable String proxyPassword,
         List<String> proxyIgnoredHosts
     ) {
+        this(proxyHost, proxyPort, proxyUsername, proxyPassword, proxyIgnoredHosts, Collections.emptyList());
+    }
+
+    /**
+     * Constructs a resolver with forward-proxy and corporate mirror support.
+     *
+     * @param proxyHost            Proxy hostname or IP — plain value, <strong>no</strong> {@code http://} or {@code https://} prefix.
+     * @param proxyPort            Proxy port (0 means no proxy).
+     * @param proxyUsername        Optional proxy-auth username (may be null).
+     * @param proxyPassword        Optional proxy-auth password (may be null).
+     * @param proxyIgnoredHosts    Host patterns that should bypass the proxy (may be empty, never null).
+     * @param mirrorConfigurations List of mirror configurations for corporate repository managers.
+     */
+    public MavenDependencyResolver(
+        @Nullable String proxyHost,
+        int proxyPort,
+        @Nullable String proxyUsername,
+        @Nullable String proxyPassword,
+        List<String> proxyIgnoredHosts,
+        List<MavenMirrorConfig> mirrorConfigurations
+    ) {
         // Create MavenProxyConfigurator only if proxy is configured (host is non-blank and port is valid)
         if (proxyHost != null && !proxyHost.trim().isEmpty() && proxyPort > 0) {
             this.proxyConfigurator = new MavenProxyConfigurator(
@@ -100,6 +130,14 @@ public class MavenDependencyResolver {
             );
         } else {
             this.proxyConfigurator = null;
+        }
+
+        // Create MavenMirrorConfigurator only if mirrors are configured
+        if (mirrorConfigurations != null && !mirrorConfigurations.isEmpty()) {
+            this.mirrorConfigurator = new MavenMirrorConfigurator(mirrorConfigurations);
+            logger.info("Mirror configurator initialized with {} mirror(s)", mirrorConfigurations.size());
+        } else {
+            this.mirrorConfigurator = null;
         }
 
         this.repositorySystem = new RepositorySystemSupplier() {
@@ -429,6 +467,11 @@ public class MavenDependencyResolver {
             proxyConfigurator.configureProxy(builder);
         }
 
+        // Configure mirrors if available
+        if (mirrorConfigurator != null) {
+            mirrorConfigurator.configureMirrors(builder);
+        }
+
         return builder.build();
     }
 
@@ -445,6 +488,11 @@ public class MavenDependencyResolver {
             // Configure proxy if available
             if (proxyConfigurator != null) {
                 proxyConfigurator.configureProxy(builder);
+            }
+
+            // Configure mirrors if available
+            if (mirrorConfigurator != null) {
+                mirrorConfigurator.configureMirrors(builder);
             }
 
             return builder.build();

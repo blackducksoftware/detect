@@ -1197,6 +1197,64 @@ public class DetectProperties {
                     .setExample("https://repo1.company.com/maven2,https://nexus.internal.net/repository/maven-public")
                     .build();
 
+    public static final NullableStringProperty DETECT_MAVEN_BUILDLESS_MIRROR_URL =
+            NullableStringProperty.newBuilder("detect.maven.buildless.mirror.url")
+                    .setInfo("Maven Buildless Mirror URL", DetectPropertyFromVersion.VERSION_11_1_0)
+                    .setHelp(
+                            "The URL of the corporate mirror (repository manager) to use for Maven buildless dependency resolution.",
+                            "When specified, all Maven repository requests will be routed through this mirror. This is commonly used in air-gapped or corporate environments with Nexus, Artifactory, or similar repository managers. If this property is set, settings.xml mirrors are ignored."
+                    )
+                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .setExample("https://nexus.company.com/repository/maven-public")
+                    .build();
+
+    public static final NullableStringProperty DETECT_MAVEN_BUILDLESS_MIRROR_OF =
+            NullableStringProperty.newBuilder("detect.maven.buildless.mirror.of")
+                    .setInfo("Maven Buildless Mirror Of Pattern", DetectPropertyFromVersion.VERSION_11_1_0)
+                    .setHelp(
+                            "The repository matching pattern for the mirror (follows Maven's mirrorOf syntax).",
+                            "Specifies which repositories the mirror intercepts. Common patterns: '*' (all repositories), 'central' (only Maven Central), '*,!internal' (all except 'internal'). Defaults to '*' if not specified when mirror.url is provided."
+                    )
+                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .setExample("*")
+                    .build();
+
+    public static final NullableStringProperty DETECT_MAVEN_BUILDLESS_MIRROR_USERNAME =
+            NullableStringProperty.newBuilder("detect.maven.buildless.mirror.username")
+                    .setInfo("Maven Buildless Mirror Username", DetectPropertyFromVersion.VERSION_11_1_0)
+                    .setHelp(
+                            "The username for authenticating with the corporate mirror.",
+                            "Used for basic authentication with the repository manager specified by detect.maven.buildless.mirror.url."
+                    )
+                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
+
+    public static final NullableStringProperty DETECT_MAVEN_BUILDLESS_MIRROR_PASSWORD =
+            NullableStringProperty.newBuilder("detect.maven.buildless.mirror.password")
+                    .setInfo("Maven Buildless Mirror Password", DetectPropertyFromVersion.VERSION_11_1_0)
+                    .setHelp(
+                            "The password for authenticating with the corporate mirror.",
+                            "Used for basic authentication with the repository manager specified by detect.maven.buildless.mirror.url."
+                    )
+                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
+
+    public static final NullablePathProperty DETECT_MAVEN_BUILDLESS_SETTINGS_FILE_PATH =
+            NullablePathProperty.newBuilder("detect.maven.buildless.settings.file.path")
+                    .setInfo("Maven Buildless Settings File Path", DetectPropertyFromVersion.VERSION_11_1_0)
+                    .setHelp(
+                            "Path to a Maven settings.xml file to parse for mirror configurations.",
+                            "If not specified, defaults to ~/.m2/settings.xml. The parser extracts <mirror> and <server> elements to configure corporate repository managers. CLI mirror properties (detect.maven.buildless.mirror.*) take precedence over settings.xml configuration. If the specified file does not exist, extraction will fail."
+                    )
+                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .setExample("/path/to/custom/settings.xml")
+                    .build();
+
     public static final BooleanProperty DETECT_NOTICES_REPORT =
         BooleanProperty.newBuilder("detect.notices.report", false)
             .setInfo("Generate Notices Report", DetectPropertyFromVersion.VERSION_3_0_0)

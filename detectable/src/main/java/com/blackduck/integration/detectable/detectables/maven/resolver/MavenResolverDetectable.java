@@ -208,18 +208,26 @@ public class MavenResolverDetectable extends Detectable {
             logger.info("  Managed dependencies found: {}", mavenProject.getDependencyManagement().size());
 
             // PHASE 2: Resolve dependencies using Aether for both compile and test scopes
-            // Create the resolver with proxy configuration from the global blackduck.proxy.* settings.
-            // If no proxy is configured, the resolver operates without one (backward compatible).
+            // Create the resolver with proxy and mirror configurations.
+            // Proxy configuration comes from the global blackduck.proxy.* settings.
+            // Mirror configuration comes from CLI flags or settings.xml (handled by DetectableOptionFactory).
             MavenDependencyResolver dependencyResolver;
-            if (mavenResolverOptions != null && mavenResolverOptions.hasProxyConfiguration()) {
-                logger.info("Creating Maven dependency resolver with proxy: {}:{}",
-                    mavenResolverOptions.getProxyHost(), mavenResolverOptions.getProxyPort());
+            if (mavenResolverOptions != null && (mavenResolverOptions.hasProxyConfiguration() || mavenResolverOptions.hasMirrorConfiguration())) {
+                if (mavenResolverOptions.hasProxyConfiguration()) {
+                    logger.info("Creating Maven dependency resolver with proxy: {}:{}",
+                        mavenResolverOptions.getProxyHost(), mavenResolverOptions.getProxyPort());
+                }
+                if (mavenResolverOptions.hasMirrorConfiguration()) {
+                    logger.info("Creating Maven dependency resolver with {} mirror(s)",
+                        mavenResolverOptions.getMirrorConfigurations().size());
+                }
                 dependencyResolver = new MavenDependencyResolver(
                     mavenResolverOptions.getProxyHost(),
                     mavenResolverOptions.getProxyPort(),
                     mavenResolverOptions.getProxyUsername(),
                     mavenResolverOptions.getProxyPassword(),
-                    mavenResolverOptions.getProxyIgnoredHosts()
+                    mavenResolverOptions.getProxyIgnoredHosts(),
+                    mavenResolverOptions.getMirrorConfigurations()
                 );
             } else {
                 dependencyResolver = new MavenDependencyResolver();
