@@ -285,5 +285,77 @@ class BazelQueryBuilderTest {
         assertEquals("--output", result.get(2));
         assertEquals("xml", result.get(3));
     }
+
+    // ===== withOptions(List<String>) overload tests =====
+
+    @Test
+    void testQueryWithOptionsList_optionsInsertedBeforeExpression() {
+        // Verifies each option in the list becomes a separate arg, ordered before the query expression
+        List<String> result = BazelQueryBuilder.query()
+            .kind(".*library", BazelQueryBuilder.deps("//:test"))
+            .withOptions(List.of("--config=myconfig", "--keep_going"))
+            .build();
+
+        assertEquals(4, result.size());
+        assertEquals("query", result.get(0));
+        assertEquals("--config=myconfig", result.get(1));
+        assertEquals("--keep_going", result.get(2));
+        assertEquals("kind(.*library, deps(//:test))", result.get(3));
+    }
+
+    @Test
+    void testQueryWithOptionsList_outputFlagsStillAppendedAfterExpression() {
+        // Verifies list options land before the expression and --output flags still land after
+        List<String> result = BazelQueryBuilder.query()
+            .kind("maven_jar", "${input.item}")
+            .withOptions(List.of("--opt1"))
+            .withOutput(OutputFormat.XML)
+            .build();
+
+        assertEquals(5, result.size());
+        assertEquals("query", result.get(0));
+        assertEquals("--opt1", result.get(1));
+        assertEquals("kind(maven_jar, ${input.item})", result.get(2));
+        assertEquals("--output", result.get(3));
+        assertEquals("xml", result.get(4));
+    }
+
+    @Test
+    void testCqueryWithOptionsList_optionsInsertedBeforeExpression() {
+        // Verifies each option in the list becomes a separate arg, ordered before the cquery expression
+        List<String> result = BazelQueryBuilder.cquery()
+            .kind("j.*import", BazelQueryBuilder.deps("//:test"))
+            .withOptions(List.of("--config=myconfig", "--keep_going"))
+            .withOutput(OutputFormat.BUILD)
+            .build();
+
+        assertEquals(6, result.size());
+        assertEquals("cquery", result.get(0));
+        assertEquals("--config=myconfig", result.get(1));
+        assertEquals("--keep_going", result.get(2));
+        assertEquals("kind(j.*import, deps(//:test))", result.get(3));
+        assertEquals("--output", result.get(4));
+        assertEquals("build", result.get(5));
+    }
+
+    @Test
+    void testCqueryWithOptionsList_interactsCorrectlyWithNoImplicitDeps() {
+        // The critical ordering test for the probing phase:
+        // --noimplicit_deps (a flag) must come before list options, expression last before --output
+        List<String> result = BazelQueryBuilder.cquery()
+            .kind("j.*import", BazelQueryBuilder.deps("//:test"))
+            .withNoImplicitDeps()
+            .withOptions(List.of("--config=myconfig"))
+            .withOutput(OutputFormat.BUILD)
+            .build();
+
+        assertEquals(6, result.size());
+        assertEquals("cquery", result.get(0));
+        assertEquals("--noimplicit_deps", result.get(1));
+        assertEquals("--config=myconfig", result.get(2));
+        assertEquals("kind(j.*import, deps(//:test))", result.get(3));
+        assertEquals("--output", result.get(4));
+        assertEquals("build", result.get(5));
+    }
 }
 
