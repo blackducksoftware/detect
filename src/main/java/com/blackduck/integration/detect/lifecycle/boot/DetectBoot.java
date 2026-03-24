@@ -386,23 +386,27 @@ public class DetectBoot {
             return; // User already saw their configured value in the normal property output
         }
 
-        // Determine the value to display
-        String scanTypesValue = (settings.getCorrelatedScanningScanTypes() != null && !settings.getCorrelatedScanningScanTypes().isEmpty())
-            ? String.join(", ", settings.getCorrelatedScanningScanTypes())
-            : "[]";
+        boolean correlatedScanningEnabled = settings.isCorrelatedScanningEnabled();
+
+        // Only log if the server has this enabled; don't log at all if false
+        if (!correlatedScanningEnabled) {
+            return;
+        }
+
+        String correlatedScanningValue = String.valueOf(correlatedScanningEnabled);
 
         // Log to console
         logger.info("");
         logger.info("Black Duck SCA global properties:");
         logger.info("--property = value [notes]");
         logger.info("------------------------------------------------------------");
-        logger.info("detect.blackduck.correlated.scanning.enabled = {} [SCA]", scanTypesValue);
+        logger.info("detect.blackduck.correlated.scanning.enabled = {} [SCA]", correlatedScanningValue);
         logger.info("------------------------------------------------------------");
         logger.info("");
 
         // Append to diagnostic report if diagnostic mode is enabled
         if (diagnosticSystem != null) {
-            diagnosticSystem.appendBlackDuckServerProperties(scanTypesValue);
+            diagnosticSystem.appendBlackDuckServerProperties(correlatedScanningValue);
         }
     }
 }
