@@ -60,6 +60,10 @@ import org.slf4j.LoggerFactory;
  */
 public class MavenDependencyResolver {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+    private static final String MAVEN_CENTRAL_URL = "https://repo.maven.apache.org/maven2/";
+    private static final String REPOSITORY_TYPE_DEFAULT = "default";
+
     private final RepositorySystem repositorySystem;
 
     // Proxy configurator — handles all forward-proxy configuration.
@@ -320,7 +324,7 @@ public class MavenDependencyResolver {
                 try {
                     // Generate a unique ID based on the URL
                     String id = "external-" + trimmedUrl.replaceAll("[^a-zA-Z0-9]", "-").substring(0, Math.min(50, trimmedUrl.length()));
-                    RemoteRepository.Builder builder = new RemoteRepository.Builder(id, "default", trimmedUrl);
+                    RemoteRepository.Builder builder = new RemoteRepository.Builder(id, REPOSITORY_TYPE_DEFAULT, trimmedUrl);
                     externalRepos.add(builder.build());
                     logger.info("Added external repository: {} (id: {})", trimmedUrl, id);
                 } catch (Exception e) {
@@ -340,7 +344,7 @@ public class MavenDependencyResolver {
                 .map(repo -> {
                     String id = repo.getId() == null || repo.getId().trim().isEmpty() ? repo.getUrl() : repo.getId();
                     try {
-                        RemoteRepository.Builder builder = new RemoteRepository.Builder(id, "default", repo.getUrl());
+                        RemoteRepository.Builder builder = new RemoteRepository.Builder(id, REPOSITORY_TYPE_DEFAULT, repo.getUrl());
                         if (!repo.isReleasesEnabled()) {
                             logger.info("Repository {} has releases disabled", repo.getUrl());
                         }
@@ -350,7 +354,7 @@ public class MavenDependencyResolver {
                         return builder.build();
                     } catch (Exception e) {
                         logger.info("Failed to construct RemoteRepository for {} (id: {}). Falling back to basic builder. Exception: {}", repo.getUrl(), id, e.getMessage());
-                        return new RemoteRepository.Builder(id, "default", repo.getUrl()).build();
+                        return new RemoteRepository.Builder(id, REPOSITORY_TYPE_DEFAULT, repo.getUrl()).build();
                     }
                 })
                 .collect(Collectors.toList());
@@ -361,10 +365,10 @@ public class MavenDependencyResolver {
             logger.info("No repositories declared in POM.");
         }
 
-        RemoteRepository central = new RemoteRepository.Builder("central", "default", "https://repo.maven.apache.org/maven2/").build();
+        RemoteRepository central = new RemoteRepository.Builder("central", REPOSITORY_TYPE_DEFAULT, MAVEN_CENTRAL_URL).build();
         // Check if Central is present in either external or declared repos
-        boolean centralPresent = externalRepos.stream().anyMatch(r -> "https://repo.maven.apache.org/maven2/".equalsIgnoreCase(r.getUrl()))
-            || declaredRepositories.stream().anyMatch(r -> "https://repo.maven.apache.org/maven2/".equalsIgnoreCase(r.getUrl()));
+        boolean centralPresent = externalRepos.stream().anyMatch(r -> MAVEN_CENTRAL_URL.equalsIgnoreCase(r.getUrl()))
+            || declaredRepositories.stream().anyMatch(r -> MAVEN_CENTRAL_URL.equalsIgnoreCase(r.getUrl()));
 
         CollectRequest collectRequest = new CollectRequest();
         collectRequest.setRoot(new Dependency(new DefaultArtifact(
