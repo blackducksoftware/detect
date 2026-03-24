@@ -151,6 +151,22 @@ public class DiagnosticReportHandler {
         }
     }
 
+    public void appendBlackDuckServerProperties(String scanTypesValue) {
+        try {
+            ReportWriter profileWriter = getReportWriter(ReportTypes.CONFIGURATION);
+            profileWriter.writeSeparator();
+            profileWriter.writeLine("Black Duck SCA Global Properties");
+            profileWriter.writeSeparator();
+            profileWriter.writeLine("--property = value [notes]");
+            profileWriter.writeLine("------------------------------------------------------------");
+            profileWriter.writeLine("detect.blackduck.correlated.scanning.enabled = " + scanTypesValue + " [SCA]");
+            profileWriter.writeLine("------------------------------------------------------------");
+            profileWriter.writeLine("");
+        } catch (Exception e) {
+            logger.error("Failed to write Black Duck server properties to configuration report.", e);
+        }
+    }
+
     private void createReports() {
         for (ReportTypes reportType : ReportTypes.values()) {
             try {

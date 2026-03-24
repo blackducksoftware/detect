@@ -127,6 +127,12 @@ public class DiagnosticSystem {
         logger.info("Diagnostic mode has completed.");
     }
 
+    public void appendBlackDuckServerProperties(String scanTypesValue) {
+        if (diagnosticReportHandler != null) {
+            diagnosticReportHandler.appendBlackDuckServerProperties(scanTypesValue);
+        }
+    }
+
     private boolean createZip() {
         List<File> directoriesToCompress = new ArrayList<>();
         directoriesToCompress.add(directoryManager.getRunHomeDirectory());
