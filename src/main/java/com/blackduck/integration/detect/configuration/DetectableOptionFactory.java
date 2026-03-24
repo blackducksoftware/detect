@@ -1,7 +1,6 @@
 package com.blackduck.integration.detect.configuration;
 
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -9,13 +8,10 @@ import java.util.Set;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDetectableOptions;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
 import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenMirrorConfig;
-import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenSettingsParseException;
-import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenSettingsParser;
+import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenMirrorConfigResolver;
 import com.blackduck.integration.detectable.detectables.nuget.NugetDependencyType;
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.blackduck.integration.detect.workflow.diagnostic.DiagnosticSystem;
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
@@ -68,8 +64,6 @@ import com.blackduck.integration.log.LogLevel;
 import com.blackduck.integration.rest.proxy.ProxyInfo;
 
 public class DetectableOptionFactory {
-
-    private static final Logger logger = LoggerFactory.getLogger(DetectableOptionFactory.class);
 
     private final DetectPropertyConfiguration detectConfiguration;
     @Nullable
@@ -233,88 +227,18 @@ public class DetectableOptionFactory {
         // Read the global proxy-bypass list (blackduck.proxy.ignored.hosts).
         List<String> proxyIgnoredHosts = detectConfiguration.getValue(DetectProperties.BLACKDUCK_PROXY_IGNORED_HOSTS);
 
-        // Resolve mirror configurations using precedence logic:
-        // Priority 1: CLI mirror properties
-        // Priority 2: settings.xml file
-        // Priority 3: No mirrors (empty list)
-        List<MavenMirrorConfig> mirrorConfigurations = resolveMirrorConfigurations();
+        // Read raw mirror property values — no logic here, just reading config.
+        String cliMirrorUrl      = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_BUILDLESS_MIRROR_URL);
+        String cliMirrorOf       = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_BUILDLESS_MIRROR_OF);
+        String cliMirrorUsername = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_BUILDLESS_MIRROR_USERNAME);
+        String cliMirrorPassword = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_BUILDLESS_MIRROR_PASSWORD);
+        Path   settingsFilePath  = detectConfiguration.getPathOrNull(DetectProperties.DETECT_MAVEN_BUILDLESS_SETTINGS_FILE_PATH);
+
+        // Delegate all precedence logic (CLI vs settings.xml vs empty) to the domain class.
+        List<MavenMirrorConfig> mirrorConfigurations = new MavenMirrorConfigResolver()
+            .resolve(cliMirrorUrl, cliMirrorOf, cliMirrorUsername, cliMirrorPassword, settingsFilePath);
 
         return new MavenResolverOptions(externalRepositories, proxyHost, proxyPort, proxyUsername, proxyPassword, proxyIgnoredHosts, mirrorConfigurations);
-    }
-
-    /**
-     * Resolves mirror configurations using the following precedence:
-     *
-     * <ol>
-     *   <li><strong>Priority 1 - CLI Override:</strong> If detect.maven.buildless.mirror.url is provided,
-     *       create a single mirror config from CLI properties. Settings.xml is ignored.</li>
-     *   <li><strong>Priority 2 - settings.xml Fallback:</strong> If CLI URL is absent, parse settings.xml
-     *       (from explicit path or default ~/.m2/settings.xml) for mirror configurations.</li>
-     *   <li><strong>Priority 3 - Default:</strong> If no mirrors found, return empty list.</li>
-     * </ol>
-     *
-     * @return List of mirror configurations, never null
-     */
-    private List<MavenMirrorConfig> resolveMirrorConfigurations() {
-        // Priority 1: CLI Override
-        String cliMirrorUrl = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_BUILDLESS_MIRROR_URL);
-
-        if (cliMirrorUrl != null && !cliMirrorUrl.trim().isEmpty()) {
-            logger.info("Using CLI mirror configuration. Ignoring settings.xml mirrors.");
-
-            String mirrorOf = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_BUILDLESS_MIRROR_OF);
-            // If mirror.url is provided but mirror.of is blank, default mirror.of to * (intercept everything)
-            // to prevent unexpected bypasses.
-            if (mirrorOf == null || mirrorOf.trim().isEmpty()) {
-                mirrorOf = "*";
-                logger.info("No mirrorOf pattern specified. Defaulting to '*' (intercept all repositories).");
-            }
-
-            String username = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_BUILDLESS_MIRROR_USERNAME);
-            String password = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_BUILDLESS_MIRROR_PASSWORD);
-
-            MavenMirrorConfig cliMirror = new MavenMirrorConfig(
-                "detect-cli-mirror",
-                cliMirrorUrl.trim(),
-                mirrorOf.trim(),
-                username,
-                password
-            );
-
-            logger.info("CLI mirror configured: url='{}', mirrorOf='{}', hasAuth={}",
-                cliMirrorUrl, mirrorOf, (username != null && password != null));
-
-            return Collections.singletonList(cliMirror);
-        }
-
-        // Priority 2: settings.xml Fallback
-        Path settingsFilePath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_MAVEN_BUILDLESS_SETTINGS_FILE_PATH);
-        MavenSettingsParser settingsParser = new MavenSettingsParser();
-
-        try {
-            List<MavenMirrorConfig> mirrorConfigs;
-
-            if (settingsFilePath != null) {
-                // Explicit path provided - fail if file doesn't exist
-                logger.info("Parsing mirrors from specified settings.xml: {}", settingsFilePath);
-                mirrorConfigs = settingsParser.parseSettingsFile(settingsFilePath);
-            } else {
-                // Use default path (~/.m2/settings.xml) - don't fail if missing
-                mirrorConfigs = settingsParser.parseDefaultSettings();
-            }
-
-            if (!mirrorConfigs.isEmpty()) {
-                logger.info("Loaded {} mirror(s) from settings.xml", mirrorConfigs.size());
-            }
-
-            return mirrorConfigs;
-
-        } catch (MavenSettingsParseException e) {
-            // If explicitly provided settings file fails to parse, we need to propagate this error.
-            // Wrap in RuntimeException to fail the extraction - this will be caught by the detectable.
-            logger.error("Failed to parse Maven settings.xml: {}", e.getMessage());
-            throw new RuntimeException("Failed to parse Maven settings.xml for mirror configuration: " + e.getMessage(), e);
-        }
     }
 
     public ConanCliOptions createConanCliOptions() {
