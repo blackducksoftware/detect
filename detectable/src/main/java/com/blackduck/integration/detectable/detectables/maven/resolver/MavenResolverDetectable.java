@@ -236,8 +236,8 @@ public class MavenResolverDetectable extends Detectable {
                     externalRepositories.size(), String.join(", ", externalRepositories));
             }
 
-            // TODO: expose a configuration flag `includeTestScope` later; for now we enable two-phase collection (compile + test)
-            boolean includeTestScope = true; // TODO: make configurable
+            // Read test scope configuration from options (configurable via detect.maven.include.test.scope)
+            boolean includeTestScope = mavenResolverOptions != null ? mavenResolverOptions.getIncludeTestScope() : true;
 
             // Perform compile-phase dependency collection
             CollectResult collectResultCompile = dependencyResolver.resolveDependencies(

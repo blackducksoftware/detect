@@ -245,7 +245,10 @@ public class DetectableOptionFactory {
         List<MavenMirrorConfig> mirrorConfigurations = new MavenMirrorConfigResolver()
             .resolve(cliMirrorUrl, cliMirrorOf, cliMirrorUsername, cliMirrorPassword, settingsFilePath);
 
-        return new MavenResolverOptions(externalRepositories, proxyConfig, mirrorConfigurations);
+        // Read test scope inclusion configuration
+        Boolean includeTestScope = detectConfiguration.getValue(DetectProperties.DETECT_MAVEN_INCLUDE_TEST_SCOPE);
+
+        return new MavenResolverOptions(externalRepositories, proxyConfig, mirrorConfigurations, includeTestScope);
     }
 
     public ConanCliOptions createConanCliOptions() {

@@ -1199,6 +1199,16 @@ public class DetectProperties {
                     .setExample("https://repo1.company.com/maven2,https://nexus.internal.net/repository/maven-public")
                     .build();
 
+    public static final BooleanProperty DETECT_MAVEN_INCLUDE_TEST_SCOPE =
+            BooleanProperty.newBuilder("detect.maven.include.test.scope", true)
+                    .setInfo("Include Test Scope Dependencies", DetectPropertyFromVersion.VERSION_11_1_0)
+                    .setHelp(
+                            "If set to true, Detect will include test-scope dependencies in the dependency resolution.",
+                            "When enabled, both compile and test scope dependencies will be resolved and reported. When disabled, only compile-scope dependencies will be included. This applies to the Maven Resolver detectable (buildless mode). Default is true."
+                    )
+                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
+                    .build();
+
     public static final NullableStringProperty DETECT_MAVEN_BUILDLESS_MIRROR_URL =
             NullableStringProperty.newBuilder("detect.maven.buildless.mirror.url")
                     .setInfo("Maven Buildless Mirror URL", DetectPropertyFromVersion.VERSION_11_1_0)

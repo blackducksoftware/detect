@@ -50,6 +50,9 @@ public class MavenResolverOptions {
     // These allow routing Maven requests through a corporate repository manager.
     private final List<MavenMirrorConfig> mirrorConfigurations;
 
+    // Configuration for including test-scope dependencies
+    private final boolean includeTestScope;
+
     /**
      * Constructs MavenResolverOptions with external repositories, proxy, and mirror configuration.
      *
@@ -58,15 +61,18 @@ public class MavenResolverOptions {
      * @param proxyConfig           Proxy configuration (may be null if no proxy is configured).
      * @param mirrorConfigurations  List of mirror configurations for corporate repository managers.
      *                              May be empty if no mirrors are configured.
+     * @param includeTestScope      Whether to include test-scope dependencies in resolution.
      */
     public MavenResolverOptions(
         List<String> externalRepositories,
         @Nullable MavenProxyConfig proxyConfig,
-        List<MavenMirrorConfig> mirrorConfigurations
+        List<MavenMirrorConfig> mirrorConfigurations,
+        boolean includeTestScope
     ) {
         this.externalRepositories = externalRepositories != null ? externalRepositories : Collections.emptyList();
         this.proxyConfig = proxyConfig;
         this.mirrorConfigurations = mirrorConfigurations != null ? mirrorConfigurations : Collections.emptyList();
+        this.includeTestScope = includeTestScope;
     }
 
     /**
@@ -93,7 +99,7 @@ public class MavenResolverOptions {
         List<MavenMirrorConfig> mirrorConfigurations
     ) {
         this.externalRepositories = externalRepositories != null ? externalRepositories : Collections.emptyList();
-        
+
         // Convert individual proxy fields to MavenProxyConfig if proxy is configured
         if (proxyHost != null && !proxyHost.trim().isEmpty() && proxyPort > 0) {
             this.proxyConfig = new MavenProxyConfig(
@@ -106,8 +112,9 @@ public class MavenResolverOptions {
         } else {
             this.proxyConfig = null;
         }
-        
+
         this.mirrorConfigurations = mirrorConfigurations != null ? mirrorConfigurations : Collections.emptyList();
+        this.includeTestScope = true; // Default to true for backward compatibility
     }
 
     /**
@@ -132,7 +139,7 @@ public class MavenResolverOptions {
         List<String> proxyIgnoredHosts
     ) {
         this.externalRepositories = externalRepositories != null ? externalRepositories : Collections.emptyList();
-        
+
         // Convert individual proxy fields to MavenProxyConfig if proxy is configured
         if (proxyHost != null && !proxyHost.trim().isEmpty() && proxyPort > 0) {
             this.proxyConfig = new MavenProxyConfig(
@@ -145,8 +152,9 @@ public class MavenResolverOptions {
         } else {
             this.proxyConfig = null;
         }
-        
+
         this.mirrorConfigurations = Collections.emptyList();
+        this.includeTestScope = true; // Default to true for backward compatibility
     }
 
     /**
@@ -202,6 +210,15 @@ public class MavenResolverOptions {
      */
     public boolean hasMirrorConfiguration() {
         return mirrorConfigurations != null && !mirrorConfigurations.isEmpty();
+    }
+
+    /**
+     * Returns whether test-scope dependencies should be included in resolution.
+     *
+     * @return true if test-scope dependencies should be included, false otherwise
+     */
+    public boolean getIncludeTestScope() {
+        return includeTestScope;
     }
 }
 
