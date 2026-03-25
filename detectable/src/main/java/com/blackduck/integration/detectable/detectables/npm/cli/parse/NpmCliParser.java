@@ -91,34 +91,12 @@ public class NpmCliParser {
      * @return Map of alias name -> actual package name
      */
     private Map<String, String> buildAliasMapping(CombinedPackageJson combinedPackageJson) {
-        Map<String, String> aliasMapping = new HashMap<>();
-
-        // Check all dependency types for aliases
-        scanDependenciesForAliases(combinedPackageJson.getDependencies(), aliasMapping);
-        scanDependenciesForAliases(combinedPackageJson.getDevDependencies(), aliasMapping);
-        scanDependenciesForAliases(combinedPackageJson.getPeerDependencies(), aliasMapping);
-        scanDependenciesForAliases(combinedPackageJson.getOptionalDependencies(), aliasMapping);
-
-        return aliasMapping;
-    }
-
-    private void scanDependenciesForAliases(MultiValuedMap<String, String> dependencies, Map<String, String> aliasMapping) {
-        if (dependencies == null) {
-            return;
-        }
-
-        for (Map.Entry<String, String> entry : dependencies.entries()) {
-            String aliasName = entry.getKey();
-            String versionSpec = entry.getValue();
-
-            if (NpmAliasParser.isNpmAlias(versionSpec)) {
-                String actualPackageName = NpmAliasParser.extractPackageName(versionSpec);
-                if (actualPackageName != null) {
-                    aliasMapping.put(aliasName, actualPackageName);
-                    logger.debug("Found npm alias: {} -> {}", aliasName, actualPackageName);
-                }
-            }
-        }
+        return NpmAliasParser.buildAliasMapping(
+            combinedPackageJson.getDependencies(),
+            combinedPackageJson.getDevDependencies(),
+            combinedPackageJson.getPeerDependencies(),
+            combinedPackageJson.getOptionalDependencies()
+        );
     }
 
     private void populateChildren(DependencyGraph graph, Dependency parentDependency, JsonObject parentNodeChildren, boolean isRootDependency, CombinedPackageJson combinedPackageJson, Map<String, String> aliasMapping) {
