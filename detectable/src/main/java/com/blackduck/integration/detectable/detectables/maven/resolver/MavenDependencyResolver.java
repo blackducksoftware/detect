@@ -2,6 +2,7 @@ package com.blackduck.integration.detectable.detectables.maven.resolver;
 
 import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenMirrorConfig;
 import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenMirrorConfigurator;
+import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenProxyConfig;
 import com.blackduck.integration.detectable.detectables.maven.resolver.model.*;
 
 import java.io.File;
@@ -81,7 +82,7 @@ public class MavenDependencyResolver {
      * Kept for backward compatibility with existing callers (e.g. module processor).
      */
     public MavenDependencyResolver() {
-        this(null, 0, null, null, Collections.emptyList(), Collections.emptyList());
+        this(null, Collections.emptyList());
     }
 
     /**
@@ -102,36 +103,46 @@ public class MavenDependencyResolver {
         @Nullable String proxyPassword,
         List<String> proxyIgnoredHosts
     ) {
-        this(proxyHost, proxyPort, proxyUsername, proxyPassword, proxyIgnoredHosts, Collections.emptyList());
+        // Convert individual proxy fields to MavenProxyConfig
+        MavenProxyConfig proxyConfig = null;
+        if (proxyHost != null && !proxyHost.trim().isEmpty() && proxyPort > 0) {
+            proxyConfig = new MavenProxyConfig(
+                proxyHost,
+                proxyPort,
+                proxyUsername,
+                proxyPassword,
+                proxyIgnoredHosts != null ? proxyIgnoredHosts : Collections.emptyList()
+            );
+        }
+        
+        // Delegate to main constructor
+        this.proxyConfigurator = proxyConfig != null ? new MavenProxyConfigurator(proxyConfig) : null;
+        this.mirrorConfigurator = null;
+        this.repositorySystem = new RepositorySystemSupplier() {
+            @Override
+            protected Map<String, TransporterFactory> createTransporterFactories() {
+                Map<String, TransporterFactory> result = super.createTransporterFactories();
+                result.put(
+                        JdkTransporterFactory.NAME,
+                        new JdkTransporterFactory(getChecksumExtractor(), getPathProcessor()));
+                return result;
+            }
+        }.get();
     }
 
     /**
      * Constructs a resolver with forward-proxy and corporate mirror support.
      *
-     * @param proxyHost            Proxy hostname or IP — plain value, <strong>no</strong> {@code http://} or {@code https://} prefix.
-     * @param proxyPort            Proxy port (0 means no proxy).
-     * @param proxyUsername        Optional proxy-auth username (may be null).
-     * @param proxyPassword        Optional proxy-auth password (may be null).
-     * @param proxyIgnoredHosts    Host patterns that should bypass the proxy (may be empty, never null).
+     * @param proxyConfig          Proxy configuration (may be null if no proxy is configured).
      * @param mirrorConfigurations List of mirror configurations for corporate repository managers.
      */
     public MavenDependencyResolver(
-        @Nullable String proxyHost,
-        int proxyPort,
-        @Nullable String proxyUsername,
-        @Nullable String proxyPassword,
-        List<String> proxyIgnoredHosts,
+        @Nullable MavenProxyConfig proxyConfig,
         List<MavenMirrorConfig> mirrorConfigurations
     ) {
-        // Create MavenProxyConfigurator only if proxy is configured (host is non-blank and port is valid)
-        if (proxyHost != null && !proxyHost.trim().isEmpty() && proxyPort > 0) {
-            this.proxyConfigurator = new MavenProxyConfigurator(
-                proxyHost,
-                proxyPort,
-                proxyUsername,
-                proxyPassword,
-                proxyIgnoredHosts
-            );
+        // Create MavenProxyConfigurator only if proxy config is provided
+        if (proxyConfig != null) {
+            this.proxyConfigurator = new MavenProxyConfigurator(proxyConfig);
         } else {
             this.proxyConfigurator = null;
         }

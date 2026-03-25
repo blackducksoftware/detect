@@ -123,6 +123,17 @@ public class MavenMirrorConfig {
             && password != null && !password.trim().isEmpty();
     }
 
+    /**
+     * Returns a string representation of this mirror configuration.
+     *
+     * <p><strong>Security Note:</strong> This method intentionally does NOT include
+     * the actual username or password fields to prevent credential leakage into log files.
+     * Only the {@code hasAuth} flag is included to indicate whether credentials are configured.
+     *
+     * <p>To access actual credentials, use {@link #getUsername()} and {@link #getPassword()}.
+     *
+     * @return safe string representation with credentials masked
+     */
     @Override
     public String toString() {
         return "MavenMirrorConfig{" +

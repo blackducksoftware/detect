@@ -1,5 +1,6 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver;
 
+import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenProxyConfig;
 import org.eclipse.aether.RepositorySystemSession.SessionBuilder;
 import org.eclipse.aether.repository.Authentication;
 import org.eclipse.aether.repository.Proxy;
@@ -31,13 +32,7 @@ import java.util.List;
 public class MavenProxyConfigurator {
     private static final Logger logger = LoggerFactory.getLogger(MavenProxyConfigurator.class);
 
-    private final String proxyHost;
-    private final int proxyPort;
-    @Nullable
-    private final String proxyUsername;
-    @Nullable
-    private final String proxyPassword;
-    private final List<String> proxyIgnoredHosts;
+    private final MavenProxyConfig proxyConfig;
 
     // Store original system properties so we can restore them later
     // These are captured when configureProxy() is called
@@ -52,7 +47,20 @@ public class MavenProxyConfigurator {
     private String originalHttpNonProxyHosts;
 
     /**
-     * Constructs a proxy configurator with the given settings.
+     * Constructs a proxy configurator with the given proxy configuration.
+     *
+     * @param proxyConfig The proxy configuration (must not be null)
+     * @throws IllegalArgumentException if proxyConfig is null
+     */
+    public MavenProxyConfigurator(MavenProxyConfig proxyConfig) {
+        if (proxyConfig == null) {
+            throw new IllegalArgumentException("Proxy configuration cannot be null");
+        }
+        this.proxyConfig = proxyConfig;
+    }
+
+    /**
+     * Constructs a proxy configurator with individual proxy settings (backward compatibility).
      *
      * @param proxyHost         Proxy hostname or IP — plain value, <strong>no</strong> {@code http://} or {@code https://} prefix.
      * @param proxyPort         Proxy port number (must be &gt; 0).
@@ -75,11 +83,13 @@ public class MavenProxyConfigurator {
             throw new IllegalArgumentException("Proxy port must be greater than 0");
         }
 
-        this.proxyHost = proxyHost.trim();
-        this.proxyPort = proxyPort;
-        this.proxyUsername = proxyUsername;
-        this.proxyPassword = proxyPassword;
-        this.proxyIgnoredHosts = proxyIgnoredHosts != null ? proxyIgnoredHosts : java.util.Collections.emptyList();
+        this.proxyConfig = new MavenProxyConfig(
+            proxyHost.trim(),
+            proxyPort,
+            proxyUsername,
+            proxyPassword,
+            proxyIgnoredHosts != null ? proxyIgnoredHosts : java.util.Collections.emptyList()
+        );
     }
 
     /**
@@ -115,22 +125,22 @@ public class MavenProxyConfigurator {
             // Build optional authentication
             Authentication auth = buildAuthentication();
             if (auth != null) {
-                logger.info("Proxy authentication configured for user: {}", proxyUsername);
+                logger.info("Proxy authentication configured for user: {}", proxyConfig.getUsername());
             }
 
             // Build the non-proxy-hosts string (pipe-delimited)
             String nonProxyHostsPattern = buildNonProxyHostsPattern();
 
             // Configure both HTTP and HTTPS proxies in Aether
-            Proxy httpProxy = new Proxy("http", proxyHost, proxyPort, auth);
-            Proxy httpsProxy = new Proxy("https", proxyHost, proxyPort, auth);
+            Proxy httpProxy = new Proxy("http", proxyConfig.getHost(), proxyConfig.getPort(), auth);
+            Proxy httpsProxy = new Proxy("https", proxyConfig.getHost(), proxyConfig.getPort(), auth);
 
             proxySelector.add(httpProxy, nonProxyHostsPattern);
             proxySelector.add(httpsProxy, nonProxyHostsPattern);
 
             builder.setProxySelector(proxySelector);
             logger.info("Maven resolver proxy configured for HTTP and HTTPS: {}:{} (non-proxy hosts: {})",
-                proxyHost, proxyPort, nonProxyHostsPattern);
+                proxyConfig.getHost(), proxyConfig.getPort(), nonProxyHostsPattern);
 
             // STEP 2: Set Java system properties for JdkTransporterFactory
             setJavaSystemProxyProperties(nonProxyHostsPattern);
@@ -139,7 +149,7 @@ public class MavenProxyConfigurator {
         } catch (Exception e) {
             // Graceful degradation: log the error and continue without proxy
             logger.warn("Failed to configure proxy for Maven resolver ({}:{}). Continuing without proxy. Error: {}",
-                proxyHost, proxyPort, e.getMessage());
+                proxyConfig.getHost(), proxyConfig.getPort(), e.getMessage());
             logger.debug("Proxy configuration exception details:", e);
         }
     }
@@ -151,11 +161,10 @@ public class MavenProxyConfigurator {
      */
     @Nullable
     private Authentication buildAuthentication() {
-        if (proxyUsername != null && !proxyUsername.trim().isEmpty()
-            && proxyPassword != null && !proxyPassword.trim().isEmpty()) {
+        if (proxyConfig.hasAuthentication()) {
             return new AuthenticationBuilder()
-                .addUsername(proxyUsername)
-                .addPassword(proxyPassword)
+                .addUsername(proxyConfig.getUsername())
+                .addPassword(proxyConfig.getPassword())
                 .build();
         }
         return null;
@@ -165,15 +174,16 @@ public class MavenProxyConfigurator {
      * Builds a pipe-delimited string of host patterns that should bypass the proxy.
      *
      * <p>Always includes hardcoded loopback addresses ({@code localhost|127.0.0.1})
-     * and appends user-specified patterns from {@code blackduck.proxy.ignored.hosts}.
+     * and appends user-specified patterns from the proxy configuration.
      *
      * @return pipe-delimited non-proxy hosts pattern, or empty string if none
      */
     private String buildNonProxyHostsPattern() {
         StringBuilder nonProxyHosts = new StringBuilder("localhost|127.0.0.1");
 
-        if (proxyIgnoredHosts != null && !proxyIgnoredHosts.isEmpty()) {
-            for (String pattern : proxyIgnoredHosts) {
+        List<String> configuredPatterns = proxyConfig.getNonProxyHosts();
+        if (configuredPatterns != null && !configuredPatterns.isEmpty()) {
+            for (String pattern : configuredPatterns) {
                 if (pattern != null && !pattern.trim().isEmpty()) {
                     nonProxyHosts.append("|").append(pattern.trim());
                 }
@@ -196,18 +206,17 @@ public class MavenProxyConfigurator {
      */
     private void setJavaSystemProxyProperties(String nonProxyHostsPattern) {
         // Set proxy host and port for both HTTP and HTTPS
-        System.setProperty("http.proxyHost", proxyHost);
-        System.setProperty("http.proxyPort", String.valueOf(proxyPort));
-        System.setProperty("https.proxyHost", proxyHost);
-        System.setProperty("https.proxyPort", String.valueOf(proxyPort));
+        System.setProperty("http.proxyHost", proxyConfig.getHost());
+        System.setProperty("http.proxyPort", String.valueOf(proxyConfig.getPort()));
+        System.setProperty("https.proxyHost", proxyConfig.getHost());
+        System.setProperty("https.proxyPort", String.valueOf(proxyConfig.getPort()));
 
         // Set proxy authentication if available
-        if (proxyUsername != null && !proxyUsername.trim().isEmpty()
-            && proxyPassword != null && !proxyPassword.trim().isEmpty()) {
-            System.setProperty("http.proxyUser", proxyUsername);
-            System.setProperty("http.proxyPassword", proxyPassword);
-            System.setProperty("https.proxyUser", proxyUsername);
-            System.setProperty("https.proxyPassword", proxyPassword);
+        if (proxyConfig.hasAuthentication()) {
+            System.setProperty("http.proxyUser", proxyConfig.getUsername());
+            System.setProperty("http.proxyPassword", proxyConfig.getPassword());
+            System.setProperty("https.proxyUser", proxyConfig.getUsername());
+            System.setProperty("https.proxyPassword", proxyConfig.getPassword());
         }
 
         // Set non-proxy hosts (Java uses pipe-delimited, same as Aether)

@@ -6,6 +6,7 @@ import java.util.List;
 import org.jetbrains.annotations.Nullable;
 
 import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenMirrorConfig;
+import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenProxyConfig;
 
 /**
  * Configuration options for the Maven Resolver Detectable.
@@ -14,36 +15,24 @@ import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.Ma
  * Maven dependency resolution behavior, including external repositories, forward
  * proxy configuration, and corporate mirror (repository manager) support.
  *
- * <p><strong>Proxy configuration:</strong> The proxy details are sourced from the global
- * Detect proxy properties ({@code blackduck.proxy.host}, {@code blackduck.proxy.port},
- * {@code blackduck.proxy.username}, {@code blackduck.proxy.password}).
+ * <p><strong>Proxy configuration:</strong> The proxy details can be sourced from either:
+ * <ul>
+ *   <li>Global Detect proxy properties ({@code blackduck.proxy.host}, {@code blackduck.proxy.port}, etc.)</li>
+ *   <li>Maven's settings.xml file ({@code <proxies>} section)</li>
+ * </ul>
+ * CLI properties take precedence over settings.xml.
  *
  * <p><strong>Mirror configuration:</strong> Mirror settings allow routing Maven artifact
  * requests through a corporate repository manager (e.g., Nexus, Artifactory). Mirrors
  * can be configured via CLI flags or parsed from a settings.xml file. CLI configuration
  * takes precedence over settings.xml.
- *
- * <p><strong>Important:</strong> The proxy host must be a plain hostname or IP address
- * (e.g. {@code proxy.company.com} or {@code 10.0.0.1}). Do <em>not</em> include a
- * scheme/protocol such as {@code http://} or {@code https://}. The Aether proxy
- * layer adds the protocol automatically.
  */
 public class MavenResolverOptions {
     private final List<String> externalRepositories;
 
-    // Proxy fields — sourced from the global blackduck.proxy.* properties.
-    // proxyHost must be a bare hostname/IP (no http:// or https:// prefix).
+    // Proxy configuration — either from CLI flags or settings.xml
     @Nullable
-    private final String proxyHost;
-    private final int proxyPort;
-    @Nullable
-    private final String proxyUsername;
-    @Nullable
-    private final String proxyPassword;
-
-    // Comma-separated list of host patterns that should bypass the proxy,
-    // sourced from blackduck.proxy.ignored.hosts.
-    private final List<String> proxyIgnoredHosts;
+    private final MavenProxyConfig proxyConfig;
 
     // Mirror configurations — either from CLI or parsed from settings.xml.
     // These allow routing Maven requests through a corporate repository manager.
@@ -54,13 +43,33 @@ public class MavenResolverOptions {
      *
      * @param externalRepositories  List of external Maven repository URLs to use during resolution.
      *                              These are used alongside repositories declared in pom.xml.
-     * @param proxyHost             Proxy hostname or IP (no scheme). May be null if no proxy is configured.
-     * @param proxyPort             Proxy port number (0 if not configured).
-     * @param proxyUsername         Proxy authentication username. May be null.
-     * @param proxyPassword         Proxy authentication password. May be null.
-     * @param proxyIgnoredHosts     Host patterns that should bypass the proxy. Never null.
+     * @param proxyConfig           Proxy configuration (may be null if no proxy is configured).
      * @param mirrorConfigurations  List of mirror configurations for corporate repository managers.
      *                              May be empty if no mirrors are configured.
+     */
+    public MavenResolverOptions(
+        List<String> externalRepositories,
+        @Nullable MavenProxyConfig proxyConfig,
+        List<MavenMirrorConfig> mirrorConfigurations
+    ) {
+        this.externalRepositories = externalRepositories != null ? externalRepositories : Collections.emptyList();
+        this.proxyConfig = proxyConfig;
+        this.mirrorConfigurations = mirrorConfigurations != null ? mirrorConfigurations : Collections.emptyList();
+    }
+
+    /**
+     * Constructs MavenResolverOptions with external repositories and individual proxy fields (backward compatibility).
+     *
+     * <p>This constructor is provided for backward compatibility with existing callers.
+     * New code should use the constructor that accepts {@link MavenProxyConfig}.
+     *
+     * @param externalRepositories List of external Maven repository URLs to use during resolution.
+     * @param proxyHost            Proxy hostname or IP (no scheme). May be null if no proxy is configured.
+     * @param proxyPort            Proxy port number (0 if not configured).
+     * @param proxyUsername        Proxy authentication username. May be null.
+     * @param proxyPassword        Proxy authentication password. May be null.
+     * @param proxyIgnoredHosts    Host patterns that should bypass the proxy. Never null.
+     * @param mirrorConfigurations  List of mirror configurations for corporate repository managers.
      */
     public MavenResolverOptions(
         List<String> externalRepositories,
@@ -72,11 +81,20 @@ public class MavenResolverOptions {
         List<MavenMirrorConfig> mirrorConfigurations
     ) {
         this.externalRepositories = externalRepositories != null ? externalRepositories : Collections.emptyList();
-        this.proxyHost = proxyHost;
-        this.proxyPort = proxyPort;
-        this.proxyUsername = proxyUsername;
-        this.proxyPassword = proxyPassword;
-        this.proxyIgnoredHosts = proxyIgnoredHosts != null ? proxyIgnoredHosts : Collections.emptyList();
+        
+        // Convert individual proxy fields to MavenProxyConfig if proxy is configured
+        if (proxyHost != null && !proxyHost.trim().isEmpty() && proxyPort > 0) {
+            this.proxyConfig = new MavenProxyConfig(
+                proxyHost,
+                proxyPort,
+                proxyUsername,
+                proxyPassword,
+                proxyIgnoredHosts != null ? proxyIgnoredHosts : Collections.emptyList()
+            );
+        } else {
+            this.proxyConfig = null;
+        }
+        
         this.mirrorConfigurations = mirrorConfigurations != null ? mirrorConfigurations : Collections.emptyList();
     }
 
@@ -101,7 +119,22 @@ public class MavenResolverOptions {
         @Nullable String proxyPassword,
         List<String> proxyIgnoredHosts
     ) {
-        this(externalRepositories, proxyHost, proxyPort, proxyUsername, proxyPassword, proxyIgnoredHosts, Collections.emptyList());
+        this.externalRepositories = externalRepositories != null ? externalRepositories : Collections.emptyList();
+        
+        // Convert individual proxy fields to MavenProxyConfig if proxy is configured
+        if (proxyHost != null && !proxyHost.trim().isEmpty() && proxyPort > 0) {
+            this.proxyConfig = new MavenProxyConfig(
+                proxyHost,
+                proxyPort,
+                proxyUsername,
+                proxyPassword,
+                proxyIgnoredHosts != null ? proxyIgnoredHosts : Collections.emptyList()
+            );
+        } else {
+            this.proxyConfig = null;
+        }
+        
+        this.mirrorConfigurations = Collections.emptyList();
     }
 
     /**
@@ -123,50 +156,22 @@ public class MavenResolverOptions {
     }
 
     /**
-     * Returns the proxy hostname or IP address.
-     * This is a bare hostname — no {@code http://} or {@code https://} prefix.
+     * Returns the proxy configuration.
      *
-     * @return proxy host, or null if no proxy is configured
+     * @return proxy configuration, or null if no proxy is configured
      */
     @Nullable
-    public String getProxyHost() {
-        return proxyHost;
-    }
-
-    /** @return proxy port number, 0 if not configured */
-    public int getProxyPort() {
-        return proxyPort;
-    }
-
-    /** @return proxy username, or null if not configured */
-    @Nullable
-    public String getProxyUsername() {
-        return proxyUsername;
-    }
-
-    /** @return proxy password, or null if not configured */
-    @Nullable
-    public String getProxyPassword() {
-        return proxyPassword;
-    }
-
-    /**
-     * Returns the list of host patterns that should bypass the proxy.
-     *
-     * @return list of ignored host patterns, never null
-     */
-    public List<String> getProxyIgnoredHosts() {
-        return proxyIgnoredHosts;
+    public MavenProxyConfig getProxyConfig() {
+        return proxyConfig;
     }
 
     /**
      * Checks whether a forward proxy is configured.
-     * A proxy is considered configured when a non-blank host and a positive port are provided.
      *
-     * @return true if proxy host and port are both set
+     * @return true if proxy configuration is present
      */
     public boolean hasProxyConfiguration() {
-        return proxyHost != null && !proxyHost.trim().isEmpty() && proxyPort > 0;
+        return proxyConfig != null;
     }
 
     /**

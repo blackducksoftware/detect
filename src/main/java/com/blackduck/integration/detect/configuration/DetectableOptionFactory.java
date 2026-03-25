@@ -9,6 +9,8 @@ import com.blackduck.integration.detectable.detectables.cargo.CargoDetectableOpt
 import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
 import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenMirrorConfig;
 import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenMirrorConfigResolver;
+import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenProxyConfig;
+import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenProxyConfigResolver;
 import com.blackduck.integration.detectable.detectables.nuget.NugetDependencyType;
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import org.jetbrains.annotations.Nullable;
@@ -212,33 +214,34 @@ public class DetectableOptionFactory {
     public MavenResolverOptions createMavenResolverOptions() {
         List<String> externalRepositories = detectConfiguration.getValue(DetectProperties.DETECT_MAVEN_INCLUDE_EXTERNAL_REPOSITORIES);
 
-        // Extract proxy details from the global ProxyInfo (sourced from blackduck.proxy.* properties).
-        // proxyHost is a bare hostname/IP — no http:// or https:// prefix.
-        String proxyHost = proxyInfo.getHost().orElse(null);
-        int proxyPort = proxyInfo.getPort();
-        String proxyUsername = null;
-        String proxyPassword = null;
+        // Read raw proxy property values from CLI flags (blackduck.proxy.*)
+        String cliProxyHost = proxyInfo.getHost().orElse(null);
+        int cliProxyPort = proxyInfo.getPort();
+        String cliProxyUsername = null;
+        String cliProxyPassword = null;
         if (proxyInfo.getProxyCredentials().isPresent()) {
             com.blackduck.integration.rest.credentials.Credentials creds = proxyInfo.getProxyCredentials().get();
-            proxyUsername = creds.getUsername().orElse(null);
-            proxyPassword = creds.getPassword().orElse(null);
+            cliProxyUsername = creds.getUsername().orElse(null);
+            cliProxyPassword = creds.getPassword().orElse(null);
         }
+        List<String> cliProxyIgnoredHosts = detectConfiguration.getValue(DetectProperties.BLACKDUCK_PROXY_IGNORED_HOSTS);
 
-        // Read the global proxy-bypass list (blackduck.proxy.ignored.hosts).
-        List<String> proxyIgnoredHosts = detectConfiguration.getValue(DetectProperties.BLACKDUCK_PROXY_IGNORED_HOSTS);
-
-        // Read raw mirror property values — no logic here, just reading config.
+        // Read raw mirror property values
         String cliMirrorUrl      = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_BUILDLESS_MIRROR_URL);
         String cliMirrorOf       = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_BUILDLESS_MIRROR_OF);
         String cliMirrorUsername = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_BUILDLESS_MIRROR_USERNAME);
         String cliMirrorPassword = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_BUILDLESS_MIRROR_PASSWORD);
         Path   settingsFilePath  = detectConfiguration.getPathOrNull(DetectProperties.DETECT_MAVEN_BUILDLESS_SETTINGS_FILE_PATH);
 
-        // Delegate all precedence logic (CLI vs settings.xml vs empty) to the domain class.
+        // Delegate all proxy precedence logic (CLI → settings.xml → none) to the domain class
+        MavenProxyConfig proxyConfig = new MavenProxyConfigResolver()
+            .resolve(cliProxyHost, cliProxyPort, cliProxyUsername, cliProxyPassword, cliProxyIgnoredHosts, settingsFilePath);
+
+        // Delegate all mirror precedence logic (CLI → settings.xml → empty) to the domain class
         List<MavenMirrorConfig> mirrorConfigurations = new MavenMirrorConfigResolver()
             .resolve(cliMirrorUrl, cliMirrorOf, cliMirrorUsername, cliMirrorPassword, settingsFilePath);
 
-        return new MavenResolverOptions(externalRepositories, proxyHost, proxyPort, proxyUsername, proxyPassword, proxyIgnoredHosts, mirrorConfigurations);
+        return new MavenResolverOptions(externalRepositories, proxyConfig, mirrorConfigurations);
     }
 
     public ConanCliOptions createConanCliOptions() {

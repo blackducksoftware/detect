@@ -214,19 +214,14 @@ public class MavenResolverDetectable extends Detectable {
             MavenDependencyResolver dependencyResolver;
             if (mavenResolverOptions != null && (mavenResolverOptions.hasProxyConfiguration() || mavenResolverOptions.hasMirrorConfiguration())) {
                 if (mavenResolverOptions.hasProxyConfiguration()) {
-                    logger.info("Creating Maven dependency resolver with proxy: {}:{}",
-                        mavenResolverOptions.getProxyHost(), mavenResolverOptions.getProxyPort());
+                    logger.info("Creating Maven dependency resolver with proxy configuration");
                 }
                 if (mavenResolverOptions.hasMirrorConfiguration()) {
                     logger.info("Creating Maven dependency resolver with {} mirror(s)",
                         mavenResolverOptions.getMirrorConfigurations().size());
                 }
                 dependencyResolver = new MavenDependencyResolver(
-                    mavenResolverOptions.getProxyHost(),
-                    mavenResolverOptions.getProxyPort(),
-                    mavenResolverOptions.getProxyUsername(),
-                    mavenResolverOptions.getProxyPassword(),
-                    mavenResolverOptions.getProxyIgnoredHosts(),
+                    mavenResolverOptions.getProxyConfig(),
                     mavenResolverOptions.getMirrorConfigurations()
                 );
             } else {
