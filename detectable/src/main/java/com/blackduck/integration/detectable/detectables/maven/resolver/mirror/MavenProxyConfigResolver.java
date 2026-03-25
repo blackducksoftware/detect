@@ -16,13 +16,20 @@ import java.util.List;
  *
  * <p><strong>Precedence Rules (Highest to Lowest):</strong>
  * <ol>
- *   <li><strong>CLI Flags:</strong> If proxy host and port are provided via CLI, use those settings
- *       and ignore settings.xml completely.</li>
- *   <li><strong>settings.xml:</strong> If no CLI flags are provided, attempt to read proxy configuration
- *       from settings.xml (either custom path or default {@code ~/.m2/settings.xml}).</li>
- *   <li><strong>No Proxy:</strong> If neither CLI nor settings.xml provide proxy configuration, return null
+ *   <li><strong>settings.xml:</strong> If proxy configuration is found in settings.xml
+ *       (either custom path or default {@code ~/.m2/settings.xml}), use it and ignore CLI flags completely.
+ *       This allows Maven-specific proxy configuration to take precedence.</li>
+ *   <li><strong>CLI Flags (Universal Proxy):</strong> If no settings.xml proxy is found, fall back to
+ *       the global Black Duck proxy flags (blackduck.proxy.*).</li>
+ *   <li><strong>No Proxy:</strong> If neither settings.xml nor CLI flags provide proxy configuration, return null
  *       (no proxy will be used).</li>
  * </ol>
+ *
+ * <p><strong>Rationale for Precedence:</strong>
+ * settings.xml takes priority because it represents Maven-specific configuration that may differ from
+ * the general Black Duck proxy (e.g., using Artifactory/Nexus as a caching proxy for Maven artifacts).
+ * CLI flags serve as a universal fallback for the common case where the same proxy is used for both
+ * Black Duck and Maven traffic.
  *
  * <p>This class encapsulates all proxy resolution logic to keep {@code DetectableOptionFactory} clean
  * and focused on reading configuration values.
@@ -43,7 +50,14 @@ public class MavenProxyConfigResolver {
     }
 
     /**
-     * Resolves proxy configuration based on precedence: CLI flags → settings.xml → none.
+     * Resolves proxy configuration based on precedence: settings.xml → CLI flags → none.
+     *
+     * <p><strong>Priority Order:</strong>
+     * <ol>
+     *   <li>settings.xml proxy (highest priority - Maven-specific configuration)</li>
+     *   <li>CLI flags (universal Black Duck proxy - fallback)</li>
+     *   <li>No proxy (if neither source provides configuration)</li>
+     * </ol>
      *
      * @param cliProxyHost         proxy host from CLI flag (may be null)
      * @param cliProxyPort         proxy port from CLI flag (0 means not configured)
@@ -62,10 +76,48 @@ public class MavenProxyConfigResolver {
         @Nullable List<String> cliProxyIgnoredHosts,
         @Nullable Path settingsFilePath
     ) {
-        // PRIORITY 1: CLI Override
-        // If CLI provides proxy host and a valid port, construct config from CLI flags and skip settings.xml
+        // PRIORITY 1: settings.xml (Maven-Specific Configuration)
+        // Check settings.xml FIRST because it represents Maven-specific proxy configuration
+        // that may differ from the general Black Duck proxy
+        logger.debug("Checking for Maven proxy configuration in settings.xml...");
+
+        try {
+            MavenProxyConfig config;
+            if (settingsFilePath != null) {
+                // User provided explicit settings.xml path
+                logger.info("Parsing proxies from specified settings.xml: {}", settingsFilePath);
+                config = settingsParser.parseProxiesFromSettingsFile(settingsFilePath);
+            } else {
+                // Use default ~/.m2/settings.xml
+                config = settingsParser.parseDefaultSettingsForProxy();
+            }
+
+            if (config != null) {
+                logger.info("Using settings.xml proxy configuration. Ignoring CLI flags.");
+                logger.info("settings.xml proxy: host='{}', port={}, hasAuth={}, nonProxyHosts={}",
+                    config.getHost(), config.getPort(), config.hasAuthentication(), config.getNonProxyHosts().size());
+                return config;
+            } else {
+                logger.debug("No active proxy found in settings.xml. Checking CLI flags...");
+            }
+        } catch (MavenSettingsParseException e) {
+            // If user explicitly provided a custom path that fails, this is a hard error
+            if (settingsFilePath != null) {
+                throw new RuntimeException(
+                    "Failed to parse proxy configuration from specified settings.xml: " + settingsFilePath,
+                    e
+                );
+            }
+            // If default settings.xml fails to parse, just log and continue (not a hard error)
+            logger.warn("Failed to parse proxy configuration from default settings.xml: {}", e.getMessage());
+            logger.debug("Full exception for settings.xml proxy parsing:", e);
+            logger.debug("Falling back to CLI proxy flags...");
+        }
+
+        // PRIORITY 2: CLI Flags (Universal Black Duck Proxy - Fallback)
+        // If settings.xml has no proxy, fall back to the universal Black Duck proxy configuration
         if (cliProxyHost != null && !cliProxyHost.trim().isEmpty() && cliProxyPort > 0) {
-            logger.info("Using CLI proxy configuration. Ignoring settings.xml proxy.");
+            logger.info("No settings.xml proxy found. Using CLI proxy flags (universal Black Duck proxy).");
             
             List<String> nonProxyHosts = cliProxyIgnoredHosts != null ? cliProxyIgnoredHosts : Collections.emptyList();
             
@@ -83,42 +135,8 @@ public class MavenProxyConfigResolver {
             return config;
         }
 
-        // PRIORITY 2: XML Fallback (settings.xml)
-        // If no CLI proxy is configured, try to load from settings.xml
-        logger.debug("No CLI proxy configuration found. Attempting to load from settings.xml...");
-
-        try {
-            MavenProxyConfig config;
-            if (settingsFilePath != null) {
-                // User provided explicit settings.xml path
-                logger.info("Parsing proxies from specified settings.xml: {}", settingsFilePath);
-                config = settingsParser.parseProxiesFromSettingsFile(settingsFilePath);
-            } else {
-                // Use default ~/.m2/settings.xml
-                config = settingsParser.parseDefaultSettingsForProxy();
-            }
-
-            if (config != null) {
-                logger.info("Using proxy configuration from settings.xml");
-                return config;
-            } else {
-                logger.debug("No active proxy found in settings.xml");
-            }
-        } catch (MavenSettingsParseException e) {
-            // If user explicitly provided a custom path that fails, this is a hard error
-            if (settingsFilePath != null) {
-                throw new RuntimeException(
-                    "Failed to parse proxy configuration from specified settings.xml: " + settingsFilePath,
-                    e
-                );
-            }
-            // If default settings.xml fails to parse, just log and continue (not a hard error)
-            logger.warn("Failed to parse proxy configuration from default settings.xml: {}", e.getMessage());
-            logger.debug("Full exception for settings.xml proxy parsing:", e);
-        }
-
         // PRIORITY 3: No Proxy
-        logger.debug("No proxy configuration available (neither CLI nor settings.xml)");
+        logger.debug("No proxy configuration available (neither settings.xml nor CLI flags)");
         return null;
     }
 }

@@ -215,6 +215,7 @@ public class DetectableOptionFactory {
         List<String> externalRepositories = detectConfiguration.getValue(DetectProperties.DETECT_MAVEN_INCLUDE_EXTERNAL_REPOSITORIES);
 
         // Read raw proxy property values from CLI flags (blackduck.proxy.*)
+        // These serve as a fallback if settings.xml does not contain proxy configuration
         String cliProxyHost = proxyInfo.getHost().orElse(null);
         int cliProxyPort = proxyInfo.getPort();
         String cliProxyUsername = null;
@@ -233,11 +234,14 @@ public class DetectableOptionFactory {
         String cliMirrorPassword = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_BUILDLESS_MIRROR_PASSWORD);
         Path   settingsFilePath  = detectConfiguration.getPathOrNull(DetectProperties.DETECT_MAVEN_BUILDLESS_SETTINGS_FILE_PATH);
 
-        // Delegate all proxy precedence logic (CLI → settings.xml → none) to the domain class
+        // Delegate proxy precedence logic: settings.xml → CLI → none
+        // settings.xml takes priority because it represents Maven-specific proxy configuration
+        // CLI flags serve as a universal fallback for the common case where same proxy is used
         MavenProxyConfig proxyConfig = new MavenProxyConfigResolver()
             .resolve(cliProxyHost, cliProxyPort, cliProxyUsername, cliProxyPassword, cliProxyIgnoredHosts, settingsFilePath);
 
-        // Delegate all mirror precedence logic (CLI → settings.xml → empty) to the domain class
+        // Delegate mirror precedence logic: CLI → settings.xml → empty
+        // CLI takes priority for mirrors to allow explicit override of settings.xml
         List<MavenMirrorConfig> mirrorConfigurations = new MavenMirrorConfigResolver()
             .resolve(cliMirrorUrl, cliMirrorOf, cliMirrorUsername, cliMirrorPassword, settingsFilePath);
 

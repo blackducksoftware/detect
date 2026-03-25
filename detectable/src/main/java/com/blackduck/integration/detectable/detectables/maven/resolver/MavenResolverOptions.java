@@ -15,17 +15,29 @@ import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.Ma
  * Maven dependency resolution behavior, including external repositories, forward
  * proxy configuration, and corporate mirror (repository manager) support.
  *
- * <p><strong>Proxy configuration:</strong> The proxy details can be sourced from either:
- * <ul>
- *   <li>Global Detect proxy properties ({@code blackduck.proxy.host}, {@code blackduck.proxy.port}, etc.)</li>
- *   <li>Maven's settings.xml file ({@code <proxies>} section)</li>
- * </ul>
- * CLI properties take precedence over settings.xml.
+ * <p><strong>Proxy Configuration Precedence:</strong>
+ * <ol>
+ *   <li><strong>settings.xml:</strong> Maven-specific proxy from {@code <proxies>} section (highest priority)</li>
+ *   <li><strong>CLI Flags:</strong> Universal Black Duck proxy properties (blackduck.proxy.*) - fallback</li>
+ *   <li><strong>None:</strong> No proxy if neither source provides configuration</li>
+ * </ol>
  *
- * <p><strong>Mirror configuration:</strong> Mirror settings allow routing Maven artifact
- * requests through a corporate repository manager (e.g., Nexus, Artifactory). Mirrors
- * can be configured via CLI flags or parsed from a settings.xml file. CLI configuration
- * takes precedence over settings.xml.
+ * <p>The proxy details can be sourced from either:
+ * <ul>
+ *   <li>Maven's settings.xml file ({@code <proxies>} section) - takes precedence</li>
+ *   <li>Global Detect proxy properties ({@code blackduck.proxy.host}, {@code blackduck.proxy.port}, etc.) - fallback</li>
+ * </ul>
+ *
+ * <p><strong>Mirror Configuration Precedence:</strong>
+ * <ol>
+ *   <li><strong>CLI Flags:</strong> Mirror properties (detect.maven.buildless.mirror.*) - highest priority</li>
+ *   <li><strong>settings.xml:</strong> Mirrors from {@code <mirrors>} section - fallback</li>
+ *   <li><strong>None:</strong> No mirrors if neither source provides configuration</li>
+ * </ol>
+ *
+ * <p>Mirror settings allow routing Maven artifact requests through a corporate repository
+ * manager (e.g., Nexus, Artifactory). Mirrors can be configured via CLI flags or parsed
+ * from a settings.xml file. CLI configuration takes precedence over settings.xml.
  */
 public class MavenResolverOptions {
     private final List<String> externalRepositories;

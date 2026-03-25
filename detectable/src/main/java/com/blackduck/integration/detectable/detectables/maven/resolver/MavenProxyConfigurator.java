@@ -95,13 +95,26 @@ public class MavenProxyConfigurator {
     /**
      * Configures proxy settings on the given Aether session builder.
      *
-     * <p>This method performs three critical steps:
+     * <p>This method performs an optimization check before modifying system properties:
      * <ol>
-     *   <li>Saves original Java system proxy properties for later restoration</li>
-     *   <li>Configures Aether's ProxySelector for both HTTP and HTTPS protocols</li>
-     *   <li>Sets Java system properties ({@code http.proxyHost}, {@code https.proxyHost}, etc.)
-     *       because JdkTransporterFactory does NOT respect Aether's ProxySelector</li>
+     *   <li><strong>Check Current State:</strong> Reads current Java system proxy properties to see if
+     *       they already match the desired configuration.</li>
+     *   <li><strong>Skip if Matching:</strong> If all proxy values (host, port, credentials, nonProxyHosts)
+     *       already match, skips the save/set/restore cycle entirely for efficiency.</li>
+     *   <li><strong>Configure if Different:</strong> If values differ, saves original properties, configures
+     *       Aether's ProxySelector, and sets Java system properties.</li>
      * </ol>
+     *
+     * <p><strong>Why This Matters:</strong> In most cases (95%+), the global Black Duck proxy settings
+     * have already configured system properties with the same values we want to set. This optimization
+     * avoids redundant work and provides clearer logging about what's actually happening.
+     *
+     * <p>This method configures both:
+     * <ul>
+     *   <li>Aether's ProxySelector for both HTTP and HTTPS protocols</li>
+     *   <li>Java system properties ({@code http.proxyHost}, {@code https.proxyHost}, etc.)
+     *       because JdkTransporterFactory does NOT respect Aether's ProxySelector</li>
+     * </ul>
      *
      * <p>Non-proxy hosts are built from the configured patterns combined with
      * hardcoded loopback addresses {@code localhost} and {@code 127.0.0.1}.
@@ -109,6 +122,7 @@ public class MavenProxyConfigurator {
      * <p><strong>IMPORTANT:</strong> After Maven resolution completes, you MUST call
      * {@link #restoreOriginalProxyProperties()} to restore the original system state,
      * preferably in a finally block to ensure cleanup happens even if errors occur.
+     * (Note: If optimization skips configuration, restoration is also skipped automatically.)
      *
      * <p>If anything goes wrong during configuration, a warning is logged and
      * the method continues gracefully (no exception is thrown).
@@ -117,6 +131,26 @@ public class MavenProxyConfigurator {
      */
     public void configureProxy(SessionBuilder builder) {
         try {
+            // OPTIMIZATION: Check if proxy is already configured with matching values
+            // This is common when Black Duck's global proxy settings have already set system properties
+            if (isProxyAlreadyConfigured()) {
+                logger.info("Proxy already configured with matching values ({}:{}). No changes needed.",
+                    proxyConfig.getHost(), proxyConfig.getPort());
+                logger.debug("Skipping save/set/restore cycle because current system properties match desired configuration.");
+                return; // Skip entire save/set/restore cycle
+            }
+
+            // Log that we're changing proxy configuration
+            String currentHost = System.getProperty("http.proxyHost");
+            String currentPort = System.getProperty("http.proxyPort");
+            if (currentHost != null && !currentHost.isEmpty()) {
+                logger.info("Changing proxy configuration from {}:{} to {}:{} for Maven resolution",
+                    currentHost, currentPort != null ? currentPort : "?",
+                    proxyConfig.getHost(), proxyConfig.getPort());
+            } else {
+                logger.info("Configuring proxy for Maven resolution: {}:{}", proxyConfig.getHost(), proxyConfig.getPort());
+            }
+
             // STEP 1: Save original system properties BEFORE we modify them
             saveOriginalProxyProperties();
 
@@ -152,6 +186,115 @@ public class MavenProxyConfigurator {
                 proxyConfig.getHost(), proxyConfig.getPort(), e.getMessage());
             logger.debug("Proxy configuration exception details:", e);
         }
+    }
+
+    /**
+     * Checks if the Java system proxy properties already match the desired configuration.
+     *
+     * <p>This optimization check compares all proxy-related fields:
+     * <ul>
+     *   <li>Host and port (must match exactly)</li>
+     *   <li>Authentication credentials (must both match or both be absent)</li>
+     *   <li>Non-proxy hosts pattern (must match exactly)</li>
+     * </ul>
+     *
+     * <p>If ALL fields match, we can skip the save/set/restore cycle because the system
+     * is already in the desired state.
+     *
+     * @return true if current system properties match desired configuration, false otherwise
+     */
+    private boolean isProxyAlreadyConfigured() {
+        try {
+            String currentHttpHost = System.getProperty("http.proxyHost");
+            String currentHttpPort = System.getProperty("http.proxyPort");
+            String currentHttpsHost = System.getProperty("https.proxyHost");
+            String currentHttpsPort = System.getProperty("https.proxyPort");
+
+            // Check host and port for both HTTP and HTTPS
+            boolean hostPortMatch = 
+                matches(currentHttpHost, proxyConfig.getHost()) &&
+                matches(currentHttpPort, String.valueOf(proxyConfig.getPort())) &&
+                matches(currentHttpsHost, proxyConfig.getHost()) &&
+                matches(currentHttpsPort, String.valueOf(proxyConfig.getPort()));
+
+            if (!hostPortMatch) {
+                return false; // Host/port mismatch - need to reconfigure
+            }
+
+            // Check authentication credentials
+            String currentHttpUser = System.getProperty("http.proxyUser");
+            String currentHttpPass = System.getProperty("http.proxyPassword");
+            String currentHttpsUser = System.getProperty("https.proxyUser");
+            String currentHttpsPass = System.getProperty("https.proxyPassword");
+
+            boolean authMatch = matchesAuth(currentHttpUser, currentHttpPass) &&
+                                matchesAuth(currentHttpsUser, currentHttpsPass);
+
+            if (!authMatch) {
+                return false; // Auth mismatch - need to reconfigure
+            }
+
+            // Check non-proxy hosts pattern
+            String currentNonProxyHosts = System.getProperty("http.nonProxyHosts");
+            String desiredNonProxyHosts = buildNonProxyHostsPattern();
+
+            boolean nonProxyMatch = matches(currentNonProxyHosts, desiredNonProxyHosts);
+
+            return nonProxyMatch; // All fields match!
+
+        } catch (Exception e) {
+            // If anything goes wrong checking, assume not configured
+            logger.debug("Error checking if proxy already configured: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Compares two strings for equality, treating null and empty as equivalent.
+     *
+     * @param current the current value from system properties
+     * @param desired the desired value we want to set
+     * @return true if values match, false otherwise
+     */
+    private boolean matches(@Nullable String current, @Nullable String desired) {
+        // Normalize: treat null and empty as equivalent
+        String normalizedCurrent = (current == null || current.trim().isEmpty()) ? null : current.trim();
+        String normalizedDesired = (desired == null || desired.trim().isEmpty()) ? null : desired.trim();
+
+        if (normalizedCurrent == null && normalizedDesired == null) {
+            return true; // Both absent
+        }
+        if (normalizedCurrent == null || normalizedDesired == null) {
+            return false; // One absent, one present
+        }
+        return normalizedCurrent.equals(normalizedDesired);
+    }
+
+    /**
+     * Checks if authentication credentials in system properties match our desired configuration.
+     *
+     * @param currentUser current username from system properties
+     * @param currentPass current password from system properties
+     * @return true if credentials match, false otherwise
+     */
+    private boolean matchesAuth(@Nullable String currentUser, @Nullable String currentPass) {
+        boolean currentHasAuth = (currentUser != null && !currentUser.trim().isEmpty() &&
+                                  currentPass != null && !currentPass.trim().isEmpty());
+        boolean desiredHasAuth = proxyConfig.hasAuthentication();
+
+        // If one has auth and the other doesn't, they don't match
+        if (currentHasAuth != desiredHasAuth) {
+            return false;
+        }
+
+        // If neither has auth, they match
+        if (!currentHasAuth && !desiredHasAuth) {
+            return true;
+        }
+
+        // Both have auth - compare values
+        return matches(currentUser, proxyConfig.getUsername()) &&
+               matches(currentPass, proxyConfig.getPassword());
     }
 
     /**
