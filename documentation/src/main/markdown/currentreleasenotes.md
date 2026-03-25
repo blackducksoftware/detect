@@ -22,5 +22,6 @@
 
 * Support for the Conda Tree–based detector has been added. For more details, see [Conda Tree](packagemgrs/conda.md#conda-tree-detector).
 * Support for pnpm now extends to 10.32.1.
+* npm detectors now allow for aliases to be used when specifying dependencies in the package.json file.
 
 ### Resolved issues
