@@ -51,7 +51,7 @@ public class NugetSolutionDetectable extends Detectable {
 
     @Override
     public DetectableResult applicable() {
-        solutionFiles = fileFinder.findFiles(environment.getDirectory(), SUPPORTED_SOLUTION_PATTERNS);
+        solutionFiles = fileFinder.findFiles(environment.getDirectory(), SUPPORTED_SOLUTION_PATTERNS); // searches only the current level. What do we do with nested solution files? Why is this a list if not?
 
         if (solutionFiles != null && solutionFiles.size() > 0) {
             PassedResultBuilder passedResultBuilder = new PassedResultBuilder();
