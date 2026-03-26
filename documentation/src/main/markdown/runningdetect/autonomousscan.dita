@@ -93,14 +93,14 @@
                                 STATELESS.</p>
                         </li>
                         <li>
-                            <p>Intelligent scan: Runs when <xref href="../properties/configuration/blackduck-server.html#ariaid-title7" format="html">scan mode</xref> is not set to RAPID or STATELESS,
+                            <p>Intelligent scan: Runs when <xref href="../properties/configuration/blackduck-server.md#ariaid-title7" format="markdown">scan mode</xref> is not set to RAPID or STATELESS,
                                 or <codeph>--detect.blackduck.scan.mode</codeph> is explicitly set
                                 to INTELLIGENT.</p>
                         </li>
                     </ul>
                 </li>
                 <li>
-                    <p><xref href="../properties/configuration/blackduck-server.md#offline-mode" format="markdown">OFFLINE mode</xref>: When
+                    <p><xref href="../properties/configuration/blackduck-server.md" format="markdown">OFFLINE mode</xref>: When
                             <codeph>--blackduck.offline.mode</codeph> is true or there is no <keyword keyref="bd_product_short"/> url or <keyword keyref="bd_product_short"/> proxy information provided. (Warning
                         messages will be logged for binary and signature scans if applicable tools
                         are not available or related parameters not set.)</p>
@@ -305,7 +305,7 @@
     </topic>
     <topic id="results">
         <title>Results</title>
-        <shortdesc>Autonomous scan findings will be stored in a <xref href="../properties/configuration/paths.html#ariaid-title4" format="html">BDIO</xref> file when run without <keyword keyref="bd_product_short"/>.</shortdesc>
+        <shortdesc>Autonomous scan findings will be stored in a <xref href="../properties/configuration/paths.md#ariaid-title4" format="markdown">BDIO</xref> file when run without <keyword keyref="bd_product_short"/>.</shortdesc>
         <body>
             <p>Autonomous scan findings will appear in the <keyword keyref="bd_product_short"/>
                 user interface if <keyword keyref="bd_product_short"/> is configured.</p>
