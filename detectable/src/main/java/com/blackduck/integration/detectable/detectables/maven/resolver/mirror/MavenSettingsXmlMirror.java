@@ -37,12 +37,6 @@ public class MavenSettingsXmlMirror {
     private String name;
 
     /**
-     * Default constructor for Jackson deserialization.
-     */
-    public MavenSettingsXmlMirror() {
-    }
-
-    /**
      * Returns the unique identifier for this mirror.
      * This ID is used to match with server credentials.
      *

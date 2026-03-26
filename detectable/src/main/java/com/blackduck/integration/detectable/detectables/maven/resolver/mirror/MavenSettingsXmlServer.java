@@ -32,11 +32,6 @@ public class MavenSettingsXmlServer {
     @JacksonXmlProperty(localName = "password")
     private String password;
 
-    /**
-     * Default constructor for Jackson deserialization.
-     */
-    public MavenSettingsXmlServer() {
-    }
 
     /**
      * Returns the unique identifier for this server.

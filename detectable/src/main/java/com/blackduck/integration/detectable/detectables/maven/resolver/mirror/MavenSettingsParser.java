@@ -238,37 +238,76 @@ public class MavenSettingsParser {
     private MavenProxyConfig parseProxiesFromSettingsFile(File settingsFile) throws MavenSettingsParseException {
         logger.debug("Parsing proxy configuration from Maven settings.xml: {}", settingsFile.getAbsolutePath());
 
-        if (!settingsFile.canRead()) {
-            throw new MavenSettingsParseException(
-                "Cannot read settings.xml file (permission denied): " + settingsFile.getAbsolutePath()
-            );
-        }
-
-        MavenSettingsXml settings;
-        try {
-            settings = xmlMapper.readValue(settingsFile, MavenSettingsXml.class);
-        } catch (IOException e) {
-            throw new MavenSettingsParseException(
-                "Failed to parse settings.xml at " + settingsFile.getAbsolutePath() + ": " + e.getMessage(),
-                e
-            );
-        }
-
+        // Parse the XML file
+        MavenSettingsXml settings = parseXmlFile(settingsFile);
         if (settings == null) {
             logger.debug("Parsed settings.xml is null. No proxy configuration available.");
             return null;
         }
 
         List<MavenSettingsXmlProxy> proxies = settings.getProxies();
-
         if (proxies.isEmpty()) {
             logger.debug("No proxies found in settings.xml at {}", settingsFile.getAbsolutePath());
             return null;
         }
 
-        // Find the first active proxy for HTTP/HTTPS traffic
-        // Maven uses the first active proxy that matches the protocol
-        MavenSettingsXmlProxy activeProxy = null;
+        // Find the first active HTTP proxy
+        MavenSettingsXmlProxy activeProxy = findFirstActiveHttpProxy(proxies);
+        if (activeProxy == null) {
+            logger.debug("No active HTTP proxy found in settings.xml at {}", settingsFile.getAbsolutePath());
+            return null;
+        }
+
+        // Convert to MavenProxyConfig
+        MavenProxyConfig config = buildProxyConfig(activeProxy);
+
+        // SECURITY: The toString() method of MavenProxyConfig redacts credentials.
+        // Only hasAuth flag is logged, not actual username/password values.
+        logger.info("Loaded proxy configuration from settings.xml: {}", config);
+
+        return config;
+    }
+
+    /**
+     * Parses the settings.xml file into a MavenSettingsXml object.
+     *
+     * @param settingsFile the settings.xml file to parse
+     * @return parsed settings object, or null if parsing results in null
+     * @throws MavenSettingsParseException if file cannot be read or parsed
+     */
+    @org.jetbrains.annotations.Nullable
+    private MavenSettingsXml parseXmlFile(File settingsFile) throws MavenSettingsParseException {
+        if (!settingsFile.canRead()) {
+            throw new MavenSettingsParseException(
+                "Cannot read settings.xml file (permission denied): " + settingsFile.getAbsolutePath()
+            );
+        }
+
+        try {
+            return xmlMapper.readValue(settingsFile, MavenSettingsXml.class);
+        } catch (IOException e) {
+            throw new MavenSettingsParseException(
+                "Failed to parse settings.xml at " + settingsFile.getAbsolutePath() + ": " + e.getMessage(),
+                e
+            );
+        }
+    }
+
+    /**
+     * Finds the first active HTTP proxy from a list of proxy configurations.
+     *
+     * <p>Maven uses the first active proxy that matches the protocol. We look for:
+     * <ul>
+     *   <li>Valid proxies (have host and port)</li>
+     *   <li>Active proxies (active flag is true or null)</li>
+     *   <li>HTTP proxies (protocol is "http" or null/empty)</li>
+     * </ul>
+     *
+     * @param proxies list of proxy configurations from settings.xml
+     * @return the first matching active HTTP proxy, or null if none found
+     */
+    @org.jetbrains.annotations.Nullable
+    private MavenSettingsXmlProxy findFirstActiveHttpProxy(List<MavenSettingsXmlProxy> proxies) {
         for (MavenSettingsXmlProxy proxy : proxies) {
             if (!proxy.isValid()) {
                 logger.debug("Skipping invalid proxy entry (missing host or port): {}", proxy);
@@ -282,45 +321,70 @@ public class MavenSettingsParser {
 
             // Accept proxies with protocol "http" or no protocol specified (defaults to http)
             String protocol = proxy.getProtocol();
-            if (protocol == null || protocol.trim().isEmpty() || "http".equalsIgnoreCase(protocol.trim())) {
-                activeProxy = proxy;
-                logger.info("Found active HTTP proxy in settings.xml: {} (id: {})", proxy.getHost() + ":" + proxy.getPort(), proxy.getId());
-                break; // Maven uses the first matching active proxy
+            if (isHttpProtocol(protocol)) {
+                logger.info("Found active HTTP proxy in settings.xml: {} (id: {})", 
+                    proxy.getHost() + ":" + proxy.getPort(), proxy.getId());
+                return proxy; // Maven uses the first matching active proxy
             } else {
                 logger.debug("Skipping proxy with unsupported protocol '{}': {}", protocol, proxy.getId());
             }
         }
 
-        if (activeProxy == null) {
-            logger.debug("No active HTTP proxy found in settings.xml at {}", settingsFile.getAbsolutePath());
-            return null;
-        }
+        return null; // No active HTTP proxy found
+    }
 
-        // Convert nonProxyHosts string to list
-        List<String> nonProxyHostsList = new ArrayList<>();
-        if (activeProxy.getNonProxyHosts() != null && !activeProxy.getNonProxyHosts().trim().isEmpty()) {
-            String[] hosts = activeProxy.getNonProxyHosts().split("\\|");
-            for (String host : hosts) {
-                String trimmed = host.trim();
-                if (!trimmed.isEmpty()) {
-                    nonProxyHostsList.add(trimmed);
-                }
-            }
-        }
+    /**
+     * Checks if a protocol string represents HTTP (or defaults to HTTP).
+     *
+     * @param protocol the protocol string (may be null or empty)
+     * @return true if protocol is null, empty, or "http" (case-insensitive)
+     */
+    private boolean isHttpProtocol(@org.jetbrains.annotations.Nullable String protocol) {
+        return protocol == null || protocol.trim().isEmpty() || "http".equalsIgnoreCase(protocol.trim());
+    }
 
-        MavenProxyConfig config = new MavenProxyConfig(
+    /**
+     * Builds a MavenProxyConfig from a MavenSettingsXmlProxy.
+     *
+     * <p>Converts the nonProxyHosts pipe-delimited string into a list.
+     *
+     * @param activeProxy the active proxy from settings.xml
+     * @return configured MavenProxyConfig object
+     */
+    private MavenProxyConfig buildProxyConfig(MavenSettingsXmlProxy activeProxy) {
+        List<String> nonProxyHostsList = parseNonProxyHosts(activeProxy.getNonProxyHosts());
+
+        return new MavenProxyConfig(
             activeProxy.getHost().trim(),
             activeProxy.getPort(),
             activeProxy.getUsername(),
             activeProxy.getPassword(),
             nonProxyHostsList
         );
+    }
 
-        // SECURITY: The toString() method of MavenProxyConfig redacts credentials.
-        // Only hasAuth flag is logged, not actual username/password values.
-        logger.info("Loaded proxy configuration from settings.xml: {}", config);
+    /**
+     * Parses a pipe-delimited nonProxyHosts string into a list.
+     *
+     * <p>Example: "localhost|127.0.0.1|*.company.com" becomes ["localhost", "127.0.0.1", "*.company.com"]
+     *
+     * @param nonProxyHostsString pipe-delimited string (may be null or empty)
+     * @return list of host patterns, empty if input is null/empty
+     */
+    private List<String> parseNonProxyHosts(@org.jetbrains.annotations.Nullable String nonProxyHostsString) {
+        List<String> result = new ArrayList<>();
 
-        return config;
+        if (nonProxyHostsString != null && !nonProxyHostsString.trim().isEmpty()) {
+            String[] hosts = nonProxyHostsString.split("\\|");
+            for (String host : hosts) {
+                String trimmed = host.trim();
+                if (!trimmed.isEmpty()) {
+                    result.add(trimmed);
+                }
+            }
+        }
+
+        return result;
     }
 }
 

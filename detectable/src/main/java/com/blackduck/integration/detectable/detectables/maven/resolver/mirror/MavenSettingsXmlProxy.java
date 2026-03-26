@@ -47,10 +47,11 @@ public class MavenSettingsXmlProxy {
     @JacksonXmlProperty(localName = "nonProxyHosts")
     private String nonProxyHosts;
 
-    // Default constructor for Jackson
-    public MavenSettingsXmlProxy() {
-    }
-
+    /**
+     * Returns the unique identifier for this proxy.
+     *
+     * @return proxy ID, may be null if not specified
+     */
     public String getId() {
         return id;
     }

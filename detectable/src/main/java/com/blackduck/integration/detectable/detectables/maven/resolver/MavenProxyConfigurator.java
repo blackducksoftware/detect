@@ -32,6 +32,19 @@ import java.util.List;
 public class MavenProxyConfigurator {
     private static final Logger logger = LoggerFactory.getLogger(MavenProxyConfigurator.class);
 
+    // System property names for HTTP proxy configuration
+    private static final String HTTP_PROXY_HOST = "http.proxyHost";
+    private static final String HTTP_PROXY_PORT = "http.proxyPort";
+    private static final String HTTP_PROXY_USER = "http.proxyUser";
+    private static final String HTTP_PROXY_PASSWORD = "http.proxyPassword";
+    private static final String HTTP_NON_PROXY_HOSTS = "http.nonProxyHosts";
+
+    // System property names for HTTPS proxy configuration
+    private static final String HTTPS_PROXY_HOST = "https.proxyHost";
+    private static final String HTTPS_PROXY_PORT = "https.proxyPort";
+    private static final String HTTPS_PROXY_USER = "https.proxyUser";
+    private static final String HTTPS_PROXY_PASSWORD = "https.proxyPassword";
+
     private final MavenProxyConfig proxyConfig;
 
     // Store original system properties so we can restore them later
@@ -141,8 +154,8 @@ public class MavenProxyConfigurator {
             }
 
             // Log that we're changing proxy configuration
-            String currentHost = System.getProperty("http.proxyHost");
-            String currentPort = System.getProperty("http.proxyPort");
+            String currentHost = System.getProperty(HTTP_PROXY_HOST);
+            String currentPort = System.getProperty(HTTP_PROXY_PORT);
             if (currentHost != null && !currentHost.isEmpty()) {
                 logger.info("Changing proxy configuration from {}:{} to {}:{} for Maven resolution",
                     currentHost, currentPort != null ? currentPort : "?",
@@ -205,10 +218,10 @@ public class MavenProxyConfigurator {
      */
     private boolean isProxyAlreadyConfigured() {
         try {
-            String currentHttpHost = System.getProperty("http.proxyHost");
-            String currentHttpPort = System.getProperty("http.proxyPort");
-            String currentHttpsHost = System.getProperty("https.proxyHost");
-            String currentHttpsPort = System.getProperty("https.proxyPort");
+            String currentHttpHost = System.getProperty(HTTP_PROXY_HOST);
+            String currentHttpPort = System.getProperty(HTTP_PROXY_PORT);
+            String currentHttpsHost = System.getProperty(HTTPS_PROXY_HOST);
+            String currentHttpsPort = System.getProperty(HTTPS_PROXY_PORT);
 
             // Check host and port for both HTTP and HTTPS
             boolean hostPortMatch = 
@@ -222,10 +235,10 @@ public class MavenProxyConfigurator {
             }
 
             // Check authentication credentials
-            String currentHttpUser = System.getProperty("http.proxyUser");
-            String currentHttpPass = System.getProperty("http.proxyPassword");
-            String currentHttpsUser = System.getProperty("https.proxyUser");
-            String currentHttpsPass = System.getProperty("https.proxyPassword");
+            String currentHttpUser = System.getProperty(HTTP_PROXY_USER);
+            String currentHttpPass = System.getProperty(HTTP_PROXY_PASSWORD);
+            String currentHttpsUser = System.getProperty(HTTPS_PROXY_USER);
+            String currentHttpsPass = System.getProperty(HTTPS_PROXY_PASSWORD);
 
             boolean authMatch = matchesAuth(currentHttpUser, currentHttpPass) &&
                                 matchesAuth(currentHttpsUser, currentHttpsPass);
@@ -235,12 +248,10 @@ public class MavenProxyConfigurator {
             }
 
             // Check non-proxy hosts pattern
-            String currentNonProxyHosts = System.getProperty("http.nonProxyHosts");
+            String currentNonProxyHosts = System.getProperty(HTTP_NON_PROXY_HOSTS);
             String desiredNonProxyHosts = buildNonProxyHostsPattern();
 
-            boolean nonProxyMatch = matches(currentNonProxyHosts, desiredNonProxyHosts);
-
-            return nonProxyMatch; // All fields match!
+            return matches(currentNonProxyHosts, desiredNonProxyHosts); // All fields match!
 
         } catch (Exception e) {
             // If anything goes wrong checking, assume not configured
@@ -349,22 +360,22 @@ public class MavenProxyConfigurator {
      */
     private void setJavaSystemProxyProperties(String nonProxyHostsPattern) {
         // Set proxy host and port for both HTTP and HTTPS
-        System.setProperty("http.proxyHost", proxyConfig.getHost());
-        System.setProperty("http.proxyPort", String.valueOf(proxyConfig.getPort()));
-        System.setProperty("https.proxyHost", proxyConfig.getHost());
-        System.setProperty("https.proxyPort", String.valueOf(proxyConfig.getPort()));
+        System.setProperty(HTTP_PROXY_HOST, proxyConfig.getHost());
+        System.setProperty(HTTP_PROXY_PORT, String.valueOf(proxyConfig.getPort()));
+        System.setProperty(HTTPS_PROXY_HOST, proxyConfig.getHost());
+        System.setProperty(HTTPS_PROXY_PORT, String.valueOf(proxyConfig.getPort()));
 
         // Set proxy authentication if available
         if (proxyConfig.hasAuthentication()) {
-            System.setProperty("http.proxyUser", proxyConfig.getUsername());
-            System.setProperty("http.proxyPassword", proxyConfig.getPassword());
-            System.setProperty("https.proxyUser", proxyConfig.getUsername());
-            System.setProperty("https.proxyPassword", proxyConfig.getPassword());
+            System.setProperty(HTTP_PROXY_USER, proxyConfig.getUsername());
+            System.setProperty(HTTP_PROXY_PASSWORD, proxyConfig.getPassword());
+            System.setProperty(HTTPS_PROXY_USER, proxyConfig.getUsername());
+            System.setProperty(HTTPS_PROXY_PASSWORD, proxyConfig.getPassword());
         }
 
         // Set non-proxy hosts (Java uses pipe-delimited, same as Aether)
         if (nonProxyHostsPattern != null && !nonProxyHostsPattern.isEmpty()) {
-            System.setProperty("http.nonProxyHosts", nonProxyHostsPattern);
+            System.setProperty(HTTP_NON_PROXY_HOSTS, nonProxyHostsPattern);
             // Note: https uses the same nonProxyHosts property as http
         }
     }
@@ -381,15 +392,15 @@ public class MavenProxyConfigurator {
      */
     private void saveOriginalProxyProperties() {
         try {
-            originalHttpProxyHost = System.getProperty("http.proxyHost");
-            originalHttpProxyPort = System.getProperty("http.proxyPort");
-            originalHttpProxyUser = System.getProperty("http.proxyUser");
-            originalHttpProxyPassword = System.getProperty("http.proxyPassword");
-            originalHttpsProxyHost = System.getProperty("https.proxyHost");
-            originalHttpsProxyPort = System.getProperty("https.proxyPort");
-            originalHttpsProxyUser = System.getProperty("https.proxyUser");
-            originalHttpsProxyPassword = System.getProperty("https.proxyPassword");
-            originalHttpNonProxyHosts = System.getProperty("http.nonProxyHosts");
+            originalHttpProxyHost = System.getProperty(HTTP_PROXY_HOST);
+            originalHttpProxyPort = System.getProperty(HTTP_PROXY_PORT);
+            originalHttpProxyUser = System.getProperty(HTTP_PROXY_USER);
+            originalHttpProxyPassword = System.getProperty(HTTP_PROXY_PASSWORD);
+            originalHttpsProxyHost = System.getProperty(HTTPS_PROXY_HOST);
+            originalHttpsProxyPort = System.getProperty(HTTPS_PROXY_PORT);
+            originalHttpsProxyUser = System.getProperty(HTTPS_PROXY_USER);
+            originalHttpsProxyPassword = System.getProperty(HTTPS_PROXY_PASSWORD);
+            originalHttpNonProxyHosts = System.getProperty(HTTP_NON_PROXY_HOSTS);
 
             logger.debug("Original proxy properties saved for later restoration");
         } catch (Exception e) {
@@ -423,15 +434,15 @@ public class MavenProxyConfigurator {
      */
     public void restoreOriginalProxyProperties() {
         try {
-            restoreProperty("http.proxyHost", originalHttpProxyHost);
-            restoreProperty("http.proxyPort", originalHttpProxyPort);
-            restoreProperty("http.proxyUser", originalHttpProxyUser);
-            restoreProperty("http.proxyPassword", originalHttpProxyPassword);
-            restoreProperty("https.proxyHost", originalHttpsProxyHost);
-            restoreProperty("https.proxyPort", originalHttpsProxyPort);
-            restoreProperty("https.proxyUser", originalHttpsProxyUser);
-            restoreProperty("https.proxyPassword", originalHttpsProxyPassword);
-            restoreProperty("http.nonProxyHosts", originalHttpNonProxyHosts);
+            restoreProperty(HTTP_PROXY_HOST, originalHttpProxyHost);
+            restoreProperty(HTTP_PROXY_PORT, originalHttpProxyPort);
+            restoreProperty(HTTP_PROXY_USER, originalHttpProxyUser);
+            restoreProperty(HTTP_PROXY_PASSWORD, originalHttpProxyPassword);
+            restoreProperty(HTTPS_PROXY_HOST, originalHttpsProxyHost);
+            restoreProperty(HTTPS_PROXY_PORT, originalHttpsProxyPort);
+            restoreProperty(HTTPS_PROXY_USER, originalHttpsProxyUser);
+            restoreProperty(HTTPS_PROXY_PASSWORD, originalHttpsProxyPassword);
+            restoreProperty(HTTP_NON_PROXY_HOSTS, originalHttpNonProxyHosts);
 
             logger.debug("Original Java system proxy properties restored successfully");
         } catch (Exception e) {
