@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
  * - Download parent and BOM POMs via {@link MavenDownloader} when local parent POMs are not available.
  * - Merge properties, repositories, dependency management, and dependencies from parent/BOM models.
  * - Apply dependency management to resolve missing versions/scopes and produce the final dependency list.
+ * - Recursively process nested BOMs (BOMs that import other BOMs) with cycle detection.
  *
  * The implementation caches partially-built projects to avoid duplicate work and detects parent
  * cycles to prevent infinite recursion. Instances are not thread-safe due to internal mutable state
@@ -40,6 +41,13 @@ import java.util.stream.Collectors;
  */
 public class ProjectBuilder {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
+    
+    /**
+     * Maximum number of BOM processing iterations to prevent infinite loops from pathological POMs.
+     * This is a safety limit - in practice, most projects have far fewer nested BOMs.
+     */
+    private static final int MAX_BOM_ITERATIONS = 50;
+    
     private final PomParser pomParser;
     private final PropertiesResolverProvider propertiesResolverProvider;
     private final Map<String, PartialMavenProject> pomCache = new HashMap<>();
@@ -230,91 +238,173 @@ public class ProjectBuilder {
         );
     }
 
-    private PartialMavenProject processBoms(String pomFilePath, PartialMavenProject partialModel) throws Exception {
-        // NOTE: This method was previously defined earlier; we're providing an updated implementation
-        // that resolves BOM coordinates against combined properties before attempting downloads.
-        List<PomXmlDependency> bomImports = partialModel.getDependencyManagement().stream()
-            .filter(dep -> "import".equals(dep.getScope()))
-            .collect(Collectors.toList());
-
-        if (bomImports.isEmpty()) {
-            return partialModel;
-        }
-
-        logger.info("Found {} BOM imports to process in {}", bomImports.size(), pomFilePath);
-
-        for (PomXmlDependency bom : bomImports) {
-            // Build a combined properties map including parent properties to resolve BOM coordinates
-            Map<String, String> combinedProps = new HashMap<>();
-            try {
-                Map<String, String> parentProps = propertiesResolverProvider.getParentProperties();
-                if (parentProps != null) {
-                    combinedProps.putAll(parentProps);
-                }
-            } catch (Exception e) {
-                logger.debug("Failed to include parent properties while resolving BOM coords: {}", e.getMessage());
+    private PartialMavenProject processBoms(String pomFilePath, PartialMavenProject partialModel, Set<String> visitedBoms) throws Exception {
+        int iteration = 0;
+        
+        while (iteration < MAX_BOM_ITERATIONS) {
+            // Build combined properties for resolving BOM coordinates
+            final Map<String, String> currentProps = buildCombinedProperties(partialModel);
+            
+            // Find unprocessed BOMs: scope=import AND not already visited
+            List<PomXmlDependency> unprocessedBoms = partialModel.getDependencyManagement().stream()
+                .filter(dep -> "import".equals(dep.getScope()))
+                .filter(dep -> {
+                    String bomKey = buildBomKey(dep, currentProps);
+                    return !visitedBoms.contains(bomKey);
+                })
+                .collect(Collectors.toList());
+            
+            if (unprocessedBoms.isEmpty()) {
+                logger.debug("No more unprocessed BOMs found after {} iteration(s)", iteration);
+                break;
             }
-            if (partialModel.getProperties() != null) {
-                combinedProps.putAll(partialModel.getProperties());
-            }
-
-            String resolvedGroupId = resolveProperties(bom.getGroupId(), combinedProps);
-            String resolvedArtifactId = resolveProperties(bom.getArtifactId(), combinedProps);
-            String resolvedVersion = resolveProperties(bom.getVersion(), combinedProps);
-
-            JavaCoordinates bomCoords = new JavaCoordinates(resolvedGroupId, resolvedArtifactId, resolvedVersion, "pom");
-            MavenDownloader mavenDownloader = new MavenDownloader(partialModel.getRepositories(), downloadDir);
-            File bomPomFile = mavenDownloader.downloadPom(bomCoords);
-
-            if (bomPomFile != null) {
-                logger.debug("Building BOM project: {}", bomPomFile.getAbsolutePath());
-                PartialMavenProject bomProject = internalBuildProject(bomPomFile, new HashSet<>());
-
-                // Resolve BOM dependencyManagement entries in BOM context before merging
-                try {
-                    Map<String, String> bomProps = new HashMap<>();
+            
+            logger.info("BOM processing iteration {}: found {} unprocessed BOM(s) in {}", 
+                iteration + 1, unprocessedBoms.size(), pomFilePath);
+            
+            // Process each unprocessed BOM
+            for (PomXmlDependency bom : unprocessedBoms) {
+                // Rebuild combined props in case they changed from previous BOM merges
+                final Map<String, String> combinedProps = buildCombinedProperties(partialModel);
+                
+                String resolvedGroupId = resolveProperties(bom.getGroupId(), combinedProps);
+                String resolvedArtifactId = resolveProperties(bom.getArtifactId(), combinedProps);
+                String resolvedVersion = resolveProperties(bom.getVersion(), combinedProps);
+                
+                String bomKey = resolvedGroupId + ":" + resolvedArtifactId + ":" + resolvedVersion;
+                
+                // Mark as visited BEFORE processing to prevent cycles
+                visitedBoms.add(bomKey);
+                logger.debug("Processing BOM: {} (iteration {})", bomKey, iteration + 1);
+                
+                JavaCoordinates bomCoords = new JavaCoordinates(resolvedGroupId, resolvedArtifactId, resolvedVersion, "pom");
+                MavenDownloader mavenDownloader = new MavenDownloader(partialModel.getRepositories(), downloadDir);
+                File bomPomFile = mavenDownloader.downloadPom(bomCoords);
+                
+                if (bomPomFile != null) {
+                    logger.debug("Building BOM project: {}", bomPomFile.getAbsolutePath());
+                    PartialMavenProject bomProject = internalBuildProject(bomPomFile, new HashSet<>());
+                    
+                    // Resolve BOM dependencyManagement entries in BOM context before merging
+                    resolveBomManagedEntries(bomProject);
+                    
+                    // Merge properties from BOM. Existing properties take precedence.
+                    Map<String, String> mergedProperties = new HashMap<>();
                     if (bomProject.getProperties() != null) {
-                        bomProps.putAll(bomProject.getProperties());
+                        mergedProperties.putAll(bomProject.getProperties());
                     }
-                    // Substitute properties for all BOM-managed entries so ${project.version} etc. become literals
+                    mergedProperties.putAll(partialModel.getProperties()); // Original properties override BOM's
+                    partialModel.setProperties(mergedProperties);
+                    
+                    // Merge dependency management from BOM. Existing entries take precedence.
+                    // This may introduce NEW scope=import entries (nested BOMs) which will be
+                    // picked up in the next iteration of the while loop.
+                    Map<String, PomXmlDependency> depMgmtMap = new HashMap<>();
                     if (bomProject.getDependencyManagement() != null) {
-                        for (PomXmlDependency depMgmt : bomProject.getDependencyManagement()) {
-                            depMgmt.setGroupId(resolveProperties(depMgmt.getGroupId(), bomProps));
-                            depMgmt.setArtifactId(resolveProperties(depMgmt.getArtifactId(), bomProps));
-                            depMgmt.setVersion(resolveProperties(depMgmt.getVersion(), bomProps));
-                            depMgmt.setScope(resolveProperties(depMgmt.getScope(), bomProps));
-                            depMgmt.setType(resolveProperties(depMgmt.getType(), bomProps));
-                            depMgmt.setClassifier(resolveProperties(depMgmt.getClassifier(), bomProps));
-                        }
+                        bomProject.getDependencyManagement().forEach(dep -> 
+                            depMgmtMap.put(dep.getGroupId() + ":" + dep.getArtifactId(), dep));
                     }
-                } catch (Exception e) {
-                    logger.debug("Failed to resolve BOM managed entries in BOM context: {}", e.getMessage());
+                    // Original entries override BOM's entries
+                    partialModel.getDependencyManagement().forEach(dep -> 
+                        depMgmtMap.put(dep.getGroupId() + ":" + dep.getArtifactId(), dep));
+                    partialModel.setDependencyManagement(new ArrayList<>(depMgmtMap.values()));
+                    
+                    logger.debug("Merged BOM {}: {} properties, {} managed dependencies", 
+                        bomKey, 
+                        bomProject.getProperties() != null ? bomProject.getProperties().size() : 0,
+                        bomProject.getDependencyManagement() != null ? bomProject.getDependencyManagement().size() : 0);
+                } else {
+                    logger.warn("Could not download BOM POM for coordinates: {}", bomKey);
                 }
-
-                // Merge properties from BOM. Existing properties take precedence.
-                Map<String, String> mergedProperties = new HashMap<>();
-                if (bomProject.getProperties() != null) {
-                    mergedProperties.putAll(bomProject.getProperties());
-                }
-                mergedProperties.putAll(partialModel.getProperties()); // Original properties override BOM's
-                partialModel.setProperties(mergedProperties);
-
-                // Merge dependency management from BOM. Existing entries take precedence.
-                Map<String, PomXmlDependency> depMgmtMap = new HashMap<>();
-                if (bomProject.getDependencyManagement() != null) {
-                    bomProject.getDependencyManagement().forEach(dep -> depMgmtMap.put(dep.getGroupId() + ":" + dep.getArtifactId(), dep));
-                }
-                partialModel.getDependencyManagement().forEach(dep -> depMgmtMap.put(dep.getGroupId() + ":" + dep.getArtifactId(), dep)); // Original entries override BOM's
-                partialModel.setDependencyManagement(new ArrayList<>(depMgmtMap.values()));
-            } else {
-                logger.warn("Could not download BOM POM for coordinates: {}:{}:{}", resolvedGroupId, resolvedArtifactId, resolvedVersion);
+                
+                // Remove THIS specific processed BOM from the dependency management list
+                // We match by the RESOLVED coordinates to ensure correct removal
+                final String finalGroupId = resolvedGroupId;
+                final String finalArtifactId = resolvedArtifactId;
+                partialModel.getDependencyManagement().removeIf(dep -> 
+                    finalGroupId.equals(resolveProperties(dep.getGroupId(), combinedProps)) &&
+                    finalArtifactId.equals(resolveProperties(dep.getArtifactId(), combinedProps)) &&
+                    "import".equals(dep.getScope()));
             }
+            
+            iteration++;
         }
-
-        // Remove the 'import' scoped dependencies themselves from the list
+        
+        if (iteration >= MAX_BOM_ITERATIONS) {
+            logger.warn("Reached maximum BOM processing iterations ({}). Some nested BOMs may not be fully processed. " +
+                "This could indicate a circular BOM import or an unusually deep BOM hierarchy.", MAX_BOM_ITERATIONS);
+        }
+        
+        // Final cleanup: remove any remaining scope=import entries that couldn't be processed
+        int remainingImports = (int) partialModel.getDependencyManagement().stream()
+            .filter(dep -> "import".equals(dep.getScope()))
+            .count();
+        if (remainingImports > 0) {
+            logger.warn("Removing {} unprocessed BOM import(s) from dependency management", remainingImports);
+        }
         partialModel.getDependencyManagement().removeIf(dep -> "import".equals(dep.getScope()));
-
+        
+        logger.info("BOM processing complete: processed {} unique BOM(s) in {} iteration(s)", 
+            visitedBoms.size(), iteration);
+        
         return partialModel;
+    }
+    
+    /**
+     * Builds a combined properties map including parent properties and current model properties.
+     * Used for resolving property placeholders in BOM coordinates.
+     */
+    private Map<String, String> buildCombinedProperties(PartialMavenProject partialModel) {
+        Map<String, String> combinedProps = new HashMap<>();
+        try {
+            Map<String, String> parentProps = propertiesResolverProvider.getParentProperties();
+            if (parentProps != null) {
+                combinedProps.putAll(parentProps);
+            }
+        } catch (Exception e) {
+            logger.debug("Failed to include parent properties while resolving BOM coords: {}", e.getMessage());
+        }
+        if (partialModel.getProperties() != null) {
+            combinedProps.putAll(partialModel.getProperties());
+        }
+        return combinedProps;
+    }
+    
+    /**
+     * Builds a unique key for a BOM dependency using resolved coordinates.
+     * Format: groupId:artifactId:version
+     */
+    private String buildBomKey(PomXmlDependency bom, Map<String, String> properties) {
+        String groupId = resolveProperties(bom.getGroupId(), properties);
+        String artifactId = resolveProperties(bom.getArtifactId(), properties);
+        String version = resolveProperties(bom.getVersion(), properties);
+        return groupId + ":" + artifactId + ":" + version;
+    }
+    
+    /**
+     * Resolves property placeholders in all dependency management entries of a BOM project.
+     * This ensures ${project.version} and similar placeholders become literal values before merging.
+     */
+    private void resolveBomManagedEntries(PartialMavenProject bomProject) {
+        try {
+            Map<String, String> bomProps = new HashMap<>();
+            if (bomProject.getProperties() != null) {
+                bomProps.putAll(bomProject.getProperties());
+            }
+            // Substitute properties for all BOM-managed entries
+            if (bomProject.getDependencyManagement() != null) {
+                for (PomXmlDependency depMgmt : bomProject.getDependencyManagement()) {
+                    depMgmt.setGroupId(resolveProperties(depMgmt.getGroupId(), bomProps));
+                    depMgmt.setArtifactId(resolveProperties(depMgmt.getArtifactId(), bomProps));
+                    depMgmt.setVersion(resolveProperties(depMgmt.getVersion(), bomProps));
+                    depMgmt.setScope(resolveProperties(depMgmt.getScope(), bomProps));
+                    depMgmt.setType(resolveProperties(depMgmt.getType(), bomProps));
+                    depMgmt.setClassifier(resolveProperties(depMgmt.getClassifier(), bomProps));
+                }
+            }
+        } catch (Exception e) {
+            logger.debug("Failed to resolve BOM managed entries in BOM context: {}", e.getMessage());
+        }
     }
 
     private PartialMavenProject finalizeEffectiveModel(String path, PartialMavenProject partialModel, PartialMavenProject parentModel) {
@@ -374,10 +464,12 @@ public class ProjectBuilder {
         logger.info("Starting first pass of property resolution for '{}'...", project.getCoordinates().getArtifactId());
         resolveDependencyProperties(project);
 
-        // 2. Process BOMs, which may add new properties and managed dependencies
+        // 2. Process BOMs (including nested BOMs), which may add new properties and managed dependencies.
+        // The visitedBoms set tracks processed BOMs to prevent infinite cycles.
         // Process any imported BOMs so their properties and dependencyManagement entries
         // are merged into the partial model before the second property resolution pass.
-        project = processBoms(pomFile, project);
+        Set<String> visitedBoms = new HashSet<>();
+        project = processBoms(pomFile, project, visitedBoms);
 
         // 3. Second pass of property resolution to handle properties from imported BOMs
         logger.info("Starting second pass of property resolution for '{}' after processing BOMs...", project.getCoordinates().getArtifactId());
