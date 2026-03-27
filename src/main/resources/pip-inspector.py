@@ -34,7 +34,7 @@ Usage: pip-inspector.py --projectname=<project_name> --requirements=<requirement
 from getopt import getopt, GetoptError
 from os import path
 import sys
-from re import split
+from re import split, match
 
 import pip
 pip_major_version = int(pip.__version__.split(".")[0])
@@ -118,7 +118,8 @@ def populate_dependency_tree(project_root_node, requirements_path):
                 project_root_node.children = project_root_node.children + [dependency_node]
             else:
                 print('--' + package_name)
-    except:
+    except Exception as e:
+        print(e)
         print('p?' + requirements_path)
 
 
@@ -169,7 +170,6 @@ else:
     # Priority 1: Try importlib.metadata (modern standard, Python 3.8+)
     try:
         import importlib.metadata as metadata
-        from packaging.requirements import Requirement
         use_importlib_metadata = True
     except ImportError:
         # Priority 2: Fall back to pkg_resources
@@ -179,18 +179,33 @@ else:
         except ImportError:
             pass
 
+    def normalize_package_name(package_name):
+        """Extract and normalize package name from a requirement string using regex.
+        Handles cases like 'package-name>=1.0', 'Package[extra]>=1.0', 'package (>=1.0)', etc.
+        Package names contain only: letters, digits, dots, hyphens, underscores per PEP 508."""
+        if package_name is None:
+            return None
+        # Extract just the package name (valid chars: a-z, A-Z, 0-9, -, _, .)
+        name_match = match(r'^([a-zA-Z0-9._-]+)', package_name.strip())
+        if name_match:
+            return name_match.group(1)
+        return None
+
     if use_importlib_metadata:
         def get_package_by_name(package_name):
             """Looks up a package from the pip cache using importlib.metadata"""
             if package_name is None:
                 return None, None
 
+            # Normalize the package name to handle different representations
+            normalized_name = normalize_package_name(package_name)
+
             package_info = None
             try:
-                package_info = metadata.distribution(Requirement(package_name).name)
+                package_info = metadata.distribution(normalized_name)
             except:
-                # Try name variants
-                name_variants = (package_name, package_name.lower(), package_name.replace('-', '_'), package_name.replace('_', '-'), package_name.replace('.', '-'))
+                # Try name variants if the initial lookup fails
+                name_variants = (normalized_name, normalized_name.lower(), normalized_name.replace('-', '_'), normalized_name.replace('_', '-'), normalized_name.replace('.', '-'))
                 for name_variant in name_variants:
                     try:
                         package_info = metadata.distribution(name_variant)
@@ -205,13 +220,14 @@ else:
             requires = []
             if package_info.requires:
                 for requirement in package_info.requires:
-                    # Extract just the package name from the requirement string
-                    req_name = Requirement(requirement).name
+                    # Extract and normalize the package name from the requirement string
+                    req_name = normalize_package_name(requirement)
                     requires.append(req_name)
 
+            # Remove duplicates while preserving order
             requires = list(dict.fromkeys(requires))
 
-            return DependencyNode(package_info.name, package_info.version), requires
+            return DependencyNode(package_info.metadata['Name'], package_info.metadata['Version']), requires
 
     elif use_pkg_resources:
         def get_package_by_name(package_name):
