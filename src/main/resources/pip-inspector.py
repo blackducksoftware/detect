@@ -204,9 +204,15 @@ else:
             requires = []
             if package_info.requires:
                 for requirement in package_info.requires:
-                    # Extract just the package name from the requirement string
+                    # Skip optional extras
+                    if '; extra ==' in requirement or '; extra==' in requirement:
+                        continue
+                    # Extract package name and strip any remaining marker
                     req_name = split('===|<=|!=|==|>=|~=|<|>', requirement)[0].strip()
-                    requires.append(req_name)
+                    req_name = req_name.split(';')[0].strip()
+                    if req_name:
+                        requires.append(req_name)
+
 
             return DependencyNode(package_info.metadata['Name'], package_info.metadata['Version']), requires
 
