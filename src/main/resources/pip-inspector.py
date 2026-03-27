@@ -169,6 +169,7 @@ else:
     # Priority 1: Try importlib.metadata (modern standard, Python 3.8+)
     try:
         import importlib.metadata as metadata
+        from packaging.requirements import Requirement
         use_importlib_metadata = True
     except ImportError:
         # Priority 2: Fall back to pkg_resources
@@ -186,7 +187,7 @@ else:
 
             package_info = None
             try:
-                package_info = metadata.distribution(package_name)
+                package_info = metadata.distribution(Requirement(package_name).name)
             except:
                 # Try name variants
                 name_variants = (package_name, package_name.lower(), package_name.replace('-', '_'), package_name.replace('_', '-'), package_name.replace('.', '-'))
@@ -205,10 +206,12 @@ else:
             if package_info.requires:
                 for requirement in package_info.requires:
                     # Extract just the package name from the requirement string
-                    req_name = split('===|<=|!=|==|>=|~=|<|>', requirement)[0].strip()
+                    req_name = Requirement(requirement).name
                     requires.append(req_name)
 
-            return DependencyNode(package_info.metadata['Name'], package_info.metadata['Version']), requires
+            requires = list(dict.fromkeys(requires))
+
+            return DependencyNode(package_info.name, package_info.version), requires
 
     elif use_pkg_resources:
         def get_package_by_name(package_name):
