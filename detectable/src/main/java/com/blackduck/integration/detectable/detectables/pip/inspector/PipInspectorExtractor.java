@@ -112,7 +112,9 @@ public class PipInspectorExtractor {
             inspectorArguments.add(String.format("--projectname=%s", projectName));
         }
 
-        return executableRunner.execute(ExecutableUtils.createFromTarget(sourceDirectory, pythonExe, inspectorArguments)).getStandardOutputAsList();
+        List<String> output = executableRunner.execute(ExecutableUtils.createFromTarget(sourceDirectory, pythonExe, inspectorArguments)).getStandardOutputAsList();
+        output.forEach(line -> logger.debug("[pip-inspector] {}", line));
+        return output;
     }
 
     private String getProjectName(File directory, ExecutableTarget pythonExe, File setupFile, TomlParseResult tomlParseResult, String providedProjectName) throws ExecutableRunnerException {

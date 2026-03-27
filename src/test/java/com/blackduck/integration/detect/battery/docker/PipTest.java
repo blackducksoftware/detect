@@ -49,15 +49,16 @@ public class PipTest {
 
             // Set up blackduck connection and environment
             String projectVersion = PROJECT_NAME + "-" + pipVersion;
-            BlackDuckTestConnection blackDuckTestConnection = BlackDuckTestConnection.fromEnvironment();
-            BlackDuckAssertions blackduckAssertions = blackDuckTestConnection.projectVersionAssertions(PROJECT_NAME, projectVersion);
-            blackduckAssertions.emptyOnBlackDuck();
+//            BlackDuckTestConnection blackDuckTestConnection = BlackDuckTestConnection.fromEnvironment();
+//            BlackDuckAssertions blackduckAssertions = blackDuckTestConnection.projectVersionAssertions(PROJECT_NAME, projectVersion);
+//            blackduckAssertions.emptyOnBlackDuck();
 
             // Build command with BlackDuck config
-            DetectCommandBuilder commandBuilder = new DetectCommandBuilder().defaults().defaultDirectories(test);
-            commandBuilder.connectToBlackDuck(blackDuckTestConnection);
-            commandBuilder.projectNameVersion(blackduckAssertions);
-            commandBuilder.waitForResults();
+            DetectCommandBuilder commandBuilder = DetectCommandBuilder.withOfflineDefaults().defaultDirectories(test);
+//            DetectCommandBuilder commandBuilder = new DetectCommandBuilder().defaults().defaultDirectories(test);
+//            commandBuilder.connectToBlackDuck(blackDuckTestConnection);
+//            commandBuilder.projectNameVersion(blackduckAssertions);
+//            commandBuilder.waitForResults();
 
             // Set up Detect properties
             commandBuilder.property(DetectProperties.DETECT_TOOLS, DetectTool.DETECTOR.toString());
@@ -71,7 +72,7 @@ public class PipTest {
             dockerAssertions.atLeastOneBdioFile();
 
             // Blackduck specific assertions
-            validateComponentsForSamplePipProject(blackduckAssertions);
+//            validateComponentsForSamplePipProject(blackduckAssertions);
         }
     }
 

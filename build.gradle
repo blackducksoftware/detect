@@ -158,18 +158,24 @@ artifactory {
     }
 }
 
-test {
-    testLogging {
-        exceptionFormat = 'full'
-    }
+//test {
+//    testLogging {
+//        exceptionFormat = 'full'
+//    }
+//
+//    def maxParallelForksEnvVar = System.getenv('MAX_PARALLEL_TEST_FORKS')
+//    if (maxParallelForksEnvVar) {
+//        maxParallelForks = maxParallelForksEnvVar as int
+//    } else {
+//        maxParallelForks = 4
+//    }
+//    println "maxParallelForks has been set to ${maxParallelForks}"
+//
+//    useJunitPlatform()
+//}
 
-    def maxParallelForksEnvVar = System.getenv('MAX_PARALLEL_TEST_FORKS')
-    if (maxParallelForksEnvVar) {
-        maxParallelForks = maxParallelForksEnvVar as int
-    } else {
-        maxParallelForks = 4
-    }
-    println "maxParallelForks has been set to ${maxParallelForks}"
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
 }
 
 dependencies {

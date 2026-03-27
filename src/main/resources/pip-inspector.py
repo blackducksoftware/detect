@@ -51,6 +51,7 @@ else:
 
 def main():
     """Handles commandline args, executes the inspector, and prints the resulting dependency tree"""
+    print("Entering ...main method")
     try:
         opts, __ = getopt(sys.argv[1:], 'p:r:', ['projectname=', 'requirements='])
     except GetoptError as error:
@@ -82,6 +83,7 @@ def main():
 def resolve_project_node(project_name):
     """Attempts to resolve the root DependencyNode from the user provided --projectname argument.
     If it can't, produces a DependencyNode with name 'n?' and version 'v?'"""
+    print("Entering ...resolve_project_node method")
     project_dependency_node = None
 
     if project_name is not None:
@@ -95,6 +97,7 @@ def resolve_project_node(project_name):
 
 def populate_dependency_tree(project_root_node, requirements_path):
     """Resolves the dependencies of the user-provided requirements.txt and appends them to the dependency tree"""
+    print("Entering ...populate_dependency_tree method")
     try:
         parsed_requirements = parse_requirements(requirements_path, session=PipSession())
         for parsed_requirement in parsed_requirements:
@@ -124,6 +127,7 @@ def populate_dependency_tree(project_root_node, requirements_path):
 
 def recursively_resolve_dependencies(package_name, history):
     """Forms a DependencyNode by recursively resolving its dependencies. Tracks history for cyclic dependencies."""
+    print("Entering ...recursively_resolve_dependencies method")
     dependency_node, child_names = get_package_by_name(package_name)
 
     if dependency_node is None:
@@ -153,6 +157,7 @@ if use_pip_internal_to_search_packages:
         """Looks up a package from the pip cache using internal pip API.
         This should not be used when PIP is older than 21.2 since the internal API was slightly different then.
         """
+        print("Entering ...get_package_by_name method (pip internal API)")
         if package_name is None:
             return None, None
 
@@ -167,11 +172,14 @@ else:
     use_pkg_resources = False
 
     # Priority 1: Try importlib.metadata (modern standard, Python 3.8+)
+    print("Entering ...Try importlib.metadata ")
+
     try:
         import importlib.metadata as metadata
         use_importlib_metadata = True
     except ImportError:
         # Priority 2: Fall back to pkg_resources
+        print("Entering ...fallback to priority 2 ")
         try:
             from pkg_resources import working_set, Requirement
             use_pkg_resources = True
@@ -181,6 +189,7 @@ else:
     if use_importlib_metadata:
         def get_package_by_name(package_name):
             """Looks up a package from the pip cache using importlib.metadata"""
+            print("Entering ...get_package_by_name method (importlib.metadata)")
             if package_name is None:
                 return None, None
 
@@ -212,6 +221,7 @@ else:
                     req_name = req_name.split(';')[0].strip()
                     if req_name:
                         requires.append(req_name)
+                        print(f"Appending: {req_name}")
 
 
             return DependencyNode(package_info.metadata['Name'], package_info.metadata['Version']), requires
@@ -219,6 +229,7 @@ else:
     elif use_pkg_resources:
         def get_package_by_name(package_name):
             """Looks up a package from the pip cache using pkg_resources"""
+            print("Entering ...get_package_by_name method (pkg_resources)")
             if package_name is None:
                 return None, None
 
@@ -242,12 +253,14 @@ else:
 class DependencyNode(object):
     """Represents a python dependency in a tree graph with a name, version, and array of children DependencyNodes"""
     def __init__(self, name, version):
+        print("Entering ...__init__ method")
         self.name = name
         self.version = version
         self.children = []
 
     def render(self, layer=1):
         """Recursively builds a dependency tree string to be printed to the commandline"""
+        print("Entering ...render method")
         result = self.name + "==" + self.version
         for child in self.children:
             result += "\n" + (" " * 4 * layer)
