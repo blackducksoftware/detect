@@ -4,9 +4,12 @@ dependencies {
     implementation 'com.blackduck.integration:integration-bdio'
     implementation 'com.blackduck.integration:integration-rest'
 
-    implementation 'org.tomlj:tomlj:1.1.1'
+    implementation('org.tomlj:tomlj:1.1.1') {
+        exclude group: 'org.antlr', module: 'antlr4-runtime'
+    }
     implementation 'com.moandjiezana.toml:toml4j:0.7.2'
     implementation 'com.paypal.digraph:digraph-parser:1.0'
+    implementation 'org.antlr:antlr4-runtime:4.7.2'
     implementation 'guru.nidi:graphviz-java:0.18.1'
 
     testImplementation 'org.skyscreamer:jsonassert:1.5.0'
