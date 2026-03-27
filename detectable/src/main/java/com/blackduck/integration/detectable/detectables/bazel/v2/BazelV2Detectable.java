@@ -148,17 +148,22 @@ public class BazelV2Detectable extends Detectable {
         // Set up Bazel command executor and determine environment mode
         BazelCommandExecutor bazelCmd = new BazelCommandExecutor(executableRunner, environment.getDirectory(), bazelExe);
 
-        // Detect Bazel version for feature gating (e.g., mod graph --output json requires 7.1+)
-        BazelVersion bazelVersion = new BazelVersionDetector(bazelCmd).detectVersion().orElse(null);
-        if (bazelVersion != null) {
-            logger.info("Bazel version detected: {}. Features requiring 7.1+ are {}.",
-                bazelVersion, bazelVersion.isAtLeast(7, 1) ? "ENABLED" : "DISABLED");
-        } else {
-            logger.info("Bazel version could not be detected; 7.1+ optimizations will be disabled.");
-        }
-
         // Determine mode (either via override or auto-detection)
         BazelEnvironmentAnalyzer.Mode mode = determineMode(bazelCmd);
+
+        // Detect Bazel version only for BZLMOD — the version is used exclusively in BZLMOD-specific
+        // paths (mod graph fast path in HttpFamilyProber, batched show_repo in Pipelines).
+        // Skipping this call for WORKSPACE avoids an extra bazel invocation that is never needed there.
+        BazelVersion bazelVersion = null;
+        if (mode == BazelEnvironmentAnalyzer.Mode.BZLMOD) {
+            bazelVersion = new BazelVersionDetector(bazelCmd).detectVersion().orElse(null);
+            if (bazelVersion != null) {
+                logger.info("Bazel version detected: {}. Features requiring 7.1+ are {}.",
+                    bazelVersion, bazelVersion.isAtLeast(7, 1) ? "ENABLED" : "DISABLED");
+            } else {
+                logger.info("Bazel version could not be detected; 7.1+ optimizations will be disabled.");
+            }
+        }
 
         // Determine pipelines (either from properties or by probing)
         Set<DependencySource> pipelines = resolvePipelines(bazelCmd, target, mode, bazelVersion);
