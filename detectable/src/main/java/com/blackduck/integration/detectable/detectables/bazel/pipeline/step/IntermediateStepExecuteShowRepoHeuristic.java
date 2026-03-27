@@ -71,9 +71,9 @@ public class IntermediateStepExecuteShowRepoHeuristic implements IntermediateSte
 
         // For Bazel 7.1+, try batched show_repo first
         if (bazelVersion != null && bazelVersion.isAtLeast(7, 1)) {
-            List<String> batchResult = tryBatchedShowRepo(input);
-            if (batchResult != null) {
-                return batchResult;
+            Optional<List<String>> batchResult = tryBatchedShowRepo(input);
+            if (batchResult.isPresent()) {
+                return batchResult.get();
             }
             logger.info("Batched show_repo failed; falling back to per-repo calls.");
         }
@@ -83,9 +83,9 @@ public class IntermediateStepExecuteShowRepoHeuristic implements IntermediateSte
 
     /**
      * Attempts a single batched `bazel mod show_repo @repo1 @repo2 ...` call.
-     * Returns the list of output blocks if successful, or null if the batch fails.
+     * Returns present with output blocks if successful, or empty if the batch fails.
      */
-    private List<String> tryBatchedShowRepo(List<String> input) {
+    private Optional<List<String>> tryBatchedShowRepo(List<String> input) {
         List<String> repoArgs = new ArrayList<>();
         for (String raw : input) {
             if (raw == null) continue;
@@ -98,7 +98,7 @@ public class IntermediateStepExecuteShowRepoHeuristic implements IntermediateSte
             }
         }
 
-        if (repoArgs.isEmpty()) return new ArrayList<>();
+        if (repoArgs.isEmpty()) return Optional.of(new ArrayList<>());
 
         try {
             logger.info("Attempting batched show_repo for {} repos (Bazel {})", repoArgs.size(), bazelVersion);
@@ -110,12 +110,12 @@ public class IntermediateStepExecuteShowRepoHeuristic implements IntermediateSte
             if (result.isPresent() && !result.get().trim().isEmpty()) {
                 List<String> blocks = splitShowRepoOutput(result.get());
                 logger.info("Batched show_repo succeeded: {} blocks from {} repos", blocks.size(), repoArgs.size());
-                return blocks;
+                return Optional.of(blocks);
             }
         } catch (ExecutableFailedException e) {
             logger.debug("Batched show_repo failed: {}", e.getMessage());
         }
-        return null;
+        return Optional.empty();
     }
 
     /**
@@ -125,7 +125,7 @@ public class IntermediateStepExecuteShowRepoHeuristic implements IntermediateSte
     private List<String> splitShowRepoOutput(String combinedOutput) {
         List<String> blocks = new ArrayList<>();
         // Split on the "## @" boundary which separates repo blocks
-        String[] parts = combinedOutput.split("(?=## @)");
+        String[] parts = combinedOutput.split("(?=" + REPO_BLOCK_SEPARATOR + ")");
         for (String part : parts) {
             String trimmed = part.trim();
             if (!trimmed.isEmpty()) {
