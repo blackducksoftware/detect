@@ -2,14 +2,9 @@ package com.blackduck.integration.detectable.detectables.maven.resolver;
 
 import com.blackduck.integration.detectable.detectables.maven.resolver.model.*;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import org.apache.commons.text.StringSubstitutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -34,153 +29,185 @@ public class PomParser {
                                             PropertiesResolverProvider propertiesResolverProvider) throws com.blackduck.integration.detectable.detectables.maven.resolver.PomParser.PomParsingException {
 
         try {
-            String xmlContent = new String(pomFileContent, "UTF-8");
+            ParseContext ctx = new ParseContext(pomFilePath, pomFileContent);
 
-            // Step 1: Parse properties from the XML
-            Map<String, String> explicitProps = parseProperties(xmlContent);
-            Map<String, String> implicitProps = new HashMap<>(); // Would be populated by properties parser
+            parseInitialModel(ctx);
+            buildPreliminaryCoordinates(ctx);
+            inheritCoordinatesFromParent(ctx);
+            createProjectStarProperties(ctx);
+            resolveAndReparseWithProperties(ctx, propertiesResolverProvider);
 
-            if (explicitProps.isEmpty()) {
-                logger.debug("Couldn't parse pom.xml properties, using empty map");
-                explicitProps = new HashMap<>();
-            }
-
-            // Step 2: Parse XML without property resolution first
-            XmlMapper xmlMapper = new XmlMapper();
-
-            //workaround for now
-            xmlMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-            PomXml unresolvedParsedPomFile = xmlMapper.readValue(xmlContent, PomXml.class);
-
-            // Step 3: Create a preliminary model to determine final coordinates
-            PartialMavenProject preliminaryResult = new PartialMavenProject();
-            preliminaryResult.setCoordinates(new JavaCoordinates(
-                trimSpace(unresolvedParsedPomFile.getGroupId()),
-                trimSpace(unresolvedParsedPomFile.getArtifactId()),
-                trimSpace(unresolvedParsedPomFile.getVersion()),
-                trimSpace(unresolvedParsedPomFile.getPackaging())
-            ));
-
-            ParentPomInfo parentPomInfo = new ParentPomInfo();
-            PomXmlParent parent = unresolvedParsedPomFile.getParent();
-            if (parent != null) {
-                parentPomInfo.setCoordinates(new JavaCoordinates(
-                    trimSpace(parent.getGroupId()),
-                    trimSpace(parent.getArtifactId()),
-                    trimSpace(parent.getVersion()),
-                    ""
-                ));
-            } else {
-                parentPomInfo.setCoordinates(new JavaCoordinates());
-            }
-            preliminaryResult.setParentPomInfo(parentPomInfo);
-            JavaCoordinates parentCoords = parentPomInfo.getCoordinates();
-
-            // Inherit GroupId or Version from parent if empty
-            if (isEmpty(preliminaryResult.getCoordinates().getGroupId()) && isNotEmpty(parentCoords.getGroupId())) {
-                preliminaryResult.getCoordinates().setGroupId(parentCoords.getGroupId());
-            }
-            if (isEmpty(preliminaryResult.getCoordinates().getVersion()) && isNotEmpty(parentCoords.getVersion())) {
-                preliminaryResult.getCoordinates().setVersion(parentCoords.getVersion());
-            }
-
-            // Step 4: Create project star properties now that coordinates are finalized
-            Map<String, String> projectStarProperties = new HashMap<>();
-            JavaCoordinates finalCoords = preliminaryResult.getCoordinates();
-            if (isNotEmpty(finalCoords.getGroupId())) {
-                projectStarProperties.put("project.groupId", finalCoords.getGroupId());
-                projectStarProperties.put("pom.groupId", finalCoords.getGroupId());
-            }
-            if (isNotEmpty(finalCoords.getArtifactId())) {
-                projectStarProperties.put("project.artifactId", finalCoords.getArtifactId());
-                projectStarProperties.put("pom.artifactId", finalCoords.getArtifactId());
-            }
-            if (isNotEmpty(finalCoords.getVersion())) {
-                projectStarProperties.put("project.version", finalCoords.getVersion());
-                projectStarProperties.put("pom.version", finalCoords.getVersion());
-            }
-
-            // Step 5: Create the final, fully-contextualized property resolver
-            PropertyResolver propertiesResolver = propertiesResolverProvider.newResolver(explicitProps, projectStarProperties);
-
-            // Step 6: Replace properties in the complete POM XML file
-            String resolvedPomFileContent = replaceProperties(xmlContent, propertiesResolver);
-
-            // Step 7: Parse POM file with properties resolved
-            PomXml parsedPomFile;
-            try {
-                parsedPomFile = xmlMapper.readValue(resolvedPomFileContent, PomXml.class);
-            } catch (Exception e) {
-                logger.debug("Parsing file with resolved properties failed. Using original file without resolved properties.");
-                parsedPomFile = unresolvedParsedPomFile;
-            }
-
-            // Step 8: Build the final resulting POM model
-            PartialMavenProject result = new PartialMavenProject();
-            result.setParentPomInfo(parentPomInfo);
-            result.setProperties(propertiesResolver.getAllProperties());
-            result.setCoordinates(finalCoords); // Use the already finalized coordinates
-
-            parentPomInfo.setDependencies(new ArrayList<>());
-            parentPomInfo.setDependencyManagement(new ArrayList<>());
-
-            result.setRepositories(new ArrayList<>());
-            result.setDependencies(new ArrayList<>());
-            result.setDependencyManagement(new ArrayList<>());
-            result.setDependenciesWithShaded(new ArrayList<>());
-            result.setDependencyManagementForShaded(new ArrayList<>());
-            result.setModules(new ArrayList<>());
-            result.setPlugins(new HashMap<>());
-
-            // Calculate expected parent POM path
-            String expectedParentPomPath = "";
-            if (isNotEmpty(parentCoords.getGroupId()) && isNotEmpty(parentCoords.getArtifactId()) && isNotEmpty(parentCoords.getVersion())) {
-                String relativePath = (parent != null) ? parent.getRelativePath() : null;
-                expectedParentPomPath = calcExpectedParentPath(pomFilePath, relativePath);
-            }
-            parentPomInfo.setExpectedPath(expectedParentPomPath);
-
-            // Process modules
-            if (parsedPomFile.getModules() != null) {
-                for (String module : parsedPomFile.getModules()) {
-                    result.getModules().add(trimSpace(module));
-                }
-            }
-
-            // Process plugins
-            if (parsedPomFile.getBuild() != null && parsedPomFile.getBuild().getPlugins() != null) {
-                for (PomXmlPlugin plugin : parsedPomFile.getBuild().getPlugins()) {
-                    result.getPlugins().put(trimSpace(plugin.getArtifactId()), true);
-                }
-            }
-
-            // Process repositories
-            if (parsedPomFile.getRepositories() != null) {
-                for (MavenRepositoryXml xmlRepo : parsedPomFile.getRepositories()) {
-                    result.getRepositories().add(xmlToBuildlessRepository(xmlRepo));
-                }
-            }
-
-            // Process dependencies (store without resolving properties for later processing)
-            if (unresolvedParsedPomFile.getDependencies() != null) {
-                for (PomXmlDependency dep : unresolvedParsedPomFile.getDependencies()) {
-                    trimSpacesInPomXmlDep(dep);
-                    result.getDependencies().add(dep);
-                }
-            }
-
-            // Process dependency management
-            if (unresolvedParsedPomFile.getDependencyManagement() != null && unresolvedParsedPomFile.getDependencyManagement().getDependencies() != null) {
-                for (PomXmlDependency depMgmt : unresolvedParsedPomFile.getDependencyManagement().getDependencies()) {
-                    trimSpacesInPomXmlDep(depMgmt);
-                    result.getDependencyManagement().add(depMgmt);
-                }
-            }
-
-            return result;
+            return buildFinalResult(ctx);
 
         } catch (Exception e) {
             throw new com.blackduck.integration.detectable.detectables.maven.resolver.PomParser.PomParsingException("Failed to parse POM file: " + pomFilePath, e);
+        }
+    }
+
+    private void parseInitialModel(ParseContext ctx) throws Exception {
+        ctx.explicitProps = parseProperties(ctx.xmlContent);
+        if (ctx.explicitProps.isEmpty()) {
+            logger.debug("Couldn't parse pom.xml properties, using empty map");
+            ctx.explicitProps = new HashMap<>();
+        }
+
+        ctx.xmlMapper = new XmlMapper();
+        ctx.xmlMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ctx.unresolvedPom = ctx.xmlMapper.readValue(ctx.xmlContent, PomXml.class);
+    }
+
+    private void buildPreliminaryCoordinates(ParseContext ctx) {
+        ctx.preliminaryResult = new PartialMavenProject();
+        ctx.preliminaryResult.setCoordinates(new JavaCoordinates(
+            trimSpace(ctx.unresolvedPom.getGroupId()),
+            trimSpace(ctx.unresolvedPom.getArtifactId()),
+            trimSpace(ctx.unresolvedPom.getVersion()),
+            trimSpace(ctx.unresolvedPom.getPackaging())
+        ));
+
+        ctx.parentPomInfo = new ParentPomInfo();
+        PomXmlParent parent = ctx.unresolvedPom.getParent();
+        if (parent != null) {
+            ctx.parentPomInfo.setCoordinates(new JavaCoordinates(
+                trimSpace(parent.getGroupId()),
+                trimSpace(parent.getArtifactId()),
+                trimSpace(parent.getVersion()),
+                ""
+            ));
+        } else {
+            ctx.parentPomInfo.setCoordinates(new JavaCoordinates());
+        }
+        ctx.preliminaryResult.setParentPomInfo(ctx.parentPomInfo);
+    }
+
+    private void inheritCoordinatesFromParent(ParseContext ctx) {
+        JavaCoordinates coords = ctx.preliminaryResult.getCoordinates();
+        JavaCoordinates parentCoords = ctx.parentPomInfo.getCoordinates();
+
+        if (isEmpty(coords.getGroupId()) && isNotEmpty(parentCoords.getGroupId())) {
+            coords.setGroupId(parentCoords.getGroupId());
+        }
+        if (isEmpty(coords.getVersion()) && isNotEmpty(parentCoords.getVersion())) {
+            coords.setVersion(parentCoords.getVersion());
+        }
+    }
+
+    private void createProjectStarProperties(ParseContext ctx) {
+        ctx.projectStarProperties = new HashMap<>();
+        JavaCoordinates finalCoords = ctx.preliminaryResult.getCoordinates();
+
+        addCoordinateProperty(ctx.projectStarProperties, "groupId", finalCoords.getGroupId());
+        addCoordinateProperty(ctx.projectStarProperties, "artifactId", finalCoords.getArtifactId());
+        addCoordinateProperty(ctx.projectStarProperties, "version", finalCoords.getVersion());
+    }
+
+    private void addCoordinateProperty(Map<String, String> props, String name, String value) {
+        if (isNotEmpty(value)) {
+            props.put("project." + name, value);
+            props.put("pom." + name, value);
+        }
+    }
+
+    private void resolveAndReparseWithProperties(ParseContext ctx, PropertiesResolverProvider propertiesResolverProvider) {
+        ctx.propertiesResolver = propertiesResolverProvider.newResolver(ctx.explicitProps, ctx.projectStarProperties);
+        String resolvedPomFileContent = replaceProperties(ctx.xmlContent, ctx.propertiesResolver);
+        ctx.parsedPom = tryParseResolvedPom(ctx.xmlMapper, resolvedPomFileContent, ctx.unresolvedPom);
+    }
+
+    private PomXml tryParseResolvedPom(XmlMapper xmlMapper, String resolvedContent, PomXml fallback) {
+        try {
+            return xmlMapper.readValue(resolvedContent, PomXml.class);
+        } catch (Exception e) {
+            logger.debug("Parsing file with resolved properties failed. Using original file without resolved properties.");
+            return fallback;
+        }
+    }
+
+    private PartialMavenProject buildFinalResult(ParseContext ctx) {
+        PartialMavenProject result = new PartialMavenProject();
+        result.setParentPomInfo(ctx.parentPomInfo);
+        result.setProperties(ctx.propertiesResolver.getAllProperties());
+        result.setCoordinates(ctx.preliminaryResult.getCoordinates());
+
+        initializeEmptyCollections(result, ctx.parentPomInfo);
+        setExpectedParentPath(ctx);
+        processModules(result, ctx.parsedPom);
+        processPlugins(result, ctx.parsedPom);
+        processRepositories(result, ctx.parsedPom);
+        processDependencies(result, ctx.unresolvedPom);
+        processDependencyManagement(result, ctx.unresolvedPom);
+
+        return result;
+    }
+
+    private void initializeEmptyCollections(PartialMavenProject result, ParentPomInfo parentPomInfo) {
+        parentPomInfo.setDependencies(new ArrayList<>());
+        parentPomInfo.setDependencyManagement(new ArrayList<>());
+
+        result.setRepositories(new ArrayList<>());
+        result.setDependencies(new ArrayList<>());
+        result.setDependencyManagement(new ArrayList<>());
+        result.setDependenciesWithShaded(new ArrayList<>());
+        result.setDependencyManagementForShaded(new ArrayList<>());
+        result.setModules(new ArrayList<>());
+        result.setPlugins(new HashMap<>());
+    }
+
+    private void setExpectedParentPath(ParseContext ctx) {
+        JavaCoordinates parentCoords = ctx.parentPomInfo.getCoordinates();
+        String expectedParentPomPath = "";
+        if (isNotEmpty(parentCoords.getGroupId()) && isNotEmpty(parentCoords.getArtifactId()) && isNotEmpty(parentCoords.getVersion())) {
+            PomXmlParent parent = ctx.unresolvedPom.getParent();
+            String relativePath = (parent != null) ? parent.getRelativePath() : null;
+            expectedParentPomPath = calcExpectedParentPath(ctx.pomFilePath, relativePath);
+        }
+        ctx.parentPomInfo.setExpectedPath(expectedParentPomPath);
+    }
+
+    private void processModules(PartialMavenProject result, PomXml parsedPom) {
+        if (parsedPom.getModules() == null) {
+            return;
+        }
+        for (String module : parsedPom.getModules()) {
+            result.getModules().add(trimSpace(module));
+        }
+    }
+
+    private void processPlugins(PartialMavenProject result, PomXml parsedPom) {
+        if (parsedPom.getBuild() == null || parsedPom.getBuild().getPlugins() == null) {
+            return;
+        }
+        for (PomXmlPlugin plugin : parsedPom.getBuild().getPlugins()) {
+            result.getPlugins().put(trimSpace(plugin.getArtifactId()), true);
+        }
+    }
+
+    private void processRepositories(PartialMavenProject result, PomXml parsedPom) {
+        if (parsedPom.getRepositories() == null) {
+            return;
+        }
+        for (MavenRepositoryXml xmlRepo : parsedPom.getRepositories()) {
+            result.getRepositories().add(xmlToBuildlessRepository(xmlRepo));
+        }
+    }
+
+    private void processDependencies(PartialMavenProject result, PomXml unresolvedPom) {
+        if (unresolvedPom.getDependencies() == null) {
+            return;
+        }
+        for (PomXmlDependency dep : unresolvedPom.getDependencies()) {
+            trimSpacesInPomXmlDep(dep);
+            result.getDependencies().add(dep);
+        }
+    }
+
+    private void processDependencyManagement(PartialMavenProject result, PomXml unresolvedPom) {
+        if (unresolvedPom.getDependencyManagement() == null || unresolvedPom.getDependencyManagement().getDependencies() == null) {
+            return;
+        }
+        for (PomXmlDependency depMgmt : unresolvedPom.getDependencyManagement().getDependencies()) {
+            trimSpacesInPomXmlDep(depMgmt);
+            result.getDependencyManagement().add(depMgmt);
         }
     }
 
@@ -318,6 +345,29 @@ public class PomParser {
 
     private boolean isNotEmpty(String str) {
         return !isEmpty(str);
+    }
+
+    /**
+     * Context object holding all parsing state for a single POM file parsing operation.
+     * Reduces parameter passing and variable count in methods.
+     */
+    private static class ParseContext {
+        final String pomFilePath;
+        final String xmlContent;
+
+        XmlMapper xmlMapper;
+        Map<String, String> explicitProps;
+        Map<String, String> projectStarProperties;
+        PomXml unresolvedPom;
+        PomXml parsedPom;
+        PartialMavenProject preliminaryResult;
+        ParentPomInfo parentPomInfo;
+        PropertyResolver propertiesResolver;
+
+        ParseContext(String pomFilePath, byte[] pomFileContent) throws Exception {
+            this.pomFilePath = pomFilePath;
+            this.xmlContent = new String(pomFileContent, "UTF-8");
+        }
     }
 
     // Exception class

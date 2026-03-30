@@ -63,27 +63,14 @@ public class ProjectBuilder {
 
     public MavenProject buildProject(File pomFile) throws Exception {
         // Use canonical path to ensure consistent cache keys and avoid duplicate processing
-        File canonicalPom = pomFile;
-        try {
-            canonicalPom = pomFile.getCanonicalFile();
-        } catch (IOException e) {
-            logger.debug("Could not canonicalize pom file path {}, falling back to provided file: {}", pomFile, e.getMessage());
-        }
+        File canonicalPom = canonicalizeFile(pomFile, "pom file path");
 
         PartialMavenProject partialMavenProject = internalBuildProject(canonicalPom, new HashSet<>());
         return toCompleteMavenProject(canonicalPom.getCanonicalPath(), partialMavenProject);
     }
 
     PartialMavenProject internalBuildProject(File pomFile, Set<String> identifiedParents) throws Exception {
-        // Canonicalize the file to normalize path segments like '..' and symlinks so cache keys match
-        File canonicalFile = pomFile;
-        try {
-            canonicalFile = pomFile.getCanonicalFile();
-        } catch (IOException e) {
-            logger.debug("Could not canonicalize pom file path {}, continuing with absolute path: {}", pomFile, e.getMessage());
-            // fallback to provided file
-        }
-
+        File canonicalFile = canonicalizeFile(pomFile, "pom file path");
         String pomFilePath = canonicalFile.getCanonicalPath();
         logger.debug("Building project file \"{}\"", pomFilePath);
 
@@ -95,65 +82,95 @@ public class ProjectBuilder {
         byte[] content = Files.readAllBytes(canonicalFile.toPath());
         PartialMavenProject pomFileInfo = pomParser.parsePomFile(pomFilePath, content, propertiesResolverProvider);
 
-        if (pomFileInfo.getParentPomInfo() != null && pomFileInfo.getParentPomInfo().getCoordinates() != null) {
-            JavaCoordinates parentCoords = pomFileInfo.getParentPomInfo().getCoordinates();
-            if (parentCoords.getGroupId() != null && parentCoords.getArtifactId() != null && parentCoords.getVersion() != null) {
-                String parentKey = buildGavKey(parentCoords);
-                if (identifiedParents.contains(parentKey)) {
-                    logger.debug("Cycle detected for parent key '{}', treating file \"{}\" as direct super pom descendant.", parentKey, pomFilePath);
-                    return modelMerger.finalizeEffectiveModel(pomFilePath, pomFileInfo, null, pomCache);
-                }
-                identifiedParents.add(parentKey);
+        JavaCoordinates parentCoords = extractValidParentCoordinates(pomFileInfo);
+        if (parentCoords == null) {
+            return modelMerger.finalizeEffectiveModel(pomFilePath, pomFileInfo, null, pomCache);
+        }
 
-                // First attempt: check expected local parent path (relativePath or default ../pom.xml)
-                String expectedParentPath = pomFileInfo.getParentPomInfo().getExpectedPath();
-                if (expectedParentPath != null && !expectedParentPath.isEmpty()) {
-                    File expectedParentFile = new File(expectedParentPath);
-                    try {
-                        expectedParentFile = expectedParentFile.getCanonicalFile();
-                    } catch (IOException e) {
-                        logger.debug("Could not canonicalize expected parent path {}, using raw path: {}", expectedParentPath, e.getMessage());
-                    }
-                    if (expectedParentFile.exists() && expectedParentFile.isFile()) {
-                        logger.info("Found local parent POM at expected path: {}", expectedParentFile.getAbsolutePath());
-                        PartialMavenProject effectiveParentPom = internalBuildProject(expectedParentFile, identifiedParents);
-                        propertiesResolverProvider.setParentProperties(effectiveParentPom.getProperties());
-                        PartialMavenProject interpolatedPomInfo = pomParser.parsePomFile(pomFilePath, content, propertiesResolverProvider);
-                        return modelMerger.finalizeEffectiveModel(pomFilePath, interpolatedPomInfo, effectiveParentPom, pomCache);
-                    } else {
-                        logger.debug("No local parent POM found at expected path: {}", expectedParentPath);
-                    }
-                }
+        String parentKey = buildGavKey(parentCoords);
+        if (identifiedParents.contains(parentKey)) {
+            logger.debug("Cycle detected for parent key '{}', treating file \"{}\" as direct super pom descendant.", parentKey, pomFilePath);
+            return modelMerger.finalizeEffectiveModel(pomFilePath, pomFileInfo, null, pomCache);
+        }
+        identifiedParents.add(parentKey);
 
-                MavenDownloader mavenDownloader = new MavenDownloader(pomFileInfo.getRepositories(), downloadDir);
-                File parentPomFile = mavenDownloader.downloadPom(parentCoords);
+        // First attempt: check expected local parent path (relativePath or default ../pom.xml)
+        PartialMavenProject localParent = resolveLocalParent(pomFileInfo, identifiedParents);
+        if (localParent != null) {
+            return mergeWithParent(pomFilePath, content, localParent);
+        }
 
-                if (parentPomFile != null) {
-                    // Use canonical file when recursing
-                    File canonicalParent = parentPomFile;
-                    try {
-                        canonicalParent = parentPomFile.getCanonicalFile();
-                    } catch (IOException e) {
-                        logger.debug("Could not canonicalize downloaded parent pom path {}, proceeding with returned file: {}", parentPomFile, e.getMessage());
-                    }
-
-                    logger.debug("Building effective pom for parent pom \"{}\" ...", canonicalParent.getAbsolutePath());
-                    PartialMavenProject effectiveParentPom = internalBuildProject(canonicalParent, identifiedParents);
-                    logger.debug("Built effective pom for parent pom \"{}\".", canonicalParent.getAbsolutePath());
-                    logger.info("Parent ({}) properties found: {}", effectiveParentPom.getCoordinates().getArtifactId(), effectiveParentPom.getProperties().size());
-//                    effectiveParentPom.getProperties().forEach((k, v) -> logger.info("  - Parent Prop: {} = {}", k, v));
-
-
-                    propertiesResolverProvider.setParentProperties(effectiveParentPom.getProperties());
-                    PartialMavenProject interpolatedPomInfo = pomParser.parsePomFile(pomFilePath, content, propertiesResolverProvider);
-                    return modelMerger.finalizeEffectiveModel(pomFilePath, interpolatedPomInfo, effectiveParentPom, pomCache);
-                } else {
-                    logger.warn("Could not retrieve parent pom for file: \"{}\"", pomFilePath);
-                }
-            }
+        // Second attempt: download parent from remote repositories
+        PartialMavenProject downloadedParent = resolveDownloadedParent(pomFileInfo, parentCoords, pomFilePath, identifiedParents);
+        if (downloadedParent != null) {
+            return mergeWithParent(pomFilePath, content, downloadedParent);
         }
 
         return modelMerger.finalizeEffectiveModel(pomFilePath, pomFileInfo, null, pomCache);
+    }
+
+    private JavaCoordinates extractValidParentCoordinates(PartialMavenProject pomFileInfo) {
+        if (pomFileInfo.getParentPomInfo() == null || pomFileInfo.getParentPomInfo().getCoordinates() == null) {
+            return null;
+        }
+        JavaCoordinates parentCoords = pomFileInfo.getParentPomInfo().getCoordinates();
+        if (parentCoords.getGroupId() == null || parentCoords.getArtifactId() == null || parentCoords.getVersion() == null) {
+            return null;
+        }
+        return parentCoords;
+    }
+
+    private PartialMavenProject resolveLocalParent(PartialMavenProject pomFileInfo, Set<String> identifiedParents) throws Exception {
+        String expectedParentPath = pomFileInfo.getParentPomInfo().getExpectedPath();
+        if (expectedParentPath == null || expectedParentPath.isEmpty()) {
+            return null;
+        }
+        File expectedParentFile = canonicalizeFile(new File(expectedParentPath), "expected parent path");
+        if (!expectedParentFile.exists() || !expectedParentFile.isFile()) {
+            logger.debug("No local parent POM found at expected path: {}", expectedParentPath);
+            return null;
+        }
+        logger.info("Found local parent POM at expected path: {}", expectedParentFile.getAbsolutePath());
+        return internalBuildProject(expectedParentFile, identifiedParents);
+    }
+
+    private PartialMavenProject resolveDownloadedParent(
+        PartialMavenProject pomFileInfo,
+        JavaCoordinates parentCoords,
+        String pomFilePath,
+        Set<String> identifiedParents
+    ) throws Exception {
+        MavenDownloader mavenDownloader = new MavenDownloader(pomFileInfo.getRepositories(), downloadDir);
+        File parentPomFile = mavenDownloader.downloadPom(parentCoords);
+
+        if (parentPomFile == null) {
+            logger.warn("Could not retrieve parent pom for file: \"{}\"", pomFilePath);
+            return null;
+        }
+
+        File canonicalParent = canonicalizeFile(parentPomFile, "downloaded parent pom path");
+        logger.debug("Building effective pom for parent pom \"{}\" ...", canonicalParent.getAbsolutePath());
+        PartialMavenProject effectiveParentPom = internalBuildProject(canonicalParent, identifiedParents);
+        logger.debug("Built effective pom for parent pom \"{}\".", canonicalParent.getAbsolutePath());
+        logger.info("Parent ({}) properties found: {}", effectiveParentPom.getCoordinates().getArtifactId(), effectiveParentPom.getProperties().size());
+//                    effectiveParentPom.getProperties().forEach((k, v) -> logger.info("  - Parent Prop: {} = {}", k, v));
+
+        return effectiveParentPom;
+    }
+
+    private PartialMavenProject mergeWithParent(String pomFilePath, byte[] content, PartialMavenProject effectiveParentPom) throws Exception {
+        propertiesResolverProvider.setParentProperties(effectiveParentPom.getProperties());
+        PartialMavenProject interpolatedPomInfo = pomParser.parsePomFile(pomFilePath, content, propertiesResolverProvider);
+        return modelMerger.finalizeEffectiveModel(pomFilePath, interpolatedPomInfo, effectiveParentPom, pomCache);
+    }
+
+    private File canonicalizeFile(File file, String description) {
+        try {
+            return file.getCanonicalFile();
+        } catch (IOException e) {
+            logger.debug("Could not canonicalize {}: {}, continuing with provided file: {}", description, e.getMessage(), file);
+            return file;
+        }
     }
 
     private String buildGavKey(JavaCoordinates coords) {

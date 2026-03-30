@@ -27,6 +27,8 @@ public class MavenDownloader {
     private final List<JavaRepository> remoteRepositories;
     private final Path downloadDir;
 
+    private static final String MAVEN_METADATA_XML = "maven-metadata.xml";
+
     private static final JavaRepository MAVEN_CENTRAL;
     static {
         MAVEN_CENTRAL = new JavaRepository();
@@ -36,6 +38,12 @@ public class MavenDownloader {
         MAVEN_CENTRAL.setSnapshotsEnabled(false);
         MAVEN_CENTRAL.setReleasesEnabled(true);
     }
+
+    private static final List<String> SONATYPE_FALLBACK_REPOS = Arrays.asList(
+        "https://oss.sonatype.org/content/repositories/snapshots/",
+        "https://s01.oss.sonatype.org/content/repositories/snapshots/",
+        "https://central.sonatype.com/repository/maven-snapshots/"
+    );
 
     // package-private constructor to avoid exposing package-private JavaRepository in a public API
     MavenDownloader(List<JavaRepository> remoteRepositories, Path downloadDir) {
@@ -57,178 +65,254 @@ public class MavenDownloader {
 
     // package-private to avoid exposing package-private JavaCoordinates in a public API
     File downloadPom(JavaCoordinates coordinates) {
-        // Log context for easier debugging
+        DownloadContext ctx = new DownloadContext(coordinates, downloadDir);
         logger.info("Attempting to download POM for coordinates: {}:{}:{} into download dir: {}",
-            coordinates.getGroupId(), coordinates.getArtifactId(), coordinates.getVersion(), downloadDir.toAbsolutePath());
+            ctx.groupId, ctx.artifactId, ctx.version, downloadDir.toAbsolutePath());
 
-        boolean isSnapshot = coordinates.getVersion() != null && coordinates.getVersion().toUpperCase().contains("SNAPSHOT");
+        ensureDownloadDirectoryExists();
 
-        String pomPath = String.format("%s/%s/%s/%s-%s.pom",
-            coordinates.getGroupId().replace('.', '/'),
-            coordinates.getArtifactId(),
-            coordinates.getVersion(),
-            coordinates.getArtifactId(),
-            coordinates.getVersion()
-        );
+        File existingFile = findExistingDownload(ctx);
+        if (existingFile != null) {
+            return existingFile;
+        }
 
-        // Ensure download directory exists
+        ensureParentDirectoriesExist(ctx.newDestination);
+
+        File result = tryDownloadFromRepositories(ctx);
+        if (result != null) {
+            return result;
+        }
+
+        if (ctx.isSnapshot) {
+            result = trySonatypeFallbacks(ctx);
+            if (result != null) {
+                return result;
+            }
+        }
+
+        logDownloadFailure(ctx);
+        return null;
+    }
+
+    private void ensureDownloadDirectoryExists() {
         try {
             Files.createDirectories(downloadDir);
         } catch (Exception e) {
             logger.warn("Failed to create download directory {}: {}", downloadDir, e.getMessage());
         }
+    }
 
-        // New destination layout includes groupId directories to avoid collisions
-        Path newDestination = downloadDir.resolve(coordinates.getGroupId().replace('.', '/')).resolve(coordinates.getArtifactId()).resolve(coordinates.getVersion()).resolve(coordinates.getArtifactId() + "-" + coordinates.getVersion() + ".pom");
-        // Backwards-compatible old filename
-        Path oldDestination = downloadDir.resolve(coordinates.getArtifactId() + "-" + coordinates.getVersion() + ".pom");
-
-        // If either already exists, return it (prefer new layout)
+    private File findExistingDownload(DownloadContext ctx) {
         try {
-            if (Files.exists(newDestination)) {
-                logger.debug("Found previously downloaded POM at new location: {}", newDestination);
-                return newDestination.toFile();
+            if (Files.exists(ctx.newDestination)) {
+                logger.debug("Found previously downloaded POM at new location: {}", ctx.newDestination);
+                return ctx.newDestination.toFile();
             }
-            if (Files.exists(oldDestination)) {
-                logger.debug("Found previously downloaded POM at old location: {}", oldDestination);
-                return oldDestination.toFile();
+            if (Files.exists(ctx.oldDestination)) {
+                logger.debug("Found previously downloaded POM at old location: {}", ctx.oldDestination);
+                return ctx.oldDestination.toFile();
             }
         } catch (Exception e) {
             logger.debug("Error while checking existing download paths: {}", e.getMessage());
         }
+        return null;
+    }
 
-        // Ensure parent directories exist for newDestination
+    private void ensureParentDirectoriesExist(Path destination) {
         try {
-            Files.createDirectories(newDestination.getParent());
+            Files.createDirectories(destination.getParent());
         } catch (Exception ignored) {
         }
+    }
 
-        // Try each configured repository first
+    private File tryDownloadFromRepositories(DownloadContext ctx) {
         for (JavaRepository repository : remoteRepositories) {
-            // Respect repository policy for snapshots/releases
-            if (isSnapshot && !repository.isSnapshotsEnabled()) {
-                logger.debug("Skipping repository {} for SNAPSHOT coordinates {} because snapshots are disabled on that repository.", repository.getUrl(), coordinates.getVersion());
+            if (!isRepositoryApplicable(repository, ctx.isSnapshot, ctx.version)) {
                 continue;
             }
-            if (!isSnapshot && !repository.isReleasesEnabled()) {
-                logger.debug("Skipping repository {} for release coordinates {} because releases are disabled on that repository.", repository.getUrl(), coordinates.getVersion());
-                continue;
-            }
-
-            // Attempt metadata-aware download if snapshot
-            try {
-                String base = repository.getUrl();
-                if (!base.endsWith("/")) base = base + "/";
-                String versionDir = coordinates.getGroupId().replace('.', '/') + "/" + coordinates.getArtifactId() + "/" + coordinates.getVersion() + "/";
-
-                if (isSnapshot) {
-                    String metadataUrl = base + versionDir + "maven-metadata.xml";
-                    try (InputStream metaIn = new URL(metadataUrl).openStream()) {
-                        logger.debug("Found maven-metadata.xml at {}", metadataUrl);
-                        String timestamped = parseSnapshotVersionFromMetadata(metaIn, coordinates.getArtifactId());
-                        if (timestamped != null) {
-                            String timestampedPomPath = versionDir + coordinates.getArtifactId() + "-" + timestamped + ".pom";
-                            URL pomUrl = new URL(base + timestampedPomPath);
-                            logger.info("Attempting to download timestamped snapshot POM from {}", pomUrl);
-                            if (downloadUrlToPath(pomUrl, newDestination)) {
-                                logger.info("Successfully downloaded timestamped snapshot POM to: {}", newDestination);
-                                return newDestination.toFile();
-                            } else {
-                                logger.debug("Timestamped POM at {} not found or failed to download", pomUrl);
-                            }
-                        } else {
-                            logger.debug("No snapshotVersion entry found in metadata for POM; will attempt timestamp+buildNumber method if present.");
-                            // Try alternate snapshot assembly using <snapshot><timestamp> and <buildNumber>
-                            try (InputStream metaIn2 = new URL(metadataUrl).openStream()) {
-                                String ts = parseTimestampBuildFromMetadata(metaIn2);
-                                if (ts != null) {
-                                    String timestampedPomPath = versionDir + coordinates.getArtifactId() + "-" + ts + ".pom";
-                                    URL pomUrl = new URL(base + timestampedPomPath);
-                                    logger.info("Attempting to download constructed timestamped snapshot POM from {}", pomUrl);
-                                    if (downloadUrlToPath(pomUrl, newDestination)) {
-                                        logger.info("Successfully downloaded constructed timestamped POM to: {}", newDestination);
-                                        return newDestination.toFile();
-                                    } else {
-                                        logger.debug("Constructed timestamped POM at {} not found or failed to download", pomUrl);
-                                    }
-                                }
-                            } catch (Exception e) {
-                                logger.debug("Failed to re-read metadata for timestamp+buildNumber method: {}", e.getMessage());
-                            }
-                        }
-                    } catch (Exception metaEx) {
-                        logger.debug("No maven-metadata.xml found at {} or failed to read: {}", base + versionDir + "maven-metadata.xml", metaEx.getMessage());
-                        // fall-through to try plain POM path
-                    }
-                }
-
-                // Default attempt (non-snapshot or fallback)
-                URL url = new URL(repository.getUrl() + (repository.getUrl().endsWith("/") ? "" : "/") + pomPath);
-                logger.debug("Attempting to download parent POM from: {} (repo id={}, repo name={})", url, repository.getId(), repository.getName());
-                if (downloadUrlToPath(url, newDestination)) {
-                    logger.debug("Successfully downloaded POM to: {} (from repo: {})", newDestination, repository.getUrl());
-                    return newDestination.toFile();
-                }
-            } catch (Exception e) {
-                logger.debug("Failed to download from repository {} for coordinates {}:{}:{} - exception: {}",
-                    repository.getUrl(), coordinates.getGroupId(), coordinates.getArtifactId(), coordinates.getVersion(), e.toString());
-                logger.debug("Download exception stacktrace for repository {}: ", repository.getUrl(), e);
+            File result = tryDownloadFromRepository(repository, ctx);
+            if (result != null) {
+                return result;
             }
         }
+        return null;
+    }
 
-        // If initial set of repositories failed for SNAPSHOT, try common Sonatype snapshot endpoints as fallback
-        if (isSnapshot) {
-            List<String> sonatypeFallbacks = Arrays.asList(
-                "https://oss.sonatype.org/content/repositories/snapshots/",
-                "https://s01.oss.sonatype.org/content/repositories/snapshots/",
-                "https://central.sonatype.com/repository/maven-snapshots/"
-            );
+    private boolean isRepositoryApplicable(JavaRepository repository, boolean isSnapshot, String version) {
+        if (isSnapshot && !repository.isSnapshotsEnabled()) {
+            logger.debug("Skipping repository {} for SNAPSHOT coordinates {} because snapshots are disabled on that repository.",
+                repository.getUrl(), version);
+            return false;
+        }
+        if (!isSnapshot && !repository.isReleasesEnabled()) {
+            logger.debug("Skipping repository {} for release coordinates {} because releases are disabled on that repository.",
+                repository.getUrl(), version);
+            return false;
+        }
+        return true;
+    }
 
-            for (String base : sonatypeFallbacks) {
-                try {
-                    if (!base.endsWith("/")) base = base + "/";
-                    String versionDir = coordinates.getGroupId().replace('.', '/') + "/" + coordinates.getArtifactId() + "/" + coordinates.getVersion() + "/";
-                    String metadataUrl = base + versionDir + "maven-metadata.xml";
-                    try (InputStream metaIn = new URL(metadataUrl).openStream()) {
-                        logger.debug("Found maven-metadata.xml at {} (fallback)", metadataUrl);
-                        String timestamped = parseSnapshotVersionFromMetadata(metaIn, coordinates.getArtifactId());
-                        if (timestamped != null) {
-                            String timestampedPomPath = versionDir + coordinates.getArtifactId() + "-" + timestamped + ".pom";
-                            URL pomUrl = new URL(base + timestampedPomPath);
-                            logger.info("Attempting to download timestamped snapshot POM from fallback {}", pomUrl);
-                            if (downloadUrlToPath(pomUrl, newDestination)) {
-                                logger.info("Successfully downloaded timestamped snapshot POM from fallback to: {}", newDestination);
-                                return newDestination.toFile();
-                            }
-                        } else {
-                            logger.debug("No snapshotVersion entry found in fallback metadata at {}", metadataUrl);
-                        }
-                    } catch (Exception metaEx) {
-                        logger.debug("No metadata at fallback {}: {}", metadataUrl, metaEx.getMessage());
-                    }
+    private File tryDownloadFromRepository(JavaRepository repository, DownloadContext ctx) {
+        try {
+            String baseUrl = normalizeBaseUrl(repository.getUrl());
 
-                    // Try plain path fallback
-                    String plainPomUrl = base + coordinates.getGroupId().replace('.', '/') + "/" + coordinates.getArtifactId() + "/" + coordinates.getVersion() + "/" + coordinates.getArtifactId() + "-" + coordinates.getVersion() + ".pom";
-                    URL url = new URL(plainPomUrl);
-                    logger.debug("Attempting fallback download from {}", url);
-                    if (downloadUrlToPath(url, newDestination)) {
-                        logger.info("Successfully downloaded POM from fallback to: {}", newDestination);
-                        return newDestination.toFile();
-                    }
-                } catch (Exception e) {
-                    logger.debug("Fallback attempt failed for base {}: {}", base, e.getMessage());
+            if (ctx.isSnapshot) {
+                File snapshotResult = trySnapshotDownload(baseUrl, ctx);
+                if (snapshotResult != null) {
+                    return snapshotResult;
                 }
             }
+
+            return tryDirectDownload(repository, ctx);
+        } catch (Exception e) {
+            logger.debug("Failed to download from repository {} for coordinates {}:{}:{} - exception: {}",
+                repository.getUrl(), ctx.groupId, ctx.artifactId, ctx.version, e.toString());
+            logger.debug("Download exception stacktrace for repository {}: ", repository.getUrl(), e);
+        }
+        return null;
+    }
+
+    private File trySnapshotDownload(String baseUrl, DownloadContext ctx) {
+        String metadataUrl = baseUrl + ctx.versionDir + MAVEN_METADATA_XML;
+
+        File result = trySnapshotVersionMetadataDownload(baseUrl, metadataUrl, ctx);
+        if (result != null) {
+            return result;
         }
 
-        // Build a readable list of repository URLs for the error message
+        return tryTimestampBuildMetadataDownload(baseUrl, metadataUrl, ctx);
+    }
+
+    private File trySnapshotVersionMetadataDownload(String baseUrl, String metadataUrl, DownloadContext ctx) {
+        try (InputStream metaIn = new URL(metadataUrl).openStream()) {
+            logger.debug("Found {} at {}", MAVEN_METADATA_XML, metadataUrl);
+            String timestamped = parseSnapshotVersionFromMetadata(metaIn, ctx.artifactId);
+            if (timestamped != null) {
+                return downloadTimestampedPom(baseUrl, ctx, timestamped, "timestamped snapshot");
+            }
+            logger.debug("No snapshotVersion entry found in metadata for POM; will attempt timestamp+buildNumber method if present.");
+        } catch (Exception metaEx) {
+            logger.debug("No {} found at {} or failed to read: {}", MAVEN_METADATA_XML, metadataUrl, metaEx.getMessage());
+        }
+        return null;
+    }
+
+    private File tryTimestampBuildMetadataDownload(String baseUrl, String metadataUrl, DownloadContext ctx) {
+        try (InputStream metaIn = new URL(metadataUrl).openStream()) {
+            String ts = parseTimestampBuildFromMetadata(metaIn);
+            if (ts != null) {
+                return downloadTimestampedPom(baseUrl, ctx, ts, "constructed timestamped");
+            }
+        } catch (Exception e) {
+            logger.debug("Failed to re-read metadata for timestamp+buildNumber method: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    private File downloadTimestampedPom(String baseUrl, DownloadContext ctx, String timestamped, String description) {
+        try {
+            String timestampedPomPath = ctx.versionDir + ctx.artifactId + "-" + timestamped + ".pom";
+            URL pomUrl = new URL(baseUrl + timestampedPomPath);
+            logger.info("Attempting to download {} POM from {}", description, pomUrl);
+            if (downloadUrlToPath(pomUrl, ctx.newDestination)) {
+                logger.info("Successfully downloaded {} POM to: {}", description, ctx.newDestination);
+                return ctx.newDestination.toFile();
+            }
+            logger.debug("{} POM at {} not found or failed to download", description, pomUrl);
+        } catch (Exception e) {
+            logger.debug("Failed to download {} POM: {}", description, e.getMessage());
+        }
+        return null;
+    }
+
+    private File tryDirectDownload(JavaRepository repository, DownloadContext ctx) {
+        try {
+            URL url = new URL(normalizeBaseUrl(repository.getUrl()) + ctx.pomPath);
+            logger.debug("Attempting to download parent POM from: {} (repo id={}, repo name={})",
+                url, repository.getId(), repository.getName());
+            if (downloadUrlToPath(url, ctx.newDestination)) {
+                logger.debug("Successfully downloaded POM to: {} (from repo: {})", ctx.newDestination, repository.getUrl());
+                return ctx.newDestination.toFile();
+            }
+        } catch (Exception e) {
+            logger.debug("Direct download failed: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    private File trySonatypeFallbacks(DownloadContext ctx) {
+        for (String base : SONATYPE_FALLBACK_REPOS) {
+            File result = trySonatypeFallback(base, ctx);
+            if (result != null) {
+                return result;
+            }
+        }
+        return null;
+    }
+
+    private File trySonatypeFallback(String baseUrl, DownloadContext ctx) {
+        try {
+            String normalizedBase = normalizeBaseUrl(baseUrl);
+
+            File metadataResult = tryFallbackMetadataDownload(normalizedBase, ctx);
+            if (metadataResult != null) {
+                return metadataResult;
+            }
+
+            return tryFallbackDirectDownload(normalizedBase, ctx);
+        } catch (Exception e) {
+            logger.debug("Fallback attempt failed for base {}: {}", baseUrl, e.getMessage());
+        }
+        return null;
+    }
+
+    private File tryFallbackMetadataDownload(String baseUrl, DownloadContext ctx) {
+        String metadataUrl = baseUrl + ctx.versionDir + MAVEN_METADATA_XML;
+        try (InputStream metaIn = new URL(metadataUrl).openStream()) {
+            logger.debug("Found {} at {} (fallback)", MAVEN_METADATA_XML, metadataUrl);
+            String timestamped = parseSnapshotVersionFromMetadata(metaIn, ctx.artifactId);
+            if (timestamped != null) {
+                String timestampedPomPath = ctx.versionDir + ctx.artifactId + "-" + timestamped + ".pom";
+                URL pomUrl = new URL(baseUrl + timestampedPomPath);
+                logger.info("Attempting to download timestamped snapshot POM from fallback {}", pomUrl);
+                if (downloadUrlToPath(pomUrl, ctx.newDestination)) {
+                    logger.info("Successfully downloaded timestamped snapshot POM from fallback to: {}", ctx.newDestination);
+                    return ctx.newDestination.toFile();
+                }
+            } else {
+                logger.debug("No snapshotVersion entry found in fallback metadata at {}", metadataUrl);
+            }
+        } catch (Exception metaEx) {
+            logger.debug("No metadata at fallback {}: {}", metadataUrl, metaEx.getMessage());
+        }
+        return null;
+    }
+
+    private File tryFallbackDirectDownload(String baseUrl, DownloadContext ctx) {
+        try {
+            URL url = new URL(baseUrl + ctx.pomPath);
+            logger.debug("Attempting fallback download from {}", url);
+            if (downloadUrlToPath(url, ctx.newDestination)) {
+                logger.info("Successfully downloaded POM from fallback to: {}", ctx.newDestination);
+                return ctx.newDestination.toFile();
+            }
+        } catch (Exception e) {
+            logger.debug("Fallback direct download failed: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    private String normalizeBaseUrl(String url) {
+        return url.endsWith("/") ? url : url + "/";
+    }
+
+    private void logDownloadFailure(DownloadContext ctx) {
         String triedRepos = remoteRepositories.stream()
             .map(JavaRepository::getUrl)
             .collect(Collectors.joining(", "));
 
         logger.error("Could not download POM for coordinates: {}:{}:{}; tried repositories: {}; downloadDir: {}",
-            coordinates.getGroupId(), coordinates.getArtifactId(), coordinates.getVersion(), triedRepos, downloadDir.toAbsolutePath());
-        return null;
+            ctx.groupId, ctx.artifactId, ctx.version, triedRepos, downloadDir.toAbsolutePath());
     }
 
     private boolean downloadUrlToPath(URL url, Path destination) {
@@ -292,5 +376,38 @@ public class MavenDownloader {
         if (el == null) return null;
         if (el.getFirstChild() == null) return null;
         return el.getFirstChild().getNodeValue();
+    }
+
+    /**
+     * Context object holding all download-related state for a single POM download operation.
+     * Reduces parameter passing and variable count in methods.
+     */
+    private static class DownloadContext {
+        final String groupId;
+        final String artifactId;
+        final String version;
+        final boolean isSnapshot;
+        final String versionDir;
+        final String pomPath;
+        final Path newDestination;
+        final Path oldDestination;
+
+        DownloadContext(JavaCoordinates coordinates, Path downloadDir) {
+            this.groupId = coordinates.getGroupId();
+            this.artifactId = coordinates.getArtifactId();
+            this.version = coordinates.getVersion();
+            this.isSnapshot = version != null && version.toUpperCase().contains("SNAPSHOT");
+
+            String groupPath = groupId.replace('.', '/');
+            this.versionDir = groupPath + "/" + artifactId + "/" + version + "/";
+            this.pomPath = versionDir + artifactId + "-" + version + ".pom";
+
+            this.newDestination = downloadDir
+                .resolve(groupPath)
+                .resolve(artifactId)
+                .resolve(version)
+                .resolve(artifactId + "-" + version + ".pom");
+            this.oldDestination = downloadDir.resolve(artifactId + "-" + version + ".pom");
+        }
     }
 }
