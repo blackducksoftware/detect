@@ -186,9 +186,10 @@ public class DetectorRuleFactory {
 
         rules.addDetector(DetectorType.IVY, detector -> {
             detector.entryPoint(IvyCliDetectable.class)
-                .fallback(IvyParseDetectable.class)
                 .search().defaultLock();
-        });
+            detector.entryPoint(IvyParseDetectable.class)
+                .search().defaultLock();
+        }).allEntryPointsFallbackToNext();
 
         rules.addDetector(DetectorType.HEX, detector -> {
             detector.entryPoint(RebarDetectable.class)
