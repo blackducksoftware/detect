@@ -31,6 +31,8 @@ class DependencyTreeFileWriter {
     private static final String TREE_FILE_EXTENSION = ".txt";
     private static final String ERROR_FILE_SUFFIX = "-ERROR";
 
+    private final MavenCoordinateFormatter coordinateFormatter = new MavenCoordinateFormatter();
+
     /**
      * Writes a dependency tree to a file for a given scope.
      *
@@ -104,19 +106,8 @@ class DependencyTreeFileWriter {
         return DEPENDENCY_TREE_FILE_PREFIX + scope + "-" + sanitizeForFilename(gavOrTag) + "-" + hash + ERROR_FILE_SUFFIX + TREE_FILE_EXTENSION;
     }
 
-    /**
-     * Sanitizes a string for safe use in filenames.
-     *
-     * <p>Replaces forward slashes, backslashes, and colons with underscores.
-     *
-     * @param s The string to sanitize
-     * @return Sanitized string, or "unknown" if input is null
-     */
     private String sanitizeForFilename(String s) {
-        if (s == null) {
-            return "unknown";
-        }
-        return s.replace('/', '_').replace('\\', '_').replace(':', '_');
+        return coordinateFormatter.toSafeFilename(s);
     }
 
     /**

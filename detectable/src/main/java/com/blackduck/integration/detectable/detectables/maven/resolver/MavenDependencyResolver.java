@@ -81,51 +81,6 @@ public class MavenDependencyResolver {
     }
 
     /**
-     * Constructs a resolver with forward-proxy support (no mirrors).
-     *
-     * <p>This constructor is provided for backward compatibility.
-     *
-     * @param proxyHost         Proxy hostname or IP — plain value, <strong>no</strong> {@code http://} or {@code https://} prefix.
-     * @param proxyPort         Proxy port (0 means no proxy).
-     * @param proxyUsername     Optional proxy-auth username (may be null).
-     * @param proxyPassword     Optional proxy-auth password (may be null).
-     * @param proxyIgnoredHosts Host patterns that should bypass the proxy (may be empty, never null).
-     */
-    public MavenDependencyResolver(
-        @Nullable String proxyHost,
-        int proxyPort,
-        @Nullable String proxyUsername,
-        @Nullable String proxyPassword,
-        List<String> proxyIgnoredHosts
-    ) {
-        // Convert individual proxy fields to MavenProxyConfig
-        MavenProxyConfig proxyConfig = null;
-        if (proxyHost != null && !proxyHost.trim().isEmpty() && proxyPort > 0) {
-            proxyConfig = new MavenProxyConfig(
-                proxyHost,
-                proxyPort,
-                proxyUsername,
-                proxyPassword,
-                proxyIgnoredHosts != null ? proxyIgnoredHosts : Collections.emptyList()
-            );
-        }
-
-        // Delegate to main constructor
-        this.proxyConfigurator = proxyConfig != null ? new MavenProxyConfigurator(proxyConfig) : null;
-        this.mirrorConfigurator = null;
-        this.repositorySystem = new RepositorySystemSupplier() {
-            @Override
-            protected Map<String, TransporterFactory> createTransporterFactories() {
-                Map<String, TransporterFactory> result = super.createTransporterFactories();
-                result.put(
-                        JdkTransporterFactory.NAME,
-                        new JdkTransporterFactory(getChecksumExtractor(), getPathProcessor()));
-                return result;
-            }
-        }.get();
-    }
-
-    /**
      * Constructs a resolver with forward-proxy and corporate mirror support.
      *
      * @param proxyConfig          Proxy configuration (may be null if no proxy is configured).

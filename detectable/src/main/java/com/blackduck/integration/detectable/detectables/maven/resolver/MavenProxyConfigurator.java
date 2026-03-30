@@ -73,39 +73,6 @@ public class MavenProxyConfigurator {
     }
 
     /**
-     * Constructs a proxy configurator with individual proxy settings (backward compatibility).
-     *
-     * @param proxyHost         Proxy hostname or IP — plain value, <strong>no</strong> {@code http://} or {@code https://} prefix.
-     * @param proxyPort         Proxy port number (must be &gt; 0).
-     * @param proxyUsername     Optional proxy authentication username (may be null).
-     * @param proxyPassword     Optional proxy authentication password (may be null).
-     * @param proxyIgnoredHosts Host patterns that should bypass the proxy (never null, may be empty).
-     * @throws IllegalArgumentException if proxyHost is null/blank or proxyPort is &lt;= 0
-     */
-    public MavenProxyConfigurator(
-        String proxyHost,
-        int proxyPort,
-        @Nullable String proxyUsername,
-        @Nullable String proxyPassword,
-        List<String> proxyIgnoredHosts
-    ) {
-        if (proxyHost == null || proxyHost.trim().isEmpty()) {
-            throw new IllegalArgumentException("Proxy host cannot be null or empty");
-        }
-        if (proxyPort <= 0) {
-            throw new IllegalArgumentException("Proxy port must be greater than 0");
-        }
-
-        this.proxyConfig = new MavenProxyConfig(
-            proxyHost.trim(),
-            proxyPort,
-            proxyUsername,
-            proxyPassword,
-            proxyIgnoredHosts != null ? proxyIgnoredHosts : java.util.Collections.emptyList()
-        );
-    }
-
-    /**
      * Configures proxy settings on the given Aether session builder.
      *
      * <p>This method performs an optimization check before modifying system properties:
