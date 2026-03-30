@@ -8,11 +8,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.http.conn.HttpHostConnectException;
 import org.jetbrains.annotations.Nullable;
@@ -62,9 +58,14 @@ public class SignatureScanStepRunner {
         try {
             reports = executeScan(scanBatch, scanBatchRunner, scanPaths, scanIdsToWaitFor, gson, blackDuckRunData.shouldWaitAtScanLevel(), true);
         } catch (HttpHostConnectException e) {
-            logger.warn("Initial Signature Scan failed due to connectivity issues. Retrying scan. Please allow the SCASS IPs to increase scanning performance.");
-            scanBatch = operationRunner.createScanBatchOnline(detectRunUuid, scanPaths, projectNameVersion, dockerTargetData, blackDuckRunData, true);
-            reports = executeScan(scanBatch, scanBatchRunner, scanPaths, scanIdsToWaitFor, gson, blackDuckRunData.shouldWaitAtScanLevel(), true);
+            if (!operationRunner.isCorrelationScanningEnabled()) {
+                logger.warn("Initial Signature Scan failed due to connectivity issues. Retrying scan. Please allow the SCASS IPs to increase scanning performance.");
+                scanBatch = operationRunner.createScanBatchOnline(detectRunUuid, scanPaths, projectNameVersion, dockerTargetData, blackDuckRunData, true);
+                reports = executeScan(scanBatch, scanBatchRunner, scanPaths, scanIdsToWaitFor, gson, blackDuckRunData.shouldWaitAtScanLevel(), true);
+            } else {
+                reports = new ArrayList<>();
+                logger.warn("Correlation scanning is enabled. Please verify your SCASS configuration, as it is required for correlation scans to function properly.");
+            }
         }
 
         return operationRunner.calculateWaitableSignatureScannerCodeLocations(notificationTaskRange, reports);

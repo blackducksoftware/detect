@@ -216,7 +216,12 @@ public class IntelligentModeStepRunner {
                     return;
                 }
             }
-            invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId);
+
+            if (!operationRunner.isCorrelationScanningEnabled()) {
+                invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId);
+            } else {
+                logger.warn("Correlation scanning is enabled. Please verify your SCASS configuration, as it is required for correlation scans to function properly.");
+            }
         } else {
             String scanId = null;
             invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId);
