@@ -501,6 +501,17 @@
 						</row>
 						<row>
 							<entry> </entry>
+							<entry>Ivy CLI</entry>
+							<entry>various</entry>
+							<entry>Maven Central</entry>
+							<entry>
+								<p>File: ivy.xml</p>
+								<p>Executable: ivy</p>
+							</entry>
+							<entry>HIGH</entry>
+						</row>
+						<row>
+							<entry> </entry>
 							<entry>Ivy Build Parse</entry>
 							<entry>various</entry>
 							<entry>Maven Central</entry>
