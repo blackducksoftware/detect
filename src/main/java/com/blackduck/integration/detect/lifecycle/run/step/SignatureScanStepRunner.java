@@ -214,7 +214,7 @@ public class SignatureScanStepRunner {
             failedScans.add(output.getCodeLocationName());
             handleNoScanStatusFile(scanIdsToWaitFor, shouldWaitAtScanLevel, scassScan, scanOutputLocation);
         } catch (IntegrationException e) {
-            if (e.getCause() instanceof HttpHostConnectException || e.getCause() instanceof SocketException) {
+            if (e.getCause() instanceof SocketException) {
                 // The most likely cause of a failure like this is that the SCASS URLs are
                 // not accessible. Attempt a legacy scan.
                 throw (SocketException) e.getCause();
