@@ -146,6 +146,7 @@ if sys.version_info.major > 3 or sys.version_info.major == 3 and sys.version_inf
     #  * a test confirmed that this version of python is incompatible with PIP versions below 21.2,
     #    which was the most recent version in which PIP search_packages_info interface changed
     use_pip_internal_to_search_packages = True
+    print("[PIP_INSPECTOR] Using pip internal API (Python 3.12+)")
 
 if use_pip_internal_to_search_packages:
     from pip._internal.commands.show import search_packages_info
@@ -171,13 +172,15 @@ else:
     try:
         import importlib.metadata as metadata
         use_importlib_metadata = True
+        print("[PIP_INSPECTOR] Using importlib.metadata route")
     except ImportError:
         # Priority 2: Fall back to pkg_resources
         try:
             from pkg_resources import working_set, Requirement
             use_pkg_resources = True
+            print("[PIP_INSPECTOR] Using pkg_resources route")
         except ImportError:
-            pass
+            print("[PIP_INSPECTOR] WARNING: Neither importlib.metadata nor pkg_resources available")
 
     def normalize_package_name(package_name):
         """Extract and normalize package name from a requirement string using regex.
