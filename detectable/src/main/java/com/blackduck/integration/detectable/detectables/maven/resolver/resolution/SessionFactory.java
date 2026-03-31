@@ -1,9 +1,10 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver.resolution;
 
-import com.blackduck.integration.detectable.detectables.maven.resolver.BaseSessionBuilderSupplier;
-import com.blackduck.integration.detectable.detectables.maven.resolver.TestSessionBuilderSupplier;
 import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenMirrorConfigurator;
-import com.blackduck.integration.detectable.detectables.maven.resolver.MavenProxyConfigurator;
+import com.blackduck.integration.detectable.detectables.maven.resolver.proxy.MavenProxyConfigurator;
+import com.blackduck.integration.detectable.detectables.maven.resolver.resolution.selector.BaseSessionBuilderSupplier;
+import com.blackduck.integration.detectable.detectables.maven.resolver.resolution.selector.LenientDescriptionPolicy;
+import com.blackduck.integration.detectable.detectables.maven.resolver.resolution.selector.TestSessionBuilderSupplier;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.RepositorySystemSession.SessionBuilder;

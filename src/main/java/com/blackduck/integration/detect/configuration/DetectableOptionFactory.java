@@ -9,8 +9,8 @@ import com.blackduck.integration.detectable.detectables.cargo.CargoDetectableOpt
 import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
 import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenMirrorConfig;
 import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenMirrorConfigResolver;
-import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenProxyConfig;
-import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenProxyConfigResolver;
+import com.blackduck.integration.detectable.detectables.maven.resolver.proxy.MavenProxyConfig;
+import com.blackduck.integration.detectable.detectables.maven.resolver.proxy.MavenProxyConfigResolver;
 import com.blackduck.integration.detectable.detectables.nuget.NugetDependencyType;
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import org.jetbrains.annotations.Nullable;

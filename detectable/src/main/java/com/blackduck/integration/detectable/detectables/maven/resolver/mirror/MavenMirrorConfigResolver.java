@@ -1,5 +1,10 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver.mirror;
 
+import com.blackduck.integration.detectable.detectables.maven.resolver.settings.MavenSettingsParseException;
+import com.blackduck.integration.detectable.detectables.maven.resolver.settings.MavenSettingsParser;
+import com.blackduck.integration.detectable.detectables.maven.resolver.settings.MavenSettingsXml;
+import com.blackduck.integration.detectable.detectables.maven.resolver.settings.MavenSettingsXmlMirror;
+import com.blackduck.integration.detectable.detectables.maven.resolver.settings.MavenSettingsXmlServer;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

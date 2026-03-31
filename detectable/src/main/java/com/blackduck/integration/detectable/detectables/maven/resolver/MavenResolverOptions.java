@@ -6,7 +6,7 @@ import java.util.List;
 import org.jetbrains.annotations.Nullable;
 
 import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenMirrorConfig;
-import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenProxyConfig;
+import com.blackduck.integration.detectable.detectables.maven.resolver.proxy.MavenProxyConfig;
 
 /**
  * Configuration options for the Maven Resolver Detectable.
