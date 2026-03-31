@@ -42,6 +42,10 @@ public class VersionUtils {
         } else if (constraint.startsWith("=")) {
             normalizedConstraintVersion = normalizeVersion(constraint.substring(1));
             return compareVersions(normalizedActual, normalizedConstraintVersion) == 0;
+        } else if (constraint.startsWith("^")) {
+            return versionCompatible(constraint.substring(1).trim(), actualVersion);
+        } else if (constraint.startsWith("~")) {
+            return tildeMatches(constraint.substring(1).trim(), actualVersion);
         } else {
             return versionCompatible(constraint, actualVersion);
         }
@@ -99,6 +103,36 @@ public class VersionUtils {
             return false;
         }
         return actualMinor > declaredMinor || actualPatch >= declaredPatch;
+    }
+
+    public static boolean tildeMatches(String declaredVersion, String actualVersion) {
+        if (declaredVersion == null || actualVersion == null) {
+            return false;
+        }
+
+        String[] declaredParts = declaredVersion.split("\\.");
+        String[] actualParts = actualVersion.split("\\.");
+
+        int declaredMajor = declaredParts.length > 0 ? Integer.parseInt(declaredParts[0]) : 0;
+        int declaredMinor = declaredParts.length > 1 ? Integer.parseInt(declaredParts[1]) : 0;
+        int declaredPatch = declaredParts.length > 2 ? Integer.parseInt(declaredParts[2]) : 0;
+
+        int actualMajor = actualParts.length > 0 ? Integer.parseInt(actualParts[0]) : 0;
+        int actualMinor = actualParts.length > 1 ? Integer.parseInt(actualParts[1]) : 0;
+        int actualPatch = actualParts.length > 2 ? Integer.parseInt(actualParts[2]) : 0;
+
+        if (actualMajor != declaredMajor) {
+            return false;
+        }
+        if (declaredParts.length >= 2) {
+            // ~X.Y or ~X.Y.Z: same major.minor, patch >= declared
+            if (actualMinor != declaredMinor) {
+                return false;
+            }
+            return actualPatch >= declaredPatch;
+        }
+        // ~X: same major, any minor/patch >= declared
+        return actualMinor >= declaredMinor;
     }
 
     public static String stripBuildMetadata(String version) {
