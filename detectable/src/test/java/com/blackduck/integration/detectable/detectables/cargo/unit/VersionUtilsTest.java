@@ -108,10 +108,10 @@ class VersionUtilsTest {
     }
 
     @Test
-    void compareVersionsHandlesPreRelease() {
-        assertEquals(0, VersionUtils.compareVersions("1.0.0-alpha", "1.0.0"));
-        assertEquals(0, VersionUtils.compareVersions("1.0.0-alpha", "1.0.0-beta"));
-        assertTrue(VersionUtils.compareVersions("1.1.0-rc1", "1.0.0") > 0);
+    void preReleaseVersionsMatchThroughVersionMatches() {
+        assertTrue(VersionUtils.versionMatches("^1.0.0", "1.0.0-alpha"));
+        assertTrue(VersionUtils.versionMatches("=1.0.0", "1.0.0-beta"));
+        assertTrue(VersionUtils.versionMatches(">=1.0.0", "1.1.0-rc1"));
     }
 
     @Test

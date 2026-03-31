@@ -11,6 +11,8 @@ public class VersionUtils {
         GREATER_THAN(">", "Greater than operator"),
         LESS_THAN("<", "Less than operator");
 
+        private static final CargoOperator[] VALUES = values();
+
         private final String symbol;
         private final String description;
 
@@ -29,8 +31,8 @@ public class VersionUtils {
     }
 
     public static int compareVersions(String version1, String version2) {
-        String[] v1Parts = sanitizeVersion(version1).split("\\.");
-        String[] v2Parts = sanitizeVersion(version2).split("\\.");
+        String[] v1Parts = version1.split("\\.");
+        String[] v2Parts = version2.split("\\.");
 
         for (int i = 0; i < Math.max(v1Parts.length, v2Parts.length); i++) {
             int v1 = i < v1Parts.length ? Integer.parseInt(v1Parts[i]) : 0;
@@ -55,16 +57,16 @@ public class VersionUtils {
         CargoOperator operator = CargoOperator.CARET;
         String version = trimmed;
 
-        for (CargoOperator op : CargoOperator.values()) {
-            if (trimmed.startsWith(op.symbol)) {
+        for (CargoOperator op : CargoOperator.VALUES) {
+            if (trimmed.startsWith(op.getSymbol())) {
                 operator = op;
-                version = trimmed.substring(op.symbol.length()).trim();
+                version = trimmed.substring(op.getSymbol().length()).trim();
                 break;
             }
         }
 
-        String normalizedConstraint = normalizeVersion(version);
-        String normalizedActual = normalizeVersion(actualVersion);
+        String normalizedConstraint = sanitizeAndNormalize(version);
+        String normalizedActual = sanitizeAndNormalize(actualVersion);
 
         switch (operator) {
             case GREATER_THAN_OR_EQUAL:
@@ -78,36 +80,21 @@ public class VersionUtils {
             case EQUAL:
                 return compareVersions(normalizedActual, normalizedConstraint) == 0;
             case CARET:
-                return matchesCaretRange(version, actualVersion);
+                String caretUpperBound = version.startsWith("0.")
+                    ? nextMinorVersion(version)
+                    : nextMajorVersion(version);
+                return isWithinRange(normalizedActual, normalizedConstraint, sanitizeAndNormalize(caretUpperBound));
             case TILDE:
-                return matchesTildeRange(version, actualVersion);
+                String tildeUpperBound = nextMinorVersion(version);
+                return isWithinRange(normalizedActual, normalizedConstraint, sanitizeAndNormalize(tildeUpperBound));
             default:
                 return false;
         }
     }
 
-    /**
-     * Caret (^) allows changes that do not modify the left-most non-zero digit.
-     * ^1.2.3 means >=1.2.3 <2.0.0
-     * ^0.2.3 means >=0.2.3 <0.3.0
-     */
-    private static boolean matchesCaretRange(String constraintVersion, String actualVersion) {
-        String upperBound = constraintVersion.startsWith("0.")
-            ? nextMinorVersion(constraintVersion)
-            : nextMajorVersion(constraintVersion);
-        return compareVersions(normalizeVersion(actualVersion), normalizeVersion(constraintVersion)) >= 0
-            && compareVersions(normalizeVersion(actualVersion), normalizeVersion(upperBound)) < 0;
-    }
-
-    /**
-     * Tilde (~) allows patch-level changes.
-     * ~1.2.3 means >=1.2.3 <1.3.0
-     * ~1.2   means >=1.2.0 <1.3.0
-     */
-    private static boolean matchesTildeRange(String constraintVersion, String actualVersion) {
-        String upperBound = nextMinorVersion(constraintVersion);
-        return compareVersions(normalizeVersion(actualVersion), normalizeVersion(constraintVersion)) >= 0
-            && compareVersions(normalizeVersion(actualVersion), normalizeVersion(upperBound)) < 0;
+    private static boolean isWithinRange(String actual, String lowerBound, String upperBound) {
+        return compareVersions(actual, lowerBound) >= 0
+            && compareVersions(actual, upperBound) < 0;
     }
 
     private static String nextMajorVersion(String version) {
@@ -133,8 +120,9 @@ public class VersionUtils {
         return sb.toString();
     }
 
-    private static String normalizeVersion(String version) {
-        String[] parts = version.split("\\.");
+    private static String sanitizeAndNormalize(String version) {
+        String sanitized = sanitizeVersion(version);
+        String[] parts = sanitized.split("\\.");
         StringBuilder normalized = new StringBuilder();
         for (int i = 0; i < 3; i++) {
             if (i < parts.length) {
@@ -157,7 +145,6 @@ public class VersionUtils {
         if (version == null) {
             return null;
         }
-        // Strip build metadata first (+build), then pre-release tag (-alpha)
         return version.split("\\+")[0].split("-")[0];
     }
 }
