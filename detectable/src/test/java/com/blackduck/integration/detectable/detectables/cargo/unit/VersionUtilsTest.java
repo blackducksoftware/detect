@@ -1,8 +1,12 @@
-package com.blackduck.integration.detectable.detectables.cargo;
+package com.blackduck.integration.detectable.detectables.cargo.unit;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.blackduck.integration.detectable.detectables.cargo.VersionUtils;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class VersionUtilsTest {
@@ -10,7 +14,7 @@ class VersionUtilsTest {
     // Caret (^) tests — the exact scenario from IDETECT-5056
     @Test
     void caretVersionMatchesCompatible() {
-        assertTrue(VersionUtils.versionMatches("^6.0", "6.0.0"));
+        Assertions.assertTrue(VersionUtils.versionMatches("^6.0", "6.0.0"));
         assertTrue(VersionUtils.versionMatches("^6.0", "6.1.0"));
         assertTrue(VersionUtils.versionMatches("^6.0", "6.0.5"));
     }
@@ -87,5 +91,35 @@ class VersionUtilsTest {
     void nullInputsReturnFalse() {
         assertFalse(VersionUtils.versionMatches(null, "1.0.0"));
         assertFalse(VersionUtils.versionMatches("1.0", null));
+    }
+
+    // Pre-release and build metadata — versions like "1.0.0-alpha" or "1.0.0+build"
+    @Test
+    void versionWithPreReleaseTagMatches() {
+        assertTrue(VersionUtils.versionMatches("^1.0", "1.0.0-alpha"));
+        assertTrue(VersionUtils.versionMatches("^1.0", "1.2.3-beta.1"));
+        assertTrue(VersionUtils.versionMatches(">=1.0.0", "1.0.0-rc1"));
+    }
+
+    @Test
+    void versionWithBuildMetadataMatches() {
+        assertTrue(VersionUtils.versionMatches("^1.0", "1.0.0+build123"));
+        assertTrue(VersionUtils.versionMatches("=1.0.0", "1.0.0+metadata"));
+    }
+
+    @Test
+    void compareVersionsHandlesPreRelease() {
+        assertEquals(0, VersionUtils.compareVersions("1.0.0-alpha", "1.0.0"));
+        assertEquals(0, VersionUtils.compareVersions("1.0.0-alpha", "1.0.0-beta"));
+        assertTrue(VersionUtils.compareVersions("1.1.0-rc1", "1.0.0") > 0);
+    }
+
+    @Test
+    void sanitizeVersionStripsPreReleaseAndBuildMetadata() {
+        assertEquals("1.0.0", VersionUtils.sanitizeVersion("1.0.0-alpha"));
+        assertEquals("1.0.0", VersionUtils.sanitizeVersion("1.0.0+build123"));
+        assertEquals("1.0.0", VersionUtils.sanitizeVersion("1.0.0-alpha+build"));
+        assertEquals("1.0.0", VersionUtils.sanitizeVersion("1.0.0"));
+        assertNull(VersionUtils.sanitizeVersion(null));
     }
 }

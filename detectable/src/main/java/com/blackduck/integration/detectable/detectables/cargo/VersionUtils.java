@@ -1,13 +1,40 @@
 package com.blackduck.integration.detectable.detectables.cargo;
 
 public class VersionUtils {
-    public static int compareVersions(String version1, String version2) {
-        String[] version1Parts = version1.split("\\.");
-        String[] version2Parts = version2.split("\\.");
 
-        for (int i = 0; i < Math.max(version1Parts.length, version2Parts.length); i++) {
-            int v1 = i < version1Parts.length ? Integer.parseInt(version1Parts[i]) : 0;
-            int v2 = i < version2Parts.length ? Integer.parseInt(version2Parts[i]) : 0;
+    enum CargoOperator {
+        CARET("^", "Major range operator, example: ^1.2.3 is equivalent to >=1.2.3, <2.0.0"),
+        TILDE("~", "Minor range operator, example: ~1.2.3 is equivalent to >=1.2.3, <1.3.0"),
+        GREATER_THAN_OR_EQUAL(">=", "Greater than or equal to operator"),
+        LESS_THAN_OR_EQUAL("<=", "Less than or equal to operator"),
+        EQUAL("=", "Equal operator"),
+        GREATER_THAN(">", "Greater than operator"),
+        LESS_THAN("<", "Less than operator");
+
+        private final String symbol;
+        private final String description;
+
+        CargoOperator(String symbol, String description) {
+            this.symbol = symbol;
+            this.description = description;
+        }
+
+        public String getSymbol() {
+            return symbol;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+    }
+
+    public static int compareVersions(String version1, String version2) {
+        String[] v1Parts = sanitizeVersion(version1).split("\\.");
+        String[] v2Parts = sanitizeVersion(version2).split("\\.");
+
+        for (int i = 0; i < Math.max(v1Parts.length, v2Parts.length); i++) {
+            int v1 = i < v1Parts.length ? Integer.parseInt(v1Parts[i]) : 0;
+            int v2 = i < v2Parts.length ? Integer.parseInt(v2Parts[i]) : 0;
             if (v1 != v2) {
                 return Integer.compare(v1, v2);
             }
@@ -20,35 +47,90 @@ public class VersionUtils {
             return false;
         }
 
-        if ("*".equals(constraint.trim())) {
+        String trimmed = constraint.trim();
+        if ("*".equals(trimmed)) {
             return true;
         }
 
-        String normalizedActual = normalizeVersion(actualVersion);
-        String normalizedConstraintVersion;
+        CargoOperator operator = CargoOperator.CARET;
+        String version = trimmed;
 
-        if (constraint.startsWith(">=")) {
-            normalizedConstraintVersion = normalizeVersion(constraint.substring(2));
-            return compareVersions(normalizedActual, normalizedConstraintVersion) >= 0;
-        } else if (constraint.startsWith(">")) {
-            normalizedConstraintVersion = normalizeVersion(constraint.substring(1));
-            return compareVersions(normalizedActual, normalizedConstraintVersion) > 0;
-        } else if (constraint.startsWith("<=")) {
-            normalizedConstraintVersion = normalizeVersion(constraint.substring(2));
-            return compareVersions(normalizedActual, normalizedConstraintVersion) <= 0;
-        } else if (constraint.startsWith("<")) {
-            normalizedConstraintVersion = normalizeVersion(constraint.substring(1));
-            return compareVersions(normalizedActual, normalizedConstraintVersion) < 0;
-        } else if (constraint.startsWith("=")) {
-            normalizedConstraintVersion = normalizeVersion(constraint.substring(1));
-            return compareVersions(normalizedActual, normalizedConstraintVersion) == 0;
-        } else if (constraint.startsWith("^")) {
-            return versionCompatible(constraint.substring(1).trim(), actualVersion);
-        } else if (constraint.startsWith("~")) {
-            return tildeMatches(constraint.substring(1).trim(), actualVersion);
-        } else {
-            return versionCompatible(constraint, actualVersion);
+        for (CargoOperator op : CargoOperator.values()) {
+            if (trimmed.startsWith(op.symbol)) {
+                operator = op;
+                version = trimmed.substring(op.symbol.length()).trim();
+                break;
+            }
         }
+
+        String normalizedConstraint = normalizeVersion(version);
+        String normalizedActual = normalizeVersion(actualVersion);
+
+        switch (operator) {
+            case GREATER_THAN_OR_EQUAL:
+                return compareVersions(normalizedActual, normalizedConstraint) >= 0;
+            case GREATER_THAN:
+                return compareVersions(normalizedActual, normalizedConstraint) > 0;
+            case LESS_THAN_OR_EQUAL:
+                return compareVersions(normalizedActual, normalizedConstraint) <= 0;
+            case LESS_THAN:
+                return compareVersions(normalizedActual, normalizedConstraint) < 0;
+            case EQUAL:
+                return compareVersions(normalizedActual, normalizedConstraint) == 0;
+            case CARET:
+                return matchesCaretRange(version, actualVersion);
+            case TILDE:
+                return matchesTildeRange(version, actualVersion);
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Caret (^) allows changes that do not modify the left-most non-zero digit.
+     * ^1.2.3 means >=1.2.3 <2.0.0
+     * ^0.2.3 means >=0.2.3 <0.3.0
+     */
+    private static boolean matchesCaretRange(String constraintVersion, String actualVersion) {
+        String upperBound = constraintVersion.startsWith("0.")
+            ? nextMinorVersion(constraintVersion)
+            : nextMajorVersion(constraintVersion);
+        return compareVersions(normalizeVersion(actualVersion), normalizeVersion(constraintVersion)) >= 0
+            && compareVersions(normalizeVersion(actualVersion), normalizeVersion(upperBound)) < 0;
+    }
+
+    /**
+     * Tilde (~) allows patch-level changes.
+     * ~1.2.3 means >=1.2.3 <1.3.0
+     * ~1.2   means >=1.2.0 <1.3.0
+     */
+    private static boolean matchesTildeRange(String constraintVersion, String actualVersion) {
+        String upperBound = nextMinorVersion(constraintVersion);
+        return compareVersions(normalizeVersion(actualVersion), normalizeVersion(constraintVersion)) >= 0
+            && compareVersions(normalizeVersion(actualVersion), normalizeVersion(upperBound)) < 0;
+    }
+
+    private static String nextMajorVersion(String version) {
+        String[] parts = version.split("\\.");
+        int major = Integer.parseInt(parts[0]);
+        StringBuilder sb = new StringBuilder();
+        sb.append(major + 1);
+        for (int i = 1; i < Math.max(parts.length, 3); i++) {
+            sb.append(".0");
+        }
+        return sb.toString();
+    }
+
+    private static String nextMinorVersion(String version) {
+        String[] parts = version.split("\\.");
+        int minor = parts.length > 1 ? Integer.parseInt(parts[1]) : 0;
+        StringBuilder sb = new StringBuilder();
+        sb.append(parts[0]);
+        sb.append(".").append(minor + 1);
+        for (int i = 2; i < Math.max(parts.length, 3); i++) {
+            sb.append(".0");
+        }
+        return sb.toString();
     }
 
     private static String normalizeVersion(String version) {
@@ -67,79 +149,15 @@ public class VersionUtils {
         return normalized.toString();
     }
 
-    public static boolean versionCompatible(String declaredVersion, String actualVersion) {
-        if (declaredVersion == null || actualVersion == null) {
-            return false;
-        }
-
-        String[] declaredParts = declaredVersion.split("\\.");
-        String[] actualParts = actualVersion.split("\\.");
-
-        int declaredMajor = declaredParts.length > 0 ? Integer.parseInt(declaredParts[0]) : 0;
-        int declaredMinor = declaredParts.length > 1 ? Integer.parseInt(declaredParts[1]) : 0;
-        int declaredPatch = declaredParts.length > 2 ? Integer.parseInt(declaredParts[2]) : 0;
-
-        int actualMajor = actualParts.length > 0 ? Integer.parseInt(actualParts[0]) : 0;
-        int actualMinor = actualParts.length > 1 ? Integer.parseInt(actualParts[1]) : 0;
-        int actualPatch = actualParts.length > 2 ? Integer.parseInt(actualParts[2]) : 0;
-
-        return (declaredMajor == 0)
-            ? isCompatiblePreOne(declaredMinor, declaredPatch, actualMajor, actualMinor, actualPatch)
-            : isCompatibleStable(declaredMajor, declaredMinor, declaredPatch, actualMajor, actualMinor, actualPatch);
-    }
-
-    private static boolean isCompatiblePreOne(int declaredMinor, int declaredPatch, int actualMajor, int actualMinor, int actualPatch) {
-        if (declaredMinor == 0) {
-            return actualMajor == 0 && actualMinor == 0 && actualPatch >= declaredPatch;
-        }
-        return actualMajor == 0 && actualMinor == declaredMinor && actualPatch >= declaredPatch;
-    }
-
-    private static boolean isCompatibleStable(int declaredMajor, int declaredMinor, int declaredPatch, int actualMajor, int actualMinor, int actualPatch) {
-        if (actualMajor != declaredMajor) {
-            return false;
-        }
-        if (actualMinor < declaredMinor) {
-            return false;
-        }
-        return actualMinor > declaredMinor || actualPatch >= declaredPatch;
-    }
-
-    public static boolean tildeMatches(String declaredVersion, String actualVersion) {
-        if (declaredVersion == null || actualVersion == null) {
-            return false;
-        }
-
-        String[] declaredParts = declaredVersion.split("\\.");
-        String[] actualParts = actualVersion.split("\\.");
-
-        int declaredMajor = declaredParts.length > 0 ? Integer.parseInt(declaredParts[0]) : 0;
-        int declaredMinor = declaredParts.length > 1 ? Integer.parseInt(declaredParts[1]) : 0;
-        int declaredPatch = declaredParts.length > 2 ? Integer.parseInt(declaredParts[2]) : 0;
-
-        int actualMajor = actualParts.length > 0 ? Integer.parseInt(actualParts[0]) : 0;
-        int actualMinor = actualParts.length > 1 ? Integer.parseInt(actualParts[1]) : 0;
-        int actualPatch = actualParts.length > 2 ? Integer.parseInt(actualParts[2]) : 0;
-
-        if (actualMajor != declaredMajor) {
-            return false;
-        }
-        if (declaredParts.length >= 2) {
-            // ~X.Y or ~X.Y.Z: same major.minor, patch >= declared
-            if (actualMinor != declaredMinor) {
-                return false;
-            }
-            return actualPatch >= declaredPatch;
-        }
-        // ~X: same major, any minor/patch >= declared
-        return actualMinor >= declaredMinor;
-    }
-
-    public static String stripBuildMetadata(String version) {
+    /**
+     * Strips pre-release tags (e.g., "-alpha") and build metadata (e.g., "+build")
+     * from a version string, returning only the major.minor.patch portion.
+     */
+    public static String sanitizeVersion(String version) {
         if (version == null) {
             return null;
         }
-        // Remove anything after and including '+'
-        return version.split("\\+")[0];
+        // Strip build metadata first (+build), then pre-release tag (-alpha)
+        return version.split("\\+")[0].split("-")[0];
     }
 }
