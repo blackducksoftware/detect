@@ -1,13 +1,27 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver;
 
 import com.blackduck.integration.bdio.graph.DependencyGraph;
+import com.blackduck.integration.bdio.model.dependency.Dependency;
+import com.blackduck.integration.bdio.model.externalid.ExternalId;
+import com.blackduck.integration.detectable.detectables.maven.resolver.model.JavaCoordinates;
+import com.blackduck.integration.detectable.detectables.maven.resolver.model.JavaRepository;
 import com.blackduck.integration.detectable.detectables.maven.resolver.result.MavenParseResult;
+import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.model.DiscoveredDependency;
+import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.collection.CollectResult;
+import org.eclipse.aether.graph.DependencyNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Processor for handling Maven multi-module projects recursively.
@@ -358,6 +372,13 @@ class MavenModuleProcessor {
             testGraph = context.getGraphTransformer().transform(testParseResult);
         }
 
+        // Process shaded dependencies if enabled
+        MavenResolverOptions options = context.getMavenResolverOptions();
+        if (options != null && options.isIncludeShadedDependenciesV2Enabled()) {
+            processModuleShadedDependencies(
+                moduleProject, compileResult, testResult, compileGraph, testGraph, context);
+        }
+
         // Create and add CodeLocations
         File moduleSourcePath = modulePom.getParentFile();
 
@@ -370,6 +391,337 @@ class MavenModuleProcessor {
                 context.getCodeLocationFactory().createCodeLocation(testGraph, moduleProject, moduleSourcePath)
             );
         }
+    }
+
+    /**
+     * Processes shaded dependencies for a module.
+     *
+     * <p>This method performs the complete shaded dependency detection workflow:
+     * <ol>
+     *   <li>Extracts Aether dependencies from compile (and optionally test) scopes</li>
+     *   <li>Downloads artifact JARs</li>
+     *   <li>Scans JARs for shaded dependencies</li>
+     *   <li>Grafts shaded dependency sub-trees into the module's dependency graphs</li>
+     * </ol>
+     *
+     * @param moduleProject The module's project model
+     * @param compileResult The compile-scope CollectResult
+     * @param testResult The test-scope CollectResult (may be null)
+     * @param compileGraph The compile-scope dependency graph
+     * @param testGraph The test-scope dependency graph (may be null)
+     * @param context Processing context
+     */
+    private void processModuleShadedDependencies(
+        MavenProject moduleProject,
+        CollectResult compileResult,
+        CollectResult testResult,
+        DependencyGraph compileGraph,
+        DependencyGraph testGraph,
+        MavenModuleProcessingContext context
+    ) {
+        String moduleGav = context.getCoordinateFormatter().formatGAV(moduleProject);
+        logger.info("Processing shaded dependencies for module: {}", moduleGav);
+
+        try {
+            // Step 1: Extract Aether dependencies from compile scope
+            List<org.eclipse.aether.graph.Dependency> aetherDependencies = new ArrayList<>();
+            if (compileResult != null && compileResult.getRoot() != null) {
+                extractAetherDependenciesFromNode(compileResult.getRoot(), aetherDependencies);
+                logger.debug("Module {} - Extracted {} dependencies from compile scope", moduleGav, aetherDependencies.size());
+            }
+
+            if (aetherDependencies.isEmpty()) {
+                logger.debug("Module {} - No dependencies to process for shaded detection", moduleGav);
+                return;
+            }
+
+            // Step 2: Set up download paths
+            Path downloadDir = context.getDownloadDir();
+            if (downloadDir == null) {
+                logger.warn("Module {} - Download directory not configured, skipping shaded detection", moduleGav);
+                return;
+            }
+
+            Path moduleDownloadDir = downloadDir.resolve("modules").resolve(sanitizeForPath(moduleGav));
+            Files.createDirectories(moduleDownloadDir);
+
+            // Step 3: Create artifact downloader for this module
+            List<JavaRepository> moduleRepos = moduleProject.getRepositories();
+            if (moduleRepos == null) {
+                moduleRepos = context.getRootRepositories();
+            }
+
+            MavenResolverOptions options = context.getMavenResolverOptions();
+            ArtifactDownloader downloader = new ArtifactDownloader(
+                options.getJarRepositoryPath(),
+                moduleDownloadDir,
+                moduleRepos,
+                options
+            );
+
+            // Step 4: Download JARs
+            logger.info("Module {} - Starting JAR downloads...", moduleGav);
+            Map<Artifact, Path> downloadedJars = downloader.downloadArtifacts(aetherDependencies);
+            logger.info("Module {} - Downloaded {} JARs", moduleGav, downloadedJars.size());
+
+            if (downloadedJars.isEmpty()) {
+                logger.debug("Module {} - No JARs downloaded, skipping shaded detection", moduleGav);
+                return;
+            }
+
+            // Step 5: Scan JARs for shaded dependencies
+            ShadedDependencyScanner scanner = new ShadedDependencyScanner();
+            Map<Artifact, List<DiscoveredDependency>> shadedDepsMap = scanner.scanJarsForShadedDependencies(
+                downloadedJars,
+                compileResult,
+                testResult,
+                context.getProjectBuilder()
+            );
+
+            logger.info("Module {} - Found {} JARs with shaded dependencies", moduleGav, shadedDepsMap.size());
+
+            if (shadedDepsMap.isEmpty()) {
+                return;
+            }
+
+            // Step 6: Graft shaded dependencies into graphs
+            int addedToCompile = addShadedDependenciesToGraph(
+                compileGraph, shadedDepsMap, context, moduleDownloadDir);
+            logger.info("Module {} - Grafted {} shaded dependency nodes into compile graph", moduleGav, addedToCompile);
+
+            if (testGraph != null) {
+                int addedToTest = addShadedDependenciesToGraph(
+                    testGraph, shadedDepsMap, context, moduleDownloadDir);
+                logger.info("Module {} - Grafted {} shaded dependency nodes into test graph", moduleGav, addedToTest);
+            }
+
+        } catch (Exception e) {
+            logger.warn("Module {} - Failed to process shaded dependencies: {}", moduleGav, e.getMessage());
+            logger.debug("Module shaded dependency processing error:", e);
+        }
+    }
+
+    /**
+     * Recursively extracts Aether dependencies from a dependency node tree.
+     */
+    private void extractAetherDependenciesFromNode(
+        DependencyNode node,
+        List<org.eclipse.aether.graph.Dependency> dependencies
+    ) {
+        if (node == null) {
+            return;
+        }
+
+        org.eclipse.aether.graph.Dependency dependency = node.getDependency();
+        if (dependency != null && dependency.getArtifact() != null) {
+            // Check for duplicates
+            boolean exists = dependencies.stream()
+                .anyMatch(d -> isSameArtifact(d.getArtifact(), dependency.getArtifact()));
+            if (!exists) {
+                dependencies.add(dependency);
+            }
+        }
+
+        if (node.getChildren() != null) {
+            for (DependencyNode child : node.getChildren()) {
+                extractAetherDependenciesFromNode(child, dependencies);
+            }
+        }
+    }
+
+    /**
+     * Checks if two Aether artifacts represent the same artifact.
+     */
+    private boolean isSameArtifact(Artifact a1, Artifact a2) {
+        return a1.getGroupId().equals(a2.getGroupId()) &&
+               a1.getArtifactId().equals(a2.getArtifactId()) &&
+               a1.getVersion().equals(a2.getVersion());
+    }
+
+    /**
+     * Adds discovered shaded dependencies to a dependency graph.
+     */
+    private int addShadedDependenciesToGraph(
+        DependencyGraph graph,
+        Map<Artifact, List<DiscoveredDependency>> shadedDepsMap,
+        MavenModuleProcessingContext context,
+        Path downloadDir
+    ) {
+        int count = 0;
+
+        for (Map.Entry<Artifact, List<DiscoveredDependency>> entry : shadedDepsMap.entrySet()) {
+            Artifact parentArtifact = entry.getKey();
+            List<DiscoveredDependency> shadedDeps = entry.getValue();
+
+            // Find parent in graph
+            ExternalId parentExternalId = context.getExternalIdFactory().createMavenExternalId(
+                parentArtifact.getGroupId(), parentArtifact.getArtifactId(), parentArtifact.getVersion());
+            Dependency parentDependency = graph.getDependency(parentExternalId);
+
+            if (parentDependency == null) {
+                logger.debug("Parent artifact {} not found in graph, skipping shaded deps",
+                    formatArtifact(parentArtifact));
+                continue;
+            }
+
+            // Add each shaded dependency under the parent
+            for (DiscoveredDependency shadedDep : shadedDeps) {
+                try {
+                    String[] gavParts = shadedDep.getIdentifier().split(":");
+                    if (gavParts.length < 3) {
+                        continue;
+                    }
+
+                    String groupId = gavParts[0];
+                    String artifactId = gavParts[1];
+                    String version = gavParts[2];
+
+                    // Create and add the shaded dependency node
+                    ExternalId shadedExternalId = context.getExternalIdFactory().createMavenExternalId(
+                        groupId, artifactId, version);
+                    Dependency shadedNode = new Dependency(artifactId, version, shadedExternalId);
+
+                    graph.addChildWithParent(shadedNode, parentDependency);
+                    count++;
+
+                    // Resolve and graft the shaded dependency's transitive tree
+                    count += resolveAndGraftShadedSubTree(
+                        shadedNode, groupId, artifactId, version, graph, context, downloadDir);
+
+                } catch (Exception e) {
+                    logger.debug("Failed to add shaded dependency {}: {}",
+                        shadedDep.getIdentifier(), e.getMessage());
+                }
+            }
+        }
+
+        return count;
+    }
+
+    /**
+     * Resolves the transitive dependency tree for a shaded dependency and grafts it onto the main graph.
+     */
+    private int resolveAndGraftShadedSubTree(
+        Dependency parentNode,
+        String groupId,
+        String artifactId,
+        String version,
+        DependencyGraph mainGraph,
+        MavenModuleProcessingContext context,
+        Path downloadDir
+    ) {
+        try {
+            // Download the shaded dependency's POM
+            JavaCoordinates coords = new JavaCoordinates(groupId, artifactId, version, "pom");
+            MavenDownloader downloader = new MavenDownloader(context.getRootRepositories(), downloadDir);
+            File shadedPomFile = downloader.downloadPom(coords);
+
+            if (shadedPomFile == null || !shadedPomFile.exists()) {
+                logger.debug("Could not download POM for shaded dependency {}:{}:{}", groupId, artifactId, version);
+                return 0;
+            }
+
+            // Build the shaded project model
+            MavenProject shadedProject = context.getProjectBuilder().buildProject(shadedPomFile);
+
+            // Resolve the shaded dependency's transitive tree
+            CollectResult shadedCollectResult = context.getDependencyResolver().resolveDependencies(
+                shadedPomFile, shadedProject, context.getLocalRepoPath().toFile(), context.getCompileScope());
+
+            if (shadedCollectResult == null || shadedCollectResult.getRoot() == null) {
+                return 0;
+            }
+
+            // Transform to BDIO graph
+            MavenParseResult parseResult = context.getGraphParser().parse(shadedCollectResult);
+            DependencyGraph shadedGraph = context.getGraphTransformer().transform(parseResult);
+
+            // Graft the shaded graph under the parent node
+            return graftSubGraph(shadedGraph, mainGraph, parentNode, context);
+
+        } catch (Exception e) {
+            logger.debug("Failed to resolve sub-tree for {}:{}:{}: {}", groupId, artifactId, version, e.getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Grafts a source graph onto a destination graph under a specified parent.
+     */
+    private int graftSubGraph(
+        DependencyGraph sourceGraph,
+        DependencyGraph destGraph,
+        Dependency destParent,
+        MavenModuleProcessingContext context
+    ) {
+        int count = 0;
+        Set<Dependency> sourceRoots = sourceGraph.getRootDependencies();
+
+        if (sourceRoots == null || sourceRoots.isEmpty()) {
+            return count;
+        }
+
+        Set<ExternalId> visited = new HashSet<>();
+
+        for (Dependency sourceRoot : sourceRoots) {
+            count += copyGraphEdges(sourceGraph, destGraph, sourceRoot, destParent, visited);
+        }
+
+        return count;
+    }
+
+    /**
+     * Recursively copies edges from source to destination graph.
+     */
+    private int copyGraphEdges(
+        DependencyGraph sourceGraph,
+        DependencyGraph destGraph,
+        Dependency sourceDep,
+        Dependency destParent,
+        Set<ExternalId> visited
+    ) {
+        if (sourceDep == null || sourceDep.getExternalId() == null) {
+            return 0;
+        }
+
+        ExternalId externalId = sourceDep.getExternalId();
+
+        // Cycle detection
+        if (visited.contains(externalId)) {
+            return 0;
+        }
+        visited.add(externalId);
+
+        // Add this node under the destination parent
+        destGraph.addChildWithParent(sourceDep, destParent);
+        int count = 1;
+
+        // Recurse for children
+        Set<Dependency> children = sourceGraph.getChildrenForParent(sourceDep);
+        if (children != null) {
+            for (Dependency child : children) {
+                count += copyGraphEdges(sourceGraph, destGraph, child, sourceDep, visited);
+            }
+        }
+
+        return count;
+    }
+
+    /**
+     * Formats an artifact for logging.
+     */
+    private String formatArtifact(Artifact artifact) {
+        return artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion();
+    }
+
+    /**
+     * Sanitizes a string for use in file paths.
+     */
+    private String sanitizeForPath(String s) {
+        if (s == null) {
+            return "unknown";
+        }
+        return s.replace(':', '_').replace('/', '_').replace('\\', '_');
     }
 
     /**

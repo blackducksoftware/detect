@@ -290,7 +290,7 @@ public class MavenResolverDetectable extends Detectable {
 
                 int compileCount = aetherDependencies.size();
                 if (includeTestScope && collectResultTest != null && collectResultTest.getRoot() != null) {
-//                    extractAetherDependenciesFromNode(collectResultTest.getRoot(), aetherDependencies);
+                    extractAetherDependenciesFromNode(collectResultTest.getRoot(), aetherDependencies);
                     logger.debug("Extracted {} additional dependencies from test scope", aetherDependencies.size() - compileCount);
                 }
 
@@ -436,7 +436,7 @@ public class MavenResolverDetectable extends Detectable {
             if (mavenProject.getModules() != null && !mavenProject.getModules().isEmpty()) {
                 File rootDir = pomFile.getParentFile();
 
-                // Build processing context with all dependencies
+                // Build processing context with all dependencies including shaded dependency support
                 MavenModuleProcessingContext context = new MavenModuleProcessingContext.Builder()
                     .projectBuilder(projectBuilder)
                     .dependencyResolver(dependencyResolver)
@@ -448,6 +448,10 @@ public class MavenResolverDetectable extends Detectable {
                     .localRepoPath(localRepoPath)
                     .outputDir(extractionEnvironment.getOutputDirectory())
                     .includeTestScope(includeTestScope)
+                    .mavenResolverOptions(mavenResolverOptions)
+                    .externalIdFactory(externalIdFactory)
+                    .downloadDir(downloadDir)
+                    .rootRepositories(mavenProject.getRepositories())
                     .codeLocations(codeLocations)
                     .compileScope(MAVEN_SCOPE_COMPILE)
                     .testScope(MAVEN_SCOPE_TEST)

@@ -2,9 +2,11 @@ package com.blackduck.integration.detectable.detectables.maven.resolver;
 
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
+import com.blackduck.integration.detectable.detectables.maven.resolver.model.JavaRepository;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -40,6 +42,12 @@ class MavenModuleProcessingContext {
 
     // Configuration
     private final boolean includeTestScope;
+    private final MavenResolverOptions mavenResolverOptions;
+
+    // Shaded dependency support
+    private final ExternalIdFactory externalIdFactory;
+    private final Path downloadDir;
+    private final List<JavaRepository> rootRepositories;
 
     // Shared mutable state (modified during processing)
     private final List<CodeLocation> codeLocations;
@@ -63,6 +71,10 @@ class MavenModuleProcessingContext {
         Path localRepoPath,
         File outputDir,
         boolean includeTestScope,
+        MavenResolverOptions mavenResolverOptions,
+        ExternalIdFactory externalIdFactory,
+        Path downloadDir,
+        List<JavaRepository> rootRepositories,
         List<CodeLocation> codeLocations,
         Set<String> visitedModulePomPaths,
         String compileScope,
@@ -78,6 +90,10 @@ class MavenModuleProcessingContext {
         this.localRepoPath = localRepoPath;
         this.outputDir = outputDir;
         this.includeTestScope = includeTestScope;
+        this.mavenResolverOptions = mavenResolverOptions;
+        this.externalIdFactory = externalIdFactory;
+        this.downloadDir = downloadDir;
+        this.rootRepositories = rootRepositories;
         this.codeLocations = codeLocations;
         this.visitedModulePomPaths = visitedModulePomPaths;
         this.compileScope = compileScope;
@@ -95,6 +111,10 @@ class MavenModuleProcessingContext {
     public Path getLocalRepoPath() { return localRepoPath; }
     public File getOutputDir() { return outputDir; }
     public boolean isIncludeTestScope() { return includeTestScope; }
+    public MavenResolverOptions getMavenResolverOptions() { return mavenResolverOptions; }
+    public ExternalIdFactory getExternalIdFactory() { return externalIdFactory; }
+    public Path getDownloadDir() { return downloadDir; }
+    public List<JavaRepository> getRootRepositories() { return rootRepositories; }
     public List<CodeLocation> getCodeLocations() { return codeLocations; }
     public Set<String> getVisitedModulePomPaths() { return visitedModulePomPaths; }
     public String getCompileScope() { return compileScope; }
@@ -114,6 +134,10 @@ class MavenModuleProcessingContext {
         private Path localRepoPath;
         private File outputDir;
         private boolean includeTestScope = true;
+        private MavenResolverOptions mavenResolverOptions;
+        private ExternalIdFactory externalIdFactory;
+        private Path downloadDir;
+        private List<JavaRepository> rootRepositories;
         private List<CodeLocation> codeLocations;
         private String compileScope = "compile";
         private String testScope = "test";
@@ -168,6 +192,26 @@ class MavenModuleProcessingContext {
             return this;
         }
 
+        public Builder mavenResolverOptions(MavenResolverOptions mavenResolverOptions) {
+            this.mavenResolverOptions = mavenResolverOptions;
+            return this;
+        }
+
+        public Builder externalIdFactory(ExternalIdFactory externalIdFactory) {
+            this.externalIdFactory = externalIdFactory;
+            return this;
+        }
+
+        public Builder downloadDir(Path downloadDir) {
+            this.downloadDir = downloadDir;
+            return this;
+        }
+
+        public Builder rootRepositories(List<JavaRepository> rootRepositories) {
+            this.rootRepositories = rootRepositories;
+            return this;
+        }
+
         public Builder codeLocations(List<CodeLocation> codeLocations) {
             this.codeLocations = codeLocations;
             return this;
@@ -187,6 +231,9 @@ class MavenModuleProcessingContext {
             // Initialize visitedModulePomPaths if needed
             Set<String> visitedPaths = new HashSet<>();
 
+            // Initialize rootRepositories if not set
+            List<JavaRepository> repos = rootRepositories != null ? rootRepositories : new ArrayList<>();
+
             return new MavenModuleProcessingContext(
                 projectBuilder,
                 dependencyResolver,
@@ -198,6 +245,10 @@ class MavenModuleProcessingContext {
                 localRepoPath,
                 outputDir,
                 includeTestScope,
+                mavenResolverOptions,
+                externalIdFactory,
+                downloadDir,
+                repos,
                 codeLocations,
                 visitedPaths,
                 compileScope,

@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -38,6 +39,10 @@ public class ArtifactDownloader {
 
     private static final String MAVEN_CENTRAL_URL = "https://repo1.maven.org/maven2";
     private static final String MAVEN_CENTRAL_URL_ALT = "https://repo.maven.apache.org/maven2";
+
+    // JAR/ZIP magic bytes: PK.. (0x50 0x4B 0x03 0x04)
+    private static final byte[] JAR_MAGIC_BYTES = new byte[] { 0x50, 0x4B, 0x03, 0x04 };
+    private static final int MIN_JAR_SIZE_BYTES = 22; // Minimum valid ZIP file size (empty ZIP)
 
     private final Path resolvedCustomRepositoryPath;
     private final Path defaultRepositoryPath;
@@ -365,17 +370,27 @@ public class ArtifactDownloader {
 
     /**
      * Attempts to download a JAR from a remote repository URL with retry logic.
+     *
+     * <p>For SNAPSHOT artifacts, this method implements a 2-phase fallback:
+     * <ol>
+     *   <li>Try timestamped SNAPSHOT URL (e.g., artifact-1.0-20240315.123456-7.jar)</li>
+     *   <li>If timestamped URL fails, fall back to plain SNAPSHOT URL (artifact-1.0-SNAPSHOT.jar)</li>
+     * </ol>
      */
     private DownloadResult downloadFromRemoteWithRetry(Artifact artifact, String repoBaseUrl, String repoId) {
         String jarRelativePath = buildJarRelativePath(artifact);
-        String jarUrl = repoBaseUrl.endsWith("/")
+        String plainJarUrl = repoBaseUrl.endsWith("/")
             ? repoBaseUrl + jarRelativePath
             : repoBaseUrl + "/" + jarRelativePath;
 
+        String jarUrl = plainJarUrl;
+        String timestampedUrl = null;
+
         // Handle SNAPSHOT versions — try maven-metadata.xml for timestamped version
-        if (artifact.getVersion().endsWith("-SNAPSHOT")) {
+        boolean isSnapshot = artifact.getVersion().endsWith("-SNAPSHOT");
+        if (isSnapshot) {
             logger.debug("  SNAPSHOT detected for {}. Attempting timestamped resolution...", formatCoords(artifact));
-            String timestampedUrl = resolveSnapshotUrl(artifact, repoBaseUrl);
+            timestampedUrl = resolveSnapshotUrl(artifact, repoBaseUrl);
             if (timestampedUrl != null) {
                 logger.debug("  Resolved SNAPSHOT to timestamped URL: {}", timestampedUrl);
                 jarUrl = timestampedUrl;
@@ -385,6 +400,23 @@ public class ArtifactDownloader {
         }
 
         Path targetPath = buildJarPath(artifact, defaultRepositoryPath);
+
+        // Try primary URL first
+        DownloadResult result = attemptDownloadWithRetry(jarUrl, targetPath, repoId, artifact);
+
+        // If primary URL failed with 404 and we have a timestamped URL, try plain SNAPSHOT URL as fallback
+        if (result.notFound && isSnapshot && timestampedUrl != null && !jarUrl.equals(plainJarUrl)) {
+            logger.debug("  Timestamped SNAPSHOT URL failed. Falling back to plain SNAPSHOT URL...");
+            result = attemptDownloadWithRetry(plainJarUrl, targetPath, repoId, artifact);
+        }
+
+        return result;
+    }
+
+    /**
+     * Attempts to download from a specific URL with retry logic.
+     */
+    private DownloadResult attemptDownloadWithRetry(String jarUrl, Path targetPath, String repoId, Artifact artifact) {
 
         int maxRetries = MavenDownloadConstants.RETRY_COUNT;
         long backoffMs = MavenDownloadConstants.RETRY_BACKOFF_INITIAL_MS;
@@ -426,11 +458,19 @@ public class ArtifactDownloader {
                         Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
                     }
 
-                    // Verify the file is not empty
+                    // Verify the file is not empty and is a valid JAR/ZIP
                     long fileSize = Files.size(tempFile);
-                    if (fileSize == 0) {
+                    if (fileSize < MIN_JAR_SIZE_BYTES) {
                         Files.deleteIfExists(tempFile);
-                        logger.warn("    Downloaded file is empty (0 bytes). Discarding.");
+                        logger.warn("    Downloaded file is too small ({} bytes, minimum {}). Discarding.",
+                            fileSize, MIN_JAR_SIZE_BYTES);
+                        continue; // retry
+                    }
+
+                    // Verify JAR magic bytes (PK..) to detect corrupt downloads or HTML error pages
+                    if (!verifyJarMagicBytes(tempFile)) {
+                        Files.deleteIfExists(tempFile);
+                        logger.warn("    Downloaded file does not have valid JAR/ZIP signature. Discarding.");
                         continue; // retry
                     }
 
@@ -556,14 +596,69 @@ public class ArtifactDownloader {
         if (Files.exists(jarPath) && Files.isRegularFile(jarPath)) {
             long fileSize = jarPath.toFile().length();
             logger.debug("  Found JAR at {} (size: {} bytes)", jarPath, fileSize);
-            if (fileSize > 0) {
+            if (fileSize >= MIN_JAR_SIZE_BYTES && verifyJarMagicBytes(jarPath)) {
                 return jarPath;
+            } else if (fileSize < MIN_JAR_SIZE_BYTES) {
+                logger.warn("  Found JAR at {} but file is too small ({} bytes). Skipping.", jarPath, fileSize);
             } else {
-                logger.warn("  Found JAR at {} but file is empty (0 bytes). Skipping.", jarPath);
+                logger.warn("  Found JAR at {} but file has invalid signature. Skipping.", jarPath);
             }
         }
 
         return null;
+    }
+
+    /**
+     * Verifies that a file has valid JAR/ZIP magic bytes.
+     *
+     * <p>JAR files are ZIP archives, and all ZIP files start with the signature
+     * "PK" followed by bytes 0x03 0x04 (local file header).
+     *
+     * <p>This verification catches:
+     * <ul>
+     *   <li>Empty files</li>
+     *   <li>Truncated downloads</li>
+     *   <li>HTML error pages saved as .jar</li>
+     *   <li>Other corrupt or non-JAR files</li>
+     * </ul>
+     *
+     * @param filePath path to the file to verify
+     * @return true if the file has valid JAR/ZIP magic bytes, false otherwise
+     */
+    private boolean verifyJarMagicBytes(Path filePath) {
+        if (filePath == null || !Files.exists(filePath)) {
+            return false;
+        }
+
+        try (FileInputStream fis = new FileInputStream(filePath.toFile())) {
+            byte[] header = new byte[4];
+            int bytesRead = fis.read(header);
+
+            if (bytesRead < 4) {
+                logger.trace("  File too small to contain JAR header: {} bytes read", bytesRead);
+                return false;
+            }
+
+            // Compare with JAR magic bytes: PK.. (0x50 0x4B 0x03 0x04)
+            boolean isValid = header[0] == JAR_MAGIC_BYTES[0] &&
+                              header[1] == JAR_MAGIC_BYTES[1] &&
+                              header[2] == JAR_MAGIC_BYTES[2] &&
+                              header[3] == JAR_MAGIC_BYTES[3];
+
+            if (!isValid) {
+                logger.trace("  Invalid JAR header: [{}, {}, {}, {}] (expected [0x50, 0x4B, 0x03, 0x04])",
+                    String.format("0x%02X", header[0]),
+                    String.format("0x%02X", header[1]),
+                    String.format("0x%02X", header[2]),
+                    String.format("0x%02X", header[3]));
+            }
+
+            return isValid;
+
+        } catch (IOException e) {
+            logger.trace("  Failed to read file header for JAR verification: {}", e.getMessage());
+            return false;
+        }
     }
 
     /**

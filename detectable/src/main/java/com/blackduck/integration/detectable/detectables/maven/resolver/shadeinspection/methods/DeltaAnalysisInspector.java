@@ -94,8 +94,10 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
         File tempPomFile = null;
         try {
             // Step 2: Extract the POM to a temporary file so ProjectBuilder can consume it
+            // Use GAV-based naming for better debugging and potential caching
             logger.debug("[Method 1] Step 2 - Extracting original POM to temporary file...");
-            tempPomFile = Files.createTempFile("extracted-pom-", ".xml").toFile();
+            String tempFileName = buildGavBasedTempFileName(originalPomEntry.getName());
+            tempPomFile = Files.createTempFile(tempFileName, ".xml").toFile();
             logger.trace("[Method 1] Step 2 - Temporary POM file: {}", tempPomFile.getAbsolutePath());
 
             try (InputStream is = jarFile.getInputStream(originalPomEntry)) {
@@ -188,6 +190,73 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
 
         logger.debug("[Method 1] Delta Analysis completed for JAR: {}", jarFile.getName());
         return discoveredDependencies;
+    }
+
+    /**
+     * Builds a GAV-based temp file name from the POM entry path.
+     *
+     * <p>The POM path follows Maven convention: META-INF/maven/{groupId}/{artifactId}/pom.xml
+     * This method extracts the groupId and artifactId to create a meaningful temp file name.
+     *
+     * <p>Example:
+     *   Input:  "META-INF/maven/org.springframework/spring-core/pom.xml"
+     *   Output: "extracted-pom-org.springframework_spring-core-"
+     *
+     * @param pomEntryPath the path to the POM entry inside the JAR
+     * @return a sanitized prefix for the temp file name
+     */
+    private String buildGavBasedTempFileName(String pomEntryPath) {
+        // Default fallback
+        String prefix = "extracted-pom-";
+
+        if (pomEntryPath == null || pomEntryPath.isEmpty()) {
+            return prefix;
+        }
+
+        try {
+            // Expected format: META-INF/maven/<groupId>/<artifactId>/pom.xml
+            // Split by "/" and extract groupId and artifactId
+            String[] parts = pomEntryPath.split("/");
+
+            // Validate structure: should have at least 5 parts
+            // [META-INF, maven, groupId, artifactId, pom.xml]
+            if (parts.length >= 5 && "META-INF".equals(parts[0]) && "maven".equals(parts[1])) {
+                String groupId = parts[2];
+                String artifactId = parts[3];
+
+                // Sanitize for filesystem: replace dots with underscores, remove special chars
+                String sanitizedGroupId = sanitizeForFileName(groupId);
+                String sanitizedArtifactId = sanitizeForFileName(artifactId);
+
+                prefix = "extracted-pom-" + sanitizedGroupId + "_" + sanitizedArtifactId + "-";
+                logger.trace("[Method 1] Built GAV-based temp file prefix: {}", prefix);
+            }
+        } catch (Exception e) {
+            logger.trace("[Method 1] Could not parse GAV from POM path '{}', using default prefix", pomEntryPath);
+        }
+
+        return prefix;
+    }
+
+    /**
+     * Sanitizes a string for use in file names.
+     * Replaces characters that are problematic in file paths with underscores.
+     */
+    private String sanitizeForFileName(String input) {
+        if (input == null) {
+            return "unknown";
+        }
+        // Replace problematic characters: colons, slashes, backslashes, spaces
+        return input.replace(':', '_')
+                    .replace('/', '_')
+                    .replace('\\', '_')
+                    .replace(' ', '_')
+                    .replace('<', '_')
+                    .replace('>', '_')
+                    .replace('"', '_')
+                    .replace('|', '_')
+                    .replace('?', '_')
+                    .replace('*', '_');
     }
 
 }
