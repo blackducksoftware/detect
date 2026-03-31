@@ -3,7 +3,9 @@ package com.blackduck.integration.detectable.detectables.npm.lockfile.parse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
@@ -13,6 +15,7 @@ import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
+import com.blackduck.integration.detectable.detectables.npm.NpmAliasParser;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.NpmDependencyConverter;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.model.NpmProject;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.model.PackageLock;
@@ -41,21 +44,31 @@ public class NpmLockfilePackager {
     public NpmPackagerResult parseAndTransform(@Nullable String rootJsonPath, @Nullable String packageJsonText, String lockFileText, List<NameVersion> externalDependencies) throws IOException {
         CombinedPackageJsonExtractor extractor = new CombinedPackageJsonExtractor(gson);
         CombinedPackageJson combinedPackageJson = extractor.constructCombinedPackageJson(rootJsonPath, packageJsonText);
-        
+
         lockFileText = removePathInfoFromPackageName(lockFileText);
 
         PackageLock packageLock = gson.fromJson(lockFileText, PackageLock.class);
-        
+
         NpmDependencyConverter dependencyConverter = new NpmDependencyConverter(externalIdFactory);
-        
-        // Link up any subpackages that no longer have a nice nested relationship in the packages areas of the 
+
+        // Link up any subpackages that no longer have a nice nested relationship in the packages areas of the
         // lock file
         dependencyConverter.linkPackagesDependencies(packageLock);
-        
+
         NpmProject project = dependencyConverter.convertLockFile(packageLock, combinedPackageJson);
-        
-        DependencyGraph dependencyGraph = graphTransformer.transform(packageLock, project, externalDependencies, 
-                combinedPackageJson == null ? null : combinedPackageJson.getRelativeWorkspaces());
+
+        // Build alias mapping from package.json to resolve aliased package names
+        Map<String, String> aliasMapping = combinedPackageJson != null
+            ? NpmAliasParser.buildAliasMapping(
+                combinedPackageJson.getDependencies(),
+                combinedPackageJson.getDevDependencies(),
+                combinedPackageJson.getPeerDependencies(),
+                combinedPackageJson.getOptionalDependencies()
+            )
+            : new HashMap<>();
+
+        DependencyGraph dependencyGraph = graphTransformer.transform(packageLock, project, externalDependencies,
+                combinedPackageJson == null ? null : combinedPackageJson.getRelativeWorkspaces(), aliasMapping);
         ExternalId projectId = projectIdTransformer.transform(combinedPackageJson, packageLock);
         CodeLocation codeLocation = new CodeLocation(dependencyGraph, projectId);
         return new NpmPackagerResult(projectId.getName(), projectId.getVersion(), codeLocation);

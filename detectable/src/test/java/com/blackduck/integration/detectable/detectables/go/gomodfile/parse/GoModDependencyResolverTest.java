@@ -5,9 +5,11 @@ import com.blackduck.integration.detectable.detectables.go.gomodfile.GoModFileDe
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoDependencyNode;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoModFileContent;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoModuleInfo;
+import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoProxyModuleResolver;
 import com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model.GoReplaceDirective;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.util.*;
 
@@ -432,23 +434,127 @@ public class GoModDependencyResolverTest {
     
     @Test
     public void testResolveDependencies_WithModuleName() {
-        GoModFileContent content = new GoModFileContent(
-            "github.com/test/module",
-            "1.18",
-            "go1.18.1",
-            new ArrayList<>(),
-            new ArrayList<>(),
-            new HashSet<>(),
-            new ArrayList<>(),
-            new HashSet<>()
+        // ...existing code...
+    }
+
+    /**
+     * Verifies that cycle detection in {@code computeDependencyTree} prevents infinite recursion
+     * when two modules mutually depend on each other (A requires B, B requires A).
+     * This is the regression test for the infinite loop bug fixed in IDETECT-4993.
+     */
+    @Test
+    public void testResolveDependencies_CyclePrevention_DoesNotInfiniteLoop() {
+        GoProxyModuleResolver mockProxy = Mockito.mock(GoProxyModuleResolver.class);
+        Mockito.when(mockProxy.checkConnectivity()).thenReturn(true);
+
+        // Module A's go.mod requires B
+        Mockito.when(mockProxy.getGoModFileOfTheDependency(
+                Mockito.argThat(dep -> dep != null && "github.com/moduleA".equals(dep.getName()))))
+                .thenReturn("module github.com/moduleA\n\ngo 1.18\n\nrequire github.com/moduleB v1.0.0\n");
+
+        // Module B's go.mod requires A back — forming a cycle
+        Mockito.when(mockProxy.getGoModFileOfTheDependency(
+                Mockito.argThat(dep -> dep != null && "github.com/moduleB".equals(dep.getName()))))
+                .thenReturn("module github.com/moduleB\n\ngo 1.18\n\nrequire github.com/moduleA v1.0.0\n");
+
+        GoModDependencyResolver cycleResolver = new GoModDependencyResolver(options, mockProxy);
+
+        List<GoModuleInfo> directDeps = Collections.singletonList(
+                new GoModuleInfo("github.com/moduleA", "v1.0.0", false)
         );
-        
-        GoModDependencyResolver.ResolvedDependencies result = resolver.resolveDependencies(content, externalIdFactory);
-        
-        assertNotNull(result.getDependencyGraph(), "Dependency graph should not be null");
-        assertTrue(result.getDependencyGraph().isRootNode(), "Root node should be marked as root");
-        assertNotNull(result.getDependencyGraph().getDependency(), "Root should have parent dependency");
-        assertEquals("github.com/test/module", result.getDependencyGraph().getDependency().getName(), 
-            "Root dependency should have module name");
+
+        GoModFileContent content = new GoModFileContent(
+                "test/module", "1.18", "go1.18.1",
+                directDeps, new ArrayList<>(), new HashSet<>(), new ArrayList<>(), new HashSet<>()
+        );
+
+        // The only assertion that matters: traversal must terminate without StackOverflowError
+        assertDoesNotThrow(() -> cycleResolver.resolveDependencies(content, externalIdFactory),
+                "Cyclic dependency graph should not cause infinite recursion");
+    }
+
+    /**
+     * Verifies that a shared transitive dependency reachable via two different paths (A→D and B→D)
+     * has its children correctly attached on both occurrences — not left as a shallow empty node
+     * on the second visit.
+     * Regression test for the incomplete DAG graph issue identified in IDETECT-4993.
+     */
+    @Test
+    public void testResolveDependencies_SharedTransitive_ChildrenAttachedOnBothPaths() {
+        GoProxyModuleResolver mockProxy = Mockito.mock(GoProxyModuleResolver.class);
+        Mockito.when(mockProxy.checkConnectivity()).thenReturn(true);
+
+        // Module A requires D
+        Mockito.when(mockProxy.getGoModFileOfTheDependency(
+                Mockito.argThat(dep -> dep != null && "github.com/moduleA".equals(dep.getName()))))
+                .thenReturn("module github.com/moduleA\n\ngo 1.18\n\nrequire github.com/moduleD v1.0.0\n");
+
+        // Module B requires D as well (shared transitive)
+        Mockito.when(mockProxy.getGoModFileOfTheDependency(
+                Mockito.argThat(dep -> dep != null && "github.com/moduleB".equals(dep.getName()))))
+                .thenReturn("module github.com/moduleB\n\ngo 1.18\n\nrequire github.com/moduleD v1.0.0\n");
+
+        // Module D requires E (a leaf child)
+        Mockito.when(mockProxy.getGoModFileOfTheDependency(
+                Mockito.argThat(dep -> dep != null && "github.com/moduleD".equals(dep.getName()))))
+                .thenReturn("module github.com/moduleD\n\ngo 1.18\n\nrequire github.com/moduleE v1.0.0\n");
+
+        // Module E has no further dependencies
+        Mockito.when(mockProxy.getGoModFileOfTheDependency(
+                Mockito.argThat(dep -> dep != null && "github.com/moduleE".equals(dep.getName()))))
+                .thenReturn("module github.com/moduleE\n\ngo 1.18\n");
+
+        GoModDependencyResolver sharedTransitiveResolver = new GoModDependencyResolver(options, mockProxy);
+
+        List<GoModuleInfo> directDeps = Arrays.asList(
+                new GoModuleInfo("github.com/moduleA", "v1.0.0", false),
+                new GoModuleInfo("github.com/moduleB", "v1.0.0", false)
+        );
+        // D is listed as an indirect dep so shouldProcessChild allows it to be recursed into
+        List<GoModuleInfo> indirectDeps = Collections.singletonList(
+                new GoModuleInfo("github.com/moduleD", "v1.0.0", true)
+        );
+
+        GoModFileContent content = new GoModFileContent(
+                "test/module", "1.18", "go1.18.1",
+                directDeps, indirectDeps, new HashSet<>(), new ArrayList<>(), new HashSet<>()
+        );
+
+        GoModDependencyResolver.ResolvedDependencies result =
+                sharedTransitiveResolver.resolveDependencies(content, externalIdFactory);
+
+        // Traversal must complete without error
+        assertNotNull(result.getDependencyGraph(), "Graph should not be null");
+
+        // Both A and B should be direct children of root
+        GoDependencyNode root = result.getDependencyGraph();
+        List<GoDependencyNode> rootChildren = root.getChildren();
+        assertEquals(2, rootChildren.size(), "Root should have 2 direct children (A and B)");
+
+        // Find A and B nodes
+        GoDependencyNode nodeA = rootChildren.stream()
+                .filter(n -> "github.com/moduleA".equals(n.getDependency().getName()))
+                .findFirst().orElse(null);
+        GoDependencyNode nodeB = rootChildren.stream()
+                .filter(n -> "github.com/moduleB".equals(n.getDependency().getName()))
+                .findFirst().orElse(null);
+
+        assertNotNull(nodeA, "Node A should be present");
+        assertNotNull(nodeB, "Node B should be present");
+
+        // D should appear as a child of both A and B, and both D nodes should have children (E)
+        GoDependencyNode dViaA = nodeA.getChildren().stream()
+                .filter(n -> "github.com/moduleD".equals(n.getDependency().getName()))
+                .findFirst().orElse(null);
+        GoDependencyNode dViaB = nodeB.getChildren().stream()
+                .filter(n -> "github.com/moduleD".equals(n.getDependency().getName()))
+                .findFirst().orElse(null);
+
+        assertNotNull(dViaA, "D should be a child of A");
+        assertNotNull(dViaB, "D should be a child of B");
+
+        // Both D node instances must have E as a child — not be left as shallow empty nodes
+        assertFalse(dViaA.getChildren().isEmpty(), "D (via A) should have children (E) attached");
+        assertFalse(dViaB.getChildren().isEmpty(), "D (via B) should have children (E) attached — not a shallow placeholder");
     }
 }

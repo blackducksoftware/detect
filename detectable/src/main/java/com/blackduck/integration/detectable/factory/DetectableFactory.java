@@ -13,6 +13,7 @@ import com.blackduck.integration.detectable.detectables.cargo.transform.CargoDep
 import com.blackduck.integration.detectable.detectables.conda.parser.CondaTreeParser;
 import com.blackduck.integration.detectable.detectables.conda.tree.CondaTreeDetectable;
 import com.blackduck.integration.detectable.detectables.conda.tree.CondaTreeExtractor;
+import com.blackduck.integration.detectable.detectables.ivy.IvyCliDetectable;
 import com.blackduck.integration.detectable.detectables.pip.inspector.parser.PipInspectorTomlParser;
 import com.blackduck.integration.detectable.detectables.rush.RushDetectable;
 import com.blackduck.integration.detectable.detectables.rush.RushExtractor;
@@ -166,8 +167,12 @@ import com.blackduck.integration.detectable.detectables.gradle.inspection.parse.
 import com.blackduck.integration.detectable.detectables.gradle.inspection.parse.GradleReportTransformer;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.parse.GradleRootMetadataParser;
 import com.blackduck.integration.detectable.detectables.gradle.parsing.GradleProjectInspectorDetectable;
+import com.blackduck.integration.detectable.detectables.ivy.IvyCliDetectable;
+import com.blackduck.integration.detectable.detectables.ivy.IvyCliExtractor;
 import com.blackduck.integration.detectable.detectables.ivy.IvyParseDetectable;
 import com.blackduck.integration.detectable.detectables.ivy.IvyParseExtractor;
+import com.blackduck.integration.detectable.detectables.ivy.parse.IvyDependencyTreeParser;
+import com.blackduck.integration.detectable.detectables.ivy.parse.IvyDependencyTreeTargetParser;
 import com.blackduck.integration.detectable.detectables.ivy.parse.IvyProjectNameParser;
 import com.blackduck.integration.detectable.detectables.lerna.LernaDetectable;
 import com.blackduck.integration.detectable.detectables.lerna.LernaExtractor;
@@ -521,6 +526,10 @@ public class DetectableFactory {
 
     public IvyParseDetectable createIvyParseDetectable(DetectableEnvironment environment) {
         return new IvyParseDetectable(environment, fileFinder, ivyParseExtractor());
+    }
+
+    public IvyCliDetectable createIvyCliDetectable(DetectableEnvironment environment, AntResolver antResolver) {
+        return new IvyCliDetectable(environment, fileFinder, antResolver, ivyCliExtractor(), ivyDependencyTreeTargetParser());
     }
 
     public MavenPomDetectable createMavenPomDetectable(DetectableEnvironment environment, MavenResolver mavenResolver, MavenCliExtractorOptions mavenCliExtractorOptions, ProjectInspectorOptions projectInspectorOptions, ProjectInspectorResolver projectInspectorResolver) {
@@ -960,8 +969,20 @@ public class DetectableFactory {
         return new IvyParseExtractor(saxParser(), ivyProjectNameParser());
     }
 
+    private IvyCliExtractor ivyCliExtractor() {
+        return new IvyCliExtractor(executableRunner, ivyDependencyTreeParser(), ivyProjectNameParser(), toolVersionLogger);
+    }
+
+    private IvyDependencyTreeParser ivyDependencyTreeParser() {
+        return new IvyDependencyTreeParser(externalIdFactory);
+    }
+
     private IvyProjectNameParser ivyProjectNameParser() {
         return new IvyProjectNameParser(saxParser());
+    }
+
+    private IvyDependencyTreeTargetParser ivyDependencyTreeTargetParser() {
+        return new IvyDependencyTreeTargetParser(saxParser());
     }
 
     private Rebar3TreeParser rebar3TreeParser() {
