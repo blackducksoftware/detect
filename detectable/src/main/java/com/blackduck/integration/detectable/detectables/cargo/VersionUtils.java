@@ -65,7 +65,12 @@ public class VersionUtils {
             }
         }
 
-        String normalizedConstraint = sanitizeAndNormalize(version);
+        if (version.isEmpty()) {
+            return false;
+        }
+
+        final String resolvedVersion = version;
+        String normalizedConstraint = sanitizeAndNormalize(resolvedVersion);
         String normalizedActual = sanitizeAndNormalize(actualVersion);
 
         switch (operator) {
@@ -80,12 +85,12 @@ public class VersionUtils {
             case EQUAL:
                 return compareVersions(normalizedActual, normalizedConstraint) == 0;
             case CARET:
-                String caretUpperBound = version.startsWith("0.")
-                    ? nextMinorVersion(version)
-                    : nextMajorVersion(version);
+                String caretUpperBound = resolvedVersion.startsWith("0.")
+                    ? nextMinorVersion(resolvedVersion)
+                    : nextMajorVersion(resolvedVersion);
                 return isWithinRange(normalizedActual, normalizedConstraint, sanitizeAndNormalize(caretUpperBound));
             case TILDE:
-                String tildeUpperBound = nextMinorVersion(version);
+                String tildeUpperBound = nextMinorVersion(resolvedVersion);
                 return isWithinRange(normalizedActual, normalizedConstraint, sanitizeAndNormalize(tildeUpperBound));
             default:
                 return false;
@@ -122,6 +127,9 @@ public class VersionUtils {
 
     private static String sanitizeAndNormalize(String version) {
         String sanitized = sanitizeVersion(version);
+        if (sanitized == null) {
+            return "0.0.0";
+        }
         String[] parts = sanitized.split("\\.");
         StringBuilder normalized = new StringBuilder();
         for (int i = 0; i < 3; i++) {
