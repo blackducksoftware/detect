@@ -107,6 +107,7 @@ public class BinaryUploadOperation {
             NameVersion projectNameVersion
         )
             throws DetectUserFriendlyException {
+            logger.debug("Using legacy binary scan upload method. This can be slow, consider upgrading to a newer version of Black Duck SCA to enable multipart upload method if possible.");
             String codeLocationName = codeLocationNameManager.createBinaryScanCodeLocationName(
                 binaryScanFile,
                 projectNameVersion.getName(),
