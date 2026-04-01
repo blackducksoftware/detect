@@ -28,10 +28,10 @@ When specifying path patterns:
 
 | Value              | Excluded                                                        | Not Excluded                    | Notes                                        |
 |--------------------|-----------------------------------------------------------------|---------------------------------|----------------------------------------------|
-| `foo/bar`          | `/projectRoot/foo/bar`                                          | `/projectRoot/dir/foo/bar`      | Excludes directories at any depth            |
+| `foo/bar`          | `/projectRoot/foo/bar`                                          | `/projectRoot/dir/foo/bar`      | Excludes matching directories at any depth   |
 | `**/foo/bar/`      | `/projectRoot/dir/foo/bar` & `/projectRoot/directory/foo/bar`  | NA                              | Excludes only the project-root directory     |
 | `**/foo/bar`       | NA                                                              | NA                              | Does not match and should not be used        |
-| `/projectRoot/d*/*`| `/projectRoot/dir/foo` & `/projectRoot/directory/bar`          | NA                              |                                              |
+| `/projectRoot/d*/*`| `/projectRoot/dir/foo` & `/projectRoot/directory/bar`          | NA                              | Excludes matching directories                |
 
 [detect_product_short] uses FileSystem::getPatchMatcher and its glob syntax implementation to exclude path patterns. See [Oracle FileSystem::getPatchMatcher](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/nio/file/FileSystem.html#getPathMatcher(java.lang.String)) for more info.
 
