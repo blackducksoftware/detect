@@ -1,6 +1,6 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver.pom;
 
-import com.blackduck.integration.detectable.detectables.maven.resolver.download.MavenDownloader;
+import com.blackduck.integration.detectable.detectables.maven.resolver.mavendownload.MavenDownloader;
 import com.blackduck.integration.detectable.detectables.maven.resolver.model.*;
 import com.blackduck.integration.detectable.detectables.maven.resolver.model.pomxml.*;
 import com.blackduck.integration.detectable.detectables.maven.resolver.pom.property.PropertiesResolverProvider;
