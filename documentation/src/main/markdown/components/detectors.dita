@@ -74,7 +74,7 @@
 							<entry>crates</entry>
 							<entry>
 								<p>Files: Cargo.toml</p>
-								<p>Executible: Cargo version 1.44.0+</p>
+								<p>Executable: Cargo version 1.44.0+</p>
 							</entry>
 							<entry>HIGH</entry>
 						</row>
@@ -498,6 +498,17 @@
 							<entry> </entry>
 							<entry> </entry>
 							<entry> </entry>
+						</row>
+						<row>
+							<entry> </entry>
+							<entry>Ivy CLI</entry>
+							<entry>various</entry>
+							<entry>Maven Central</entry>
+							<entry>
+								<p>Files: ivy.xml, build.xml</p>
+								<p>Executables: Ant 1.6.0+ and Ivy 2.4.0+</p>
+							</entry>
+							<entry>HIGH</entry>
 						</row>
 						<row>
 							<entry> </entry>
