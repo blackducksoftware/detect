@@ -69,8 +69,7 @@ public class VersionUtils {
             return false;
         }
 
-        final String resolvedVersion = version;
-        String normalizedConstraint = sanitizeAndNormalize(resolvedVersion);
+        String normalizedConstraint = sanitizeAndNormalize(version);
         String normalizedActual = sanitizeAndNormalize(actualVersion);
 
         switch (operator) {
@@ -85,12 +84,12 @@ public class VersionUtils {
             case EQUAL:
                 return compareVersions(normalizedActual, normalizedConstraint) == 0;
             case CARET:
-                String caretUpperBound = resolvedVersion.startsWith("0.")
-                    ? nextMinorVersion(resolvedVersion)
-                    : nextMajorVersion(resolvedVersion);
+                String caretUpperBound = version.startsWith("0.")
+                    ? nextMinorVersion(version)
+                    : nextMajorVersion(version);
                 return isWithinRange(normalizedActual, normalizedConstraint, sanitizeAndNormalize(caretUpperBound));
             case TILDE:
-                String tildeUpperBound = nextMinorVersion(resolvedVersion);
+                String tildeUpperBound = nextMinorVersion(version);
                 return isWithinRange(normalizedActual, normalizedConstraint, sanitizeAndNormalize(tildeUpperBound));
             default:
                 return false;
@@ -145,10 +144,6 @@ public class VersionUtils {
         return normalized.toString();
     }
 
-    /**
-     * Strips pre-release tags (e.g., "-alpha") and build metadata (e.g., "+build")
-     * from a version string, returning only the major.minor.patch portion.
-     */
     public static String sanitizeVersion(String version) {
         if (version == null) {
             return null;

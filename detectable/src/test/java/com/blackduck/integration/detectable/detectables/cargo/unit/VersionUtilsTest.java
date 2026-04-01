@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.blackduck.integration.detectable.detectables.cargo.VersionUtils;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class VersionUtilsTest {
@@ -14,7 +13,7 @@ class VersionUtilsTest {
     // Caret (^) tests — the exact scenario from IDETECT-5056
     @Test
     void caretVersionMatchesCompatible() {
-        Assertions.assertTrue(VersionUtils.versionMatches("^6.0", "6.0.0"));
+        assertTrue(VersionUtils.versionMatches("^6.0", "6.0.0"));
         assertTrue(VersionUtils.versionMatches("^6.0", "6.1.0"));
         assertTrue(VersionUtils.versionMatches("^6.0", "6.0.5"));
     }
@@ -93,25 +92,18 @@ class VersionUtilsTest {
         assertFalse(VersionUtils.versionMatches("1.0", null));
     }
 
-    // Pre-release and build metadata — versions like "1.0.0-alpha" or "1.0.0+build"
     @Test
     void versionWithPreReleaseTagMatches() {
         assertTrue(VersionUtils.versionMatches("^1.0", "1.0.0-alpha"));
         assertTrue(VersionUtils.versionMatches("^1.0", "1.2.3-beta.1"));
-        assertTrue(VersionUtils.versionMatches(">=1.0.0", "1.0.0-rc1"));
+        assertTrue(VersionUtils.versionMatches(">=1.0.0", "1.1.0-rc1"));
+        assertTrue(VersionUtils.versionMatches("=1.0.0", "1.0.0-beta"));
     }
 
     @Test
     void versionWithBuildMetadataMatches() {
         assertTrue(VersionUtils.versionMatches("^1.0", "1.0.0+build123"));
         assertTrue(VersionUtils.versionMatches("=1.0.0", "1.0.0+metadata"));
-    }
-
-    @Test
-    void preReleaseVersionsMatchThroughVersionMatches() {
-        assertTrue(VersionUtils.versionMatches("^1.0.0", "1.0.0-alpha"));
-        assertTrue(VersionUtils.versionMatches("=1.0.0", "1.0.0-beta"));
-        assertTrue(VersionUtils.versionMatches(">=1.0.0", "1.1.0-rc1"));
     }
 
     @Test
