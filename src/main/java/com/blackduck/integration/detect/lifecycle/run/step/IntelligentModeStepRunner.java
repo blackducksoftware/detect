@@ -112,7 +112,9 @@ public class IntelligentModeStepRunner {
 
         logger.debug("Completed project and version actions.");
         logger.debug("Processing Detect Code Locations.");
-        
+
+        long codeLocationsProcessingStartTime = System.currentTimeMillis();
+
         Set<String> scanIdsToWaitFor = new HashSet<>();
         AtomicBoolean mustWaitAtBomSummaryLevel = new AtomicBoolean(false);
 
@@ -120,7 +122,8 @@ public class IntelligentModeStepRunner {
 
         if (bdioResult.isNotEmpty()) {
             invokePackageManagerScanningWorkflow(projectNameVersion, blackDuckRunData, scanIdsToWaitFor, bdioResult, codeLocationAccumulator);
-        } else {
+        }
+        else {
             logger.debug("No BDIO results to upload. Skipping.");
         }
 
@@ -128,7 +131,7 @@ public class IntelligentModeStepRunner {
 
         stepHelper.runToolIfIncluded(DetectTool.SIGNATURE_SCAN, "Signature Scanner", () -> {
             SignatureScanStepRunner signatureScanStepRunner = new SignatureScanStepRunner(operationRunner, blackDuckRunData);
-            SignatureScannerCodeLocationResult signatureScannerCodeLocationResult = signatureScanStepRunner.runSignatureScannerOnline(
+            SignatureScannerCodeLocationResult signatureScannerCodeLocationResult = signatureScanStepRunner.runSignatureScannerOnline( // queries notification api but why
                 detectRunUuid,
                 projectNameVersion,
                 dockerTargetData,
@@ -136,7 +139,7 @@ public class IntelligentModeStepRunner {
                 gson
             );
             codeLocationAccumulator.addWaitableCodeLocations(signatureScannerCodeLocationResult.getWaitableCodeLocationData());
-            codeLocationAccumulator.addNonWaitableCodeLocation(signatureScannerCodeLocationResult.getNonWaitableCodeLocationData());
+            codeLocationAccumulator.addNonWaitableCodeLocation(signatureScannerCodeLocationResult.getNonWaitableCodeLocationData()); // no need for notification API
         });
 
         stepHelper.runToolIfIncluded(DetectTool.BINARY_SCAN, "Binary Scanner", () -> {           
@@ -154,7 +157,6 @@ public class IntelligentModeStepRunner {
             "Vulnerability Impact Analysis",
             () -> {
                 runImpactAnalysisOnline(projectNameVersion, projectVersion, codeLocationAccumulator, blackDuckRunData.getBlackDuckServicesFactory());
-                mustWaitAtBomSummaryLevel.set(true);
             },
             operationRunner::publishImpactSuccess,
             operationRunner::publishImpactFailure
@@ -164,7 +166,6 @@ public class IntelligentModeStepRunner {
             IacScanStepRunner iacScanStepRunner = new IacScanStepRunner(operationRunner);
             IacScanCodeLocationData iacScanCodeLocationData = iacScanStepRunner.runIacScanOnline(detectRunUuid, projectNameVersion, blackDuckRunData);
             codeLocationAccumulator.addNonWaitableCodeLocation(iacScanCodeLocationData.getCodeLocationNames());
-            mustWaitAtBomSummaryLevel.set(true);
         });
 
         if (operationRunner.createBlackDuckPostOptions().isCorrelatedScanningEnabled()) {
@@ -177,18 +178,18 @@ public class IntelligentModeStepRunner {
         stepHelper.runAsGroup("Wait for Results", OperationType.INTERNAL, () -> {
             // Calculate code locations. We do this even if we don't wait as we want to report code location data 
             // in various reports.
-            CodeLocationResults codeLocationResults = calculateCodeLocations(codeLocationAccumulator);
-            
-            if (operationRunner.createBlackDuckPostOptions().shouldWaitForResults()) {                  
+            CodeLocationResults codeLocationResults = calculateCodeLocations(codeLocationAccumulator); // publishes formatted codelocationdata (task range not used). calls to notifications API that i believe can be safely removed. accumulator needs to be refactored so we dnt need task range, just accumulate formatted names.
+
+            if (operationRunner.createBlackDuckPostOptions().shouldWaitForResults()) {    // property set or reports wanted
                 // Waiting at the scan level is more reliable, do that if the BD server is new enough.
-                if (blackDuckRunData.shouldWaitAtScanLevel()) {
+                if (blackDuckRunData.shouldWaitAtScanLevel()) { // >= 2023.1.1
                     pollForBomScanCompletion(blackDuckRunData, projectVersion, scanIdsToWaitFor);
-                } 
+                }
 
                 // If the BD server is older, or we can't detect its version, or if we have scans that we are 
                 // not yet able to obtain the scanID for, use the original notification based waiting.
-                if (!blackDuckRunData.shouldWaitAtScanLevel() || mustWaitAtBomSummaryLevel.get()) {
-                    waitForCodeLocations(codeLocationResults.getCodeLocationWaitData(), projectNameVersion, blackDuckRunData);
+                if (!blackDuckRunData.shouldWaitAtScanLevel() || mustWaitAtBomSummaryLevel.get()) { // <2023.1.1 and this is for backwards compatibility sake anyhow. do not remove. and its only if we have code locations to wait for, otherwise we skip entirely.
+                    waitForCodeLocations(codeLocationResults.getCodeLocationWaitData(), projectNameVersion, blackDuckRunData); // this versus line 180?
                 }
             }
         });
@@ -209,17 +210,19 @@ public class IntelligentModeStepRunner {
             String scanId = null;
             if(commonScanResult != null) {
                 scanId = commonScanResult.getScanId() == null ? null : commonScanResult.getScanId().toString();
-                if(commonScanResult.isPackageManagerScassPossible()) {
+                if(commonScanResult.isPackageManagerScassPossible()) // note: if upload failed, then we got a fresh scanID and must do the upload ourselves.,if upload succss, add to scanIdsToWaitFor. either way, no waitablecodelocations.
+                {
                     scanIdsToWaitFor.add(scanId);
+                    logger.debug("Added package manager scan {} to list of scanIds to wait for.", scanId);
                     codeLocationAccumulator.addNonWaitableCodeLocation(commonScanResult.getCodeLocationName());
                     codeLocationAccumulator.incrementAdditionalCounts(DetectTool.DETECTOR, 1);
                     return;
                 }
             }
-            invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId);
+            invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId); // only called if non-scass or
         } else {
             String scanId = null;
-            invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId);
+            invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId); // only called if non scass
         }
     }
 
@@ -241,19 +244,20 @@ public class IntelligentModeStepRunner {
     )
         throws IntegrationException, OperationException {
         logger.debug("Invoking intelligent persistent binary scan.");
-        
+
         AbstractBinaryScanStepRunner binaryScanStepRunner = CommonScanStepRunner.areScassScansPossible(blackDuckRunData.getBlackDuckServerVersion()) ?
             new ScassOrBdbaBinaryScanStepRunner(operationRunner) :
             new PreScassBinaryScanStepRunner(operationRunner);
 
         Optional<UUID> scanId = binaryScanStepRunner.invokeBinaryScanningWorkflow(dockerTargetData, projectNameVersion, 
-                blackDuckRunData, binaryTargets);
-        
+                blackDuckRunData, binaryTargets); // takes wait for results property value AND creates code locations WITH task range ... but does it call notifications api? only if legacy is kicked off --> document.
         if (scanId.isPresent()) {
             scanIdsToWaitFor.add(scanId.get().toString());
+            logger.debug("Added binary scan {} to list of scanIds to wait for.", scanId);
         } else {
-            Optional<CodeLocationCreationData<BinaryScanBatchOutput>> codeLocations = binaryScanStepRunner.getCodeLocations();
-            
+            Optional<CodeLocationCreationData<BinaryScanBatchOutput>> codeLocations = binaryScanStepRunner.getCodeLocations(); // empty unless multipart upload couldnt be done, in which case, great we need it ... right?
+
+            // Code Locations are only present if server version was too old for multipart binary upload
             if (codeLocations.isPresent()) {
                 codeLocationAccumulator.addWaitableCodeLocations(detectTool, codeLocations.get());
                 mustWaitAtBomSummaryLevel.set(true);
@@ -277,7 +281,10 @@ public class IntelligentModeStepRunner {
         }
 
         Optional<UUID> scanId = containerScanStepRunner.invokeContainerScanningWorkflow();
-        scanId.ifPresent(uuid -> scanIdsToWaitFor.add(uuid.toString()));
+        scanId.ifPresent(uuid -> {
+            scanIdsToWaitFor.add(uuid.toString());
+            logger.debug("Added container scan {} to list of scanIds to wait for.", uuid);
+        });
         Set<String> containerScanCodeLocations = new HashSet<>();
         containerScanCodeLocations.add(containerScanStepRunner.getCodeLocationName());
         codeLocationAccumulator.addNonWaitableCodeLocation(containerScanCodeLocations);
@@ -299,6 +306,7 @@ public class IntelligentModeStepRunner {
         }
     }
 
+    // note this is fallback/prescass pkg mngr workflow's bdio upload. Calls to get task range.
     public void uploadBdio(BlackDuckRunData blackDuckRunData, BdioResult bdioResult, Set<String> scanIdsToWaitFor, CodeLocationAccumulator codeLocationAccumulator, Long timeout, String scassScanId) throws OperationException {
         BdioUploadResult uploadResult = operationRunner.uploadBdioIntelligentPersistent(blackDuckRunData, bdioResult, timeout, scassScanId);
         Optional<CodeLocationCreationData<UploadBatchOutput>> codeLocationCreationData = uploadResult.getUploadOutput();
@@ -311,6 +319,7 @@ public class IntelligentModeStepRunner {
                 result.getScanId().ifPresent((scanId) -> scanIdsToWaitFor.add(scanId));
             }
         }
+        logger.debug("Added the following BDIO upload (prescass pkg mngr scan IDs to list of scanIds to wait for: {}", scanIdsToWaitFor);
     }
     
     public void uploadCorrelatedScanCounts(BlackDuckRunData blackDuckRunData, CodeLocationAccumulator codeLocationAccumulator, String detectRunUuid) throws OperationException {
@@ -328,7 +337,7 @@ public class IntelligentModeStepRunner {
         logger.info(ReportConstants.RUN_SEPARATOR);
 
         Set<String> allCodeLocationNames = new HashSet<>(codeLocationAccumulator.getNonWaitableCodeLocations());
-        CodeLocationWaitData waitData = operationRunner.calculateCodeLocationWaitData(codeLocationAccumulator.getWaitableCodeLocations());
+        CodeLocationWaitData waitData = operationRunner.calculateCodeLocationWaitData(codeLocationAccumulator.getWaitableCodeLocations()); // calculates the mins and the maxes CONSIDERING ALL waitable code locations.
         allCodeLocationNames.addAll(waitData.getCodeLocationNames());
         
         Set<FormattedCodeLocation> allCodeLocationData = new HashSet<>();
@@ -337,8 +346,8 @@ public class IntelligentModeStepRunner {
             allCodeLocationData.add(codeLocation);
         }
         
-        operationRunner.publishCodeLocationData(allCodeLocationData);
-        return new CodeLocationResults(allCodeLocationNames, waitData);
+        operationRunner.publishCodeLocationData(allCodeLocationData); // needs no range.
+        return new CodeLocationResults(allCodeLocationNames, waitData); // the return value is the only place the "wait data" is used...
     }
 
     private boolean shouldPublishBomLinkForTool(DetectToolFilter detectToolFilter) {
@@ -372,9 +381,10 @@ public class IntelligentModeStepRunner {
     }
     
     public void waitForCodeLocations(CodeLocationWaitData codeLocationWaitData, NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData)
-            throws OperationException {
+            throws OperationException { // note: pass start date directly here
             logger.info("Checking to see if Detect should wait for bom tool calculations to finish.");
-            if (operationRunner.createBlackDuckPostOptions().shouldWaitForResults() && codeLocationWaitData.getExpectedNotificationCount() > 0) {
+            if (codeLocationWaitData.getExpectedNotificationCount() > 0) {
+                logger.debug("Will use old notifications based waiting for the following code locations: {}", codeLocationWaitData.getCodeLocationNames()); // wait why is bdio and signature here but not impact analysis
                 operationRunner.waitForCodeLocations(blackDuckRunData, codeLocationWaitData, projectNameVersion);
             }
         }
@@ -387,7 +397,7 @@ public class IntelligentModeStepRunner {
     ) throws OperationException {
         String impactAnalysisName = operationRunner.generateImpactAnalysisCodeLocationName(projectNameVersion);
         Path impactFile = operationRunner.generateImpactAnalysisFile(impactAnalysisName);
-        CodeLocationCreationData<ImpactAnalysisBatchOutput> uploadData = operationRunner.uploadImpactAnalysisFile(
+        CodeLocationCreationData<ImpactAnalysisBatchOutput> uploadData = operationRunner.uploadImpactAnalysisFile( // note: calls notification API here via create coe location when upload
             impactFile,
             projectNameVersion,
             impactAnalysisName,
