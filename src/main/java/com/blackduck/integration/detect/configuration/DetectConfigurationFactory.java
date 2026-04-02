@@ -495,6 +495,12 @@ public class DetectConfigurationFactory {
             return CorrelatedScanningDecision.offlineModeDisabled();
         }
 
+        // Priority 1b: RAPID/STATELESS modes do not support correlated scanning
+        if (blackDuckDecision.scanMode() != null && blackDuckDecision.scanMode() != BlackduckScanMode.INTELLIGENT) {
+            logger.debug("Correlated scanning disabled: scan mode is {}", blackDuckDecision.scanMode());
+            return CorrelatedScanningDecision.defaultDisabled();
+        }
+
         // Priority 2: User explicitly set the property
         if (detectConfiguration.wasPropertyProvided(DetectProperties.DETECT_CORRELATED_SCANNING_ENABLED)) {
             boolean userValue = detectConfiguration.getValue(DetectProperties.DETECT_CORRELATED_SCANNING_ENABLED);

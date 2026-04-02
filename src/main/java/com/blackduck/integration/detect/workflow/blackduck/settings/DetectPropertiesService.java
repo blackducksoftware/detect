@@ -16,8 +16,7 @@ public class DetectPropertiesService {
         DetectPropertiesSetting.class,
         false
     );
-    private static final String MIME_TYPE = "application/json";
-            //"application/vnd.blackducksoftware.detect-setting-1+json";
+    private static final String MIME_TYPE = "application/vnd.blackducksoftware.admin-6+json";
 
     public DetectPropertiesSetting fetchDetectProperties(ApiDiscovery apiDiscovery, BlackDuckApiClient blackDuckApiClient) throws IntegrationException, IOException {
         UrlSingleResponse<DetectPropertiesSetting> urlResponse = apiDiscovery.metaSingleResponse(DETECT_PROPERTIES_PATH);
