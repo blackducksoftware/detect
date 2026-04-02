@@ -381,19 +381,28 @@ public class DetectBoot {
 
         DetectPropertiesSetting settings = serverSettings.get();
 
-        // Only log server properties if the user didn't specify correlated scanning themselves
+        // Only report server properties if the user didn't specify correlated scanning themselves
         if (detectConfiguration.wasPropertyProvided(DetectProperties.DETECT_CORRELATED_SCANNING_ENABLED)) {
             return; // User already saw their configured value in the normal property output
         }
 
         boolean correlatedScanningEnabled = settings.isCorrelatedScanningEnabled();
 
-        // Only log if the server has this enabled; don't log at all if false
+        // Only report if the server has this enabled; don't report at all if false
         if (!correlatedScanningEnabled) {
             return;
         }
 
         String correlatedScanningValue = String.valueOf(correlatedScanningEnabled);
+
+        // Publish to status.json
+        Map<String, String> serverProperties = new java.util.LinkedHashMap<>();
+        serverProperties.put("detect.blackduck.correlated.scanning.enabled", correlatedScanningValue);
+        List<String> scanTypes = settings.getCorrelatedScanningScanTypes();
+        if (scanTypes != null && !scanTypes.isEmpty()) {
+            serverProperties.put("detect.blackduck.correlated.scanning.scan.types", String.join(",", scanTypes));
+        }
+        eventSystem.publishEvent(Event.BlackDuckServerPropertiesCollected, serverProperties);
 
         // Log to console
         logger.info("");
