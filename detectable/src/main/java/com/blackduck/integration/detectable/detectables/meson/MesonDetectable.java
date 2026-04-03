@@ -1,8 +1,6 @@
 package com.blackduck.integration.detectable.detectables.meson;
 
 import java.io.File;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.blackduck.integration.common.util.finder.FileFinder;
 import com.blackduck.integration.detectable.Detectable;
@@ -16,15 +14,17 @@ import com.blackduck.integration.detectable.detectable.result.PassedDetectableRe
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 
-@DetectableInfo(name = "Meson", language = "C/C++", forge = "Generic", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: meson.build")
+@DetectableInfo(name = "Meson", language = "C/C++", forge = "conan", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "Files: meson.build, intro-projectinfo.json, intro-dependencies.json")
 public class MesonDetectable extends Detectable {
-    private final Logger logger = LoggerFactory.getLogger(this.getClass());
-    public static final String detectable_file = "meson.build";
-    private static final String introspect_project = "intro-projectinfo.json";
-    private static final String introspect_dependencies = "intro-dependencies.json";
+    public static final String MESON_BUILD_FILENAME = "meson.build";
+    private static final String INTROSPECT_PROJECT_FILENAME = "intro-projectinfo.json";
+    private static final String INTROSPECT_DEPENDENCIES_FILENAME = "intro-dependencies.json";
 
     private final FileFinder fileFinder;
     private final MesonExtractor mesonExtractor;
+
+    private File projectInfoFile;
+    private File dependenciesFile;
 
     public MesonDetectable(DetectableEnvironment environment, FileFinder fileFinder, MesonExtractor mesonExtractor) {
         super(environment);
@@ -35,16 +35,18 @@ public class MesonDetectable extends Detectable {
     @Override
     public DetectableResult applicable() {
         Requirements requirements = new Requirements(fileFinder, environment);
-        requirements.file(detectable_file);
-        File projectFile = fileFinder.findFile(environment.getDirectory(), introspect_project, false, 2);
-        logger.debug("found {}",projectFile);
-        File dependencyFile = fileFinder.findFile(environment.getDirectory(), introspect_dependencies, false, 2);
-        logger.debug("found {}",dependencyFile);
-        if (projectFile != null && dependencyFile != null) {
+        requirements.file(MESON_BUILD_FILENAME);
+        if (requirements.isAlreadyFailed()) {
             return requirements.result();
         }
-        logger.debug("even though {} is found, also a builddirectory with the introspect files is needed", detectable_file);
-        return new FilesNotFoundDetectableResult();
+        projectInfoFile = fileFinder.findFile(environment.getDirectory(), INTROSPECT_PROJECT_FILENAME, false, 2);
+        dependenciesFile = fileFinder.findFile(environment.getDirectory(), INTROSPECT_DEPENDENCIES_FILENAME, false, 2);
+        if (projectInfoFile == null || dependenciesFile == null) {
+            return new FilesNotFoundDetectableResult(INTROSPECT_PROJECT_FILENAME, INTROSPECT_DEPENDENCIES_FILENAME);
+        }
+        requirements.explainFile(projectInfoFile);
+        requirements.explainFile(dependenciesFile);
+        return requirements.result();
     }
 
     @Override
@@ -54,6 +56,6 @@ public class MesonDetectable extends Detectable {
 
     @Override
     public Extraction extract(ExtractionEnvironment extractionEnvironment) {
-        return mesonExtractor.extract(environment.getDirectory());
+        return mesonExtractor.extract(projectInfoFile, dependenciesFile);
     }
 }

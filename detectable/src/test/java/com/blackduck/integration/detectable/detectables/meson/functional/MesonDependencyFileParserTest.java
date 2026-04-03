@@ -7,10 +7,10 @@ import java.nio.file.Paths;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
 
-import com.blackduck.integration.bdio.model.Forge;
 import com.blackduck.integration.detectable.Detectable;
 import com.blackduck.integration.detectable.DetectableEnvironment;
 import com.blackduck.integration.detectable.extraction.Extraction;
+import com.blackduck.integration.detectable.detectables.conan.Constants;
 import com.blackduck.integration.detectable.functional.DetectableFunctionalTest;
 import com.blackduck.integration.detectable.util.graph.NameVersionGraphAssert;
 
@@ -47,7 +47,7 @@ public class MesonDependencyFileParserTest extends DetectableFunctionalTest {
     @Override
     public void assertExtraction(@NotNull Extraction extraction) {
         Assertions.assertEquals(1, extraction.getCodeLocations().size());
-        NameVersionGraphAssert graphAssert = new NameVersionGraphAssert(new Forge("/", "Generic"), extraction.getCodeLocations().get(0).getDependencyGraph());
+        NameVersionGraphAssert graphAssert = new NameVersionGraphAssert(Constants.conanForge, extraction.getCodeLocations().get(0).getDependencyGraph());
         graphAssert.hasRootSize(2);
         graphAssert.hasRootDependency("boost", "1.83.0");
         graphAssert.hasRootDependency("libcurl", "8.5.0");

@@ -403,7 +403,7 @@ public class DetectableFactory {
     public MesonDetectable createMesonDetectable(DetectableEnvironment environment) {
         MesonProjectFileParser mesonProjectFileParser = new MesonProjectFileParser();
         MesonDependencyFileParser mesonDependencyFileParser = new MesonDependencyFileParser(externalIdFactory);
-        MesonExtractor mesonExtractor = new MesonExtractor(mesonProjectFileParser, mesonDependencyFileParser, fileFinder, gson);
+        MesonExtractor mesonExtractor = new MesonExtractor(mesonProjectFileParser, mesonDependencyFileParser, gson);
         return new MesonDetectable(environment, fileFinder, mesonExtractor);
     }
 

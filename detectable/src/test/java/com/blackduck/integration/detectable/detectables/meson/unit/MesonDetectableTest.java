@@ -1,5 +1,6 @@
 package com.blackduck.integration.detectable.detectables.meson.unit;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
@@ -24,7 +25,7 @@ public class MesonDetectableTest {
         Mockito.when(fileFinder.findFile(envDir, "meson.build")).thenReturn(new File("meson.build"));
         Mockito.when(fileFinder.findFile(envDir, "intro-projectinfo.json", false, 2)).thenReturn(new File("builddir/meson-info/intro-projectinfo.json"));
         Mockito.when(fileFinder.findFile(envDir, "intro-dependencies.json", false, 2)).thenReturn(new File("builddir/meson-info/intro-dependencies.json"));
-        MesonExtractor mesonExtractor = new MesonExtractor(null, null, fileFinder, null);
+        MesonExtractor mesonExtractor = new MesonExtractor(null, null, null);
         MesonDetectable detectable = new MesonDetectable(environment, fileFinder, mesonExtractor);
 
         assertTrue(detectable.applicable().getPassed());
@@ -36,9 +37,9 @@ public class MesonDetectableTest {
         FileFinder fileFinder = Mockito.mock(FileFinder.class);
         File envDir = environment.getDirectory();
         Mockito.when(fileFinder.findFile(envDir, "meson.build", true, 0)).thenReturn(new File("meson.build"));
-        MesonExtractor mesonExtractor = new MesonExtractor(null, null, fileFinder, null);
+        MesonExtractor mesonExtractor = new MesonExtractor(null, null, null);
         MesonDetectable detectable = new MesonDetectable(environment, fileFinder, mesonExtractor);
 
-        assertTrue(!detectable.applicable().getPassed());
+        assertFalse(detectable.applicable().getPassed());
     }
 }
