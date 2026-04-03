@@ -9,6 +9,7 @@ import org.eclipse.aether.collection.CollectResult;
 import com.blackduck.integration.detectable.detectables.maven.resolver.ProjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -93,6 +94,13 @@ public class ShadedDependencyScanner {
 
             String artifactGav = formatArtifactGav(artifact);
             logger.debug("Scanning JAR {}/{}: {}", processedCount, totalJars, artifactGav);
+
+            // Guard: skip if the JAR file doesn't exist (e.g., download failed or was skipped)
+            if (jarPath == null || !Files.exists(jarPath)) {
+                logger.warn("JAR file not found for {}, skipping shaded dependency scan. Expected path: {}",
+                        artifactGav, jarPath);
+                continue;
+            }
 
             try {
                 List<DiscoveredDependency> shadedDeps = scanSingleJar(jarPath, inspectors, artifactGav);

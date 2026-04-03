@@ -168,7 +168,7 @@ public class ParallelDownloadManager {
             List<Dependency> dependencies,
             Path customRepoPath,
             Path defaultRepoPath,
-            HttpArtifactDownloader.DownloadConfiguration downloadConfig) {
+            DownloadConfiguration downloadConfig) {
         // Delegate to new method with empty POM repositories
         return downloadArtifacts(dependencies, customRepoPath, defaultRepoPath,
                                 new ArrayList<>(), downloadConfig);
@@ -193,7 +193,7 @@ public class ParallelDownloadManager {
             Path customRepoPath,
             Path defaultRepoPath,
             List<JavaRepository> pomRepositories,
-            HttpArtifactDownloader.DownloadConfiguration downloadConfig) {
+            DownloadConfiguration downloadConfig) {
 
         if (dependencies == null || dependencies.isEmpty()) {
             return new ParallelDownloadResult(0, 0, 0, 0, new ArrayList<>(), 0);
@@ -261,31 +261,33 @@ public class ParallelDownloadManager {
                     switch (outcome.getStatus()) {
                         case SUCCESS:
                             successCount.incrementAndGet();
-                            logger.info("[{}/{}] ✓ SUCCESS: {}",
+                            logger.info("[{}/{}] SUCCESS: {}",
                                 successCount.get() + failureCount.get() + skippedCount.get(),
                                 dependencies.size(),
                                 outcome.getCoordinate());
                             break;
 
                         case FAILED:
-                            int failures = failureCount.incrementAndGet();
-                            logger.error("[{}/{}] ✗ FAILED: {} - {}",
-                                successCount.get() + failures + skippedCount.get(),
+                            failureCount.incrementAndGet();
+                            // Log failure details and continue — do not cancel remaining downloads.
+                            // A single artifact missing from a repo should not stop other JARs from being scanned.
+                            String failureReason = (outcome.getException() != null)
+                                ? "[" + outcome.getException().getCategory() + "] " + outcome.getException().getSanitizedMessage()
+                                : (outcome.getErrorMessage() != null ? outcome.getErrorMessage() : "Unknown error");
+                            logger.warn("[{}/{}] DOWNLOAD FAILED (continuing with remaining): {} - Reason: {}",
+                                successCount.get() + failureCount.get() + skippedCount.get(),
                                 dependencies.size(),
                                 outcome.getCoordinate(),
-                                outcome.getErrorMessage());
-
-                            // Cancel remaining tasks on first failure (fail-fast)
-                            if (failures == 1) {
-                                logger.warn("Cancelling remaining downloads due to failure");
-                                cancelFlag.set(true);
+                                failureReason);
+                            if (outcome.getException() != null) {
+                                logger.debug("Failure details for {}:", outcome.getCoordinate(), outcome.getException());
                             }
                             break;
 
                         case SKIPPED_LOCAL:
                         case SKIPPED_NOT_FOUND:
                             skippedCount.incrementAndGet();
-                            logger.info("[{}/{}] ⚠ SKIPPED: {} - {}",
+                            logger.info("[{}/{}] SKIPPED: {} - {}",
                                 successCount.get() + failureCount.get() + skippedCount.get(),
                                 dependencies.size(),
                                 outcome.getCoordinate(),
@@ -339,9 +341,9 @@ public class ParallelDownloadManager {
         logger.info("PARALLEL DOWNLOAD SUMMARY");
         logger.info("========================================");
         logger.info("Total processed: {}", result.getTotalArtifacts());
-        logger.info("  ✓ Successfully downloaded: {}", result.getSuccessCount());
-        logger.info("  ⚠ Skipped: {}", result.getSkippedCount());
-        logger.info("  ✗ Failed: {}", result.getFailureCount());
+        logger.info("  Successfully downloaded: {}", result.getSuccessCount());
+        logger.info("  Skipped: {}", result.getSkippedCount());
+        logger.info("  Failed: {}", result.getFailureCount());
         logger.info("Time elapsed: {} ms ({} ms/artifact avg)",
             result.getTotalTimeMs(),
             result.getTotalArtifacts() > 0 ? result.getTotalTimeMs() / result.getTotalArtifacts() : 0);
@@ -363,7 +365,7 @@ public class ParallelDownloadManager {
             Path defaultRepoPath,
             List<JavaRepository> pomRepositories,
             Map<String, HttpArtifactDownloader> remoteDownloaders,
-            HttpArtifactDownloader.DownloadConfiguration downloadConfig,
+            DownloadConfiguration downloadConfig,
             AtomicBoolean cancelFlag) {
 
         ArtifactCoordinate coordinate = ArtifactCoordinate.fromAetherArtifact(artifact);
@@ -418,7 +420,7 @@ public class ParallelDownloadManager {
                             logger.debug("[{}] Trying POM repository: {} for {}",
                                 threadName, repo.getId(), coordinate);
 
-                            HttpArtifactDownloader.DownloadResult pomResult = remoteDownloader.download(
+                            DownloadResult pomResult = remoteDownloader.download(
                                 artifact, targetPath, downloadConfig
                             );
 
@@ -426,7 +428,7 @@ public class ParallelDownloadManager {
                                 logger.debug("[{}] Found in POM repository {}: {}",
                                     threadName, repo.getId(), coordinate);
                                 return DownloadOutcome.success(coordinate,
-                                    "pom-repository:" + repo.getId(), pomResult.getPath());
+                                    "pom-repository:" + repo.getId(), pomResult.getDownloadedPath());
                             }
                         }
                     } catch (ArtifactDownloadException e) {
@@ -450,15 +452,15 @@ public class ParallelDownloadManager {
             // ========== TIER-3: MAVEN CENTRAL (FALLBACK) ==========
             // Download from Maven Central as last resort
             logger.debug("[{}] Downloading from Maven Central: {}", threadName, coordinate);
-            HttpArtifactDownloader.DownloadResult result = httpDownloader.download(
+            DownloadResult result = httpDownloader.download(
                 artifact, targetPath, downloadConfig
             );
 
             if (result.isSuccess()) {
                 logger.debug("[{}] Downloaded successfully: {}", threadName, coordinate);
-                return DownloadOutcome.success(coordinate, result.getSource(), result.getPath());
+                return DownloadOutcome.success(coordinate, result.getSource(), result.getDownloadedPath());
             } else {
-                if (result.getErrorMessage() != null && result.getErrorMessage().contains("404")) {
+                if (result.isNotFound()) {
                     return DownloadOutcome.skippedNotFound(coordinate, result.getErrorMessage());
                 }
                 return DownloadOutcome.failed(coordinate, result.getErrorMessage(), null);

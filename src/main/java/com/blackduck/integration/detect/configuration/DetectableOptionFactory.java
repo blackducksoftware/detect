@@ -211,7 +211,7 @@ public class DetectableOptionFactory {
     /**
      * Creates Maven resolver options with user-facing configuration only.
      * Internal download tuning (timeouts, threads, retries) is handled
-     * by {@link com.blackduck.integration.detectable.detectables.maven.resolver.MavenDownloadConstants}.
+     * by {@link com.blackduck.integration.detectable.detectables.maven.resolver.artifactdownload.DownloadConfiguration}.
      *
      * @return MavenResolverOptions with user-facing settings
      */

@@ -1,22 +1,19 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver;
 
+import com.blackduck.integration.detectable.detectables.maven.resolver.artifactdownload.DownloadConfiguration;
+import com.blackduck.integration.detectable.detectables.maven.resolver.artifactdownload.DownloadResult;
+import com.blackduck.integration.detectable.detectables.maven.resolver.artifactdownload.HttpArtifactDownloader;
+import com.blackduck.integration.detectable.detectables.maven.resolver.artifactdownload.LocalRepositoryChecker;
+import com.blackduck.integration.detectable.detectables.maven.resolver.artifactdownload.MavenCentralDownloader;
+import com.blackduck.integration.detectable.detectables.maven.resolver.artifactdownload.RemoteRepositoryDownloader;
+import com.blackduck.integration.detectable.detectables.maven.resolver.exception.ArtifactDownloadException;
 import com.blackduck.integration.detectable.detectables.maven.resolver.model.JavaRepository;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.graph.Dependency;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,8 +27,13 @@ import java.util.Map;
  * <p>Tier-2: POM-declared remote repositories
  * <p>Tier-3: Maven Central as fallback
  *
- * <p>Internal tuning (timeouts, retries) uses {@link MavenDownloadConstants}.
- * Only user-facing options come from {@link MavenResolverOptions}.
+ * <p>This class follows the Single Responsibility Principle: it only orchestrates resolution.
+ * All actual work is delegated to specialized classes:
+ * <ul>
+ *   <li>{@link LocalRepositoryChecker} - checks local repositories for existing JARs</li>
+ *   <li>{@link RemoteRepositoryDownloader} - downloads from POM-declared repositories</li>
+ *   <li>{@link MavenCentralDownloader} - downloads from Maven Central</li>
+ * </ul>
  */
 public class ArtifactDownloader {
 
@@ -40,19 +42,22 @@ public class ArtifactDownloader {
     private static final String MAVEN_CENTRAL_URL = "https://repo1.maven.org/maven2";
     private static final String MAVEN_CENTRAL_URL_ALT = "https://repo.maven.apache.org/maven2";
 
-    // JAR/ZIP magic bytes: PK.. (0x50 0x4B 0x03 0x04)
-    private static final byte[] JAR_MAGIC_BYTES = new byte[] { 0x50, 0x4B, 0x03, 0x04 };
-    private static final int MIN_JAR_SIZE_BYTES = 22; // Minimum valid ZIP file size (empty ZIP)
+    // Delegates
+    private final LocalRepositoryChecker localChecker;
+    private final MavenCentralDownloader mavenCentralDownloader;
+    private final Map<String, HttpArtifactDownloader> pomRepoDownloaders;
 
+    // Configuration
     private final Path resolvedCustomRepositoryPath;
     private final Path defaultRepositoryPath;
+    private final Path homeM2Repository;
     private final List<JavaRepository> pomRepositories;
+    private final DownloadConfiguration downloadConfiguration;
 
     /**
      * Constructs an ArtifactDownloader with full configuration including POM repositories.
      *
      * @param customRepositoryPath Optional custom path to a local Maven repository (.m2 location).
-     *                             Resolved automatically via {@link M2RepositoryPathResolver}.
      * @param defaultRepositoryPath Default download cache path (typically Detect output downloads dir)
      * @param pomRepositories List of repositories declared in POM files (Tier-2)
      * @param options User-facing configuration (download flag, custom repo path)
@@ -62,7 +67,12 @@ public class ArtifactDownloader {
 
         logger.info("Initializing ArtifactDownloader...");
 
-        // Resolve custom repository path using M2RepositoryPathResolver
+        // Initialize delegates
+        this.localChecker = new LocalRepositoryChecker();
+        this.mavenCentralDownloader = new MavenCentralDownloader();
+        this.downloadConfiguration = DownloadConfiguration.createDefault();
+
+        // Resolve custom repository path
         if (customRepositoryPath != null) {
             logger.info("User-provided custom repository path: {}", customRepositoryPath);
             this.resolvedCustomRepositoryPath = M2RepositoryPathResolver.resolve(customRepositoryPath);
@@ -81,37 +91,19 @@ public class ArtifactDownloader {
         }
         this.defaultRepositoryPath = defaultRepositoryPath;
 
+        // Resolve home .m2 repository once
+        this.homeM2Repository = localChecker.resolveHomeM2Repository();
+
+        // Deduplicate and filter POM repositories
         this.pomRepositories = deduplicatePomRepositories(pomRepositories);
 
-        // Log initialization summary
-        logger.info("========== TIER-1: LOCAL REPOSITORIES ==========");
-        logger.info("  Custom .m2 repository: {}",
-            resolvedCustomRepositoryPath != null ? resolvedCustomRepositoryPath : "not configured");
-        logger.info("  Default download cache: {}", defaultRepositoryPath);
-        Path homeM2 = getHomeM2Repository();
-        logger.info("  Home .m2 repository: {}", homeM2 != null ? homeM2 : "not found");
-
-        logger.info("========== TIER-2: POM REPOSITORIES ==========");
-        if (this.pomRepositories.isEmpty()) {
-            logger.info("  No POM-declared repositories configured");
-        } else {
-            logger.info("  {} POM repositories configured:", this.pomRepositories.size());
-            for (int i = 0; i < this.pomRepositories.size(); i++) {
-                JavaRepository repo = this.pomRepositories.get(i);
-                logger.info("    {}. {} ({})", i + 1, repo.getId(), repo.getUrl());
-            }
+        // Create downloaders for each POM repository
+        this.pomRepoDownloaders = new HashMap<>();
+        for (JavaRepository repo : this.pomRepositories) {
+            pomRepoDownloaders.put(repo.getId(), new RemoteRepositoryDownloader(repo.getUrl()));
         }
 
-        logger.info("========== TIER-3: MAVEN CENTRAL ==========");
-        logger.info("  Maven Central: Always available as fallback");
-
-        logger.info("========== DOWNLOAD CONFIGURATION (internal defaults) ==========");
-        logger.info("  Connect timeout: {}ms", MavenDownloadConstants.CONNECT_TIMEOUT_MS);
-        logger.info("  Read timeout: {}ms", MavenDownloadConstants.READ_TIMEOUT_MS);
-        logger.info("  Retry policy: {} retries, {}ms initial backoff, {}ms max backoff",
-            MavenDownloadConstants.RETRY_COUNT,
-            MavenDownloadConstants.RETRY_BACKOFF_INITIAL_MS,
-            MavenDownloadConstants.RETRY_BACKOFF_MAX_MS);
+        logInitializationSummary();
     }
 
     /**
@@ -120,53 +112,6 @@ public class ArtifactDownloader {
     public ArtifactDownloader(Path customRepositoryPath, Path defaultRepositoryPath,
                               MavenResolverOptions options) {
         this(customRepositoryPath, defaultRepositoryPath, Collections.emptyList(), options);
-    }
-
-    private Path getHomeM2Repository() {
-        String userHome = System.getProperty("user.home");
-        if (userHome != null) {
-            Path homeM2 = Paths.get(userHome, ".m2", "repository");
-            if (homeM2.toFile().isDirectory()) {
-                return homeM2;
-            }
-        }
-        return null;
-    }
-
-    private List<JavaRepository> deduplicatePomRepositories(List<JavaRepository> repositories) {
-        if (repositories == null || repositories.isEmpty()) {
-            logger.debug("No POM repositories to deduplicate");
-            return Collections.emptyList();
-        }
-
-        List<JavaRepository> filtered = new ArrayList<>();
-        int mavenCentralSkipped = 0;
-
-        for (JavaRepository repo : repositories) {
-            String url = repo.getUrl();
-            if (url == null || url.isEmpty()) {
-                logger.debug("Skipping repository with null/empty URL: {}", repo.getId());
-                continue;
-            }
-
-            String normalizedUrl = url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
-
-            if (normalizedUrl.equals(MAVEN_CENTRAL_URL) || normalizedUrl.equals(MAVEN_CENTRAL_URL_ALT)) {
-                logger.debug("Skipping Maven Central repository from Tier-2 (will use as Tier-3): {}", repo.getId());
-                mavenCentralSkipped++;
-                continue;
-            }
-
-            filtered.add(repo);
-            logger.debug("Added POM repository to Tier-2: {} ({})", repo.getId(), url);
-        }
-
-        if (mavenCentralSkipped > 0) {
-            logger.info("Deduplicated {} Maven Central reference(s) from POM repositories", mavenCentralSkipped);
-        }
-
-        logger.info("POM repository deduplication complete: {} repositories retained for Tier-2", filtered.size());
-        return filtered;
     }
 
     /**
@@ -183,7 +128,9 @@ public class ArtifactDownloader {
             return artifactPathMap;
         }
 
+        logger.info("========================================");
         logger.info("STARTING ARTIFACT JAR DOWNLOAD PHASE");
+        logger.info("========================================");
         logger.info("Total dependencies to process: {}", dependencies.size());
 
         int successCount = 0;
@@ -213,25 +160,30 @@ public class ArtifactDownloader {
             try {
                 DownloadResult result = downloadSingleArtifact(artifact);
 
-                if (result.success) {
-                    logger.info("SUCCESS: JAR fetched from '{}' for {}", result.source, coords);
-                    if (result.path != null) {
-                        logger.debug("  Cached at: {}", result.path);
-                        artifactPathMap.put(artifact, result.path);
+                if (result.isSuccess()) {
+                    logger.info("SUCCESS: JAR fetched from '{}' for {}", result.getSource(), coords);
+                    if (result.getDownloadedPath() != null) {
+                        logger.debug("  Cached at: {}", result.getDownloadedPath());
+                        artifactPathMap.put(artifact, result.getDownloadedPath());
                     }
                     successCount++;
-                } else if (result.notFound) {
-                    logger.warn("Artifact JAR for {} not found in any configured repository", coords);
+                } else if (result.isNotFound()) {
+                    logger.warn("NOT FOUND: {} not available in any repository", coords);
                     unavailableArtifacts.add(coords);
                     skippedCount++;
                 } else {
-                    logger.error("FAILED to download {}: {}", coords, result.errorMessage);
+                    logger.error("FAILED to download {}: {}", coords, result.getErrorMessage());
                     failureCount++;
-                    failedArtifacts.add(coords + " - " + result.errorMessage);
+                    failedArtifacts.add(coords + " - " + result.getErrorMessage());
                 }
 
+            } catch (ArtifactDownloadException e) {
+                logger.error("DOWNLOAD ERROR for {}: {}", coords, e.getSanitizedMessage());
+                logger.debug("Full error details:", e);
+                failureCount++;
+                failedArtifacts.add(coords + " - " + e.getSanitizedMessage());
             } catch (Exception e) {
-                logger.error("UNEXPECTED ERROR downloading {}: {}", coords, e.getMessage());
+                logger.error("UNEXPECTED ERROR for {}: {}", coords, e.getMessage());
                 logger.debug("Full error details:", e);
                 failureCount++;
                 failedArtifacts.add(coords + " - Unexpected: " + e.getMessage());
@@ -239,369 +191,114 @@ public class ArtifactDownloader {
         }
 
         long elapsedTime = System.currentTimeMillis() - startTime;
-
-        // ===== SUMMARY LOG 1: Success/failure with source =====
-        logger.info("JAR DOWNLOAD PHASE SUMMARY");
-        logger.info("Total processed: {}", dependencies.size());
-        logger.info("  Successfully downloaded: {}", successCount);
-        logger.info("  Not available (skipped): {}", skippedCount);
-        logger.info("  Failed with errors: {}", failureCount);
-        logger.info("  Artifact-to-path map entries: {}", artifactPathMap.size());
-        logger.info("Time elapsed: {} ms", elapsedTime);
-
-        if (!unavailableArtifacts.isEmpty()) {
-            logger.info("Artifacts not available in repositories ({}):", unavailableArtifacts.size());
-            unavailableArtifacts.forEach(a -> logger.info("  - {}", a));
-        }
-
-        if (!failedArtifacts.isEmpty()) {
-            logger.error("Failed artifacts requiring attention ({}):", failedArtifacts.size());
-            failedArtifacts.forEach(a -> logger.error("  - {}", a));
-        }
-
-        // ===== SUMMARY LOG 2: Phase completion =====
-        if (failureCount > 0) {
-            logger.error("JAR DOWNLOAD PHASE COMPLETED WITH ERRORS: {} artifacts failed", failureCount);
-        } else if (skippedCount > 0) {
-            logger.info("JAR DOWNLOAD PHASE COMPLETED: {} artifacts unavailable but no errors", skippedCount);
-        } else {
-            logger.info("JAR DOWNLOAD PHASE COMPLETED SUCCESSFULLY: All {} artifacts downloaded", successCount);
-        }
-        logger.info("JAR download phase complete. Moving to the next part of the code.");
+        logDownloadSummary(dependencies.size(), successCount, failureCount, skippedCount,
+            artifactPathMap.size(), elapsedTime, unavailableArtifacts, failedArtifacts);
 
         return artifactPathMap;
     }
 
     /**
      * Downloads a single artifact JAR using 3-tier resolution.
+     * Delegates all work to specialized classes.
      */
-    private DownloadResult downloadSingleArtifact(Artifact artifact) {
+    private DownloadResult downloadSingleArtifact(Artifact artifact) throws ArtifactDownloadException {
         String coords = formatCoords(artifact);
-        Path homeM2 = getHomeM2Repository();
-
-        logger.info("Starting 3-Tier Resolution for: {}", coords);
-
-        // Calculate total steps for progress logging
-        int currentStep = 0;
-        int totalSteps = 1; // Maven Central always last
-        if (resolvedCustomRepositoryPath != null) totalSteps++;
-        if (homeM2 != null) totalSteps++;
-        totalSteps++; // download cache
-        totalSteps += pomRepositories.size();
+        logger.debug("Starting 3-Tier Resolution for: {}", coords);
 
         // ========== TIER-1: LOCAL REPOSITORIES ==========
         logger.info("--- TIER-1: LOCAL REPOSITORIES ---");
-
-        // Step 1a: Check custom .m2 repository
-        if (resolvedCustomRepositoryPath != null) {
-            currentStep++;
-            logger.info("  [Step {}/{}] Checking custom .m2 repository: {}", currentStep, totalSteps, resolvedCustomRepositoryPath);
-            Path jarPath = findJarInRepository(artifact, resolvedCustomRepositoryPath);
-            if (jarPath != null) {
-                logger.info("  FOUND in custom .m2 repository: {}", jarPath);
-                return DownloadResult.success("custom-m2-repository", jarPath);
-            }
-            logger.info("  Not found in custom .m2 repository");
+        DownloadResult localResult = checkLocalRepositories(artifact);
+        if (localResult != null) {
+            return localResult;
         }
-
-        // Step 1b: Check home ~/.m2/repository
-        if (homeM2 != null) {
-            currentStep++;
-            logger.info("  [Step {}/{}] Checking home .m2 repository: {}", currentStep, totalSteps, homeM2);
-            Path jarPath = findJarInRepository(artifact, homeM2);
-            if (jarPath != null) {
-                logger.info("  FOUND in home .m2 repository: {}", jarPath);
-                return DownloadResult.success("home-m2-repository", jarPath);
-            }
-            logger.info("  Not found in home .m2 repository");
-        }
-
-        // Step 1c: Check download cache
-        currentStep++;
-        logger.info("  [Step {}/{}] Checking download cache: {}", currentStep, totalSteps, defaultRepositoryPath);
-        Path cachedJarPath = findJarInRepository(artifact, defaultRepositoryPath);
-        if (cachedJarPath != null) {
-            logger.info("  FOUND in download cache: {}", cachedJarPath);
-            return DownloadResult.success("download-cache", cachedJarPath);
-        }
-        logger.info("  Not found in download cache");
 
         // ========== TIER-2: POM-DECLARED REPOSITORIES ==========
         if (!pomRepositories.isEmpty()) {
-            logger.info("--- TIER-2: POM-DECLARED REPOSITORIES ---");
-            logger.info("  Checking {} POM repositories...", pomRepositories.size());
-
-            for (JavaRepository repo : pomRepositories) {
-                currentStep++;
-                logger.info("  [Step {}/{}] Trying repository: {} ({})",
-                    currentStep, totalSteps, repo.getId(), repo.getUrl());
-
-                DownloadResult result = downloadFromRemoteWithRetry(artifact, repo.getUrl(), repo.getId());
-                if (result.success) {
-                    logger.info("  FOUND in POM repository: {} ({})", repo.getId(), repo.getUrl());
-                    return DownloadResult.success("pom-repository:" + repo.getId(), result.path);
-                } else if (result.notFound) {
-                    logger.debug("    Not available in {}: 404 Not Found", repo.getId());
-                } else {
-                    logger.debug("    Failed to download from {}: {}", repo.getId(), result.errorMessage);
-                }
+            logger.info("--- TIER-2: POM-DECLARED REPOSITORIES ({}) ---", pomRepositories.size());
+            DownloadResult pomResult = downloadFromPomRepositories(artifact);
+            if (pomResult != null && (pomResult.isSuccess() || !pomResult.isNotFound())) {
+                return pomResult;
             }
-
-            logger.info("  Not found in any POM repository");
+            logger.debug("Not found in any POM repository");
         }
 
         // ========== TIER-3: MAVEN CENTRAL (FALLBACK) ==========
-        currentStep++;
         logger.info("--- TIER-3: MAVEN CENTRAL (FALLBACK) ---");
-        logger.info("  [Step {}/{}] Downloading from Maven Central...", currentStep, totalSteps);
-
-        DownloadResult centralResult = downloadFromRemoteWithRetry(artifact, MAVEN_CENTRAL_URL, "maven-central");
-        if (centralResult.success) {
-            logger.info("  FOUND in Maven Central. Saved to: {}", centralResult.path);
-            return DownloadResult.success("maven-central", centralResult.path);
-        } else if (centralResult.notFound) {
-            logger.info("  Not available in Maven Central: 404 Not Found");
-            return DownloadResult.notFound("Artifact JAR for " + coords + " not found in Maven Central");
-        } else {
-            logger.warn("  Failed to download from Maven Central: {}", centralResult.errorMessage);
-            return DownloadResult.failure("Maven Central download failed: " + centralResult.errorMessage);
-        }
+        return downloadFromMavenCentral(artifact);
     }
 
     /**
-     * Attempts to download a JAR from a remote repository URL with retry logic.
-     *
-     * <p>For SNAPSHOT artifacts, this method implements a 2-phase fallback:
-     * <ol>
-     *   <li>Try timestamped SNAPSHOT URL (e.g., artifact-1.0-20240315.123456-7.jar)</li>
-     *   <li>If timestamped URL fails, fall back to plain SNAPSHOT URL (artifact-1.0-SNAPSHOT.jar)</li>
-     * </ol>
+     * Checks all local repositories for the artifact.
+     * Returns DownloadResult if found, null if not found in any local repo.
      */
-    private DownloadResult downloadFromRemoteWithRetry(Artifact artifact, String repoBaseUrl, String repoId) {
-        String jarRelativePath = buildJarRelativePath(artifact);
-        String plainJarUrl = repoBaseUrl.endsWith("/")
-            ? repoBaseUrl + jarRelativePath
-            : repoBaseUrl + "/" + jarRelativePath;
-
-        String jarUrl = plainJarUrl;
-        String timestampedUrl = null;
-
-        // Handle SNAPSHOT versions — try maven-metadata.xml for timestamped version
-        boolean isSnapshot = artifact.getVersion().endsWith("-SNAPSHOT");
-        if (isSnapshot) {
-            logger.debug("  SNAPSHOT detected for {}. Attempting timestamped resolution...", formatCoords(artifact));
-            timestampedUrl = resolveSnapshotUrl(artifact, repoBaseUrl);
-            if (timestampedUrl != null) {
-                logger.debug("  Resolved SNAPSHOT to timestamped URL: {}", timestampedUrl);
-                jarUrl = timestampedUrl;
-            } else {
-                logger.debug("  Could not resolve SNAPSHOT timestamp. Using default SNAPSHOT URL.");
+    private DownloadResult checkLocalRepositories(Artifact artifact) {
+        // Step 1a: Check custom .m2 repository
+        if (resolvedCustomRepositoryPath != null) {
+            logger.debug("  Checking custom .m2 repository: {}", resolvedCustomRepositoryPath);
+            Path jarPath = localChecker.checkCustomRepository(artifact, resolvedCustomRepositoryPath);
+            if (jarPath != null) {
+                logger.info("  FOUND in custom .m2 repository");
+                return DownloadResult.success("custom-m2-repository", jarPath);
             }
         }
 
-        Path targetPath = buildJarPath(artifact, defaultRepositoryPath);
-
-        // Try primary URL first
-        DownloadResult result = attemptDownloadWithRetry(jarUrl, targetPath, repoId, artifact);
-
-        // If primary URL failed with 404 and we have a timestamped URL, try plain SNAPSHOT URL as fallback
-        if (result.notFound && isSnapshot && timestampedUrl != null && !jarUrl.equals(plainJarUrl)) {
-            logger.debug("  Timestamped SNAPSHOT URL failed. Falling back to plain SNAPSHOT URL...");
-            result = attemptDownloadWithRetry(plainJarUrl, targetPath, repoId, artifact);
+        // Step 1b: Check home ~/.m2/repository
+        if (homeM2Repository != null) {
+            logger.debug("  Checking home .m2 repository: {}", homeM2Repository);
+            Path jarPath = localChecker.checkDefaultRepository(artifact, homeM2Repository);
+            if (jarPath != null) {
+                logger.info("  FOUND in home .m2 repository");
+                return DownloadResult.success("home-m2-repository", jarPath);
+            }
         }
 
-        return result;
+        // Step 1c: Check download cache
+        logger.debug("  Checking download cache: {}", defaultRepositoryPath);
+        Path cachedJarPath = localChecker.checkRepository(artifact, defaultRepositoryPath, "download-cache");
+        if (cachedJarPath != null) {
+            logger.info("  FOUND in download cache");
+            return DownloadResult.success("download-cache", cachedJarPath);
+        }
+
+        logger.debug("  Not found in any local repository");
+        return null;
     }
 
     /**
-     * Attempts to download from a specific URL with retry logic.
+     * Attempts to download from POM-declared repositories.
+     * Returns first successful result, or null if all fail.
      */
-    private DownloadResult attemptDownloadWithRetry(String jarUrl, Path targetPath, String repoId, Artifact artifact) {
+    private DownloadResult downloadFromPomRepositories(Artifact artifact) throws ArtifactDownloadException {
+        Path targetPath = localChecker.buildJarPath(artifact, defaultRepositoryPath);
 
-        int maxRetries = MavenDownloadConstants.RETRY_COUNT;
-        long backoffMs = MavenDownloadConstants.RETRY_BACKOFF_INITIAL_MS;
-        long maxBackoffMs = MavenDownloadConstants.RETRY_BACKOFF_MAX_MS;
+        for (JavaRepository repo : pomRepositories) {
+            logger.debug("  Trying POM repository: {} ({})", repo.getId(), repo.getUrl());
 
-        for (int attempt = 1; attempt <= maxRetries + 1; attempt++) {
-            if (attempt > 1) {
-                logger.info("    Retry attempt {}/{} for {} from {}", attempt - 1, maxRetries, formatCoords(artifact), repoId);
-                try {
-                    logger.debug("    Waiting {}ms before retry...", backoffMs);
-                    Thread.sleep(backoffMs);
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    return DownloadResult.failure("Download interrupted during retry backoff");
-                }
-                backoffMs = Math.min(backoffMs * 2, maxBackoffMs);
-            } else {
-                logger.debug("    Attempt {}: downloading from {}", attempt, jarUrl);
+            HttpArtifactDownloader downloader = pomRepoDownloaders.get(repo.getId());
+            if (downloader == null) {
+                logger.debug("    No downloader available for {}", repo.getId());
+                continue;
             }
 
             try {
-                URL url = URI.create(jarUrl).toURL();
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                connection.setConnectTimeout(MavenDownloadConstants.CONNECT_TIMEOUT_MS);
-                connection.setReadTimeout(MavenDownloadConstants.READ_TIMEOUT_MS);
-                connection.setRequestMethod("GET");
-                connection.setRequestProperty("User-Agent", "BlackDuck-Detect-MavenResolver");
+                DownloadResult result = downloader.download(artifact, targetPath, downloadConfiguration);
 
-                int responseCode = connection.getResponseCode();
-                logger.debug("    HTTP response: {} from {}", responseCode, jarUrl);
-
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    // Ensure parent directories exist
-                    Files.createDirectories(targetPath.getParent());
-
-                    // Download to a temp file first, then move atomically
-                    Path tempFile = targetPath.getParent().resolve(targetPath.getFileName() + ".tmp");
-                    try (InputStream in = connection.getInputStream()) {
-                        Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
-                    }
-
-                    // Verify the file is not empty and is a valid JAR/ZIP
-                    long fileSize = Files.size(tempFile);
-                    if (fileSize < MIN_JAR_SIZE_BYTES) {
-                        Files.deleteIfExists(tempFile);
-                        logger.warn("    Downloaded file is too small ({} bytes, minimum {}). Discarding.",
-                            fileSize, MIN_JAR_SIZE_BYTES);
-                        continue; // retry
-                    }
-
-                    // Verify JAR magic bytes (PK..) to detect corrupt downloads or HTML error pages
-                    if (!verifyJarMagicBytes(tempFile)) {
-                        Files.deleteIfExists(tempFile);
-                        logger.warn("    Downloaded file does not have valid JAR/ZIP signature. Discarding.");
-                        continue; // retry
-                    }
-
-                    Files.move(tempFile, targetPath, StandardCopyOption.REPLACE_EXISTING);
-                    logger.debug("    Downloaded {} bytes to {}", fileSize, targetPath);
-                    connection.disconnect();
-                    return DownloadResult.success(repoId, targetPath);
-
-                } else if (responseCode == HttpURLConnection.HTTP_NOT_FOUND) {
-                    connection.disconnect();
-                    return DownloadResult.notFound("404 Not Found at " + jarUrl);
-
-                } else if (responseCode >= 500) {
-                    // Server error — worth retrying
-                    logger.debug("    Server error (HTTP {}), will retry if attempts remain", responseCode);
-                    connection.disconnect();
-                    continue;
-
+                if (result.isSuccess()) {
+                    logger.info("  FOUND in POM repository: {}", repo.getId());
+                    return DownloadResult.success("pom-repository:" + repo.getId(), result.getDownloadedPath());
+                } else if (result.isNotFound()) {
+                    logger.debug("    Not available in {}: 404", repo.getId());
                 } else {
-                    connection.disconnect();
-                    return DownloadResult.failure("HTTP " + responseCode + " from " + jarUrl);
+                    logger.debug("    Failed to download from {}: {}", repo.getId(), result.getErrorMessage());
                 }
 
-            } catch (IOException e) {
-                logger.debug("    IOException on attempt {}: {}", attempt, e.getMessage());
-                if (attempt > maxRetries) {
-                    return DownloadResult.failure("IOException after " + maxRetries + " retries: " + e.getMessage());
+            } catch (ArtifactDownloadException e) {
+                // Log but continue to next repository
+                if (e.getMessage() != null && e.getMessage().contains("404")) {
+                    logger.debug("    Not available in {}: 404", repo.getId());
+                } else {
+                    logger.debug("    Error downloading from {}: {}", repo.getId(), e.getSanitizedMessage());
                 }
-                // continue to retry
-            }
-        }
-
-        return DownloadResult.failure("Exhausted all retry attempts for " + jarUrl);
-    }
-
-    /**
-     * Attempts to resolve a SNAPSHOT artifact's timestamped version via maven-metadata.xml.
-     *
-     * @return the full URL to the timestamped JAR, or null if resolution fails
-     */
-    private String resolveSnapshotUrl(Artifact artifact, String repoBaseUrl) {
-        String groupPath = artifact.getGroupId().replace('.', '/');
-        String metadataUrl = repoBaseUrl
-            + (repoBaseUrl.endsWith("/") ? "" : "/")
-            + groupPath + "/"
-            + artifact.getArtifactId() + "/"
-            + artifact.getVersion() + "/maven-metadata.xml";
-
-        try {
-            URL url = URI.create(metadataUrl).toURL();
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setConnectTimeout(MavenDownloadConstants.CONNECT_TIMEOUT_MS);
-            connection.setReadTimeout(MavenDownloadConstants.READ_TIMEOUT_MS);
-            connection.setRequestProperty("User-Agent", "BlackDuck-Detect-MavenResolver");
-
-            int responseCode = connection.getResponseCode();
-            if (responseCode != HttpURLConnection.HTTP_OK) {
-                connection.disconnect();
-                logger.debug("  SNAPSHOT metadata not available (HTTP {}): {}", responseCode, metadataUrl);
-                return null;
-            }
-
-            // Simple XML parsing for <timestamp> and <buildNumber>
-            String metadataContent;
-            try (InputStream in = connection.getInputStream()) {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                byte[] buffer = new byte[4096];
-                int bytesRead;
-                while ((bytesRead = in.read(buffer)) != -1) {
-                    baos.write(buffer, 0, bytesRead);
-                }
-                metadataContent = baos.toString("UTF-8");
-            }
-            connection.disconnect();
-
-            String timestamp = extractXmlValue(metadataContent, "timestamp");
-            String buildNumber = extractXmlValue(metadataContent, "buildNumber");
-
-            if (timestamp != null && buildNumber != null) {
-                String baseVersion = artifact.getVersion().replace("-SNAPSHOT", "");
-                String timestampedFilename = artifact.getArtifactId() + "-" + baseVersion + "-" + timestamp + "-" + buildNumber + ".jar";
-                String timestampedUrl = repoBaseUrl
-                    + (repoBaseUrl.endsWith("/") ? "" : "/")
-                    + groupPath + "/"
-                    + artifact.getArtifactId() + "/"
-                    + artifact.getVersion() + "/"
-                    + timestampedFilename;
-                logger.debug("  Resolved SNAPSHOT: timestamp={}, buildNumber={}", timestamp, buildNumber);
-                return timestampedUrl;
-            }
-
-        } catch (Exception e) {
-            logger.debug("  Failed to resolve SNAPSHOT metadata: {}", e.getMessage());
-        }
-
-        return null;
-    }
-
-    /**
-     * Extracts a simple XML element value (no attributes, no namespaces).
-     */
-    private String extractXmlValue(String xml, String tagName) {
-        String openTag = "<" + tagName + ">";
-        String closeTag = "</" + tagName + ">";
-        int start = xml.indexOf(openTag);
-        int end = xml.indexOf(closeTag);
-        if (start >= 0 && end > start) {
-            return xml.substring(start + openTag.length(), end).trim();
-        }
-        return null;
-    }
-
-    /**
-     * Looks for a JAR in a local repository using standard Maven layout.
-     */
-    private Path findJarInRepository(Artifact artifact, Path repositoryRoot) {
-        if (repositoryRoot == null || !repositoryRoot.toFile().isDirectory()) {
-            return null;
-        }
-
-        Path jarPath = buildJarPath(artifact, repositoryRoot);
-
-        if (Files.exists(jarPath) && Files.isRegularFile(jarPath)) {
-            long fileSize = jarPath.toFile().length();
-            logger.debug("  Found JAR at {} (size: {} bytes)", jarPath, fileSize);
-            if (fileSize >= MIN_JAR_SIZE_BYTES && verifyJarMagicBytes(jarPath)) {
-                return jarPath;
-            } else if (fileSize < MIN_JAR_SIZE_BYTES) {
-                logger.warn("  Found JAR at {} but file is too small ({} bytes). Skipping.", jarPath, fileSize);
-            } else {
-                logger.warn("  Found JAR at {} but file has invalid signature. Skipping.", jarPath);
             }
         }
 
@@ -609,114 +306,120 @@ public class ArtifactDownloader {
     }
 
     /**
-     * Verifies that a file has valid JAR/ZIP magic bytes.
-     *
-     * <p>JAR files are ZIP archives, and all ZIP files start with the signature
-     * "PK" followed by bytes 0x03 0x04 (local file header).
-     *
-     * <p>This verification catches:
-     * <ul>
-     *   <li>Empty files</li>
-     *   <li>Truncated downloads</li>
-     *   <li>HTML error pages saved as .jar</li>
-     *   <li>Other corrupt or non-JAR files</li>
-     * </ul>
-     *
-     * @param filePath path to the file to verify
-     * @return true if the file has valid JAR/ZIP magic bytes, false otherwise
+     * Downloads from Maven Central.
      */
-    private boolean verifyJarMagicBytes(Path filePath) {
-        if (filePath == null || !Files.exists(filePath)) {
-            return false;
-        }
+    private DownloadResult downloadFromMavenCentral(Artifact artifact) throws ArtifactDownloadException {
+        Path targetPath = localChecker.buildJarPath(artifact, defaultRepositoryPath);
+        logger.debug("  Downloading from Maven Central...");
 
-        try (FileInputStream fis = new FileInputStream(filePath.toFile())) {
-            byte[] header = new byte[4];
-            int bytesRead = fis.read(header);
+        DownloadResult result = mavenCentralDownloader.download(artifact, targetPath, downloadConfiguration);
 
-            if (bytesRead < 4) {
-                logger.trace("  File too small to contain JAR header: {} bytes read", bytesRead);
-                return false;
-            }
-
-            // Compare with JAR magic bytes: PK.. (0x50 0x4B 0x03 0x04)
-            boolean isValid = header[0] == JAR_MAGIC_BYTES[0] &&
-                              header[1] == JAR_MAGIC_BYTES[1] &&
-                              header[2] == JAR_MAGIC_BYTES[2] &&
-                              header[3] == JAR_MAGIC_BYTES[3];
-
-            if (!isValid) {
-                logger.trace("  Invalid JAR header: [{}, {}, {}, {}] (expected [0x50, 0x4B, 0x03, 0x04])",
-                    String.format("0x%02X", header[0]),
-                    String.format("0x%02X", header[1]),
-                    String.format("0x%02X", header[2]),
-                    String.format("0x%02X", header[3]));
-            }
-
-            return isValid;
-
-        } catch (IOException e) {
-            logger.trace("  Failed to read file header for JAR verification: {}", e.getMessage());
-            return false;
+        if (result.isSuccess()) {
+            logger.info("  FOUND in Maven Central");
+            return DownloadResult.success("maven-central", result.getDownloadedPath());
+        } else if (result.isNotFound()) {
+            logger.info("  Not available in Maven Central (404)");
+            return DownloadResult.notFound("Artifact not found in Maven Central");
+        } else {
+            logger.warn("  Failed to download from Maven Central: {}", result.getErrorMessage());
+            return DownloadResult.failure("Maven Central download failed: " + result.getErrorMessage());
         }
     }
 
     /**
-     * Builds the expected JAR path within a Maven repository using standard layout.
+     * Deduplicates POM repositories, removing Maven Central references (handled as Tier-3).
      */
-    private Path buildJarPath(Artifact artifact, Path repositoryRoot) {
-        String groupPath = artifact.getGroupId().replace('.', '/');
-        return repositoryRoot
-            .resolve(groupPath)
-            .resolve(artifact.getArtifactId())
-            .resolve(artifact.getVersion())
-            .resolve(artifact.getArtifactId() + "-" + artifact.getVersion() + ".jar");
+    private List<JavaRepository> deduplicatePomRepositories(List<JavaRepository> repositories) {
+        if (repositories == null || repositories.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<JavaRepository> filtered = new ArrayList<>();
+        int mavenCentralSkipped = 0;
+
+        for (JavaRepository repo : repositories) {
+            String url = repo.getUrl();
+            if (url == null || url.isEmpty()) {
+                continue;
+            }
+
+            String normalizedUrl = url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
+
+            if (normalizedUrl.equals(MAVEN_CENTRAL_URL) || normalizedUrl.equals(MAVEN_CENTRAL_URL_ALT)) {
+                mavenCentralSkipped++;
+                continue;
+            }
+
+            filtered.add(repo);
+        }
+
+        if (mavenCentralSkipped > 0) {
+            logger.debug("Deduplicated {} Maven Central reference(s) from POM repositories", mavenCentralSkipped);
+        }
+
+        return filtered;
     }
 
-    /**
-     * Builds the relative path portion (groupId/artifactId/version/artifactId-version.jar).
-     */
-    private String buildJarRelativePath(Artifact artifact) {
-        String groupPath = artifact.getGroupId().replace('.', '/');
-        return groupPath + "/"
-            + artifact.getArtifactId() + "/"
-            + artifact.getVersion() + "/"
-            + artifact.getArtifactId() + "-" + artifact.getVersion() + ".jar";
+    private void logInitializationSummary() {
+        logger.info("========== TIER-1: LOCAL REPOSITORIES ==========");
+        logger.info("  Custom .m2 repository: {}",
+            resolvedCustomRepositoryPath != null ? resolvedCustomRepositoryPath : "not configured");
+        logger.info("  Home .m2 repository: {}",
+            homeM2Repository != null ? homeM2Repository : "not found");
+        logger.info("  Download cache: {}", defaultRepositoryPath);
+
+        logger.info("========== TIER-2: POM REPOSITORIES ==========");
+        if (pomRepositories.isEmpty()) {
+            logger.info("  No POM-declared repositories configured");
+        } else {
+            logger.info("  {} POM repositories configured:", pomRepositories.size());
+            for (int i = 0; i < pomRepositories.size(); i++) {
+                JavaRepository repo = pomRepositories.get(i);
+                logger.info("    {}. {} ({})", i + 1, repo.getId(), repo.getUrl());
+            }
+        }
+
+        logger.info("========== TIER-3: MAVEN CENTRAL ==========");
+        logger.info("  Maven Central: Always available as fallback");
+
+        logger.info("========== DOWNLOAD CONFIGURATION ==========");
+        logger.info("  {}", downloadConfiguration);
+    }
+
+    private void logDownloadSummary(int total, int success, int failures, int skipped,
+                                    int mapSize, long elapsedMs,
+                                    List<String> unavailable, List<String> failed) {
+        logger.info("========================================");
+        logger.info("JAR DOWNLOAD PHASE SUMMARY");
+        logger.info("========================================");
+        logger.info("Total processed: {}", total);
+        logger.info("  Successfully downloaded: {}", success);
+        logger.info("  Not available (skipped): {}", skipped);
+        logger.info("  Failed with errors: {}", failures);
+        logger.info("  Artifact-to-path map entries: {}", mapSize);
+        logger.info("Time elapsed: {} ms", elapsedMs);
+
+        if (!unavailable.isEmpty()) {
+            logger.info("Artifacts not available in repositories ({}):", unavailable.size());
+            unavailable.forEach(a -> logger.info("  - {}", a));
+        }
+
+        if (!failed.isEmpty()) {
+            logger.error("Failed artifacts requiring attention ({}):", failed.size());
+            failed.forEach(a -> logger.error("  - {}", a));
+        }
+
+        if (failures > 0) {
+            logger.error("JAR DOWNLOAD PHASE COMPLETED WITH ERRORS: {} artifacts failed", failures);
+        } else if (skipped > 0) {
+            logger.info("JAR DOWNLOAD PHASE COMPLETED: {} artifacts unavailable but no errors", skipped);
+        } else {
+            logger.info("JAR DOWNLOAD PHASE COMPLETED SUCCESSFULLY: All {} artifacts downloaded", success);
+        }
     }
 
     private String formatCoords(Artifact artifact) {
         return artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion();
-    }
-
-    /**
-     * Internal result class for download operations.
-     */
-    private static class DownloadResult {
-        final boolean success;
-        final boolean notFound;
-        final String source;
-        final Path path;
-        final String errorMessage;
-
-        private DownloadResult(boolean success, boolean notFound, String source, Path path, String errorMessage) {
-            this.success = success;
-            this.notFound = notFound;
-            this.source = source;
-            this.path = path;
-            this.errorMessage = errorMessage;
-        }
-
-        static DownloadResult success(String source, Path path) {
-            return new DownloadResult(true, false, source, path, null);
-        }
-
-        static DownloadResult notFound(String message) {
-            return new DownloadResult(false, true, null, null, message);
-        }
-
-        static DownloadResult failure(String errorMessage) {
-            return new DownloadResult(false, false, null, null, errorMessage);
-        }
     }
 }
 

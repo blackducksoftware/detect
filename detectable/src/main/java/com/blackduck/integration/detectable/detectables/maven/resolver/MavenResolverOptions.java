@@ -1,5 +1,7 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver;
 
+import com.blackduck.integration.detectable.detectables.maven.resolver.artifactdownload.DownloadConfiguration;
+
 import java.nio.file.Path;
 
 /**
@@ -12,7 +14,7 @@ import java.nio.file.Path;
  * </ul>
  *
  * <p>Internal download tuning (timeouts, threads, retries) is handled by
- * {@link MavenDownloadConstants}.
+ * {@link DownloadConfiguration}.
  */
 public class MavenResolverOptions {
     private final boolean includeShadedDependenciesV2Enabled;

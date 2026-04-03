@@ -851,14 +851,36 @@ public class MavenResolverDetectable extends Detectable {
     }
 
     private void debugPrintBdioGraph(DependencyGraph graph, Set<Dependency> dependencies, int depth) {
-        if(dependencies.isEmpty()) {return;}
+        debugPrintBdioGraph(graph, dependencies, depth, new HashSet<>());
+    }
+
+    private void debugPrintBdioGraph(DependencyGraph graph, Set<Dependency> dependencies, int depth, Set<ExternalId> visited) {
+        if (dependencies == null || dependencies.isEmpty()) { return; }
 
         String indent = String.join("", Collections.nCopies(depth * 2, " "));
-        for(Dependency dep : dependencies) {
-            String gav = dep.getExternalId().getGroup() + ":" + dep.getName() + ":" + dep.getVersion();
+        for (Dependency dep : dependencies) {
+            ExternalId id = dep.getExternalId();
+
+            // Guard: null ExternalId cannot be tracked — log and skip to avoid NPE and untracked cycles
+            if (id == null) {
+                logger.warn("{}|-- [skipped: dependency '{}' has null ExternalId]", indent, dep.getName());
+                continue;
+            }
+
+            // Cycle guard: check before logging so a cyclic node is never printed as if it has children
+            if (visited.contains(id)) {
+                logger.info("{}|-- {}:{}:{} (already visited — cycle/diamond detected, skipping children)",
+                        indent, id.getGroup(), dep.getName(), dep.getVersion());
+                continue;
+            }
+
+            String gav = id.getGroup() + ":" + dep.getName() + ":" + dep.getVersion();
             logger.info("{}|-- {}", indent, gav);
+
+            visited.add(id);
             Set<Dependency> children = graph.getChildrenForParent(dep);
-            debugPrintBdioGraph(graph, children, depth + 1);
+            debugPrintBdioGraph(graph, children, depth + 1, visited);
+            visited.remove(id);
         }
     }
 }

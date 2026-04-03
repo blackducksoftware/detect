@@ -6,6 +6,7 @@ import org.eclipse.aether.artifact.Artifact;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -16,8 +17,17 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
 /**
- * Downloads artifacts from a remote Maven repository.
- * Single Responsibility: Handle downloads from POM-declared repositories.
+ * Downloads artifacts from a remote Maven repository with SNAPSHOT support.
+ * Single Responsibility: Handle HTTP downloads from a specific Maven repository.
+ *
+ * <p>Features:
+ * <ul>
+ *   <li>SNAPSHOT resolution via maven-metadata.xml (timestamped + plain fallback)</li>
+ *   <li>Resumable downloads with Range header support</li>
+ *   <li>Disk space checking before download</li>
+ *   <li>Progress reporting for large files</li>
+ *   <li>Retry logic via {@link RetryPolicy}</li>
+ * </ul>
  */
 public class RemoteRepositoryDownloader implements HttpArtifactDownloader {
 
@@ -38,96 +48,210 @@ public class RemoteRepositoryDownloader implements HttpArtifactDownloader {
         this.diskSpaceChecker = new DiskSpaceChecker();
     }
 
+    /**
+     * Returns the base repository URL.
+     */
+    public String getBaseRepositoryUrl() {
+        return baseRepositoryUrl;
+    }
+
     @Override
     public DownloadResult download(Artifact artifact, Path targetPath, DownloadConfiguration configuration)
             throws ArtifactDownloadException {
 
         String artifactId = formatArtifactId(artifact);
-        String jarUrl = buildRepositoryUrl(artifact);
+        RetryPolicy retryPolicy = configuration.getRetryPolicy();
 
-        logger.debug("Remote repository URL: {}", jarUrl);
+        // Build URL with SNAPSHOT support
+        String primaryJarUrl = buildRepositoryUrl(artifact);
+        String plainSnapshotUrl = null;
+        boolean isSnapshot = artifact.getVersion().endsWith("-SNAPSHOT");
+
+        if (isSnapshot) {
+            logger.debug("SNAPSHOT detected for {}. Attempting timestamped resolution...", artifactId);
+            String timestampedUrl = resolveSnapshotUrl(artifact, configuration);
+            if (timestampedUrl != null) {
+                logger.debug("Resolved SNAPSHOT to timestamped URL: {}", timestampedUrl);
+                plainSnapshotUrl = primaryJarUrl; // Keep plain URL as fallback
+                primaryJarUrl = timestampedUrl;
+            } else {
+                logger.debug("Could not resolve SNAPSHOT timestamp. Using default SNAPSHOT URL.");
+            }
+        }
+
+        logger.debug("Remote repository URL: {}", primaryJarUrl);
 
         // Check for partial download
         PartialDownloadManager.PartialDownloadInfo partialInfo =
             partialDownloadManager.checkPartialDownload(targetPath);
 
-        long startOffset = 0;
-        Path downloadPath = targetPath;
+        // Track mutable state for resume attempts
+        final long[] startOffset = { 0 };
+        final Path[] downloadPath = { targetPath };
 
         if (partialInfo.isResumable()) {
-            startOffset = partialInfo.getBytesDownloaded();
-            downloadPath = partialInfo.getPartialFile();
-            logger.debug("Attempting to resume download from byte {}", startOffset);
+            startOffset[0] = partialInfo.getBytesDownloaded();
+            downloadPath[0] = partialInfo.getPartialFile();
+            logger.debug("Attempting to resume download from byte {}", startOffset[0]);
         } else if (partialInfo.getPartialFile() != null) {
-            // Clean up non-resumable partial file
             partialDownloadManager.cleanupPartialFile(partialInfo.getPartialFile());
         }
 
-        // Download with retries following same pattern as MavenCentralDownloader
-        for (int attempt = 1; attempt <= configuration.getMaxRetries(); attempt++) {
-            if (attempt > 1) {
-                int sleepMs = configuration.getRetryDelayMs() * attempt;
-                logger.debug("Retry {} of {} (waiting {}ms)...", attempt, configuration.getMaxRetries(), sleepMs);
+        // Final URL references for lambda
+        final String finalPrimaryUrl = primaryJarUrl;
+        final String finalPlainSnapshotUrl = plainSnapshotUrl;
+
+        // Use RetryPolicy for retry logic
+        try {
+            return retryPolicy.executeWithRetry(() -> {
                 try {
-                    Thread.sleep(sleepMs);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw DownloadErrorFactory.networkError(artifactId,
-                        "Download interrupted during retry delay", e);
+                    DownloadResult result = attemptDownload(
+                        artifact, targetPath, downloadPath[0], finalPrimaryUrl, configuration, startOffset[0]
+                    );
+
+                    if (result.isSuccess()) {
+                        if (!downloadPath[0].equals(targetPath) && Files.exists(downloadPath[0])) {
+                            partialDownloadManager.promotePartialToFinal(downloadPath[0], targetPath);
+                        }
+                        return result;
+                    }
+
+                    // If primary URL 404 and we have a plain SNAPSHOT fallback, try it
+                    if (result.isNotFound() && finalPlainSnapshotUrl != null && !finalPrimaryUrl.equals(finalPlainSnapshotUrl)) {
+                        logger.debug("Timestamped SNAPSHOT URL failed (404). Trying plain SNAPSHOT URL...");
+                        DownloadResult fallbackResult = attemptDownload(
+                            artifact, targetPath, downloadPath[0], finalPlainSnapshotUrl, configuration, startOffset[0]
+                        );
+                        if (fallbackResult.isSuccess()) {
+                            if (!downloadPath[0].equals(targetPath) && Files.exists(downloadPath[0])) {
+                                partialDownloadManager.promotePartialToFinal(downloadPath[0], targetPath);
+                            }
+                            return fallbackResult;
+                        }
+                        return fallbackResult;
+                    }
+
+                    if (isNonRetryableError(result)) {
+                        return result;
+                    }
+
+                    throw DownloadErrorFactory.repositoryError(artifactId,
+                        "Download failed: " + result.getErrorMessage(), null);
+
+                } catch (ArtifactDownloadException e) {
+                    if (e.getMessage() != null && e.getMessage().contains("404")) {
+                        return DownloadResult.notFound("Artifact not found in repository (404)");
+                    }
+
+                    if (e.getCategory() == ArtifactDownloadException.ErrorCategory.RANGE_NOT_SUPPORTED_ERROR ||
+                        e.getCategory() == ArtifactDownloadException.ErrorCategory.PARTIAL_DOWNLOAD_ERROR) {
+                        partialDownloadManager.cleanupPartialFile(downloadPath[0]);
+                        startOffset[0] = 0;
+                        downloadPath[0] = targetPath;
+                    }
+
+                    throw e;
+                } catch (IOException e) {
+                    throw DownloadErrorFactory.fileSystemError(artifactId,
+                        "Failed to promote partial download to final location", e);
                 }
+            }, "download from " + baseRepositoryUrl);
+
+        } catch (ArtifactDownloadException e) {
+            if (e.getMessage() != null && e.getMessage().contains("404")) {
+                return DownloadResult.notFound("Artifact not found in repository (404)");
+            }
+            throw e;
+        }
+    }
+
+    /**
+     * Resolves a SNAPSHOT artifact's timestamped version via maven-metadata.xml.
+     *
+     * @param artifact The SNAPSHOT artifact
+     * @param configuration Download configuration for timeouts
+     * @return The full URL to the timestamped JAR, or null if resolution fails
+     */
+    private String resolveSnapshotUrl(Artifact artifact, DownloadConfiguration configuration) {
+        String groupPath = artifact.getGroupId().replace('.', '/');
+        String metadataUrl = baseRepositoryUrl + "/" + groupPath + "/"
+            + artifact.getArtifactId() + "/"
+            + artifact.getVersion() + "/maven-metadata.xml";
+
+        HttpURLConnection connection = null;
+        try {
+            URL url = new URL(metadataUrl);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setConnectTimeout(configuration.getConnectTimeoutMs());
+            connection.setReadTimeout(configuration.getReadTimeoutMs());
+            connection.setRequestProperty("User-Agent", "Black Duck Detect Maven Resolver");
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode != HttpURLConnection.HTTP_OK) {
+                logger.debug("SNAPSHOT metadata not available (HTTP {}): {}", responseCode, metadataUrl);
+                return null;
             }
 
-            logger.debug("Attempt {}/{}: Connecting to {}", attempt, configuration.getMaxRetries(), baseRepositoryUrl);
-
-            try {
-                DownloadResult result = attemptDownload(
-                    artifact, targetPath, downloadPath, jarUrl, configuration, startOffset
-                );
-
-                if (result.isSuccess()) {
-                    // If we used a partial file, promote it to final
-                    if (!downloadPath.equals(targetPath) && Files.exists(downloadPath)) {
-                        try {
-                            partialDownloadManager.promotePartialToFinal(downloadPath, targetPath);
-                        } catch (IOException e) {
-                            throw DownloadErrorFactory.fileSystemError(artifactId,
-                                    "Failed to promote partial download to final location", e);
-                        }
-                    }
-                    return result;
+            String metadataContent;
+            try (InputStream in = connection.getInputStream()) {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                while ((bytesRead = in.read(buffer)) != -1) {
+                    baos.write(buffer, 0, bytesRead);
                 }
+                metadataContent = baos.toString("UTF-8");
+            }
 
-                // Check if error is non-retryable (404 is non-retryable for remote repos)
-                if (isNonRetryableError(result)) {
-                    return result;
-                }
+            String timestamp = extractXmlValue(metadataContent, "timestamp");
+            String buildNumber = extractXmlValue(metadataContent, "buildNumber");
 
-            } catch (ArtifactDownloadException e) {
-                // For 404 errors, return immediately without retrying
-                if (e.getMessage() != null && e.getMessage().contains("404")) {
-                    logger.debug("Artifact not found in repository (404): {}", baseRepositoryUrl);
-                    return DownloadResult.failure("Artifact not found in repository (404)");
-                }
+            if (timestamp != null && buildNumber != null) {
+                String baseVersion = artifact.getVersion().replace("-SNAPSHOT", "");
+                StringBuilder fileName = new StringBuilder();
+                fileName.append(artifact.getArtifactId());
+                fileName.append("-").append(baseVersion);
+                fileName.append("-").append(timestamp);
+                fileName.append("-").append(buildNumber);
 
-                if (attempt == configuration.getMaxRetries()) {
-                    throw e;
+                String classifier = artifact.getClassifier();
+                if (classifier != null && !classifier.isEmpty()) {
+                    fileName.append("-").append(classifier);
                 }
-                logger.debug("Attempt {}/{} failed: {}", attempt, configuration.getMaxRetries(),
-                    e.getSanitizedMessage());
+                fileName.append(".jar");
 
-                // If resume failed, try fresh download on next attempt
-                if (e.getCategory() == ArtifactDownloadException.ErrorCategory.RANGE_NOT_SUPPORTED_ERROR ||
-                    e.getCategory() == ArtifactDownloadException.ErrorCategory.PARTIAL_DOWNLOAD_ERROR) {
-                    partialDownloadManager.cleanupPartialFile(downloadPath);
-                    startOffset = 0;
-                    downloadPath = targetPath;
-                }
+                String timestampedUrl = baseRepositoryUrl + "/" + groupPath + "/"
+                    + artifact.getArtifactId() + "/"
+                    + artifact.getVersion() + "/"
+                    + fileName.toString();
+
+                logger.debug("Resolved SNAPSHOT: timestamp={}, buildNumber={}", timestamp, buildNumber);
+                return timestampedUrl;
+            }
+
+        } catch (Exception e) {
+            logger.debug("Failed to resolve SNAPSHOT metadata: {}", e.getMessage());
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
             }
         }
 
-        throw DownloadErrorFactory.networkError(artifactId,
-            String.format("Failed to download from %s after %d attempts", baseRepositoryUrl, configuration.getMaxRetries()),
-            null);
+        return null;
+    }
+
+    /**
+     * Extracts a simple XML element value (no attributes, no namespaces).
+     */
+    private String extractXmlValue(String xml, String tagName) {
+        String openTag = "<" + tagName + ">";
+        String closeTag = "</" + tagName + ">";
+        int start = xml.indexOf(openTag);
+        int end = xml.indexOf(closeTag);
+        if (start >= 0 && end > start) {
+            return xml.substring(start + openTag.length(), end).trim();
+        }
+        return null;
     }
 
     private DownloadResult attemptDownload(Artifact artifact, Path targetPath, Path downloadPath,
@@ -145,7 +269,6 @@ public class RemoteRepositoryDownloader implements HttpArtifactDownloader {
             connection.setReadTimeout(config.getReadTimeoutMs());
             connection.setRequestProperty("User-Agent", "Black Duck Detect Maven Resolver");
 
-            // Add Range header if resuming
             if (startOffset > 0) {
                 String rangeHeader = partialDownloadManager.buildRangeHeader(startOffset);
                 connection.setRequestProperty("Range", rangeHeader);
@@ -154,37 +277,21 @@ public class RemoteRepositoryDownloader implements HttpArtifactDownloader {
 
             int responseCode = connection.getResponseCode();
 
-            // Handle resume response
             if (startOffset > 0) {
                 if (responseCode == 206) {
-                    // Partial content - resume supported
                     logger.debug("Server supports resume (206 Partial Content)");
                 } else if (responseCode == 200) {
-                    // Full content - resume not supported
-                    logger.debug("Server does not support resume, starting fresh download");
-                    partialDownloadManager.cleanupPartialFile(downloadPath);
-                    startOffset = 0;
-                    downloadPath = targetPath;
-
-                    // Reconnect without Range header
-                    connection.disconnect();
-                    connection = (HttpURLConnection) url.openConnection();
-                    connection.setRequestMethod("GET");
-                    connection.setConnectTimeout(config.getConnectTimeoutMs());
-                    connection.setReadTimeout(config.getReadTimeoutMs());
-                    connection.setRequestProperty("User-Agent", "Black Duck Detect Maven Resolver");
-                    responseCode = connection.getResponseCode();
+                    throw DownloadErrorFactory.rangeNotSupportedError(artifactId,
+                        "Server returned 200 (not 206) for range request — this server does not support resume");
                 } else {
                     throw DownloadErrorFactory.rangeNotSupportedError(artifactId,
                         "Server returned unexpected response to range request: " + responseCode);
                 }
             }
 
-            // Handle response codes
             if (responseCode == HttpURLConnection.HTTP_OK || responseCode == 206) {
                 long contentLength = connection.getContentLengthLong();
 
-                // Parse total size from Content-Range if available
                 if (responseCode == 206) {
                     String contentRange = connection.getHeaderField("Content-Range");
                     long totalSize = partialDownloadManager.parseContentRangeTotal(contentRange);
@@ -193,7 +300,6 @@ public class RemoteRepositoryDownloader implements HttpArtifactDownloader {
                     }
                 }
 
-                // Check disk space before downloading
                 if (contentLength > 0) {
                     DiskSpaceChecker.DiskSpaceCheckResult spaceCheck =
                         diskSpaceChecker.checkAvailableSpace(targetPath, contentLength, startOffset);
@@ -212,36 +318,25 @@ public class RemoteRepositoryDownloader implements HttpArtifactDownloader {
                     contentLength > 0 ? contentLength / 1024 : "unknown size",
                     baseRepositoryUrl);
 
-                // Create parent directories if needed
                 Files.createDirectories(targetPath.getParent());
 
-                // Determine final download path
                 Path actualDownloadPath = (startOffset > 0) ? downloadPath :
                     partialDownloadManager.getPartialFilePath(targetPath);
 
-                // Download with progress reporting
                 long bytesWritten = downloadWithProgress(
-                    connection,
-                    actualDownloadPath,
-                    artifactId,
-                    contentLength,
-                    startOffset
+                    connection, actualDownloadPath, artifactId, contentLength, startOffset
                 );
 
-                // Verify download integrity if content length was provided
-                if (contentLength > 0 && startOffset == 0) {
-                    if (bytesWritten != contentLength) {
-                        Files.deleteIfExists(actualDownloadPath);
-                        throw DownloadErrorFactory.networkError(artifactId,
-                            String.format("Incomplete download: expected %d bytes, received %d bytes",
-                                contentLength, bytesWritten), null);
-                    }
+                if (contentLength > 0 && startOffset == 0 && bytesWritten != contentLength) {
+                    Files.deleteIfExists(actualDownloadPath);
+                    throw DownloadErrorFactory.networkError(artifactId,
+                        String.format("Incomplete download: expected %d bytes, received %d bytes",
+                            contentLength, bytesWritten), null);
                 }
 
                 logger.info("DOWNLOAD SUCCESSFUL from {} - {} KB downloaded",
                     baseRepositoryUrl, bytesWritten / 1024);
 
-                // Move partial file to final location if needed
                 if (!actualDownloadPath.equals(targetPath)) {
                     partialDownloadManager.promotePartialToFinal(actualDownloadPath, targetPath);
                 }
@@ -250,7 +345,7 @@ public class RemoteRepositoryDownloader implements HttpArtifactDownloader {
 
             } else if (responseCode == HttpURLConnection.HTTP_NOT_FOUND) {
                 logger.debug("JAR NOT AVAILABLE - HTTP 404 from {}", baseRepositoryUrl);
-                return DownloadResult.failure("Artifact JAR not found in repository (404)");
+                return DownloadResult.notFound("Artifact JAR not found in repository (404)");
 
             } else {
                 throw DownloadErrorFactory.fromHttpError(artifactId, responseCode);
@@ -269,7 +364,6 @@ public class RemoteRepositoryDownloader implements HttpArtifactDownloader {
                                       String artifactId, long totalSize, long startOffset)
             throws IOException {
 
-        // Open output stream in append mode if resuming
         StandardOpenOption[] openOptions = (startOffset > 0) ?
             new StandardOpenOption[] { StandardOpenOption.CREATE, StandardOpenOption.APPEND } :
             new StandardOpenOption[] { StandardOpenOption.CREATE, StandardOpenOption.WRITE,
@@ -294,33 +388,31 @@ public class RemoteRepositoryDownloader implements HttpArtifactDownloader {
     }
 
     private boolean isNonRetryableError(DownloadResult result) {
+        if (result.isNotFound()) {
+            return true;
+        }
         return result.getErrorMessage() != null &&
-            (result.getErrorMessage().contains("404") ||
-             result.getErrorMessage().contains("403") ||
+            (result.getErrorMessage().contains("403") ||
              result.getErrorMessage().contains("401"));
     }
 
     private String buildRepositoryUrl(Artifact artifact) {
         String groupPath = artifact.getGroupId().replace('.', '/');
-        String artifactPath = artifact.getArtifactId();
         String version = artifact.getVersion();
 
-        // Build filename with classifier support
         StringBuilder fileName = new StringBuilder();
         fileName.append(artifact.getArtifactId());
-        fileName.append("-");
-        fileName.append(version);
+        fileName.append("-").append(version);
 
         String classifier = artifact.getClassifier();
         if (classifier != null && !classifier.isEmpty()) {
-            fileName.append("-");
-            fileName.append(classifier);
+            fileName.append("-").append(classifier);
         }
 
         fileName.append(".jar");
 
         return String.format("%s/%s/%s/%s/%s",
-            baseRepositoryUrl, groupPath, artifactPath, version, fileName.toString());
+            baseRepositoryUrl, groupPath, artifact.getArtifactId(), version, fileName.toString());
     }
 
     private String formatArtifactId(Artifact artifact) {
@@ -331,7 +423,7 @@ public class RemoteRepositoryDownloader implements HttpArtifactDownloader {
         if (url == null) {
             return "";
         }
-        // Remove trailing slash for consistency
         return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
     }
 }
+

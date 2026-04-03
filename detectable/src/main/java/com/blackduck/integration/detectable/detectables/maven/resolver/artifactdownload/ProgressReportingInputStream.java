@@ -56,10 +56,10 @@ public class ProgressReportingInputStream extends FilterInputStream {
 
         // Log initial state
         if (startOffset > 0) {
-            logger.info("  → Resuming download from byte {}", formatBytes(startOffset));
+            logger.info("  Resuming download from byte {}", formatBytes(startOffset));
         }
         if (totalSize > 0) {
-            logger.info("  → Total size: {}", formatBytes(totalSize));
+            logger.info("  Total size: {}", formatBytes(totalSize));
         }
     }
 
@@ -129,7 +129,7 @@ public class ProgressReportingInputStream extends FilterInputStream {
 
         // Build progress message
         StringBuilder message = new StringBuilder();
-        message.append("  → Progress: ");
+        message.append("  Progress: ");
         message.append(formatBytes(totalDownloaded));
 
         // Add total size and percentage if known
@@ -179,7 +179,7 @@ public class ProgressReportingInputStream extends FilterInputStream {
         Duration totalDuration = Duration.between(startTime, Instant.now());
 
         StringBuilder message = new StringBuilder();
-        message.append("  → Download complete: ");
+        message.append("  Download complete: ");
         message.append(formatBytes(totalDownloaded));
 
         if (totalDuration.toMillis() > 0) {
