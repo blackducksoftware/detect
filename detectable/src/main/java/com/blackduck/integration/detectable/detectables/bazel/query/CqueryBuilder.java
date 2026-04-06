@@ -110,6 +110,21 @@ public class CqueryBuilder {
     }
 
     /**
+     * Adds each option from the provided list directly as a command argument.
+     * Use this in the probing phase where no BazelVariableSubstitutor is involved and
+     * options must be injected as real arguments rather than substitution placeholders.
+     *
+     * @param options List of option flags to append (e.g., ["--config=myconfig"])
+     * @return This builder for chaining
+     */
+    public CqueryBuilder withOptions(List<String> options) {
+        if (options != null) {
+            this.flags.addAll(options);
+        }
+        return this;
+    }
+
+    /**
      * Specifies the output format for the query results.
      *
      * @param format Output format (BUILD, XML, JSONPROTO, LABEL_KIND)

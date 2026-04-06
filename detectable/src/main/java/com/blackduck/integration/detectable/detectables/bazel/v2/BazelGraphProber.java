@@ -7,6 +7,7 @@ import com.blackduck.integration.detectable.detectables.bazel.query.OutputFormat
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -23,17 +24,24 @@ public class BazelGraphProber {
     private final BazelCommandExecutor bazel;
     private final String target;
     private final BazelEnvironmentAnalyzer.Mode mode;
+    private final List<String> cqueryOptions;
+    private final List<String> queryOptions;
 
     /**
      * Constructor for BazelGraphProber
      * @param bazel Bazel command executor
      * @param target Bazel target to probe
      * @param mode Bazel environment mode
+     * @param cqueryOptions Additional options for bazel cquery commands (from detect.bazel.cquery.options)
+     * @param queryOptions Additional options for bazel query commands (from detect.bazel.query.options)
      */
-    public BazelGraphProber(BazelCommandExecutor bazel, String target, BazelEnvironmentAnalyzer.Mode mode) {
+    public BazelGraphProber(BazelCommandExecutor bazel, String target, BazelEnvironmentAnalyzer.Mode mode,
+                            List<String> cqueryOptions, List<String> queryOptions) {
         this.bazel = bazel;
         this.target = target;
         this.mode = mode;
+        this.cqueryOptions = cqueryOptions != null ? cqueryOptions : Collections.emptyList();
+        this.queryOptions = queryOptions != null ? queryOptions : Collections.emptyList();
     }
 
     /**
@@ -69,7 +77,7 @@ public class BazelGraphProber {
         }
         // Probe for http_archive and related rules
         try {
-            HttpFamilyProber httpProber = new HttpFamilyProber(bazel, mode);
+            HttpFamilyProber httpProber = new HttpFamilyProber(bazel, mode, queryOptions);
             httpFamily = httpProber.detect(target);
         } catch (Exception e) {
             logger.debug("HTTP_ARCHIVE family probe failed: {}", e.getMessage());
@@ -105,6 +113,7 @@ public class BazelGraphProber {
         List<String> queryArgs = BazelQueryBuilder.cquery()
             .kind(JAVA_IMPORT_RULE_PATTERN, BazelQueryBuilder.deps(target))
             .withNoImplicitDeps()
+            .withOptions(cqueryOptions)
             .withOutput(OutputFormat.BUILD)
             .build();
 
@@ -129,6 +138,7 @@ public class BazelGraphProber {
         List<String> queryArgs = BazelQueryBuilder.cquery()
             .filter(MAVEN_JAR_FILTER_PATTERN, BazelQueryBuilder.deps(target))
             .withNoImplicitDeps()
+            .withOptions(cqueryOptions)
             .build();
 
         Optional<String> out = bazel.executeToString(queryArgs);
@@ -149,6 +159,7 @@ public class BazelGraphProber {
         List<String> queryArgs = BazelQueryBuilder.cquery()
             .kind(HASKELL_CABAL_RULE_PATTERN, BazelQueryBuilder.deps(target))
             .withNoImplicitDeps()
+            .withOptions(cqueryOptions)
             .withOutput(OutputFormat.LABEL_KIND)
             .build();
 
