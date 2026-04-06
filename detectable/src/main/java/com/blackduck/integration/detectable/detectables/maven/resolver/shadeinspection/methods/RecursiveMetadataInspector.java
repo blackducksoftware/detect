@@ -5,6 +5,7 @@ package com.blackduck.integration.detectable.detectables.maven.resolver.shadeins
 import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.ShadedDependencyInspector;
 import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.model.DiscoveredDependency;
 
+import org.eclipse.aether.artifact.Artifact;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,12 +15,12 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import java.util.jar.Manifest;
-import java.util.jar.Attributes;
 
 /**
  * Scans a JAR file for all embedded pom.properties files under META-INF/maven/.
@@ -33,6 +34,17 @@ import java.util.jar.Attributes;
 public class RecursiveMetadataInspector implements ShadedDependencyInspector {
 
     private static final Logger logger = LoggerFactory.getLogger(RecursiveMetadataInspector.class);
+
+    private final Artifact hostArtifact;
+
+    /**
+     * Initializes the inspector with the host artifact for reliable self-reference exclusion.
+     *
+     * @param hostArtifact The host artifact whose JAR is being inspected (used to exclude self-reference)
+     */
+    public RecursiveMetadataInspector(Artifact hostArtifact) {
+        this.hostArtifact = hostArtifact;
+    }
 
     /**
      * Iterates over every entry in the JAR, looking for pom.properties files.
@@ -52,18 +64,32 @@ public class RecursiveMetadataInspector implements ShadedDependencyInspector {
         logger.debug("[Method 2] Scanning all entries for embedded pom.properties files.");
         logger.debug("========================================================================");
 
-        // Step 1: Determine the host JAR's own coordinates so we can exclude it from results
-        // This prevents reporting the JAR as a shaded dependency of itself
-        logger.debug("[Method 2] Step 1 - Determining host JAR coordinates to exclude self-reference...");
-        HostJarCoordinates hostCoordinates = extractHostJarCoordinates(jarFile);
+        // Step 1: Host JAR coordinates are provided via constructor
+        logger.debug("[Method 2] Step 1 - Using provided host artifact coordinates for self-reference exclusion...");
 
-        if (hostCoordinates != null) {
+        if (hostArtifact != null) {
             logger.debug("[Method 2] Step 1 - Host JAR identified as: {}:{}:{}",
-                    hostCoordinates.groupId, hostCoordinates.artifactId, hostCoordinates.version);
+                    hostArtifact.getGroupId(), hostArtifact.getArtifactId(), hostArtifact.getVersion());
         } else {
-            logger.warn("[Method 2] Step 1 - Could not determine host JAR coordinates. " +
+            logger.warn("[Method 2] Step 1 - Host artifact not provided. " +
                     "Self-reference exclusion may not work correctly.");
         }
+
+        // Step 1.5: Pre-scan all JAR entries to build a set of class file directory prefixes
+        // This is used to detect ghost dependencies (metadata without classes)
+        logger.debug("[Method 2] Step 1.5 - Pre-scanning JAR entries for .class file prefixes...");
+        Set<String> classPathPrefixes = new HashSet<String>();
+        Enumeration<JarEntry> prePassEntries = jarFile.entries();
+        while (prePassEntries.hasMoreElements()) {
+            String entryName = prePassEntries.nextElement().getName();
+            if (entryName.endsWith(".class")) {
+                int lastSlash = entryName.lastIndexOf('/');
+                if (lastSlash > 0) {
+                    classPathPrefixes.add(entryName.substring(0, lastSlash + 1));
+                }
+            }
+        }
+        logger.debug("[Method 2] Step 1.5 - Found {} unique class path prefixes in JAR.", classPathPrefixes.size());
 
         // Step 2: Walk through every entry inside the JAR archive
         logger.debug("[Method 2] Step 2 - Scanning all JAR entries for pom.properties files...");
@@ -71,6 +97,7 @@ public class RecursiveMetadataInspector implements ShadedDependencyInspector {
         int scannedCount = 0;
         int skippedHostCount = 0;
         int skippedInvalidCount = 0;
+        int skippedGhostCount = 0;
 
         while (entries.hasMoreElements()) {
 
@@ -125,10 +152,28 @@ public class RecursiveMetadataInspector implements ShadedDependencyInspector {
 
                     // Check if this is the host JAR's own pom.properties - skip if so
                     // This prevents the JAR from reporting itself as a shaded dependency
-                    if (isHostJar(hostCoordinates, groupId, artifactId)) {
+                    if (hostArtifact != null
+                            && hostArtifact.getGroupId().equals(groupId)
+                            && hostArtifact.getArtifactId().equals(artifactId)) {
                         logger.debug("[Method 2] Step 2 - Skipping host JAR's own coordinates: {}:{}:{}",
                                 groupId, artifactId, version);
                         skippedHostCount++;
+                        continue;
+                    }
+
+                    // Check for ghost dependency: metadata exists but no .class files for this groupId
+                    String expectedClassPrefix = groupId.replace('.', '/') + "/";
+                    boolean hasClasses = false;
+                    for (String prefix : classPathPrefixes) {
+                        if (prefix.startsWith(expectedClassPrefix)) {
+                            hasClasses = true;
+                            break;
+                        }
+                    }
+                    if (!hasClasses) {
+                        logger.debug("[Method 2] Step 2 - Skipping ghost dependency (no .class files found "
+                                + "for prefix '{}'): {}:{}:{}", expectedClassPrefix, groupId, artifactId, version);
+                        skippedGhostCount++;
                         continue;
                     }
 
@@ -150,6 +195,7 @@ public class RecursiveMetadataInspector implements ShadedDependencyInspector {
         logger.debug("[Method 2] Step 3 - Total entries scanned: {}", scannedCount);
         logger.debug("[Method 2] Step 3 - Host JAR entries skipped (self-reference): {}", skippedHostCount);
         logger.debug("[Method 2] Step 3 - Invalid entries skipped (missing fields): {}", skippedInvalidCount);
+        logger.debug("[Method 2] Step 3 - Ghost entries skipped (metadata without classes): {}", skippedGhostCount);
         logger.debug("[Method 2] Step 3 - Shaded dependencies found: {}", discoveredDependencies.size());
         logger.debug("------------------------------------------------------------------------");
 
@@ -185,147 +231,4 @@ public class RecursiveMetadataInspector implements ShadedDependencyInspector {
         return props;
     }
 
-    /**
-     * Extracts the host JAR's own Maven coordinates by examining its pom.properties or MANIFEST.MF.
-     * This is used to exclude the host JAR from the list of shaded dependencies.
-     *
-     * Strategy:
-     * 1. First, try to find exactly ONE pom.properties that matches the JAR's root structure
-     * 2. If multiple pom.properties exist, fall back to MANIFEST.MF headers
-     * 3. If neither works, return null and log a warning
-     *
-     * @param jarFile The JAR file to examine.
-     * @return The host JAR's coordinates, or null if they cannot be determined.
-     */
-    private HostJarCoordinates extractHostJarCoordinates(JarFile jarFile) {
-        String hostGroupId = null;
-        String hostArtifactId = null;
-        String hostVersion = null;
-
-        // Strategy 1: Try to get coordinates from MANIFEST.MF first (most reliable)
-        // Many JARs include Implementation-* or Bundle-* headers that identify them
-        try {
-            Manifest manifest = jarFile.getManifest();
-            if (manifest != null) {
-                Attributes attrs = manifest.getMainAttributes();
-
-                // Try standard Implementation headers first
-                String implTitle = attrs.getValue("Implementation-Title");
-                String implVersion = attrs.getValue("Implementation-Version");
-                String implVendorId = attrs.getValue("Implementation-Vendor-Id");
-
-                // Try Bundle headers (OSGi)
-                String bundleSymbolicName = attrs.getValue("Bundle-SymbolicName");
-                String bundleVersion = attrs.getValue("Bundle-Version");
-
-                // Try to construct coordinates from manifest
-                if (implVendorId != null && !implVendorId.isEmpty()) {
-                    hostGroupId = implVendorId;
-                }
-                if (implTitle != null && !implTitle.isEmpty()) {
-                    hostArtifactId = implTitle;
-                } else if (bundleSymbolicName != null && !bundleSymbolicName.isEmpty()) {
-                    // Bundle-SymbolicName may contain directives like ;singleton:=true
-                    int semicolon = bundleSymbolicName.indexOf(';');
-                    hostArtifactId = semicolon > 0 ? bundleSymbolicName.substring(0, semicolon) : bundleSymbolicName;
-                }
-                if (implVersion != null && !implVersion.isEmpty()) {
-                    hostVersion = implVersion;
-                } else if (bundleVersion != null && !bundleVersion.isEmpty()) {
-                    hostVersion = bundleVersion;
-                }
-
-                if (hostGroupId != null && hostArtifactId != null) {
-                    logger.debug("[Method 2] Step 1 - Host coordinates extracted from MANIFEST.MF");
-                    return new HostJarCoordinates(hostGroupId, hostArtifactId, hostVersion);
-                }
-            }
-        } catch (Exception e) {
-            logger.warn("[Method 2] Step 1 - Could not read MANIFEST.MF: {}", e.getMessage());
-        }
-
-        // Strategy 2: Find the first pom.properties file (works for simple JARs)
-        // In a properly structured JAR, the first pom.properties under META-INF/maven/ is usually the host's
-        try {
-            Enumeration<JarEntry> entries = jarFile.entries();
-
-            while (entries.hasMoreElements()) {
-                JarEntry entry = entries.nextElement();
-                String name = entry.getName();
-
-                if (name.startsWith("META-INF/maven/") && name.endsWith("pom.properties")) {
-                    // The path structure is: META-INF/maven/<groupId>/<artifactId>/pom.properties
-                    // Extract groupId and artifactId from the path itself for verification
-                    String[] parts = name.split("/");
-                    if (parts.length >= 5) {
-                        // parts[0] = "META-INF", parts[1] = "maven", parts[2] = groupId, parts[3] = artifactId
-
-                        // Read the actual properties to get version and verify
-                        InputStream is = null;
-                        try {
-                            is = jarFile.getInputStream(entry);
-                            Properties props = loadPropertiesWithUtf8(is);
-                            String propGroupId = props.getProperty("groupId");
-                            String propArtifactId = props.getProperty("artifactId");
-                            String propVersion = props.getProperty("version");
-
-                            // Use the first valid pom.properties found as the host
-                            if (propGroupId != null && propArtifactId != null) {
-                                logger.debug("[Method 2] Step 1 - Host coordinates extracted from first pom.properties: {}", name);
-                                return new HostJarCoordinates(propGroupId.trim(), propArtifactId.trim(),
-                                        propVersion != null ? propVersion.trim() : "UNKNOWN");
-                            }
-                        } finally {
-                            if (is != null) {
-                                try {
-                                    is.close();
-                                } catch (Exception ignored) {
-                                    // Ignore close exceptions
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            logger.warn("[Method 2] Step 1 - Error scanning for host pom.properties: {}", e.getMessage());
-        }
-
-        // Could not determine host coordinates
-        return null;
-    }
-
-    /**
-     * Checks if the given coordinates match the host JAR's own coordinates.
-     * Comparison is done on groupId and artifactId only (version may differ in some edge cases).
-     *
-     * @param hostCoordinates The host JAR's coordinates (could be null).
-     * @param groupId         The groupId to check.
-     * @param artifactId      The artifactId to check.
-     * @return true if this is the host JAR, false otherwise.
-     */
-    private boolean isHostJar(HostJarCoordinates hostCoordinates, String groupId, String artifactId) {
-        if (hostCoordinates == null) {
-            // Can't determine, so don't exclude anything
-            return false;
-        }
-
-        // Match on groupId and artifactId (case-sensitive, as Maven coordinates are case-sensitive)
-        return hostCoordinates.groupId.equals(groupId) && hostCoordinates.artifactId.equals(artifactId);
-    }
-
-    /**
-     * Simple data class to hold the host JAR's Maven coordinates.
-     */
-    private static class HostJarCoordinates {
-        final String groupId;
-        final String artifactId;
-        final String version;
-
-        HostJarCoordinates(String groupId, String artifactId, String version) {
-            this.groupId = groupId;
-            this.artifactId = artifactId;
-            this.version = version;
-        }
-    }
 }

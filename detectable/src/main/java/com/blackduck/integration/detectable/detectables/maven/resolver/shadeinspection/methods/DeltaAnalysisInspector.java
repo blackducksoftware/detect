@@ -6,12 +6,14 @@ import com.blackduck.integration.detectable.detectables.maven.resolver.model.Jav
 import com.blackduck.integration.detectable.detectables.maven.resolver.model.JavaDependency;
 import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.ShadedDependencyInspector;
 import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.model.DiscoveredDependency;
+import org.eclipse.aether.artifact.Artifact;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,16 +53,19 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
     // A mapping of GA -> Set of exact child GAVs extracted from the Aether tree
     private final Map<String, Set<String>> aetherDirectChildrenByGa;
     private final ProjectBuilder projectBuilder;
+    private final Artifact hostArtifact;
 
     /**
-     * Initializes the inspector with the Aether graph context and ProjectBuilder.
+     * Initializes the inspector with the Aether graph context, ProjectBuilder, and host artifact.
      *
      * @param aetherDirectChildrenByGa A map of Artifact GA to a Set of its direct children GAVs from Aether resolution
      * @param projectBuilder The ProjectBuilder instance used to parse and resolve POMs with full BOM/Parent support
+     * @param hostArtifact The host artifact whose JAR is being inspected (used to locate the correct POM)
      */
-    public DeltaAnalysisInspector(Map<String, Set<String>> aetherDirectChildrenByGa, ProjectBuilder projectBuilder) {
+    public DeltaAnalysisInspector(Map<String, Set<String>> aetherDirectChildrenByGa, ProjectBuilder projectBuilder, Artifact hostArtifact) {
         this.aetherDirectChildrenByGa = aetherDirectChildrenByGa != null ? aetherDirectChildrenByGa : new HashMap<String, Set<String>>();
         this.projectBuilder = projectBuilder;
+        this.hostArtifact = hostArtifact;
         logger.debug("[Method 1] DeltaAnalysisInspector initialized with {} GA entries in Aether map.", this.aetherDirectChildrenByGa.size());
     }
 
@@ -69,17 +74,27 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
         List<DiscoveredDependency> discoveredDependencies = new ArrayList<DiscoveredDependency>();
         logger.debug("[Method 1] Starting Delta Analysis for JAR: {}", jarFile.getName());
 
+        // Guard: host artifact is required for targeted POM lookup
+        if (hostArtifact == null) {
+            logger.warn("[Method 1] Host artifact not provided. Delta analysis skipped.");
+            return discoveredDependencies;
+        }
+
         JarEntry originalPomEntry = null;
 
-        // Step 1: Locate the Original POM inside the JAR
+        // Step 1: Locate the Original POM inside the JAR using targeted path lookup
         logger.debug("[Method 1] Step 1 - Scanning JAR entries for Original pom.xml...");
+        String targetPath = "META-INF/maven/" + hostArtifact.getGroupId()
+                + "/" + hostArtifact.getArtifactId() + "/pom.xml";
+        logger.debug("[Method 1] Step 1 - Looking for POM at exact path: {}", targetPath);
+
         Enumeration<JarEntry> entries = jarFile.entries();
         while (entries.hasMoreElements()) {
             JarEntry entry = entries.nextElement();
             String name = entry.getName();
 
-            // The original POM is tucked inside META-INF/maven/<groupId>/<artifactId>/pom.xml
-            if (name.startsWith("META-INF/maven/") && name.endsWith("pom.xml")) {
+            // Match only the exact expected path for the host artifact's POM
+            if (name.equals(targetPath)) {
                 originalPomEntry = entry;
                 logger.debug("[Method 1] Step 1 - Found original POM: {}", name);
                 break;
@@ -87,17 +102,21 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
         }
 
         if (originalPomEntry == null) {
-            logger.debug("[Method 1] Step 1 - Original pom.xml not found in JAR. Delta analysis skipped.");
+            logger.debug("[Method 1] Step 1 - Original pom.xml not found at expected path '{}'. Delta analysis skipped.", targetPath);
             return discoveredDependencies;
         }
 
         File tempPomFile = null;
+        Path tempDir = null;
         try {
-            // Step 2: Extract the POM to a temporary file so ProjectBuilder can consume it
-            // Use GAV-based naming for better debugging and potential caching
+            // Step 2: Extract the POM to a deterministic temporary directory so ProjectBuilder cache works
+            // Use GAV-based naming for cache hits and better debugging
             logger.debug("[Method 1] Step 2 - Extracting original POM to temporary file...");
-            String tempFileName = buildGavBasedTempFileName(originalPomEntry.getName());
-            tempPomFile = Files.createTempFile(tempFileName, ".xml").toFile();
+            tempDir = Files.createTempDirectory(
+                "extracted-pom-" + hostArtifact.getGroupId()
+                + "_" + hostArtifact.getArtifactId()
+                + "_" + hostArtifact.getVersion());
+            tempPomFile = tempDir.resolve("pom.xml").toFile();
             logger.trace("[Method 1] Step 2 - Temporary POM file: {}", tempPomFile.getAbsolutePath());
 
             try (InputStream is = jarFile.getInputStream(originalPomEntry)) {
@@ -120,9 +139,9 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
             logger.debug("[Method 1] Step 3 - Host artifact coordinates - GroupId: {}, ArtifactId: {}", hostCoords.getGroupId(), hostCoords.getArtifactId());
             logger.debug("[Method 1] Step 3 - Host GA: {}", hostGa);
 
-            // Step 4: Extract and format the resolved dependencies from MavenProject
-            logger.debug("[Method 1] Step 4 - Extracting resolved dependencies from MavenProject...");
-            Set<String> originalDependencies = new HashSet<String>();
+            // Step 4: Extract and format the resolved dependencies from MavenProject using GA-based map
+            logger.debug("[Method 1] Step 4 - Extracting resolved dependencies from MavenProject (GA-based)...");
+            Map<String, String> originalDepsByGa = new HashMap<String, String>();
             if (mavenProject.getDependencies() != null) {
                 logger.debug("[Method 1] Step 4 - MavenProject has {} total dependencies.", mavenProject.getDependencies().size());
 
@@ -136,9 +155,10 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
 
                     JavaCoordinates coords = dep.getCoordinates();
                     if (coords != null && coords.getGroupId() != null && coords.getArtifactId() != null && coords.getVersion() != null) {
+                        String ga = coords.getGroupId() + ":" + coords.getArtifactId();
                         String gav = coords.getGroupId() + ":" + coords.getArtifactId() + ":" + coords.getVersion();
-                        originalDependencies.add(gav);
-                        logger.trace("[Method 1] Step 4 - Added original dependency: {}", gav);
+                        originalDepsByGa.put(ga, gav);
+                        logger.trace("[Method 1] Step 4 - Added original dependency GA '{}' -> GAV '{}'", ga, gav);
                     } else {
                         logger.trace("[Method 1] Step 4 - Skipping dependency with incomplete coordinates: {}", coords);
                     }
@@ -147,9 +167,9 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
                 logger.debug("[Method 1] Step 4 - MavenProject has no dependencies.");
             }
 
-            logger.debug("[Method 1] Step 4 - Original POM has {} dependencies after scope filtering.", originalDependencies.size());
+            logger.debug("[Method 1] Step 4 - Original POM has {} dependencies (GA-keyed) after scope filtering.", originalDepsByGa.size());
 
-            // Step 5: Compare with Aether and calculate the strict delta
+            // Step 5: Compare with Aether using GA-based lookup to handle version bumps
             logger.debug("[Method 1] Step 5 - Retrieving Aether graph dependencies for host: {}", hostGa);
             Set<String> aetherChildren = aetherDirectChildrenByGa.containsKey(hostGa)
                     ? aetherDirectChildrenByGa.get(hostGa)
@@ -160,22 +180,40 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
                 logger.trace("[Method 1] Step 5 - Aether dependency: {}", aetherDep);
             }
 
-            // Set Difference: Original POM GAVs - Aether Graph GAVs = Shaded dependencies
-            int originalSize = originalDependencies.size();
-            originalDependencies.removeAll(aetherChildren);
-            int shadedCount = originalDependencies.size();
-
-            logger.debug("[Method 1] Step 5 - Delta calculation: {} original - {} aether = {} shaded dependency(ies).", originalSize, aetherChildren.size(), shadedCount);
-
-            for (String shadedGav : originalDependencies) {
-                logger.info("[Method 1] Step 5 - Shaded dependency detected: {}", shadedGav);
-                discoveredDependencies.add(new DiscoveredDependency(shadedGav, "Delta Analysis (ProjectBuilder)"));
+            // Build GA key set from Aether children for GA-based comparison
+            Set<String> aetherGaKeys = new HashSet<String>();
+            for (String aetherGav : aetherChildren) {
+                String[] parts = aetherGav.split(":");
+                if (parts.length >= 2) {
+                    aetherGaKeys.add(parts[0] + ":" + parts[1]);
+                }
             }
+            logger.debug("[Method 1] Step 5 - Built {} GA keys from Aether children for comparison.", aetherGaKeys.size());
+
+            // GA-based Delta: If original GA is NOT in Aether GA keys, it's shaded
+            int originalSize = originalDepsByGa.size();
+            int shadedCount = 0;
+
+            for (Map.Entry<String, String> depEntry : originalDepsByGa.entrySet()) {
+                String gaKey = depEntry.getKey();
+                String gavValue = depEntry.getValue();
+
+                if (!aetherGaKeys.contains(gaKey)) {
+                    // This GA is not in the Aether graph -> shaded dependency
+                    logger.info("[Method 1] Step 5 - Shaded dependency detected: {}", gavValue);
+                    discoveredDependencies.add(new DiscoveredDependency(gavValue, "Delta Analysis (ProjectBuilder)"));
+                    shadedCount++;
+                } else {
+                    logger.trace("[Method 1] Step 5 - Dependency resolved by Aether (GA match): {}", gaKey);
+                }
+            }
+
+            logger.debug("[Method 1] Step 5 - GA-based delta calculation: {} original - {} aether GA keys = {} shaded dependency(ies).", originalSize, aetherGaKeys.size(), shadedCount);
 
         } catch (Exception e) {
             logger.error("[Method 1] Failed to process ProjectBuilder delta math for JAR {}: {}", jarFile.getName(), e.getMessage(), e);
         } finally {
-            // Step 6: Graceful cleanup to prevent disk leaks
+            // Step 6: Graceful cleanup to prevent disk leaks (delete file and directory)
             if (tempPomFile != null && tempPomFile.exists()) {
                 logger.trace("[Method 1] Step 6 - Cleaning up temporary POM file: {}", tempPomFile.getAbsolutePath());
                 try {
@@ -186,77 +224,20 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
                     tempPomFile.deleteOnExit();
                 }
             }
+            if (tempDir != null) {
+                try {
+                    Files.delete(tempDir);
+                    logger.trace("[Method 1] Step 6 - Successfully deleted temporary directory.");
+                } catch (Exception e) {
+                    logger.warn("[Method 1] Step 6 - Failed to delete temporary directory: {}", tempDir);
+                    tempDir.toFile().deleteOnExit();
+                }
+            }
         }
 
         logger.debug("[Method 1] Delta Analysis completed for JAR: {}", jarFile.getName());
         return discoveredDependencies;
     }
 
-    /**
-     * Builds a GAV-based temp file name from the POM entry path.
-     *
-     * <p>The POM path follows Maven convention: META-INF/maven/{groupId}/{artifactId}/pom.xml
-     * This method extracts the groupId and artifactId to create a meaningful temp file name.
-     *
-     * <p>Example:
-     *   Input:  "META-INF/maven/org.springframework/spring-core/pom.xml"
-     *   Output: "extracted-pom-org.springframework_spring-core-"
-     *
-     * @param pomEntryPath the path to the POM entry inside the JAR
-     * @return a sanitized prefix for the temp file name
-     */
-    private String buildGavBasedTempFileName(String pomEntryPath) {
-        // Default fallback
-        String prefix = "extracted-pom-";
-
-        if (pomEntryPath == null || pomEntryPath.isEmpty()) {
-            return prefix;
-        }
-
-        try {
-            // Expected format: META-INF/maven/<groupId>/<artifactId>/pom.xml
-            // Split by "/" and extract groupId and artifactId
-            String[] parts = pomEntryPath.split("/");
-
-            // Validate structure: should have at least 5 parts
-            // [META-INF, maven, groupId, artifactId, pom.xml]
-            if (parts.length >= 5 && "META-INF".equals(parts[0]) && "maven".equals(parts[1])) {
-                String groupId = parts[2];
-                String artifactId = parts[3];
-
-                // Sanitize for filesystem: replace dots with underscores, remove special chars
-                String sanitizedGroupId = sanitizeForFileName(groupId);
-                String sanitizedArtifactId = sanitizeForFileName(artifactId);
-
-                prefix = "extracted-pom-" + sanitizedGroupId + "_" + sanitizedArtifactId + "-";
-                logger.trace("[Method 1] Built GAV-based temp file prefix: {}", prefix);
-            }
-        } catch (Exception e) {
-            logger.trace("[Method 1] Could not parse GAV from POM path '{}', using default prefix", pomEntryPath);
-        }
-
-        return prefix;
-    }
-
-    /**
-     * Sanitizes a string for use in file names.
-     * Replaces characters that are problematic in file paths with underscores.
-     */
-    private String sanitizeForFileName(String input) {
-        if (input == null) {
-            return "unknown";
-        }
-        // Replace problematic characters: colons, slashes, backslashes, spaces
-        return input.replace(':', '_')
-                    .replace('/', '_')
-                    .replace('\\', '_')
-                    .replace(' ', '_')
-                    .replace('<', '_')
-                    .replace('>', '_')
-                    .replace('"', '_')
-                    .replace('|', '_')
-                    .replace('?', '_')
-                    .replace('*', '_');
-    }
-
 }
+

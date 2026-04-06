@@ -282,15 +282,16 @@ public class MavenResolverDetectable extends Detectable {
 
                 // Collect all Aether dependencies from both compile and test scopes
                 List<org.eclipse.aether.graph.Dependency> aetherDependencies = new ArrayList<org.eclipse.aether.graph.Dependency>();
+                Set<String> seenGavs = new HashSet<>();
 
                 if (collectResultCompile != null && collectResultCompile.getRoot() != null) {
-                    extractAetherDependenciesFromNode(collectResultCompile.getRoot(), aetherDependencies);
+                    extractAetherDependenciesFromNode(collectResultCompile.getRoot(), aetherDependencies, seenGavs);
                     logger.debug("Extracted {} dependencies from compile scope", aetherDependencies.size());
                 }
 
                 int compileCount = aetherDependencies.size();
                 if (includeTestScope && collectResultTest != null && collectResultTest.getRoot() != null) {
-                    extractAetherDependenciesFromNode(collectResultTest.getRoot(), aetherDependencies);
+                    extractAetherDependenciesFromNode(collectResultTest.getRoot(), aetherDependencies, seenGavs);
                     logger.debug("Extracted {} additional dependencies from test scope", aetherDependencies.size() - compileCount);
                 }
 
@@ -802,12 +803,15 @@ public class MavenResolverDetectable extends Detectable {
     /**
      * Recursively extracts all Aether dependencies from a dependency node tree.
      * This traverses the Aether dependency graph and collects all unique dependencies.
+     * Uses a Set for O(1) duplicate detection instead of linear search.
      *
      * @param node The root dependency node to traverse
      * @param aetherDependencies The list to collect Aether dependencies into
+     * @param seenGavs Set of already-seen GAV keys for O(1) deduplication
      */
     private void extractAetherDependenciesFromNode(DependencyNode node,
-                                                    List<org.eclipse.aether.graph.Dependency> aetherDependencies) {
+                                                    List<org.eclipse.aether.graph.Dependency> aetherDependencies,
+                                                    Set<String> seenGavs) {
         if (node == null) {
             return;
         }
@@ -815,16 +819,11 @@ public class MavenResolverDetectable extends Detectable {
         // Add current node's dependency if it exists
         org.eclipse.aether.graph.Dependency dependency = node.getDependency();
         if (dependency != null && dependency.getArtifact() != null) {
-            // Avoid duplicates by checking if already added
-            boolean alreadyExists = false;
-            for (org.eclipse.aether.graph.Dependency existing : aetherDependencies) {
-                if (isSameArtifact(existing.getArtifact(), dependency.getArtifact())) {
-                    alreadyExists = true;
-                    break;
-                }
-            }
-
-            if (!alreadyExists) {
+            // O(1) duplicate check using Set
+            String gavKey = dependency.getArtifact().getGroupId() + ":"
+                          + dependency.getArtifact().getArtifactId() + ":"
+                          + dependency.getArtifact().getVersion();
+            if (seenGavs.add(gavKey)) {  // add() returns false if already present
                 aetherDependencies.add(dependency);
             }
         }
@@ -832,22 +831,9 @@ public class MavenResolverDetectable extends Detectable {
         // Recursively process children
         if (node.getChildren() != null) {
             for (DependencyNode child : node.getChildren()) {
-                extractAetherDependenciesFromNode(child, aetherDependencies);
+                extractAetherDependenciesFromNode(child, aetherDependencies, seenGavs);
             }
         }
-    }
-
-    /**
-     * Checks if two Aether artifacts represent the same artifact (same coordinates).
-     *
-     * @param a1 First artifact
-     * @param a2 Second artifact
-     * @return true if they have the same groupId, artifactId, and version
-     */
-    private boolean isSameArtifact(Artifact a1, Artifact a2) {
-        return a1.getGroupId().equals(a2.getGroupId()) &&
-               a1.getArtifactId().equals(a2.getArtifactId()) &&
-               a1.getVersion().equals(a2.getVersion());
     }
 
     private void debugPrintBdioGraph(DependencyGraph graph, Set<Dependency> dependencies, int depth) {

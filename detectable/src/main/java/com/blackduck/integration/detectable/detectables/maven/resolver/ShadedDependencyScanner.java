@@ -79,9 +79,7 @@ public class ShadedDependencyScanner {
             buildAetherDirectChildrenMap(testResult.getRoot(), aetherDirectChildrenByGa);
         }
 
-        // Initialize inspectors
-        List<ShadedDependencyInspector> inspectors = createInspectors(aetherDirectChildrenByGa, projectBuilder);
-        logger.debug("Registered {} inspector(s) for shaded dependency detection.", inspectors.size());
+        logger.debug("Built Aether direct children map with {} GA entries.", aetherDirectChildrenByGa.size());
 
         int processedCount = 0;
         int jarsWithShadedDeps = 0;
@@ -101,6 +99,12 @@ public class ShadedDependencyScanner {
                         artifactGav, jarPath);
                 continue;
             }
+
+            // Create inspectors per-artifact with the current artifact as hostArtifact
+            List<ShadedDependencyInspector> inspectors = new ArrayList<ShadedDependencyInspector>();
+            inspectors.add(new DeltaAnalysisInspector(aetherDirectChildrenByGa, projectBuilder, artifact));  // Method 1
+            inspectors.add(new RecursiveMetadataInspector(artifact));  // Method 2
+            logger.debug("Created {} inspector(s) for artifact: {}", inspectors.size(), artifactGav);
 
             try {
                 List<DiscoveredDependency> shadedDeps = scanSingleJar(jarPath, inspectors, artifactGav);
@@ -125,21 +129,6 @@ public class ShadedDependencyScanner {
         logger.info("  - Total shaded dependencies found: {}", totalShadedDepsFound);
 
         return results;
-    }
-
-    /**
-     * Creates and returns the list of inspectors to use for shaded dependency detection.
-     *
-     * @return List of initialized inspectors
-     */
-    private List<ShadedDependencyInspector> createInspectors(
-            Map<String, java.util.Set<String>> aetherDirectChildrenByGa,
-            ProjectBuilder projectBuilder) {
-        List<ShadedDependencyInspector> inspectors = new ArrayList<ShadedDependencyInspector>();
-//        inspectors.add(new DeltaAnalysisInspector());        // Method 1: Delta analysis of POM files
-        inspectors.add(new DeltaAnalysisInspector(aetherDirectChildrenByGa, projectBuilder));        // Method 1: Delta analysis of POM files
-        inspectors.add(new RecursiveMetadataInspector());    // Method 2: Recursive metadata scanning
-        return inspectors;
     }
 
     /**
