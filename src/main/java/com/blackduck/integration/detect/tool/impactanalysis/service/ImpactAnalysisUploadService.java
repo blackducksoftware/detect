@@ -49,7 +49,7 @@ public class ImpactAnalysisUploadService {
 
     public CodeLocationCreationData<ImpactAnalysisBatchOutput> uploadImpactAnalysis(ImpactAnalysisBatch impactAnalysisBatch) throws IntegrationException {
         ImpactAnalysisCodeLocationCreationRequest uploadRequest = createUploadRequest(impactAnalysisBatch);
-        return codeLocationCreationService.createCodeLocations(uploadRequest);
+        return codeLocationCreationService.createCodeLocationsWithoutNotificationTaskRange(uploadRequest);
     }
 
     public CodeLocationCreationData<ImpactAnalysisBatchOutput> uploadImpactAnalysis(ImpactAnalysis impactAnalysis) throws IntegrationException {
