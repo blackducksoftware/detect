@@ -24,6 +24,8 @@
 * Support for pnpm now extends to 10.32.1.
 * npm detectors now allow for aliases to be used when specifying dependencies in the package.json file.
 * Ivy CLI Detector, leveraging the `ivy:dependencytree` Ant task to extract direct and transitive dependencies for Ant + Ivy projects. For further information, see [Ivy (Ant) support](packagemgrs/ivy.md).
+* Changed the default output directory of the Quack Patch feature to current working directory.
+* Introduced a new flag `detect.quack.patch.output` to control the path for quack patch output information. If not set, the current working directory will be used as the default.
 
 ### Resolved issues
 
