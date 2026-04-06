@@ -11,7 +11,7 @@ import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.dependency.Dependency;
 import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
-import com.blackduck.integration.detectable.detectables.conan.Constants;
+import com.blackduck.integration.detectable.detectables.meson.MesonConstants;
 import com.google.gson.Gson;
 
 public class MesonDependencyFileParser {
@@ -42,7 +42,7 @@ public class MesonDependencyFileParser {
                         && StringUtils.isNotBlank(dep.getName())
                         && StringUtils.isNotBlank(dep.getVersion())) {
 
-                    ExternalId dependencyExternalId = externalIdFactory.createNameVersionExternalId(Constants.conanForge, dep.getName(), dep.getVersion());
+                    ExternalId dependencyExternalId = externalIdFactory.createNameVersionExternalId(MesonConstants.MESON_FORGE, dep.getName(), dep.getVersion());
                     Dependency dependency = new Dependency(dep.getName(), dep.getVersion(), dependencyExternalId);
                     logger.trace("Adding dependency: {}", dependency.getExternalId());
                     graph.addDirectDependency(dependency);

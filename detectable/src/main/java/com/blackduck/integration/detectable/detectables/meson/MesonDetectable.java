@@ -14,7 +14,7 @@ import com.blackduck.integration.detectable.detectable.result.PassedDetectableRe
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 
-@DetectableInfo(name = "Meson", language = "C/C++", forge = "conan", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "Files: meson.build, intro-projectinfo.json, intro-dependencies.json")
+@DetectableInfo(name = "Meson", language = "C/C++", forge = "meson", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "Files: meson.build, intro-projectinfo.json, intro-dependencies.json")
 public class MesonDetectable extends Detectable {
     public static final String MESON_BUILD_FILENAME = "meson.build";
     private static final String INTROSPECT_PROJECT_FILENAME = "intro-projectinfo.json";
