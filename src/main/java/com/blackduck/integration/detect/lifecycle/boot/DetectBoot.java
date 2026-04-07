@@ -12,8 +12,10 @@ import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 
 import com.blackduck.integration.configuration.config.MaskedRawValueResult;
+import com.blackduck.integration.configuration.property.base.TypedProperty;
 import com.blackduck.integration.configuration.property.types.enumallnone.list.AllEnumList;
 import com.blackduck.integration.configuration.property.types.path.PathValue;
 import com.blackduck.integration.detect.configuration.connection.BlackDuckConnectionDetails;
@@ -381,27 +383,38 @@ public class DetectBoot {
 
         DetectPropertiesSetting settings = serverSettings.get();
 
-        // Only report server properties if the user didn't specify correlated scanning themselves
-        if (detectConfiguration.wasPropertyProvided(DetectProperties.DETECT_CORRELATED_SCANNING_ENABLED)) {
-            return; // User already saw their configured value in the normal property output
-        }
-
-        boolean correlatedScanningEnabled = settings.isCorrelatedScanningEnabled();
-
         // Only report if the server has this enabled; don't report at all if false
-        if (!correlatedScanningEnabled) {
+        if (!settings.isCorrelatedScanningEnabled()) {
             return;
         }
 
-        String correlatedScanningValue = String.valueOf(correlatedScanningEnabled);
+        String correlatedScanningValue = String.valueOf(settings.isCorrelatedScanningEnabled());
 
-        // Publish to status.json
-        Map<String, String> serverProperties = new java.util.LinkedHashMap<>();
+        // Build the full server properties map
+        Map<String, String> serverProperties = new LinkedHashMap<>();
         serverProperties.put("detect.blackduck.correlated.scanning.enabled", correlatedScanningValue);
         List<String> scanTypes = settings.getCorrelatedScanningScanTypes();
         if (scanTypes != null && !scanTypes.isEmpty()) {
             serverProperties.put("detect.blackduck.correlated.scanning.scan.types", String.join(",", scanTypes));
         }
+
+        // Map each server property key to its corresponding DetectProperty for user-override filtering.
+        // Add new entries here as additional server-driven properties are introduced.
+        Map<String, TypedProperty<?, ?>> serverPropertyOverrides = new LinkedHashMap<>();
+        serverPropertyOverrides.put("detect.blackduck.correlated.scanning.enabled", DetectProperties.DETECT_CORRELATED_SCANNING_ENABLED);
+
+        // Remove any properties the user has already explicitly configured (they saw those in normal property output)
+        serverPropertyOverrides.forEach((key, property) -> {
+            if (detectConfiguration.wasPropertyProvided(property)) {
+                serverProperties.remove(key);
+            }
+        });
+
+        if (serverProperties.isEmpty()) {
+            return;
+        }
+
+        // Publish to status.json
         eventSystem.publishEvent(Event.BlackDuckServerPropertiesCollected, serverProperties);
 
         // Log to console
@@ -409,7 +422,7 @@ public class DetectBoot {
         logger.info("Black Duck SCA global properties:");
         logger.info("--property = value [notes]");
         logger.info("------------------------------------------------------------");
-        logger.info("detect.blackduck.correlated.scanning.enabled = {} [SCA]", correlatedScanningValue);
+        serverProperties.forEach((key, value) -> logger.info("{} = {} [SCA]", key, value));
         logger.info("------------------------------------------------------------");
         logger.info("");
 

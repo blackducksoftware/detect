@@ -14,11 +14,6 @@ import com.blackduck.integration.detect.workflow.blackduck.integratedmatching.mo
 
 public class ScanCountsPayloadCreator {
 
-    public ScanCountsPayload create(List<WaitableCodeLocationData> createdCodelocations, Map<DetectTool, Integer> additionalCounts) {
-        Map<DetectTool, Integer> countsByTool = collectCountsByTool(createdCodelocations, additionalCounts);
-        return createPayloadFromCountsByTool(countsByTool);
-    }
-
     @NotNull
     public ScanCountsPayload createPayloadFromCountsByTool(
         List<WaitableCodeLocationData> createdCodelocations,
@@ -27,17 +22,6 @@ public class ScanCountsPayloadCreator {
     ) {
         Map<DetectTool, Integer> countsByTool = collectCountsByTool(createdCodelocations, additionalCounts);
         return createPayloadFromCountsByTool(countsByTool, supportedScanTypes);
-    }
-
-    @NotNull
-    private ScanCountsPayload createPayloadFromCountsByTool(final Map<DetectTool, Integer> countsByTool) {
-        int packageManagerScanCount = countsByTool.getOrDefault(DetectTool.DETECTOR, 0)
-            + countsByTool.getOrDefault(DetectTool.BAZEL, 0)
-            + countsByTool.getOrDefault(DetectTool.DOCKER, 0);
-        int signatureScanCount = countsByTool.getOrDefault(DetectTool.SIGNATURE_SCAN, 0);
-        int binaryScanCount = countsByTool.getOrDefault(DetectTool.BINARY_SCAN, 0);
-        ScanCounts scanCounts = new ScanCounts(packageManagerScanCount, signatureScanCount, binaryScanCount);
-        return new ScanCountsPayload(scanCounts);
     }
 
     @NotNull

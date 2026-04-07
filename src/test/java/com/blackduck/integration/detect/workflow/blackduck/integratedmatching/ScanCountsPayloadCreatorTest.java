@@ -44,7 +44,8 @@ class ScanCountsPayloadCreatorTest {
         Map<DetectTool, Integer> additionalCounts = new HashMap<>();
         additionalCounts.put(DetectTool.DETECTOR, 17);
 
-        ScanCountsPayload payload = creator.create(waitableCodeLocationDataList, additionalCounts);
+        Set<String> allScanTypes = new HashSet<>(Arrays.asList("PACKAGE_MANAGER", "SIGNATURE", "BINARY"));
+        ScanCountsPayload payload = creator.createPayloadFromCountsByTool(waitableCodeLocationDataList, additionalCounts, allScanTypes);
 
         assertEquals(17, payload.getScanCounts().getPackageManager());
         assertEquals(2, payload.getScanCounts().getSignature());
@@ -89,7 +90,8 @@ class ScanCountsPayloadCreatorTest {
             iacWaitableCodeLocationData);
 
         ScanCountsPayloadCreator creator = new ScanCountsPayloadCreator();
-        ScanCountsPayload payload = creator.create(waitableCodeLocationDataList, new HashMap<>());
+        Set<String> allScanTypes = new HashSet<>(Arrays.asList("PACKAGE_MANAGER", "SIGNATURE", "BINARY"));
+        ScanCountsPayload payload = creator.createPayloadFromCountsByTool(waitableCodeLocationDataList, new HashMap<>(), allScanTypes);
 
         assertEquals(6, payload.getScanCounts().getPackageManager());
         assertEquals(0, payload.getScanCounts().getSignature());

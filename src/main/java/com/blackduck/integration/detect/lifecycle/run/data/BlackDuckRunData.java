@@ -20,6 +20,16 @@ public class BlackDuckRunData {
     private final Optional<DetectPropertiesSetting> serverDetectProperties;
     private Optional<BlackDuckVersion> blackDuckServerVersion;
 
+    private BlackDuckRunData() {
+        this.phoneHomeManager = null;
+        this.blackDuckServerConfig = null;
+        this.blackDuckServicesFactory = null;
+        this.scanMode = null;
+        this.waitAtScanLevel = false;
+        this.serverDetectProperties = Optional.empty();
+        this.blackDuckServerVersion = Optional.empty();
+    }
+
     protected BlackDuckRunData(
         PhoneHomeManager phoneHomeManager,
         BlackDuckConnectivityResult blackDuckConnectivityResult,
@@ -55,7 +65,7 @@ public class BlackDuckRunData {
     }
 
     public static BlackDuckRunData offline() {
-        return new BlackDuckRunData(null, null, null, null, false, Optional.empty());
+        return new BlackDuckRunData();
     }
 
     public static BlackDuckRunData online(
