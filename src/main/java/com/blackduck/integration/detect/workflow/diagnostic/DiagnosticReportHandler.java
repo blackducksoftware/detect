@@ -151,7 +151,7 @@ public class DiagnosticReportHandler {
         }
     }
 
-    public void appendBlackDuckServerProperties(String scanTypesValue) {
+    public void appendBlackDuckServerProperties(Map<String, String> serverProperties) {
         try {
             ReportWriter profileWriter = getReportWriter(ReportTypes.CONFIGURATION);
             profileWriter.writeSeparator();
@@ -159,7 +159,7 @@ public class DiagnosticReportHandler {
             profileWriter.writeSeparator();
             profileWriter.writeLine("--property = value [notes]");
             profileWriter.writeLine("------------------------------------------------------------");
-            profileWriter.writeLine("detect.blackduck.correlated.scanning.enabled = " + scanTypesValue + " [SCA]");
+            serverProperties.forEach((key, value) -> profileWriter.writeLine(key + " = " + value + " [SCA]"));
             profileWriter.writeLine("------------------------------------------------------------");
             profileWriter.writeLine("");
         } catch (Exception e) {

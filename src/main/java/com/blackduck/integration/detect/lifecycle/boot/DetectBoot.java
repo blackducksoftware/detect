@@ -383,19 +383,16 @@ public class DetectBoot {
 
         DetectPropertiesSetting settings = serverSettings.get();
 
-        // Only report if the server has this enabled; don't report at all if false
-        if (!settings.isCorrelatedScanningEnabled()) {
-            return;
-        }
-
-        String correlatedScanningValue = String.valueOf(settings.isCorrelatedScanningEnabled());
-
-        // Build the full server properties map
+        // Build the server properties map from whatever the server has enabled.
+        // Only include a property if its server value is worth reporting (e.g. enabled features).
+        // Add new server properties here as DetectPropertiesSetting grows.
         Map<String, String> serverProperties = new LinkedHashMap<>();
-        serverProperties.put("detect.blackduck.correlated.scanning.enabled", correlatedScanningValue);
-        List<String> scanTypes = settings.getCorrelatedScanningScanTypes();
-        if (scanTypes != null && !scanTypes.isEmpty()) {
-            serverProperties.put("detect.blackduck.correlated.scanning.scan.types", String.join(",", scanTypes));
+        if (settings.isCorrelatedScanningEnabled()) {
+            serverProperties.put("detect.blackduck.correlated.scanning.enabled", "true");
+            List<String> scanTypes = settings.getCorrelatedScanningScanTypes();
+            if (scanTypes != null && !scanTypes.isEmpty()) {
+                serverProperties.put("detect.blackduck.correlated.scanning.scan.types", String.join(",", scanTypes));
+            }
         }
 
         // Map each server property key to its corresponding DetectProperty for user-override filtering.
@@ -428,7 +425,7 @@ public class DetectBoot {
 
         // Append to diagnostic report if diagnostic mode is enabled
         if (diagnosticSystem != null) {
-            diagnosticSystem.appendBlackDuckServerProperties(correlatedScanningValue);
+            diagnosticSystem.appendBlackDuckServerProperties(serverProperties);
         }
     }
 }

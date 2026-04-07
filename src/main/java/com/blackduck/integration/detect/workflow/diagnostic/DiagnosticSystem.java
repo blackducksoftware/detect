@@ -127,9 +127,9 @@ public class DiagnosticSystem {
         logger.info("Diagnostic mode has completed.");
     }
 
-    public void appendBlackDuckServerProperties(String scanTypesValue) {
+    public void appendBlackDuckServerProperties(Map<String, String> serverProperties) {
         if (diagnosticReportHandler != null) {
-            diagnosticReportHandler.appendBlackDuckServerProperties(scanTypesValue);
+            diagnosticReportHandler.appendBlackDuckServerProperties(serverProperties);
         }
     }
 
