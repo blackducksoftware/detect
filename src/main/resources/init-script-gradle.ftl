@@ -81,9 +81,13 @@ gradle.allprojects {
         // Configure the dependencies task during configuration time
         def dependenciesTask = currentProject.tasks.getByName('dependencies')
 
-        // Set the configurations at configuration time if possible
-        if (!selectedConfigs.isEmpty()) {
-            dependenciesTask.configurations = selectedConfigs
+        // Always set configurations explicitly: null → Gradle reports everything; empty Set → reports nothing.
+        // Phantoms always get an empty Set — their configs maybe (e.g. detekt, ktlint) are injected by
+        // parent subprojects{} blocks, not real dependencies, and must never leak into scan results.
+        if (isPhantom) {
+            dependenciesTask.configurations = [] as Set
+        } else {
+            dependenciesTask.configurations = selectedConfigs as Set
         }
 
         // Set the output file at configuration time if possible
