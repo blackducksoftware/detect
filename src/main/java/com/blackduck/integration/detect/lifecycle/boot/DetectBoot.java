@@ -389,10 +389,6 @@ public class DetectBoot {
         Map<String, String> serverProperties = new LinkedHashMap<>();
         if (settings.isCorrelatedScanningEnabled()) {
             serverProperties.put("detect.blackduck.correlated.scanning.enabled", "true");
-            List<String> scanTypes = settings.getCorrelatedScanningScanTypes();
-            if (scanTypes != null && !scanTypes.isEmpty()) {
-                serverProperties.put("detect.blackduck.correlated.scanning.scan.types", String.join(",", scanTypes));
-            }
         }
 
         // Map each server property key to its corresponding DetectProperty for user-override filtering.
