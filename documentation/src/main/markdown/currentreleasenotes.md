@@ -15,8 +15,6 @@
 	* na.store.scass.blackduck.com - 34.54.95.139
 	* eu.store.scass.blackduck.com - 34.54.213.11
 	* eu.scass.blackduck.com - 34.54.38.252
-	
-* **Deprecation of Java 8 support** - In alignment with EU Cyber Resilience Act (CRA) requirements and compliance timelines, Java 8 support with be deprecated in the anticipated August/September 2026 Detect 12.0.0 release.
 
 ## Version 11.4.0
 
