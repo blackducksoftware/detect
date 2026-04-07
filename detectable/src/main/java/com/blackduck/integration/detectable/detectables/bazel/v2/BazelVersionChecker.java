@@ -12,12 +12,12 @@ import java.util.Optional;
  * Detects the installed Bazel version by running `bazel --version`.
  * Used to gate features that require a minimum Bazel version (e.g., mod graph --output json requires 7.1+).
  */
-public class BazelVersionDetector {
-    private static final Logger logger = LoggerFactory.getLogger(BazelVersionDetector.class);
+public class BazelVersionChecker {
+    private static final Logger logger = LoggerFactory.getLogger(BazelVersionChecker.class);
 
     private final BazelCommandExecutor bazel;
 
-    public BazelVersionDetector(BazelCommandExecutor bazel) {
+    public BazelVersionChecker(BazelCommandExecutor bazel) {
         this.bazel = bazel;
     }
 

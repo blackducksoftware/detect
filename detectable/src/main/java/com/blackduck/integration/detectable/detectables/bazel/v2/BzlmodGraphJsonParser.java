@@ -37,6 +37,7 @@ public class BzlmodGraphJsonParser {
     private static final String JSON_KEY_KEY = "key";
     private static final String JSON_KEY_DEPENDENCIES = "dependencies";
     private static final String ROOT_KEY = "<root>";
+    private static final String MODULE_KEY_SEPARATOR = "@";
 
     /**
      * Parses the JSON output and returns all unique module keys (name@version) found in the tree.
@@ -73,7 +74,7 @@ public class BzlmodGraphJsonParser {
     private void collectKeys(JsonObject node, Set<String> keys) {
         if (node.has(JSON_KEY_KEY)) {
             String key = node.get(JSON_KEY_KEY).getAsString();
-            if (!ROOT_KEY.equals(key) && key.contains("@")) {
+            if (!ROOT_KEY.equals(key) && key.contains(MODULE_KEY_SEPARATOR)) {
                 keys.add(key);
             }
         }
@@ -98,7 +99,7 @@ public class BzlmodGraphJsonParser {
      * @return Module name
      */
     public static String extractName(String moduleKey) {
-        int atIdx = moduleKey.indexOf('@');
+        int atIdx = moduleKey.indexOf(MODULE_KEY_SEPARATOR);
         return atIdx > 0 ? moduleKey.substring(0, atIdx) : moduleKey;
     }
 
@@ -110,7 +111,7 @@ public class BzlmodGraphJsonParser {
      * @return Module version, or null if not present
      */
     public static String extractVersion(String moduleKey) {
-        int atIdx = moduleKey.indexOf('@');
+        int atIdx = moduleKey.indexOf(MODULE_KEY_SEPARATOR);
         return atIdx > 0 && atIdx < moduleKey.length() - 1 ? moduleKey.substring(atIdx + 1) : null;
     }
 }

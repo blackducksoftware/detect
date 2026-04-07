@@ -156,7 +156,7 @@ public class BazelV2Detectable extends Detectable {
         // Skipping this call for WORKSPACE avoids an extra bazel invocation that is never needed there.
         BazelVersion bazelVersion = null;
         if (mode == BazelEnvironmentAnalyzer.Mode.BZLMOD) {
-            bazelVersion = new BazelVersionDetector(bazelCmd).detectVersion().orElse(null);
+            bazelVersion = new BazelVersionChecker(bazelCmd).detectVersion().orElse(null);
             if (bazelVersion != null) {
                 logger.info("Bazel version detected: {}. Features requiring 7.1+ are {}.",
                     bazelVersion, bazelVersion.isAtLeast(7, 1) ? "ENABLED" : "DISABLED");
