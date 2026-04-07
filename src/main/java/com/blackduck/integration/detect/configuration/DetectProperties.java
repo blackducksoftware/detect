@@ -1186,6 +1186,94 @@ public class DetectProperties {
                     .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
                     .build();
 
+    public static final StringListProperty DETECT_MAVEN_INCLUDE_EXTERNAL_REPOSITORIES =
+            StringListProperty.newBuilder("detect.maven.include.external.repositories", emptyList())
+                    .setInfo("Maven Resolver External Repositories", DetectPropertyFromVersion.VERSION_9_8_0)
+                    .setHelp(
+                            "A comma-separated list of additional Maven repository URLs to use during dependency resolution.",
+                            "These external repositories will be used alongside repositories declared in pom.xml during dependency resolution. This is useful for air-gapped environments or when dependencies are hosted in private Artifactory/Nexus repositories. External repositories are prioritized over POM-declared repositories. "
+                                + "Tip: If any URL contains special shell characters (e.g., '&', '?'), wrap the entire value in quotes on the command line "
+                                + "(e.g., --detect.maven.include.external.repositories=\"https://repo1.company.com/maven2,https://repo2.company.com/maven2\")."
+                    )
+                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
+                    .setExample("https://repo1.company.com/maven2,https://nexus.internal.net/repository/maven-public")
+                    .build();
+
+    public static final BooleanProperty DETECT_MAVEN_INCLUDE_TEST_SCOPE =
+            BooleanProperty.newBuilder("detect.maven.include.test.scope", true)
+                    .setInfo("Include Test Scope Dependencies", DetectPropertyFromVersion.VERSION_11_1_0)
+                    .setHelp(
+                            "If set to true, Detect will include test-scope dependencies in the dependency resolution.",
+                            "When enabled, both compile and test scope dependencies will be resolved and reported. When disabled, only compile-scope dependencies will be included. This applies to the Maven Resolver detectable (buildless mode). Default is true."
+                    )
+                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
+                    .build();
+
+    public static final NullableStringProperty DETECT_MAVEN_BUILDLESS_MIRROR_URL =
+            NullableStringProperty.newBuilder("detect.maven.buildless.mirror.url")
+                    .setInfo("Maven Buildless Mirror URL", DetectPropertyFromVersion.VERSION_11_1_0)
+                    .setHelp(
+                            "The URL of the corporate mirror (repository manager) to use for Maven buildless dependency resolution.",
+                            "When specified, all Maven repository requests will be routed through this mirror. This is commonly used in air-gapped or corporate environments with Nexus, Artifactory, or similar repository managers. If this property is set, settings.xml mirrors are ignored. "
+                                + "Tip: If the URL contains special shell characters (e.g., '&', '?'), wrap it in quotes on the command line "
+                                + "(e.g., --detect.maven.buildless.mirror.url=\"https://nexus.company.com/repo?type=proxy\")."
+                    )
+                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .setExample("https://nexus.company.com/repository/maven-public")
+                    .build();
+
+    public static final NullableStringProperty DETECT_MAVEN_BUILDLESS_MIRROR_OF =
+            NullableStringProperty.newBuilder("detect.maven.buildless.mirror.of")
+                    .setInfo("Maven Buildless Mirror Of Pattern", DetectPropertyFromVersion.VERSION_11_1_0)
+                    .setHelp(
+                            "The repository matching pattern for the mirror (follows Maven's mirrorOf syntax).",
+                            "Specifies which repositories the mirror intercepts. Common patterns: '*' (all repositories), 'central' (only Maven Central), '*,!internal' (all except 'internal'). "
+                                + "Defaults to '*' if not specified when mirror.url is provided. "
+                                + "*** SHELL QUOTING REQUIRED ***: When using '*' on the command line, you MUST wrap it in quotes "
+                                + "(e.g., --detect.maven.buildless.mirror.of=\"*\") to prevent the shell from expanding it as a filename glob. "
+                                + "Without quotes, the shell replaces '*' with local filenames and the mirror will silently misconfigure. "
+                                + "This applies to any pattern containing '*', such as \"*,!internal\" or \"external:*\"."
+                    )
+                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .setExample("\"*\"")
+                    .build();
+
+    public static final NullableStringProperty DETECT_MAVEN_BUILDLESS_MIRROR_USERNAME =
+            NullableStringProperty.newBuilder("detect.maven.buildless.mirror.username")
+                    .setInfo("Maven Buildless Mirror Username", DetectPropertyFromVersion.VERSION_11_1_0)
+                    .setHelp(
+                            "The username for authenticating with the corporate mirror.",
+                            "Used for basic authentication with the repository manager specified by detect.maven.buildless.mirror.url."
+                    )
+                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
+
+    public static final NullableStringProperty DETECT_MAVEN_BUILDLESS_MIRROR_PASSWORD =
+            NullableStringProperty.newBuilder("detect.maven.buildless.mirror.password")
+                    .setInfo("Maven Buildless Mirror Password", DetectPropertyFromVersion.VERSION_11_1_0)
+                    .setHelp(
+                            "The password for authenticating with the corporate mirror.",
+                            "Used for basic authentication with the repository manager specified by detect.maven.buildless.mirror.url."
+                    )
+                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
+
+    public static final NullablePathProperty DETECT_MAVEN_BUILDLESS_SETTINGS_FILE_PATH =
+            NullablePathProperty.newBuilder("detect.maven.buildless.settings.file.path")
+                    .setInfo("Maven Buildless Settings File Path", DetectPropertyFromVersion.VERSION_11_1_0)
+                    .setHelp(
+                            "Path to a Maven settings.xml file to parse for mirror configurations.",
+                            "If not specified, defaults to ~/.m2/settings.xml. The parser extracts <mirror> and <server> elements to configure corporate repository managers. CLI mirror properties (detect.maven.buildless.mirror.*) take precedence over settings.xml configuration. If the specified file does not exist, extraction will fail."
+                    )
+                    .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .setExample("/path/to/custom/settings.xml")
+                    .build();
+
     public static final BooleanProperty DETECT_NOTICES_REPORT =
         BooleanProperty.newBuilder("detect.notices.report", false)
             .setInfo("Generate Notices Report", DetectPropertyFromVersion.VERSION_3_0_0)

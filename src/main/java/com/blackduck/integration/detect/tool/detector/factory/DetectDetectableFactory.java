@@ -216,7 +216,8 @@ public class DetectDetectableFactory {
                 detectExecutableResolver,
                 detectableOptionFactory.createMavenCliOptions(),
                 detectableOptionFactory.createProjectInspectorOptions(),
-                projectInspectorResolver
+                projectInspectorResolver,
+                detectableOptionFactory.createMavenResolverOptions()
         );
     }
 

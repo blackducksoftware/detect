@@ -7,11 +7,14 @@ import java.util.Set;
 
 import com.blackduck.integration.detectable.detectables.cargo.CargoDetectableOptions;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
+import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenMirrorConfig;
+import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenMirrorConfigResolver;
+import com.blackduck.integration.detectable.detectables.maven.resolver.proxy.MavenProxyConfig;
+import com.blackduck.integration.detectable.detectables.maven.resolver.proxy.MavenProxyConfigResolver;
 import com.blackduck.integration.detectable.detectables.nuget.NugetDependencyType;
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import org.jetbrains.annotations.Nullable;
 
-import com.blackduck.integration.detect.workflow.ArtifactoryConstants;
 import com.blackduck.integration.detect.workflow.diagnostic.DiagnosticSystem;
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.detectable.detectables.bazel.BazelDetectableOptions;
@@ -35,6 +38,7 @@ import com.blackduck.integration.detectable.detectables.gradle.inspection.inspec
 import com.blackduck.integration.detectable.detectables.lerna.LernaOptions;
 import com.blackduck.integration.detectable.detectables.lerna.LernaPackageType;
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenCliExtractorOptions;
+import com.blackduck.integration.detectable.detectables.maven.resolver.MavenResolverOptions;
 import com.blackduck.integration.detectable.detectables.npm.NpmDependencyType;
 import com.blackduck.integration.detectable.detectables.npm.cli.NpmCliExtractorOptions;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.NpmLockfileOptions;
@@ -205,6 +209,46 @@ public class DetectableOptionFactory {
         List<String> mavenIncludedModules = detectConfiguration.getValue(DetectProperties.DETECT_MAVEN_INCLUDED_MODULES);
         Boolean includeShadedDependencies = detectConfiguration.getValue(DetectProperties.DETECT_MAVEN_INCLUDE_SHADED_DEPENDENCIES);
         return new MavenCliExtractorOptions(mavenBuildCommand, mavenExcludedScopes, mavenIncludedScopes, mavenExcludedModules, mavenIncludedModules, includeShadedDependencies);
+    }
+
+    public MavenResolverOptions createMavenResolverOptions() {
+        List<String> externalRepositories = detectConfiguration.getValue(DetectProperties.DETECT_MAVEN_INCLUDE_EXTERNAL_REPOSITORIES);
+
+        // Read raw proxy property values from CLI flags (blackduck.proxy.*)
+        // These serve as a fallback if settings.xml does not contain proxy configuration
+        String cliProxyHost = proxyInfo.getHost().orElse(null);
+        int cliProxyPort = proxyInfo.getPort();
+        String cliProxyUsername = null;
+        String cliProxyPassword = null;
+        if (proxyInfo.getProxyCredentials().isPresent()) {
+            com.blackduck.integration.rest.credentials.Credentials creds = proxyInfo.getProxyCredentials().get();
+            cliProxyUsername = creds.getUsername().orElse(null);
+            cliProxyPassword = creds.getPassword().orElse(null);
+        }
+        List<String> cliProxyIgnoredHosts = detectConfiguration.getValue(DetectProperties.BLACKDUCK_PROXY_IGNORED_HOSTS);
+
+        // Read raw mirror property values
+        String cliMirrorUrl      = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_BUILDLESS_MIRROR_URL);
+        String cliMirrorOf       = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_BUILDLESS_MIRROR_OF);
+        String cliMirrorUsername = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_BUILDLESS_MIRROR_USERNAME);
+        String cliMirrorPassword = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_BUILDLESS_MIRROR_PASSWORD);
+        Path   settingsFilePath  = detectConfiguration.getPathOrNull(DetectProperties.DETECT_MAVEN_BUILDLESS_SETTINGS_FILE_PATH);
+
+        // Delegate proxy precedence logic: settings.xml → CLI → none
+        // settings.xml takes priority because it represents Maven-specific proxy configuration
+        // CLI flags serve as a universal fallback for the common case where same proxy is used
+        MavenProxyConfig proxyConfig = new MavenProxyConfigResolver()
+            .resolve(cliProxyHost, cliProxyPort, cliProxyUsername, cliProxyPassword, cliProxyIgnoredHosts, settingsFilePath);
+
+        // Delegate mirror precedence logic: CLI → settings.xml → empty
+        // CLI takes priority for mirrors to allow explicit override of settings.xml
+        List<MavenMirrorConfig> mirrorConfigurations = new MavenMirrorConfigResolver()
+            .resolve(cliMirrorUrl, cliMirrorOf, cliMirrorUsername, cliMirrorPassword, settingsFilePath);
+
+        // Read test scope inclusion configuration
+        Boolean includeTestScope = detectConfiguration.getValue(DetectProperties.DETECT_MAVEN_INCLUDE_TEST_SCOPE);
+
+        return new MavenResolverOptions(externalRepositories, proxyConfig, mirrorConfigurations, includeTestScope);
     }
 
     public ConanCliOptions createConanCliOptions() {

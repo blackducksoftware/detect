@@ -13,7 +13,17 @@ import com.blackduck.integration.detectable.detectable.result.FileNotFoundDetect
 import com.blackduck.integration.detectable.detectable.result.PassedDetectableResult;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
-import com.blackduck.integration.detectable.detectables.maven.resolver.result.MavenParseResult;
+import com.blackduck.integration.detectable.detectables.maven.resolver.graph.MavenGraphParser;
+import com.blackduck.integration.detectable.detectables.maven.resolver.graph.MavenGraphTransformer;
+import com.blackduck.integration.detectable.detectables.maven.resolver.graph.MavenParseResult;
+import com.blackduck.integration.detectable.detectables.maven.resolver.module.MavenModuleProcessor;
+import com.blackduck.integration.detectable.detectables.maven.resolver.module.MavenModuleProcessingContext;
+import com.blackduck.integration.detectable.detectables.maven.resolver.output.CodeLocationFactory;
+import com.blackduck.integration.detectable.detectables.maven.resolver.output.DependencyTreeFileWriter;
+import com.blackduck.integration.detectable.detectables.maven.resolver.output.MavenCoordinateFormatter;
+import com.blackduck.integration.detectable.detectables.maven.resolver.pom.MavenProject;
+import com.blackduck.integration.detectable.detectables.maven.resolver.pom.ProjectBuilder;
+import com.blackduck.integration.detectable.detectables.maven.resolver.resolution.MavenDependencyResolver;
 import com.blackduck.integration.util.NameVersion;
 import org.eclipse.aether.collection.CollectResult;
 import org.slf4j.Logger;
@@ -23,6 +33,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -74,6 +85,7 @@ public class MavenResolverDetectable extends Detectable {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final FileFinder fileFinder;
     private final ExternalIdFactory externalIdFactory;
+    private final MavenResolverOptions mavenResolverOptions;
 
     // Helper classes for code organization and reusability
     private final DependencyTreeFileWriter treeWriter;
@@ -90,15 +102,18 @@ public class MavenResolverDetectable extends Detectable {
      * @param environment The detectable environment providing context for detection
      * @param fileFinder Utility for locating files in the project directory
      * @param externalIdFactory Factory for creating Maven external identifiers for code locations
+     * @param mavenResolverOptions Configuration options for Maven resolution
      */
     public MavenResolverDetectable(
             DetectableEnvironment environment,
             FileFinder fileFinder,
-            ExternalIdFactory externalIdFactory
+            ExternalIdFactory externalIdFactory,
+            MavenResolverOptions mavenResolverOptions
     ) {
         super(environment);
         this.fileFinder = fileFinder;
         this.externalIdFactory = externalIdFactory;
+        this.mavenResolverOptions = mavenResolverOptions;
 
         // Initialize helper classes
         this.treeWriter = new DependencyTreeFileWriter();
@@ -203,21 +218,46 @@ public class MavenResolverDetectable extends Detectable {
             logger.info("  Managed dependencies found: {}", mavenProject.getDependencyManagement().size());
 
             // PHASE 2: Resolve dependencies using Aether for both compile and test scopes
-            MavenDependencyResolver dependencyResolver = new MavenDependencyResolver();
+            // Create the resolver with proxy and mirror configurations.
+            // Proxy configuration comes from the global blackduck.proxy.* settings.
+            // Mirror configuration comes from CLI flags or settings.xml (handled by DetectableOptionFactory).
+            MavenDependencyResolver dependencyResolver;
+            if (mavenResolverOptions != null && (mavenResolverOptions.hasProxyConfiguration() || mavenResolverOptions.hasMirrorConfiguration())) {
+                if (mavenResolverOptions.hasProxyConfiguration()) {
+                    logger.info("Creating Maven dependency resolver with proxy configuration");
+                }
+                if (mavenResolverOptions.hasMirrorConfiguration()) {
+                    logger.info("Creating Maven dependency resolver with {} mirror(s)",
+                        mavenResolverOptions.getMirrorConfigurations().size());
+                }
+                dependencyResolver = new MavenDependencyResolver(
+                    mavenResolverOptions.getProxyConfig(),
+                    mavenResolverOptions.getMirrorConfigurations()
+                );
+            } else {
+                dependencyResolver = new MavenDependencyResolver();
+            }
             Path localRepoPath = extractionEnvironment.getOutputDirectory().toPath().resolve(LOCAL_REPO_DIR_NAME);
 
-            // TODO: expose a configuration flag `includeTestScope` later; for now we enable two-phase collection (compile + test)
-            boolean includeTestScope = true; // TODO: make configurable
+            // Get external repositories from configuration
+            List<String> externalRepositories = mavenResolverOptions != null ? mavenResolverOptions.getExternalRepositories() : Collections.emptyList();
+            if (!externalRepositories.isEmpty()) {
+                logger.info("Using {} external repository URL(s) from configuration: {}",
+                    externalRepositories.size(), String.join(", ", externalRepositories));
+            }
+
+            // Read test scope configuration from options (configurable via detect.maven.include.test.scope)
+            boolean includeTestScope = mavenResolverOptions != null ? mavenResolverOptions.getIncludeTestScope() : true;
 
             // Perform compile-phase dependency collection
             CollectResult collectResultCompile = dependencyResolver.resolveDependencies(
-                pomFile, mavenProject, localRepoPath.toFile(), MAVEN_SCOPE_COMPILE);
+                pomFile, mavenProject, localRepoPath.toFile(), MAVEN_SCOPE_COMPILE, externalRepositories);
 
             // Perform test-phase collection (only if enabled)
             CollectResult collectResultTest = null;
             if (includeTestScope) {
                 collectResultTest = dependencyResolver.resolveDependencies(
-                    pomFile, mavenProject, localRepoPath.toFile(), MAVEN_SCOPE_TEST);
+                    pomFile, mavenProject, localRepoPath.toFile(), MAVEN_SCOPE_TEST, externalRepositories);
             }
 
             // PHASE 3: Write dependency trees to files for human inspection and debugging
