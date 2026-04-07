@@ -140,6 +140,32 @@ class PackageJsonExtractorTest {
         assertEquals("1.0.0", extractor.extractLowestVersion("1.0.0 || 2.0.0"));
     }
 
+    @Test
+    void extractWithNpmAliases() {
+        CombinedPackageJson packageJson = new CombinedPackageJson();
+        // Non-scoped alias
+        packageJson.getDependencies().put("myalias", "npm:package@^1.0.0");
+        // Scoped alias
+        packageJson.getDependencies().put("scopedalias", "npm:@scope/package@^2.0.0");
+        // Regular dependency (not an alias)
+        packageJson.getDependencies().put("regular", "^3.0.0");
+
+        Extraction extraction = createExtractor(NpmDependencyType.PEER).extract(packageJson);
+        CodeLocation codeLocation = extraction.getCodeLocations().get(0);
+        DependencyGraph dependencyGraph = codeLocation.getDependencyGraph();
+
+        ExternalIdFactory externalIdFactory = new ExternalIdFactory();
+        ExternalId nonScopedAlias = externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "package", "1.0.0");
+        ExternalId scopedAlias = externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "@scope/package", "2.0.0");
+        ExternalId regularDep = externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "regular", "3.0.0");
+
+        GraphAssert graphAssert = new GraphAssert(Forge.NPMJS, dependencyGraph);
+        graphAssert.hasRootDependency(nonScopedAlias);
+        graphAssert.hasRootDependency(scopedAlias);
+        graphAssert.hasRootDependency(regularDep);
+        graphAssert.hasRootSize(3);
+    }
+
 
     private CombinedPackageJson createPackageJson() {
         CombinedPackageJson combinedPackageJson = new CombinedPackageJson();

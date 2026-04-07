@@ -10,6 +10,10 @@ import com.blackduck.integration.detectable.detectable.executable.resolver.*;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelV2Detectable;
 import com.blackduck.integration.detectable.detectables.cargo.*;
 import com.blackduck.integration.detectable.detectables.cargo.transform.CargoDependencyGraphTransformer;
+import com.blackduck.integration.detectable.detectables.conda.parser.CondaTreeParser;
+import com.blackduck.integration.detectable.detectables.conda.tree.CondaTreeDetectable;
+import com.blackduck.integration.detectable.detectables.conda.tree.CondaTreeExtractor;
+import com.blackduck.integration.detectable.detectables.ivy.IvyCliDetectable;
 import com.blackduck.integration.detectable.detectables.pip.inspector.parser.PipInspectorTomlParser;
 import com.blackduck.integration.detectable.detectables.rush.RushDetectable;
 import com.blackduck.integration.detectable.detectables.rush.RushExtractor;
@@ -98,9 +102,9 @@ import com.blackduck.integration.detectable.detectables.conan.lockfile.ConanLock
 import com.blackduck.integration.detectable.detectables.conan.lockfile.ConanLockfileExtractor;
 import com.blackduck.integration.detectable.detectables.conan.lockfile.ConanLockfileExtractorOptions;
 import com.blackduck.integration.detectable.detectables.conan.lockfile.parser.ConanLockfileParser;
-import com.blackduck.integration.detectable.detectables.conda.CondaCliDetectable;
+import com.blackduck.integration.detectable.detectables.conda.cli.CondaCliDetectable;
 import com.blackduck.integration.detectable.detectables.conda.CondaCliDetectableOptions;
-import com.blackduck.integration.detectable.detectables.conda.CondaCliExtractor;
+import com.blackduck.integration.detectable.detectables.conda.cli.CondaCliExtractor;
 import com.blackduck.integration.detectable.detectables.conda.parser.CondaDependencyCreator;
 import com.blackduck.integration.detectable.detectables.conda.parser.CondaListParser;
 import com.blackduck.integration.detectable.detectables.cpan.CpanCliDetectable;
@@ -163,8 +167,12 @@ import com.blackduck.integration.detectable.detectables.gradle.inspection.parse.
 import com.blackduck.integration.detectable.detectables.gradle.inspection.parse.GradleReportTransformer;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.parse.GradleRootMetadataParser;
 import com.blackduck.integration.detectable.detectables.gradle.parsing.GradleProjectInspectorDetectable;
+import com.blackduck.integration.detectable.detectables.ivy.IvyCliDetectable;
+import com.blackduck.integration.detectable.detectables.ivy.IvyCliExtractor;
 import com.blackduck.integration.detectable.detectables.ivy.IvyParseDetectable;
 import com.blackduck.integration.detectable.detectables.ivy.IvyParseExtractor;
+import com.blackduck.integration.detectable.detectables.ivy.parse.IvyDependencyTreeParser;
+import com.blackduck.integration.detectable.detectables.ivy.parse.IvyDependencyTreeTargetParser;
 import com.blackduck.integration.detectable.detectables.ivy.parse.IvyProjectNameParser;
 import com.blackduck.integration.detectable.detectables.lerna.LernaDetectable;
 import com.blackduck.integration.detectable.detectables.lerna.LernaExtractor;
@@ -420,6 +428,10 @@ public class DetectableFactory {
         return new CondaCliDetectable(environment, fileFinder, condaResolver, condaCliExtractor(), condaCliDetectableOptions);
     }
 
+    public CondaTreeDetectable createCondaTreeDetectable(DetectableEnvironment environment, CondaTreeResolver condaTreeResolver, CondaResolver condaResolver, CondaCliDetectableOptions condaCliDetectableOptions) {
+        return new CondaTreeDetectable(environment, fileFinder, condaTreeResolver, condaResolver, condaTreeExtractor(), condaCliDetectableOptions);
+    }
+
     public CpanCliDetectable createCpanCliDetectable(DetectableEnvironment environment, CpanResolver cpanResolver, CpanmResolver cpanmResolver) {
         return new CpanCliDetectable(environment, fileFinder, cpanResolver, cpanmResolver, cpanCliExtractor());
     }
@@ -514,6 +526,10 @@ public class DetectableFactory {
 
     public IvyParseDetectable createIvyParseDetectable(DetectableEnvironment environment) {
         return new IvyParseDetectable(environment, fileFinder, ivyParseExtractor());
+    }
+
+    public IvyCliDetectable createIvyCliDetectable(DetectableEnvironment environment, AntResolver antResolver) {
+        return new IvyCliDetectable(environment, fileFinder, antResolver, ivyCliExtractor(), ivyDependencyTreeTargetParser());
     }
 
     public MavenPomDetectable createMavenPomDetectable(DetectableEnvironment environment, MavenResolver mavenResolver, MavenCliExtractorOptions mavenCliExtractorOptions, ProjectInspectorOptions projectInspectorOptions, ProjectInspectorResolver projectInspectorResolver) {
@@ -853,6 +869,14 @@ public class DetectableFactory {
         return new CondaCliExtractor(condaListParser(), executableRunner, toolVersionLogger);
     }
 
+    private CondaTreeExtractor condaTreeExtractor() {
+        return new CondaTreeExtractor(executableRunner, condaTreeParser(), condaListParser());
+    }
+
+    private CondaTreeParser condaTreeParser() {
+        return new CondaTreeParser(condaDependencyCreator());
+    }
+
     private CpanListParser cpanListParser() {
         return new CpanListParser(externalIdFactory);
     }
@@ -945,8 +969,20 @@ public class DetectableFactory {
         return new IvyParseExtractor(saxParser(), ivyProjectNameParser());
     }
 
+    private IvyCliExtractor ivyCliExtractor() {
+        return new IvyCliExtractor(executableRunner, ivyDependencyTreeParser(), ivyProjectNameParser(), toolVersionLogger);
+    }
+
+    private IvyDependencyTreeParser ivyDependencyTreeParser() {
+        return new IvyDependencyTreeParser(externalIdFactory);
+    }
+
     private IvyProjectNameParser ivyProjectNameParser() {
         return new IvyProjectNameParser(saxParser());
+    }
+
+    private IvyDependencyTreeTargetParser ivyDependencyTreeTargetParser() {
+        return new IvyDependencyTreeTargetParser(saxParser());
     }
 
     private Rebar3TreeParser rebar3TreeParser() {

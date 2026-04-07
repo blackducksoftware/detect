@@ -98,6 +98,25 @@ public class QueryBuilder {
     }
 
     /**
+     * Adds each option from the provided list directly as a command argument.
+     * Use this in the probing phase where no BazelVariableSubstitutor is involved and
+     * options must be injected as real arguments rather than substitution placeholders.
+     *
+     * @param options List of option flags to append (e.g., ["--config=myconfig"])
+     * @return This builder for chaining
+     */
+    public QueryBuilder withOptions(List<String> options) {
+        if (options != null) {
+            for (String opt : options) {
+                if (opt != null && !opt.trim().isEmpty()) {
+                    this.args.add(opt);
+                }
+            }
+        }
+        return this;
+    }
+
+    /**
      * Specifies the output format for the query results.
      *
      * @param format Output format (BUILD, XML, JSONPROTO, LABEL_KIND)

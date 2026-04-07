@@ -19,7 +19,8 @@ import com.blackduck.integration.detectable.detectables.cocoapods.PodlockDetecta
 import com.blackduck.integration.detectable.detectables.conan.cli.Conan2CliDetectable;
 import com.blackduck.integration.detectable.detectables.conan.cli.Conan1CliDetectable;
 import com.blackduck.integration.detectable.detectables.conan.lockfile.ConanLockfileDetectable;
-import com.blackduck.integration.detectable.detectables.conda.CondaCliDetectable;
+import com.blackduck.integration.detectable.detectables.conda.cli.CondaCliDetectable;
+import com.blackduck.integration.detectable.detectables.conda.tree.CondaTreeDetectable;
 import com.blackduck.integration.detectable.detectables.cpan.CpanCliDetectable;
 import com.blackduck.integration.detectable.detectables.cran.PackratLockDetectable;
 import com.blackduck.integration.detectable.detectables.dart.pubdep.DartPubDepDetectable;
@@ -36,6 +37,7 @@ import com.blackduck.integration.detectable.detectables.go.vendor.GoVendorDetect
 import com.blackduck.integration.detectable.detectables.go.vendr.GoVndrDetectable;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.GradleInspectorDetectable;
 import com.blackduck.integration.detectable.detectables.gradle.parsing.GradleProjectInspectorDetectable;
+import com.blackduck.integration.detectable.detectables.ivy.IvyCliDetectable;
 import com.blackduck.integration.detectable.detectables.ivy.IvyParseDetectable;
 import com.blackduck.integration.detectable.detectables.lerna.LernaDetectable;
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenPomDetectable;
@@ -152,6 +154,10 @@ public class DetectDetectableFactory {
         return detectableFactory.createCondaCliDetectable(environment, detectExecutableResolver, detectableOptionFactory.createCondaOptions());
     }
 
+    public CondaTreeDetectable createCondaTreeDetectable(DetectableEnvironment environment) {
+        return detectableFactory.createCondaTreeDetectable(environment, detectExecutableResolver, detectExecutableResolver, detectableOptionFactory.createCondaOptions());
+    }
+
     public CpanCliDetectable createCpanCliDetectable(DetectableEnvironment environment) {
         return detectableFactory.createCpanCliDetectable(environment, detectExecutableResolver, detectExecutableResolver);
     }
@@ -215,6 +221,10 @@ public class DetectDetectableFactory {
 
     public IvyParseDetectable createIvyParseDetectable(DetectableEnvironment environment) {
         return detectableFactory.createIvyParseDetectable(environment);
+    }
+
+    public IvyCliDetectable createIvyCliDetectable(DetectableEnvironment environment) {
+        return detectableFactory.createIvyCliDetectable(environment, detectExecutableResolver);
     }
 
     public MavenPomDetectable createMavenPomDetectable(DetectableEnvironment environment) {
