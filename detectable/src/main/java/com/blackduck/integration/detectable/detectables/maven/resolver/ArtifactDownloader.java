@@ -5,6 +5,7 @@ import com.blackduck.integration.detectable.detectables.maven.resolver.artifactd
 import com.blackduck.integration.detectable.detectables.maven.resolver.artifactdownload.HttpArtifactDownloader;
 import com.blackduck.integration.detectable.detectables.maven.resolver.artifactdownload.LocalRepositoryChecker;
 import com.blackduck.integration.detectable.detectables.maven.resolver.artifactdownload.MavenCentralDownloader;
+import com.blackduck.integration.detectable.detectables.maven.resolver.artifactdownload.ParallelDownloadManager;
 import com.blackduck.integration.detectable.detectables.maven.resolver.artifactdownload.RemoteRepositoryDownloader;
 import com.blackduck.integration.detectable.detectables.maven.resolver.exception.ArtifactDownloadException;
 import com.blackduck.integration.detectable.detectables.maven.resolver.model.JavaRepository;
@@ -19,6 +20,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Artifact Downloader that orchestrates JAR downloads using a 3-tier resolution strategy.
@@ -46,6 +48,7 @@ public class ArtifactDownloader {
     private final LocalRepositoryChecker localChecker;
     private final MavenCentralDownloader mavenCentralDownloader;
     private final Map<String, HttpArtifactDownloader> pomRepoDownloaders;
+    private final ParallelDownloadManager parallelDownloadManager;
 
     // Configuration
     private final Path resolvedCustomRepositoryPath;
@@ -104,6 +107,14 @@ public class ArtifactDownloader {
         }
 
         logInitializationSummary();
+
+        // Initialize parallel download manager for concurrent artifact downloads.
+        // Uses default thread count (5), the shared local checker, and Maven Central as the HTTP downloader.
+        this.parallelDownloadManager = new ParallelDownloadManager(null, this.localChecker, this.mavenCentralDownloader);
+        // TODO: Add shutdown lifecycle management for parallelDownloadManager in a future cleanup pass.
+        //       ArtifactDownloader does not currently implement AutoCloseable or have a lifecycle hook,
+        //       so calling parallelDownloadManager.shutdown() is deferred. The thread pool uses daemon threads
+        //       so it will not prevent JVM shutdown.
     }
 
     /**
@@ -115,84 +126,89 @@ public class ArtifactDownloader {
     }
 
     /**
-     * Downloads JAR files for all dependencies in the list.
+     * Downloads JAR files for all dependencies in the list using parallel downloads.
      *
      * @param dependencies the list of dependencies to download
      * @return a map of successfully downloaded artifacts to their local JAR file paths
      */
     public Map<Artifact, Path> downloadArtifacts(List<Dependency> dependencies) {
-        Map<Artifact, Path> artifactPathMap = new HashMap<>();
+        Map<Artifact, Path> artifactPathMap = new ConcurrentHashMap<>();
 
         if (dependencies == null || dependencies.isEmpty()) {
             logger.info("No dependencies to download. Skipping JAR download phase.");
             return artifactPathMap;
         }
 
-        logger.info("========================================");
-        logger.info("STARTING ARTIFACT JAR DOWNLOAD PHASE");
-        logger.info("========================================");
-        logger.info("Total dependencies to process: {}", dependencies.size());
-
-        int successCount = 0;
-        int failureCount = 0;
-        int skippedCount = 0;
-        List<String> failedArtifacts = new ArrayList<>();
-        List<String> unavailableArtifacts = new ArrayList<>();
-
-        long startTime = System.currentTimeMillis();
-
-        for (int i = 0; i < dependencies.size(); i++) {
-            Dependency dependency = dependencies.get(i);
-            Artifact artifact = dependency.getArtifact();
-            String coords = formatCoords(artifact);
-
-            logger.info("----------------------------------------");
-            logger.info("[{}/{}] PROCESSING: {}", i + 1, dependencies.size(), coords);
-
-            // Skip artifacts that have a classifier (e.g., sources, javadoc, test-jar)
-            String classifier = artifact.getClassifier();
+        // Pre-filter: skip artifacts with classifiers (e.g., sources, javadoc, test-jar)
+        List<Dependency> downloadable = new ArrayList<>();
+        int classifierSkippedCount = 0;
+        for (Dependency dep : dependencies) {
+            String classifier = dep.getArtifact().getClassifier();
             if (classifier != null && !classifier.isEmpty()) {
-                logger.info("SKIPPING artifact with classifier '{}': {}", classifier, coords);
-                skippedCount++;
-                continue;
-            }
-
-            try {
-                DownloadResult result = downloadSingleArtifact(artifact);
-
-                if (result.isSuccess()) {
-                    logger.info("SUCCESS: JAR fetched from '{}' for {}", result.getSource(), coords);
-                    if (result.getDownloadedPath() != null) {
-                        logger.debug("  Cached at: {}", result.getDownloadedPath());
-                        artifactPathMap.put(artifact, result.getDownloadedPath());
-                    }
-                    successCount++;
-                } else if (result.isNotFound()) {
-                    logger.warn("NOT FOUND: {} not available in any repository", coords);
-                    unavailableArtifacts.add(coords);
-                    skippedCount++;
-                } else {
-                    logger.error("FAILED to download {}: {}", coords, result.getErrorMessage());
-                    failureCount++;
-                    failedArtifacts.add(coords + " - " + result.getErrorMessage());
-                }
-
-            } catch (ArtifactDownloadException e) {
-                logger.error("DOWNLOAD ERROR for {}: {}", coords, e.getSanitizedMessage());
-                logger.debug("Full error details:", e);
-                failureCount++;
-                failedArtifacts.add(coords + " - " + e.getSanitizedMessage());
-            } catch (Exception e) {
-                logger.error("UNEXPECTED ERROR for {}: {}", coords, e.getMessage());
-                logger.debug("Full error details:", e);
-                failureCount++;
-                failedArtifacts.add(coords + " - Unexpected: " + e.getMessage());
+                logger.info("SKIPPING artifact with classifier '{}': {}", classifier, formatCoords(dep.getArtifact()));
+                classifierSkippedCount++;
+            } else {
+                downloadable.add(dep);
             }
         }
 
-        long elapsedTime = System.currentTimeMillis() - startTime;
-        logDownloadSummary(dependencies.size(), successCount, failureCount, skippedCount,
-            artifactPathMap.size(), elapsedTime, unavailableArtifacts, failedArtifacts);
+        // Build a GAV -> Artifact lookup from the input dependencies list.
+        // This is needed because ParallelDownloadResult returns ArtifactCoordinate (not Artifact),
+        // so we need to map back to the original Artifact objects for the return type.
+        Map<String, Artifact> gavToArtifact = new HashMap<>();
+        for (Dependency dep : downloadable) {
+            Artifact a = dep.getArtifact();
+            String gavKey = a.getGroupId() + ":" + a.getArtifactId() + ":" + a.getVersion();
+            gavToArtifact.put(gavKey, a);
+        }
+
+        // Delegate to ParallelDownloadManager for concurrent downloads
+        ParallelDownloadManager.ParallelDownloadResult parallelResult =
+            parallelDownloadManager.downloadArtifacts(
+                downloadable,
+                resolvedCustomRepositoryPath,
+                defaultRepositoryPath,
+                pomRepositories,
+                downloadConfiguration
+            );
+
+        // Translate ParallelDownloadResult outcomes back into Map<Artifact, Path>
+        for (ParallelDownloadManager.DownloadOutcome outcome : parallelResult.getOutcomes()) {
+            if ((outcome.getStatus() == ParallelDownloadManager.DownloadOutcome.DownloadStatus.SUCCESS
+                    || outcome.getStatus() == ParallelDownloadManager.DownloadOutcome.DownloadStatus.SKIPPED_LOCAL)
+                    && outcome.getPath() != null && outcome.getCoordinate() != null) {
+                String gavKey = outcome.getCoordinate().getGroupId() + ":"
+                    + outcome.getCoordinate().getArtifactId() + ":"
+                    + outcome.getCoordinate().getVersion();
+                Artifact originalArtifact = gavToArtifact.get(gavKey);
+                if (originalArtifact != null) {
+                    artifactPathMap.put(originalArtifact, outcome.getPath());
+                }
+            }
+        }
+
+        // Build summary lists from parallel outcomes for the existing logDownloadSummary method
+        List<String> failedArtifacts = new ArrayList<>();
+        List<String> unavailableArtifacts = new ArrayList<>();
+        for (ParallelDownloadManager.DownloadOutcome outcome : parallelResult.getOutcomes()) {
+            String coords = outcome.getCoordinate() != null ? outcome.getCoordinate().toString() : "unknown";
+            if (outcome.getStatus() == ParallelDownloadManager.DownloadOutcome.DownloadStatus.FAILED) {
+                failedArtifacts.add(coords + " - " + (outcome.getErrorMessage() != null ? outcome.getErrorMessage() : "Unknown error"));
+            } else if (outcome.getStatus() == ParallelDownloadManager.DownloadOutcome.DownloadStatus.SKIPPED_NOT_FOUND) {
+                unavailableArtifacts.add(coords);
+            }
+        }
+
+        logDownloadSummary(
+            dependencies.size(),
+            parallelResult.getSuccessCount(),
+            parallelResult.getFailureCount(),
+            parallelResult.getSkippedCount() + classifierSkippedCount,
+            artifactPathMap.size(),
+            parallelResult.getTotalTimeMs(),
+            unavailableArtifacts,
+            failedArtifacts
+        );
 
         return artifactPathMap;
     }
@@ -361,14 +377,14 @@ public class ArtifactDownloader {
     }
 
     private void logInitializationSummary() {
-        logger.info("========== TIER-1: LOCAL REPOSITORIES ==========");
+        logger.info(" TIER-1: LOCAL REPOSITORIES ");
         logger.info("  Custom .m2 repository: {}",
             resolvedCustomRepositoryPath != null ? resolvedCustomRepositoryPath : "not configured");
         logger.info("  Home .m2 repository: {}",
             homeM2Repository != null ? homeM2Repository : "not found");
         logger.info("  Download cache: {}", defaultRepositoryPath);
 
-        logger.info("========== TIER-2: POM REPOSITORIES ==========");
+        logger.info(" TIER-2: POM REPOSITORIES ");
         if (pomRepositories.isEmpty()) {
             logger.info("  No POM-declared repositories configured");
         } else {
@@ -379,17 +395,16 @@ public class ArtifactDownloader {
             }
         }
 
-        logger.info("========== TIER-3: MAVEN CENTRAL ==========");
+        logger.info(" TIER-3: MAVEN CENTRAL ");
         logger.info("  Maven Central: Always available as fallback");
 
-        logger.info("========== DOWNLOAD CONFIGURATION ==========");
+        logger.info(" DOWNLOAD CONFIGURATION ");
         logger.info("  {}", downloadConfiguration);
     }
 
     private void logDownloadSummary(int total, int success, int failures, int skipped,
                                     int mapSize, long elapsedMs,
                                     List<String> unavailable, List<String> failed) {
-        logger.info("========================================");
         logger.info("JAR DOWNLOAD PHASE SUMMARY");
         logger.info("========================================");
         logger.info("Total processed: {}", total);

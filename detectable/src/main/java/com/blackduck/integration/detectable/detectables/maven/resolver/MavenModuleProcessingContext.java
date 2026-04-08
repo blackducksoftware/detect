@@ -1,5 +1,6 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver;
 
+import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import com.blackduck.integration.detectable.detectables.maven.resolver.model.JavaRepository;
@@ -7,8 +8,10 @@ import com.blackduck.integration.detectable.detectables.maven.resolver.model.Jav
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -53,6 +56,10 @@ class MavenModuleProcessingContext {
     private final List<CodeLocation> codeLocations;
     private final Set<String> visitedModulePomPaths;
 
+    // Shaded sub-tree resolution cache: keyed on "groupId:artifactId:version",
+    // shared across all modules to avoid re-resolving the same GAV.
+    private final Map<String, DependencyGraph> shadedSubTreeCache;
+
     // Maven scope constants
     private final String compileScope;
     private final String testScope;
@@ -78,7 +85,8 @@ class MavenModuleProcessingContext {
         List<CodeLocation> codeLocations,
         Set<String> visitedModulePomPaths,
         String compileScope,
-        String testScope
+        String testScope,
+        Map<String, DependencyGraph> shadedSubTreeCache
     ) {
         this.projectBuilder = projectBuilder;
         this.dependencyResolver = dependencyResolver;
@@ -98,6 +106,7 @@ class MavenModuleProcessingContext {
         this.visitedModulePomPaths = visitedModulePomPaths;
         this.compileScope = compileScope;
         this.testScope = testScope;
+        this.shadedSubTreeCache = shadedSubTreeCache;
     }
 
     // Getters
@@ -117,6 +126,7 @@ class MavenModuleProcessingContext {
     public List<JavaRepository> getRootRepositories() { return rootRepositories; }
     public List<CodeLocation> getCodeLocations() { return codeLocations; }
     public Set<String> getVisitedModulePomPaths() { return visitedModulePomPaths; }
+    public Map<String, DependencyGraph> getShadedSubTreeCache() { return shadedSubTreeCache; }
     public String getCompileScope() { return compileScope; }
     public String getTestScope() { return testScope; }
 
@@ -234,6 +244,9 @@ class MavenModuleProcessingContext {
             // Initialize rootRepositories if not set
             List<JavaRepository> repos = rootRepositories != null ? rootRepositories : new ArrayList<>();
 
+            // Initialize shaded sub-tree cache (shared across all module recursive calls)
+            Map<String, DependencyGraph> cache = new HashMap<>();
+
             return new MavenModuleProcessingContext(
                 projectBuilder,
                 dependencyResolver,
@@ -252,7 +265,8 @@ class MavenModuleProcessingContext {
                 codeLocations,
                 visitedPaths,
                 compileScope,
-                testScope
+                testScope,
+                cache
             );
         }
     }

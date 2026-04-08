@@ -375,6 +375,9 @@ public class MavenResolverDetectable extends Detectable {
                     // We pass the root POM's repositories so the downloader knows about any custom repos defined in the root
                     List<JavaRepository> rootRepositories = mavenProject.getRepositories() != null ? mavenProject.getRepositories() : new ArrayList<>();
 
+                    // Shared cache for shaded sub-tree resolutions — reused across compile and test graphs
+                    Map<String, DependencyGraph> shadedSubTreeCache = new HashMap<>();
+
                     // Process compile scope dependency graph
                     int addedToCompile = addShadedDependenciesToGraph(
                             dependencyGraphCompile,
@@ -385,7 +388,8 @@ public class MavenResolverDetectable extends Detectable {
                             mavenGraphTransformer,
                             downloadDir.toFile(),
                             localRepoPath.toFile(),
-                            rootRepositories
+                            rootRepositories,
+                            shadedSubTreeCache
                     );
                     logger.info("Grafted {} sub-graph nodes into compile dependency graph.", addedToCompile);
 
@@ -400,7 +404,8 @@ public class MavenResolverDetectable extends Detectable {
                                 mavenGraphTransformer,
                                 downloadDir.toFile(),
                                 localRepoPath.toFile(),
-                                rootRepositories
+                                rootRepositories,
+                                shadedSubTreeCache
                         );
                         logger.info("Grafted {} sub-graph nodes into test dependency graph.", addedToTest);
                     }
@@ -408,9 +413,9 @@ public class MavenResolverDetectable extends Detectable {
                     logger.info("Successfully integrated shaded dependency sub-trees.");
 
                     // Optional: Print the updated graphs for debugging
-                    logger.info("================= Updated Compile Dependency Graph with Shaded Dependencies =================");
-                    debugPrintBdioGraph(dependencyGraphCompile, dependencyGraphCompile.getRootDependencies(),0);
-                    logger.info("==============================================================================================");
+//                    logger.info("================= Updated Compile Dependency Graph with Shaded Dependencies =================");
+//                    debugPrintBdioGraph(dependencyGraphCompile, dependencyGraphCompile.getRootDependencies(),0);
+//                    logger.info("==============================================================================================");
                 } else {
                     logger.info("No shaded dependencies found to add to dependency graphs.");
                 }
@@ -502,7 +507,8 @@ public class MavenResolverDetectable extends Detectable {
             MavenGraphTransformer graphTransformer,
             File downloadDir,
             File localRepoPath,
-            List<JavaRepository> rootRepositories) {
+            List<JavaRepository> rootRepositories,
+            Map<String, DependencyGraph> shadedSubTreeCache) {
 
         int graftedNodeCount = 0;
 
@@ -560,63 +566,74 @@ public class MavenResolverDetectable extends Detectable {
                         continue;
                     }
 
-                    logger.debug("Resolving sub-tree for shaded dependency: {}", identifier);
+                    // Check the cache before performing expensive resolution
+                    String gavKey = groupId + ":" + artifactId + ":" + version;
+                    DependencyGraph isolatedShadedGraph = shadedSubTreeCache.get(gavKey);
 
-                    // ==========================================
-                    // STEP 1: Download the POM for the shaded dependency
-                    // ==========================================
-                    // NOTE (Edge Case): If the POM is not in Maven Central, the download will fail.
-                    // This frequently occurs in air-gapped environments or when artifacts are hosted on
-                    // custom Nexus/Artifactory mirrors that are NOT declared in the root POM's <repositories> block.
-                    // Future enhancement: Add a fallback to attach the shaded dependency as a flat, single node
-                    // if the POM download fails, ensuring we don't lose the vulnerability finding entirely.
-                    JavaCoordinates coords = new JavaCoordinates(groupId, artifactId, version, "pom");
-                    MavenDownloader downloader = new MavenDownloader(rootRepositories, downloadDir.toPath());
-                    File shadedPomFile = downloader.downloadPom(coords);
+                    if (isolatedShadedGraph == null) {
+                        logger.debug("Resolving sub-tree for shaded dependency: {}", identifier);
 
-                    // Handle POM download failure with fallback behavior
-                    if (shadedPomFile == null || !shadedPomFile.exists()) {
-                        logger.warn("Could not download POM for shaded dependency {}. Sub-tree resolution aborted.", identifier);
-                        // Fallback: Attach just the single node to prevent data loss
-                        // This ensures the vulnerability is still reported, even without transitive dependencies
-                        ExternalId fallbackId = externalIdFactory.createMavenExternalId(groupId, artifactId, version);
-                        mainGraph.addChildWithParent(new Dependency(artifactId, version, fallbackId), parentDependency);
-                        graftedNodeCount++;
-                        logger.info("Added fallback single node for shaded dependency: {} (parent: {})",
-                                identifier, parentArtifact.getArtifactId());
-                        continue;
+                        // ==========================================
+                        // STEP 1: Download the POM for the shaded dependency
+                        // ==========================================
+                        // NOTE (Edge Case): If the POM is not in Maven Central, the download will fail.
+                        // This frequently occurs in air-gapped environments or when artifacts are hosted on
+                        // custom Nexus/Artifactory mirrors that are NOT declared in the root POM's <repositories> block.
+                        // Future enhancement: Add a fallback to attach the shaded dependency as a flat, single node
+                        // if the POM download fails, ensuring we don't lose the vulnerability finding entirely.
+                        JavaCoordinates coords = new JavaCoordinates(groupId, artifactId, version, "pom");
+                        MavenDownloader downloader = new MavenDownloader(rootRepositories, downloadDir.toPath());
+                        File shadedPomFile = downloader.downloadPom(coords);
+
+                        // Handle POM download failure with fallback behavior
+                        if (shadedPomFile == null || !shadedPomFile.exists()) {
+                            logger.warn("Could not download POM for shaded dependency {}. Sub-tree resolution aborted.", identifier);
+                            // Fallback: Attach just the single node to prevent data loss
+                            // This ensures the vulnerability is still reported, even without transitive dependencies
+                            ExternalId fallbackId = externalIdFactory.createMavenExternalId(groupId, artifactId, version);
+                            mainGraph.addChildWithParent(new Dependency(artifactId, version, fallbackId), parentDependency);
+                            graftedNodeCount++;
+                            logger.info("Added fallback single node for shaded dependency: {} (parent: {})",
+                                    identifier, parentArtifact.getArtifactId());
+                            continue;
+                        }
+
+                        logger.debug("Successfully downloaded POM for shaded dependency: {}", identifier);
+
+                        // ==========================================
+                        // STEP 2: Build the MavenProject model
+                        // ==========================================
+                        // This resolves properties, BOMs, and Parent POMs to get the complete dependency list
+                        com.blackduck.integration.detectable.detectables.maven.resolver.MavenProject shadedProject =
+                                projectBuilder.buildProject(shadedPomFile);
+                        logger.debug("Built MavenProject for shaded dependency: {} with {} direct dependencies",
+                                identifier, shadedProject.getDependencies().size());
+
+                        // ==========================================
+                        // STEP 3: Resolve the Aether dependency tree
+                        // ==========================================
+                        // This performs full transitive resolution using Eclipse Aether
+                        CollectResult collectResult = dependencyResolver.resolveDependencies(
+                                shadedPomFile, shadedProject, localRepoPath, MAVEN_SCOPE_COMPILE);
+                        logger.debug("Resolved Aether tree for shaded dependency: {}", identifier);
+
+                        //TODO : FIND SHADED DEPENDENCIES OF THESE SHADED DEPENDENCIES
+                        //Aether only resolves unshaded dependencies, leaving shaded deps as gaps
+                        //in the tree which may result in false negatives for vulnerabilities.
+
+                        // ==========================================
+                        // STEP 4: Convert to isolated BDIO DependencyGraph
+                        // ==========================================
+                        MavenParseResult parseResult = graphParser.parse(collectResult);
+                        isolatedShadedGraph = graphTransformer.transform(parseResult);
+                        logger.debug("Transformed shaded dependency {} to BDIO graph with {} root dependencies",
+                                identifier, isolatedShadedGraph.getRootDependencies().size());
+
+                        // Cache the resolved sub-tree for reuse (compile→test, or across modules)
+                        shadedSubTreeCache.put(gavKey, isolatedShadedGraph);
+                    } else {
+                        logger.debug("Cache hit for shaded dependency sub-tree: {}", gavKey);
                     }
-
-                    logger.debug("Successfully downloaded POM for shaded dependency: {}", identifier);
-
-                    // ==========================================
-                    // STEP 2: Build the MavenProject model
-                    // ==========================================
-                    // This resolves properties, BOMs, and Parent POMs to get the complete dependency list
-                    com.blackduck.integration.detectable.detectables.maven.resolver.MavenProject shadedProject =
-                            projectBuilder.buildProject(shadedPomFile);
-                    logger.debug("Built MavenProject for shaded dependency: {} with {} direct dependencies",
-                            identifier, shadedProject.getDependencies().size());
-
-                    // ==========================================
-                    // STEP 3: Resolve the Aether dependency tree
-                    // ==========================================
-                    // This performs full transitive resolution using Eclipse Aether
-                    CollectResult collectResult = dependencyResolver.resolveDependencies(
-                            shadedPomFile, shadedProject, localRepoPath, MAVEN_SCOPE_COMPILE);
-                    logger.debug("Resolved Aether tree for shaded dependency: {}", identifier);
-
-                    //TODO : FIND SHADED DEPENDENCIES OF THESE SHADED DEPENDENCIES
-                    //Aether only resolves unshaded dependencies, leaving shaded deps as gaps
-                    //in the tree which may result in false negatives for vulnerabilities.
-
-                    // ==========================================
-                    // STEP 4: Convert to isolated BDIO DependencyGraph
-                    // ==========================================
-                    MavenParseResult parseResult = graphParser.parse(collectResult);
-                    DependencyGraph isolatedShadedGraph = graphTransformer.transform(parseResult);
-                    logger.debug("Transformed shaded dependency {} to BDIO graph with {} root dependencies",
-                            identifier, isolatedShadedGraph.getRootDependencies().size());
 
                     // ==========================================
                     // STEP 5: Graft the shaded dependency and its sub-tree onto the main graph

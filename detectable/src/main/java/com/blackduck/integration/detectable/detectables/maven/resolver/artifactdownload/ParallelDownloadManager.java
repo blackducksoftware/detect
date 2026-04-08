@@ -337,9 +337,7 @@ public class ParallelDownloadManager {
         );
 
         // Log summary
-        logger.info("========================================");
         logger.info("PARALLEL DOWNLOAD SUMMARY");
-        logger.info("========================================");
         logger.info("Total processed: {}", result.getTotalArtifacts());
         logger.info("  Successfully downloaded: {}", result.getSuccessCount());
         logger.info("  Skipped: {}", result.getSkippedCount());
@@ -347,17 +345,13 @@ public class ParallelDownloadManager {
         logger.info("Time elapsed: {} ms ({} ms/artifact avg)",
             result.getTotalTimeMs(),
             result.getTotalArtifacts() > 0 ? result.getTotalTimeMs() / result.getTotalArtifacts() : 0);
-        logger.info("========================================");
-
         return result;
     }
 
     /**
-     * Downloads a single artifact using 3-tier resolution.
-     * Resolution order:
-     *   Tier-1: Local repositories (custom, then .m2)
-     *   Tier-2: POM-declared remote repositories
-     *   Tier-3: Maven Central as fallback
+     * Downloads a single artifact using 3-tier resolution with log buffering.
+     * All artifact-specific logs are buffered and flushed atomically to prevent
+     * interleaving of log output from concurrent download threads.
      */
     private DownloadOutcome downloadSingleArtifact(
             Artifact artifact,
@@ -368,6 +362,41 @@ public class ParallelDownloadManager {
             DownloadConfiguration downloadConfig,
             AtomicBoolean cancelFlag) {
 
+        List<String> messageBuffer = new ArrayList<>();
+        DownloadOutcome outcome = doDownloadSingleArtifact(
+            artifact, customRepoPath, defaultRepoPath,
+            pomRepositories, remoteDownloaders, downloadConfig,
+            cancelFlag, messageBuffer);
+
+        // Flush buffer atomically to prevent log interleaving between threads
+        if (!messageBuffer.isEmpty()) {
+            synchronized (logger) {
+                for (String line : messageBuffer) {
+                    logger.info("[DOWNLOAD] {}", line);
+                }
+            }
+        }
+
+        return outcome;
+    }
+
+    /**
+     * Internal implementation of single artifact download with buffered logging.
+     * Resolution order:
+     *   Tier-1: Local repositories (custom, then .m2)
+     *   Tier-2: POM-declared remote repositories
+     *   Tier-3: Maven Central as fallback
+     */
+    private DownloadOutcome doDownloadSingleArtifact(
+            Artifact artifact,
+            Path customRepoPath,
+            Path defaultRepoPath,
+            List<JavaRepository> pomRepositories,
+            Map<String, HttpArtifactDownloader> remoteDownloaders,
+            DownloadConfiguration downloadConfig,
+            AtomicBoolean cancelFlag,
+            List<String> messageBuffer) {
+
         ArtifactCoordinate coordinate = ArtifactCoordinate.fromAetherArtifact(artifact);
         String threadName = Thread.currentThread().getName();
 
@@ -377,13 +406,13 @@ public class ParallelDownloadManager {
                 return DownloadOutcome.failed(coordinate, "Cancelled", null);
             }
 
-            logger.debug("[{}] Processing: {}", threadName, coordinate);
+            messageBuffer.add(String.format("[%s] Processing: %s", threadName, coordinate));
 
             // Check custom repository
             if (customRepoPath != null) {
                 Path customJar = localChecker.checkCustomRepository(artifact, customRepoPath);
                 if (customJar != null) {
-                    logger.debug("[{}] Found in custom repository: {}", threadName, coordinate);
+                    messageBuffer.add(String.format("[%s] Found in custom repository: %s", threadName, coordinate));
                     return DownloadOutcome.skippedLocal(coordinate, "custom-repository", customJar);
                 }
             }
@@ -391,7 +420,7 @@ public class ParallelDownloadManager {
             // Check default repository
             Path defaultJar = localChecker.checkDefaultRepository(artifact, defaultRepoPath);
             if (defaultJar != null) {
-                logger.debug("[{}] Found in default repository: {}", threadName, coordinate);
+                messageBuffer.add(String.format("[%s] Found in default repository: %s", threadName, coordinate));
                 return DownloadOutcome.skippedLocal(coordinate, "m2-repository", defaultJar);
             }
 
@@ -405,8 +434,8 @@ public class ParallelDownloadManager {
             // ========== TIER-2: POM-DECLARED REPOSITORIES ==========
             // Try POM repositories before falling back to Maven Central
             if (pomRepositories != null && !pomRepositories.isEmpty()) {
-                logger.debug("[{}] Checking {} POM repositories for: {}",
-                    threadName, pomRepositories.size(), coordinate);
+                messageBuffer.add(String.format("[%s] Checking %d POM repositories for: %s",
+                    threadName, pomRepositories.size(), coordinate));
 
                 for (JavaRepository repo : pomRepositories) {
                     // Check cancellation between repositories
@@ -417,16 +446,16 @@ public class ParallelDownloadManager {
                     try {
                         HttpArtifactDownloader remoteDownloader = remoteDownloaders.get(repo.getUrl());
                         if (remoteDownloader != null) {
-                            logger.debug("[{}] Trying POM repository: {} for {}",
-                                threadName, repo.getId(), coordinate);
+                            messageBuffer.add(String.format("[%s] Trying POM repository: %s for %s",
+                                threadName, repo.getId(), coordinate));
 
                             DownloadResult pomResult = remoteDownloader.download(
                                 artifact, targetPath, downloadConfig
                             );
 
                             if (pomResult.isSuccess()) {
-                                logger.debug("[{}] Found in POM repository {}: {}",
-                                    threadName, repo.getId(), coordinate);
+                                messageBuffer.add(String.format("[%s] Found in POM repository %s: %s",
+                                    threadName, repo.getId(), coordinate));
                                 return DownloadOutcome.success(coordinate,
                                     "pom-repository:" + repo.getId(), pomResult.getDownloadedPath());
                             }
@@ -434,30 +463,30 @@ public class ParallelDownloadManager {
                     } catch (ArtifactDownloadException e) {
                         // Log but continue to next repository
                         if (e.getMessage() != null && e.getMessage().contains("404")) {
-                            logger.debug("[{}] Not found in {}: {}", threadName, repo.getId(), coordinate);
+                            messageBuffer.add(String.format("[%s] Not found in %s: %s", threadName, repo.getId(), coordinate));
                         } else {
-                            logger.debug("[{}] Error downloading from {}: {}",
-                                threadName, repo.getId(), e.getSanitizedMessage());
+                            messageBuffer.add(String.format("[%s] Error downloading from %s: %s",
+                                threadName, repo.getId(), e.getSanitizedMessage()));
                         }
                     } catch (Exception e) {
-                        logger.debug("[{}] Unexpected error with repository {}: {}",
-                            threadName, repo.getId(), e.getMessage());
+                        messageBuffer.add(String.format("[%s] Unexpected error with repository %s: %s",
+                            threadName, repo.getId(), e.getMessage()));
                     }
                 }
 
-                logger.debug("[{}] Not found in any POM repository, falling back to Maven Central: {}",
-                    threadName, coordinate);
+                messageBuffer.add(String.format("[%s] Not found in any POM repository, falling back to Maven Central: %s",
+                    threadName, coordinate));
             }
 
             // ========== TIER-3: MAVEN CENTRAL (FALLBACK) ==========
             // Download from Maven Central as last resort
-            logger.debug("[{}] Downloading from Maven Central: {}", threadName, coordinate);
+            messageBuffer.add(String.format("[%s] Downloading from Maven Central: %s", threadName, coordinate));
             DownloadResult result = httpDownloader.download(
                 artifact, targetPath, downloadConfig
             );
 
             if (result.isSuccess()) {
-                logger.debug("[{}] Downloaded successfully: {}", threadName, coordinate);
+                messageBuffer.add(String.format("[%s] Downloaded successfully: %s", threadName, coordinate));
                 return DownloadOutcome.success(coordinate, result.getSource(), result.getDownloadedPath());
             } else {
                 if (result.isNotFound()) {
@@ -467,10 +496,10 @@ public class ParallelDownloadManager {
             }
 
         } catch (ArtifactDownloadException e) {
-            logger.error("[{}] Download failed for {}: {}", threadName, coordinate, e.getSanitizedMessage());
+            messageBuffer.add(String.format("[%s] Download failed for %s: %s", threadName, coordinate, e.getSanitizedMessage()));
             return DownloadOutcome.failed(coordinate, e.getSanitizedMessage(), e);
         } catch (Exception e) {
-            logger.error("[{}] Unexpected error for {}: {}", threadName, coordinate, e.getMessage());
+            messageBuffer.add(String.format("[%s] Unexpected error for %s: %s", threadName, coordinate, e.getMessage()));
             return DownloadOutcome.failed(coordinate, "Unexpected error: " + e.getMessage(), null);
         }
     }

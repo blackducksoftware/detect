@@ -17,7 +17,6 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -425,8 +424,9 @@ class MavenModuleProcessor {
         try {
             // Step 1: Extract Aether dependencies from compile scope
             List<org.eclipse.aether.graph.Dependency> aetherDependencies = new ArrayList<>();
+            Set<String> seenGavs = new HashSet<>();
             if (compileResult != null && compileResult.getRoot() != null) {
-                extractAetherDependenciesFromNode(compileResult.getRoot(), aetherDependencies);
+                extractAetherDependenciesFromNode(compileResult.getRoot(), aetherDependencies, seenGavs);
                 logger.debug("Module {} - Extracted {} dependencies from compile scope", moduleGav, aetherDependencies.size());
             }
 
@@ -503,10 +503,16 @@ class MavenModuleProcessor {
 
     /**
      * Recursively extracts Aether dependencies from a dependency node tree.
+     * Uses a Set for O(1) duplicate detection instead of linear search.
+     *
+     * @param node The root dependency node to traverse
+     * @param dependencies The list to collect Aether dependencies into
+     * @param seenGavs Set of already-seen GAV keys for O(1) deduplication
      */
     private void extractAetherDependenciesFromNode(
         DependencyNode node,
-        List<org.eclipse.aether.graph.Dependency> dependencies
+        List<org.eclipse.aether.graph.Dependency> dependencies,
+        Set<String> seenGavs
     ) {
         if (node == null) {
             return;
@@ -514,28 +520,19 @@ class MavenModuleProcessor {
 
         org.eclipse.aether.graph.Dependency dependency = node.getDependency();
         if (dependency != null && dependency.getArtifact() != null) {
-            // Check for duplicates
-            boolean exists = dependencies.stream()
-                .anyMatch(d -> isSameArtifact(d.getArtifact(), dependency.getArtifact()));
-            if (!exists) {
+            String gavKey = dependency.getArtifact().getGroupId() + ":"
+                          + dependency.getArtifact().getArtifactId() + ":"
+                          + dependency.getArtifact().getVersion();
+            if (seenGavs.add(gavKey)) {
                 dependencies.add(dependency);
             }
         }
 
         if (node.getChildren() != null) {
             for (DependencyNode child : node.getChildren()) {
-                extractAetherDependenciesFromNode(child, dependencies);
+                extractAetherDependenciesFromNode(child, dependencies, seenGavs);
             }
         }
-    }
-
-    /**
-     * Checks if two Aether artifacts represent the same artifact.
-     */
-    private boolean isSameArtifact(Artifact a1, Artifact a2) {
-        return a1.getGroupId().equals(a2.getGroupId()) &&
-               a1.getArtifactId().equals(a2.getArtifactId()) &&
-               a1.getVersion().equals(a2.getVersion());
     }
 
     /**
@@ -600,6 +597,7 @@ class MavenModuleProcessor {
 
     /**
      * Resolves the transitive dependency tree for a shaded dependency and grafts it onto the main graph.
+     * Uses a shared cache to avoid re-resolving the same GAV across modules.
      */
     private int resolveAndGraftShadedSubTree(
         Dependency parentNode,
@@ -611,32 +609,44 @@ class MavenModuleProcessor {
         Path downloadDir
     ) {
         try {
-            // Download the shaded dependency's POM
-            JavaCoordinates coords = new JavaCoordinates(groupId, artifactId, version, "pom");
-            MavenDownloader downloader = new MavenDownloader(context.getRootRepositories(), downloadDir);
-            File shadedPomFile = downloader.downloadPom(coords);
+            String gavKey = groupId + ":" + artifactId + ":" + version;
+            Map<String, DependencyGraph> cache = context.getShadedSubTreeCache();
+            DependencyGraph shadedGraph = cache.get(gavKey);
 
-            if (shadedPomFile == null || !shadedPomFile.exists()) {
-                logger.debug("Could not download POM for shaded dependency {}:{}:{}", groupId, artifactId, version);
-                return 0;
+            if (shadedGraph == null) {
+                // Cache miss — resolve the full sub-tree
+                // Download the shaded dependency's POM
+                JavaCoordinates coords = new JavaCoordinates(groupId, artifactId, version, "pom");
+                MavenDownloader downloader = new MavenDownloader(context.getRootRepositories(), downloadDir);
+                File shadedPomFile = downloader.downloadPom(coords);
+
+                if (shadedPomFile == null || !shadedPomFile.exists()) {
+                    logger.debug("Could not download POM for shaded dependency {}:{}:{}", groupId, artifactId, version);
+                    return 0;
+                }
+
+                // Build the shaded project model
+                MavenProject shadedProject = context.getProjectBuilder().buildProject(shadedPomFile);
+
+                // Resolve the shaded dependency's transitive tree
+                CollectResult shadedCollectResult = context.getDependencyResolver().resolveDependencies(
+                    shadedPomFile, shadedProject, context.getLocalRepoPath().toFile(), context.getCompileScope());
+
+                if (shadedCollectResult == null || shadedCollectResult.getRoot() == null) {
+                    return 0;
+                }
+
+                // Transform to BDIO graph
+                MavenParseResult parseResult = context.getGraphParser().parse(shadedCollectResult);
+                shadedGraph = context.getGraphTransformer().transform(parseResult);
+
+                cache.put(gavKey, shadedGraph);
+                logger.debug("Cached shaded sub-tree for: {}", gavKey);
+            } else {
+                logger.debug("Cache hit for shaded dependency sub-tree: {}", gavKey);
             }
 
-            // Build the shaded project model
-            MavenProject shadedProject = context.getProjectBuilder().buildProject(shadedPomFile);
-
-            // Resolve the shaded dependency's transitive tree
-            CollectResult shadedCollectResult = context.getDependencyResolver().resolveDependencies(
-                shadedPomFile, shadedProject, context.getLocalRepoPath().toFile(), context.getCompileScope());
-
-            if (shadedCollectResult == null || shadedCollectResult.getRoot() == null) {
-                return 0;
-            }
-
-            // Transform to BDIO graph
-            MavenParseResult parseResult = context.getGraphParser().parse(shadedCollectResult);
-            DependencyGraph shadedGraph = context.getGraphTransformer().transform(parseResult);
-
-            // Graft the shaded graph under the parent node
+            // Graft the shaded graph under the parent node (always executes, even on cache hit)
             return graftSubGraph(shadedGraph, mainGraph, parentNode, context);
 
         } catch (Exception e) {
