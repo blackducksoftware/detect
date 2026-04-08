@@ -25,7 +25,13 @@ gradle.allprojects {
     }
 
     afterEvaluate { currentProject ->
-        // Capture all needed project properties during configuration
+        // Capture all needed project properties during configuration phase.
+        // NOTE: configuration enumeration is intentionally NOT done here.
+        // Many plugins (AGP, KSP, etc.) use lazy configuration registration and their
+        // afterEvaluate callbacks fire AFTER this one (FIFO order; Detect's init script
+        // registers first). Configurations like debugCompileClasspath, debugRuntimeClasspath,
+        // and _agp_internal_* are therefore not yet visible here.
+        // Configuration enumeration is deferred to gradle.projectsEvaluated below.
         def projectPath = currentProject.path
         def projectName = currentProject.name
         def isRootProject = isRoot(currentProject)
@@ -47,68 +53,12 @@ gradle.allprojects {
         def projectVersion = currentProject.version.toString()
         def projectParent = currentProject.parent ? currentProject.parent.toString() : "none"
 
-        // Prepare configuration names (handles single quotes issues )
-        def configurationNames = getFilteredConfigurationNames(currentProject,
-             '${excludedConfigurationNames?replace("\\", "\\\\")?replace("\'", "\\\'")}',
-             '${includedConfigurationNames?replace("\\", "\\\\")?replace("\'", "\\\'")}'
-         )
-
-        def selectedConfigs = []
-        configurationNames.each { name ->
-            try {
-                def config = currentProject.configurations.findByName(name)
-                if (config) {
-                    selectedConfigs.add(config)
-                }
-            } catch (Exception e) {
-                println "Could not process configuration: " + name
-                throw e
-            }
-        }
-
-        // Check if the project should be included based on project-level filters
-        def projectMatchesFilters = (rootOnly && isRootProject) ||
-            (!rootOnly && shouldInclude(projectNameExcludeFilter, projectNameIncludeFilter, projectName) &&
-             shouldInclude(projectPathExcludeFilter, projectPathIncludeFilter, projectPath))
-
-        // Include if passes project filters and has selected configs or is phantom without build file.
-        def isPhantom = !currentProject.buildFile.exists()
-        def shouldIncludeProject = projectMatchesFilters && (!selectedConfigs.isEmpty() || isPhantom)
-
-        // Capture output file path during configuration
+        // Compute output file path now (deterministic, needs only project path).
+        // The actual file is created in projectsEvaluated (only if the project is included).
+        // doLast uses file existence to decide whether to append metadata.
         def projectFilePathConfig = computeProjectFilePath(projectPath, extractionDir, rootProject)
 
-        // Configure the dependencies task during configuration time
         def dependenciesTask = currentProject.tasks.getByName('dependencies')
-
-        // Always set configurations explicitly: null → Gradle reports everything; empty Set → reports nothing.
-        // Phantoms always get an empty Set — their configs maybe (e.g. detekt, ktlint) are injected by
-        // parent subprojects{} blocks, not real dependencies, and must never leak into scan results.
-        if (isPhantom) {
-            dependenciesTask.configurations = [] as Set
-        } else {
-            dependenciesTask.configurations = selectedConfigs as Set
-        }
-
-        // Set the output file at configuration time if possible
-        if (shouldIncludeProject) {
-            // Create output file directly during configuration
-            File projectFile = new File(projectFilePathConfig)
-            if (projectFile.exists()) {
-                projectFile.delete()
-            }
-            projectFile.createNewFile()
-
-            // Set the output file during configuration phase
-            try {
-                dependenciesTask.outputFile = projectFile
-                println "Set output file during configuration to " + projectFile.getAbsolutePath()
-            } catch (Exception e) {
-                println "Could not set outputFile property during configuration: " + e.message
-                e.printStackTrace()
-                throw e
-            }
-        }
 
         dependenciesTask.doFirst {
             try {
@@ -148,10 +98,11 @@ gradle.allprojects {
 
         dependenciesTask.doLast {
             try {
-                if(shouldIncludeProject) {
-                    File projectFile = new File(projectFilePathConfig)
-
-                    // Add metadata at the end of the file
+                // Use file existence as the inclusion signal.
+                // The output file is created in projectsEvaluated if and only if
+                // the project passes filters and has resolvable configurations.
+                File projectFile = new File(projectFilePathConfig)
+                if (projectFile.exists()) {
                     def metaDataPieces = []
                     metaDataPieces.add('')
                     metaDataPieces.add('DETECT META DATA START')
@@ -169,7 +120,6 @@ gradle.allprojects {
                     metaDataPieces.add('DETECT META DATA END')
                     metaDataPieces.add('')
 
-                    // Append to file
                     projectFile << metaDataPieces.join('\n')
                 }
             } catch (Exception e) {
@@ -182,6 +132,79 @@ gradle.allprojects {
         // This forces the dependencies task to be run
         currentProject.gatherDependencies.finalizedBy(currentProject.tasks.getByName('dependencies'))
         currentProject.gatherDependencies
+    }
+}
+
+// Enumerate configurations and set up output files AFTER all projects have been fully evaluated.
+// gradle.projectsEvaluated fires once, after every project's afterEvaluate callbacks have
+// completed — including AGP's, KSP's, ktlint's, and any other plugin that registers
+// configurations lazily during its own afterEvaluate.  At this point all configurations
+// (debugCompileClasspath, debugRuntimeClasspath, _agp_internal_*, UTP, kotlin-extension, …)
+// are visible in project.configurations, so nothing is silently dropped.
+//
+// This hook still runs during the configuration phase (before task-graph assembly), so it
+// is fully compatible with Gradle's configuration cache — no project references escape into
+// task actions.
+gradle.projectsEvaluated {
+    gradle.allprojects { currentProject ->
+        def dependenciesTask = currentProject.tasks.findByName('dependencies')
+        if (!dependenciesTask) return
+
+        def extractionDir = System.getProperty('GRADLEEXTRACTIONDIR')
+        def projectPath = currentProject.path
+        def rootProject = currentProject.gradle.rootProject
+        def projectName = currentProject.name
+        def isRootProject = isRoot(currentProject)
+        def isPhantom = !currentProject.buildFile.exists()
+
+        def projectMatchesFilters = (rootOnly && isRootProject) ||
+            (!rootOnly && shouldInclude(projectNameExcludeFilter, projectNameIncludeFilter, projectName) &&
+             shouldInclude(projectPathExcludeFilter, projectPathIncludeFilter, projectPath))
+
+        // Enumerate configurations — all plugins' afterEvaluate have now run.
+        def configurationNames = getFilteredConfigurationNames(
+            currentProject,
+            '${excludedConfigurationNames?replace("\\", "\\\\")?replace("\'", "\\\'")}',
+            '${includedConfigurationNames?replace("\\", "\\\\")?replace("\'", "\\\'")}'
+        )
+
+        def selectedConfigs = []
+        configurationNames.each { name ->
+            try {
+                def config = currentProject.configurations.findByName(name)
+                if (config) selectedConfigs.add(config)
+            } catch (Exception e) {
+                println "Could not process configuration: " + name
+                throw e
+            }
+        }
+
+        def shouldIncludeProject = projectMatchesFilters && (!selectedConfigs.isEmpty() || isPhantom)
+
+        // Phantoms always get an empty Set — their configs (e.g. detekt, ktlint) are injected
+        // by parent subprojects{} blocks, not real dependencies, and must never leak into results.
+        if (isPhantom) {
+            dependenciesTask.configurations = [] as Set
+        } else {
+            dependenciesTask.configurations = selectedConfigs as Set
+        }
+
+        // Create the output file only for included projects.
+        // doLast checks file existence to decide whether to append metadata.
+        if (shouldIncludeProject) {
+            def projectFilePathConfig = computeProjectFilePath(projectPath, extractionDir, rootProject)
+            File projectFile = new File(projectFilePathConfig)
+            if (projectFile.exists()) projectFile.delete()
+            projectFile.createNewFile()
+            try {
+                dependenciesTask.outputFile = projectFile
+                println "Set output file during projectsEvaluated to " + projectFile.getAbsolutePath()
+            } catch (Exception e) {
+                println "Could not set outputFile property: " + e.message
+                e.printStackTrace()
+                throw e
+            }
+        }
     }
 }
 
