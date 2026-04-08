@@ -53,6 +53,10 @@ gradle.allprojects {
         def projectVersion = currentProject.version.toString()
         def projectParent = currentProject.parent ? currentProject.parent.toString() : "none"
 
+        if (extractionDir == null) {
+            throw new IllegalStateException("GRADLEEXTRACTIONDIR system property is not set")
+        }
+
         // Compute output file path now (deterministic, needs only project path).
         // The actual file is created in projectsEvaluated (only if the project is included).
         // doLast uses file existence to decide whether to append metadata.
@@ -62,10 +66,6 @@ gradle.allprojects {
 
         dependenciesTask.doFirst {
             try {
-                if (extractionDir == null) {
-                    throw new IllegalStateException("GRADLEEXTRACTIONDIR system property is not set")
-                }
-
                 // Create metadata file for root project
                 if (isRootProject) {
                     try {
@@ -183,7 +183,9 @@ gradle.projectsEvaluated {
 
         // Phantoms always get an empty Set — their configs (e.g. detekt, ktlint) are injected
         // by parent subprojects{} blocks, not real dependencies, and must never leak into results.
-        if (isPhantom) {
+        // Excluded projects also get an empty Set so we don't trigger unnecessary (and potentially
+        // failing) dependency resolution for projects whose output Detect will ignore.
+        if (isPhantom || !projectMatchesFilters) {
             dependenciesTask.configurations = [] as Set
         } else {
             dependenciesTask.configurations = selectedConfigs as Set
@@ -213,8 +215,9 @@ gradle.projectsEvaluated {
 <#noparse>
 def isRoot(Project project) {
     try {
-        Project rootProject = project.gradle.rootProject;
-        return project.name.equals(rootProject.name)
+        // Use path rather than name: a subproject can share the root's name,
+        // but only the root project has path ":"
+        return project.path == ":"
     } catch (Exception e) {
         println "ERROR in isRoot: " + e.message
         e.printStackTrace()
