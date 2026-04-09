@@ -244,9 +244,8 @@ public class DetectableOptionFactory {
         // CLI takes priority for mirrors to allow explicit override of settings.xml
         List<MavenMirrorConfig> mirrorConfigurations = new MavenMirrorConfigResolver()
             .resolve(cliMirrorUrl, cliMirrorOf, cliMirrorUsername, cliMirrorPassword, settingsFilePath);
-
-        // Read test scope inclusion configuration
-        Boolean includeTestScope = detectConfiguration.getValue(DetectProperties.DETECT_MAVEN_INCLUDE_TEST_SCOPE);
+        List<String> resolverExcludedScopes = detectConfiguration.getValue(DetectProperties.DETECT_MAVEN_EXCLUDED_SCOPES);
+        boolean includeTestScope = !resolverExcludedScopes.contains("test");
 
         return new MavenResolverOptions(externalRepositories, proxyConfig, mirrorConfigurations, includeTestScope);
     }

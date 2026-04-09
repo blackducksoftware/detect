@@ -99,10 +99,10 @@ public class MavenMirrorConfigurator {
                         .addPassword(config.getPassword())
                         .build();
 
-                    // Authentication is keyed by the MIRROR URL, not the mirror ID
-                    // When Aether resolves a mirrored repository, it uses the mirror's URL
-                    // to look up authentication credentials
-                    authSelector.add(config.getUrl(), auth);
+                    // Authentication is keyed by the mirror's repository ID.
+                    // DefaultAuthenticationSelector.getAuthentication() calls repository.getId(),
+                    // so the key here must match the mirror's ID (set via mirrorSelector.add())
+                    authSelector.add(config.getId(), auth);
 
                     logger.info("Registered authentication for mirror '{}' (URL: {})",
                         config.getId(), config.getUrl());
