@@ -245,10 +245,13 @@ public class DetectableOptionFactory {
         List<MavenMirrorConfig> mirrorConfigurations = new MavenMirrorConfigResolver()
             .resolve(cliMirrorUrl, cliMirrorOf, cliMirrorUsername, cliMirrorPassword, settingsFilePath);
 
-        // Read test scope inclusion configuration
-        Boolean includeTestScope = detectConfiguration.getValue(DetectProperties.DETECT_MAVEN_INCLUDE_TEST_SCOPE);
+        // Derive test scope flag from detect.maven.excluded.scopes
+        // If "test" is present in the excluded list, test-scope dependencies are skipped.
+        List<String> resolverExcludedScopes = detectConfiguration.getValue(DetectProperties.DETECT_MAVEN_EXCLUDED_SCOPES);
+        boolean includeTestScope = !resolverExcludedScopes.contains("test");
 
         return new MavenResolverOptions(externalRepositories, proxyConfig, mirrorConfigurations, includeTestScope);
+
     }
 
     public ConanCliOptions createConanCliOptions() {
