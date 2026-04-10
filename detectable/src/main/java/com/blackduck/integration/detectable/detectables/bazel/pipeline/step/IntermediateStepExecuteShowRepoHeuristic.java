@@ -1,7 +1,6 @@
 package com.blackduck.integration.detectable.detectables.bazel.pipeline.step;
 
 import com.blackduck.integration.detectable.detectable.exception.DetectableException;
-import com.blackduck.integration.detectable.detectable.executable.ExecutableFailedException;
 import com.blackduck.integration.detectable.detectables.bazel.query.BazelQueryBuilder;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelVersion;
 import org.slf4j.Logger;
@@ -106,13 +105,15 @@ public class IntermediateStepExecuteShowRepoHeuristic implements IntermediateSte
                 .showRepoRawBatch(repoArgs)
                 .build();
 
-            Optional<String> result = bazel.executeToString(modArgs);
+            // Use executeModCommandToString: a broken module extension (e.g., bazel_jar_jar+ on Bazel 9)
+            // causes exit code 2 even when the batch output is fully valid in stdout.
+            Optional<String> result = bazel.executeModCommandToString(modArgs);
             if (result.isPresent() && !result.get().trim().isEmpty()) {
                 List<String> blocks = splitShowRepoOutput(result.get());
                 logger.info("Batched show_repo succeeded: {} blocks from {} repos", blocks.size(), repoArgs.size());
                 return Optional.of(blocks);
             }
-        } catch (ExecutableFailedException e) {
+        } catch (Exception e) {
             logger.debug("Batched show_repo failed: {}", e.getMessage());
         }
         return Optional.empty();
@@ -208,15 +209,15 @@ public class IntermediateStepExecuteShowRepoHeuristic implements IntermediateSte
      * @return true if the command succeeded and output was added, false otherwise
      */
     private boolean tryShowRepoAddOutput(String repoArg, List<String> out) {
-        try {
-            Optional<String> res = bazel.executeToString(Arrays.asList("mod", "show_repo", repoArg));
-            if (res.isPresent()) {
-                out.add(res.get());
-                return true;
-            }
-        } catch (ExecutableFailedException e) {
-            logger.debug("mod show_repo {} failed: {}", repoArg, e.getMessage());
+        // Use executeModCommandToString: a broken module extension (e.g., bazel_jar_jar+ on Bazel 9)
+        // poisons the exit code to 2 even when show_repo produced a valid repo definition in stdout.
+        // stdout being non-empty is the authoritative success signal for mod show_repo.
+        Optional<String> res = bazel.executeModCommandToString(Arrays.asList("mod", "show_repo", repoArg));
+        if (res.isPresent()) {
+            out.add(res.get());
+            return true;
         }
+        logger.debug("mod show_repo {} produced no usable output", repoArg);
         return false;
     }
 }

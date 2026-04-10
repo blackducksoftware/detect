@@ -174,8 +174,17 @@ public class HttpFamilyProber {
 
         ExecutableOutput output = bazel.executeWithoutThrowing(modGraphJsonCmd);
         if (output.getReturnCode() != 0) {
-            logger.info("'bazel mod graph --output json' returned exit code {}; falling back to legacy probing.", output.getReturnCode());
-            return Optional.empty();
+            // Don't bail immediately on non-zero exit: a broken module extension (e.g., bazel_jar_jar+
+            // on Bazel 9) poisons the exit code even when the JSON graph was fully emitted to stdout.
+            // Check whether stdout has usable JSON before giving up.
+            String stdout = output.getStandardOutput();
+            if (stdout == null || stdout.trim().isEmpty()) {
+                logger.info("'bazel mod graph --output json' returned exit code {} with no output; falling back to legacy probing.",
+                    output.getReturnCode());
+                return Optional.empty();
+            }
+            logger.info("'bazel mod graph --output json' returned exit code {} but stdout has content; continuing with JSON parsing.",
+                output.getReturnCode());
         }
 
         String jsonOutput = output.getStandardOutput();
@@ -379,7 +388,9 @@ public class HttpFamilyProber {
             .showRepo(repo, canonical)
             .build();
 
-        Optional<String> modOut = bazel.executeToString(modArgs);
+        // Use executeModCommandToString: a broken module extension (e.g., bazel_jar_jar+ on Bazel 9)
+        // poisons the exit code to 2 even when show_repo produced valid output in stdout.
+        Optional<String> modOut = bazel.executeModCommandToString(modArgs);
         if (!modOut.isPresent()) {
             return false;
         }
