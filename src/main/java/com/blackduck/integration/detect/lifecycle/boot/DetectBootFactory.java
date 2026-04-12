@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.SortedMap;
 
-import com.blackduck.integration.detect.lifecycle.autonomous.AutonomousManager;
 import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +46,7 @@ import com.blackduck.integration.detect.tool.detector.executable.DetectExecutabl
 import com.blackduck.integration.detect.tool.detector.executable.DetectExecutableResolver;
 import com.blackduck.integration.detect.tool.detector.executable.DetectExecutableRunner;
 import com.blackduck.integration.detect.tool.detector.executable.DirectoryExecutableFinder;
+import com.blackduck.integration.detect.workflow.aiassist.AiAssistanceManager;
 import com.blackduck.integration.detect.tool.detector.executable.SystemPathExecutableFinder;
 import com.blackduck.integration.detect.tool.detector.inspector.ArtifactoryZipInstaller;
 import com.blackduck.integration.detect.tool.detector.inspector.DockerInspectorInstaller;
@@ -239,7 +239,11 @@ public class DetectBootFactory {
         InteractiveModeDecisionTree interactiveModeDecisionTree = new InteractiveModeDecisionTree(detectInfo, blackDuckConnectivityChecker, propertySources, gson);
         return new InteractiveManager(propertySourceBuilder, writer, interactiveModeDecisionTree);
     }
-    
+
+    public AiAssistanceManager createAiAssistanceManager() {
+        return new AiAssistanceManager(gson);
+    }
+
     public void stripCorrelationId() {
         detectRunId.stripCorrelationId();
     }

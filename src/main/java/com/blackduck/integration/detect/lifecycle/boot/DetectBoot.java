@@ -45,7 +45,9 @@ import com.blackduck.integration.detect.configuration.help.print.HelpPrinter;
 import com.blackduck.integration.detect.configuration.validation.DeprecationResult;
 import com.blackduck.integration.detect.configuration.validation.DetectConfigurationBootManager;
 import com.blackduck.integration.detect.interactive.InteractiveManager;
+import com.blackduck.integration.detect.interactive.InteractiveWriter;
 import com.blackduck.integration.detect.lifecycle.autonomous.AutonomousManager;
+import com.blackduck.integration.detect.workflow.aiassist.AiAssistanceManager;
 import com.blackduck.integration.detect.lifecycle.boot.decision.BlackDuckDecision;
 import com.blackduck.integration.detect.lifecycle.boot.decision.ProductDecider;
 import com.blackduck.integration.detect.lifecycle.boot.decision.RunDecision;
@@ -131,6 +133,12 @@ public class DetectBoot {
             InteractiveManager interactiveManager = detectBootFactory.createInteractiveManager(propertySources);
             MapPropertySource interactivePropertySource = interactiveManager.executeInteractiveMode();
             propertySources.add(0, interactivePropertySource);
+        } else if (detectArgumentState.isAiAssistance()) {
+            File sourceDirectory = resolveSourceDirectory(propertySources);
+            AiAssistanceManager aiAssistanceManager = detectBootFactory.createAiAssistanceManager();
+            InteractiveWriter writer = InteractiveWriter.defaultWriter(System.console(), System.in, System.out);
+            MapPropertySource aiPropertySource = aiAssistanceManager.run(sourceDirectory, writer, propertySources);
+            propertySources.add(0, aiPropertySource);
         }
 
         SortedMap<String, String> scanSettingsProperties = new TreeMap<>();
@@ -356,5 +364,21 @@ public class DetectBoot {
 
     private void publishCollectedPropertyValues(Map<String, String> maskedRawPropertyValues) {
         eventSystem.publishEvent(Event.RawMaskedPropertyValuesCollected, new TreeMap<>(maskedRawPropertyValues));
+    }
+
+    /**
+     * Resolves the project source directory for the AI pre-scan phase, before the full
+     * {@link com.blackduck.integration.configuration.config.PropertyConfiguration} is built.
+     * Reads {@code detect.source.path} directly from the raw property sources.
+     * Falls back to the current working directory if not set.
+     */
+    private File resolveSourceDirectory(List<PropertySource> propertySources) {
+        for (PropertySource source : propertySources) {
+            String path = source.getValue("detect.source.path");
+            if (path != null && !path.trim().isEmpty()) {
+                return new File(path.trim());
+            }
+        }
+        return new File(System.getProperty("user.dir"));
     }
 }

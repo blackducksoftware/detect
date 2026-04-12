@@ -11,6 +11,7 @@ public class DetectArgumentStateParser {
         boolean isHelpJsonDocument = parser.isArgumentPresent("-hjson", "--helpjson");
         boolean isHelpYamlDocument = parser.isArgumentPresent("-hyaml", "--helpyaml");
         boolean isInteractive = parser.isArgumentPresent("-i", "--interactive");
+        boolean isAiAssistance = parser.isArgumentPresent("--ai", "--ai-assist");
 
         boolean isVerboseHelp = parser.isArgumentPresent("-hv", "--helpVerbose");
         boolean isDeprecatedHelp = parser.isArgumentPresent("-hd", "--helpDeprecated");
@@ -35,7 +36,8 @@ public class DetectArgumentStateParser {
             isDeprecatedHelp,
             parsedValue,
             isDiagnostic,
-            isGenerateAirGapZip
+            isGenerateAirGapZip,
+            isAiAssistance
         );
     }
 

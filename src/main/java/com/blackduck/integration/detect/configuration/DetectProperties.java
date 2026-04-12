@@ -1138,6 +1138,17 @@ public class DetectProperties {
             .setGroups(DetectGroup.IMPACT_ANALYSIS, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
 
+    public static final BooleanProperty DETECT_AI_ASSISTANCE_ENABLED =
+        BooleanProperty.newBuilder("detect.ai.assistance.enabled", false)
+            .setInfo("AI Assistance Enabled", DetectPropertyFromVersion.VERSION_11_4_0)
+            .setHelp(
+                "If set to true, Detect will analyse your project before scanning and suggest an optimal configuration.",
+                "Triggers an interactive pre-scan phase that extracts project context, asks targeted questions, "
+              + "and uses an LLM to generate a ready-to-run detect command. "
+              + "Optionally requires detect.llm.api.key, detect.llm.api.endpoint, and detect.llm.name for AI explanations.")
+            .setGroups(DetectGroup.AI_ASSIST)
+            .build();
+
     public static final BooleanProperty DETECT_QUACK_PATCH_ENABLED =
             BooleanProperty.newBuilder("detect.quack.patch.enabled", false)
                     .setInfo("Quack Patch Enabled", DetectPropertyFromVersion.VERSION_11_2_0)

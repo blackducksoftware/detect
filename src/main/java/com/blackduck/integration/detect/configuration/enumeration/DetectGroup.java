@@ -78,7 +78,8 @@ public enum DetectGroup implements Group {
     REPORT_SETTING("report setting"),
     SEARCH("search"),
     DEFAULT("default"),
-    QUACKPATCH("quack patch");
+    QUACKPATCH("quack patch"),
+    AI_ASSIST("ai assist");
 
     private final String name;
     private final Group superGroup;

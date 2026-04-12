@@ -1,0 +1,30 @@
+{
+  "detector": "MAVEN",
+  "flags": [
+    {
+      "key": "detect.maven.excluded.scopes",
+      "type": "List<String>",
+      "description": "A comma-separated list of Maven scopes to exclude from the BOM. Dependencies in these scopes will not appear in the scan results.",
+      "example": "--detect.maven.excluded.scopes=test",
+      "signal": "hasTestDependencies",
+      "guidance": "If the project has test-scoped dependencies and you want a production-only BOM, exclude the 'test' scope."
+    },
+    {
+      "key": "detect.maven.build.command",
+      "type": "String",
+      "description": "Additional Maven command line arguments to pass to the mvn/mvnw command. Use this to activate profiles with -P<profileName>.",
+      "example": "--detect.maven.build.command=-Pdev",
+      "signal": "hasProfiles",
+      "guidance": "If the project uses Maven profiles and a specific profile changes which dependencies are resolved, activate it with -P<name>."
+    },
+    {
+      "key": "detect.maven.excluded.modules",
+      "type": "List<String>",
+      "description": "A comma-separated list of Maven sub-module names to exclude from the BOM. Modules listed here will be skipped during dependency tree parsing.",
+      "example": "--detect.maven.excluded.modules=test-utils,integration-tests",
+      "signal": "hasModules",
+      "guidance": "If the project is multi-module and some modules (e.g. test utilities, integration test modules) should not appear in the production BOM, exclude them by name."
+    }
+  ]
+}
+
