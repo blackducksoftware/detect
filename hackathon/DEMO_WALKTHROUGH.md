@@ -21,7 +21,7 @@ No manual flag knowledge required. No docs to read.
 ## Demo Project
 
 ```
-Logs-Test-Debug/hackathon/demoMavenProject/
+hackathon/demoMavenProject/
 ├── pom.xml                  ← Parent: 4 modules, 2 profiles (dev/production), test deps
 ├── core/                    ← Business logic            [PRODUCTION]
 ├── api/                     ← Spring Boot REST layer    [PRODUCTION]
@@ -147,7 +147,7 @@ User types: `test-utils,integration-tests`
 
 ```bash
 java -jar build/libs/detect-*.jar \
-  --detect.source.path=Logs-Test-Debug/hackathon/demoMavenProject \
+  --detect.source.path=hackathon/demoMavenProject \
   --blackduck.url=<your-bd-url> \
   --blackduck.api.token=<your-token> \
   --detect.project.name=ai-assist-demo \
@@ -166,7 +166,7 @@ Open the Black Duck project and note the BOM. You will see:
 
 ```bash
 java -jar build/libs/detect-*.jar \
-  --detect.source.path=Logs-Test-Debug/hackathon/demoMavenProject \
+  --detect.source.path=hackathon/demoMavenProject \
   --blackduck.url=<your-bd-url> \
   --blackduck.api.token=<your-token> \
   --detect.project.name=ai-assist-demo \
@@ -235,7 +235,7 @@ Configuration accepted. Starting scan with AI-suggested flags.
 
 ```bash
 java -jar build/libs/detect-*.jar \
-  --detect.source.path=Logs-Test-Debug/hackathon/demoMavenProject \
+  --detect.source.path=hackathon/demoMavenProject \
   --blackduck.url=<your-bd-url> \
   --blackduck.api.token=<your-token> \
   --detect.project.name=ai-assist-demo \
@@ -262,6 +262,67 @@ The flow is identical — the only difference is the flag suggestion comes from 
 | `test-utils` module deps | ✔ present | ✗ excluded (module filter) |
 | `integration-tests` module deps | ✔ present | ✗ excluded (module filter) |
 | **Total components** | **~20+** | **~6–8** |
+
+---
+
+## Why Use an LLM? (Why not just rules?)
+
+This is a fair question — and the mock mode in the code makes it especially pointed:
+`buildMockSuggestion()` in `AiAssistanceLlmClient` is literally a set of `if` statements that
+produce the same 3 flag suggestions. For today's 3 Maven flags, rules work perfectly.
+So why involve an LLM at all?
+
+### The mock mode IS rules — and that's intentional
+
+The mock path demonstrates the **minimum viable version** of the idea.
+It also serves as a fallback when no LLM credentials are configured, so the full
+interactive flow works in CI and offline demos without an API key.
+Both paths produce an identical `LlmFlagSuggestion` — the architecture treats them as interchangeable.
+
+### Where the LLM genuinely adds value
+
+#### 1. The flags catalog is the key architectural bet
+
+The LLM receives `maven-flags.json` as a **grounding document at runtime**.
+The promise is: to support a new detector (Gradle, Bazel, npm), you write one JSON file
+describing its flags — the LLM reads it and decides which flags apply.
+A pure rules engine requires new `if/else` branches per detector, per flag, per combination.
+
+#### 2. Flag interactions grow combinatorially with scale
+
+Three flags are easy to reason about with rules.
+Detect has dozens of flags across many detectors.
+Rules for *"if flag A and flag B are both triggered, but B conflicts with C unless D is also set"*
+become unmaintainable quickly. The LLM reasons over the full catalog naturally.
+
+#### 3. Free-text answer interpretation
+
+Questions 2 and 3 accept free-text input (profile names, module names typed by the user).
+Rules handle the happy path.
+An LLM gracefully handles `"skip"`, `""`, `"none"`, typos, or `"prod,staging"` without
+case-by-case string matching.
+
+#### 4. Context-aware, natural-language explanations
+
+The **"Why:"** block needs per-flag, context-sensitive explanations — not canned strings.
+Rules produce `"User activated the 'production' profile"` for every profile name.
+The LLM can explain *why that specific choice matters for this specific project*, e.g.:
+> *"Activating 'production' replaces the H2 in-memory dev DB with PostgreSQL —
+> the correct driver for the production BOM."*
+
+### The honest trade-off
+
+| Concern | Rules | LLM |
+|---|---|---|
+| Today — 3 Maven flags | ✔ works perfectly | overkill |
+| Tomorrow — Gradle + npm + Bazel | combinatorial explosion in code | just add a JSON catalog file |
+| Offline / no API key | ✔ always works | needs mock fallback (already built) |
+| Predictability | ✔ fully deterministic | requires output parsing + graceful fallback |
+| Explanation quality | canned, repetitive strings | context-aware prose per project |
+| New flag added to catalog | requires code change | zero code change — update JSON only |
+
+The mock mode is the rules engine standing in until an LLM is available.
+The real payoff arrives when the catalog grows past what a rules engine can sanely maintain.
 
 ---
 
