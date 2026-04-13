@@ -19,7 +19,7 @@ import com.blackduck.integration.detect.workflow.blackduck.integratedmatching.mo
 class ScanCountsPayloadCreatorTest {
 
     @Test
-    void testMultSigScansPlusBinary() {
+    void testMultSigScansWithUnsupportedBinaryIgnored() {
         WaitableCodeLocationData signatureScanWaitableCodeLocationData = Mockito.mock(WaitableCodeLocationData.class);
         Mockito.when(signatureScanWaitableCodeLocationData.getDetectTool()).thenReturn(DetectTool.SIGNATURE_SCAN);
         Set<String> successfulSigScanCodeLocationNames = new HashSet<>();
@@ -44,11 +44,13 @@ class ScanCountsPayloadCreatorTest {
         Map<DetectTool, Integer> additionalCounts = new HashMap<>();
         additionalCounts.put(DetectTool.DETECTOR, 17);
 
-        ScanCountsPayload payload = creator.create(waitableCodeLocationDataList, additionalCounts);
+        // BINARY is not supported in correlated mode and is filtered out by CorrelatedScanningDecision
+        Set<String> supportedScanTypes = new HashSet<>(Arrays.asList("PACKAGE_MANAGER", "SIGNATURE"));
+        ScanCountsPayload payload = creator.createPayloadFromCountsByTool(waitableCodeLocationDataList, additionalCounts, supportedScanTypes);
 
         assertEquals(17, payload.getScanCounts().getPackageManager());
         assertEquals(2, payload.getScanCounts().getSignature());
-        assertEquals(3, payload.getScanCounts().getBinary());
+        assertEquals(0, payload.getScanCounts().getBinary());
     }
 
     @Test
@@ -89,7 +91,9 @@ class ScanCountsPayloadCreatorTest {
             iacWaitableCodeLocationData);
 
         ScanCountsPayloadCreator creator = new ScanCountsPayloadCreator();
-        ScanCountsPayload payload = creator.create(waitableCodeLocationDataList, new HashMap<>());
+        // BINARY is not supported in correlated mode and is filtered out by CorrelatedScanningDecision
+        Set<String> supportedScanTypes = new HashSet<>(Arrays.asList("PACKAGE_MANAGER", "SIGNATURE"));
+        ScanCountsPayload payload = creator.createPayloadFromCountsByTool(waitableCodeLocationDataList, new HashMap<>(), supportedScanTypes);
 
         assertEquals(6, payload.getScanCounts().getPackageManager());
         assertEquals(0, payload.getScanCounts().getSignature());

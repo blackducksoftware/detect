@@ -8,6 +8,7 @@ import com.blackduck.integration.blackduck.version.BlackDuckVersion;
 import com.blackduck.integration.detect.configuration.enumeration.BlackduckScanMode;
 import com.blackduck.integration.detect.lifecycle.boot.product.BlackDuckConnectivityResult;
 import com.blackduck.integration.detect.lifecycle.boot.product.version.BlackDuckVersionParser;
+import com.blackduck.integration.detect.workflow.blackduck.settings.DetectPropertiesSetting;
 import com.blackduck.integration.detect.workflow.phonehome.PhoneHomeManager;
 
 public class BlackDuckRunData {
@@ -16,20 +17,33 @@ public class BlackDuckRunData {
     private final BlackDuckServicesFactory blackDuckServicesFactory;
     private final BlackduckScanMode scanMode;
     private final boolean waitAtScanLevel;
+    private final Optional<DetectPropertiesSetting> serverDetectProperties;
     private Optional<BlackDuckVersion> blackDuckServerVersion;
+
+    private BlackDuckRunData() {
+        this.phoneHomeManager = null;
+        this.blackDuckServerConfig = null;
+        this.blackDuckServicesFactory = null;
+        this.scanMode = null;
+        this.waitAtScanLevel = false;
+        this.serverDetectProperties = Optional.empty();
+        this.blackDuckServerVersion = Optional.empty();
+    }
 
     protected BlackDuckRunData(
         PhoneHomeManager phoneHomeManager,
         BlackDuckConnectivityResult blackDuckConnectivityResult,
         BlackDuckServicesFactory blackDuckServicesFactory,
         BlackduckScanMode scanMode,
-        boolean waitAtScanLevel
+        boolean waitAtScanLevel,
+        Optional<DetectPropertiesSetting> serverDetectProperties
     ) {
         this.phoneHomeManager = phoneHomeManager;
         this.blackDuckServerConfig = blackDuckConnectivityResult != null ? blackDuckConnectivityResult.getBlackDuckServerConfig() : null;
         this.blackDuckServicesFactory = blackDuckServicesFactory;
         this.scanMode = scanMode;
         this.waitAtScanLevel = waitAtScanLevel;
+        this.serverDetectProperties = serverDetectProperties;
 
         determineBlackDuckServerVersion(blackDuckConnectivityResult);
     }
@@ -51,7 +65,7 @@ public class BlackDuckRunData {
     }
 
     public static BlackDuckRunData offline() {
-        return new BlackDuckRunData(null, null, null, null, false);
+        return new BlackDuckRunData();
     }
 
     public static BlackDuckRunData online(
@@ -59,13 +73,20 @@ public class BlackDuckRunData {
         BlackDuckServicesFactory blackDuckServicesFactory,
         PhoneHomeManager phoneHomeManager,
         BlackDuckConnectivityResult blackDuckConnectivityResult,
-        boolean waitAtScanLevel
+        boolean waitAtScanLevel,
+        Optional<DetectPropertiesSetting> serverDetectProperties
     ) {
-        return new BlackDuckRunData(phoneHomeManager, blackDuckConnectivityResult, blackDuckServicesFactory, scanMode, waitAtScanLevel);
+        return new BlackDuckRunData(phoneHomeManager, blackDuckConnectivityResult, blackDuckServicesFactory, scanMode, waitAtScanLevel, serverDetectProperties);
     }
 
-    public static BlackDuckRunData onlineNoPhoneHome(BlackduckScanMode scanMode, BlackDuckServicesFactory blackDuckServicesFactory, BlackDuckConnectivityResult blackDuckConnectivityResult, boolean waitAtScanLevel) {
-        return new BlackDuckRunData(null, blackDuckConnectivityResult, blackDuckServicesFactory, scanMode, waitAtScanLevel);
+    public static BlackDuckRunData onlineNoPhoneHome(
+        BlackduckScanMode scanMode,
+        BlackDuckServicesFactory blackDuckServicesFactory,
+        BlackDuckConnectivityResult blackDuckConnectivityResult,
+        boolean waitAtScanLevel,
+        Optional<DetectPropertiesSetting> serverDetectProperties
+    ) {
+        return new BlackDuckRunData(null, blackDuckConnectivityResult, blackDuckServicesFactory, scanMode, waitAtScanLevel, serverDetectProperties);
     }
 
     public Boolean isNonPersistent() {
@@ -82,6 +103,10 @@ public class BlackDuckRunData {
 
     public Optional<BlackDuckVersion> getBlackDuckServerVersion() {
         return blackDuckServerVersion;
+    }
+
+    public Optional<DetectPropertiesSetting> getServerDetectProperties() {
+        return serverDetectProperties;
     }
 
     private void determineBlackDuckServerVersion(BlackDuckConnectivityResult blackDuckConnectivityResult) {

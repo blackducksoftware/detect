@@ -1,7 +1,6 @@
 package com.blackduck.integration.detectable.detectables.go.gomodfile.parse.model;
 
 import java.util.List;
-import java.util.Objects;
 
 import com.blackduck.integration.bdio.model.dependency.Dependency;
 
@@ -49,7 +48,10 @@ public class GoDependencyNode {
 
     @Override
     public int hashCode() {
-        return Objects.hash(dependency, children, isRootNode);
+        // Only use dependency to match equals() contract
+        // Including children or isRootNode would violate the equals-hashCode contract
+        // because equals() only compares dependency
+        return dependency != null ? dependency.hashCode() : 0;
     }
     
     /**

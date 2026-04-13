@@ -14,6 +14,7 @@ import com.blackduck.integration.configuration.property.types.enumallnone.list.A
 import com.blackduck.integration.detect.configuration.DetectConfigurationFactory;
 import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
+import com.blackduck.integration.detect.lifecycle.boot.decision.CorrelatedScanningDecision;
 import com.blackduck.integration.detect.lifecycle.autonomous.AutonomousManager;
 import com.blackduck.integration.detect.workflow.phonehome.PhoneHomeManager;
 import com.blackduck.integration.detector.base.DetectorType;
@@ -91,13 +92,13 @@ public class DetectRun {
             BdioResult bdio;
             Boolean forceBdio = bootSingletons.getDetectConfigurationFactory().forceBdio();
             logger.debug("Integrated Matching Correlation ID: {}", bootSingletons.getDetectRunId().getCorrelationId());
-            String correlationId = getCorrelationId(operationRunner.getDetectConfigurationFactory(), bootSingletons);
+            CorrelatedScanningDecision correlatedScanningDecision = bootSingletons.getCorrelatedScanningDecision();
             if (!universalToolsResult.getDetectCodeLocations().isEmpty()
                     || (productRunData.shouldUseBlackDuckProduct()
                     && !productRunData.getBlackDuckRunData().isOnline()
                     && forceBdio && !universalToolsResult.didAnyFail()
                     && exitCodeManager.getWinningExitCodeRequest().getExitCodeType().isSuccess())) {
-                bdio = stepRunner.generateBdio(correlationId, universalToolsResult, nameVersion);
+                bdio = stepRunner.generateBdio(operationRunner.getCorrelationIdForScanType("PACKAGE_MANAGER"), universalToolsResult, nameVersion);
             } else {
                 bdio = BdioResult.none();
             }
@@ -125,8 +126,8 @@ public class DetectRun {
                 );
 
                 if (blackDuckRunData.isNonPersistent() && blackDuckRunData.isOnline()) {
-                    RapidModeStepRunner rapidModeSteps = new RapidModeStepRunner(operationRunner, stepHelper, bootSingletons.getGson(), correlationId, bootSingletons.getDirectoryManager());
-                    
+                    RapidModeStepRunner rapidModeSteps = new RapidModeStepRunner(operationRunner, stepHelper, bootSingletons.getGson(), bootSingletons.getDetectRunId().getCorrelationId(), bootSingletons.getDirectoryManager());
+
                     Optional<String> scaaasFilePath = bootSingletons.getDetectConfigurationFactory().getScaaasFilePath();
                     rapidModeSteps.runOnline(blackDuckRunData, nameVersion, bdio, universalToolsResult.getDockerTargetData(), scaaasFilePath);
                 } else if (blackDuckRunData.isNonPersistent()) {
@@ -137,7 +138,7 @@ public class DetectRun {
                             stepHelper, 
                             bootSingletons.getGson(), 
                             new ScanCountsPayloadCreator(),
-                            correlationId);
+                            correlatedScanningDecision);
                     intelligentModeSteps.runOnline(blackDuckRunData, bdio, nameVersion, productRunData.getDetectToolFilter(), universalToolsResult.getDockerTargetData(), binaryTargets);
                 } else {
                     IntelligentModeStepRunner intelligentModeSteps = new IntelligentModeStepRunner(
@@ -145,7 +146,7 @@ public class DetectRun {
                             stepHelper, 
                             bootSingletons.getGson(), 
                             new ScanCountsPayloadCreator(), 
-                            correlationId);
+                            correlatedScanningDecision);
                     intelligentModeSteps.runOffline(nameVersion, universalToolsResult.getDockerTargetData(), bdio);
                 }
             }
@@ -168,10 +169,6 @@ public class DetectRun {
     public void phoneHomeApplicableDetectorTypes(PhoneHomeManager phoneHomeManager, Set<DetectorType> applicableDetectorTypes) {
         Map<DetectorType, Long> detectorTimes = applicableDetectorTypes.stream().collect(Collectors.toMap(detectorType -> detectorType, detectorType -> 0L));
         phoneHomeManager.savePhoneHomeDetectorTimes(detectorTimes);
-    }
-
-    private String getCorrelationId(DetectConfigurationFactory configurationFactory, BootSingletons bootSingletons) {
-        return configurationFactory.isCorrelatedScanningEnabled()? bootSingletons.getDetectRunId().getCorrelationId():null;
     }
 
     private Set<String> getDecidedTools(BootSingletons bootSingletons, Map<DetectTool, Set<String>> scanTypeEvidenceMap) {
