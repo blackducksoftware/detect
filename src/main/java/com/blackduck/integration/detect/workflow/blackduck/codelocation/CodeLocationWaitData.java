@@ -23,6 +23,9 @@ public class CodeLocationWaitData {
         return notificationRange;
     }
 
+    // used when:
+        //1. we poll notifications api eventually.
+        //2. when we do that reports thing "even if not set to wait for reuslts" in intelligent step runner
     public Set<String> getCodeLocationNames() {
         return codeLocationNames;
     }

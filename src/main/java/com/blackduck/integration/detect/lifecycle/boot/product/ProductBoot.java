@@ -172,7 +172,8 @@ public class ProductBoot {
             return true; // Skip phone home will be applied at the library level.
         }
     }
-    
+
+    @Deprecated
     private boolean shouldWaitAtScanLevel(BlackDuckConnectivityResult blackDuckConnectivityResult) {
         BlackDuckVersionParser parser = new BlackDuckVersionParser();
         Optional<BlackDuckVersion> blackDuckServerVersion = parser.parse(blackDuckConnectivityResult.getContactedServerVersion());

@@ -182,7 +182,6 @@ public class IntelligentModeStepRunner {
             // Calculate code locations. We do this even if we don't wait as we want to report code location data 
             // in various reports.
             CodeLocationResults codeLocationResults = calculateCodeLocations(codeLocationAccumulator, codeLocationsUploadStartTime); // note: use to create "true" notification range by calculating mins/maxes that may or may not be used later. otherwise, all we need is names of all code locations.
-            codeLocationResults.getCodeLocationWaitData().setNotificationRange(codeLocationsUploadStartTime); // wait didn't we do this line above?
 
             if (operationRunner.createBlackDuckPostOptions().shouldWaitForResults()) {    // property set or reports wanted
                 // Waiting at the scan level is more reliable, do that if the BD server is new enough (any BD version newer than 2023.1.1 is new enough).

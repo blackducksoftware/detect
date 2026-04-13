@@ -75,7 +75,9 @@ public class BlackDuckRunData {
     public BlackduckScanMode getScanMode() {
         return scanMode;
     }
-    
+
+    //repeated method
+    @Deprecated
     public boolean shouldWaitAtScanLevel() {
         return waitAtScanLevel;
     }

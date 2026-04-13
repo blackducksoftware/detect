@@ -701,7 +701,7 @@ public class OperationRunner {
         }
     }
 
-    public void uploadBdioEntries(BlackDuckRunData blackDuckRunData, UUID bdScanId) throws IntegrationException, IOException {
+    public void uploadBdioEntriesForRapidMode(BlackDuckRunData blackDuckRunData, UUID bdScanId) throws IntegrationException, IOException {
         // parse directory and upload all chunks
         File bdioDirectory = directoryManager.getBdioOutputDirectory();
 
@@ -1002,18 +1002,18 @@ public class OperationRunner {
     //Post actions
     //End post actions
 
-    public final BdioUploadResult uploadBdioIntelligentPersistent(BlackDuckRunData blackDuckRunData, BdioResult bdioResult, Long timeout, String scassScanId) throws OperationException {
+    public final BdioUploadResult uploadBdioForIntelligentPersistentMode(BlackDuckRunData blackDuckRunData, BdioResult bdioResult, Long timeout, String scassScanId) throws OperationException {
         return auditLog.namedPublic(
             "Upload Intelligent Persistent Bdio",
             () -> new IntelligentPersistentUploadOperation(
                 blackDuckRunData.getBlackDuckServicesFactory().createIntelligentPersistenceService(),
                 timeout
-            ).uploadBdioFiles(bdioResult, scassScanId, blackDuckRunData.getBlackDuckServerConfig().getBlackDuckUrl())
+            ).uploadBdioFilesWithoutInitiatingNotificationRange(bdioResult, scassScanId, blackDuckRunData.getBlackDuckServerConfig().getBlackDuckUrl())
         );
     }
 
-    public final CodeLocationWaitData calculateCodeLocationWaitData(List<WaitableCodeLocationData> codeLocationCreationDatas) throws OperationException {
-        return auditLog.namedInternal("Calculate Code Location Wait Data", () -> new CodeLocationWaitCalculator().calculateWaitData(codeLocationCreationDatas));
+    public final CodeLocationWaitData calculateCodeLocationWaitDataGivenNotificationRangeStart(List<WaitableCodeLocationData> codeLocationCreationDatas, long codeLocationsUploadStartTime) throws OperationException {
+        return auditLog.namedInternal("Calculate Code Location Wait Data", () -> new CodeLocationWaitCalculator().calculateWaitData(codeLocationCreationDatas, codeLocationsUploadStartTime));
     }
 
     public final void publishCodeLocationData(Set<FormattedCodeLocation> codeLocationData) throws OperationException {
@@ -1287,7 +1287,8 @@ public class OperationRunner {
         });
     }
 
-    public NotificationTaskRange createCodeLocationRange(BlackDuckRunData blackDuckRunData) throws OperationException {
+    public NotificationTaskRange createCodeLocationsWithoutNotificationTaskRange(BlackDuckRunData blackDuckRunData) throws OperationException {
+        logger.info("~~ABOUT TO CALCULATE CODE LOCATION RANGE~~");
         return auditLog.namedInternal(
             "Create Code Location Task Range",
             () -> blackDuckRunData.getBlackDuckServicesFactory().createCodeLocationCreationService().calculateCodeLocationRange()
@@ -1310,6 +1311,7 @@ public class OperationRunner {
         });
     }
 
+    @Deprecated
     public SignatureScannerCodeLocationResult calculateWaitableSignatureScannerCodeLocations(
         NotificationTaskRange notificationTaskRange,
         List<SignatureScannerReport> reports
@@ -1413,7 +1415,7 @@ public class OperationRunner {
             return Optional.empty();
         });
     }
-
+// the below method is only to be called if version <2023.1.1 or somethign happens w/ binary
     public void waitForCodeLocations(BlackDuckRunData blackDuckRunData, CodeLocationWaitData codeLocationWaitData, NameVersion projectNameVersion)
         throws OperationException {
         auditLog.namedPublic("Wait for Code Locations", () -> {
@@ -1426,7 +1428,7 @@ public class OperationRunner {
                     codeLocationWaitData.getNotificationRange().getStartDate(),
                     codeLocationWaitData.getNotificationRange().getEndDate()
                 ))
-                .orElseThrow(() -> new DetectUserFriendlyException("Date range for notification range wasn't set.", ExitCodeType.FAILURE_UNKNOWN_ERROR));
+                .orElseThrow(() -> new DetectUserFriendlyException("Date range for notification range wasn't set.", ExitCodeType.FAILURE_UNKNOWN_ERROR)); // need to make sure this avenue still works.
 
             CodeLocationCreationService codeLocationCreationService = blackDuckRunData.getBlackDuckServicesFactory().createCodeLocationCreationService();
             CodeLocationWaitResult result = codeLocationCreationService.waitForCodeLocations(
