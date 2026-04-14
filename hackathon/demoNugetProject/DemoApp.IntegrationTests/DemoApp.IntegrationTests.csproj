@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>DemoApp.IntegrationTests</RootNamespace>
+    <Description>Integration tests for DemoApp — this is a TEST-ONLY component that should NOT appear in a production BOM.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- ── Project references to code under test ───────────────── -->
+    <ProjectReference Include="..\DemoApp.Core\DemoApp.Core.csproj" />
+    <ProjectReference Include="..\DemoApp.Api\DemoApp.Api.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- ── Test framework dependencies (should NOT appear in production BOM) ── -->
+    <PackageReference Include="xunit" Version="2.7.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.7">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+    <PackageReference Include="Testcontainers" Version="3.8.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.3" />
+    <PackageReference Include="coverlet.collector" Version="6.0.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>
+

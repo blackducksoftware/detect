@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>DemoApp.Api</RootNamespace>
+    <Description>ASP.NET Core Web API — this is a PRODUCTION component.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- ── Project reference to Core ───────────────────────────── -->
+    <ProjectReference Include="..\DemoApp.Core\DemoApp.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- ── Runtime dependencies (should appear in BOM) ─────────── -->
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+
+    <!-- ── Dev-only dependencies (should NOT appear in production BOM) ── -->
+    <!-- StyleCop analyzer — code-style enforcement at compile time only -->
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>
+

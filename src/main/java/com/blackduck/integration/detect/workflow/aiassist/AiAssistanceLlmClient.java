@@ -238,6 +238,23 @@ public class AiAssistanceLlmClient {
                     "Skips graph probing and uses the specified sources directly — "
                     + "faster and more deterministic in CI/CD environments.");
             }
+
+            // ── NuGet mock mappings ──────────────────────────────────────────────
+
+            // Q1 — dev dependencies (question contains "dev dependencies")
+            if (q.contains("dev dependenc") && a.equalsIgnoreCase("yes")) {
+                flags.put("detect.nuget.dependency.types.excluded", "DEV");
+                explanations.put("detect.nuget.dependency.types.excluded",
+                    "User chose to exclude dev-only dependencies (analyzers, source generators) — produces a clean production-only BOM.");
+            }
+
+            // Q2 — exclude projects from solution
+            if (q.contains("project") && !a.equalsIgnoreCase("(skipped)") && !a.isEmpty()) {
+                flags.put("detect.nuget.excluded.modules", a);
+                explanations.put("detect.nuget.excluded.modules",
+                    "User excluded '" + a + "' — these are test/utility projects that should not "
+                    + "appear in the production Bill of Materials.");
+            }
         }
 
         return new LlmFlagSuggestion(flags, explanations);

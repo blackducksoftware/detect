@@ -1,0 +1,22 @@
+{
+  "detector": "NUGET",
+  "flags": [
+    {
+      "key": "detect.nuget.dependency.types.excluded",
+      "type": "Enum(DEV)",
+      "description": "Excludes development-only NuGet dependencies (analyzers, source generators, build tools marked with PrivateAssets=all) from the BOM.",
+      "example": "--detect.nuget.dependency.types.excluded=DEV",
+      "signal": "hasDevDependencies",
+      "guidance": "If the project has dev-only packages (analyzers like StyleCop, Roslyn analyzers, source generators) and you want a production-only BOM, exclude the 'DEV' type."
+    },
+    {
+      "key": "detect.nuget.excluded.modules",
+      "type": "List<String>",
+      "description": "A comma-separated list of project names (supports regex) within the solution to exclude from the BOM. Projects with matching names will be skipped during inspection.",
+      "example": "--detect.nuget.excluded.modules=MyApp.Tests,MyApp.IntegrationTests",
+      "signal": "hasTestProjects",
+      "guidance": "If the solution contains test or utility projects that should not appear in the production BOM, exclude them by name."
+    }
+  ]
+}
+

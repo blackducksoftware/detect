@@ -14,7 +14,10 @@ public class ParsedProject {
     public String getPath() {
         return path;
     }
-    //public String name; //Available, not used
+
+    public String getName() {
+        return name;
+    }
     //public String guid; //Available, not used
 
     //public List<String> projectDependencies; //Available, not used
