@@ -1,0 +1,21 @@
+"""
+MODULE.bazel — bzlmod module definition for demo_bazel_project.
+
+AI-ASSIST SIGNAL: The presence of this file alongside WORKSPACE marks the project
+as a hybrid Bazel repository. BazelAiContextAdapter will set isHybridRepo = true,
+which triggers Q2 asking the user to force a Bazel mode (workspace or bzlmod).
+
+In this demo the external JVM and HTTP dependencies are managed via WORKSPACE
+(rules_jvm_external / maven_install).  MODULE.bazel is present to reflect
+a realistic scenario where a team has started migrating to bzlmod but has not
+yet fully converted all external deps.
+"""
+
+module(
+    name = "demo_bazel_project",
+    version = "1.0.0",
+)
+
+# When fully migrated to bzlmod, external deps would be declared here via
+# bazel_dep().  For now WORKSPACE handles them (hybrid repo).
+

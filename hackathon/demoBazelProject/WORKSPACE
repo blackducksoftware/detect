@@ -1,0 +1,71 @@
+workspace(name = "demo_bazel_project")
+
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+# ── bazel_skylib (required by rules_jvm_external) ─────────────────────────────
+http_archive(
+    name = "bazel_skylib",
+    sha256 = "74d544d96f4a5bb630d465ca8bbcfe231e3594e5aae57e1edbf17a6eb3ca2506",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.3.0/bazel-skylib-1.3.0.tar.gz",
+        "https://github.com/bazelbuild/bazel-skylib/releases/download/1.3.0/bazel-skylib-1.3.0.tar.gz",
+    ],
+)
+
+load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
+
+bazel_skylib_workspace()
+
+# ── rules_jvm_external setup ──────────────────────────────────────────────────
+# Provides the maven_install() rule used below.
+http_archive(
+    name = "rules_jvm_external",
+    sha256 = "b17d7388feb9bfa7f2fa09031b32707df529f26c91ab9e5d909eb1676badd9a6",
+    strip_prefix = "rules_jvm_external-4.5",
+    urls = ["https://github.com/bazelbuild/rules_jvm_external/archive/4.5.zip"],
+)
+
+load("@rules_jvm_external//:defs.bzl", "maven_install")
+
+# ── Maven JVM dependencies ─────────────────────────────────────────────────────
+# AI-ASSIST SIGNAL: maven_install dependency source detected by BazelAiContextAdapter.
+# This line triggers detection of DependencySource.MAVEN_INSTALL.
+maven_install(
+    name = "maven",
+    artifacts = [
+        # Production runtime dependencies
+        "com.google.guava:guava:32.1.2-jre",
+        "com.fasterxml.jackson.core:jackson-databind:2.17.0",
+        "org.slf4j:slf4j-api:2.0.12",
+        "ch.qos.logback:logback-classic:1.5.3",
+    ],
+    repositories = [
+        "https://repo1.maven.org/maven2",
+    ],
+    # maven_install_json = "//:maven_install.json",  # enable after running: bazel run @maven//:pin
+)
+
+# ── HTTP Archive: Google gflags C++ utility library ───────────────────────────
+# AI-ASSIST SIGNAL: http_archive dependency source detected by BazelAiContextAdapter.
+# This line triggers detection of DependencySource.HTTP_ARCHIVE.
+http_archive(
+    name = "com_github_gflags_gflags",
+    sha256 = "34af2f15cf7367513b352bdcd2493ab14ce43692d2dcd9dfc499492966c64dcf",
+    strip_prefix = "gflags-2.2.2",
+    urls = [
+        "https://github.com/gflags/gflags/archive/v2.2.2.tar.gz",
+    ],
+)
+
+http_archive(
+    name = "com_github_google_glog",
+    sha256 = "21bc744fb7f2fa701ee8db339ded7dce4f975d0d55837a97be7d46e8382dea5a",
+    strip_prefix = "glog-0.5.0",
+    urls = [
+        "https://github.com/google/glog/archive/v0.5.0.tar.gz",
+    ],
+)
+
+
+
+

@@ -186,15 +186,17 @@ public class AiAssistanceLlmClient {
             String q = entry.getKey().toLowerCase();
             String a = entry.getValue().trim();
 
-            // Q1 — test dependencies (question is now "Exclude test deps?")
-            if (q.contains("test") && a.equalsIgnoreCase("yes")) {
+            // ── Maven mock rules ──────────────────────────────────────────────
+
+            // Q1 — test dependencies
+            if (q.contains("exclude test dependencies") && a.equalsIgnoreCase("yes")) {
                 flags.put("detect.maven.excluded.scopes", "test");
                 explanations.put("detect.maven.excluded.scopes",
                     "User chose to exclude test dependencies — produces a clean production-only BOM.");
             }
 
             // Q2 — Maven profile
-            if (q.contains("profile") && !a.equalsIgnoreCase("(skipped)") && !a.isEmpty()) {
+            if (q.contains("activate a maven profile") && !a.equalsIgnoreCase("(skipped)") && !a.isEmpty()) {
                 flags.put("detect.maven.build.command", "-P" + a);
                 explanations.put("detect.maven.build.command",
                     "User activated the '" + a + "' profile — ensures the correct environment-specific "
@@ -202,11 +204,39 @@ public class AiAssistanceLlmClient {
             }
 
             // Q3 — exclude sub-modules
-            if (q.contains("module") && !a.equalsIgnoreCase("(skipped)") && !a.isEmpty()) {
+            if (q.contains("exclude any sub-modules") && !a.equalsIgnoreCase("(skipped)") && !a.isEmpty()) {
                 flags.put("detect.maven.excluded.modules", a);
                 explanations.put("detect.maven.excluded.modules",
                     "User excluded '" + a + "' — these are test/utility modules that should not "
                     + "appear in the production Bill of Materials.");
+            }
+
+            // ── Bazel mock rules ──────────────────────────────────────────────
+
+            // Q1 — Bazel target (required — detector won't run without this)
+            if (q.contains("target label") && !a.equalsIgnoreCase("(skipped)") && !a.isEmpty()) {
+                flags.put("detect.bazel.target", a);
+                explanations.put("detect.bazel.target",
+                    "Required to run the Bazel detector — specifies which build target's "
+                    + "dependencies to analyse.");
+            }
+
+            // Q2 — Bazel mode (workspace / bzlmod)
+            if (q.contains("bazel mode") && !a.equalsIgnoreCase("(skipped)") && !a.isEmpty()) {
+                flags.put("detect.bazel.mode", a.toUpperCase().trim());
+                explanations.put("detect.bazel.mode",
+                    "Explicit mode prevents silent mis-detection in hybrid repos that contain "
+                    + "both WORKSPACE and MODULE.bazel.");
+            }
+
+            // Q3 — dependency sources (skip probing)
+            if (q.contains("dependency sources") && q.contains("probe")
+                    && !a.equalsIgnoreCase("(skipped)") && !a.isEmpty()) {
+                flags.put("detect.bazel.dependency.sources",
+                    a.toUpperCase().replace(" ", "").trim());
+                explanations.put("detect.bazel.dependency.sources",
+                    "Skips graph probing and uses the specified sources directly — "
+                    + "faster and more deterministic in CI/CD environments.");
             }
         }
 

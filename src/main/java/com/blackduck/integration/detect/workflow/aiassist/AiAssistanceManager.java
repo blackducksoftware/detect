@@ -5,6 +5,7 @@ import com.blackduck.integration.configuration.source.PropertySource;
 import com.blackduck.integration.detectable.detectable.ai.AiContext;
 import com.blackduck.integration.detectable.detectable.ai.AiContextAdapter;
 import com.blackduck.integration.detectable.detectable.ai.AiQuestion;
+import com.blackduck.integration.detectable.detectables.bazel.BazelAiContextAdapter;
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenAiContextAdapter;
 import com.blackduck.integration.detect.interactive.InteractiveWriter;
 import com.google.gson.Gson;
@@ -204,7 +205,7 @@ public class AiAssistanceManager {
     private List<AiContextAdapter> buildAdapters() {
         List<AiContextAdapter> list = new ArrayList<>();
         list.add(new MavenAiContextAdapter());
-        // list.add(new BazelAiContextAdapter());  ← register here when Bazel is implemented
+        list.add(new BazelAiContextAdapter());
         return list;
     }
 }

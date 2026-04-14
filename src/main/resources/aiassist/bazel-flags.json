@@ -1,0 +1,30 @@
+{
+  "detector": "BAZEL",
+  "flags": [
+    {
+      "key": "detect.bazel.target",
+      "type": "String",
+      "description": "The Bazel build target for which dependencies are collected. REQUIRED — without this property the Bazel detector does not run at all.",
+      "example": "--detect.bazel.target=//myapp:myapp",
+      "signal": "buildTargetsFound",
+      "guidance": "Specify the Bazel label of the production build target to scan (e.g. //myapp:myapp for a java_binary). The dependency graph is computed relative to this target. If multiple targets exist, choose the one that represents the production artifact."
+    },
+    {
+      "key": "detect.bazel.mode",
+      "type": "Enum(WORKSPACE, BZLMOD)",
+      "description": "Overrides Bazel mode auto-detection. Valid values: WORKSPACE, BZLMOD. By default Detect runs 'bazel mod graph' to determine the mode automatically.",
+      "example": "--detect.bazel.mode=WORKSPACE",
+      "signal": "isHybridRepo",
+      "guidance": "If the project contains both WORKSPACE and MODULE.bazel (hybrid repo), auto-detection may silently pick the wrong mode and produce missing or incorrect dependencies. Set to WORKSPACE if external dependencies are declared in WORKSPACE, or BZLMOD if they are managed via MODULE.bazel and bazel_dep."
+    },
+    {
+      "key": "detect.bazel.dependency.sources",
+      "type": "Enum(MAVEN_INSTALL, MAVEN_JAR, HTTP_ARCHIVE, HASKELL_CABAL_LIBRARY, ALL, NONE)",
+      "description": "Explicitly specifies which dependency source pipelines to run. Default NONE triggers automatic graph probing (4-5 extra Bazel queries before extraction). Setting this explicitly skips probing for faster, deterministic CI/CD scans.",
+      "example": "--detect.bazel.dependency.sources=MAVEN_INSTALL,HTTP_ARCHIVE",
+      "signal": "workspaceDependencySources",
+      "guidance": "If the dependency sources are already known from the WORKSPACE file (e.g. maven_install, http_archive), specify them here to skip the probing phase entirely. Use comma-separated values for multiple sources. This is especially valuable in CI/CD environments where scan speed and determinism matter."
+    }
+  ]
+}
+
