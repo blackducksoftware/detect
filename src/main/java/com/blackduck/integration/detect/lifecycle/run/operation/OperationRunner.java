@@ -1834,8 +1834,8 @@ public class OperationRunner {
         }
     }
 
-    public boolean isCorrelationScanningEnabled() {
-        return detectConfigurationFactory.isCorrelatedScanningEnabled();
+    public boolean isCorrelationScanningEnabled(String scanType) {
+        return correlatedScanningDecision.isEnabled() && correlatedScanningDecision.isScanTypeSupported(scanType);
     }
 
     public UUID getScanIdFromScanUrl(HttpUrl blackDuckScanUrl) {
