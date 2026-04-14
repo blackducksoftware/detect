@@ -31,7 +31,7 @@
 * (IDETECT-4980) When `detect.clone.project.version.latest` is set to true, an INFO-level log message will be written to identify the exact project version selected as the clone source.
 * (IDETECT‑4979) Updated the NuGet Inspector to prevent duplicate components from being reported which end up unversioned in the BOM.
 * (IDETECT‑5058) Improved the Poetry detector to eliminate errors encountered while parsing pyproject.toml.
-* (IDETECT‑5013) Fixed an issue in the signature scan fallback logic when SCASS is intentionally bypassed.
+* (IDETECT‑5013) Fixed an issue in the signature scan fallback logic when SCA Scan Service (SCASS) is intentionally bypassed.
 
 ### Dependency Updates
 
