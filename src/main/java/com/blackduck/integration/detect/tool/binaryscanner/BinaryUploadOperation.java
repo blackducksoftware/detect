@@ -117,7 +117,7 @@ public class BinaryUploadOperation {
                 logger.info("Preparing to upload binary scan file: " + binaryScanFile.getAbsolutePath());
                 BinaryScan binaryScan = new BinaryScan(binaryScanFile, projectNameVersion.getName(), projectNameVersion.getVersion(), codeLocationName);
                 BinaryScanBatch binaryScanBatch = new BinaryScanBatch(binaryScan);
-                CodeLocationCreationData<BinaryScanBatchOutput> codeLocationCreationData = binaryScanUploadService.uploadBinaryScan(binaryScanBatch);
+                CodeLocationCreationData<BinaryScanBatchOutput> codeLocationCreationData = binaryScanUploadService.uploadBinaryScanWithoutNotificationsQuery(binaryScanBatch);
 
                 BinaryScanBatchOutput binaryScanBatchOutput = codeLocationCreationData.getOutput();
                 // The throwExceptionForError() in BinaryScanBatchOutput has a bug, so doing that work here
