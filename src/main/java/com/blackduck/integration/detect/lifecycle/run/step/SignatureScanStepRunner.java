@@ -59,11 +59,11 @@ public class SignatureScanStepRunner {
 
         List<SignatureScannerReport> reports;
         try {
-            reports = executeScan(scanBatch, scanBatchRunner, scanPaths, scanIdsToWaitFor, gson, blackDuckRunData.shouldWaitAtScanLevel(), true);
+            reports = executeScan(scanBatch, scanBatchRunner, scanPaths, scanIdsToWaitFor, gson, true);
         } catch (HttpHostConnectException e) {
             logger.warn("Initial Signature Scan failed due to connectivity issues. Retrying scan. Please allow the SCASS IPs to increase scanning performance.");
             scanBatch = operationRunner.createScanBatchOnline(detectRunUuid, scanPaths, projectNameVersion, dockerTargetData, blackDuckRunData, true);
-            reports = executeScan(scanBatch, scanBatchRunner, scanPaths, scanIdsToWaitFor, gson, blackDuckRunData.shouldWaitAtScanLevel(), true);
+            reports = executeScan(scanBatch, scanBatchRunner, scanPaths, scanIdsToWaitFor, gson,true);
         }
 
         return operationRunner.calculateWaitableSignatureScannerCodeLocations(null, reports);
@@ -91,15 +91,15 @@ public class SignatureScanStepRunner {
         List<SignatureScanPath> scanPaths = operationRunner.createScanPaths(projectNameVersion, dockerTargetData);
         ScanBatch scanBatch = operationRunner.createScanBatchOffline(detectRunUuid, scanPaths, projectNameVersion, dockerTargetData);
 
-        executeScan(scanBatch, scanBatchRunner, scanPaths, null, null, false, false);
+        executeScan(scanBatch, scanBatchRunner, scanPaths, null, null,false);
     }
 
-    protected List<SignatureScannerReport> executeScan(ScanBatch scanBatch, ScanBatchRunner scanBatchRunner, List<SignatureScanPath> scanPaths, Set<String> scanIdsToWaitFor, Gson gson, boolean shouldWaitAtScanLevel, boolean isOnline) throws OperationException, IOException {
+    protected List<SignatureScannerReport> executeScan(ScanBatch scanBatch, ScanBatchRunner scanBatchRunner, List<SignatureScanPath> scanPaths, Set<String> scanIdsToWaitFor, Gson gson, boolean isOnline) throws OperationException, IOException {
         // Step 1: Run Scan CLI
         SignatureScanOuputResult scanOuputResult = operationRunner.signatureScan(scanBatch, scanBatchRunner);      
 
         // Step 2: Check results and upload BDIO
-        Set<String> failedScans = processEachScan(scanIdsToWaitFor, scanOuputResult, gson, shouldWaitAtScanLevel, scanBatch.isScassScan(), isOnline, scanBatch.isCsvArchive()); // note: successful scanIDs are added to scanIdsToWaitFor. code location of failed stuff is added to failed scans. this indicates a scass error.
+        Set<String> failedScans = processEachScan(scanIdsToWaitFor, scanOuputResult, gson, scanBatch.isScassScan(), isOnline, scanBatch.isCsvArchive()); // note: successful scanIDs are added to scanIdsToWaitFor. code location of failed stuff is added to failed scans. this indicates a scass error.
 
         // Step 3: Report on results
         List<SignatureScannerReport> reports = operationRunner.createSignatureScanReport(scanPaths, scanOuputResult.getScanBatchOutput().getOutputs(), failedScans);
@@ -151,7 +151,7 @@ public class SignatureScanStepRunner {
         return ScanBatchRunnerUserResult.none();
     }
 
-    private Set<String> processEachScan(Set<String> scanIdsToWaitFor, SignatureScanOuputResult signatureScanOutputResult, Gson gson, boolean shouldWaitAtScanLevel, boolean scassScan, boolean isOnline, boolean isCsvArchive) throws IOException {
+    private Set<String> processEachScan(Set<String> scanIdsToWaitFor, SignatureScanOuputResult signatureScanOutputResult, Gson gson, boolean scassScan, boolean isOnline, boolean isCsvArchive) throws IOException {
         List<ScanCommandOutput> outputs = signatureScanOutputResult.getScanBatchOutput().getOutputs();
         Set<String> failedScans = new HashSet<>();
 
@@ -172,7 +172,7 @@ public class SignatureScanStepRunner {
                 String scanOutputLocation = specificRunOutputDirectory.toString()
                         + SignatureScanResult.OUTPUT_FILE_PATH;
 
-                processOnlineScan(scanIdsToWaitFor, gson, shouldWaitAtScanLevel, scassScan, failedScans, output, // failed scan code lcoation name is added to failed scans
+                processOnlineScan(scanIdsToWaitFor, gson, scassScan, failedScans, output, // failed scan code lcoation name is added to failed scans
                         specificRunOutputDirectory, scanOutputLocation);
             }
         }
@@ -180,7 +180,7 @@ public class SignatureScanStepRunner {
         return failedScans;
     }
 
-    private void processOnlineScan(Set<String> scanIdsToWaitFor, Gson gson, boolean shouldWaitAtScanLevel,
+    private void processOnlineScan(Set<String> scanIdsToWaitFor, Gson gson,
             boolean scassScan, Set<String> failedScans, ScanCommandOutput output, File specificRunOutputDirectory,
             String scanOutputLocation) throws IOException {
         SignatureScanResult result;
@@ -204,7 +204,7 @@ public class SignatureScanStepRunner {
                 scassScanStepRunner.runScassScan(optionalBdio, result);
             }
             
-            if (shouldWaitAtScanLevel && scanIdsToWaitFor != null) { // note: TODOTODOTODO what do we do if scass enabled here?
+            if (scanIdsToWaitFor != null) { // note: TODOTODOTODO what do we do if scass enabled here?
                 scanIdsToWaitFor.addAll(result.parseScanIds());
                 logger.debug("Added the following signature scans to list of scanIds to wait for: {}." , result.parseScanIds());
             }
