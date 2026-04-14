@@ -1407,7 +1407,7 @@ public class OperationRunner {
             return Optional.empty();
         });
     }
-// the below method is only to be called if version <2023.1.1 or somethign happens w/ binary
+
     public void waitForCodeLocations(BlackDuckRunData blackDuckRunData, CodeLocationWaitData codeLocationWaitData, NameVersion projectNameVersion)
         throws OperationException {
         auditLog.namedPublic("Wait for Code Locations", () -> {
@@ -1420,7 +1420,7 @@ public class OperationRunner {
                     codeLocationWaitData.getNotificationRange().getStartDate(),
                     codeLocationWaitData.getNotificationRange().getEndDate()
                 ))
-                .orElseThrow(() -> new DetectUserFriendlyException("Date range for notification range wasn't set.", ExitCodeType.FAILURE_UNKNOWN_ERROR)); // need to make sure this avenue still works.
+                .orElseThrow(() -> new DetectUserFriendlyException("Date range for notification range wasn't set.", ExitCodeType.FAILURE_UNKNOWN_ERROR));
 
             CodeLocationCreationService codeLocationCreationService = blackDuckRunData.getBlackDuckServicesFactory().createCodeLocationCreationService();
             CodeLocationWaitResult result = codeLocationCreationService.waitForCodeLocations(

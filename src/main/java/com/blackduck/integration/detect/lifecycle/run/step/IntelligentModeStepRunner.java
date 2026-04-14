@@ -3,7 +3,10 @@ package com.blackduck.integration.detect.lifecycle.run.step;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.blackduck.integration.detect.lifecycle.run.data.CommonScanResult;
@@ -110,13 +113,13 @@ public class IntelligentModeStepRunner {
         logger.debug("Completed project and version actions.");
         logger.debug("Processing Detect Code Locations.");
 
-        // Used for notifications method of waiting for results (scan level)
+        // Code locations upload waiting mechanisms:
+        // Notifications based (scan level)
         long codeLocationsUploadStartTime = System.currentTimeMillis();
-
-        // Used by new BOM status polling method of waiting for results (BOM summary level)
-        Set<String> scanIdsToWaitFor = new HashSet<>();
-        // Only true if binary scan + bd version too old for multipart upload
         AtomicBoolean mustWaitAtBomSummaryLevel = new AtomicBoolean(false);
+
+        // BOM status based (BOM summary level)
+        Set<String> scanIdsToWaitFor = new HashSet<>();
 
         CodeLocationAccumulator codeLocationAccumulator = new CodeLocationAccumulator();
 
