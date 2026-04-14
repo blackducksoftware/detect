@@ -11,7 +11,6 @@ import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerCodeLocationResult;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerReport;
 import com.blackduck.integration.detect.workflow.blackduck.codelocation.WaitableCodeLocationData;
-import com.blackduck.integration.detect.workflow.blackduck.codelocation.WaitableCodeLocationWithoutNotificationsTaskRange;
 
 public class CalculateWaitableSignatureScanCodeLocations {
     public SignatureScannerCodeLocationResult calculateWaitableCodeLocations(NotificationTaskRange notificationTaskRange, List<SignatureScannerReport> reports) {
@@ -23,26 +22,23 @@ public class CalculateWaitableSignatureScanCodeLocations {
     }
 
     private WaitableCodeLocationData calculateWaitable(NotificationTaskRange notificationTaskRange, List<SignatureScannerReport> reports) {
-        // add successful reports to "waitable reports"
         List<SignatureScannerReport> waitableScans = Bds.of(reports)
             .filter(SignatureScannerReport::isSuccessful)
             .toList();
 
-        // count expected (if snippet is enabled, expected is 2 instead of 1 for that code location or whatever.
         int totalExpected = waitableScans.stream()
             .map(SignatureScannerReport::getExpectedNotificationCount)
             .filter(Optional::isPresent)
             .mapToInt(Optional::get)
             .sum();
 
-        // all successful code location names
         Set<String> allNames = waitableScans.stream()
             .map(SignatureScannerReport::getCodeLocationName)
             .filter(Optional::isPresent)
             .map(Optional::get)
             .collect(Collectors.toSet());
 
-        return new WaitableCodeLocationData(DetectTool.SIGNATURE_SCAN, totalExpected, allNames, notificationTaskRange); // let this be null.
+        return new WaitableCodeLocationData(DetectTool.SIGNATURE_SCAN, totalExpected, allNames, notificationTaskRange);
     }
 
     private Set<String> calculateNonWaitable(List<SignatureScannerReport> reports) {
@@ -52,37 +48,5 @@ public class CalculateWaitableSignatureScanCodeLocations {
             .filter(Optional::isPresent)
             .map(Optional::get)
             .toSet();
-    }
-
-    private WaitableCodeLocationWithoutNotificationsTaskRange calculateSuccessfulCodeLocationNamesAndExpectedCounts(List<SignatureScannerReport> reports) {
-        // add successful reports to "waitable reports"
-        List<SignatureScannerReport> waitableScans = Bds.of(reports)
-                .filter(SignatureScannerReport::isSuccessful)
-                .toList();
-
-        // count expected (if snippet is enabled, expected is 2 instead of 1 for that code location or whatever.
-        int totalExpected = waitableScans.stream()
-                .map(SignatureScannerReport::getExpectedNotificationCount)
-                .filter(Optional::isPresent)
-                .mapToInt(Optional::get)
-                .sum();
-
-        // all successful code location names
-        Set<String> allNames = waitableScans.stream()
-                .map(SignatureScannerReport::getCodeLocationName)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .collect(Collectors.toSet());
-
-        return new WaitableCodeLocationWithoutNotificationsTaskRange(DetectTool.SIGNATURE_SCAN, totalExpected, allNames); // let this be null.
-    }
-
-    private Set<String> calculateSkippedOrFailedCodeLocationNames(List<SignatureScannerReport> reports) {
-        return Bds.of(reports)
-                .filter(report -> report.isSkipped() || report.isFailure())
-                .map(SignatureScannerReport::getCodeLocationName)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .toSet();
     }
 }
