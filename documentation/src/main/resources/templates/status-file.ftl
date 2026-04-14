@@ -129,6 +129,6 @@ A map of property keys to their string values that have been configured at the B
 
 ````
   "blackDuckServerProperties": {
-    "detect.blackduck.correlated.scanning.enabled": "true or false"
+    "detect.blackduck.correlated.scanning.enabled": "true" or "false"
   }
 ````
