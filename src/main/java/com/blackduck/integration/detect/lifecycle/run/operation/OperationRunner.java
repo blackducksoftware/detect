@@ -1287,14 +1287,6 @@ public class OperationRunner {
         });
     }
 
-    public NotificationTaskRange createCodeLocationsWithoutNotificationTaskRange(BlackDuckRunData blackDuckRunData) throws OperationException {
-        logger.info("~~ABOUT TO CALCULATE CODE LOCATION RANGE~~");
-        return auditLog.namedInternal(
-            "Create Code Location Task Range",
-            () -> blackDuckRunData.getBlackDuckServicesFactory().createCodeLocationCreationService().calculateCodeLocationRange()
-        );
-    }
-
     public SignatureScanOuputResult signatureScan(ScanBatch scanBatch, ScanBatchRunner scanBatchRunner) throws OperationException {
         return auditLog.namedPublic("Execute Signature Scan CLI", "SigScan", () -> new SignatureScanOperation().performScanActions(scanBatch, scanBatchRunner));
     }
