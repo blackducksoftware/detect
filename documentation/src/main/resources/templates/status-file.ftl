@@ -122,3 +122,13 @@ This information is intended to be used when [detect_product_short] fails and th
     "status": "SUCCESS" or "FAILURE"
   }
 ````
+
+## Black Duck Server Properties
+
+A map of property keys to their string values that have been configured at the Black Duck server level and applied to this [detect_product_short] run. These properties originate from the server rather than from user-provided configuration.
+
+````
+  "blackDuckServerProperties": {
+    "detect.blackduck.correlated.scanning.enabled": "true or false"
+  }
+````

@@ -26,6 +26,7 @@
 * Cargo CLI Detector, leveraging `cargo tree` to extract direct and transitive dependencies, improving accuracy over the previous flat lockfile detection. This build-based detector is triggered for Cargo projects with a `Cargo.toml` file and requires Cargo version **1.44.0+**. For further information, see [Cargo package manager support](packagemgrs/cargo.md).
 * Added property [detect.cargo.path](properties/detectors/cargo.md) to allow user specification of a custom Cargo executable path.   
 * New `detect.pnpm.included.packages` and `detect.pnpm.excluded.packages` properties for pnpm provide increased control over what directories [detect_product_short] scans under a pnpm project. See the [pnpm](properties/detectors/pnpm.html) property page for more information.
+* If enabled, [detect_product_short] will now pull certain configured properties from [bd_product_long]. In [bd_product_long] version 2026.4 this will start with the `detect.blackduck.correlated.scanning.enabled` property.
 
 ### Changed features
 
