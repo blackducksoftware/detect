@@ -36,8 +36,8 @@ class CodeLocationAccumulatorTest {
         Set<String> names2 = new HashSet<>(Arrays.asList("location3", "location4"));
         String name3 = "location5";
         
-        accumulator.addNonWaitableCodeLocation(names1);
-        accumulator.addNonWaitableCodeLocation(names2);
+        accumulator.addNonWaitableCodeLocations(names1);
+        accumulator.addNonWaitableCodeLocations(names2);
         accumulator.addNonWaitableCodeLocation(name3);
 
         assertEquals(5, accumulator.getNonWaitableCodeLocations().size());

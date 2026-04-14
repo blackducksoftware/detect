@@ -126,18 +126,16 @@ public class IntelligentModeStepRunner {
             logger.debug("No BDIO results to upload. Skipping.");
         }
 
-        logger.debug("Completed Detect Code Location processing."); // this is a weird place to have this isn't it ... the below will also generate code locations ... the bdio upload is also a code location generated ....
-
         stepHelper.runToolIfIncluded(DetectTool.SIGNATURE_SCAN, "Signature Scanner", () -> {
             SignatureScanStepRunner signatureScanStepRunner = new SignatureScanStepRunner(operationRunner, blackDuckRunData);
-            SignatureScannerCodeLocationResult signatureScannerCodeLocationResult = signatureScanStepRunner.runSignatureScannerOnline( // queries notification api but why
+            SignatureScannerCodeLocationResult signatureScannerCodeLocationResult = signatureScanStepRunner.runSignatureScannerOnline(
                 detectRunUuid,
                 projectNameVersion,
                 dockerTargetData,
                 scanIdsToWaitFor,
                 gson
             );
-            codeLocationAccumulator.addWaitableCodeLocations(signatureScannerCodeLocationResult.getWaitableCodeLocationData()); // null notification task range todo change me to nonwaitable
+            codeLocationAccumulator.addNonWaitableCodeLocations(signatureScannerCodeLocationResult.getWaitableCodeLocationData().getSuccessfulCodeLocationNames());
             codeLocationAccumulator.addNonWaitableCodeLocations(signatureScannerCodeLocationResult.getNonWaitableCodeLocationData());
         });
 
@@ -166,6 +164,8 @@ public class IntelligentModeStepRunner {
             IacScanCodeLocationData iacScanCodeLocationData = iacScanStepRunner.runIacScanOnline(detectRunUuid, projectNameVersion, blackDuckRunData);
             codeLocationAccumulator.addNonWaitableCodeLocations(iacScanCodeLocationData.getCodeLocationNames());
         });
+
+        logger.debug("Completed Detect Code Location processing.");
 
         if (operationRunner.createBlackDuckPostOptions().isCorrelatedScanningEnabled()) {
             stepHelper.runAsGroup("Upload Correlated Scan Counts", OperationType.INTERNAL, () -> {
@@ -310,7 +310,8 @@ public class IntelligentModeStepRunner {
 
         codeLocationCreationData.ifPresent(uploadBatchOutputCodeLocationCreationData -> codeLocationAccumulator.addNonWaitableCodeLocations(
                 uploadBatchOutputCodeLocationCreationData.getOutput().getSuccessfulCodeLocationNames()
-        ));        codeLocationAccumulator.incrementAdditionalCounts(DetectTool.DETECTOR, 1);
+                ));
+        codeLocationAccumulator.incrementAdditionalCounts(DetectTool.DETECTOR, 1);
 
         if (uploadResult.getUploadOutput().isPresent()) {
             for (UploadOutput result : uploadResult.getUploadOutput().get().getOutput()) {

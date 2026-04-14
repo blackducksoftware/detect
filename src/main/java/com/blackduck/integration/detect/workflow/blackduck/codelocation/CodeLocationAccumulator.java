@@ -28,7 +28,7 @@ public class CodeLocationAccumulator {
         waitableCodeLocationData.add(codeLocationData);
     }
 
-    public void addNonWaitableCodeLocation(Set<String> names) {
+    public void addNonWaitableCodeLocations(Set<String> names) {
         nonWaitableCodeLocations.addAll(names);
     }
 
