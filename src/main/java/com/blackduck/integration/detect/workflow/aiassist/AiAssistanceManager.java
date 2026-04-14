@@ -65,15 +65,17 @@ public class AiAssistanceManager {
         writer.println("Analysing project at: " + sourceDirectory.getAbsolutePath());
         writer.println();
 
-        // Resolve LLM credentials from raw property sources
-        String llmApiKey      = resolveProperty(propertySources, "detect.llm.api.key");
-        String llmApiEndpoint = resolveProperty(propertySources, "detect.llm.api.endpoint");
-        String llmName        = resolveProperty(propertySources, "detect.llm.name");
-        boolean llmAvailable  = !llmApiKey.isEmpty() && !llmApiEndpoint.isEmpty() && !llmName.isEmpty();
+        //Strict Environment Variable check for LLM credentials
+        String llmApiKey      = System.getenv("DETECT_LLM_API_KEY");
+        String llmApiEndpoint = System.getenv("DETECT_LLM_API_ENDPOINT");
+        String llmName        = System.getenv("DETECT_LLM_MODEL_NAME");
+        boolean llmAvailable = llmApiKey != null && !llmApiKey.isEmpty() &&
+                                llmApiEndpoint != null && !llmApiEndpoint.isEmpty() &&
+                                llmName != null && !llmName.isEmpty();
 
         if (!llmAvailable) {
-            writer.println("⚠  LLM credentials not configured — running in MOCK mode.");
-            writer.println("   (Set detect.llm.api.key / detect.llm.api.endpoint / detect.llm.name for real LLM suggestions)");
+            writer.println("  LLM credentials not configured — running in MOCK mode.");
+            writer.println("   (Set DETECT_LLM_API_KEY, DETECT_LLM_API_ENDPOINT, DETECT_LLM_MODEL_NAME for real LLM suggestions)");
             writer.println();
             // Continue — AiAssistanceLlmClient will use the mock suggestion path.
         }
@@ -93,7 +95,7 @@ public class AiAssistanceManager {
                 continue;
             }
 
-            writer.println("✔ Detected: " + adapter.getDetectorName() + " project");
+            writer.println(" Detected: " + adapter.getDetectorName() + " project");
             writer.println("  Analysing build files...");
 
             AiContext context      = adapter.extractContext(sourceDirectory);
@@ -197,19 +199,6 @@ public class AiAssistanceManager {
 
     // ── Utilities ─────────────────────────────────────────────────────────────
 
-    /**
-     * Searches {@code propertySources} in priority order for the first non-empty value
-     * of the given key. Returns an empty string if not found.
-     */
-    private String resolveProperty(List<PropertySource> propertySources, String key) {
-        for (PropertySource source : propertySources) {
-            String value = source.getValue(key);
-            if (value != null && !value.isEmpty()) {
-                return value;
-            }
-        }
-        return "";
-    }
 
     /** Returns the registered adapters. Add new detector adapters here. */
     private List<AiContextAdapter> buildAdapters() {

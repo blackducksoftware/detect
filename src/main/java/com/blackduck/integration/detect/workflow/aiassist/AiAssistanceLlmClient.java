@@ -54,8 +54,8 @@ public class AiAssistanceLlmClient {
     private final Gson gson;
 
     public AiAssistanceLlmClient(String llmApiKey, String llmApiEndpoint, String llmName, Gson gson) {
-        this.llmApiKey      = llmApiKey;
-        this.llmApiEndpoint = llmApiEndpoint.replaceAll("/$", "");
+        this.llmApiKey      = llmApiKey == null? "" : llmApiKey.trim();
+        this.llmApiEndpoint = llmApiEndpoint == null? "" : llmApiEndpoint.trim().replaceAll("/+$", ""); // remove trailing slashes for consistent URL building
         this.llmName        = llmName;
         this.gson           = gson;
     }
@@ -94,24 +94,47 @@ public class AiAssistanceLlmClient {
                       .append("\n");
         }
 
+//        String systemPrompt =
+//            "You are a Black Duck Detect auto-config expert.\n"
+//            + "Given the user's answers about their project and a catalog of available Detect "
+//            + "configuration flags, decide which flags should be applied to optimise the scan.\n"
+//            + "Return ONLY valid JSON — no markdown fences, no extra text — in exactly this format:\n"
+//            + "{\n"
+//            + "  \"flags\":        { \"<detect-property-key>\": \"<value>\", ... },\n"
+//            + "  \"explanations\": { \"<detect-property-key>\": \"<one-sentence reason>\", ... }\n"
+//            + "}\n"
+//            + "Only include flags that are genuinely relevant based on the user's answers. "
+//            + "If no flags are needed, return {\"flags\":{},\"explanations\":{}}.";
+//
+//        String userPrompt =
+//            "Detected: " + detectorName + "\n\n"
+//            + "User responses:\n" + qandaBlock + "\n"
+//            + "Available flags catalog (JSON):\n" + flagsMetadata + "\n\n"
+//            + "Based on the user's answers, select the appropriate flags from the catalog "
+//            + "and return your decision as the JSON described in the system prompt.";
+
         String systemPrompt =
-            "You are a Black Duck Detect auto-config expert.\n"
-            + "Given the user's answers about their project and a catalog of available Detect "
-            + "configuration flags, decide which flags should be applied to optimise the scan.\n"
-            + "Return ONLY valid JSON — no markdown fences, no extra text — in exactly this format:\n"
-            + "{\n"
-            + "  \"flags\":        { \"<detect-property-key>\": \"<value>\", ... },\n"
-            + "  \"explanations\": { \"<detect-property-key>\": \"<one-sentence reason>\", ... }\n"
-            + "}\n"
-            + "Only include flags that are genuinely relevant based on the user's answers. "
-            + "If no flags are needed, return {\"flags\":{},\"explanations\":{}}.";
+                "You are a Senior Black Duck Software Composition Analysis (SCA) Engineer. "
+                        + "Your task is to configure the Black Duck Detect CLI based on a user's environment answers.\n\n"
+                        + "RULES:\n"
+                        + "1. You are provided with a strictly allowed catalog of Detect flags. DO NOT invent or guess flags outside of this catalog.\n"
+                        + "2. Review the user's Q&A. If their answer requires a flag from the catalog, apply it.\n"
+                        + "3. If an answer is 'No' or '(skipped)', do NOT apply the associated flag.\n"
+                        + "4. You MUST output your response in strict JSON format. Do not use Markdown formatting (like ```json).\n\n"
+                        + "JSON SCHEMA:\n"
+                        + "{\n"
+                        + "  \"analysis\": \"<Write a brief, step-by-step reasoning evaluating the Q&A against the catalog to decide which flags are necessary>\",\n"
+                        + "  \"flags\": { \"<detect.property.key>\": \"<exact_value>\" },\n"
+                        + "  \"explanations\": { \"<detect.property.key>\": \"<One clear sentence explaining to the user why this was added based on their answer>\" }\n"
+                        + "}\n"
+                        + "If no flags are needed, leave the 'flags' and 'explanations' objects empty.";
 
         String userPrompt =
-            "Detected: " + detectorName + "\n\n"
-            + "User responses:\n" + qandaBlock + "\n"
-            + "Available flags catalog (JSON):\n" + flagsMetadata + "\n\n"
-            + "Based on the user's answers, select the appropriate flags from the catalog "
-            + "and return your decision as the JSON described in the system prompt.";
+                "Target Detector: " + detectorName + "\n\n"
+                        + "Allowed Flags Catalog:\n" + flagsMetadata + "\n\n"
+                        + "User Q&A Responses:\n" + qandaBlock + "\n\n"
+                        + "Return the JSON output now.";
+
 
         try {
             String requestBody = buildRequestBody(systemPrompt, userPrompt);
@@ -207,6 +230,7 @@ public class AiAssistanceLlmClient {
 
         JsonObject body = new JsonObject();
         body.addProperty("model", llmName);
+        body.addProperty("temperature", 0.1); // deterministic output
         body.add("messages", messages);
 
         return gson.toJson(body);
