@@ -14,7 +14,7 @@ public class ImpactAnalysisCodeLocationCreationRequest extends CodeLocationCreat
 
     @Override
     public ImpactAnalysisBatchOutput executeRequest() throws BlackDuckIntegrationException {
-        return impactAnalysisBatchRunner.executeUploads(impactAnalysisBatch);
+        return impactAnalysisBatchRunner.executeUploads(impactAnalysisBatch); // confirm we hit here
     }
 
 }
