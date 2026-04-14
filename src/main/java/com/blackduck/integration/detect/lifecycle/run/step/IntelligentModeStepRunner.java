@@ -218,16 +218,16 @@ public class IntelligentModeStepRunner {
                     return;
                 }
             }
-            invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId); // becauuuuuuse ... if we got a scan ID back, then we know the upload failed and we need to do it ourselves, if we didnt get a scan ID back, then we are in the old workflow and also need to do the upload ourselves, but in that case we have no scan ID to pass in. so either way, we call the same method, just with different scan ID values.... is that so?
+            invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId);
         } else {
             String scanId = null;
-            invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId); // only called if bd version <2025.7.0. in this scassscanId is null, but the bdio upload response has a scan id and we dd that to wait for.
+            invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId);
         }
     }
 
     private void invokePreScassPackageManagerWorkflow(BlackDuckRunData blackDuckRunData, BdioResult bdioResult, Set<String> scanIdsToWaitFor, CodeLocationAccumulator codeLocationAccumulator, String scanId) throws OperationException {
         stepHelper.runAsGroup("Upload Bdio", OperationType.INTERNAL, () -> {
-            uploadBdio(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, operationRunner.calculateDetectTimeout(), scanId); // even when called prescass style w/ null scanId, this method adds to scanIds towait for.
+            uploadBdio(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, operationRunner.calculateDetectTimeout(), scanId);
         });
     }
 
@@ -249,12 +249,13 @@ public class IntelligentModeStepRunner {
             new PreScassBinaryScanStepRunner(operationRunner);
 
         Optional<UUID> scanId = binaryScanStepRunner.invokeBinaryScanningWorkflow(dockerTargetData, projectNameVersion, 
-                blackDuckRunData, binaryTargets); // takes wait for results property value AND creates code locations WITH task range ... but does it call notifications api? only if legacy is kicked off --> document.
+                blackDuckRunData, binaryTargets);
+
         if (scanId.isPresent()) {
             scanIdsToWaitFor.add(scanId.get().toString());
             logger.debug("Added binary scan {} to list of scanIds to wait for.", scanId);
         } else {
-            Optional<CodeLocationCreationData<BinaryScanBatchOutput>> codeLocations = binaryScanStepRunner.getCodeLocations(); // empty unless multipart upload couldnt be done, in which case, great we need it ... right?
+            Optional<CodeLocationCreationData<BinaryScanBatchOutput>> codeLocations = binaryScanStepRunner.getCodeLocations();
 
             // Waitable code Locations are only present if server version was too old for multipart binary upload (<2024.7.0)
             if (codeLocations.isPresent()) {
@@ -305,21 +306,17 @@ public class IntelligentModeStepRunner {
         }
     }
 
-    // note this is fallback/prescass pkg mngr workflow's bdio upload. used to call to get task range.
     public void uploadBdio(BlackDuckRunData blackDuckRunData, BdioResult bdioResult, Set<String> scanIdsToWaitFor, CodeLocationAccumulator codeLocationAccumulator, Long timeout, String scassScanId) throws OperationException {
-        BdioUploadResult uploadResult = operationRunner.uploadBdioForIntelligentPersistentMode(blackDuckRunData, bdioResult, timeout, scassScanId); // uploadBdio --> uploadBdioWithoutNotificationsQuery
-
+        BdioUploadResult uploadResult = operationRunner.uploadBdioForIntelligentPersistentMode(blackDuckRunData, bdioResult, timeout, scassScanId);
         Optional<CodeLocationCreationData<UploadBatchOutput>> codeLocationCreationData = uploadResult.getUploadOutput();
-
         codeLocationCreationData.ifPresent(uploadBatchOutputCodeLocationCreationData -> codeLocationAccumulator.addNonWaitableCodeLocations(
                 uploadBatchOutputCodeLocationCreationData.getOutput().getSuccessfulCodeLocationNames()
-                ));
+        ));
         codeLocationAccumulator.incrementAdditionalCounts(DetectTool.DETECTOR, 1);
-
         if (uploadResult.getUploadOutput().isPresent()) {
             for (UploadOutput result : uploadResult.getUploadOutput().get().getOutput()) {
                 result.getScanId().ifPresent((scanId) -> {
-                    scanIdsToWaitFor.add(scanId); // the upload result basically always gives scanID. and so we always add it for scanIdsToWaitFor
+                    scanIdsToWaitFor.add(scanId);
                     logger.debug("Added BDIO upload (prescass pkg mngr) scan ID to list of scanIds to wait for: {}", scanId);
                         }
                 );
@@ -338,7 +335,7 @@ public class IntelligentModeStepRunner {
         }
     }
 
-    public CodeLocationResults calculateCodeLocations(CodeLocationAccumulator codeLocationAccumulator, long codeLocationsUploadStartTime) throws OperationException { //this is waiting....
+    public CodeLocationResults calculateCodeLocations(CodeLocationAccumulator codeLocationAccumulator, long codeLocationsUploadStartTime) throws OperationException {
         logger.info(ReportConstants.RUN_SEPARATOR);
 
         Set<String> allCodeLocationNames = new HashSet<>(codeLocationAccumulator.getNonWaitableCodeLocations());
@@ -351,8 +348,8 @@ public class IntelligentModeStepRunner {
             allCodeLocationData.add(codeLocation);
         }
         
-        operationRunner.publishCodeLocationData(allCodeLocationData); // needs no range.
-        return new CodeLocationResults(allCodeLocationNames, waitData); // the return value is the only place the "wait data" is used...
+        operationRunner.publishCodeLocationData(allCodeLocationData);
+        return new CodeLocationResults(allCodeLocationNames, waitData);
     }
 
     private boolean shouldPublishBomLinkForTool(DetectToolFilter detectToolFilter) {
@@ -389,7 +386,7 @@ public class IntelligentModeStepRunner {
             throws OperationException {
             logger.info("Checking to see if Detect should wait for bom tool calculations to finish.");
             if (codeLocationWaitData.getExpectedNotificationCount() > 0) {
-                logger.debug("Will use old notifications based waiting for the following code locations: {}", codeLocationWaitData.getCodeLocationNames()); // wait why is bdio and signature here but not impact analysis
+                logger.debug("Will use old notifications based waiting for the following code locations: {}", codeLocationWaitData.getCodeLocationNames());
                 logger.debug("Notifications after {} will be considered.", codeLocationWaitData.getNotificationRange().getStartDate());
                 operationRunner.waitForCodeLocations(blackDuckRunData, codeLocationWaitData, projectNameVersion);
             }
@@ -403,7 +400,7 @@ public class IntelligentModeStepRunner {
     ) throws OperationException {
         String impactAnalysisName = operationRunner.generateImpactAnalysisCodeLocationName(projectNameVersion);
         Path impactFile = operationRunner.generateImpactAnalysisFile(impactAnalysisName);
-        CodeLocationCreationData<ImpactAnalysisBatchOutput> uploadData = operationRunner.uploadImpactAnalysisFile( // note: we never make use of uploadData's notificationTaskRange field. it is null with the changes. should do better than null in future iteration. but it is used in SO many places. (38 to be exact)
+        CodeLocationCreationData<ImpactAnalysisBatchOutput> uploadData = operationRunner.uploadImpactAnalysisFile(
             impactFile,
             projectNameVersion,
             impactAnalysisName,

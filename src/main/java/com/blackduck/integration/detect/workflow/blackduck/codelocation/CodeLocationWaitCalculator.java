@@ -29,6 +29,6 @@ public class CodeLocationWaitCalculator {
         LocalDateTime threeDaysLater = localStartTime.plusDays(3L);
         Date startDate = Date.from(localStartTime.atZone(ZoneOffset.UTC).toInstant());
         Date endDate = Date.from(threeDaysLater.atZone(ZoneOffset.UTC).toInstant());
-        return new NotificationTaskRange(0, startDate, endDate); // taskStart time not used ultimately b/c see comment in operation runner when we actually poll
+        return new NotificationTaskRange(0, startDate, endDate);
     }
 }

@@ -1303,7 +1303,6 @@ public class OperationRunner {
         });
     }
 
-    @Deprecated
     public SignatureScannerCodeLocationResult calculateWaitableSignatureScannerCodeLocations(
         NotificationTaskRange notificationTaskRange,
         List<SignatureScannerReport> reports

@@ -10,10 +10,8 @@ public class WaitableCodeLocationData {
     private final DetectTool detectTool;
     private final int expectedNotificationCount;
     private final Set<String> successfulCodeLocationNames;
-    @Deprecated
     private final NotificationTaskRange notificationTaskRange;
 
-    @Deprecated
     public WaitableCodeLocationData(DetectTool detectTool, int expectedNotificationCount, Set<String> successfulCodeLocationNames, NotificationTaskRange notificationTaskRange) {
         this.detectTool = detectTool;
         this.expectedNotificationCount = expectedNotificationCount;
@@ -28,6 +26,7 @@ public class WaitableCodeLocationData {
     public int getExpectedNotificationCount() {
         return expectedNotificationCount;
     }
+
 
     public Set<String> getSuccessfulCodeLocationNames() {
         return successfulCodeLocationNames;

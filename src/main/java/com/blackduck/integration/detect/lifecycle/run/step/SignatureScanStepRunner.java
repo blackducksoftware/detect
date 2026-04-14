@@ -99,7 +99,7 @@ public class SignatureScanStepRunner {
         SignatureScanOuputResult scanOuputResult = operationRunner.signatureScan(scanBatch, scanBatchRunner);      
 
         // Step 2: Check results and upload BDIO
-        Set<String> failedScans = processEachScan(scanIdsToWaitFor, scanOuputResult, gson, scanBatch.isScassScan(), isOnline, scanBatch.isCsvArchive()); // note: successful scanIDs are added to scanIdsToWaitFor. code location of failed stuff is added to failed scans. this indicates a scass error.
+        Set<String> failedScans = processEachScan(scanIdsToWaitFor, scanOuputResult, gson, scanBatch.isScassScan(), isOnline, scanBatch.isCsvArchive());
 
         // Step 3: Report on results
         List<SignatureScannerReport> reports = operationRunner.createSignatureScanReport(scanPaths, scanOuputResult.getScanBatchOutput().getOutputs(), failedScans);
@@ -172,7 +172,7 @@ public class SignatureScanStepRunner {
                 String scanOutputLocation = specificRunOutputDirectory.toString()
                         + SignatureScanResult.OUTPUT_FILE_PATH;
 
-                processOnlineScan(scanIdsToWaitFor, gson, scassScan, failedScans, output, // failed scan code lcoation name is added to failed scans
+                processOnlineScan(scanIdsToWaitFor, gson, scassScan, failedScans, output,
                         specificRunOutputDirectory, scanOutputLocation);
             }
         }
@@ -204,7 +204,7 @@ public class SignatureScanStepRunner {
                 scassScanStepRunner.runScassScan(optionalBdio, result);
             }
             
-            if (scanIdsToWaitFor != null) { // note: TODOTODOTODO what do we do if scass enabled here?
+            if (scanIdsToWaitFor != null) {
                 scanIdsToWaitFor.addAll(result.parseScanIds());
                 logger.debug("Added the following signature scans to list of scanIds to wait for: {}." , result.parseScanIds());
             }
