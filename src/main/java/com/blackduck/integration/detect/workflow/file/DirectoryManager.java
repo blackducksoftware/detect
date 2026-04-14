@@ -260,4 +260,8 @@ public class DirectoryManager {
     public File getPermanentDirectory(String name) { // shared across all invocations of detect (scan cli)
         return new File(getOutputDirectory(OutputDirectory.TOOLS), name);
     }
+
+    public static String getScanDirectoryName() {
+        return RunDirectory.SCAN.getDirectoryName();
+    }
 }

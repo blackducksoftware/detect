@@ -1,4 +1,4 @@
-# Detector Properties
+# [detect_product_short] Detector properties
 
 This section contains details about properties that configure the [detect_product_long] detectors.
 

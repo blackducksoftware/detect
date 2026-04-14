@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class PythonDependencyTransformer {
 
@@ -15,6 +17,15 @@ public class PythonDependencyTransformer {
     private static final List<String> IGNORE_AFTER_CHARS = Arrays.asList("#", ";");
     private static final List<String> TOKEN_CLEANUP_CHARS = Arrays.asList("\"", "'");
     private static final List<String> TOKEN_IGNORE_AFTER_CHARS = Arrays.asList(",", "[", "==", ">=", "~=", "<=", ">", "<");
+
+    // Matching version from URI of direct reference like "https://download.pytorch.org/whl/cpu/torch-2.6.0%2Bcpu-cp310-cp310-linux_x86_64.whl"
+    private static final Pattern URI_VERSION_PATTERN = Pattern.compile(".*/([A-Za-z\\d_.-]+)-(\\d+(?:\\.\\d[A-Za-z\\d_-]*){0,10}).*\\.(whl|zip|tar\\.gz|tar\\.bz2|tar)$");
+
+    // Matching version from VCS URL of direct reference like "git+https://github.com/pallets/flask.git@2.3.3" or "git+https://github.com/statsmodels/statsmodels.git@v0.14.0"
+    private static final Pattern VCS_VERSION_PATTERN = Pattern.compile(".*@([A-Za-z]?\\d+(?:\\.\\d+){0,5}[A-Za-z\\d._-]{0,20}).*");
+
+    // Matching version from archive or release URL of direct reference like "https://github.com/pypa/pip/archive/1.3.1.zip"
+    private static final Pattern ARCHIVE_VERSION_PATTERN = Pattern.compile(".*/(?:archive|releases)/(\\d+(?:\\.\\d+){1,5}).*\\.(zip|tar\\.gz|tar\\.bz2|tar).*");
 
     public List<PythonDependency> transform(File requirementsFile) throws IOException {
 
@@ -39,6 +50,22 @@ public class PythonDependencyTransformer {
             return null;
         }
 
+        // Case 1: Handle PEP 508 direct references (name @ url)
+        if (formattedLine.contains("@")) {
+            String[] parts = formattedLine.split("@", 2);
+            String dependency = parts[0].trim();
+            String uri = parts[1].trim();
+
+            String version = extractVersionFromUri(uri);
+
+            if (!dependency.isEmpty()) {
+                return new PythonDependency(dependency, version);
+            } else {
+                return null;
+            }
+        }
+
+        // Case 2: Normal operator-based dependency (==, >=, etc.)
         // Extract tokens before and after the operator that was found in the line
         List<List<String>> extractedTokens = extractTokens(formattedLine);
         List<String> tokensBeforeOperator = extractedTokens.get(0);
@@ -64,6 +91,40 @@ public class PythonDependencyTransformer {
         } else {
             return null;
         }
+    }
+
+    private String extractVersionFromUri(String uri) {
+        if (uri == null || uri.isEmpty()) {
+            return "";
+        }
+
+        // Case 1: wheel/archive style like "https://download.pytorch.org/whl/cpu/torchvision-0.21.0%2Bcpu-cp310-cp310-linux_x86_64.whl"
+        Matcher uriMatcher = URI_VERSION_PATTERN.matcher(uri);
+        if (uriMatcher.find()) {
+            return trimLeadingPrefix(uriMatcher.group(2));
+        }
+
+        // Case 2: VCS reference with @<version/tag>
+        Matcher vcsMatcher = VCS_VERSION_PATTERN.matcher(uri);
+        if (vcsMatcher.find()) {
+            return trimLeadingPrefix(vcsMatcher.group(1));
+        }
+
+        // Case 3: Generic archive URL with version in path (like pip archive)
+        Matcher archiveMatcher = ARCHIVE_VERSION_PATTERN.matcher(uri);
+        if (archiveMatcher.find()) {
+            return trimLeadingPrefix(archiveMatcher.group(1));
+        }
+
+        // Case 4: fallback – no version found
+        return "";
+    }
+
+    private String trimLeadingPrefix(String version) {
+        if (version != null && version.startsWith("v") && version.length() > 1) {
+            return version.substring(1);
+        }
+        return version;
     }
 
     public List<List<String>> extractTokens(String formattedLine) {

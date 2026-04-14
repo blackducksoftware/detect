@@ -3,5 +3,6 @@ package com.blackduck.integration.detect.tool.signaturescanner.enums;
 public enum SignatureScanStatusType {
     SUCCESS,
     FAILURE,
-    SKIPPED
+    SKIPPED,
+    SCASS_ERROR
 }

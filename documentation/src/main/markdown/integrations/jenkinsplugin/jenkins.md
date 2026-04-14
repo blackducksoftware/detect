@@ -1,4 +1,4 @@
-# Jenkins Plugin
+# [detect_product_short] Jenkins Plugin
 
 The [detect_product_long] for Jenkins plugin enables you to install and run [detect_product_short] in your Jenkins instance. 
 

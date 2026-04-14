@@ -1,6 +1,6 @@
 # Running with [bd_product_long]
 
-[detect_product_long] can be used with multiple [bd_product_short] platforms to perform Software Composition Analysis (SCA).
+[detect_product_short] can be used with multiple [bd_product_short] platforms to perform Software Composition Analysis (SCA).
 
 ## Overview
 
@@ -21,7 +21,7 @@ project directory.
 * Fail on [policy violation](../../properties/configuration/project.md#fail-on-policy-violation-severities-advanced).
 * Run [IaC Scan](../iacscan.md) on provided targets. Note: Iac Scan capabilities require [bd_product_short] 2022.7.0 or later.
 
-Refer to [Black Duck Server properties](../../properties/configuration/blackduck-server.md), [Black Duck Signature Scanner properties](../../properties/configuration/signature-scanner.md), and [IaC Scan](../iacscan.md) for details.
+Refer to [Black Duck SCA Server properties](../../properties/configuration/blackduck-server.md), [Black Duck Signature Scanner properties](../../properties/configuration/signature-scanner.md), and [IaC Scan](../iacscan.md) for details.
 
 <note type="tip">Available signature scanner properties can be determined by specifying `--help` when executing the signature scanner jar file from the command line.</note>
 
@@ -53,12 +53,13 @@ https://{blackduckserver}/download/scan.cli.zip
 https://{blackduckserver}/download/scan.cli-windows.zip
 https://{blackduckserver}/download/scan.cli-macosx.zip
 
-Scanning [detect_product_short] Properties to specify:
+Specify the following [detect_product_short] scan properties:
 * --blackduck.offline.mode=true
 * --detect.scan.output.path= output of the Signature Scanner
 * --detect.output.path= output directory to store files that [detect_product_short] downloads or creates
 * --detect.blackduck.signature.scanner.local.path= location to the signature scanner scan.cli-202x.xx.x
-If using air-gap zip archive files, [see air gap mode](../../downloadingandinstalling/airgap.md)
+
+<note type="note">If using air gap zip archive files for [detect_product_short] scanning, [see Air Gap Mode](../../downloadingandinstalling/airgap.md) for additional information.</note>
 
 [detect_product_short] Scan Command example:
 ```

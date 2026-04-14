@@ -38,4 +38,16 @@ public class Version implements Comparable<Version> {
             }
             return -1;
         }
+
+        public int nearestVersion(Version o) {
+            if (this.major == o.major && this.minor == o.minor && this.patch == o.patch) {
+                return 0;
+            } else if (this.major == o.major && this.minor == o.minor) {
+                return 1;
+            } else if (this.major == o.major) {
+                return 2;
+            } else {
+                return 3;
+            }
+        }
     }

@@ -1,4 +1,4 @@
-# Tools
+# [detect_product_short] Tools
 
 By default, all detection tools are eligible to run; the set of tools that will run
 depends on your configuration, type of files you are scanning, and the properties you set.   

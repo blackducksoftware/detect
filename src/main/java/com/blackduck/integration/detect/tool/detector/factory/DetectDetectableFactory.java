@@ -8,6 +8,8 @@ import com.blackduck.integration.detectable.detectable.inspector.PipInspectorRes
 import com.blackduck.integration.detectable.detectable.inspector.ProjectInspectorResolver;
 import com.blackduck.integration.detectable.detectable.inspector.nuget.NugetInspectorResolver;
 import com.blackduck.integration.detectable.detectables.bazel.BazelDetectable;
+import com.blackduck.integration.detectable.detectables.bazel.BazelDetectableOptions;
+import com.blackduck.integration.detectable.detectables.bazel.v2.BazelV2Detectable;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectable;
 import com.blackduck.integration.detectable.detectables.cargo.CargoCliDetectable;
 import com.blackduck.integration.detectable.detectables.cargo.CargoLockDetectable;
@@ -17,7 +19,8 @@ import com.blackduck.integration.detectable.detectables.cocoapods.PodlockDetecta
 import com.blackduck.integration.detectable.detectables.conan.cli.Conan2CliDetectable;
 import com.blackduck.integration.detectable.detectables.conan.cli.Conan1CliDetectable;
 import com.blackduck.integration.detectable.detectables.conan.lockfile.ConanLockfileDetectable;
-import com.blackduck.integration.detectable.detectables.conda.CondaCliDetectable;
+import com.blackduck.integration.detectable.detectables.conda.cli.CondaCliDetectable;
+import com.blackduck.integration.detectable.detectables.conda.tree.CondaTreeDetectable;
 import com.blackduck.integration.detectable.detectables.cpan.CpanCliDetectable;
 import com.blackduck.integration.detectable.detectables.cran.PackratLockDetectable;
 import com.blackduck.integration.detectable.detectables.dart.pubdep.DartPubDepDetectable;
@@ -29,10 +32,12 @@ import com.blackduck.integration.detectable.detectables.git.GitParseDetectable;
 import com.blackduck.integration.detectable.detectables.go.godep.GoDepLockDetectable;
 import com.blackduck.integration.detectable.detectables.go.gogradle.GoGradleDetectable;
 import com.blackduck.integration.detectable.detectables.go.gomod.GoModCliDetectable;
+import com.blackduck.integration.detectable.detectables.go.gomodfile.GoModFileDetectable;
 import com.blackduck.integration.detectable.detectables.go.vendor.GoVendorDetectable;
 import com.blackduck.integration.detectable.detectables.go.vendr.GoVndrDetectable;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.GradleInspectorDetectable;
 import com.blackduck.integration.detectable.detectables.gradle.parsing.GradleProjectInspectorDetectable;
+import com.blackduck.integration.detectable.detectables.ivy.IvyCliDetectable;
 import com.blackduck.integration.detectable.detectables.ivy.IvyParseDetectable;
 import com.blackduck.integration.detectable.detectables.lerna.LernaDetectable;
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenPomDetectable;
@@ -58,11 +63,14 @@ import com.blackduck.integration.detectable.detectables.poetry.PoetryDetectable;
 import com.blackduck.integration.detectable.detectables.rebar.RebarDetectable;
 import com.blackduck.integration.detectable.detectables.rubygems.gemlock.GemlockDetectable;
 import com.blackduck.integration.detectable.detectables.rubygems.gemspec.GemspecParseDetectable;
+import com.blackduck.integration.detectable.detectables.rush.RushDetectable;
 import com.blackduck.integration.detectable.detectables.sbt.SbtDetectable;
 import com.blackduck.integration.detectable.detectables.setuptools.tbuild.SetupToolsBuildDetectable;
 import com.blackduck.integration.detectable.detectables.setuptools.buildless.SetupToolsBuildlessDetectable;
 import com.blackduck.integration.detectable.detectables.swift.cli.SwiftCliDetectable;
 import com.blackduck.integration.detectable.detectables.swift.lock.SwiftPackageResolvedDetectable;
+import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildDetectable;
+import com.blackduck.integration.detectable.detectables.uv.lockfile.UVLockFileDetectable;
 import com.blackduck.integration.detectable.detectables.xcode.XcodeProjectDetectable;
 import com.blackduck.integration.detectable.detectables.xcode.XcodeWorkspaceDetectable;
 import com.blackduck.integration.detectable.detectables.yarn.YarnLockDetectable;
@@ -113,16 +121,21 @@ public class DetectDetectableFactory {
         return detectableFactory.createBazelDetectable(environment, detectableOptionFactory.createBazelDetectableOptions(), detectExecutableResolver);
     }
 
+    public BazelV2Detectable createBazelV2Detectable(DetectableEnvironment environment) {
+        BazelDetectableOptions options = detectableOptionFactory.createBazelDetectableOptions();
+        return detectableFactory.createBazelV2Detectable(environment, options, detectExecutableResolver);
+    }
+
     public BitbakeDetectable createBitbakeDetectable(DetectableEnvironment environment) {
         return detectableFactory.createBitbakeDetectable(environment, detectableOptionFactory.createBitbakeDetectableOptions(), detectExecutableResolver);
     }
 
     public CargoLockDetectable createCargoDetectable(DetectableEnvironment environment) {
-        return detectableFactory.createCargoDetectable(environment);
+        return detectableFactory.createCargoLockfileDetectable(environment, detectableOptionFactory.createCargoDetectableOptions());
     }
 
     public CargoCliDetectable createCargoCliDetectable(DetectableEnvironment environment) {
-        return detectableFactory.createCargoCliDetectable(environment, detectExecutableResolver);
+        return detectableFactory.createCargoCliDetectable(environment, detectExecutableResolver, detectableOptionFactory.createCargoDetectableOptions());
     }
 
     public CarthageLockDetectable createCarthageDetectable(DetectableEnvironment environment) {
@@ -139,6 +152,10 @@ public class DetectDetectableFactory {
 
     public CondaCliDetectable createCondaCliDetectable(DetectableEnvironment environment) {
         return detectableFactory.createCondaCliDetectable(environment, detectExecutableResolver, detectableOptionFactory.createCondaOptions());
+    }
+
+    public CondaTreeDetectable createCondaTreeDetectable(DetectableEnvironment environment) {
+        return detectableFactory.createCondaTreeDetectable(environment, detectExecutableResolver, detectExecutableResolver, detectableOptionFactory.createCondaOptions());
     }
 
     public CpanCliDetectable createCpanCliDetectable(DetectableEnvironment environment) {
@@ -174,6 +191,10 @@ public class DetectDetectableFactory {
         return detectableFactory.createGoModCliDetectable(environment, detectExecutableResolver, detectableOptionFactory.createGoModCliDetectableOptions());
     }
 
+    public GoModFileDetectable createGoModFileDetectable(DetectableEnvironment environment) {
+        return detectableFactory.createGoModFileDetectable(environment, detectableOptionFactory.createGoModFileDetectableOptions());
+    }
+
     public GoDepLockDetectable createGoLockDetectable(DetectableEnvironment environment) {
         return detectableFactory.createGoLockDetectable(environment);
     }
@@ -200,6 +221,10 @@ public class DetectDetectableFactory {
 
     public IvyParseDetectable createIvyParseDetectable(DetectableEnvironment environment) {
         return detectableFactory.createIvyParseDetectable(environment);
+    }
+
+    public IvyCliDetectable createIvyCliDetectable(DetectableEnvironment environment) {
+        return detectableFactory.createIvyCliDetectable(environment, detectExecutableResolver);
     }
 
     public MavenPomDetectable createMavenPomDetectable(DetectableEnvironment environment) {
@@ -314,6 +339,17 @@ public class DetectDetectableFactory {
         );
     }
 
+    public RushDetectable createRushDetectable(DetectableEnvironment environment) {
+        return detectableFactory.createRushDetectable(
+                environment,
+                detectableOptionFactory.createNpmLockfileOptions(),
+                detectableOptionFactory.createPnpmLockOptions(),
+                detectableOptionFactory.createYarnLockOptions(),
+                detectableOptionFactory.createRushOptions()
+        );
+    }
+
+
     public NugetProjectInspectorDetectable createNugetParseDetectable(DetectableEnvironment detectableEnvironment) {
         return detectableFactory.createNugetParseDetectable(
             detectableEnvironment,
@@ -360,5 +396,13 @@ public class DetectDetectableFactory {
 
     public OpamLockFileDetectable createOpamLockFileDetectable(DetectableEnvironment environment) {
         return detectableFactory.createOpamLockFileDetectable(environment, detectExecutableResolver);
+    }
+
+    public UVBuildDetectable createUVBuildDetectable(DetectableEnvironment environment) {
+        return detectableFactory.createUVBuildDetectable(environment, detectExecutableResolver, detectableOptionFactory.createUVDetectorOptions());
+    }
+
+    public UVLockFileDetectable createUVLockfileDetectable(DetectableEnvironment environment) {
+        return detectableFactory.createUVLockFileDetectable(environment, detectableOptionFactory.createUVDetectorOptions());
     }
 }

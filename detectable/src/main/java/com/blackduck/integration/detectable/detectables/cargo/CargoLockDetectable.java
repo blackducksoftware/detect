@@ -24,15 +24,16 @@ public class CargoLockDetectable extends Detectable {
     public static final String CARGO_TOML_FILENAME = "Cargo.toml";
 
     private final FileFinder fileFinder;
-    private final CargoExtractor cargoExtractor;
-
+    private final CargoLockfileExtractor cargoLockfileExtractor;
+    private final CargoDetectableOptions cargoDetectableOptions;
     private File cargoLock;
     private File cargoToml;
 
-    public CargoLockDetectable(DetectableEnvironment environment, FileFinder fileFinder, CargoExtractor cargoExtractor) {
+    public CargoLockDetectable(DetectableEnvironment environment, FileFinder fileFinder, CargoLockfileExtractor cargoLockfileExtractor, CargoDetectableOptions cargoDetectableOptions) {
         super(environment);
         this.fileFinder = fileFinder;
-        this.cargoExtractor = cargoExtractor;
+        this.cargoLockfileExtractor = cargoLockfileExtractor;
+        this.cargoDetectableOptions = cargoDetectableOptions;
     }
 
     @Override
@@ -52,6 +53,6 @@ public class CargoLockDetectable extends Detectable {
 
     @Override
     public Extraction extract(ExtractionEnvironment extractionEnvironment) throws IOException, DetectableException, MissingExternalIdException {
-        return cargoExtractor.extract(cargoLock, cargoToml);
+        return cargoLockfileExtractor.extract(cargoLock, cargoToml, cargoDetectableOptions);
     }
 }

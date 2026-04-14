@@ -50,6 +50,7 @@ public class CombinedPackageJsonExtractor {
         combinedPackageJson.getDependencies().putAll(packageJson.dependencies);
         combinedPackageJson.getDevDependencies().putAll(packageJson.devDependencies);
         combinedPackageJson.getPeerDependencies().putAll(packageJson.peerDependencies);
+        combinedPackageJson.getOptionalDependencies().putAll(packageJson.optionalDependencies);
         
         if (packageJson.workspaces != null && rootJsonPath != null) {
             // If there are workspaces there are additional package.json's we need to parse
@@ -81,6 +82,7 @@ public class CombinedPackageJsonExtractor {
                     combinedPackageJson.getDependencies().putAll(workspacePackageJson.dependencies);
                     combinedPackageJson.getDevDependencies().putAll(workspacePackageJson.devDependencies);
                     combinedPackageJson.getPeerDependencies().putAll(workspacePackageJson.peerDependencies);
+                    combinedPackageJson.getOptionalDependencies().putAll(workspacePackageJson.optionalDependencies);
                 }
             }
         }

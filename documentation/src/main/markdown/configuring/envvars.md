@@ -7,7 +7,7 @@ is the property name converted to uppercase, with period characters (".") conver
 characters ("_"). For example:
 ```
 export DETECT_PROJECT_NAME=MyProject
-bash <(curl -s -L https://detect.blackduck.com/detect10.sh)
+bash <(curl -s -L https://detect.blackduck.com/detect11.sh)
 ```
 
 On Windows, the environment variable name can either be the original property
@@ -15,5 +15,5 @@ name, or the property name converted to uppercase with period characters (".") c
 characters ("_"). For example:
 ```
 $Env:DETECT_PROJECT_NAME = MyProject
-powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect"
+powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect11.ps1?$(Get-Random) | iex; detect"
 ```

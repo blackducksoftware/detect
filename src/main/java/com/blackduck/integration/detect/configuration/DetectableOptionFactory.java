@@ -1,18 +1,26 @@
 package com.blackduck.integration.detect.configuration;
 
+import java.io.File;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation;
+import com.blackduck.integration.detect.workflow.file.DirectoryManager;
+import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
+import com.blackduck.integration.detectable.detectables.cargo.CargoDetectableOptions;
+import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
 import com.blackduck.integration.detectable.detectables.nuget.NugetDependencyType;
+import com.blackduck.integration.detectable.detectables.rush.RushOptions;
+import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import org.jetbrains.annotations.Nullable;
 
-import com.blackduck.integration.detect.workflow.ArtifactoryConstants;
 import com.blackduck.integration.detect.workflow.diagnostic.DiagnosticSystem;
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.detectable.detectables.bazel.BazelDetectableOptions;
-import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
+import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDependencyType;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectableOptions;
 import com.blackduck.integration.detectable.detectables.clang.ClangDetectableOptions;
@@ -25,6 +33,7 @@ import com.blackduck.integration.detectable.detectables.dart.pubdep.DartPubDepsD
 import com.blackduck.integration.detectable.detectables.docker.DockerDetectableOptions;
 import com.blackduck.integration.detectable.detectables.go.gomod.GoModCliDetectableOptions;
 import com.blackduck.integration.detectable.detectables.go.gomod.GoModDependencyType;
+import com.blackduck.integration.detectable.detectables.go.gomodfile.GoModFileDetectableOptions;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.GradleConfigurationType;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.GradleInspectorOptions;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.inspector.GradleInspectorScriptOptions;
@@ -57,6 +66,9 @@ import com.blackduck.integration.detectable.detectables.yarn.YarnLockOptions;
 import com.blackduck.integration.log.LogLevel;
 import com.blackduck.integration.rest.proxy.ProxyInfo;
 
+import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON;
+import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.QUACKPATCH_SUBDIRECTORY_NAME;
+
 public class DetectableOptionFactory {
 
     private final DetectPropertyConfiguration detectConfiguration;
@@ -73,8 +85,11 @@ public class DetectableOptionFactory {
     public BazelDetectableOptions createBazelDetectableOptions() {
         String targetName = detectConfiguration.getNullableValue(DetectProperties.DETECT_BAZEL_TARGET);
         List<String> bazelCqueryAdditionalOptions = detectConfiguration.getValue(DetectProperties.DETECT_BAZEL_CQUERY_OPTIONS);
+        List<String> bazelQueryAdditionalOptions = detectConfiguration.getValue(DetectProperties.DETECT_BAZEL_QUERY_OPTIONS);
+        Set<DependencySource> dependencySourcesFromProperty = detectConfiguration.getValue(DetectProperties.DETECT_BAZEL_DEPENDENCY_SOURCES).representedValueSet();
+        String modeOverride = detectConfiguration.getNullableValue(DetectProperties.DETECT_BAZEL_MODE);
         Set<WorkspaceRule> workspaceRulesFromProperty = detectConfiguration.getValue(DetectProperties.DETECT_BAZEL_WORKSPACE_RULES).representedValueSet();
-        return new BazelDetectableOptions(targetName, workspaceRulesFromProperty, bazelCqueryAdditionalOptions);
+        return new BazelDetectableOptions(targetName, dependencySourcesFromProperty, bazelCqueryAdditionalOptions, bazelQueryAdditionalOptions, modeOverride, workspaceRulesFromProperty);
     }
 
     public BitbakeDetectableOptions createBitbakeDetectableOptions() {
@@ -139,6 +154,26 @@ public class DetectableOptionFactory {
         return new GoModCliDetectableOptions(excludedDependencyType);
     }
 
+    public GoModFileDetectableOptions createGoModFileDetectableOptions() {
+        String goForgeUrl = detectConfiguration.getNullableValue(DetectProperties.DETECT_GO_FORGE);
+        if (goForgeUrl == null || goForgeUrl.isEmpty()) {
+            goForgeUrl = "https://proxy.golang.org";
+        }
+        // if the URL ends with a trailing slash, remove it
+        if (goForgeUrl.endsWith("/")) {
+            goForgeUrl = goForgeUrl.substring(0, goForgeUrl.length() - 1);
+        }
+        int connectionTimeout = detectConfiguration.getValue(DetectProperties.DETECT_GO_FORGE_CONNECTION_TIMEOUT);
+        if (connectionTimeout <= 0) {
+            connectionTimeout = 30; // default to 30 seconds if not set
+        }
+        int readTimeout = detectConfiguration.getValue(DetectProperties.DETECT_GO_FORGE_READ_TIMEOUT);
+        if (readTimeout <= 0) {
+            readTimeout = 60; // default to 60 seconds if not set
+        }
+        return new GoModFileDetectableOptions(goForgeUrl, connectionTimeout, readTimeout);
+    }
+
     public GradleInspectorOptions createGradleInspectorOptions() {
         List<String> excludedProjectNames = detectConfiguration.getValue(DetectProperties.DETECT_GRADLE_EXCLUDED_PROJECTS);
         List<String> includedProjectNames = detectConfiguration.getValue(DetectProperties.DETECT_GRADLE_INCLUDED_PROJECTS);
@@ -147,7 +182,6 @@ public class DetectableOptionFactory {
         List<String> excludedConfigurationNames = detectConfiguration.getValue(DetectProperties.DETECT_GRADLE_EXCLUDED_CONFIGURATIONS);
         List<String> includedConfigurationNames = detectConfiguration.getValue(DetectProperties.DETECT_GRADLE_INCLUDED_CONFIGURATIONS);
         boolean rootOnlyOption = detectConfiguration.getValue(DetectProperties.DETECT_GRADLE_ROOT_ONLY);
-        String customRepository = ArtifactoryConstants.GRADLE_INSPECTOR_MAVEN_REPO;
 
         Set<GradleConfigurationType> excludedConfigurationTypes = detectConfiguration.getValue(DetectProperties.DETECT_GRADLE_CONFIGURATION_TYPES_EXCLUDED).representedValueSet();
         EnumListFilter<GradleConfigurationType> dependencyTypeFilter = EnumListFilter.fromExcluded(excludedConfigurationTypes);
@@ -159,7 +193,6 @@ public class DetectableOptionFactory {
             includedProjectPaths,
             excludedConfigurationNames,
             includedConfigurationNames,
-            customRepository,
             rootOnlyOption
         );
         String gradleBuildCommand = detectConfiguration.getNullableValue(DetectProperties.DETECT_GRADLE_BUILD_COMMAND);
@@ -173,6 +206,12 @@ public class DetectableOptionFactory {
         List<String> excludedPackages = detectConfiguration.getValue(DetectProperties.DETECT_LERNA_EXCLUDED_PACKAGES);
         List<String> includedPackages = detectConfiguration.getValue(DetectProperties.DETECT_LERNA_INCLUDED_PACKAGES);
         return new LernaOptions(lernaPackageTypeFilter, excludedPackages, includedPackages);
+    }
+
+    public RushOptions createRushOptions() {
+        List<String> excludedSubspaces = detectConfiguration.getValue(DetectProperties.DETECT_RUSH_PNPM_EXCLUDED_SUBSPACES);
+        List<String> includedSubspaces = detectConfiguration.getValue(DetectProperties.DETECT_RUSH_PNPM_INCLUDED_SUBSPACES);
+        return new RushOptions(excludedSubspaces, includedSubspaces);
     }
 
     public MavenCliExtractorOptions createMavenCliOptions() {
@@ -228,6 +267,18 @@ public class DetectableOptionFactory {
         Set<PearDependencyType> excludedDependencyTypes = detectConfiguration.getValue(DetectProperties.DETECT_PEAR_DEPENDENCY_TYPES_EXCLUDED).representedValueSet();
         pearDependencyTypeFilter = EnumListFilter.fromExcluded(excludedDependencyTypes);
         return new PearCliDetectableOptions(pearDependencyTypeFilter);
+    }
+
+    public CargoDetectableOptions createCargoDetectableOptions() {
+        Set<CargoDependencyType> excludedDependencyTypes = detectConfiguration.getValue(DetectProperties.DETECT_CARGO_DEPENDENCY_TYPES_EXCLUDED).representedValueSet();
+        EnumListFilter<CargoDependencyType> dependencyTypeFilter = EnumListFilter.fromExcluded(excludedDependencyTypes);
+
+        Boolean cargoIgnoreAllWorkspacesMode = detectConfiguration.getValue(DetectProperties.DETECT_CARGO_IGNORE_ALL_WORKSPACES_MODE);
+        Boolean isDefaultFeaturesDisabled = detectConfiguration.getValue(DetectProperties.DETECT_CARGO_DISABLE_DEFAULT_FEATURES);
+        List<String> includedWorkspaces = detectConfiguration.getValue(DetectProperties.DETECT_CARGO_INCLUDED_WORKSPACES);
+        List<String> excludedWorkspaces = detectConfiguration.getValue(DetectProperties.DETECT_CARGO_EXCLUDED_WORKSPACES);
+        List<String> includedFeatures = detectConfiguration.getValue(DetectProperties.DETECT_CARGO_INCLUDED_FEATURES);
+        return new CargoDetectableOptions(dependencyTypeFilter, cargoIgnoreAllWorkspacesMode, isDefaultFeaturesDisabled, includedWorkspaces, excludedWorkspaces, includedFeatures);
     }
 
     public PipenvDetectableOptions createPipenvDetectableOptions() {
@@ -306,10 +357,39 @@ public class DetectableOptionFactory {
         Path nugetConfigPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_CONFIG_PATH);
         Set<NugetDependencyType> nugetExcludedDependencyTypes = detectConfiguration.getValue(DetectProperties.DETECT_NUGET_DEPENDENCY_TYPES_EXCLUDED).representedValueSet();
         Path nugetArtifactsPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_ARTIFACTS_PATH);
-        return new NugetInspectorOptions(ignoreFailures, excludedModules, includedModules, packagesRepoUrl, nugetConfigPath, nugetExcludedDependencyTypes, nugetArtifactsPath);
+        Path relevantDetectorsAndFilesInfoPath = null;
+        if (detectConfiguration.getValue(DetectProperties.DETECT_QUACK_PATCH_ENABLED)) {
+            relevantDetectorsAndFilesInfoPath = Paths.get(DirectoryManager.getScanDirectoryName())
+                    .resolve(QUACKPATCH_SUBDIRECTORY_NAME)
+                    .resolve(INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON);
+        }
+        Path nugetInspectorPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_INSPECTOR_PATH);
+        File nugetInspectorPathFile = null;
+        if (nugetInspectorPath != null) {
+            nugetInspectorPathFile = nugetInspectorPath.toFile();
+        }
+        return new NugetInspectorOptions.Builder()
+                .ignoreFailures(ignoreFailures)
+                .excludedModules(excludedModules)
+                .includedModules(includedModules)
+                .packagesRepoUrl(packagesRepoUrl)
+                .nugetConfigPath(nugetConfigPath)
+                .nugetExcludedDependencyTypes(nugetExcludedDependencyTypes)
+                .nugetArtifactsPath(nugetArtifactsPath)
+                .inspectedFilesInfoPath(relevantDetectorsAndFilesInfoPath)
+                .nugetInspectorPath(nugetInspectorPathFile)
+                .build();
     }
 
     private boolean getFollowSymLinks() {
         return detectConfiguration.getValue(DetectProperties.DETECT_FOLLOW_SYMLINKS);
+    }
+
+    public UVDetectorOptions createUVDetectorOptions() {
+        List<String> excludedDependencyGroups = detectConfiguration.getValue(DetectProperties.DETECT_UV_DEPENDENCY_GROUPS_EXCLUDED);
+        List<String> includedWorkSpaceMembers = detectConfiguration.getValue(DetectProperties.DETECT_UV_INCLUDED_WORKSPACE_MEMBERS);
+        List<String> excludeWorkSpaceMembers = detectConfiguration.getValue(DetectProperties.DETECT_UV_EXCLUDED_WORKSPACE_MEMBERS);
+
+        return new UVDetectorOptions(excludedDependencyGroups, includedWorkSpaceMembers, excludeWorkSpaceMembers);
     }
 }

@@ -1,6 +1,7 @@
 package com.blackduck.integration.detect.configuration;
 
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -8,7 +9,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import com.google.gson.JsonElement;
 import com.blackduck.integration.configuration.config.PropertyConfiguration;
 import com.blackduck.integration.configuration.property.base.NullableProperty;
 import com.blackduck.integration.configuration.property.base.PassthroughProperty;
@@ -18,10 +22,16 @@ import com.blackduck.integration.configuration.property.types.path.NullablePathP
 import com.blackduck.integration.configuration.property.types.path.PathListProperty;
 import com.blackduck.integration.configuration.property.types.path.PathProperty;
 import com.blackduck.integration.configuration.property.types.path.PathResolver;
+import com.blackduck.integration.configuration.source.MapPropertySource;
 
 public class DetectPropertyConfiguration {
+    private static final Logger logger = LoggerFactory.getLogger(DetectPropertyConfiguration.class);
+    
     private final PropertyConfiguration propertyConfiguration;
     private final PathResolver pathResolver;
+    private final ProjectSettingsJsonMerger jsonMerger = new ProjectSettingsJsonMerger();
+    private final ProjectSettingsJsonFileReader jsonFileReader = new ProjectSettingsJsonFileReader();
+    private Map<String, String> cachedJsonProperties = null;
 
     public DetectPropertyConfiguration(PropertyConfiguration propertyConfiguration, PathResolver pathResolver) {
         this.propertyConfiguration = propertyConfiguration;
@@ -101,5 +111,82 @@ public class DetectPropertyConfiguration {
 
     public <V, R> boolean wasPropertyProvided(TypedProperty<V, R> property) {
         return propertyConfiguration.wasPropertyProvided(property);
+    }
+    
+    /**
+     * Gets the value of a nullable property, checking JSON project settings as fallback.
+     * Individual detect.project.* properties take precedence over JSON values.
+     */
+    public <V, R> R getNullableValueWithJsonFallback(NullableProperty<V, R> detectProperty) {
+        return getValueWithJsonFallback(detectProperty, true);
+    }
+    
+    /**
+     * Gets the value of a valued property, checking JSON project settings as fallback.
+     * Individual detect.project.* properties take precedence over JSON values.
+     */
+    public <V, R> R getValueWithJsonFallback(ValuedProperty<V, R> detectProperty) {
+        return getValueWithJsonFallback(detectProperty, false);
+    }
+    
+    /**
+     * Common implementation for getting property values with JSON fallback.
+     * @param detectProperty the property to get the value for
+     * @param nullable true to return null for empty Optional values
+     */
+    private <V, R> R getValueWithJsonFallback(TypedProperty<V, R> detectProperty, boolean nullable) {
+        // First check if the individual property was provided
+        if (propertyConfiguration.wasPropertyProvided(detectProperty)) {
+            if (nullable && detectProperty instanceof NullableProperty) {
+                return propertyConfiguration.getValue((NullableProperty<V, R>) detectProperty).orElse(null);
+            } else {
+                return propertyConfiguration.getValue((ValuedProperty<V, R>) detectProperty);
+            }
+        }
+        
+        // If it's a project property, check JSON fallback
+        if (detectProperty.getKey().startsWith("detect.project.")) {
+            String jsonValue = getJsonPropertyValue(detectProperty.getKey());
+            if (jsonValue != null) {
+                try {
+                    // Parse the JSON value using the property's parser
+                    V parsedValue = detectProperty.getValueParser().parse(jsonValue);
+                    return detectProperty.convertValue(parsedValue);
+                } catch (Exception e) {
+                    logger.warn("Failed to parse JSON value '{}' for property '{}': {}", 
+                        jsonValue, detectProperty.getKey(), e.getMessage());
+                }
+            }
+        }
+        
+        // Return default behavior based on property type
+        if (nullable && detectProperty instanceof NullableProperty) {
+            return propertyConfiguration.getValue((NullableProperty<V, R>) detectProperty).orElse(null);
+        } else {
+            return propertyConfiguration.getValue((ValuedProperty<V, R>) detectProperty);
+        }
+    }
+
+    private String getJsonPropertyValue(String propertyKey) {
+        if (cachedJsonProperties == null) {
+            cachedJsonProperties = loadJsonProperties();
+        }
+        return cachedJsonProperties.get(propertyKey);
+    }
+
+    private Map<String, String> loadJsonProperties() {
+        try {
+            Path settingsFilePath = getPathOrNull(DetectProperties.DETECT_PROJECT_SETTINGS);
+            if (settingsFilePath != null) {
+                logger.debug("Loading project settings from file: {}", settingsFilePath);
+                ProjectSettings projectSettings = jsonFileReader.readProjectSettings(settingsFilePath);
+                if (projectSettings != null) {
+                    return jsonMerger.extractPropertiesFromProjectSettings(projectSettings);
+                }
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to load project settings from file: {}", e.getMessage());
+        }
+        return new HashMap<>();
     }
 }

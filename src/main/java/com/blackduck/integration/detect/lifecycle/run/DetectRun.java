@@ -93,7 +93,10 @@ public class DetectRun {
             logger.debug("Integrated Matching Correlation ID: {}", bootSingletons.getDetectRunId().getCorrelationId());
             String correlationId = getCorrelationId(operationRunner.getDetectConfigurationFactory(), bootSingletons);
             if (!universalToolsResult.getDetectCodeLocations().isEmpty()
-                    || (productRunData.shouldUseBlackDuckProduct() && !productRunData.getBlackDuckRunData().isOnline() && forceBdio && !universalToolsResult.didAnyFail() && exitCodeManager.getWinningExitCode().isSuccess())) {
+                    || (productRunData.shouldUseBlackDuckProduct()
+                    && !productRunData.getBlackDuckRunData().isOnline()
+                    && forceBdio && !universalToolsResult.didAnyFail()
+                    && exitCodeManager.getWinningExitCodeRequest().getExitCodeType().isSuccess())) {
                 bdio = stepRunner.generateBdio(correlationId, universalToolsResult, nameVersion);
             } else {
                 bdio = BdioResult.none();

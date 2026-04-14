@@ -107,6 +107,12 @@ For further remediation and transitive dependency upgrade guidance, please consu
 
 ## Rapid Scan Compare Mode
 
-You can configure Rapid Scan to return only the difference in policy violations between the current scan and previous Persistent Scans using the same configuration. To return only the difference in policy violations, configure detect.blackduck.rapid.compare.mode to BOM_COMPARE or BOM_COMPARE_STRICT.
+You can configure Rapid Scan to return only the difference in policy violations between the current scan and previous Persistent Scans using the same configuration for an existing project in Black Duck SCA. 
+
+To return only the difference in policy violations, configure `detect.blackduck.rapid.compare.mode` to `BOM_COMPARE` or `BOM_COMPARE_STRICT`.
+
+BOM_COMPARE: Will evaluate policy rules based on the type of [policy rule modes](https://documentation.blackduck.com/bundle/bd-hub/page/Policies/CreatePolicy.html) configured. When the policy rule is set to (`RAPID` and `FULL`) it will behave like `BOM_COMPARE_STRICT` but if the policy rule is only (`RAPID`) it will evaluate the result of the Rapid Scan against the policy, ignoring results in the BOM.
+
+BOM_COMPARE_STRICT: Will only evaluate policy rules that are (`RAPID` and `FULL`). Policy violations are compared to the existing project version BOM. If the policy violation was already known and visible in the BOM (active or overridden) it is not part of the rapid scan positive result, it will still be part of the full result following existing restrictions.
 
 BOM compare mode settings determine which policies are considered and how they behave when violations are present. See the [bd_product_short] documentation for futher details on<a href="https://documentation.blackduck.com/bundle/bd-hub/page/ComponentDiscovery/RapidScanning.html" target="_blank"> Rapid Scanning.</a>

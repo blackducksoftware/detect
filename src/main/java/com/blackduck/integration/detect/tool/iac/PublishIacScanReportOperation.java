@@ -41,7 +41,7 @@ public class PublishIacScanReportOperation {
         iacScanReports.stream()
             .filter(iacScanReport -> iacScanReport.getErrorMessage().isPresent())
             .findAny()
-            .ifPresent(iacScanReport -> exitCodePublisher.publishExitCode(new ExitCodeRequest(ExitCodeType.FAILURE_IAC)));
+            .ifPresent(iacScanReport -> exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_IAC));
     }
 
     private void publishStatusEvents(List<IacScanReport> iacScanReports) {

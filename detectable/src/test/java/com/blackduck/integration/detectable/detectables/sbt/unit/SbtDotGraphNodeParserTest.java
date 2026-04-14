@@ -1,15 +1,16 @@
 package com.blackduck.integration.detectable.detectables.sbt.unit;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
 
+import guru.nidi.graphviz.model.MutableGraph;
+import guru.nidi.graphviz.model.MutableNode;
+import guru.nidi.graphviz.parse.Parser;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.paypal.digraph.parser.GraphNode;
-import com.paypal.digraph.parser.GraphParser;
 import com.blackduck.integration.bdio.model.dependency.Dependency;
 import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
@@ -18,7 +19,7 @@ import com.blackduck.integration.detectable.detectables.sbt.dot.SbtDotGraphNodeP
 public class SbtDotGraphNodeParserTest {
 
     @Test
-    public void canParseSimpleGraph() {
+    public void canParseSimpleGraph() throws IOException {
         String simpleGraph = "digraph \"dependency-graph\" {\n"
             + "    graph[rankdir=\"LR\"]\n"
             + "    edge [\n"
@@ -28,15 +29,13 @@ public class SbtDotGraphNodeParserTest {
             + "\n"
             + "}";
         InputStream stream = new ByteArrayInputStream(simpleGraph.getBytes(StandardCharsets.UTF_8));
-        GraphParser graphParser = new GraphParser(stream);
+        MutableGraph mutableGraph = new Parser().read(stream);
 
-        Map.Entry<String, GraphNode> node = graphParser.getNodes().entrySet().stream().findFirst().get();
+        MutableNode node = mutableGraph.nodes().stream().findFirst().get();
         SbtDotGraphNodeParser nodeParser = new SbtDotGraphNodeParser(new ExternalIdFactory());
-        Dependency dependencyFromKey = nodeParser.nodeToDependency(node.getKey());
-        Dependency dependencyFromId = nodeParser.nodeToDependency(node.getValue().getId());
+        Dependency dependency = nodeParser.nodeToDependency(node.name().toString());
 
-        assertDependency(dependencyFromId, "org.scalameta", "scalafmtroot_2.13", "2.7.5-SNAPSHOT");
-        assertDependency(dependencyFromKey, "org.scalameta", "scalafmtroot_2.13", "2.7.5-SNAPSHOT");
+        assertDependency(dependency, "org.scalameta", "scalafmtroot_2.13", "2.7.5-SNAPSHOT");
     }
 
     @Test

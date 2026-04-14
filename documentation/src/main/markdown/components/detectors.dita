@@ -74,7 +74,7 @@
 							<entry>crates</entry>
 							<entry>
 								<p>Files: Cargo.toml</p>
-								<p>Executible: Cargo version 1.44.0+</p>
+								<p>Executable: Cargo version 1.44.0+</p>
 							</entry>
 							<entry>HIGH</entry>
 						</row>
@@ -202,12 +202,23 @@
 							<entry> </entry>
 						</row>
 						<row>
+                            <entry> </entry>
+                            <entry>Conda Tree</entry>
+                            <entry>Python</entry>
+                            <entry>Anaconda</entry>
+                            <entry>
+                                <p>File: environment.yml or environment.yaml</p>
+                                <p>Executables: conda, conda-tree</p>
+                            </entry>
+                            <entry>HIGH</entry>
+                        </row>
+						<row>
 							<entry> </entry>
 							<entry>Conda CLI</entry>
 							<entry>Python</entry>
 							<entry>Anaconda</entry>
 							<entry>
-								<p>File: environment.yml</p>
+								<p>File: environment.yml or environment.yaml</p>
 								<p>Executable: conda</p>
 							</entry>
 							<entry>HIGH</entry>
@@ -377,6 +388,16 @@
 							<entry>HIGH</entry>
 						</row>
 						<row>
+							<entry> </entry>
+							<entry>Go Mod File</entry>
+							<entry>Golang</entry>
+							<entry>Go Modules</entry>
+							<entry>
+								<p>File: go.mod</p>
+							</entry>
+							<entry>HIGH</entry>
+						</row>
+						<row>
 							<entry>
 								<b>GO_VENDOR</b>
 							</entry>
@@ -480,6 +501,17 @@
 						</row>
 						<row>
 							<entry> </entry>
+							<entry>Ivy CLI</entry>
+							<entry>various</entry>
+							<entry>Maven Central</entry>
+							<entry>
+								<p>Files: ivy.xml, build.xml</p>
+								<p>Executables: Ant 1.6.0+ and Ivy 2.4.0+</p>
+							</entry>
+							<entry>HIGH</entry>
+						</row>
+						<row>
+							<entry> </entry>
 							<entry>Ivy Build Parse</entry>
 							<entry>various</entry>
 							<entry>Maven Central</entry>
@@ -526,7 +558,7 @@
 							<entry>various</entry>
 							<entry>Maven Central</entry>
 							<entry>
-								<p>File: pom.xml</p>
+								<p>File: *pom.xml</p>
 								<p>Executable: mvnw or mvn</p>
 							</entry>
 							<entry>HIGH</entry>
@@ -734,7 +766,7 @@
 						</row>
 						<row>
 							<entry> </entry>
-							<entry>Pipenv Lock</entry>
+							<entry>Pipenv CLI</entry>
 							<entry>Python</entry>
 							<entry>PyPI</entry>
 							<entry>
@@ -750,7 +782,7 @@
 							<entry>Python</entry>
 							<entry>PyPI</entry>
 							<entry>
-								<p>Files: setup.py file, or one or more requirements.txt files</p>
+								<p>Files: setup.py file, pyproject.toml file, or one or more requirements.txt files</p>
 								<p>Executables: python and pip, or python3 and pip3 specified via --detect.python.path and --detect.pip.path properties</p>
 							</entry>
 							<entry>HIGH</entry>
@@ -846,6 +878,26 @@
 							<entry>LOW</entry>
 						</row>
 						<row>
+                            <entry>
+                                <b>Rush</b>
+                            </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                        </row>
+                        <row>
+                            <entry> </entry>
+                            <entry>Rush Lock</entry>
+                            <entry>Node JS</entry>
+                            <entry>npmjs</entry>
+                            <entry>
+                                <p>Files: rush.json file, pnpm-lock.yaml, npm-shrinkwrap.json, or yarn.lock </p>
+                            </entry>
+                            <entry>HIGH</entry>
+                        </row>
+						<row>
 							<entry>
 								<b>SBT</b>
 							</entry>
@@ -878,7 +930,7 @@
 						</row>
 						<row>
 							<entry> </entry>
-							<entry>Setuptools Pip Detector</entry>
+							<entry>Setuptools CLI</entry>
 							<entry>Python</entry>
 							<entry>PyPI</entry>
 							<entry>
@@ -889,7 +941,7 @@
 						</row>
 						<row>
 							<entry> </entry>
-							<entry>Setuptools Detector</entry>
+							<entry>Setuptools Parse</entry>
 							<entry>Python</entry>
 							<entry>PyPI</entry>
 							<entry>
@@ -928,6 +980,37 @@
 							</entry>
 							<entry>HIGH</entry>
 						</row>
+						<row>
+                            <entry>
+                                <b>UV</b>
+                            </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                            <entry> </entry>
+                        </row>
+                        <row>
+                            <entry> </entry>
+                            <entry>UV CLI</entry>
+                            <entry>Python</entry>
+                            <entry>PyPI</entry>
+                            <entry>
+                                <p>Files: pyproject.toml</p>
+                                <p>Executable: uv</p>
+                            </entry>
+                            <entry>HIGH</entry>
+                        </row>
+                        <row>
+                            <entry> </entry>
+                            <entry>UV Lock</entry>
+                            <entry>Python</entry>
+                            <entry>PyPI</entry>
+                            <entry>
+                                <p>Files: pyproject.toml and uv.lock or requirements.txt file </p>
+                            </entry>
+                            <entry>HIGH</entry>
+                        </row>
 						<row>
 							<entry>
 								<b>XCODE</b>

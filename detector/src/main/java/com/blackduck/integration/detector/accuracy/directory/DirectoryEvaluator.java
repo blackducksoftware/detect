@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.blackduck.integration.detectable.DetectableEnvironment;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 import com.blackduck.integration.detector.accuracy.detectable.DetectableEvaluationResult;
 import com.blackduck.integration.detector.accuracy.entrypoint.DetectorRuleEvaluation;
@@ -51,6 +52,7 @@ public class DirectoryEvaluator {
         logger.debug("Determining applicable detectors on the directory: {}", findResult.getDirectory());
 
         File directory = findResult.getDirectory();
+        DetectableEnvironment detectableEnvironment = new DetectableEnvironment(directory);
         Set<DetectorType> appliedSoFar = new HashSet<>();
         Set<DetectableDefinition> extractedSoFar = new HashSet<>();
         List<DetectorRuleEvaluation> evaluations = new LinkedList<>();
@@ -58,7 +60,7 @@ public class DirectoryEvaluator {
         for (DetectorRule rule : rules.getDetectorRules()) {
             SearchEnvironment searchEnvironment = new SearchEnvironment(findResult.getDepthFromRoot(), appliedSoFar, appliedInParent, extractedInParentDetectables);
             DetectorRuleEvaluation detectorRuleEvaluation = detectorRuleEvaluator.evaluate(
-                directory,
+                detectableEnvironment,
                 searchEnvironment,
                 rule,
                 () -> extractionEnvironmentSupplier.apply(rule.getDetectorType())

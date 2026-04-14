@@ -1,7 +1,18 @@
 # Release Notes for Jenkins Plugin
 
-## Version 10.0.0
+## Version 11.0.0
+**New features**
 
+* This release is compatible with [detect_product_long] 11.x.x. (Downloading and using detect11.(sh/ps1)).
+
+**Changed features**
+
+* Updated to use [detect_product_long] 11.x.x for execution.
+* Jenkins version 2.462.3 or later is required.
+
+<note type="note">Configuration and usage of the plugin is unchanged.</note>
+
+## Version 10.0.0
 **Notice**
 
 The [company_name] Software Integrity Group is now [var_company_name]    

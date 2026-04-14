@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodeRequest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -33,7 +34,7 @@ public class FormattedOutputManagerTest {
         eventSystem.publishEvent(Event.CodeLocationsCompleted, codeLocationExpected);
         
         DetectInfo detectInfo = new DetectInfo("", null, "");
-        FormattedOutput formattedOutput = formattedOutputManager.createFormattedOutput(detectInfo, ExitCodeType.SUCCESS, Optional.empty());
+        FormattedOutput formattedOutput = formattedOutputManager.createFormattedOutput(detectInfo, new ExitCodeRequest(ExitCodeType.SUCCESS), Optional.empty());
         
         List<FormattedCodeLocationOutput> codeLocationActual = formattedOutput.codeLocations;
         Assertions.assertEquals(1, codeLocationActual.size());

@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodeRequest;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
 
@@ -18,13 +19,6 @@ import com.blackduck.integration.detect.workflow.result.AirGapDetectResult;
 import com.blackduck.integration.detect.workflow.result.BlackDuckBomDetectResult;
 import com.blackduck.integration.detect.workflow.result.DetectResult;
 import com.blackduck.integration.detect.workflow.result.ReportDetectResult;
-import com.blackduck.integration.detect.workflow.status.DetectIssue;
-import com.blackduck.integration.detect.workflow.status.DetectIssueType;
-import com.blackduck.integration.detect.workflow.status.DetectStatusLogger;
-import com.blackduck.integration.detect.workflow.status.Operation;
-import com.blackduck.integration.detect.workflow.status.OperationType;
-import com.blackduck.integration.detect.workflow.status.Status;
-import com.blackduck.integration.detect.workflow.status.StatusType;
 import com.blackduck.integration.log.BufferedIntLogger;
 import com.blackduck.integration.log.LogLevel;
 
@@ -40,7 +34,7 @@ public class DetectStatusLoggerTest {
         List<DetectResult> detectResults = createResults();
         List<DetectIssue> detectIssues = createIssues();
         List<Operation> detectOperations = createOperations();
-        statusLogger.logDetectStatus(loggerActual, statusSummaries, detectResults, detectIssues, detectOperations, ExitCodeType.SUCCESS, Optional.empty());
+        statusLogger.logDetectStatus(loggerActual, statusSummaries, detectResults, detectIssues, detectOperations, new ExitCodeRequest(ExitCodeType.SUCCESS), Optional.empty());
         String actualOutput = loggerActual.getOutputString(LogLevel.INFO);
         assertEquals(expectedOutput.trim().replaceAll("\r?\n", "\n"), actualOutput.trim().replaceAll("\r?\n", "\n"));
     }
@@ -56,7 +50,7 @@ public class DetectStatusLoggerTest {
         List<DetectResult> detectResults = createResults();
         List<DetectIssue> detectIssues = createIssues();
         List<Operation> detectOperations = createOperations();
-        statusLogger.logDetectStatus(loggerActual, statusSummaries, detectResults, detectIssues, detectOperations, ExitCodeType.SUCCESS, Optional.empty());
+        statusLogger.logDetectStatus(loggerActual, statusSummaries, detectResults, detectIssues, detectOperations, new ExitCodeRequest(ExitCodeType.SUCCESS), Optional.empty());
         String actualOutput = loggerActual.getOutputString(LogLevel.DEBUG);
         assertEquals(expectedOutput.trim().replaceAll("\r?\n", "\n"), actualOutput.trim().replaceAll("\r?\n", "\n"));
     }

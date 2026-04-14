@@ -35,7 +35,7 @@ public class DetectToolFilter {
     public DetectToolFilter(
         ExcludeIncludeEnumFilter<DetectTool> excludedIncludedFilter,
         boolean impactEnabled,
-        boolean iacEnabled, 
+        boolean iacEnabled,
         RunDecision runDecision,
         BlackDuckDecision blackDuckDecision
     ) {
@@ -50,9 +50,11 @@ public class DetectToolFilter {
         if (detectTool == DetectTool.IMPACT_ANALYSIS) {
             return impactEnabled;
         }
+
         if (detectTool == DetectTool.IAC_SCAN) {
             return iacEnabled;
         }
+
         if (detectTool == DetectTool.DETECTOR && runDecision.getDockerMode() == DetectTargetType.IMAGE) {
             return false;
         }

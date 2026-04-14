@@ -8,7 +8,9 @@
 
 [detect_product_short] detectors for discovery of dependencies in Python:
 
-* Setuptools detector
+* Setuptools detectors
+	* Setuptools CLI
+	* Setuptools Parse
 * PIPENV detectors
 	* Pipenv lock detector
 	* Pipfile lock detector
@@ -16,21 +18,24 @@
 	* Pip Native Inspector
 	* Pip Requirements File Parse
 * Poetry detector
+* UV detectors
+	* UV CLI
+	* UV Lock
 
-## Setuptools detector
+## Setuptools detectors
 
-Setuptools detector attempts to run on your project if a pyproject.toml file containing a build section with `requires = ["setuptools"]` or equivalent line is located, and a pip installation is found. (Setuptools scans can be run in both build, if a pip installation is available, and buildless mode, if not.)
+Setuptools detectors attempt to run on your project if a pyproject.toml file containing a build section with `requires = ["setuptools"]` or equivalent line is located. (Setuptools scans can be run in both build, if a pip installation is available, and buildless mode, if not.)
 
-<note type="note">Setuptools build detector should be run in a virtual environment, or environment with a clean global pip cache, where a pip install has only been performed for the project being scanned.</note>
+<note type="note">Setuptools CLI detector should be run in a virtual environment, or environment with a clean global pip cache, where a pip install has only been performed for the project being scanned.</note>
 
-[detect_product_short] parses the pyproject.toml file determining if the `[build-system]` section has been configured for Setuptools Pip via the `requries= ["setuptools"]` setting. If the setting is located and pip is installed in the environment, either in the default location or specified via the `--detect.pip.path` property, the detector will execute in a virtual environment, if configured as suggested, and analyze the pyproject.toml, setup.cfg, or setup.py files for dependencies. If the detector discovers a configured pyproject.toml file but not a pip executible, it will execute in buildless mode where it will parse dependencies from the pyproject.toml, setup.cfg, or setup.py files but may not be able to specify exact package versions. If no dependencies are located in the pyproject.toml, setup.cfg, or setup.py files, or if the detector fails, the BDIO file output will not be generated in build or buildless mode. [detect_product_short] will also attempt to run additional detectors if their execution requirements are met.
+[detect_product_short] parses the pyproject.toml file determining if the `[build-system]` section has been configured for Setuptools Pip via the `requries = ["setuptools"]` setting. If the setting is located and pip is installed in the environment, either in the default location or specified via the `--detect.pip.path` property, Setuptools CLI detector will execute in a virtual environment, if configured as suggested, and analyze the pyproject.toml, setup.cfg, or setup.py files for dependencies. If a configured pyproject.toml file is discovered but a pip executable is not, the Setuptools Parse detector will parse dependencies from the pyproject.toml, setup.cfg, or setup.py files but may not be able to specify exact package versions. If no dependencies are located in the pyproject.toml, setup.cfg, or setup.py files, or if the detectors fail the BDIO file output will not be generated in build or buildless mode. [detect_product_short] will also attempt to run additional detectors if their execution requirements are met.
 
-For setup.cfg and setup.py file parsing, the Setuptools detector supports direct mentioning of dependency files. For reference, see 
+For setup.cfg and setup.py file parsing, the Setuptools detectors support direct mentioning of dependency files. For reference, see 
 [Dependency Management in Setuptools](https://setuptools.pypa.io/en/latest/userguide/dependency_management.html).
 
 <note type="tip">URL references, optional dependencies and `file: \<path to file\>` parameters found in setup.cfg are not supported. For setup.py files, programmatic population of the `install_requires` parameter is not supported.</note>
 
-<note type="note">The `--detect.pip.only.project.tree`, `--detect.pip.project.name`, and `--detect.pip.project.version.name` properties do not apply to the Setuptools detector.</note>
+<note type="note">The `--detect.pip.only.project.tree`, `--detect.pip.project.name`, and `--detect.pip.project.version.name` properties do not apply to the Setuptools detectors.</note>
 
 ## PIPENV Detectors
 
@@ -60,7 +65,7 @@ Pipfile.lock dependencies can be filtered using the [detect.pipfile.dependency.t
 
 ## Pip Native Inspector
 
-Pip Native Inspector attempts to run on your project if any of the following are true: a setup.py file is found, a requirements.txt is found, or a requirements file is provided using the [--detect.pip.requirements.path](../properties/detectors/pip.md#pip-requirements-path) property.
+Pip Native Inspector attempts to run on your project if any of the following are true: a setup.py file is found, a pyproject.toml file is found, a requirements.txt is found, or a requirements file is provided using the [--detect.pip.requirements.path](../properties/detectors/pip.md#pip-requirements-path) property.
 
 Pip Native Inspector requires Python and pip executables.
 
@@ -69,24 +74,24 @@ Pip Native Inspector requires Python and pip executables.
 
 Pip Native Inspector runs the [pip-inspector.py script](https://github.com/blackducksoftware/detect/blob/master/src/main/resources/pip-inspector.py), which uses Python/pip libraries to query the pip cache for the project, which may or may not be a virtual environment, for dependency information:
 
-1. pip-inspector.py queries for the project dependencies by project name which can be discovered using setup.py, or provided using the detect.pip.project.name property. If your project is installed into the pip cache, this discovers dependencies specified in setup.py.
-1. If one or more requirements files are found or provided, pip-inspector.py queries each requirements file for possible additional dependencies and details of each.
+1. pip-inspector.py queries for the project dependencies by project name, which can be discovered using setup.py, pyproject.toml, or provided using the [--detect.pip.project.name](../properties/detectors/pip.md#pip-project-name) property. If your project is installed into the pip cache, this discovers dependencies specified in setup.py, or pyproject.toml file.
+2. If one or more requirements files are found or provided, pip-inspector.py queries each requirements file for possible additional dependencies and details of each.
 
 <note type="tip">Only those packages which have been installed; using, for example, `pip install`, into the pip cache and appearing in the output of `pip list`, are included in the output of pip-inspector.py. There must be a match between the package version on which your project depends and the package version installed in the pip cache.</note>
 <note type="note">If the packages are installed into a virtual environment for your project, you must run [detect_product_short] from within that virtual environment.</note>
 
 ### Recommendations for Pip Detector
 
-* Be sure that [detect_product_short] is locating the correct verion of the Python executable; this can be done by running the logging level at DEBUG and then reading the log. This is a particular concern if your system has multiple versions of Python installed.
-* Create a setup.py file for your project.
+* Be sure that [detect_product_short] is locating the correct version of the Python executable; this can be done by running the logging level at DEBUG and then reading the log. This is a particular concern if your system has multiple versions of Python installed.
+* Create a setup.py or pyproject.toml file for your project.
 * Install your project and dependencies into the pip cache:
 ````
-python setup.py install
+python setup.py install or pip install . (from directory where pyproject.toml is present)
 pip install -r requirements.txt
 ````
-* Pip detector attempts to derive the project name using your setup.py file if you have one. If you do not have a setup.py file, you can provide the correct project name using the propety `--detect.pip.project.name`.
-* If there are any dependencies specified in requirements.txt that are not specified in setup.py, then provide the requirements.txt file using the [detect_product_short] property.   
-<note type="tip">If you are using a virtual environment, be sure to switch to that virtual environment when you run [detect_product_short]. This also applies when you are using a tool such as Poetry that sets up a Python virtual environment.</note>
+* Pip detector attempts to derive the project name using your setup.py or pyproject.toml file if you have one. If you do not have a setup.py or pyproject.toml file, you can provide the correct project name using the property `--detect.pip.project.name`.
+* If there are any dependencies specified in requirements.txt that are not specified in setup.py or pyproject.toml file, then provide the requirements.txt file using the [detect_product_short] property.   
+<note type="important"><li>Ensure that the paths to the Python and pip executables are correctly configured, either via system environment variables or [detect_product_short] properties. For projects using `pyproject.toml` file(s), incorrect paths may lead to [detect_product_short] failures.</li><li>If you are using a virtual environment, be sure to switch to that virtual environment when you run [detect_product_short]. This also applies when you are using a tool such as Poetry that sets up a Python virtual environment.</li></note>
 
 ## PIP Requirements File Parse
 
@@ -116,3 +121,29 @@ The Poetry detector parses poetry.lock for dependency information. If the detect
 The Poetry detector extracts the project's name and version from the pyproject.toml file.  If it does not find a pyproject.toml file, it will defer to values derived by git, from the project's directory, or defaults.
 
 When the `--detect.poetry.dependency.groups.excluded` property is specified, presence of both poetry.lock and pyproject.toml files is required for this detector to run successfully.
+
+## UV Package Manager
+
+One of the UV detectors will run on your project if a pyproject.toml file containing section `[tool.uv]` is found. 
+
+The UV detectors extract the project's name and version from the pyproject.toml file. If these are not found in a pyproject.toml file, default values will be used.
+
+UV has two detectors:
+
+### UV CLI detector
+
+UV CLI will run if the uv executable is found along with a pyproject.toml file. It will run uv tree commands to find dependencies for the project.
+
+### UV Lock detector
+
+If the uv executable is not found, the UV Lock detector will run if either uv.lock or requirements.txt file is found in the source directory of the project.
+
+UV Lock detector will parse uv.lock, requirements.txt, or both to find project dependencies.
+
+<note type="note">UV Lock detector will run if there is no uv.lock file in the source; however, an uv.lock file is recommended for the highest result accuracy. Parsing only requirements.txt is considered LOW accuracy as there is no dependency source information.</note>
+
+### Dependency and Workspace Inclusions/Exclusions
+
+[UV Properties](../properties/detectors/uv.md) supports exclusion of all the dependency groups specified. Since uv has a concept of workspaces, they can be included and excluded using the properties provided.
+The workspace member provided in the property should be identical to the key name under tool.uv.sources since dependencies are created under the same key name in the tree and uv.lock file.
+For excluding dependency groups and workspaces, presence of uv.lock or uv executable is required.

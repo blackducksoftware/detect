@@ -19,11 +19,20 @@ import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.util.ToolVersionLogger;
 import com.blackduck.integration.executable.ExecutableOutput;
 import com.blackduck.integration.executable.ExecutableRunnerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.tomlj.TomlParseResult;
+import org.tomlj.TomlTable;
 
 public class PipInspectorExtractor {
+
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final DetectableExecutableRunner executableRunner;
     private final PipInspectorTreeParser pipInspectorTreeParser;
     private final ToolVersionLogger toolVersionLogger;
+    private static final String NAME_KEY = "name";
+    private static final String VERSION_KEY = "version";
+    private static final String PROJECT_KEY = "project";
 
     public PipInspectorExtractor(DetectableExecutableRunner executableRunner, PipInspectorTreeParser pipInspectorTreeParser, ToolVersionLogger toolVersionLogger) {
         this.executableRunner = executableRunner;
@@ -38,13 +47,14 @@ public class PipInspectorExtractor {
         File pipInspector,
         File setupFile,
         List<Path> requirementFilePaths,
-        String providedProjectName
+        String providedProjectName,
+        TomlParseResult tomlParseResult
     ) {
         toolVersionLogger.log(directory, pythonExe);
         toolVersionLogger.log(directory, pipExe);
         Extraction extractionResult;
         try {
-            String projectName = getProjectName(directory, pythonExe, setupFile, providedProjectName);
+            String projectName = getProjectName(directory, pythonExe, setupFile, tomlParseResult, providedProjectName);
 
             if (StringUtils.isEmpty(projectName) && requirementFilePaths.isEmpty()) {
                 return new Extraction.Builder().failure("Unable to run the Pip Inspector without a project name or a requirements file").build();
@@ -105,16 +115,37 @@ public class PipInspectorExtractor {
         return executableRunner.execute(ExecutableUtils.createFromTarget(sourceDirectory, pythonExe, inspectorArguments)).getStandardOutputAsList();
     }
 
-    private String getProjectName(File directory, ExecutableTarget pythonExe, File setupFile, String providedProjectName) throws ExecutableRunnerException {
+    private String getProjectName(File directory, ExecutableTarget pythonExe, File setupFile, TomlParseResult tomlParseResult, String providedProjectName) throws ExecutableRunnerException {
+        if (StringUtils.isNotBlank(providedProjectName)) {
+            return providedProjectName;
+        }
+
         String projectName = providedProjectName;
 
-        if (StringUtils.isBlank(projectName) && setupFile != null && setupFile.exists()) {
-            List<String> pythonArguments = Arrays.asList(setupFile.getAbsolutePath(), "--name");
-            ExecutableOutput executableOutput = executableRunner.execute(ExecutableUtils.createFromTarget(directory, pythonExe, pythonArguments));
-            if (executableOutput.getReturnCode() == 0) {
-                List<String> output = executableOutput.getStandardOutputAsList();
-                projectName = output.get(output.size() - 1).replace('_', '-').trim();
+        try {
+            if (tomlParseResult != null && (tomlParseResult.getTable(PROJECT_KEY) != null)) {
+                TomlTable projectTable = tomlParseResult.getTable(PROJECT_KEY);
+                if (projectTable != null && projectTable.contains(NAME_KEY)) {
+                    projectName = projectTable.getString(NAME_KEY);
+                    return projectName;
+                }
             }
+        } catch (Exception e) {
+            logger.debug("Failed to parse project name from pyproject.toml.");
+        }
+
+
+        try {
+            if (setupFile != null && setupFile.exists()) {
+                List<String> pythonArguments = Arrays.asList(setupFile.getAbsolutePath(), "--name");
+                ExecutableOutput executableOutput = executableRunner.execute(ExecutableUtils.createFromTarget(directory, pythonExe, pythonArguments));
+                if (executableOutput.getReturnCode() == 0) {
+                    List<String> output = executableOutput.getStandardOutputAsList();
+                    projectName = output.get(output.size() - 1).replace('_', '-').trim();
+                }
+            }
+        } catch (Exception e) {
+            logger.debug("Failed to parse project name from setup.py.");
         }
 
         return projectName;

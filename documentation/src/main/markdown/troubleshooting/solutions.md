@@ -1,27 +1,44 @@
-# Solutions to common problems
+# Common [detect_product_short] troubleshooting solutions
+
+## SCA Scan Service (SCASS) Store endpoint is not whitelisted for Signature Scans
+
+### Symptom
+
+When running [detect_product_short] version 10.6.0 and [bd_product_short] server 2025.7.0, [detect_product_short] fails with ```Signature scan failure: Connect to na.store.scass.blackduck.com:443 [na.store.scass.blackduck.com/6.6.6.1] failed: Operation timed out (Connection timed out)``` or,
+```Signature scan failure: Connect to eu.store.scass.blackduck.com:443 [eu.store.scass.blackduck.com/6.6.6.1] failed: Operation timed out (Connection timed out)```
+
+### Solution
+
+Rerun the scan after adding or updating the IP addresses listed below in your network firewalls or allow lists.
+
+* scass.blackduck.com - 35.244.200.22
+* na.scass.blackduck.com - 35.244.200.22
+* na.store.scass.blackduck.com - 34.54.95.139
+* eu.store.scass.blackduck.com - 34.54.213.11
+* eu.scass.blackduck.com - 34.54.38.252
 
 ## DETECT_SOURCE was not set or computed correctly
 
 ### Symptom
 
-detect10.sh fails with: DETECT_SOURCE was not set or computed correctly, please check your configuration and environment.
+detect11.sh fails with: DETECT_SOURCE was not set or computed correctly, please check your configuration and environment.
 
 ### Possible cause
 
-detect10.sh is trying to execute this command:
+detect11.sh is trying to execute this command:
 ````
-curl --silent --header \"X-Result-Detail: info\" https://repo.blackduck.com/api/storage/bds-integrations-release/com/blackduck/integration/detect?properties=DETECT_LATEST_10
+curl --silent --header \"X-Result-Detail: info\" https://repo.blackduck.com/api/storage/bds-integrations-release/com/blackduck/integration/detect?properties=DETECT_LATEST_11
 ````
 The response to this command should be similar to the following:
 ```
 {
 "properties" : {
-"DETECT_LATEST_10" : [ "https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/detect/10.0.0/detect-10.0.0.jar" ]
+"DETECT_LATEST_11" : [ "https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/detect/11.0.0/detect-11.0.0.jar" ]
 },
 "uri" : "https://repo.blackduck.com/api/storage/bds-integrations-release/com/blackduck/integration/detect"
 }
 ```
-When that command does not successfully return a value for property DETECT_LATEST, detect10.sh reports:
+When that command does not successfully return a value for property DETECT_LATEST, detect11.sh reports:
 ````
 DETECT_SOURCE was not set or computed correctly, please check your configuration and environment.
 ````
@@ -136,23 +153,23 @@ you will get this (or a similar) error if you run with --detect.tools.BINARY_SCA
 
 Set --detect.project.name and --detect.project.version.name.
 
-## [blackduck_signature_scanner_name] fails on Alpine Linux
+## [blackduck_signature_scanner_name] fails on Alpine Linux (non ARM64 architecture)
 
 ### Symptom
 
-The [blackduck_signature_scanner_name] fails on Alpine Linux with an error similar to:
+The [blackduck_signature_scanner_name] fails on Alpine Linux systems with non arm64 architecture with an error similar to:
 
 ````
-There was a problem scanning target '/opt/projects/myproject': Cannot run program "/home/me/blackduck/tools/Black_Duck_Scan_Installation/scan.cli-2020.6.0/jre/bin/java": error=2, No such file or directory
+There was a problem scanning target '/opt/projects/myproject': Cannot run program "/home/me/blackduck/tools/Black_Duck_Scan_Installation/scan.cli-2025.4.0/jre/bin/java": error=2, No such file or directory
 ````
 
 ### Possible cause
 
-The Java bundled with the [blackduck_signature_scanner_name] does not work on Alpine Linux (it relies on libraries not usually present on an Alpine system).
+The Java bundled with the [blackduck_signature_scanner_name] does not work on Alpine Linux systems with non arm64 architecture (it relies on libraries not usually present on an Alpine system).
 
 ### Solution
 
-Install an appropriate version of Java and tell [detect_product_short] to invoke the [blackduck_signature_scanner_name] using that
+Install a supported version of Java and tell [detect_product_short] to invoke the [blackduck_signature_scanner_name] using that
 version of Java by setting environment variable BDS_JAVA_HOME to the JAVA_HOME value for that Java installation.
 
 For example:
@@ -164,8 +181,22 @@ export BDS_JAVA_HOME=$JAVA_HOME
 Or:
 
 ````
-export BDS_JAVA_HOME=/usr/lib/jvm/java-11-openjdk/jre
+export BDS_JAVA_HOME=/<path to supported>/jre
 ````
+
+## Detector scan fails with Java compatibility issues
+
+### Symptom
+
+Detector scans may fail with an error indicating Java incompatibility.
+
+### Possible cause
+
+[detect_product_short] might use package manager executables and CLI commands to investigate projects and the Java version in use by [detect_product_short] might not be compatible with the Java version used for the project.
+
+### Solution
+
+Install an appropriate [detect_product_short] supported version of Java and configure [detect_product_short] to use that version of Java by setting environment variable JAVA_HOME value for that Java installation.
 
 ## On Windows: Error trying cleanup
 
@@ -220,3 +251,57 @@ The requirements.txt file was created using encoding systems other than UTF-8.
 To resolve this issue, the requirements.txt file must be created using UTF-8 encoding before the [detect_product_short] inspection is run on the source code.
 
 <note type="note">See [PIP uses UTF-8 as the default encoding when creating requirements.txt files](https://pip.pypa.io/en/stable/reference/requirements-file-format/#encoding).</note>
+
+## Bazel Troubleshooting Guide
+
+### Common Issues and Solutions
+
+#### Unable to determine Bazel mode automatically
+**Problem:** The tool cannot determine if your project uses BZLMOD or WORKSPACE mode. Usually occurs when the `bazel mod show_repo` command fails unexpectedly (not due to old Bazel version).
+
+**Possible Solutions:**
+- Manually specify the mode using `--detect.bazel.mode=WORKSPACE` or `--detect.bazel.mode=BZLMOD`
+
+#### No supported Bazel dependency sources found
+**Problem:** The automatic graph probing did not detect any dependency sources.
+
+**Possible Solutions:**
+- Verify your target has dependencies: `bazel query 'deps(//your:target)'`
+- Manually specify dependency sources: `--detect.bazel.dependency.sources=MAVEN_INSTALL,HTTP_ARCHIVE`
+- Check that your Bazel target builds successfully: `bazel build //your:target`
+
+#### Old Bazel Version Warning
+**Problem:** You see a warning like "Bazel does not support 'mod' command (likely version < 6.0)" or "show repo command not found".
+
+Expected behavior for Bazel versions before 6.0: the tool assumes WORKSPACE mode and continues.
+
+**Possible Solutions:**
+- To use BZLMOD features, upgrade to Bazel 6.4+ (preferably 7.x or 8.x)
+- To suppress the warning, explicitly set: `--detect.bazel.mode=WORKSPACE`
+
+<note type="note">For Bazel 6.0–6.3 with Bzlmod enabled (via --enable_bzlmod), the tool may fail to probe HTTP/BCR repositories because bazel mod show_repo is unavailable or unstable. Upgrade or use WORKSPACE mode as a workaround.</note>
+
+#### HTTP Dependencies Missing
+**Problem:** Some http_archive or git_repository dependencies are not detected.
+
+**Possible Solutions:**
+- Check the logs to verify the HTTP pipeline was enabled
+- Verify the dependencies are actually reachable from your specified target: `bazel query 'deps(//your:target)'`
+- For projects where HTTP dependencies are known to be absent, exclude the pipeline explicitly: `--detect.bazel.dependency.sources=MAVEN_INSTALL`
+
+#### Bazel Executable Not Found
+**Problem:** Error indicates Bazel executable cannot be located.
+
+**Possible Solutions:**
+- Ensure Bazel is installed: `bazel version`
+- Verify Bazel is on your PATH: `which bazel`
+- Specify the path explicitly: `--detect.bazel.path=/path/to/bazel`
+
+#### Debug Mode
+For detailed logging to diagnose issues:
+```sh
+bash <(curl -s -L https://detect.blackduck.com/detect11.sh) \
+  --logging.level.detect=DEBUG \
+  --detect.bazel.target='//your:target'
+```
+

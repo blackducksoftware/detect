@@ -5,7 +5,11 @@ import com.blackduck.integration.blackduck.api.generated.view.DeveloperScansScan
 import com.blackduck.integration.blackduck.http.BlackDuckRequestBuilder;
 import com.blackduck.integration.blackduck.service.request.BlackDuckMultipleRequest;
 import com.blackduck.integration.blackduck.service.request.BlackDuckResponseRequest;
+import com.blackduck.integration.exception.IntegrationException;
 import com.blackduck.integration.rest.HttpUrl;
+import com.blackduck.integration.rest.response.Response;
+
+import java.util.List;
 
 public class DetectRapidScanRequestBuilder {
     public static final String CURRENT_MEDIA_TYPE = "application/vnd.blackducksoftware.scan-5+json";
@@ -21,10 +25,7 @@ public class DetectRapidScanRequestBuilder {
         return blackDuckRequestBuilder.buildBlackDuckResponseRequest(httpUrl);
     }
 
-    public BlackDuckMultipleRequest<DeveloperScansScanView> createRequest(HttpUrl httpUrl) {
-        return blackDuckRequestBuilder.buildBlackDuckRequest(new UrlMultipleResponses<>(httpUrl, DeveloperScansScanView.class));
-    }
-    public BlackDuckMultipleRequest<DeveloperScansScanView> createFullRequest(HttpUrl httpUrl) {
+    public BlackDuckMultipleRequest<DeveloperScansScanView> createRegularRequest(HttpUrl httpUrl) {
         return blackDuckRequestBuilder.buildBlackDuckRequest(new UrlMultipleResponses<>(httpUrl, DeveloperScansScanView.class));
     }
 

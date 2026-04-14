@@ -1,6 +1,6 @@
-# Air Gap Mode
+# [detect_product_short] Air Gap mode
 
-To run [detect_product_long] on an air-gapped computer or network, you must first download and install [detect_product_short] and dependencies that [detect_product_short] normally downloads as it runs. These include inspectors for Docker and NuGet, libraries that Gradle inspector requires, and other files. These files are packaged together in an air gap archive that will be extracted on the target system.
+To run [detect_product_long] on an air-gapped computer or network, you must first download and install [detect_product_short] and dependencies that [detect_product_short] normally downloads as it runs. These include inspectors for Docker, NuGet and other files. These files are packaged together in an air gap archive that will be extracted on the target system.
 
 ## Downloading or creating an air gap archive
 
@@ -18,8 +18,6 @@ Optionally you can follow --zip with a space and an argument (for example: --zip
 Possible values:   
 * FULL (produce a full air gap zip; the default)   
 * NO_DOCKER (do not include the Docker Inspector)    
-
-Your PATH environment variable must include the *bin* directory of the Gradle distribution to generate an air gap archive.
 
 ## Running in air gap mode
 

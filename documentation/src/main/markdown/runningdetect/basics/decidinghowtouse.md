@@ -1,4 +1,4 @@
-# Deciding how to use [detect_product_long]
+# Deciding how to use [detect_product_short]
 
 Before you download and run [detect_product_short], you should make the following decisions:
 

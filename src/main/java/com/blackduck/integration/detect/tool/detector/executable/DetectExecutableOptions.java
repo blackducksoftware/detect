@@ -13,6 +13,7 @@ public class DetectExecutableOptions {
     private final Path flutterPath;
     private final Path gradleUserPath;
     private final Path mavenUserPath;
+    private final Path antUserPath;
     private final Path npmUserPath;
     private final Path pearUserPath;
     private final Path pipUserPath;
@@ -28,6 +29,8 @@ public class DetectExecutableOptions {
     private final Path lernaUserPath;
     private final Path opamUserPath;
     private final Path cargoUserPath;
+    private final Path uvUserPath;
+    private final Path condaTreeUserPath;
 
     public DetectExecutableOptions(
         Path bashUserPath,
@@ -40,6 +43,7 @@ public class DetectExecutableOptions {
         Path flutterPath,
         Path gradleUserPath,
         Path mavenUserPath,
+        Path antUserPath,
         Path npmUserPath,
         Path pearUserPath,
         Path pipUserPath,
@@ -54,7 +58,9 @@ public class DetectExecutableOptions {
         Path sbtUserPath,
         Path lernaUserPath,
         Path opamUserPath,
-        Path cargoUserPath
+        Path cargoUserPath,
+        Path uvUserPath,
+        Path condaTreeUserPath
     ) {
         this.bashUserPath = bashUserPath;
         this.bazelUserPath = bazelUserPath;
@@ -66,6 +72,7 @@ public class DetectExecutableOptions {
         this.flutterPath = flutterPath;
         this.gradleUserPath = gradleUserPath;
         this.mavenUserPath = mavenUserPath;
+        this.antUserPath = antUserPath;
         this.npmUserPath = npmUserPath;
         this.pearUserPath = pearUserPath;
         this.pipUserPath = pipUserPath;
@@ -81,6 +88,8 @@ public class DetectExecutableOptions {
         this.lernaUserPath = lernaUserPath;
         this.opamUserPath = opamUserPath;
         this.cargoUserPath = cargoUserPath;
+        this.uvUserPath = uvUserPath;
+        this.condaTreeUserPath = condaTreeUserPath;
     }
 
     public Path getBashUserPath() {
@@ -122,6 +131,8 @@ public class DetectExecutableOptions {
     public Path getMavenUserPath() {
         return mavenUserPath;
     }
+
+    public Path getAntUserPath() { return antUserPath; }
 
     public Path getNpmUserPath() {
         return npmUserPath;
@@ -180,4 +191,7 @@ public class DetectExecutableOptions {
     }
 
     public Path getCargoUserPath() { return cargoUserPath; }
+
+    public Path getUVUserPath() { return uvUserPath; }
+    public Path getCondaTreeUserPath() { return condaTreeUserPath; }
 }

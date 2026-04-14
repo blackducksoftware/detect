@@ -1,6 +1,7 @@
 package com.blackduck.integration.detect.workflow.blackduck.report;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 
 import org.junit.jupiter.api.Assertions;
@@ -50,6 +51,20 @@ public class RiskReportServiceTestIT {
         File pdfFile = reportService.createReportPdfFile(folder, projectVersionWrapper.getProjectView(), projectVersionWrapper.getProjectVersionView());
         Assertions.assertNotNull(pdfFile);
         Assertions.assertTrue(pdfFile.exists());
+    }
+
+    @Test
+    @ExtendWith(TempDirectory.class)
+    public void createReportJsonFileTest(@TempDirectory.TempDir Path folderForReport) throws IntegrationException, IOException {
+        BlackDuckTestConnection blackDuckTestConnection = BlackDuckTestConnection.fromEnvironment();
+        ReportService reportService = blackDuckTestConnection.createReportService();
+
+        ProjectVersionWrapper projectVersionWrapper = blackDuckTestConnection.projectVersionAssertions(PROJECT_NAME, PROJECT_VERSION_NAME).getProjectVersionWrapper();
+
+        File folder = folderForReport.toFile();
+        File jsonFile = reportService.createReportJsonFile(folder, projectVersionWrapper.getProjectView(), projectVersionWrapper.getProjectVersionView());
+        Assertions.assertNotNull(jsonFile);
+        Assertions.assertTrue(jsonFile.exists());
     }
 
     @Test

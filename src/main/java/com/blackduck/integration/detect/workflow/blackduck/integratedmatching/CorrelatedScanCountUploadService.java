@@ -51,7 +51,7 @@ public class CorrelatedScanCountUploadService extends DataService {
             .buildBlackDuckResponseRequest(url);
 
         Response response = blackDuckApiClient.execute(request);
-        logger.debug(String.format("uploadCorrelatedScanCounts(): Black Duck response status: %d", response.getStatusCode()));
+        logger.debug(String.format("uploadCorrelatedScanCounts(): Black Duck SCA response status: %d", response.getStatusCode()));
         return response;
     }
 

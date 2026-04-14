@@ -2,7 +2,9 @@ package com.blackduck.integration.detectable.detectables.npm.lockfile.unit;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +22,8 @@ import com.blackduck.integration.detectable.detectables.npm.lockfile.parse.NpmLo
 import com.blackduck.integration.detectable.detectables.npm.lockfile.parse.NpmLockfilePackager;
 import com.blackduck.integration.detectable.util.FunctionalTestFiles;
 import com.blackduck.integration.detectable.util.graph.GraphAssert;
+import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
+import com.blackduck.integration.detectable.detectables.npm.NpmDependencyType;
 
 public class NpmLockfileGraphTransformerTest {
     
@@ -73,9 +77,9 @@ public class NpmLockfileGraphTransformerTest {
         // as normally the requires would be in one area of the structure and the dependencies
         // in another but this is a unit test and we are only concerned about workspace dependencies becoming
         // direct dependencies in the final graph.
-        NpmDependency workspaceDependency = new NpmDependency("packages/a", "1.0.0", false, false);
-        NpmDependency simpleDependency1 = new NpmDependency("abbrev", "^2.0.0", false, false);
-        NpmDependency simpleDependency2 = new NpmDependency("send", "0.17.2", false, false);
+        NpmDependency workspaceDependency = new NpmDependency("packages/a", "1.0.0", false, false, false);
+        NpmDependency simpleDependency1 = new NpmDependency("abbrev", "^2.0.0", false, false, false);
+        NpmDependency simpleDependency2 = new NpmDependency("send", "0.17.2", false, false, false);
         NpmRequires workspaceRequires1 = new NpmRequires("abbrev", "^2.0.0");
         NpmRequires workspaceRequires2 = new NpmRequires("send", "0.17.2");
         requires.add(workspaceRequires1);
@@ -92,16 +96,182 @@ public class NpmLockfileGraphTransformerTest {
             Collections.emptyList(),
             Collections.emptyList(),
             Collections.emptyList(),
+            Collections.emptyList(),
             resolvedDependencies
         );
         
         NpmLockfileGraphTransformer graphTransformer = new NpmLockfileGraphTransformer(null);
         List<String> workspaces = new ArrayList<>();
         workspaces.add("packages/a");
-        DependencyGraph graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), workspaces);
+        DependencyGraph graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), workspaces, Collections.emptyMap());
         
         GraphAssert graphAssert = new GraphAssert(Forge.NPMJS, graph);
         graphAssert.hasRootDependency(externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "abbrev", "^2.0.0"));
         graphAssert.hasRootDependency(externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "send", "0.17.2"));
+    }
+    
+    @Test
+    void testOptionalDependenciesExcludedFromRequires() {
+        // Create a parent dependency with requires that include optional dependencies
+        NpmDependency parentDependency = new NpmDependency("parent-package", "1.0.0", false, false, false);
+        
+        // Create child dependencies - one regular, one optional
+        NpmDependency regularChildDependency = new NpmDependency("regular-child", "1.0.0", false, false, false);
+        NpmDependency optionalChildDependency = new NpmDependency("optional-child", "1.0.0", false, false, true);
+        
+        // Create requires for both dependencies
+        NpmRequires regularRequires = new NpmRequires("regular-child", "1.0.0");
+        NpmRequires optionalRequires = new NpmRequires("optional-child", "1.0.0");
+        
+        // Set up parent dependency with requires
+        List<NpmRequires> requires = new ArrayList<>();
+        requires.add(regularRequires);
+        requires.add(optionalRequires);
+        parentDependency.addAllRequires(requires);
+        
+        // Set up child dependencies under parent
+        List<NpmDependency> childDependencies = new ArrayList<>();
+        childDependencies.add(regularChildDependency);
+        childDependencies.add(optionalChildDependency);
+        parentDependency.addAllDependencies(childDependencies);
+        
+        // Create resolved dependencies list
+        List<NpmDependency> resolvedDependencies = new ArrayList<>();
+        resolvedDependencies.add(parentDependency);
+        resolvedDependencies.add(regularChildDependency);
+        resolvedDependencies.add(optionalChildDependency);
+        
+        // Create npm project
+        NpmProject npmProject = new NpmProject(
+            StringUtils.EMPTY,
+            StringUtils.EMPTY,
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Collections.emptyList(),
+            resolvedDependencies
+        );
+        
+        // Create a filter that excludes optional dependencies
+        EnumListFilter<NpmDependencyType> filter = EnumListFilter.fromExcluded(NpmDependencyType.OPTIONAL);
+        
+        // Transform the graph
+        NpmLockfileGraphTransformer graphTransformer = new NpmLockfileGraphTransformer(filter);
+        PackageLock packageLock = new PackageLock();
+        packageLock.packages = Collections.emptyMap();
+        DependencyGraph graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), Collections.emptyList(), Collections.emptyMap());
+        
+        // Verify that the regular child dependency is included but optional child dependency is excluded
+        GraphAssert graphAssert = new GraphAssert(Forge.NPMJS, graph);
+        graphAssert.hasParentChildRelationship(
+            externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "parent-package", "1.0.0"),
+            externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "regular-child", "1.0.0")
+        );
+        graphAssert.hasNoDependency(externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "optional-child", "1.0.0"));
+    }
+    
+    @Test
+    void testNpmAliasesResolvedCorrectly() {
+        // Test that npm aliases are properly resolved using the 'name' field from package-lock.json
+        // When package.json has: "coloring": "npm:picocolors@^1.0.0"
+        // The package-lock.json has: "node_modules/coloring": { "name": "picocolors", ... }
+
+        // Create resolved dependencies with the ACTUAL package name (picocolors)
+        NpmDependency picocolorsDependency = new NpmDependency("picocolors", "1.1.1", false, false, false);
+
+        List<NpmDependency> resolvedDependencies = new ArrayList<>();
+        resolvedDependencies.add(picocolorsDependency);
+
+        // Create declared dependencies with the ALIAS name (coloring)
+        List<NpmRequires> declaredDependencies = new ArrayList<>();
+        declaredDependencies.add(new NpmRequires("coloring", "npm:picocolors@^1.0.0"));
+
+        // Create alias mapping (coloring -> picocolors)
+        Map<String, String> aliasMapping = new HashMap<>();
+        aliasMapping.put("coloring", "picocolors");
+
+        // Create npm project
+        NpmProject npmProject = new NpmProject(
+            "test-project",
+            "1.0.0",
+            Collections.emptyList(), // devDependencies
+            Collections.emptyList(), // peerDependencies
+            declaredDependencies,    // dependencies
+            Collections.emptyList(), // optionalDependencies
+            resolvedDependencies
+        );
+
+        // Transform the graph with alias mapping
+        NpmLockfileGraphTransformer graphTransformer = new NpmLockfileGraphTransformer(EnumListFilter.excludeNone());
+        PackageLock packageLock = new PackageLock();
+        packageLock.packages = Collections.emptyMap();
+        DependencyGraph graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), Collections.emptyList(), aliasMapping);
+
+        // Verify that picocolors (the actual package) is in the graph, not coloring (the alias)
+        GraphAssert graphAssert = new GraphAssert(Forge.NPMJS, graph);
+        graphAssert.hasRootDependency(externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "picocolors", "1.1.1"));
+    }
+
+    @Test
+    void testOptionalDependenciesIncludedWhenAllowed() {
+        // Create a parent dependency with requires that include optional dependencies
+        NpmDependency parentDependency = new NpmDependency("parent-package", "1.0.0", false, false, false);
+        
+        // Create child dependencies - one regular, one optional
+        NpmDependency regularChildDependency = new NpmDependency("regular-child", "1.0.0", false, false, false);
+        NpmDependency optionalChildDependency = new NpmDependency("optional-child", "1.0.0", false, false, true);
+        
+        // Create requires for both dependencies
+        NpmRequires regularRequires = new NpmRequires("regular-child", "1.0.0");
+        NpmRequires optionalRequires = new NpmRequires("optional-child", "1.0.0");
+        
+        // Set up parent dependency with requires
+        List<NpmRequires> requires = new ArrayList<>();
+        requires.add(regularRequires);
+        requires.add(optionalRequires);
+        parentDependency.addAllRequires(requires);
+        
+        // Set up child dependencies under parent
+        List<NpmDependency> childDependencies = new ArrayList<>();
+        childDependencies.add(regularChildDependency);
+        childDependencies.add(optionalChildDependency);
+        parentDependency.addAllDependencies(childDependencies);
+        
+        // Create resolved dependencies list
+        List<NpmDependency> resolvedDependencies = new ArrayList<>();
+        resolvedDependencies.add(parentDependency);
+        resolvedDependencies.add(regularChildDependency);
+        resolvedDependencies.add(optionalChildDependency);
+        
+        // Create npm project
+        NpmProject npmProject = new NpmProject(
+            StringUtils.EMPTY,
+            StringUtils.EMPTY,
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Collections.emptyList(),
+            resolvedDependencies
+        );
+        
+        // Create a filter that includes optional dependencies (excludes none)
+        EnumListFilter<NpmDependencyType> filter = EnumListFilter.excludeNone();
+        
+        // Transform the graph
+        NpmLockfileGraphTransformer graphTransformer = new NpmLockfileGraphTransformer(filter);
+        PackageLock packageLock = new PackageLock();
+        packageLock.packages = Collections.emptyMap();
+        DependencyGraph graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), Collections.emptyList(), Collections.emptyMap());
+        
+        // Verify that both regular and optional child dependencies are included
+        GraphAssert graphAssert = new GraphAssert(Forge.NPMJS, graph);
+        graphAssert.hasParentChildRelationship(
+            externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "parent-package", "1.0.0"),
+            externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "regular-child", "1.0.0")
+        );
+        graphAssert.hasParentChildRelationship(
+            externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "parent-package", "1.0.0"),
+            externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "optional-child", "1.0.0")
+        );
     }
 }

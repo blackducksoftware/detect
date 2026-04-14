@@ -111,7 +111,7 @@ public class NugetProjectDetectable extends Detectable {
 
     @Override
     public DetectableResult extractable() throws DetectableException {
-        inspector = nugetInspectorResolver.resolveNugetInspector();
+        inspector = nugetInspectorResolver.resolveNugetInspector(nugetInspectorOptions);
 
         if (inspector == null) {
             return new InspectorNotFoundDetectableResult("nuget");

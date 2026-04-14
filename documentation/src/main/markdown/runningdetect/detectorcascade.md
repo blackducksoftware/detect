@@ -44,9 +44,12 @@ Detector type filtering honors your requests to exclude certain detector types (
 
 ## Yielding rules
 
-Yielding rules cause some detectors to have precedence over others for a given directory. For example, if both the
-YARN and NPM detector types apply to a directory, only the YARN detector will apply
-because NPM yields to YARN.
+Yielding rules cause some detectors to have precedence over others for a given directory.    
+
+Examples;    
+* If both the YARN and NPM detector types apply to a directory, only the YARN detector will apply
+because NPM yields to YARN.    
+* If PMPN and NPM detectors apply, NPM will yield to PNPM detector.    
 
 Yielding rules cannot be disabled.
 

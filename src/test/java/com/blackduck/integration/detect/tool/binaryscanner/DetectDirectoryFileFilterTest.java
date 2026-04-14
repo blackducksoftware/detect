@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
@@ -14,7 +15,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import com.blackduck.integration.detect.util.finder.DetectDirectoryFileFilter;
+import com.blackduck.integration.detect.util.finder.DetectDirectoryFileFilterCaseSensitive;
 
 public class DetectDirectoryFileFilterTest {
     private static File tempDir;
@@ -23,6 +24,8 @@ public class DetectDirectoryFileFilterTest {
     private static File includedFileInIncludedDir;
     private static File nonMatchingFile;
     private static File excludedDir;
+    private static File upperCaseFileExtension;
+    private static File lowerCaseFileExtension;
 
     @BeforeAll
     static void setup() throws IOException {
@@ -39,6 +42,10 @@ public class DetectDirectoryFileFilterTest {
         excludedDir = new File(includedDir, "excludeme");
         excludedDir.mkdir();
 
+        upperCaseFileExtension = new File(tempDir, "uppercase.DLL");
+        upperCaseFileExtension.createNewFile();
+        lowerCaseFileExtension = new File(tempDir, "lowercase.dll");
+        lowerCaseFileExtension.createNewFile();
     }
 
     @AfterAll
@@ -53,7 +60,7 @@ public class DetectDirectoryFileFilterTest {
 
         List<String> excludedDirs = Arrays.asList("excludeme");
         List<String> includedFiles = Arrays.asList("*.txt");
-        DetectDirectoryFileFilter filter = new DetectDirectoryFileFilter(excludedDirs, includedFiles);
+        DetectDirectoryFileFilterCaseSensitive filter = new DetectDirectoryFileFilterCaseSensitive(excludedDirs, includedFiles);
 
         assertTrue(filter.test(includedFile));
         assertTrue(filter.test(includedFileInIncludedDir));
@@ -66,9 +73,29 @@ public class DetectDirectoryFileFilterTest {
     void testDirExclusion() {
         List<String> excludedDirs = Arrays.asList("excludeme");
         List<String> includedFiles = Arrays.asList("*.txt");
-        DetectDirectoryFileFilter filter = new DetectDirectoryFileFilter(excludedDirs, includedFiles);
+        DetectDirectoryFileFilterCaseSensitive filter = new DetectDirectoryFileFilterCaseSensitive(excludedDirs, includedFiles);
 
         assertFalse(filter.test(includedDir));
         assertTrue(filter.test(excludedDir));
+    }
+
+    @Test
+    void testFileInclusionCaseInsensitive() {
+        List<String> fileInclusionPatterns = Arrays.asList("*.dll");
+        List<String> excludedDirs = Collections.emptyList();
+        DetectDirectoryFileFilterCaseSensitive filter = new DetectDirectoryFileFilterCaseSensitive(excludedDirs, fileInclusionPatterns, false);
+
+        assertTrue(filter.test(lowerCaseFileExtension));
+        assertTrue(filter.test(upperCaseFileExtension));
+    }
+
+    @Test
+    void testFileInclusionCaseSensitive() {
+        List<String> fileInclusionPatterns = Arrays.asList("*.dll");
+        List<String> excludedDirs = Collections.emptyList();
+        DetectDirectoryFileFilterCaseSensitive filter = new DetectDirectoryFileFilterCaseSensitive(excludedDirs, fileInclusionPatterns);
+
+        assertTrue(filter.test(lowerCaseFileExtension));
+        assertFalse(filter.test(upperCaseFileExtension));
     }
 }

@@ -12,9 +12,11 @@ import com.blackduck.integration.blackduck.api.generated.enumeration.PolicyRuleS
 public class BlackDuckPostOptions {
     private final boolean waitForResults;
 
-    private final boolean generateRiskReport;
+    private final boolean generateRiskReportPdf;
+    private final boolean generateRiskReportJson;
     private final boolean generateNoticesReport;
     private final @Nullable Path riskReportPdfPath;
+    private final @Nullable Path riskReportJsonPath;
     private final @Nullable Path noticesReportPath;
     private final List<PolicyRuleSeverityType> severitiesToFailPolicyCheck;
     private final List<String> policyNamesToFailPolicyCheck;
@@ -22,30 +24,38 @@ public class BlackDuckPostOptions {
 
     public BlackDuckPostOptions(
         boolean waitForResults,
-        boolean generateRiskReport,
+        boolean generateRiskReportPdf,
         boolean generateNoticesReport,
         @Nullable Path riskReportPdfPath,
         @Nullable Path noticesReportPath,
         List<PolicyRuleSeverityType> severitiesToFailPolicyCheck,
         List<String> policyNamesToFailPolicyCheck,
-        boolean correlatedScanningEnabled
+        boolean correlatedScanningEnabled,
+        boolean generateRiskReportJson,
+        @Nullable Path riskReportJsonPath
     ) {
         this.waitForResults = waitForResults;
-        this.generateRiskReport = generateRiskReport;
+        this.generateRiskReportPdf = generateRiskReportPdf;
         this.generateNoticesReport = generateNoticesReport;
         this.riskReportPdfPath = riskReportPdfPath;
         this.noticesReportPath = noticesReportPath;
         this.severitiesToFailPolicyCheck = severitiesToFailPolicyCheck;
         this.policyNamesToFailPolicyCheck = policyNamesToFailPolicyCheck;
         this.correlatedScanningEnabled = correlatedScanningEnabled;
+        this.generateRiskReportJson = generateRiskReportJson;
+        this.riskReportJsonPath = riskReportJsonPath;
     }
 
     public boolean shouldWaitForResults() {
         return waitForResults || shouldGenerateAnyReport() || shouldPerformAnyPolicyCheck();
     }
 
-    public boolean shouldGenerateRiskReport() {
-        return generateRiskReport;
+    public boolean shouldGenerateRiskReportPdf() {
+        return generateRiskReportPdf;
+    }
+
+    public boolean shouldGenerateRiskReportJson() {
+        return generateRiskReportJson;
     }
 
     public boolean shouldGenerateNoticesReport() {
@@ -53,7 +63,7 @@ public class BlackDuckPostOptions {
     }
 
     public boolean shouldGenerateAnyReport() {
-        return shouldGenerateNoticesReport() || shouldGenerateRiskReport();
+        return shouldGenerateNoticesReport() || shouldGenerateRiskReportPdf() || shouldGenerateRiskReportJson();
     }
 
     public boolean shouldPerformSeverityPolicyCheck() {
@@ -70,6 +80,10 @@ public class BlackDuckPostOptions {
 
     public Optional<Path> getRiskReportPdfPath() {
         return Optional.ofNullable(riskReportPdfPath);
+    }
+
+    public Optional<Path> getRiskReportJsonPath() {
+        return Optional.ofNullable(riskReportJsonPath);
     }
 
     public Optional<Path> getNoticesReportPath() {

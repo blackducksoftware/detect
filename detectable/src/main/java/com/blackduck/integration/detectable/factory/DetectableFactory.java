@@ -7,8 +7,26 @@ import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
 import com.blackduck.integration.detectable.detectable.executable.resolver.*;
+import com.blackduck.integration.detectable.detectables.bazel.v2.BazelV2Detectable;
 import com.blackduck.integration.detectable.detectables.cargo.*;
 import com.blackduck.integration.detectable.detectables.cargo.transform.CargoDependencyGraphTransformer;
+import com.blackduck.integration.detectable.detectables.conda.parser.CondaTreeParser;
+import com.blackduck.integration.detectable.detectables.conda.tree.CondaTreeDetectable;
+import com.blackduck.integration.detectable.detectables.conda.tree.CondaTreeExtractor;
+import com.blackduck.integration.detectable.detectables.ivy.IvyCliDetectable;
+import com.blackduck.integration.detectable.detectables.pip.inspector.parser.PipInspectorTomlParser;
+import com.blackduck.integration.detectable.detectables.rush.RushDetectable;
+import com.blackduck.integration.detectable.detectables.rush.RushExtractor;
+import com.blackduck.integration.detectable.detectables.rush.RushOptions;
+import com.blackduck.integration.detectable.detectables.rush.parse.RushJsonParser;
+import com.blackduck.integration.detectable.detectables.rush.parse.RushLockFileParser;
+import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
+import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildDetectable;
+import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildExtractor;
+import com.blackduck.integration.detectable.detectables.uv.lockfile.UVLockFileDetectable;
+import com.blackduck.integration.detectable.detectables.uv.lockfile.UVLockfileExtractor;
+import com.blackduck.integration.detectable.detectables.uv.transform.UVLockParser;
+import com.blackduck.integration.detectable.detectables.uv.transform.UVTreeDependencyGraphTransformer;
 import org.xml.sax.SAXException;
 
 import com.google.gson.Gson;
@@ -27,7 +45,7 @@ import com.blackduck.integration.detectable.detectables.bazel.BazelDetectableOpt
 import com.blackduck.integration.detectable.detectables.bazel.BazelExtractor;
 import com.blackduck.integration.detectable.detectables.bazel.BazelProjectNameGenerator;
 import com.blackduck.integration.detectable.detectables.bazel.BazelWorkspaceFileParser;
-import com.blackduck.integration.detectable.detectables.bazel.pipeline.WorkspaceRuleChooser;
+import com.blackduck.integration.detectable.detectables.bazel.pipeline.DependencySourceChooser;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelVariableSubstitutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.HaskellCabalLibraryJsonProtoParser;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectable;
@@ -84,9 +102,9 @@ import com.blackduck.integration.detectable.detectables.conan.lockfile.ConanLock
 import com.blackduck.integration.detectable.detectables.conan.lockfile.ConanLockfileExtractor;
 import com.blackduck.integration.detectable.detectables.conan.lockfile.ConanLockfileExtractorOptions;
 import com.blackduck.integration.detectable.detectables.conan.lockfile.parser.ConanLockfileParser;
-import com.blackduck.integration.detectable.detectables.conda.CondaCliDetectable;
+import com.blackduck.integration.detectable.detectables.conda.cli.CondaCliDetectable;
 import com.blackduck.integration.detectable.detectables.conda.CondaCliDetectableOptions;
-import com.blackduck.integration.detectable.detectables.conda.CondaCliExtractor;
+import com.blackduck.integration.detectable.detectables.conda.cli.CondaCliExtractor;
 import com.blackduck.integration.detectable.detectables.conda.parser.CondaDependencyCreator;
 import com.blackduck.integration.detectable.detectables.conda.parser.CondaListParser;
 import com.blackduck.integration.detectable.detectables.cpan.CpanCliDetectable;
@@ -134,6 +152,9 @@ import com.blackduck.integration.detectable.detectables.go.gomod.parse.GoListPar
 import com.blackduck.integration.detectable.detectables.go.gomod.parse.GoModWhyParser;
 import com.blackduck.integration.detectable.detectables.go.gomod.parse.GoVersionParser;
 import com.blackduck.integration.detectable.detectables.go.gomod.process.GoModGraphGenerator;
+import com.blackduck.integration.detectable.detectables.go.gomodfile.GoModFileDetectable;
+import com.blackduck.integration.detectable.detectables.go.gomodfile.GoModFileDetectableOptions;
+import com.blackduck.integration.detectable.detectables.go.gomodfile.GoModFileExtractor;
 import com.blackduck.integration.detectable.detectables.go.vendor.GoVendorDetectable;
 import com.blackduck.integration.detectable.detectables.go.vendor.GoVendorExtractor;
 import com.blackduck.integration.detectable.detectables.go.vendr.GoVndrDetectable;
@@ -146,8 +167,12 @@ import com.blackduck.integration.detectable.detectables.gradle.inspection.parse.
 import com.blackduck.integration.detectable.detectables.gradle.inspection.parse.GradleReportTransformer;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.parse.GradleRootMetadataParser;
 import com.blackduck.integration.detectable.detectables.gradle.parsing.GradleProjectInspectorDetectable;
+import com.blackduck.integration.detectable.detectables.ivy.IvyCliDetectable;
+import com.blackduck.integration.detectable.detectables.ivy.IvyCliExtractor;
 import com.blackduck.integration.detectable.detectables.ivy.IvyParseDetectable;
 import com.blackduck.integration.detectable.detectables.ivy.IvyParseExtractor;
+import com.blackduck.integration.detectable.detectables.ivy.parse.IvyDependencyTreeParser;
+import com.blackduck.integration.detectable.detectables.ivy.parse.IvyDependencyTreeTargetParser;
 import com.blackduck.integration.detectable.detectables.ivy.parse.IvyProjectNameParser;
 import com.blackduck.integration.detectable.detectables.lerna.LernaDetectable;
 import com.blackduck.integration.detectable.detectables.lerna.LernaExtractor;
@@ -322,6 +347,19 @@ public class DetectableFactory {
         return new BazelDetectable(environment, fileFinder, bazelExtractor(bazelDetectableOptions), bazelResolver, bazelDetectableOptions.getTargetName().orElse(null));
     }
 
+    //Bazel V2 Detectable (probing-based). Does not require WORKSPACE file. Supports both BZLMOD and WORKSPACE modes.
+    public BazelV2Detectable createBazelV2Detectable(DetectableEnvironment environment, BazelDetectableOptions options, BazelResolver bazelResolver) {
+        BazelVariableSubstitutor substitutor = new BazelVariableSubstitutor(
+            options.getTargetName().orElse(null),
+            options.getBazelCqueryAdditionalOptions(),
+            options.getBazelQueryAdditionalOptions()
+        );
+        HaskellCabalLibraryJsonProtoParser haskellParser = new HaskellCabalLibraryJsonProtoParser(gson);
+        BazelProjectNameGenerator projectNameGenerator = new BazelProjectNameGenerator();
+        return new BazelV2Detectable(environment, fileFinder, executableRunner, externalIdFactory, bazelResolver, options, substitutor, haskellParser, projectNameGenerator);
+    }
+
+
     public BitbakeDetectable createBitbakeDetectable(DetectableEnvironment environment, BitbakeDetectableOptions bitbakeDetectableOptions, BashResolver bashResolver) {
         BitbakeExtractor bitbakeExtractor = new BitbakeExtractor(
             toolVersionLogger,
@@ -339,20 +377,24 @@ public class DetectableFactory {
         return new BitbakeDetectable(environment, fileFinder, bitbakeDetectableOptions, bitbakeExtractor, bashResolver);
     }
 
-    public CargoLockDetectable createCargoDetectable(DetectableEnvironment environment) {
+    public CargoLockDetectable createCargoLockfileDetectable(DetectableEnvironment environment) {
+        return createCargoLockfileDetectable(environment, null);
+    }
+
+    public CargoLockDetectable createCargoLockfileDetectable(DetectableEnvironment environment, CargoDetectableOptions cargoDetectableOptions) {
         CargoTomlParser cargoTomlParser = new CargoTomlParser();
         CargoDependencyLineParser cargoDependencyLineParser = new CargoDependencyLineParser();
         CargoLockPackageDataTransformer cargoLockPackageDataTransformer = new CargoLockPackageDataTransformer(cargoDependencyLineParser);
         CargoLockPackageTransformer cargoLockPackageTransformer = new CargoLockPackageTransformer();
-        CargoExtractor cargoExtractor = new CargoExtractor(cargoTomlParser, cargoLockPackageDataTransformer, cargoLockPackageTransformer);
-        return new CargoLockDetectable(environment, fileFinder, cargoExtractor);
+        CargoLockfileExtractor cargoLockfileExtractor = new CargoLockfileExtractor(cargoTomlParser, cargoLockPackageDataTransformer, cargoLockPackageTransformer);
+        return new CargoLockDetectable(environment, fileFinder, cargoLockfileExtractor, cargoDetectableOptions);
     }
 
-    public CargoCliDetectable createCargoCliDetectable(DetectableEnvironment environment, CargoResolver cargoResolver) {
+    public CargoCliDetectable createCargoCliDetectable(DetectableEnvironment environment, CargoResolver cargoResolver, CargoDetectableOptions cargoDetectableOptions) {
         CargoDependencyGraphTransformer cargoDependencyTransformer= new CargoDependencyGraphTransformer(externalIdFactory);
         CargoTomlParser cargoTomlParser = new CargoTomlParser();
         CargoCliExtractor cargoCliExtractor = new CargoCliExtractor(executableRunner, cargoDependencyTransformer, cargoTomlParser);
-        return new CargoCliDetectable(environment, fileFinder, cargoResolver, cargoCliExtractor, executableRunner);
+        return new CargoCliDetectable(environment, fileFinder, cargoResolver, cargoCliExtractor, executableRunner, cargoDetectableOptions);
     }
 
 
@@ -384,6 +426,10 @@ public class DetectableFactory {
 
     public CondaCliDetectable createCondaCliDetectable(DetectableEnvironment environment, CondaResolver condaResolver, CondaCliDetectableOptions condaCliDetectableOptions) {
         return new CondaCliDetectable(environment, fileFinder, condaResolver, condaCliExtractor(), condaCliDetectableOptions);
+    }
+
+    public CondaTreeDetectable createCondaTreeDetectable(DetectableEnvironment environment, CondaTreeResolver condaTreeResolver, CondaResolver condaResolver, CondaCliDetectableOptions condaCliDetectableOptions) {
+        return new CondaTreeDetectable(environment, fileFinder, condaTreeResolver, condaResolver, condaTreeExtractor(), condaCliDetectableOptions);
     }
 
     public CpanCliDetectable createCpanCliDetectable(DetectableEnvironment environment, CpanResolver cpanResolver, CpanmResolver cpanmResolver) {
@@ -423,6 +469,10 @@ public class DetectableFactory {
 
     public GoModCliDetectable createGoModCliDetectable(DetectableEnvironment environment, GoResolver goResolver, GoModCliDetectableOptions options) {
         return new GoModCliDetectable(environment, fileFinder, goResolver, goModCliExtractor(options));
+    }
+
+    public GoModFileDetectable createGoModFileDetectable(DetectableEnvironment environment, GoModFileDetectableOptions options) {
+        return new GoModFileDetectable(environment, fileFinder, goModFileExtractor(), options);
     }
 
     public GoDepLockDetectable createGoLockDetectable(DetectableEnvironment environment) {
@@ -476,6 +526,10 @@ public class DetectableFactory {
 
     public IvyParseDetectable createIvyParseDetectable(DetectableEnvironment environment) {
         return new IvyParseDetectable(environment, fileFinder, ivyParseExtractor());
+    }
+
+    public IvyCliDetectable createIvyCliDetectable(DetectableEnvironment environment, AntResolver antResolver) {
+        return new IvyCliDetectable(environment, fileFinder, antResolver, ivyCliExtractor(), ivyDependencyTreeTargetParser());
     }
 
     public MavenPomDetectable createMavenPomDetectable(DetectableEnvironment environment, MavenResolver mavenResolver, MavenCliExtractorOptions mavenCliExtractorOptions, ProjectInspectorOptions projectInspectorOptions, ProjectInspectorResolver projectInspectorResolver) {
@@ -606,7 +660,7 @@ public class DetectableFactory {
         PythonResolver pythonResolver,
         PipResolver pipResolver
     ) {
-        return new PipInspectorDetectable(environment, fileFinder, pythonResolver, pipResolver, pipInspectorResolver, pipInspectorExtractor(), pipInspectorDetectableOptions);
+        return new PipInspectorDetectable(environment, fileFinder, pythonResolver, pipResolver, pipInspectorResolver, pipInspectorExtractor(), pipInspectorDetectableOptions, new PipInspectorTomlParser());
     }
 
     public RequirementsFileDetectable createRequirementsFileDetectable(
@@ -674,6 +728,20 @@ public class DetectableFactory {
         return new LernaDetectable(environment, fileFinder, lernaResolver, lernaExtractor);
     }
 
+    public RushDetectable createRushDetectable(
+            DetectableEnvironment environment,
+            NpmLockfileOptions npmLockfileOptions,
+            PnpmLockOptions  pnpmLockOptions,
+            YarnLockOptions yarnLockOptions,
+            RushOptions rushOptions
+    ) {
+        RushJsonParser rushJsonParser = new RushJsonParser(gson);
+        RushLockFileParser rushLockFileParser = new RushLockFileParser(npmLockfilePackager(npmLockfileOptions), new PnpmLockYamlParserInitial(pnpmLockOptions), yarnPackager(yarnLockOptions), packageJsonFiles(), yarnLockParser(), rushOptions);
+        RushExtractor rushExtractor = new RushExtractor(rushJsonParser, rushLockFileParser);
+        return new RushDetectable(environment, fileFinder, rushExtractor);
+    }
+
+
     public XcodeProjectDetectable createXcodeProjectDetectable(DetectableEnvironment environment) {
         PackageResolvedExtractor packageResolvedExtractor = createPackageResolvedExtractor();
         return new XcodeProjectDetectable(environment, fileFinder, packageResolvedExtractor);
@@ -704,6 +772,14 @@ public class DetectableFactory {
         return new OpamLockFileDetectable(environment, fileFinder, opamLockFileExtractor(environment.getDirectory()));
     }
 
+    public UVBuildDetectable createUVBuildDetectable(DetectableEnvironment environment, UVResolver uvResolver, UVDetectorOptions uvDetectorOptions) {
+        return new UVBuildDetectable(environment, fileFinder, uvResolver, uvBuildExtractor(environment.getDirectory()), uvDetectorOptions);
+    }
+
+    public UVLockFileDetectable createUVLockFileDetectable(DetectableEnvironment environment, UVDetectorOptions uvDetectorOptions) {
+        return new UVLockFileDetectable(environment, fileFinder, uvDetectorOptions, uvLockfileExtractor(environment.getDirectory()));
+    }
+
     // Used by three Detectables
     private PackageResolvedExtractor createPackageResolvedExtractor() {
         PackageResolvedParser parser = new PackageResolvedParser(gson);
@@ -720,23 +796,24 @@ public class DetectableFactory {
     //#region Utility
 
     private BazelExtractor bazelExtractor(BazelDetectableOptions bazelDetectableOptions) {
-        WorkspaceRuleChooser workspaceRuleChooser = new WorkspaceRuleChooser();
+        DependencySourceChooser dependencySourceChooser = new DependencySourceChooser();
         BazelWorkspaceFileParser bazelWorkspaceFileParser = new BazelWorkspaceFileParser();
         HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser = new HaskellCabalLibraryJsonProtoParser(gson);
         BazelVariableSubstitutor bazelVariableSubstitutor = new BazelVariableSubstitutor(
             bazelDetectableOptions.getTargetName().orElse(null),
-            bazelDetectableOptions.getBazelCqueryAdditionalOptions()
+            bazelDetectableOptions.getBazelCqueryAdditionalOptions(),
+            bazelDetectableOptions.getBazelQueryAdditionalOptions()
         );
         BazelProjectNameGenerator bazelProjectNameGenerator = new BazelProjectNameGenerator();
         return new BazelExtractor(
             executableRunner,
             externalIdFactory,
             bazelWorkspaceFileParser,
-            workspaceRuleChooser,
+            dependencySourceChooser,
             toolVersionLogger,
             haskellCabalLibraryJsonProtoParser,
             bazelDetectableOptions.getTargetName().orElse(null),
-            bazelDetectableOptions.getWorkspaceRulesFromProperty(),
+            bazelDetectableOptions.getDependencySourcesFromProperty(),
             bazelVariableSubstitutor,
             bazelProjectNameGenerator
         );
@@ -790,6 +867,14 @@ public class DetectableFactory {
 
     private CondaCliExtractor condaCliExtractor() {
         return new CondaCliExtractor(condaListParser(), executableRunner, toolVersionLogger);
+    }
+
+    private CondaTreeExtractor condaTreeExtractor() {
+        return new CondaTreeExtractor(executableRunner, condaTreeParser(), condaListParser());
+    }
+
+    private CondaTreeParser condaTreeParser() {
+        return new CondaTreeParser(condaDependencyCreator());
     }
 
     private CpanListParser cpanListParser() {
@@ -864,6 +949,10 @@ public class DetectableFactory {
         return new GoVendorExtractor(gson, externalIdFactory);
     }
 
+    private GoModFileExtractor goModFileExtractor() {
+        return new GoModFileExtractor(externalIdFactory);
+    }
+
     private GradleReportParser gradleReportParser() {
         return new GradleReportParser();
     }
@@ -880,8 +969,20 @@ public class DetectableFactory {
         return new IvyParseExtractor(saxParser(), ivyProjectNameParser());
     }
 
+    private IvyCliExtractor ivyCliExtractor() {
+        return new IvyCliExtractor(executableRunner, ivyDependencyTreeParser(), ivyProjectNameParser(), toolVersionLogger);
+    }
+
+    private IvyDependencyTreeParser ivyDependencyTreeParser() {
+        return new IvyDependencyTreeParser(externalIdFactory);
+    }
+
     private IvyProjectNameParser ivyProjectNameParser() {
         return new IvyProjectNameParser(saxParser());
+    }
+
+    private IvyDependencyTreeTargetParser ivyDependencyTreeTargetParser() {
+        return new IvyDependencyTreeTargetParser(saxParser());
     }
 
     private Rebar3TreeParser rebar3TreeParser() {
@@ -1130,6 +1231,24 @@ public class DetectableFactory {
 
     private OpamLockFileExtractor opamLockFileExtractor(File sourceDirectory) {
         return new OpamLockFileExtractor(opamGraphTransformer(sourceDirectory));
+    }
+
+    private UVBuildExtractor uvBuildExtractor(File sourceDirectory) {
+        return new UVBuildExtractor(executableRunner, sourceDirectory, uvTreeDependencyGraphTransformer());
+    }
+
+    private UVTreeDependencyGraphTransformer uvTreeDependencyGraphTransformer() {
+        return new UVTreeDependencyGraphTransformer(externalIdFactory);
+    }
+
+    private UVLockfileExtractor uvLockfileExtractor(File sourceDirectory) {
+        PythonDependencyTransformer requirementsFileTransformer = new PythonDependencyTransformer();
+        RequirementsFileDependencyTransformer requirementsFileDependencyTransformer = new RequirementsFileDependencyTransformer();
+        return new UVLockfileExtractor(uvLockParser(), requirementsFileTransformer, requirementsFileDependencyTransformer);
+    }
+
+    private UVLockParser uvLockParser() {
+        return new UVLockParser(externalIdFactory);
     }
 
 

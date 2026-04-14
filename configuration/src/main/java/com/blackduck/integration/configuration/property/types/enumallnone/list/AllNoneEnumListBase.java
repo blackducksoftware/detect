@@ -76,6 +76,22 @@ public class AllNoneEnumListBase<E extends Enum<E>, B extends Enum<B>> implement
             return toPresentValues();
         }
     }
+    
+    /**
+     * This returns null if the properties' value is set to ALL values of the Enum.
+     * It returns an empty array if the value is set to NONE.
+     * This streamlines things for newer 2023.10.0 and later endpoints.
+     * Older endpoints should use representedValues.
+     */
+    public List<B> representedValuesStreamlined() {
+        if (containsNone()) {
+            return new ArrayList<>();
+        } else if (containsAll()) {
+            return null;
+        } else {
+            return toPresentValues();
+        }
+    }
 
     public Set<B> representedValueSet() {
         return new HashSet<>(representedValues());

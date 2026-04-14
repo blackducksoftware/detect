@@ -1,4 +1,4 @@
-# Azure DevOps (ADO) Plugin
+# [detect_product_short] Azure DevOps (ADO) Plugin
 
 The [detect_product_long] for Azure DevOps plugin is architected to seamlessly integrate [bd_product_long] with Azure DevOps build and release pipelines. [detect_product_long] makes it easier to set up and scan code bases using a variety of languages and package managers.
 

@@ -31,7 +31,7 @@ public class GenerateComponentLocationAnalysisOperationTest {
             op.failComponentLocationAnalysisOperation();
         } catch (ComponentLocatorException e) {
             Mockito.verify(statusEventPublisher).publishStatusSummary(Mockito.any());
-            Mockito.verify(exitCodePublisher).publishExitCode(ExitCodeType.FAILURE_COMPONENT_LOCATION_ANALYSIS, "Component Location Analysis failed.");
+            Mockito.verify(exitCodePublisher).publishExitCode(ExitCodeType.FAILURE_COMPONENT_LOCATION_ANALYSIS);
             Mockito.verifyNoMoreInteractions(statusEventPublisher, exitCodePublisher);
             return;
         }

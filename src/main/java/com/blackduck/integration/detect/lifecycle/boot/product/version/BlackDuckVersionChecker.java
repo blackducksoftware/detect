@@ -26,13 +26,13 @@ public class BlackDuckVersionChecker {
     public BlackDuckVersionCheckerResult check(String actualBlackDuckVersionString) {
         Optional<BlackDuckVersion> actualBlackDuckVersion = parser.parse(actualBlackDuckVersionString);
         if (!actualBlackDuckVersion.isPresent()) {
-            logger.debug("Unable to parse Black Duck version string {}, so unable to perform version compatibility check", actualBlackDuckVersion);
+            logger.debug("Unable to parse Black Duck SCA version string {}, so unable to perform version compatibility check", actualBlackDuckVersion);
             return BlackDuckVersionCheckerResult.passed();
         }
         for (BlackDuckMinimumVersionCheck blackDuckMinimumVersionCheck : blackDuckMinimumVersionChecks.get()) {
             if (blackDuckMinimumVersionCheck.getTest().test(blackDuckVersionSensitiveOptions) && !actualBlackDuckVersion.get()
                 .isAtLeast(blackDuckMinimumVersionCheck.getMinimumBlackDuckVersion())) {
-                String msg = String.format("%s requires at least Black Duck version %s but the connected server is %s.",
+                String msg = String.format("%s requires at least Black Duck SCA version %s but the connected server is %s.",
                     blackDuckMinimumVersionCheck.getDescription(), blackDuckMinimumVersionCheck.getMinimumBlackDuckVersion(),
                     actualBlackDuckVersion.get()
                 );

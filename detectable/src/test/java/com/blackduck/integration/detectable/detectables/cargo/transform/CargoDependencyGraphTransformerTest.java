@@ -3,10 +3,13 @@ package com.blackduck.integration.detectable.detectables.cargo.transform;
 import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.dependency.Dependency;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
+import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -24,12 +27,16 @@ class CargoDependencyGraphTransformerTest {
     @Test
     void testSingleRootWithChildren() {
         List<String> input = Arrays.asList(
+            "0test-project v1.0.0",
             "1tempfile v3.15.0",
             "2cfg-if v1.0.0",
             "2fastrand v2.3.0"
         );
 
-        DependencyGraph graph = transformer.transform(input);
+        List<CodeLocation> codeLocations = transformer.transform(input, new HashSet<>());
+
+        assertEquals(1, codeLocations.size());
+        DependencyGraph graph = codeLocations.get(0).getDependencyGraph();
 
         Dependency root = assertDependencyExists(graph.getRootDependencies(), "tempfile", "3.15.0");
         Set<Dependency> children = graph.getChildrenForParent(root);
@@ -42,12 +49,16 @@ class CargoDependencyGraphTransformerTest {
     @Test
     void testMultipleRootDependencies() {
         List<String> input = Arrays.asList(
+            "0test-project v1.0.0",
             "1tempfile v3.15.0",
             "1tokio v1.0.0",
             "1serde v1.0.0"
         );
 
-        DependencyGraph graph = transformer.transform(input);
+        List<CodeLocation> codeLocations = transformer.transform(input, new HashSet<>());
+
+        assertEquals(1, codeLocations.size());
+        DependencyGraph graph = codeLocations.get(0).getDependencyGraph();
 
         assertEquals(3, graph.getRootDependencies().size());
         assertDependencyExists(graph.getRootDependencies(), "tempfile", "3.15.0");
@@ -58,12 +69,13 @@ class CargoDependencyGraphTransformerTest {
     @Test
     void testTransformWithInvalidInput() {
         List<String> cargoTreeOutput = Arrays.asList(
+            "0test-project v1.0.0",
             "1tempfile v3.15.0",
             "^2fastrand v2.3.0"
         );
 
         assertThrows(NumberFormatException.class, () -> {
-            transformer.transform(cargoTreeOutput);
+            transformer.transform(cargoTreeOutput, new HashSet<>());
         });
     }
 

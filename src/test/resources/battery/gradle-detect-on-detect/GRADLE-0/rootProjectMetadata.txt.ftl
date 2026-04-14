@@ -1,6 +1,7 @@
 DETECT META DATA START
-rootProjectDirectory:${sourcePath?replace("\\", "/")}
-rootProjectGroup:com.synopsys.integration
-rootProjectName:synopsys-detect
-rootProjectVersion:7.5.0-SNAPSHOT
+rootProjectDirectory:/Users/samratmuk/detect
+rootProjectPath::
+rootProjectGroup:com.blackduck.integration
+rootProjectName:detect
+rootProjectVersion:11.1.0-SIGQA11-SNAPSHOT
 DETECT META DATA END

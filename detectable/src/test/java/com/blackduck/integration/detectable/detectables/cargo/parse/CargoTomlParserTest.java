@@ -1,6 +1,5 @@
 package com.blackduck.integration.detectable.detectables.cargo.parse;
 
-import com.blackduck.integration.detectable.detectables.cargo.parse.CargoTomlParser;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -14,6 +13,25 @@ import org.junit.jupiter.api.Test;
 import com.blackduck.integration.util.NameVersion;
 
 class CargoTomlParserTest {
+
+    private static final String WORKSPACE_TOML = String.join("\n",
+        "[workspace]",
+        "members = [\"extra-lib\"]",
+        "resolver = \"2\"",
+        "",
+        "[workspace.package]",
+        "version = \"0.5.0\"",
+        "edition = \"2021\"",
+        "repository = \"https://github.com/example/repo\"",
+        "license = \"CLOSED\"",
+        "",
+        "[package]",
+        "name = \"root-app\"",
+        "version.workspace = true",
+        "edition.workspace = true",
+        "repository.workspace = true",
+        "license.workspace = true"
+    );
 
     @Test
     void extractNameVersion() {
@@ -58,6 +76,17 @@ class CargoTomlParserTest {
         );
 
         assertFalse(nameVersion.isPresent());
+    }
+
+    @Test
+    void extractNameVersionFromWorkspacePackage() {
+        CargoTomlParser parser = new CargoTomlParser();
+
+        Optional<NameVersion> nameVersion = parser.parseNameVersionFromCargoToml(WORKSPACE_TOML);
+
+        assertTrue(nameVersion.isPresent());
+        assertEquals("root-app", nameVersion.get().getName());
+        assertEquals("0.5.0", nameVersion.get().getVersion());
     }
 
     private Optional<NameVersion> parseCargoTomlLines(String... lines) {

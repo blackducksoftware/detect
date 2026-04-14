@@ -10,7 +10,8 @@ import com.blackduck.integration.detectable.detectables.cocoapods.PodlockDetecta
 import com.blackduck.integration.detectable.detectables.conan.cli.Conan1CliDetectable;
 import com.blackduck.integration.detectable.detectables.conan.cli.Conan2CliDetectable;
 import com.blackduck.integration.detectable.detectables.conan.lockfile.ConanLockfileDetectable;
-import com.blackduck.integration.detectable.detectables.conda.CondaCliDetectable;
+import com.blackduck.integration.detectable.detectables.conda.cli.CondaCliDetectable;
+import com.blackduck.integration.detectable.detectables.conda.tree.CondaTreeDetectable;
 import com.blackduck.integration.detectable.detectables.cpan.CpanCliDetectable;
 import com.blackduck.integration.detectable.detectables.cran.PackratLockDetectable;
 import com.blackduck.integration.detectable.detectables.dart.pubdep.DartPubDepDetectable;
@@ -20,10 +21,12 @@ import com.blackduck.integration.detectable.detectables.git.GitParseDetectable;
 import com.blackduck.integration.detectable.detectables.go.godep.GoDepLockDetectable;
 import com.blackduck.integration.detectable.detectables.go.gogradle.GoGradleDetectable;
 import com.blackduck.integration.detectable.detectables.go.gomod.GoModCliDetectable;
+import com.blackduck.integration.detectable.detectables.go.gomodfile.GoModFileDetectable;
 import com.blackduck.integration.detectable.detectables.go.vendor.GoVendorDetectable;
 import com.blackduck.integration.detectable.detectables.go.vendr.GoVndrDetectable;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.GradleInspectorDetectable;
 import com.blackduck.integration.detectable.detectables.gradle.parsing.GradleProjectInspectorDetectable;
+import com.blackduck.integration.detectable.detectables.ivy.IvyCliDetectable;
 import com.blackduck.integration.detectable.detectables.ivy.IvyParseDetectable;
 import com.blackduck.integration.detectable.detectables.lerna.LernaDetectable;
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenPomDetectable;
@@ -49,11 +52,14 @@ import com.blackduck.integration.detectable.detectables.poetry.PoetryDetectable;
 import com.blackduck.integration.detectable.detectables.rebar.RebarDetectable;
 import com.blackduck.integration.detectable.detectables.rubygems.gemlock.GemlockDetectable;
 import com.blackduck.integration.detectable.detectables.rubygems.gemspec.GemspecParseDetectable;
+import com.blackduck.integration.detectable.detectables.rush.RushDetectable;
 import com.blackduck.integration.detectable.detectables.sbt.SbtDetectable;
 import com.blackduck.integration.detectable.detectables.setuptools.tbuild.SetupToolsBuildDetectable;
 import com.blackduck.integration.detectable.detectables.setuptools.buildless.SetupToolsBuildlessDetectable;
 import com.blackduck.integration.detectable.detectables.swift.cli.SwiftCliDetectable;
 import com.blackduck.integration.detectable.detectables.swift.lock.SwiftPackageResolvedDetectable;
+import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildDetectable;
+import com.blackduck.integration.detectable.detectables.uv.lockfile.UVLockFileDetectable;
 import com.blackduck.integration.detectable.detectables.xcode.XcodeProjectDetectable;
 import com.blackduck.integration.detectable.detectables.xcode.XcodeWorkspaceDetectable;
 import com.blackduck.integration.detectable.detectables.yarn.YarnLockDetectable;
@@ -117,9 +123,11 @@ public class DetectorRuleFactory {
         }).allEntryPointsFallbackToNext();
 
         rules.addDetector(DetectorType.CONDA, detector -> {
-            detector.entryPoint(CondaCliDetectable.class)
+            detector.entryPoint(CondaTreeDetectable.class)
                 .search().defaults();
-        });
+            detector.entryPoint(CondaCliDetectable.class)
+                    .search().defaults();
+        }).allEntryPointsFallbackToNext();
 
         rules.addDetector(DetectorType.CPAN, detector -> {
             detector.entryPoint(CpanCliDetectable.class)
@@ -146,7 +154,9 @@ public class DetectorRuleFactory {
         rules.addDetector(DetectorType.GO_MOD, detector -> {
             detector.entryPoint(GoModCliDetectable.class)
                 .search().defaults();
-        });
+            detector.entryPoint(GoModFileDetectable.class)
+                .search().defaults();
+        }).allEntryPointsFallbackToNext();
 
         rules.addDetector(DetectorType.GO_DEP, detector -> {
             detector.entryPoint(GoDepLockDetectable.class)
@@ -175,9 +185,11 @@ public class DetectorRuleFactory {
         });
 
         rules.addDetector(DetectorType.IVY, detector -> {
+            detector.entryPoint(IvyCliDetectable.class)
+                .search().defaultLock();
             detector.entryPoint(IvyParseDetectable.class)
                 .search().defaultLock();
-        });
+        }).allEntryPointsFallbackToNext();
 
         rules.addDetector(DetectorType.HEX, detector -> {
             detector.entryPoint(RebarDetectable.class)
@@ -199,10 +211,20 @@ public class DetectorRuleFactory {
                 .search().defaults();
         });
 
+        rules.addDetector(DetectorType.RUSH, detector -> {
+            detector.entryPoint(RushDetectable.class)
+                    .search().defaults();
+        });
+
         rules.addDetector(DetectorType.YARN, detector -> {
             detector.entryPoint(YarnLockDetectable.class)
                 .search().defaultLock();
-        }).yieldsTo(DetectorType.LERNA);
+        }).yieldsTo(DetectorType.LERNA, DetectorType.RUSH);
+
+        rules.addDetector(DetectorType.PNPM, detector -> {
+            detector.entryPoint(PnpmLockDetectable.class)
+                .search().defaultLock();
+        }).yieldsTo(DetectorType.LERNA,  DetectorType.RUSH);
 
         rules.addDetector(DetectorType.NPM, detector -> {
                 detector.entryPoint(NpmShrinkwrapDetectable.class)
@@ -214,12 +236,7 @@ public class DetectorRuleFactory {
                 detector.entryPoint(NpmPackageJsonParseDetectable.class)
                     .search().defaults(); //maybe this one should be defaultLock?
             }).allEntryPointsFallbackToNext()
-            .yieldsTo(DetectorType.LERNA, DetectorType.YARN, DetectorType.PNPM);
-
-        rules.addDetector(DetectorType.PNPM, detector -> {
-            detector.entryPoint(PnpmLockDetectable.class)
-                .search().defaultLock();
-        }).yieldsTo(DetectorType.LERNA);
+            .yieldsTo(DetectorType.LERNA, DetectorType.YARN, DetectorType.PNPM, DetectorType.RUSH);
 
         rules.addDetector(DetectorType.NUGET, detector -> {
             //four different detectables, last one will be the project inspector
@@ -244,6 +261,13 @@ public class DetectorRuleFactory {
                 .search().defaults();
         });
 
+        rules.addDetector(DetectorType.UV, detector -> {
+            detector.entryPoint(UVBuildDetectable.class)
+                    .search().defaults();
+            detector.entryPoint(UVLockFileDetectable.class)
+                    .search().defaults();
+        }).allEntryPointsFallbackToNext();
+
         rules.addDetector(DetectorType.PIP, detector -> {
                 detector.entryPoint(PipenvDetectable.class)
                     .search().defaults();
@@ -255,7 +279,7 @@ public class DetectorRuleFactory {
                     .search().defaults();
             })
             .allEntryPointsFallbackToNext()
-            .yieldsTo(DetectorType.POETRY);
+            .yieldsTo(DetectorType.POETRY, DetectorType.UV, DetectorType.SETUPTOOLS);
 
         rules.addDetector(DetectorType.RUBYGEMS, detector -> {
             detector.entryPoint(GemlockDetectable.class)

@@ -15,8 +15,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
 import com.blackduck.integration.blackduck.api.generated.enumeration.PolicyRuleSeverityType;
 import com.blackduck.integration.blackduck.api.generated.enumeration.ProjectCloneCategoriesType;
 import com.blackduck.integration.blackduck.api.generated.enumeration.ProjectVersionDistributionType;
@@ -25,6 +26,7 @@ import com.blackduck.integration.blackduck.codelocation.signaturescanner.command
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.ReducedPersistence;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.SnippetMatching;
 import com.blackduck.integration.blackduck.configuration.BlackDuckServerConfig;
+import com.blackduck.integration.blackduck.version.BlackDuckVersion;
 import com.blackduck.integration.configuration.property.types.enumallnone.list.AllEnumList;
 import com.blackduck.integration.configuration.property.types.enumallnone.list.AllNoneEnumCollection;
 import com.blackduck.integration.configuration.property.types.enumallnone.list.AllNoneEnumList;
@@ -50,7 +52,7 @@ import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedIndi
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedReducedPersistanceMode;
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedSnippetMode;
 import com.blackduck.integration.detect.util.filter.DetectToolFilter;
-import com.blackduck.integration.detect.util.finder.DetectDirectoryFileFilter;
+import com.blackduck.integration.detect.util.finder.DetectDirectoryFileFilterCaseSensitive;
 import com.blackduck.integration.detect.util.finder.DetectExcludedDirectoryFilter;
 import com.blackduck.integration.detect.workflow.bdio.BdioOptions;
 import com.blackduck.integration.detect.workflow.blackduck.BlackDuckPostOptions;
@@ -71,10 +73,16 @@ import com.blackduck.integration.rest.credentials.Credentials;
 import com.blackduck.integration.rest.credentials.CredentialsBuilder;
 import com.blackduck.integration.rest.proxy.ProxyInfo;
 import com.blackduck.integration.rest.proxy.ProxyInfoBuilder;
+import com.google.gson.Gson;
 
 public class DetectConfigurationFactory {
     private final DetectPropertyConfiguration detectConfiguration;
     private final Gson gson;
+    
+    private static final String POLICY_SEVERITY_BLOCKER = "BLOCKER";
+    private static final String POLICY_SEVERITY_CRITICAL = "CRITICAL";
+    
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     public DetectConfigurationFactory(DetectPropertyConfiguration detectConfiguration, Gson gson) {
         this.detectConfiguration = detectConfiguration;
@@ -218,9 +226,29 @@ public class DetectConfigurationFactory {
         return detectConfiguration.getValue(DetectProperties.DETECT_COMPONENT_LOCATION_ANALYSIS_ENABLED);
     }
 
+    public Boolean isQuackPatchEnabled() {
+        return detectConfiguration.getValue(DetectProperties.DETECT_QUACK_PATCH_ENABLED);
+    }
+
+    public boolean isQuackPatchPossible() {
+        boolean allQuackPatchPropertiesSet = Boolean.TRUE.equals(!detectConfiguration.getValue(DetectProperties.DETECT_LLM_NAME).isEmpty()
+                && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_ENDPOINT).isEmpty()
+                && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_KEY).isEmpty());
+
+        if (Boolean.TRUE.equals(isQuackPatchEnabled()) && allQuackPatchPropertiesSet) {
+            return true;
+        }
+        logger.info("Quack Patch cannot run because not all required properties are set. Please check your configuration.");
+        return false;
+    }
+
     public Boolean doesComponentLocatorAffectStatus() {
         return detectConfiguration.getValue(DetectProperties.DETECT_COMPONENT_LOCATION_ANALYSIS_STATUS);
-    }    
+    }
+
+    public DetectPropertyConfiguration getDetectPropertyConfiguration() {
+        return detectConfiguration;
+    }
 
     public DetectToolFilter createToolFilter(RunDecision runDecision, BlackDuckDecision blackDuckDecision, Map<DetectTool, Set<String>> scanTypeEvidenceMap) {
         Optional<Boolean> impactEnabled = Optional.of(detectConfiguration.getValue(DetectProperties.DETECT_IMPACT_ANALYSIS_ENABLED));
@@ -236,8 +264,14 @@ public class DetectConfigurationFactory {
     public RapidScanOptions createRapidScanOptions() {
         RapidCompareMode rapidCompareMode = detectConfiguration.getValue(DetectProperties.DETECT_BLACKDUCK_RAPID_COMPARE_MODE);
         BlackduckScanMode scanMode= detectConfiguration.getValue(DetectProperties.DETECT_BLACKDUCK_SCAN_MODE);
+        List<PolicyRuleSeverityType> severitiesToFailPolicyCheck = getPoliciesToFailOn();
+
         long detectTimeout = findTimeoutInSeconds();
-        return new RapidScanOptions(rapidCompareMode, scanMode, detectTimeout);
+        return new RapidScanOptions(rapidCompareMode, scanMode, detectTimeout, severitiesToFailPolicyCheck);
+    }
+
+    public List<PolicyRuleSeverityType> getPoliciesToFailOn() {
+        return detectConfiguration.getValue(DetectProperties.DETECT_STATELESS_POLICY_CHECK_FAIL_ON_SEVERITIES).representedValues();
     }
 
     public BlackduckScanMode createScanMode() {
@@ -310,13 +344,9 @@ public class DetectConfigurationFactory {
     }
 
     public ProjectNameVersionOptions createProjectNameVersionOptions(String sourceDirectoryName) {
-        String overrideProjectName = StringUtils.trimToNull(detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_NAME));
-        String overrideProjectVersionName = StringUtils.trimToNull(detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_VERSION_NAME));
+        String overrideProjectName = StringUtils.trimToNull(detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_NAME));
+        String overrideProjectVersionName = StringUtils.trimToNull(detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_NAME));
         return new ProjectNameVersionOptions(sourceDirectoryName, overrideProjectName, overrideProjectVersionName);
-    }
-
-    public boolean createShouldUnmapCodeLocations() {
-        return detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_CODELOCATION_UNMAP);
     }
 
     public CustomFieldDocument createCustomFieldDocument() throws DetectUserFriendlyException {
@@ -324,28 +354,43 @@ public class DetectConfigurationFactory {
         return parser.parseCustomFieldDocument(detectConfiguration.getRaw());
     }
 
-    public ProjectSyncOptions createDetectProjectServiceOptions() {
-        ProjectVersionPhaseType projectVersionPhase = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_VERSION_PHASE);
-        ProjectVersionDistributionType projectVersionDistribution = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_VERSION_DISTRIBUTION);
-        Integer projectTier = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_TIER);
-        String projectDescription = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_DESCRIPTION);
-        String projectVersionNotes = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_VERSION_NOTES);
-        List<ProjectCloneCategoriesType> cloneCategories = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_CLONE_CATEGORIES).representedValues();
-        Boolean projectLevelAdjustments = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_LEVEL_ADJUSTMENTS);
-        Boolean forceProjectVersionUpdate = detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_VERSION_UPDATE);
-        String projectVersionNickname = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_VERSION_NICKNAME);
+    public ProjectSyncOptions createDetectProjectServiceOptions(Optional<BlackDuckVersion> blackDuckServerVersion) {
+        ProjectVersionPhaseType projectVersionPhase = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_PHASE);
+        
+        if (projectVersionPhase == ProjectVersionPhaseType.ARCHIVED) {
+            logger.warn("The ARCHIVED phase will be removed in an upcoming release.");
+        }
+        
+        ProjectVersionDistributionType projectVersionDistribution = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_DISTRIBUTION);
+        Integer projectTier = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_TIER);
+        String projectDescription = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_DESCRIPTION);
+        String projectVersionNotes = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_NOTES);
+        Boolean projectLevelAdjustments = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_LEVEL_ADJUSTMENTS);
+        Boolean forceProjectVersionUpdate = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_UPDATE);
+        String projectVersionNickname = detectConfiguration.getNullableValueWithJsonFallback(DetectProperties.DETECT_PROJECT_VERSION_NICKNAME);
+        Boolean deepLicenseEnabled = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_DEEP_LICENSE);
+        
+        List<ProjectCloneCategoriesType> cloneCategories;
+        AllNoneEnumList<ProjectCloneCategoriesType> categoriesEnum = detectConfiguration.getValueWithJsonFallback(DetectProperties.DETECT_PROJECT_CLONE_CATEGORIES);
 
-        return new ProjectSyncOptions(
-            projectVersionPhase,
-            projectVersionDistribution,
-            projectTier,
-            projectDescription,
-            projectVersionNotes,
-            cloneCategories,
-            forceProjectVersionUpdate,
-            projectVersionNickname,
-            projectLevelAdjustments
-        );
+        if (canSendSummaryData(blackDuckServerVersion)) {
+            cloneCategories = categoriesEnum.representedValuesStreamlined();
+        } else {
+            cloneCategories = categoriesEnum.representedValues();
+        }
+
+        return ProjectSyncOptions.builder()
+            .projectVersionPhase(projectVersionPhase)
+            .projectVersionDistribution(projectVersionDistribution)
+            .projectTier(projectTier)
+            .projectDescription(projectDescription)
+            .projectVersionNotes(projectVersionNotes)
+            .cloneCategories(cloneCategories)
+            .forceProjectVersionUpdate(forceProjectVersionUpdate)
+            .projectVersionNickname(projectVersionNickname)
+            .projectLevelAdjustments(projectLevelAdjustments)
+            .deepLicenseEnabled(deepLicenseEnabled)
+            .build();
     }
 
     public ProjectVersionLicenseOptions createProjectVersionLicenseOptions() {
@@ -430,9 +475,11 @@ public class DetectConfigurationFactory {
 
     public BlackDuckPostOptions createBlackDuckPostOptions() {
         Boolean waitForResults = detectConfiguration.getValue(DetectProperties.DETECT_WAIT_FOR_RESULTS);
-        Boolean runRiskReport = detectConfiguration.getValue(DetectProperties.DETECT_RISK_REPORT_PDF);
+        Boolean runRiskReportPdf = detectConfiguration.getValue(DetectProperties.DETECT_RISK_REPORT_PDF);
+        Boolean runRiskReportJson = detectConfiguration.getValue(DetectProperties.DETECT_RISK_REPORT_JSON);
         Boolean runNoticesReport = detectConfiguration.getValue(DetectProperties.DETECT_NOTICES_REPORT);
         Path riskReportPdfPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_RISK_REPORT_PDF_PATH);
+        Path riskReportJsonPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_RISK_REPORT_JSON_PATH);
         Path noticesReportPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NOTICES_REPORT_PATH);
         List<PolicyRuleSeverityType> severitiesToFailPolicyCheck = detectConfiguration.getValue(DetectProperties.DETECT_POLICY_CHECK_FAIL_ON_SEVERITIES).representedValues();
         List<String> policyNamesToFailPolicyCheck = detectConfiguration.getValue(DetectProperties.DETECT_POLICY_CHECK_FAIL_ON_NAMES);
@@ -440,22 +487,24 @@ public class DetectConfigurationFactory {
 
         return new BlackDuckPostOptions(
             waitForResults,
-            runRiskReport,
+            runRiskReportPdf,
             runNoticesReport,
             riskReportPdfPath,
             noticesReportPath,
             severitiesToFailPolicyCheck,
             policyNamesToFailPolicyCheck,
-            correlatedScanningEnabled
+            correlatedScanningEnabled,
+            runRiskReportJson,
+            riskReportJsonPath
         );
     }
 
     public BinaryScanOptions createBinaryScanOptions() {
         Path singleTarget = detectConfiguration.getPathOrNull(DetectProperties.DETECT_BINARY_SCAN_FILE);
         List<String> fileInclusionPatterns = detectConfiguration.getValue(DetectProperties.DETECT_BINARY_SCAN_FILE_NAME_PATTERNS);
-        DetectDirectoryFileFilter fileFilter = null;
+        DetectDirectoryFileFilterCaseSensitive fileFilter = null;
         if (fileInclusionPatterns.stream().anyMatch(StringUtils::isNotBlank)) {
-            fileFilter = new DetectDirectoryFileFilter(collectDirectoryExclusions(), fileInclusionPatterns);
+            fileFilter = new DetectDirectoryFileFilterCaseSensitive(collectDirectoryExclusions(), fileInclusionPatterns, false);
         }
         Integer searchDepth = detectConfiguration.getValue(DetectProperties.DETECT_BINARY_SCAN_SEARCH_DEPTH);
         return new BinaryScanOptions(singleTarget, fileFilter, searchDepth, getFollowSymLinks());
@@ -482,6 +531,7 @@ public class DetectConfigurationFactory {
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_FLUTTER_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_GRADLE_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_MAVEN_PATH),
+            detectConfiguration.getPathOrNull(DetectProperties.DETECT_ANT_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_NPM_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_PEAR_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_PIP_PATH),
@@ -496,7 +546,9 @@ public class DetectConfigurationFactory {
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_SBT_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_LERNA_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_OPAM_PATH),
-            detectConfiguration.getPathOrNull(DetectProperties.DETECT_CARGO_PATH)
+            detectConfiguration.getPathOrNull(DetectProperties.DETECT_CARGO_PATH),
+            detectConfiguration.getPathOrNull(DetectProperties.DETECT_UV_PATH),
+            detectConfiguration.getPathOrNull(DetectProperties.DETECT_CONDA_TREE_PATH)
         );
     }
 
@@ -523,6 +575,10 @@ public class DetectConfigurationFactory {
         return new DetectorToolOptions(projectBomTool, requiredDetectors, accuracyFilter);
     }
 
+    public List<String> getExcludedDetectors() {
+        return detectConfiguration.getValue(DetectProperties.DETECT_EXCLUDED_DETECTORS);
+    }
+
     public ProjectGroupOptions createProjectGroupOptions() {
         String projectGroupName = detectConfiguration.getNullableValue(DetectProperties.DETECT_PROJECT_GROUP_NAME);
         return new ProjectGroupOptions(projectGroupName);
@@ -541,8 +597,30 @@ public class DetectConfigurationFactory {
 
         return directoryExclusionPatterns;
     }
+    
+    /**
+     * Newer BlackDuck servers allow us to send ALL and null values for project categories. BlackDuck will then 
+     * determine the appropriate values to display in the UI. For older servers we have to send all the values that we know
+     * about, for all, which can cause problems if we send a value Detect knows about but an older BlackDuck server does not.
+     * Eventually we can pull this code once all servers we support are 2023.10.0 or higher.
+     * 
+     * @param blackDuckServerVersion the version of the BlackDuck server specified in blackduck.url
+     * @return true if we can optimize the categories argument, false otherwise
+     */
+    private boolean canSendSummaryData(Optional<BlackDuckVersion> blackDuckServerVersion) {
+        boolean canSendSummaryData = false;
+
+        BlackDuckVersion minVersion = new BlackDuckVersion(2023, 10, 0);
+
+        if (blackDuckServerVersion.isPresent() && blackDuckServerVersion.get().isAtLeast(minVersion)) {
+            canSendSummaryData = true;
+        }
+
+        return canSendSummaryData;
+    }
 
     public Optional<String> getContainerScanFilePath() {
         return Optional.ofNullable(detectConfiguration.getNullableValue(DetectProperties.DETECT_CONTAINER_SCAN_FILE));
     }
+
 }

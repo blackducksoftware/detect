@@ -1,6 +1,6 @@
-# [detect_product_long] Code Verification
+# [detect_product_short] Code Verification
 
-Two methods are available to verify that the [detect_product_long] code you run has not been tampered with since it was built:
+Two methods are available to verify that the [detect_product_short] code you run has not been tampered with since it was built:
 code signature verification and checksum verification.
 Both methods apply to the [detect_product_short] .jar file, and only offer protection when you run
 [detect_product_short] by invoking the [detect_product_short] .jar file directly (as opposed to invoking [bash_script_name] or [powershell_script_name]).

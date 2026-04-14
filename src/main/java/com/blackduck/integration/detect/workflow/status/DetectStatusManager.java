@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
 import com.blackduck.integration.detect.lifecycle.autonomous.AutonomousManager;
+import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodeRequest;
 import com.blackduck.integration.detect.workflow.event.Event;
 import com.blackduck.integration.detect.workflow.event.EventSystem;
 import com.blackduck.integration.detect.workflow.result.DetectResult;
@@ -37,8 +38,8 @@ public class DetectStatusManager {
         detectResults.add(detectResult);
     }
 
-    public void logDetectResults(IntLogger logger, ExitCodeType exitCodeType, Optional<AutonomousManager> autonomousManagerOptional) {
-        new DetectStatusLogger().logDetectStatus(logger, statusSummaries, detectResults, detectIssues, detectOperations, exitCodeType, autonomousManagerOptional);
+    public void logDetectResults(IntLogger logger, ExitCodeRequest exitCodeRequest, Optional<AutonomousManager> autonomousManagerOptional) {
+        new DetectStatusLogger().logDetectStatus(logger, statusSummaries, detectResults, detectIssues, detectOperations, exitCodeRequest, autonomousManagerOptional);
     }
 
     public boolean hasAnyFailure() {

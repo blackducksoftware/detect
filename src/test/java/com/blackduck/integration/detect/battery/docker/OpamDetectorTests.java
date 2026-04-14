@@ -52,7 +52,7 @@ public class OpamDetectorTests {
             DockerAssertions dockerAssertions = test.run(commandBuilder);
 
             // Detect specific assertions
-            dockerAssertions.logContains("Opam Lock File: SUCCESS");
+            dockerAssertions.logContains("Opam Lock: SUCCESS");
             dockerAssertions.logContains("Opam CLI: ATTEMPTED");
             dockerAssertions.atLeastOneBdioFile();
 

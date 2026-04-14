@@ -12,7 +12,6 @@ import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import com.google.gson.Gson;
 import com.blackduck.integration.bdio.graph.BasicDependencyGraph;
 import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.Forge;
@@ -22,8 +21,10 @@ import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.detectable.detectable.util.SemVerComparator;
+import com.blackduck.integration.detectable.detectables.npm.NpmAliasParser;
 import com.blackduck.integration.detectable.detectables.npm.NpmDependencyType;
 import com.blackduck.integration.detectable.extraction.Extraction;
+import com.google.gson.Gson;
 
 public class PackageJsonExtractor {
     private final Gson gson;
@@ -54,7 +55,8 @@ public class PackageJsonExtractor {
         List<Dependency> dependencies = transformDependencies(combinedPackageJson.getDependencies());
         npmDependencyTypeFilter.ifShouldInclude(NpmDependencyType.DEV, transformDependencies(combinedPackageJson.getDevDependencies()), dependencies::addAll);
         npmDependencyTypeFilter.ifShouldInclude(NpmDependencyType.PEER, transformDependencies(combinedPackageJson.getPeerDependencies()), dependencies::addAll);
-
+        npmDependencyTypeFilter.ifShouldInclude(NpmDependencyType.OPTIONAL, transformDependencies(combinedPackageJson.getOptionalDependencies()), dependencies::addAll);
+        
         DependencyGraph dependencyGraph = new BasicDependencyGraph();
         dependencyGraph.addChildrenToRoot(dependencies);
 
@@ -80,28 +82,36 @@ public class PackageJsonExtractor {
     }
     
     private Dependency entryToDependency(String key, String value) {
+        // Handle npm aliases: "alias-name": "npm:actual-package@version"
+        String[] parsed = NpmAliasParser.parseNpmAlias(value);
+        if (parsed != null) {
+            key = parsed[0];
+            value = parsed[1];
+        }
+
         String version = extractLowestVersion(value);
         ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.NPMJS, key, version);
         return new Dependency(externalId);
     }
 
-    private String extractLowestVersion(String value) {
+    public String extractLowestVersion(String value) {
         SemVerComparator semVerComparator = new SemVerComparator();
-        
-        // Split the value into parts by spaces, "||", or "-".
-        String[] parts = value.split("\\s+|\\|\\||-");
-        String lowestVersion = Arrays.stream(parts)
+
+        // Split by whitespace or "||" (logical OR); " - " is handled implicitly by whitespace
+        String[] parts = value.split("\\s+|\\|\\|");
+
+        return Arrays.stream(parts)
              // Replace "x" or "*" with "0"
             .map(part -> part.replaceAll("x|\\*", "0"))
             // Remove npm version selection characters that the KB won't match on
             .map(part -> part.replaceAll("[>=<~^]", ""))
+            // Strip pre-release & build metadata appended by "+" or "-" characters
+            .map(part -> part.replaceAll("[-+].*", ""))
             // Filter out parts that don't match the version pattern
             .filter(part -> part.matches("\\d+\\.\\d+\\.\\d+|\\d+\\.\\d+|\\d+"))
-            // Use compareSemVerVersions method to find smallest version in each value
+            // Use compareSemVerVersions method to find the smallest version in each value
             .min(semVerComparator)
             // If no part matches the version pattern, return the original value.
             .orElse(value);
-
-        return lowestVersion;
     }
 }

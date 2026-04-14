@@ -45,6 +45,7 @@ public class DetectorResultStatusCodeLookup {
         map.put(ForcedNestedPassedDetectorResult.class, DetectorStatusCode.FORCED_NESTED_PASSED);
         map.put(GoPkgLockfileNotFoundDetectableResult.class, DetectorStatusCode.GO_PKG_LOCKFILE_NOT_FOUND);
         map.put(InspectorNotFoundDetectableResult.class, DetectorStatusCode.INSPECTOR_NOT_FOUND);
+        map.put(IvyDependencyTreeNotFoundDetectableResult.class, DetectorStatusCode.IVY_DEPENDENCY_TREE_NOT_FOUND);
         map.put(MaxDepthExceededDetectorResult.class, DetectorStatusCode.MAX_DEPTH_EXCEEDED);
         map.put(NotNestableDetectorResult.class, DetectorStatusCode.NOT_NESTABLE);
         map.put(NotNestableBeneathDetectorResult.class, DetectorStatusCode.NOT_NESTABLE_BENEATH);
@@ -66,6 +67,7 @@ public class DetectorResultStatusCodeLookup {
         map.put(SetupToolsRequiresNotFoundDetectableResult.class, DetectorStatusCode.SETUP_TOOLS_REQUIRES_NOT_FOUND);
         map.put(SetupToolsNoDependenciesDetectableResult.class, DetectorStatusCode.SETUP_TOOLS_NO_DEPENDENCIES);
         map.put(CargoExecutableVersionMismatchResult.class, DetectorStatusCode.ATTEMPTED);
+        map.put(UVLockfileNotFoundDetectableResult.class, DetectorStatusCode.UV_LOCKFILE_NOT_FOUND);
 
         return map;
     }

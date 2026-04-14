@@ -32,9 +32,7 @@ net.virtualvoid.sbt.graph.DependencyGraphPlugin
 The plugins include a "dependencyDot" task which generates "target/configuration-dependencies.dot" for each project.
 In some cases, the dot files are not generated in "./target" and while those graphs will still be found and results are not affected, it could affect the project and version chosen and code location's directory.
 
-**NOTE: Older SBT projects that generate a resolution cache are still supported but are being deprecated. You must install the plugin for SBT to continue working uninterrupted.
-
-As of 8.8.0 of [detect_product_short], evicted dependencies in Simple Build Tool(SBT) projects will not be included in the Bill of Materials(BoM) generated during the scan.
+Evicted dependencies in Simple Build Tool(SBT) projects will not be included in the Bill of Materials(BoM) generated during the scan.
 
 ## Background execution
 
@@ -45,5 +43,5 @@ and the SBT detector runs.
 You can apply the workaround suggested in that github issue using the
 *detect.sbt.arguments* property:
 ```
-./detect10.sh --detect.sbt.arguments="-Djline.terminal=jline.UnsupportedTerminal"
+./detect11.sh --detect.sbt.arguments="-Djline.terminal=jline.UnsupportedTerminal"
 ```

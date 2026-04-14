@@ -107,7 +107,7 @@ public class DetectableTool {
             logger.error(String.format("Was not extractable: %s", extractable.toDescription()));
             statusEventPublisher.publishIssue(new DetectIssue(DetectIssueType.DETECTABLE_TOOL, "Detectable Tool Issue", Arrays.asList(extractable.toDescription())));
             statusEventPublisher.publishStatusSummary(new Status(name, StatusType.FAILURE));
-            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_GENERAL_ERROR, extractable.toDescription());
+            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_GENERAL_ERROR);
             return DetectableToolResult.failed(extractable);
         }
 
@@ -126,7 +126,7 @@ public class DetectableTool {
             List<String> errorMessages = collectErrorMessages(extraction);
             statusEventPublisher.publishIssue(new DetectIssue(DetectIssueType.DETECTABLE_TOOL, "Detectable Tool Issue", errorMessages));
             statusEventPublisher.publishStatusSummary(new Status(name, StatusType.FAILURE));
-            exitCodePublisher.publishExitCode(new ExitCodeRequest(ExitCodeType.FAILURE_GENERAL_ERROR, extraction.getDescription()));
+            exitCodePublisher.publishExitCode(ExitCodeType.FAILURE_GENERAL_ERROR);
             return DetectableToolResult.failed();
         } else {
             logger.debug("Extraction success.");

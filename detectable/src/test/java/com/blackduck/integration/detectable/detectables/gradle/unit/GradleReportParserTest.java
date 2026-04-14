@@ -73,4 +73,27 @@ compile
         assertEquals(0, gradleReportLineParser.parseLine(("\\--- org.apache.commons:commons-compress:1.13"), Collections.emptyMap()).getLevel());
     }
 
+    @Test
+    void failedSuffixIsStrippedFromVersion() {
+        GradleReportLineParser gradleReportLineParser = new GradleReportLineParser();
+        String line = "+--- org.apache.commons:commons-email:1.2 FAILED";
+        GradleTreeNode node = gradleReportLineParser.parseLine(line, Collections.emptyMap());
+
+        assertTrue(node.getGav().isPresent());
+
+        GradleGav gav = node.getGav().get();
+        assertEquals("org.apache.commons", gav.getGroup());
+        assertEquals("commons-email", gav.getName());
+        assertEquals("1.2", gav.getVersion(), "Expected version to exclude 'FAILED'");
+    }
+
+    @Test
+    void missingVersionHandledAsUnknownNode() {
+        GradleReportLineParser parser = new GradleReportLineParser();
+        String line = "+--- org.apache.commons:commons-lang3:";
+        GradleTreeNode node = parser.parseLine(line, Collections.emptyMap());
+
+        assertEquals(GradleTreeNode.NodeType.UNKNOWN, node.getNodeType());
+        assertFalse(node.getGav().isPresent());
+    }
 }

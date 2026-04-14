@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.blackduck.integration.detectable.Detectable;
-import com.blackduck.integration.detectable.DetectableEnvironment;
 import com.blackduck.integration.detectable.detectable.result.DetectableResult;
 import com.blackduck.integration.detectable.detectable.result.ExceptionDetectableResult;
 import com.blackduck.integration.detectable.extraction.Extraction;
@@ -17,12 +16,10 @@ public class DetectableEvaluator {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     public DetectableEvaluationResult evaluate(
+        Detectable detectable,
         DetectableDefinition detectableDefinition,
-        DetectableEnvironment detectableEnvironment,
         Supplier<ExtractionEnvironment> extractionEnvironmentSupplier
     ) {
-        Detectable detectable = detectableDefinition.getDetectableCreatable().createDetectable(detectableEnvironment);
-
         DetectableResult applicable = detectable.applicable();
         if (!applicable.getPassed()) {
             return DetectableEvaluationResult.notApplicable(detectableDefinition, applicable);

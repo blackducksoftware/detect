@@ -45,6 +45,9 @@ public class NugetInspectorArguments {
         nugetInspectorOptions.getNugetArtifactsPath()
                 .ifPresent(arg -> options.add("--nuget_artifacts_path=" + arg.toString()));
 
+        nugetInspectorOptions.getInspectedFilesInfoPath()
+                .ifPresent(arg -> options.add("--nuget_inspected_files_path=" + arg.toString()));
+
         if (logger.isTraceEnabled()) {
             options.add("-v");
         }

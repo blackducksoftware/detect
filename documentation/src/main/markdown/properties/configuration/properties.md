@@ -1,4 +1,4 @@
-# Properties
+# [detect_product_short] Properties
 
 [detect_product_long] is highly configurable, with property settings defining scan execution parameters.   
 

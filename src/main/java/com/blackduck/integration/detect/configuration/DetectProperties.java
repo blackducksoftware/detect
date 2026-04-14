@@ -8,9 +8,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import com.blackduck.integration.blackduck.api.generated.enumeration.PolicyRuleSeverityType;
 import com.blackduck.integration.blackduck.api.generated.enumeration.ProjectCloneCategoriesType;
@@ -21,6 +21,7 @@ import com.blackduck.integration.blackduck.codelocation.signaturescanner.command
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.SnippetMatching;
 import com.blackduck.integration.configuration.property.Properties;
 import com.blackduck.integration.configuration.property.Property;
+import com.blackduck.integration.configuration.util.ProductMajorVersion;
 import com.blackduck.integration.configuration.property.base.PassthroughProperty;
 import com.blackduck.integration.configuration.property.base.TypedProperty;
 import com.blackduck.integration.configuration.property.types.bool.BooleanProperty;
@@ -46,7 +47,6 @@ import com.blackduck.integration.configuration.property.types.string.StringPrope
 import com.blackduck.integration.detect.configuration.enumeration.BlackduckScanMode;
 import com.blackduck.integration.detect.configuration.enumeration.DetectCategory;
 import com.blackduck.integration.detect.configuration.enumeration.DetectGroup;
-import com.blackduck.integration.detect.configuration.enumeration.DetectMajorVersion;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTargetType;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
 import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
@@ -54,7 +54,9 @@ import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedIndi
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedReducedPersistanceMode;
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedSnippetMode;
 import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
+import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDependencyType;
+import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
 import com.blackduck.integration.detectable.detectables.conan.cli.config.ConanDependencyType;
 import com.blackduck.integration.detectable.detectables.dart.pubdep.DartPubDependencyType;
 import com.blackduck.integration.detectable.detectables.go.gomod.GoModDependencyType;
@@ -80,8 +82,8 @@ public class DetectProperties {
 
     public static final NullableStringProperty BLACKDUCK_API_TOKEN =
         NullableStringProperty.newBuilder("blackduck.api.token")
-            .setInfo("Black Duck API Token", DetectPropertyFromVersion.VERSION_4_2_0)
-            .setHelp("The access token used to authenticate with the Black Duck Server.")
+            .setInfo("Black Duck SCA API Token", DetectPropertyFromVersion.VERSION_4_2_0)
+            .setHelp("The access token used to authenticate with the Black Duck SCA Server.")
             .setGroups(DetectGroup.BLACKDUCK_SERVER, DetectGroup.BLACKDUCK, DetectGroup.DEFAULT)
             .build();
 
@@ -89,7 +91,7 @@ public class DetectProperties {
         BooleanProperty.newBuilder("blackduck.offline.mode", false)
             .setInfo("Offline Mode", DetectPropertyFromVersion.VERSION_4_2_0)
             .setHelp(
-                "This can disable Black Duck communication - if set to true, Detect will not upload BDIO files, or check policies, and it will not download and install the signature scanner. Note that the path to a local instance of the scanner can be provided using the -detect.blackduck.signature.scanner.local.path parameter.")
+                "This can disable Black Duck SCA communication - if set to true, Detect will not upload BDIO files, or check policies, and it will not download and install the signature scanner. Note that the path to a local instance of the scanner can be provided using the -detect.blackduck.signature.scanner.local.path parameter.")
             .setGroups(DetectGroup.BLACKDUCK_SERVER, DetectGroup.BLACKDUCK, DetectGroup.OFFLINE, DetectGroup.DEFAULT)
             .build();
 
@@ -109,7 +111,7 @@ public class DetectProperties {
             .setInfo("Bypass Proxy Hosts", DetectPropertyFromVersion.VERSION_4_2_0)
             .setHelp(
                 "A comma separated list of regular expression host patterns that should not use the proxy.",
-                "This property accepts Java regular expressions. Refer to the <i>Configuring Black Duck Detect</i> > <i>Java regular expression support</i> page for more details."
+                "This property accepts Java regular expressions. For further information refer to <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/configuring/javaregex%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Java regular expression support page.</xref>"
             )
             .setGroups(DetectGroup.PROXY, DetectGroup.BLACKDUCK, DetectGroup.DEFAULT)
             .setCategory(DetectCategory.Advanced)
@@ -166,8 +168,8 @@ public class DetectProperties {
 
     public static final NullableStringProperty BLACKDUCK_URL =
         NullableStringProperty.newBuilder("blackduck.url")
-            .setInfo("Black Duck URL", DetectPropertyFromVersion.VERSION_4_2_0)
-            .setHelp("URL of the Black Duck server.")
+            .setInfo("Black Duck SCA URL", DetectPropertyFromVersion.VERSION_4_2_0)
+            .setHelp("URL of the Black Duck SCA server.")
             .setExample("https://blackduck.mydomain.com")
             .setGroups(DetectGroup.BLACKDUCK_SERVER, DetectGroup.BLACKDUCK, DetectGroup.DEFAULT)
             .build();
@@ -177,7 +179,7 @@ public class DetectProperties {
             .setInfo("Detector Accuracy Requirements", DetectPropertyFromVersion.VERSION_7_13_0)
             .setHelp(
                 "Detector types from which HIGH accuracy results are required when a detector of that type applies.",
-                "The value of this property only affects detector types which apply to the source project. If a detector type applies, and is one of the accuracy-required detector types indicated by the value of this property, low accuracy results for that detector type are treated as a failure.  Refer to the <i>Downloading and Running Black Duck Detect</i> > <i>Detector search and accuracy</i> page for more details."
+                "The value of this property only affects detector types which apply to the source project. If a detector type applies, and is one of the accuracy-required detector types indicated by the value of this property, low accuracy results for that detector type are treated as a failure.  For further information refer to <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/runningdetect/detectorcascade%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Detector search and accuracy.</xref>"
             )
             .setGroups(DetectGroup.DETECTOR, DetectGroup.GLOBAL)
             .setExample("ALL,NONE")
@@ -227,19 +229,54 @@ public class DetectProperties {
     public static final StringListProperty DETECT_BAZEL_CQUERY_OPTIONS =
         StringListProperty.newBuilder("detect.bazel.cquery.options", emptyList())
             .setInfo("Bazel cquery additional options", DetectPropertyFromVersion.VERSION_6_1_0)
-            .setHelp("A comma-separated list of additional options to pass to the bazel cquery command.")
+            .setHelp("A comma-separated list of additional options to pass to the bazel cquery command. e.g., --enable_bzlmod, --enable_workspace")
+            .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
+            .build();
+
+    public static final StringListProperty DETECT_BAZEL_QUERY_OPTIONS =
+        StringListProperty.newBuilder("detect.bazel.query.options", emptyList())
+            .setInfo("Bazel query additional options", DetectPropertyFromVersion.VERSION_11_3_0)
+            .setHelp("A comma-separated list of additional options to pass to the bazel query command. e.g., --enable_bzlmod, --enable_workspace")
+            .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
+            .build();
+
+    public static final AllNoneEnumListProperty<DependencySource> DETECT_BAZEL_DEPENDENCY_SOURCES =
+        AllNoneEnumListProperty.newBuilder("detect.bazel.dependency.sources", AllNoneEnum.NONE, DependencySource.class)
+            .setInfo("Bazel dependency sources", DetectPropertyFromVersion.VERSION_11_3_0)
+            .setHelp(
+                "Replaces the deprecated detect.bazel.workspace.rules property. Manually specify which dependency sources to extract. Valid values: MAVEN_INSTALL, MAVEN_JAR, HTTP_ARCHIVE, HASKELL_CABAL_LIBRARY, ALL, NONE. " +
+                "By default (NONE), Detect automatically probes the Bazel dependency graph to determine which sources are present and runs the appropriate pipelines. " +
+                "This property works for both BZLMOD and WORKSPACE projects.",
+                "Set this property when you know which dependency sources are present in your target to skip the probing step and improve performance, especially in CI/CD environments. " +
+                "Use ALL to extract from all supported sources without probing. " +
+                "Example: MAVEN_INSTALL,HTTP_ARCHIVE extracts only Maven and HTTP archive dependencies."
+            )
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();
 
     public static final AllNoneEnumListProperty<WorkspaceRule> DETECT_BAZEL_WORKSPACE_RULES =
-        AllNoneEnumListProperty.newBuilder("detect.bazel.workspace.rules", AllNoneEnum.NONE, WorkspaceRule.class)
-            .setInfo("Bazel workspace rules", DetectPropertyFromVersion.VERSION_7_12_0)
+            AllNoneEnumListProperty.newBuilder("detect.bazel.workspace.rules", AllNoneEnum.NONE, WorkspaceRule.class)
+                    .setInfo("Bazel workspace rules", DetectPropertyFromVersion.VERSION_7_12_0)
+                    .setHelp(
+                            "By default Detect discovers Bazel dependencies using all supported Bazel workspace rules that it finds in the WORKSPACE file. Alternatively you can use this property to specify the list of Bazel workspace rules Detect should use.",
+                            "Setting this property (or letting it default) to NONE tells Detect to use supported rules that it finds in the WORKSPACE file."
+                    )
+                    .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
+                    .setDeprecated("This property has been deprecated. Please use detect.bazel.dependency.sources instead.", new ProductMajorVersion(12))
+                    .build();
+
+    public static final NullableStringProperty DETECT_BAZEL_MODE =
+        NullableStringProperty.newBuilder("detect.bazel.mode")
+            .setInfo("Bazel Mode Override", DetectPropertyFromVersion.VERSION_11_3_0)
             .setHelp(
-                "By default Detect discovers Bazel dependencies using all of the supported Bazel workspace rules that it finds in the WORKSPACE file. Alternatively you can use this property to specify the list of Bazel workspace rules Detect should use.",
-                "Setting this property (or letting it default) to NONE tells Detect to use supported rules that it finds in the WORKSPACE file."
+                "Override Bazel mode detection. By default, Detect automatically determines whether the Bazel project uses BZLMOD or WORKSPACE-based dependency management " +
+                "by running bazel mod graph. Valid values: WORKSPACE, BZLMOD.",
+                "Only set this property if auto-detection produces incorrect results or for testing purposes. Incorrect values may cause extraction to fail. " +
+                "Auto-detection falls back to WORKSPACE mode if the project is on Bazel 5.x or earlier, or if bazel mod graph returns an empty graph (common in hybrid repos that declare MODULE.bazel for compatibility but manage dependencies via WORKSPACE)."
             )
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();
+
 
     public static final NullablePathProperty DETECT_CONAN_PATH =
         NullablePathProperty.newBuilder("detect.conan.path")
@@ -317,7 +354,7 @@ public class DetectProperties {
         StringListProperty.newBuilder("detect.binary.scan.file.name.patterns", emptyList())
             .setInfo("Binary Scan Filename Patterns", DetectPropertyFromVersion.VERSION_6_0_0)
             .setHelp(
-                "If specified, files in the source directory whose names match these file name patterns will be zipped and uploaded for binary scan analysis. This property will not be used if detect.binary.scan.file.path is specified. Search depth is controlled by property detect.binary.scan.search.depth. Directories specified via property detect.excluded.directories are excluded from the file search. This property accepts filename globbing-style wildcards. Refer to the <i>Configuring Black Duck Detect</i> > <i>Property wildcard support</i> page for more details.")
+                "If specified, files in the source directory whose names match these file name patterns will be zipped and uploaded for binary scan analysis. This property will not be used if detect.binary.scan.file.path is specified. Search depth is controlled by property detect.binary.scan.search.depth. Directories specified via property detect.excluded.directories are excluded from the file search. This property accepts filename globbing-style wildcards. For more information, refer to the <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/configuring/propertywildcards%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Property wildcard support page.</xref>")
             .setGroups(DetectGroup.BINARY_SCANNER, DetectGroup.SOURCE_PATH)
             .setExample("*.jar")
             .build();
@@ -335,8 +372,8 @@ public class DetectProperties {
         NullableStringProperty.newBuilder("detect.container.scan.file.path")
             .setInfo("Container Scan Target", DetectPropertyFromVersion.VERSION_9_1_0)
             .setHelp(
-                "If specified, this file and this file only will be uploaded for container scan analysis.",
-                "Detect will accept either a user provided local file path, or remote HTTP/HTTPS URL to fetch a container image for scanning. The CONTAINER_SCAN tool does not provide project and version name defaults to Detect, so you need to set project and version names via properties when only the CONTAINER_SCAN tool is invoked."
+                "If it is specified, only this .tar file will be uploaded for Container Scan analysis.",
+                "Detect will accept either a user provided local .tar file path, or remote HTTP/HTTPS URL to fetch a container image .tar file for scanning. The CONTAINER_SCAN tool does not provide project and version name defaults to Detect, so you need to set project and version names via properties when only the CONTAINER_SCAN tool is invoked."
             )
             .setGroups(DetectGroup.CONTAINER_SCANNER, DetectGroup.SOURCE_PATH)
             .build();
@@ -388,7 +425,7 @@ public class DetectProperties {
         NullableStringProperty.newBuilder("detect.blackduck.signature.scanner.arguments")
             .setInfo("Signature Scanner Arguments", DetectPropertyFromVersion.VERSION_4_2_0)
             .setHelp(
-                "A space-separated list of additional arguments to use when running the Black Duck signature scanner. Key-value pairs specified as arguments will replace the same entries specifed elswhere. Available signature scanner properties can be determined by specifying '--help' when executing the signature scanner jar file from the command line.",
+                "A space-separated list of additional arguments to use when running the Black Duck SCA signature scanner. Key-value pairs specified as arguments will replace the same entries specifed elswhere. Available signature scanner properties can be determined by specifying '--help' when executing the signature scanner jar file from the command line.",
                 "Example usage: Running in bash on Linux and you want signature scanner to read a list of directories to exclude from the scan (using the signature scanner '--exclude-from' option). Configure signature scanner to read excluded directories from a file named excludes.txt in the current working directory with: --detect.blackduck.signature.scanner.arguments='--exclude-from ./excludes.txt'"
             )
             .setGroups(DetectGroup.SIGNATURE_SCANNER, DetectGroup.GLOBAL)
@@ -429,7 +466,7 @@ public class DetectProperties {
     public static final BooleanProperty DETECT_BLACKDUCK_SIGNATURE_SCANNER_COPYRIGHT_SEARCH =
         BooleanProperty.newBuilder("detect.blackduck.signature.scanner.copyright.search", false)
             .setInfo("Signature Scanner Copyright Search", DetectPropertyFromVersion.VERSION_6_4_0)
-            .setHelp("When set to true, user will be able to scan and discover copyright names in Black Duck. Corresponding Signature Scanner CLI Argument: --copyright-search.")
+            .setHelp("When set to true, user will be able to scan and discover copyright names in Black Duck SCA. Corresponding Signature Scanner CLI Argument: --copyright-search.")
             .setGroups(DetectGroup.SIGNATURE_SCANNER)
             .build();
     
@@ -444,7 +481,7 @@ public class DetectProperties {
         BooleanProperty.newBuilder("detect.blackduck.signature.scanner.dry.run", false)
             .setInfo("Signature Scanner Dry Run", DetectPropertyFromVersion.VERSION_4_2_0)
             .setHelp(
-                "If set to true, the signature scanner results are not uploaded to Black Duck, and the scanner results are written to disk via the Signature Scanner CLI argument: --dryRunWriteDir.")
+                "If set to true, the signature scanner results are not uploaded to Black Duck SCA, and the scanner results are written to disk via the Signature Scanner CLI argument: --dryRunWriteDir.")
             .setGroups(DetectGroup.SIGNATURE_SCANNER, DetectGroup.GLOBAL)
             .build();
 
@@ -464,7 +501,7 @@ public class DetectProperties {
     public static final BooleanProperty DETECT_BLACKDUCK_SIGNATURE_SCANNER_LICENSE_SEARCH =
         BooleanProperty.newBuilder("detect.blackduck.signature.scanner.license.search", false)
             .setInfo("Signature Scanner License Search", DetectPropertyFromVersion.VERSION_6_2_0)
-            .setHelp("When set to true, user will be able to scan and discover license names in Black Duck. Corresponding Signature Scanner CLI Argument: --license-search.")
+            .setHelp("When set to true, user will be able to scan and discover license names in Black Duck SCA. Corresponding Signature Scanner CLI Argument: --license-search.")
             .setGroups(DetectGroup.SIGNATURE_SCANNER)
             .build();
 
@@ -501,7 +538,8 @@ public class DetectProperties {
             )
             .setInfo("Snippet Matching", DetectPropertyFromVersion.VERSION_5_5_0)
             .setHelp(
-                "Use this value to enable the various snippet scanning modes. For a full explanation, please refer to the 'Running a component scan using the Signature Scanner command line' section in your Black Duck server's online help. Corresponding Signature Scanner CLI Arguments: --snippet-matching, --snippet-matching-only, --full-snippet-scan.")
+                "Use this value to enable the various snippet scanning modes. For a full explanation, refer to <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/bd%2Dhub/page/ComponentDiscovery/CommandLine%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Running a component scan using the Signature Scanner command line.</xref> Corresponding Signature Scanner CLI Arguments: --snippet-matching, --snippet-matching-only."
+				)
             .setGroups(DetectGroup.SIGNATURE_SCANNER, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
     
@@ -514,7 +552,8 @@ public class DetectProperties {
                 )
                 .setInfo("Reduced Persistence", DetectPropertyFromVersion.VERSION_8_3_0)
                 .setHelp(
-                    "Use this value to control how unmatched files from signature scans are stored. For a full explanation, please refer to <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/bd%2Dhub/page/ComponentDiscovery/about%5Freduced%5Fpersistence%5Fsignature%5Fscanning%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">about reduced persistence signature scanning.</xref>")
+                    "Use this value to control how unmatched files from signature scans are stored. For a full explanation, refer to <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/bd%2Dhub/page/ComponentDiscovery/about%5Freduced%5Fpersistence%5Fsignature%5Fscanning%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">about reduced persistence signature scanning.</xref>"
+				)
                 .setGroups(DetectGroup.SIGNATURE_SCANNER, DetectGroup.GLOBAL)
                 .build();
 
@@ -522,7 +561,7 @@ public class DetectProperties {
         BooleanProperty.newBuilder("detect.blackduck.signature.scanner.upload.source.mode", false)
             .setInfo("Upload source mode", DetectPropertyFromVersion.VERSION_5_4_0)
             .setHelp(
-                "If set to true, the signature scanner will, if supported by your Black Duck version, upload source code to Black Duck. Corresponding Signature Scanner CLI Argument: --upload-source.")
+                "If set to true, the signature scanner will, if supported by your Black Duck SCA version, upload source code to Black Duck SCA. Corresponding Signature Scanner CLI Argument: --upload-source.")
             .setGroups(DetectGroup.SIGNATURE_SCANNER, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
 
@@ -537,7 +576,7 @@ public class DetectProperties {
         NullableStringProperty.newBuilder("detect.clone.project.version.name")
             .setInfo("Clone Project Version Name", DetectPropertyFromVersion.VERSION_4_2_0)
             .setHelp(
-                "The name of the project version to clone this project version from. Respects the given Clone Categories in detect.project.clone.categories or as set on the Black Duck server.")
+                "The name of the project version to clone this project version from. Respects the given Clone Categories in detect.project.clone.categories or as set on the Black Duck SCA.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.GLOBAL, DetectGroup.PROJECT_SETTING)
             .setCategory(DetectCategory.Advanced)
             .build();
@@ -574,6 +613,13 @@ public class DetectProperties {
             .setGroups(DetectGroup.CONDA, DetectGroup.GLOBAL)
             .build();
 
+    public static final NullablePathProperty DETECT_CONDA_TREE_PATH =
+            NullablePathProperty.newBuilder("detect.conda.tree.path")
+                    .setInfo("Conda Tree Executable", DetectPropertyFromVersion.VERSION_11_4_0)
+                    .setHelp("The path to the conda tree executable.")
+                    .setGroups(DetectGroup.CONDA, DetectGroup.GLOBAL)
+                    .build();
+
     public static final NullablePathProperty DETECT_CARGO_PATH =
         NullablePathProperty.newBuilder("detect.cargo.path")
             .setInfo("Cargo Executable", DetectPropertyFromVersion.VERSION_10_4_0)
@@ -607,6 +653,67 @@ public class DetectProperties {
             .setInfo("flutter Executable", DetectPropertyFromVersion.VERSION_7_5_0)
             .setHelp("The path to the flutter executable.")
             .setGroups(DetectGroup.DART, DetectGroup.GLOBAL)
+            .build();
+
+    public static final NoneEnumListProperty<CargoDependencyType> DETECT_CARGO_DEPENDENCY_TYPES_EXCLUDED =
+        NoneEnumListProperty.newBuilder("detect.cargo.dependency.types.excluded", NoneEnum.NONE, CargoDependencyType.class)
+            .setInfo("Cargo Dependency Types Excluded", DetectPropertyFromVersion.VERSION_10_6_0)
+            .setHelp(
+                "A comma-separated list of dependency types that will be excluded.",
+                "The Cargo CLI Detector uses cargo tree flags to exclude the specified types, while the Cargo Lockfile Detector filters dependencies by reading Cargo.toml. For example, passing `detect.cargo.dependency.types.excluded=DEV` will skip [dev-dependencies] from detection."
+            )
+            .setExample(CargoDependencyType.DEV.name())
+            .setGroups(DetectGroup.CARGO, DetectGroup.DETECTOR, DetectGroup.GLOBAL)
+            .build();
+
+    public static final BooleanProperty DETECT_CARGO_IGNORE_ALL_WORKSPACES_MODE =
+        BooleanProperty.newBuilder("detect.cargo.ignore.all.workspaces", false)
+            .setInfo("Ignore All Workspaces", DetectPropertyFromVersion.VERSION_11_2_0)
+            .setHelp("All workspaces are ignored by the Cargo detector.")
+            .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
+            .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_CARGO_INCLUDED_WORKSPACES =
+        CaseSensitiveStringListProperty.newBuilder("detect.cargo.included.workspaces")
+            .setInfo("Cargo Include Workspaces", DetectPropertyFromVersion.VERSION_11_2_0)
+            .setHelp(
+                "A comma-separated list of Cargo workspace names to include.",
+                "By default, Detect includes all workspaces, but will only include the Cargo workspaces specified via this property when set. Workspace names are defined in the workspace member's Cargo.toml file, not their directory paths."
+            )
+            .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
+            .setCategory(DetectCategory.Advanced)
+            .setExample("workspace-a,workspace-b")
+            .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_CARGO_EXCLUDED_WORKSPACES =
+        CaseSensitiveStringListProperty.newBuilder("detect.cargo.excluded.workspaces")
+            .setInfo("Cargo Exclude Workspaces", DetectPropertyFromVersion.VERSION_11_2_0)
+            .setHelp(
+                "A comma-separated list of Cargo workspace names to exclude.",
+                "By default, Detect includes all workspaces, but will skip any Cargo workspaces specified via this property. Workspace names are defined in the workspace member's Cargo.toml file, not their directory paths."
+            )
+            .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
+            .setCategory(DetectCategory.Advanced)
+            .setExample("workspace-a,workspace-b")
+            .build();
+
+    public static final BooleanProperty DETECT_CARGO_DISABLE_DEFAULT_FEATURES =
+        BooleanProperty.newBuilder("detect.cargo.disable.default.features", false)
+            .setInfo("Disable Default Features", DetectPropertyFromVersion.VERSION_11_3_0)
+            .setHelp("All default features are disabled by the Cargo detector.")
+            .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
+            .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_CARGO_INCLUDED_FEATURES =
+        CaseSensitiveStringListProperty.newBuilder("detect.cargo.included.features")
+            .setInfo("Cargo Include Features", DetectPropertyFromVersion.VERSION_11_3_0)
+            .setHelp(
+                "A comma-separated list of Cargo features (specified by the `[feature]` manifest in Cargo.toml) to include, or special values ALL or NONE. By default, Detect only includes default features. Use ALL to enable all features, NONE to generate BOM with no features, or provide a comma-separated list of specific features (e.g., feature-a,feature-b) to include.",
+                "This property applies only to the Cargo CLI Detector and is ignored by the Cargo Lockfile Detector."
+            )
+            .setGroups(DetectGroup.CARGO, DetectGroup.SOURCE_SCAN)
+            .setCategory(DetectCategory.Advanced)
+            .setExample("feature-a,feature-b")
             .build();
 
     public static final NoneEnumListProperty<PipenvDependencyType> DETECT_PIPFILE_DEPENDENCY_TYPES_EXCLUDED =
@@ -647,8 +754,8 @@ public class DetectProperties {
         BooleanProperty.newBuilder("detect.detector.search.continue", false)
             .setInfo("Detector Search Continue", DetectPropertyFromVersion.VERSION_3_2_0)
             .setHelp(
-                "By default, nesting rules limit which detectors can run on a subdirectory based on which detectors applied on any parent directory. Setting this property to true disables nesting rules.",
-                "Refer to the 'Downloading and Running Black Duck Detect' > 'Detector search and accuracy' page for more information on nesting rules."
+                "By default, nesting rules limit which detectors can run on a subdirectory based on which detectors applied on any parent directory. Setting this property to true disables nesting rules.",	
+				"For further explanation on nesting rules, refer to <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/runningdetect/detectorcascade%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Detector search and accuracy.</xref>"
             )
             .setGroups(DetectGroup.PATHS, DetectGroup.DETECTOR, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
@@ -659,7 +766,7 @@ public class DetectProperties {
             .setInfo("Diagnostic Mode", DetectPropertyFromVersion.VERSION_6_5_0)
             .setHelp(
                 "When enabled, diagnostic mode collects files valuable for troubleshooting (logs, BDIO file, extraction files, reports, etc.), writes them to a zip file, and logs the path to the zip file.",
-                "See the following for more <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/integrations%2Ddetect/page/troubleshooting/diagnosticmode%2Ehtml\" scope=\"external\" format=\"html\" target=\"_blank\">Diagnostic Mode information.</xref>")
+                "See the following for more <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/troubleshooting/diagnosticmode%2Ehtml\" scope=\"external\" format=\"html\" target=\"_blank\">Diagnostic Mode information.</xref>")
             .setGroups(DetectGroup.DEBUG, DetectGroup.GLOBAL)
             .build(); 
 
@@ -667,8 +774,8 @@ public class DetectProperties {
         BooleanProperty.newBuilder("detect.ignore.connection.failures", false)
             .setInfo("Detect Ignore Connection Failures", DetectPropertyFromVersion.VERSION_5_3_0)
             .setHelp(
-                "If true, Detect will ignore any products (eg. Black Duck) that it cannot connect to.",
-                "If true, when Detect attempts to boot a product (eg. Black Duck) it will also check if it can communicate with it - if it cannot, it will not run the product."
+                "If true, Detect will ignore any products (eg. Black Duck SCA) that it cannot connect to.",
+                "If true, when Detect attempts to boot a product (eg. Black Duck SCA) it will also check if it can communicate with it - if it cannot, it will not run the product."
             )
             .setGroups(DetectGroup.GENERAL, DetectGroup.BLACKDUCK_SERVER)
             .setCategory(DetectCategory.Advanced)
@@ -764,7 +871,7 @@ public class DetectProperties {
                 "An image .tar file which is either a Docker image saved to a file using the 'docker save' command, or an Open Container Initiative (OCI) image .tar file. The file must be readable by all.",
                 "detect.docker.image, detect.docker.tar, and detect.docker.image.id are three alternative ways to specify an image (you should only set one of these properties). "
                     +
-                    "The .tar file must conform to either of the following image format specifications: 1. Docker Image Specification v1.2.0 (https://github.com/moby/moby/blob/master/image/spec/v1.2.md), which is the format produced by the \"docker save\" command, or 2. Open Container Initiative Image Format Specification (https://github.com/opencontainers/image-spec/blob/main/spec.md)."
+                    "The .tar file must conform to either of the following image format specifications: 1. Docker Image Specification v1.2.0 (https://github.com/moby/docker-image-spec/blob/main/v1.2.md), which is the format produced by the \"docker save\" command, or 2. Open Container Initiative Image Format Specification (https://github.com/opencontainers/image-spec/blob/main/spec.md)."
             )
             .setExample("./ubuntu21_04.tar")
             .setGroups(DetectGroup.DOCKER, DetectGroup.SOURCE_PATH)
@@ -774,11 +881,23 @@ public class DetectProperties {
         NoneEnumListProperty.newBuilder("detect.excluded.detector.types", NoneEnum.NONE, DetectorType.class)
             .setInfo("Detector Types Excluded", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp(
-                "By default, all detectors will be included. If you want to exclude specific detectors, specify the ones to exclude here. Exclusion rules always win.",
-                "If Detect runs one or more detector on your project that you would like to exclude, you can use this property to prevent Detect from running them."
+                "By default, all Detector types will be included. To exclude specific Detector types, specify them via this parameter. Exclusion rules take precedence.",
+                "To prevent Detect from executing one or more Detector types on your project, specify the Detector types using this property. For more granular control, please see --detect.excluded.detectors."
             )
             .setGroups(DetectGroup.DETECTOR, DetectGroup.GLOBAL)
             .setExample("NPM,LERNA")
+            .setCategory(DetectCategory.Advanced)
+            .build();
+
+    public static final StringListProperty DETECT_EXCLUDED_DETECTORS =
+        StringListProperty.newBuilder("detect.excluded.detectors", new ArrayList<>())
+            .setInfo("Detectors Excluded", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setHelp(
+                "By default, all Detectors will be included. If you want to exclude specific Detectors, specify the ones to exclude here. Exclusion rules take precedence.",
+                "This property is similar to --detect.excluded.detector.types; but, allows for more granular control. Values are case-insensitive and spaces can be omitted."
+            )
+            .setGroups(DetectGroup.DETECTOR, DetectGroup.GLOBAL)
+            .setExample("PIPNativeInspector,PIPRequirementsFileParse")
             .setCategory(DetectCategory.Advanced)
             .build();
 
@@ -794,7 +913,7 @@ public class DetectProperties {
         BooleanProperty.newBuilder("detect.force.success.on.skip", false)
             .setInfo("Force Success On Skip", DetectPropertyFromVersion.VERSION_7_12_1)
             .setHelp(
-                "If true, Detect will always exit with code 0 when a scan of any type is skipped. Typically this happens when the Black Duck minimum scan interval timer has not been met.")
+                "If true, Detect will always exit with code 0 when a scan of any type is skipped. Typically this happens when the Black Duck SCA minimum scan interval timer has not been met.")
             .setGroups(DetectGroup.GENERAL, DetectGroup.GLOBAL)
             .setCategory(DetectCategory.Advanced)
             .build();
@@ -820,12 +939,39 @@ public class DetectProperties {
             .setHelp(
                 createTypeFilterHelpText("Go Mod dependency types"),
                 String.format(
-                    "If %s is provided, Detect will use the results of 'go mod why' to filter out unused dependencies from Go modules declaring Go 1.16 or higher. If %s is provided, Detect will use the results of 'go mod why -vendor' to filter out all unused dependencies.",
+                    "If %s is provided, Detect will use the results of 'go mod why' to filter out unused dependencies from Go modules declaring Go 1.16 or higher. If %s is provided, Detect will use the results of 'go mod why -vendor' to filter out all unused dependencies. This property is only applicable to the Go Mod CLI Detector.",
                     GoModDependencyType.UNUSED.name(),
                     GoModDependencyType.VENDORED.name()
                 )
             )
             .setExample(GoModDependencyType.VENDORED.name())
+            .setGroups(DetectGroup.GO, DetectGroup.GLOBAL)
+            .build();
+
+    public static final NullableStringProperty DETECT_GO_FORGE =
+        NullableStringProperty.newBuilder("detect.go.forge")
+            .setInfo("Go Forge URL", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setHelp(
+                "The Go Forge URL to fetch the go.mod descriptor of direct dependencies. If not set, the default Go Forge (https://proxy.golang.org) will be used. This is only applicable to the Go Mod File detector."
+            )
+            .setGroups(DetectGroup.GO, DetectGroup.GLOBAL)
+            .build();
+
+    public static final IntegerProperty DETECT_GO_FORGE_CONNECTION_TIMEOUT =
+        IntegerProperty.newBuilder("detect.go.forge.connection.timeout", 30)
+            .setInfo("Go Forge Connection Timeout", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setHelp(
+                "The connection timeout in seconds to use when connecting to the Go Forge. If not set, the default connection timeout of 30 seconds will be used."
+            ).setExample("30")
+            .setGroups(DetectGroup.GO, DetectGroup.GLOBAL)
+            .build();
+
+    public static final IntegerProperty DETECT_GO_FORGE_READ_TIMEOUT =
+        IntegerProperty.newBuilder("detect.go.forge.read.timeout", 60)
+            .setInfo("Go Forge Read Timeout", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setHelp(
+                "The read timeout in seconds to use when reading from the Go Forge. If not set, the default read timeout of 60 seconds will be used."
+            ).setExample("60")
             .setGroups(DetectGroup.GO, DetectGroup.GLOBAL)
             .build();
 
@@ -845,7 +991,7 @@ public class DetectProperties {
             .setInfo("Gradle Exclude Configurations", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp(
                 "A comma-separated list of Gradle configurations to exclude.",
-                "As Detect examines the Gradle project for dependencies, Detect will skip any Gradle configurations specified via this property. This property accepts filename globbing-style wildcards. Refer to the <i>Configuring Black Duck Detect</i> > <i>Property wildcard support</i> page for more details."
+                "As Detect examines the Gradle project for dependencies, Detect will skip any Gradle configurations specified via this property. This property accepts filename globbing-style wildcards. For more information, refer to the <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/configuring/propertywildcards%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Property wildcard support page.</xref>"
             )
             .setGroups(DetectGroup.GRADLE, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
@@ -856,7 +1002,7 @@ public class DetectProperties {
             .setInfo("Gradle Exclude Projects", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp(
                 "A comma-separated list of Gradle subprojects to exclude.",
-                "As Detect examines the Gradle project for dependencies, Detect will skip any Gradle subprojects specified via this property. This property accepts filename globbing-style wildcards. Refer to the <i>Configuring Black Duck Detect</i> > <i>Property wildcard support</i> page for more details."
+                "As Detect examines the Gradle project for dependencies, Detect will skip any Gradle subprojects specified via this property. This property accepts filename globbing-style wildcards. For more information, refer to the <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/configuring/propertywildcards%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Property wildcard support page.</xref>"
             )
             .setGroups(DetectGroup.GRADLE, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
@@ -867,7 +1013,7 @@ public class DetectProperties {
             .setInfo("Gradle Exclude Subproject Paths", DetectPropertyFromVersion.VERSION_7_12_0)
             .setHelp(
                 "A comma-separated list of Gradle subproject paths to exclude.",
-                "As Detect examines the Gradle project for dependencies, Detect will skip any Gradle subproject whose path matches one of the values passed via this property. Run 'gradle projects' to see the paths to your subprojects. Subproject paths have the form ':subproject:subsubproject' and are unique. This property accepts filename globbing-style wildcards. Refer to the <i>Configuring Black Duck Detect</i> > <i>Property wildcard support</i> page for more details."
+                "As Detect examines the Gradle project for dependencies, Detect will skip any Gradle subproject whose path matches one of the values passed via this property. Run 'gradle projects' to see the paths to your subprojects. Subproject paths have the form ':subproject:subsubproject' and are unique. This property accepts filename globbing-style wildcards. For more information, refer to the <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/configuring/propertywildcards%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Property wildcard support page.</xref>"
             )
             .setGroups(DetectGroup.GRADLE, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
@@ -878,7 +1024,7 @@ public class DetectProperties {
             .setInfo("Gradle Include Configurations", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp(
                 "A comma-separated list of Gradle configurations to include.",
-                "As Detect examines the Gradle project for dependencies, if this property is set, Detect will include only those Gradle configurations specified via this property that are not excluded. Leaving this unset implies 'include all'. Exclusion rules always win. This property accepts filename globbing-style wildcards. Refer to the <i>Configuring Black Duck Detect</i> > <i>Property wildcard support</i> page for more details."
+                "As Detect examines the Gradle project for dependencies, if this property is set, Detect will include only those Gradle configurations specified via this property that are not excluded. Leaving this unset implies 'include all'. Exclusion rules always win. This property accepts filename globbing-style wildcards. For more information, refer to the <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/configuring/propertywildcards%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Property wildcard support page.</xref>"
             )
             .setGroups(DetectGroup.GRADLE, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
@@ -900,7 +1046,7 @@ public class DetectProperties {
             .setInfo("Gradle Include Projects", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp(
                 "A comma-separated list of Gradle subprojects to include.",
-                "As Detect examines the Gradle project for dependencies, if this property is set, Detect will include only those subprojects specified via this property that are not excluded. Leaving this unset implies 'include all'. Exclusion rules always win. This property accepts filename globbing-style wildcards. Refer to the <i>Configuring Black Duck Detect</i> > <i>Property wildcard support</i> page for more details."
+                "As Detect examines the Gradle project for dependencies, if this property is set, Detect will include only those subprojects specified via this property that are not excluded. Leaving this unset implies 'include all'. Exclusion rules always win. This property accepts filename globbing-style wildcards. For more information, refer to the <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/configuring/propertywildcards%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Property wildcard support page.</xref>"
             )
             .setGroups(DetectGroup.GRADLE, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
@@ -911,7 +1057,7 @@ public class DetectProperties {
             .setInfo("Gradle Include Project Paths", DetectPropertyFromVersion.VERSION_7_12_0)
             .setHelp(
                 "A comma-separated list of Gradle subproject paths to include.",
-                "As Detect examines the Gradle project for dependencies, if this property is set, Detect will include only those subprojects whose path matches this property. Gradle project paths usually take the form ':parent:child' and are unique. Leaving this unset implies 'include all'. Exclusion rules always win. This property accepts filename globbing-style wildcards. Refer to the <i>Configuring Black Duck Detect</i> > <i>Property wildcard support</i> page for more details."
+                "As Detect examines the Gradle project for dependencies, if this property is set, Detect will include only those subprojects whose path matches this property. Gradle project paths usually take the form ':parent:child' and are unique. Leaving this unset implies 'include all'. Exclusion rules always win. This property accepts filename globbing-style wildcards. For more information, refer to the <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/configuring/propertywildcards%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Property wildcard support page.</xref>"
             )
             .setGroups(DetectGroup.GRADLE, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
@@ -947,7 +1093,7 @@ public class DetectProperties {
             .setInfo("Detect Excluded Directories", DetectPropertyFromVersion.VERSION_7_0_0)
             .setHelp(
                 "A comma-separated list of names, name patterns, relative paths, or path patterns of directories that Detect should exclude. Caution should be exercised when including this parameter on Windows, as the command length generated may exceed OS limitations.",
-                "Subdirectories whose name or path is resolved from the patterns in this list will not be searched when determining which detectors to run, will not be searched to find files for binary scanning when property detect.binary.scan.file.name.patterns is set, and will be excluded from signature scan using the Scan CLI '--exclude' flag. Refer to the <i>Downloading and Running Black Duck Detect</i> > <i>Including and Excluding Tools, Detectors, Directories, etc.</i> page for more details."
+                "Subdirectories whose name or path is resolved from the patterns in this list will not be searched when determining which detectors to run, will not be searched to find files for binary scanning when property detect.binary.scan.file.name.patterns is set, and will be excluded from signature scan using the Scan CLI '--exclude' flag. For further information, refer to the <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/runningdetect/includingexcluding/intro%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Including and Excluding Tools, Detectors, Directories page.</xref>"
             )
             .setGroups(DetectGroup.PATHS, DetectGroup.DETECTOR, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
@@ -959,8 +1105,8 @@ public class DetectProperties {
         BooleanProperty.newBuilder("detect.excluded.directories.defaults.disabled", false)
             .setInfo("Detect Excluded Directories Defaults Disabled", DetectPropertyFromVersion.VERSION_7_0_0)
             .setHelp(
-                "If false, Detect will exclude the default directory names. See the detailed help for more information. Caution should be exercised when including this parameter on Windows, as the commmand length generated may exceed OS limitations.",
-                "If false, the following directories will be excluded by Detect when searching for detectors: __MACOX, bin, build, .git, .gradle, .yarn, node_modules, out, packages, target, .synopsys, .blackduck, and the following directories will be excluded from signature scan using the Scan CLI '--exclude' flag: .git, .gradle, gradle, node_modules, .synopsys, .blackduck."
+                "If false, Detect will exclude the default list of directory names when searching for applicable detectors.",
+                "Directories excluded by default from Detector Scans: __MACOSX, bin, build, .git, .gradle, .yarn, node_modules, out, packages, target, .synopsys, .blackduck, .bridge and the following directories will be excluded from Signature Scan using the Scan CLI '--exclude' flag: .git, .gradle, gradle, node_modules, .synopsys, .blackduck, .bridge."
             )
             .setGroups(DetectGroup.PATHS, DetectGroup.DETECTOR, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
@@ -978,7 +1124,7 @@ public class DetectProperties {
         BooleanProperty.newBuilder("detect.impact.analysis.enabled", false)
             .setInfo("Vulnerability Impact Analysis Enabled", DetectPropertyFromVersion.VERSION_6_5_0)
             .setHelp(
-                "If set to true, Detect will attempt to look for *.class files and generate a Vulnerability Impact Analysis Report for upload to Black Duck.")
+                "If set to true, Detect will attempt to look for *.class files and generate a Vulnerability Impact Analysis Report for upload to  Black Duck SCA.")
             .setGroups(DetectGroup.IMPACT_ANALYSIS, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
 
@@ -991,6 +1137,40 @@ public class DetectProperties {
             )
             .setGroups(DetectGroup.IMPACT_ANALYSIS, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
+
+    public static final BooleanProperty DETECT_QUACK_PATCH_ENABLED =
+            BooleanProperty.newBuilder("detect.quack.patch.enabled", false)
+                    .setInfo("Quack Patch Enabled", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "If set to true, Detect will invoke Quack Patch -- a tool that uses LLMs to generate code patches for vulnerable transitive components.",
+                            "Only supported for Rapid and Stateless Scan modes. detect.llm.api.key, detect.llm.api.endpoint, and detect.llm.name must also be set. See <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/runningdetect/quack%2Dpatch%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Quack Patch</xref> for further details.")
+                    .setGroups(DetectGroup.QUACKPATCH)
+                    .build();
+
+    public static final StringProperty DETECT_LLM_API_KEY =
+            StringProperty.newBuilder("detect.llm.api.key", "")
+                    .setInfo("LLM Gateway API key", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "Provides the API key used to authenticate with the configured LLM Gateway.")
+                    .setGroups(DetectGroup.QUACKPATCH)
+                    .build();
+
+    public static final StringProperty DETECT_LLM_API_ENDPOINT =
+            StringProperty.newBuilder("detect.llm.api.endpoint", "")
+                    .setInfo("LLM API URL", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "Specifies the base URL of the LLM Gateway that the Quack Patch tool will send requests to.")
+                    .setGroups(DetectGroup.QUACKPATCH)
+                    .build();
+
+    public static final StringProperty DETECT_LLM_NAME =
+            StringProperty.newBuilder("detect.llm.name", "")
+                    .setInfo("LLM Model Name", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "Defines which LLM model Quack Patch should use when performing analysis.",
+                            "Quack Patch has been verified with the following model names: Claude Sonnet 4, GPT-4 and Gemini 2.5 Pro. You may use other OpenAI API standard compatible models supported by your LLM Gateway.")
+                    .setGroups(DetectGroup.QUACKPATCH)
+                    .build();
 
     public static final BooleanProperty DETECT_COMPONENT_LOCATION_ANALYSIS_ENABLED =
         BooleanProperty.newBuilder("detect.component.location.analysis.enabled", false)
@@ -1033,7 +1213,7 @@ public class DetectProperties {
             .setInfo("Lerna Packages Excluded", DetectPropertyFromVersion.VERSION_7_0_0)
             .setHelp(
                 "A comma-separated list of Lerna packages to exclude.",
-                "As Detect parses the output of lerna ls --all --json, Detect will exclude any Lerna packages specified via this property. This property accepts filename globbing-style wildcards. Refer to the <i>Configuring Black Duck Detect</i> > <i>Property wildcard support</i> page for more details."
+                "As Detect parses the output of lerna ls --all --json, Detect will exclude any Lerna packages specified via this property. This property accepts filename globbing-style wildcards. For more information, refer to the <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/configuring/propertywildcards%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Property wildcard support page.</xref>"
             )
             .setGroups(DetectGroup.LERNA, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
@@ -1044,7 +1224,7 @@ public class DetectProperties {
             .setInfo("Lerna Packages Included", DetectPropertyFromVersion.VERSION_7_0_0)
             .setHelp(
                 "A comma-separated list of Lerna packages to include.",
-                "As Detect parses the output of lerna ls --all --json2, if this property is set, Detect will include only those Lerna packages specified via this property that are not excluded. Leaving this unset implies 'include all'. Exclusion rules always win. This property accepts filename globbing-style wildcards. Refer to the <i>Configuring Black Duck Detect</i> > <i>Property wildcard support</i> page for more details."
+                "As Detect parses the output of lerna ls --all --json2, if this property is set, Detect will include only those Lerna packages specified via this property that are not excluded. Leaving this unset implies 'include all'. Exclusion rules always win. This property accepts filename globbing-style wildcards. For more information, refer to the <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/configuring/propertywildcards%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Property wildcard support page.</xref>"
             )
             .setGroups(DetectGroup.LERNA, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
@@ -1080,7 +1260,7 @@ public class DetectProperties {
             .setInfo("Maven Modules Excluded", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp(
                 "A comma-separated list of Maven modules (subprojects) to exclude.",
-                "As Detect parses the mvn dependency:tree output for dependencies, Detect will skip any Maven modules specified via this property. This property accepts filename globbing-style wildcards. Refer to the <i>Configuring Black Duck Detect</i> > <i>Property wildcard support</i> page for more details."
+                "As Detect parses the mvn dependency:tree output for dependencies, Detect will skip any Maven modules specified via this property. This property accepts filename globbing-style wildcards. For more information, refer to the <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/configuring/propertywildcards%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Property wildcard support page.</xref>"
             )
             .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
@@ -1091,7 +1271,7 @@ public class DetectProperties {
             .setInfo("Maven Modules Included", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp(
                 "A comma-separated list of Maven modules (subprojects) to include.",
-                "As Detect parses the mvn dependency:tree output for dependencies, if this property is set, Detect will include only those Maven modules specified via this property that are not excluded. Leaving this unset implies 'include all'. Exclusion rules always win. This property accepts filename globbing-style wildcards. Refer to the <i>Configuring Black Duck Detect</i> > <i>Property wildcard support</i> page for more details."
+                "As Detect parses the mvn dependency:tree output for dependencies, if this property is set, Detect will include only those Maven modules specified via this property that are not excluded. Leaving this unset implies 'include all'. Exclusion rules always win. This property accepts filename globbing-style wildcards. For more information, refer to the <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/configuring/propertywildcards%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Property wildcard support page.</xref>"
             )
             .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
@@ -1104,12 +1284,19 @@ public class DetectProperties {
             .setGroups(DetectGroup.MAVEN, DetectGroup.GLOBAL)
             .build();
 
+    public static final NullablePathProperty DETECT_ANT_PATH =
+        NullablePathProperty.newBuilder("detect.ant.path")
+            .setInfo("Ant Executable", DetectPropertyFromVersion.VERSION_11_4_0)
+            .setHelp("The path to the Ant executable.", "If set, Detect will use the given Ant executable instead of searching for one.")
+            .setGroups(DetectGroup.IVY, DetectGroup.GLOBAL)
+            .build();
+
     public static final CaseSensitiveStringListProperty DETECT_MAVEN_INCLUDED_SCOPES =
         CaseSensitiveStringListProperty.newBuilder("detect.maven.included.scopes")
             .setInfo("Dependency Scope Included", DetectPropertyFromVersion.VERSION_6_0_0)
             .setHelp(
                 "A comma separated list of Maven scopes. Output will be limited to dependencies within these scopes (overridden by exclude).",
-                "If set, Detect will include only dependencies of the given Maven scope. This property accepts filename globbing-style wildcards. This property accepts filename globbing-style wildcards. Refer to the <i>Configuring Black Duck Detect</i> > <i>Property wildcard support</i> page for more details."
+                "If set, Detect will include only dependencies of the given Maven scope. This property accepts filename globbing-style wildcards. This property accepts filename globbing-style wildcards. For more information, refer to the <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/configuring/propertywildcards%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Property wildcard support page.</xref>"
             )
             .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
             .build();
@@ -1119,7 +1306,7 @@ public class DetectProperties {
             .setInfo("Dependency Scope Excluded", DetectPropertyFromVersion.VERSION_6_0_0)
             .setHelp(
                 "A comma separated list of Maven scopes. Output will be limited to dependencies outside these scopes (overrides include).",
-                "If set, Detect will include only dependencies outside of the given Maven scope. This property accepts filename globbing-style wildcards. Refer to the <i>Configuring Black Duck Detect</i> > <i>Property wildcard support</i> page for more details."
+                "If set, Detect will include only dependencies outside of the given Maven scope. This property accepts filename globbing-style wildcards. For more information, refer to the <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/configuring/propertywildcards%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Property wildcard support page.</xref>"
             )
             .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
             .build();
@@ -1137,7 +1324,7 @@ public class DetectProperties {
     public static final BooleanProperty DETECT_NOTICES_REPORT =
         BooleanProperty.newBuilder("detect.notices.report", false)
             .setInfo("Generate Notices Report", DetectPropertyFromVersion.VERSION_3_0_0)
-            .setHelp("When set to true, a Black Duck notices report in text form will be created in your source directory.")
+            .setHelp("When set to true, a Black Duck SCA notices report in text form will be created in your source directory.")
             .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL)
             .build();
 
@@ -1171,6 +1358,17 @@ public class DetectProperties {
             .setHelp("The path to the Npm executable.")
             .setGroups(DetectGroup.NPM, DetectGroup.GLOBAL)
             .build();
+
+    public static final NullablePathProperty DETECT_NUGET_INSPECTOR_PATH =
+            NullablePathProperty.newBuilder("detect.nuget.inspector.path")
+                    .setInfo("NuGet Inspector Path", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "Use this property to point Detect to a local NuGet Inspector executable, instead of the default that Detect downloads from the binary repository."
+                    )
+                    .setExample("/path/to/unzipped/detect-nuget-inspector")
+                    .setGroups(DetectGroup.NUGET, DetectGroup.GLOBAL)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
 
     public static final NullablePathProperty DETECT_NUGET_CONFIG_PATH =
         NullablePathProperty.newBuilder("detect.nuget.config.path")
@@ -1220,7 +1418,7 @@ public class DetectProperties {
     public static final NoneEnumListProperty<NugetDependencyType> DETECT_NUGET_DEPENDENCY_TYPES_EXCLUDED =
         NoneEnumListProperty.newBuilder("detect.nuget.dependency.types.excluded", NoneEnum.NONE, NugetDependencyType.class)
             .setInfo("Nuget Dependency Types Excluded", DetectPropertyFromVersion.VERSION_9_4_0)
-            .setHelp(createTypeFilterHelpText("Nuget dependency types"), "This property supports exclusion of dependencies in projects that use PackageReference or packages.config. This property does not apply to scans that analyze project.json, project.lock.json or project.assets.json.")
+            .setHelp(createTypeFilterHelpText("Nuget dependency types"), "This property supports exclusion of dependencies in projects that use PackageReference, packages.config, project.lock.json or project.assets.json. This property does not apply to scans that analyze project.json. For more information, refer to <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/packagemgrs/nuget%2Ehtml#ariaid%2Dtitle4\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">excluding NuGet dependency types.</xref>")
             .setExample(String.format("%s", NugetDependencyType.DEV.name()))
             .setGroups(DetectGroup.NUGET, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
@@ -1342,7 +1540,7 @@ public class DetectProperties {
                 .setInfo("pnpm Exclude Directories", DetectPropertyFromVersion.VERSION_10_4_0)
                 .setHelp(
                     "A comma-separated list of pnpm directories to exclude.",
-                    "If set, Detect will only exclude those pnpm directories specified via this property when examining the pnpm project for dependencies. This property accepts filename globbing-style wildcards. Refer to the <i>Configuring Black Duck Detect</i> > <i>Property wildcard support</i> page for more details."
+                    "If set, Detect will only exclude those pnpm directories specified via this property when examining the pnpm project for dependencies. This property accepts filename globbing-style wildcards. For more information, refer to the <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/configuring/propertywildcards%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Property wildcard support page.</xref>"
                 )
                 .setGroups(DetectGroup.PNPM, DetectGroup.SOURCE_SCAN)
                 .setCategory(DetectCategory.Advanced)
@@ -1353,7 +1551,7 @@ public class DetectProperties {
                 .setInfo("pnpm Include Directories", DetectPropertyFromVersion.VERSION_10_4_0)
                 .setHelp(
                     "A comma-separated list of pnpm directories to include.",
-                    "If set, Detect will only include the pnpm directories specified via this property when examining the pnpm project for dependencies, unless the directory is set for exclusion. Exclusion rules take precedence over inclusion. Leaving this property unset implies 'include all'. This property accepts filename globbing-style wildcards. Refer to the <i>Configuring Black Duck Detect</i> > <i>Property wildcard support</i> page for more details."
+                    "If set, Detect will only include the pnpm directories specified via this property when examining the pnpm project for dependencies, unless the directory is set for exclusion. Exclusion rules take precedence over inclusion. Leaving this property unset implies 'include all'. This property accepts filename globbing-style wildcards. For more information, refer to the <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/configuring/propertywildcards%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Property wildcard support page.</xref>"
                 )
                 .setGroups(DetectGroup.PNPM, DetectGroup.SOURCE_SCAN)
                 .setCategory(DetectCategory.Advanced)
@@ -1393,6 +1591,14 @@ public class DetectProperties {
             )
             .setGroups(DetectGroup.PROJECT, DetectGroup.GLOBAL, DetectGroup.PROJECT_SETTING, DetectGroup.POLICY)
             .build();
+    
+    public static final AllNoneEnumListProperty<PolicyRuleSeverityType> DETECT_STATELESS_POLICY_CHECK_FAIL_ON_SEVERITIES =
+        AllNoneEnumListProperty.newBuilder("detect.stateless.policy.check.fail.on.severities", Arrays.asList(PolicyRuleSeverityType.BLOCKER, PolicyRuleSeverityType.CRITICAL), PolicyRuleSeverityType.class)
+            .setInfo("Fail on Stateless Policy Violation Severities", DetectPropertyFromVersion.VERSION_10_6_0)
+            .setHelp(
+                "A comma-separated list of policy violation severities that will fail Detect. If this is set to NONE, Detect will not fail due to policy violations. A value of ALL is equivalent to all of the other possible values except NONE. This property works for both stateless and rapid scans.")
+            .setGroups(DetectGroup.PROJECT, DetectGroup.GLOBAL, DetectGroup.PROJECT_SETTING, DetectGroup.POLICY)
+            .build();
 
     public static final NullableStringProperty DETECT_PROJECT_APPLICATION_ID =
         NullableStringProperty.newBuilder("detect.project.application.id")
@@ -1405,7 +1611,7 @@ public class DetectProperties {
     public static final NullableStringProperty DETECT_PROJECT_GROUP_NAME =
         NullableStringProperty.newBuilder("detect.project.group.name")
             .setInfo("Project Group Name", DetectPropertyFromVersion.VERSION_7_8_0)
-            .setHelp("Sets the 'Project Group' to assign the project to. Must match exactly to an existing project group on Black Duck.")
+            .setHelp("Sets the 'Project Group' to assign the project to. Must match exactly to an existing project group on Black Duck SCA.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
             .setCategory(DetectCategory.Advanced)
             .build();
@@ -1438,7 +1644,7 @@ public class DetectProperties {
         AllNoneEnumListProperty.newBuilder("detect.project.clone.categories", AllNoneEnum.ALL, ProjectCloneCategoriesType.class)
             .setInfo("Clone Project Categories", DetectPropertyFromVersion.VERSION_4_2_0)
             .setHelp(
-                "The value of this property is used to set the 'Cloning' settings on created Black Duck projects. If property detect.project.version.update is set to true, the value of this property is used to set the 'Cloning' settings on updated Black Duck projects.")
+                "The value of this property is used to set the 'Cloning' settings on created Black Duck SCA projects. If property detect.project.version.update is set to true, the value of this property is used to set the 'Cloning' settings on updated Black Duck SCA projects.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
             .setCategory(DetectCategory.Advanced)
             .build();
@@ -1500,7 +1706,7 @@ public class DetectProperties {
             .setInfo("Allow Project Level Adjustments", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp(
                 "If set, created projects will be created with the value of this property. For updates, see detect.project.version.update.",
-                "Corresponds to the 'Always maintain component adjustments to all versions of this project' checkbox under 'Component Adjustments' on the Black Duck Project settings page."
+                "Corresponds to the 'Always maintain component adjustments to all versions of this project' checkbox under 'Component Adjustments' on the Black Duck SCA Project settings page."
             )
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING, DetectGroup.GLOBAL)
             .setCategory(DetectCategory.Advanced)
@@ -1510,7 +1716,7 @@ public class DetectProperties {
         NullableStringProperty.newBuilder("detect.project.name")
             .setInfo("Project Name", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp(
-                "An override for the name to use for the Black Duck project. If not supplied, Detect will attempt to use the tools to figure out a reasonable project name. If that fails, the final part of the directory path where the inspection is taking place will be used.")
+                "An override for the name to use for the Black Duck SCA project. If not supplied, Detect will attempt to use the tools to figure out a reasonable project name. If that fails, the final part of the directory path where the inspection is taking place will be used.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING, DetectGroup.RAPID_SCAN)
             .build();
 
@@ -1518,7 +1724,7 @@ public class DetectProperties {
         NullableStringProperty.newBuilder("detect.parent.project.name")
             .setInfo("Parent Project Name", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp(
-                "When a parent project and version name are specified, the created detect project will be added as a component to the specified parent project version. The specified parent project and parent project version must exist on Black Duck.")
+                "When a parent project and version name are specified, the created detect project will be added as a component to the specified parent project version. The specified parent project and parent project version must exist on Black Duck SCA.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
             .setCategory(DetectCategory.Advanced)
             .build();
@@ -1527,7 +1733,7 @@ public class DetectProperties {
         NullableStringProperty.newBuilder("detect.parent.project.version.name")
             .setInfo("Parent Project Version Name", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp(
-                "When a parent project and version name are specified, the created detect project will be added as a component to the specified parent project version. The specified parent project and parent project version must exist on Black Duck.")
+                "When a parent project and version name are specified, the created detect project will be added as a component to the specified parent project version. The specified parent project and parent project version must exist on Black Duck SCA.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
             .setCategory(DetectCategory.Advanced)
             .build();
@@ -1535,7 +1741,7 @@ public class DetectProperties {
     public static final NullableIntegerProperty DETECT_PROJECT_TIER =
         NullableIntegerProperty.newBuilder("detect.project.tier")
             .setInfo("Project Tier", DetectPropertyFromVersion.VERSION_3_1_0)
-            .setHelp("If a Black Duck project tier is specified, your project will be created with this tier. For updates, see detect.project.version.update.")
+            .setHelp("If a Black Duck SCA project tier is specified, your project will be created with this tier. For updates, see detect.project.version.update.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
             .build();
 
@@ -1562,7 +1768,7 @@ public class DetectProperties {
         NullableStringProperty.newBuilder("detect.project.version.name")
             .setInfo("Version Name", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp(
-                "An override for the version to use for the Black Duck project. If not supplied, Detect will attempt to use the tools to figure out a reasonable version name. If that fails, the current date will be used.")
+                "An override for the version to use for the Black Duck SCA project. If not supplied, Detect will attempt to use the tools to figure out a reasonable version name. If that fails, the current date will be used.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING, DetectGroup.RAPID_SCAN)
             .build();
 
@@ -1585,13 +1791,14 @@ public class DetectProperties {
             .setInfo("Version Phase", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp("If project version phase is specified, your project version will be created with this phase. For updates, see detect.project.version.update.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
-            .build();
+            .build()
+            .deprecateValue(ProjectVersionPhaseType.ARCHIVED, "With the Black Duck SCA 2026.1.0 release, the ARCHIVED option was deprecated and is no longer supported. To ensure compatibility with both current and upcoming releases, please update your configuration to use a supported project version phase.");
 
     public static final BooleanProperty DETECT_PROJECT_VERSION_UPDATE =
         BooleanProperty.newBuilder("detect.project.version.update", false)
             .setInfo("Update Project Version", DetectPropertyFromVersion.VERSION_4_0_0)
             .setHelp(
-                "If set to true, Detect will update the Black Duck project and project version according to configured project and project version properties. (By default, these properties are only set on created projects / project versions.)",
+                "If set to true, Detect will update the Black Duck SCA project and project version according to configured project and project version properties. (By default, these properties are only set on created projects / project versions.)",
                 "When set to true, the following properties will be updated on the Project: description (detect.project.description), tier (detect.project.tier), and project level adjustments (detect.project.level.adjustments). "
                     + "The following properties will also be updated on the project version: notes (detect.project.version.notes), phase (detect.project.version.phase), distribution (detect.project.version.distribution), nickname (detect.project.version.nickname), license (detect.project.version.license)."
             )
@@ -1603,6 +1810,25 @@ public class DetectProperties {
             .setInfo("Project Version License", DetectPropertyFromVersion.VERSION_7_11_0)
             .setHelp("If project version license is specified, your project version will be created with this license. For updates, see detect.project.version.update.")
             .setExample("Apache License 2.0")
+            .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
+            .build();
+
+    public static final NullablePathProperty DETECT_PROJECT_SETTINGS =
+        NullablePathProperty.newBuilder("detect.project.settings")
+            .setInfo("Project Settings JSON File", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setHelp(
+                "Path to a JSON file containing project settings. The file should contain a JSON object with detect.project properties specified as key-value pairs.",
+                "detect.project properties provided on the command line take precedence over values specified in the JSON file."
+            )
+            .setExample("/path/to/project-settings.json")
+            .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
+            .setCategory(DetectCategory.Advanced)
+            .build();
+
+    public static final BooleanProperty DETECT_PROJECT_DEEP_LICENSE =
+        BooleanProperty.newBuilder("detect.project.deep.license", false)
+            .setInfo("Deep License Analysis", DetectPropertyFromVersion.VERSION_11_0_0)
+            .setHelp("If set to true, enables Deep License Analysis for the project, including detailed license data and snippet analysis.")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
             .build();
 
@@ -1627,16 +1853,30 @@ public class DetectProperties {
     public static final BooleanProperty DETECT_RISK_REPORT_PDF =
         BooleanProperty.newBuilder("detect.risk.report.pdf", false)
             .setInfo("Generate Risk Report (PDF)", DetectPropertyFromVersion.VERSION_3_0_0)
-            .setHelp("When set to true, a Black Duck risk report in PDF form will be created.")
+            .setHelp("When set to true, a Black Duck SCA risk report in PDF form will be created.")
             .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL, DetectGroup.REPORT_SETTING)
             .build();
 
+    public static final BooleanProperty DETECT_RISK_REPORT_JSON =
+            BooleanProperty.newBuilder("detect.risk.report.json", false)
+                    .setInfo("Generate Risk Report (JSON)", DetectPropertyFromVersion.VERSION_10_6_0)
+                    .setHelp("When set to true, a Black Duck SCA risk report in JSON form will be created.")
+                    .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL, DetectGroup.REPORT_SETTING)
+                    .build();
+
     public static final NullablePathProperty DETECT_RISK_REPORT_PDF_PATH =
         NullablePathProperty.newBuilder("detect.risk.report.pdf.path")
-            .setInfo("Risk Report Output Path", DetectPropertyFromVersion.VERSION_3_0_0)
+            .setInfo("Risk Report (PDF) Output Path", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp("The output directory for risk report in PDF. Default is the source directory.")
             .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL)
             .build();
+
+    public static final NullablePathProperty DETECT_RISK_REPORT_JSON_PATH =
+            NullablePathProperty.newBuilder("detect.risk.report.json.path")
+                    .setInfo("Risk Report (JSON) Output Path", DetectPropertyFromVersion.VERSION_10_6_0)
+                    .setHelp("The output directory for risk report in JSON. Default is the source directory.")
+                    .setGroups(DetectGroup.REPORT, DetectGroup.GLOBAL)
+                    .build();
 
     public static final NoneEnumListProperty<GemspecDependencyType> DETECT_RUBY_DEPENDENCY_TYPES_EXCLUDED =
         NoneEnumListProperty.newBuilder("detect.ruby.dependency.types.excluded", NoneEnum.NONE, GemspecDependencyType.class)
@@ -1645,6 +1885,28 @@ public class DetectProperties {
             .setExample(String.format("%s,%s", GemspecDependencyType.DEV.name(), GemspecDependencyType.RUNTIME))
             .setGroups(DetectGroup.RUBY, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_RUSH_PNPM_EXCLUDED_SUBSPACES =
+            CaseSensitiveStringListProperty.newBuilder("detect.rush.pnpm.excluded.subspaces")
+                    .setInfo("Rush Projects Excluded", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "A comma-separated list of rush pnpm subspaces to exclude.",
+                            "If set, Detect will only exclude those subspaces specified via this property when examining the rush monorepo for dependencies."
+                    )
+                    .setGroups(DetectGroup.RUSH, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_RUSH_PNPM_INCLUDED_SUBSPACES =
+            CaseSensitiveStringListProperty.newBuilder("detect.rush.pnpm.included.subspaces")
+                    .setInfo("Rush Projects Included", DetectPropertyFromVersion.VERSION_11_2_0)
+                    .setHelp(
+                            "A comma-separated list of rush subspaces to include.",
+                            "If set, Detect will only include those subspaces specified via this property when examining the rush monorepo for dependencies, unless the project is set for exclusion. Exclusion rules take precedence over inclusion. Leaving this property unset implies 'include all'."
+                    )
+                    .setGroups(DetectGroup.RUSH, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
 
     public static final NullablePathProperty DETECT_SBT_PATH =
         NullablePathProperty.newBuilder("detect.sbt.path")
@@ -1695,7 +1957,7 @@ public class DetectProperties {
         NullablePathProperty.newBuilder("detect.iac.scanner.local.path")
             .setInfo("IaC Scanner Local Path", DetectPropertyFromVersion.VERSION_7_14_0)
             .setHelp("Use this property to specify the path to a local IaC Scanner.",
-					"If you are running in an Air Gap environment you may need to download the IaC Scanner(Sigma) binary from Artifactory. See the Downloading and Running Black Duck Detect page for download location."
+					"If you are running in an Air Gap environment you may need to download the IaC Scanner(Sigma) binary from Artifactory. See the <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/downloadingandinstalling/downloadlocations%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Download Locations page.</xref>"
 			)
             .setGroups(DetectGroup.IAC_SCAN, DetectGroup.GLOBAL)
             .build();
@@ -1714,7 +1976,7 @@ public class DetectProperties {
 
     public static final EnumProperty<DetectTargetType> DETECT_TARGET_TYPE =
         EnumProperty.newBuilder("detect.target.type", DetectTargetType.SOURCE, DetectTargetType.class)
-            .setInfo("Detect Target", DetectPropertyFromVersion.VERSION_7_0_0)
+            .setInfo("Detect Scan Mode", DetectPropertyFromVersion.VERSION_7_0_0)
             .setHelp(
                 "Informs detect of what is being scanned which allows improved user experience when scanning different types of targets.",
                 "Changes the behaviour of detect to better suite what is being scanned. For example, when IMAGE is selected and the DOCKER tool applies and has not been excluded, detect will not pick a source directory, will automatically disable the DETECTOR tool and run BINARY/SIGNATURE SCAN on the provided image."
@@ -1725,8 +1987,8 @@ public class DetectProperties {
 
     public static final BooleanProperty DETECT_TEST_CONNECTION =
         BooleanProperty.newBuilder("detect.test.connection", false)
-            .setInfo("Test Connection to Black Duck", DetectPropertyFromVersion.VERSION_3_0_0)
-            .setHelp("Test the connection to Black Duck with the current configuration.")
+            .setInfo("Test Connection to Black Duck SCA", DetectPropertyFromVersion.VERSION_3_0_0)
+            .setHelp("Test the connection to Black Duck SCA with the current configuration.")
             .setGroups(DetectGroup.BLACKDUCK_SERVER, DetectGroup.GLOBAL)
             .build();
 
@@ -1762,6 +2024,45 @@ public class DetectProperties {
             .setGroups(DetectGroup.PATHS, DetectGroup.GLOBAL)
             .build();
 
+    public static final NullablePathProperty DETECT_UV_PATH =
+            NullablePathProperty.newBuilder("detect.uv.path")
+                    .setInfo("uv Executable", DetectPropertyFromVersion.VERSION_10_5_0)
+                    .setHelp("The path to the uv executable.")
+                    .setGroups(DetectGroup.UV, DetectGroup.GLOBAL)
+                    .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_UV_DEPENDENCY_GROUPS_EXCLUDED =
+            CaseSensitiveStringListProperty.newBuilder("detect.uv.dependency.groups.excluded")
+                    .setInfo("uv dependency groups", DetectPropertyFromVersion.VERSION_10_5_0)
+                    .setHelp(
+                            createTypeFilterHelpText("UV dependency groups"),
+                            "When specified, a pyproject.toml file and uv executable are required, or pyproject.toml file and either uv.lock or requirements.txt file are required. Components and related dependencies that belong to excluded groups will not be in the BOM unless the component also belongs to a non-excluded group. For example, to recursively exclude all components under the `[dependency-groups]` section of `pyproject.toml`: `detect.uv.dependency.groups.excluded='dev,abc'`"
+                    )
+                    .setGroups(DetectGroup.UV, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
+                    .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_UV_EXCLUDED_WORKSPACE_MEMBERS =
+            CaseSensitiveStringListProperty.newBuilder("detect.uv.excluded.workspace.members")
+                    .setInfo("uv Exclude Workspace Members", DetectPropertyFromVersion.VERSION_10_5_0)
+                    .setHelp(
+                            "A comma-separated list of uv workspace members to exclude.",
+                            "If set, Detect will only exclude those project members specified via this property when examining the uv project for dependencies."
+                    )
+                    .setGroups(DetectGroup.UV, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_UV_INCLUDED_WORKSPACE_MEMBERS =
+            CaseSensitiveStringListProperty.newBuilder("detect.uv.included.workspace.members")
+                    .setInfo("uv Include Workspace Members", DetectPropertyFromVersion.VERSION_10_5_0)
+                    .setHelp(
+                            "A comma-separated list of uv workspace members to include.",
+                            "If set, Detect will only include those uv workspace members specified via this property when examining the uv project for dependencies, unless the member is set for exclusion. Exclusion rules take precedence over inclusion. Leaving this property unset implies 'include all'."
+                    )
+                    .setGroups(DetectGroup.UV, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
+
     public static final BooleanProperty DETECT_YARN_IGNORE_ALL_WORKSPACES_MODE =
         BooleanProperty.newBuilder("detect.yarn.ignore.all.workspaces", false)
             .setInfo("Ignore All Workspaces", DetectPropertyFromVersion.VERSION_9_4_0)
@@ -1782,7 +2083,7 @@ public class DetectProperties {
             .setInfo("Yarn Exclude Workspaces", DetectPropertyFromVersion.VERSION_7_0_0)
             .setHelp(
                 "A comma-separated list of Yarn workspaces (specified by the workspace directory's relative path) to exclude.",
-                "By default, Detect includes all workspaces, but will skip any Yarn workspaces specified via this property. This property accepts filename globbing-style wildcards. Refer to the <i>Configuring Black Duck Detect</i> > <i>Property wildcard support</i> page for more details."
+                "By default, Detect includes all workspaces, but will skip any Yarn workspaces specified via this property. This property accepts filename globbing-style wildcards. For more information, refer to the <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/configuring/propertywildcards%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Property wildcard support page.</xref>"
             )
             .setGroups(DetectGroup.YARN, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
@@ -1794,7 +2095,7 @@ public class DetectProperties {
             .setInfo("Yarn Include Workspaces", DetectPropertyFromVersion.VERSION_7_0_0)
             .setHelp(
                 "A comma-separated list of Yarn workspaces (specified by the workspace directory's relative path) to include.",
-                "By default, Detect includes all workspaces. If workspaces are excluded or included, Detect will include any workspace included by this property that is not excluded. Exclusion rules always win. This property accepts filename globbing-style wildcards. Refer to the <i>Configuring Black Duck Detect</i> > <i>Property wildcard support</i> page for more details."
+                "By default, Detect includes all workspaces. If workspaces are excluded or included, Detect will include any workspace included by this property that is not excluded. Exclusion rules always win. This property accepts filename globbing-style wildcards. For more information, refer to the <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/configuring/propertywildcards%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Property wildcard support page.</xref>"
             )
             .setGroups(DetectGroup.YARN, DetectGroup.SOURCE_SCAN)
             .setCategory(DetectCategory.Advanced)
@@ -1810,9 +2111,9 @@ public class DetectProperties {
                         "Detect logging uses Spring Boot logging, which uses Logback (https://logback.qos.ch). " +
                         "The format of this property name is <i>logging.level.{package}[.{class}]</i>. " +
                         "The property name shown above specifies package <i>com.blackduck.integration</i> because that is the name of Detect's top-level package. " +
-                        "Changing the logging level for that package changes the logging level for all Detect code, as well as Black Duck integration libraries that Detect uses. " +
-                        "Non-Black Duck libraries that Detect uses are not affected. " +
-                        "However, you can use this property to set the logging level for some of the non-Black Duck libraries that Detect uses by using the appropriate package name. " +
+                        "Changing the logging level for that package changes the logging level for all Detect code, as well as Black Duck SCA integration libraries that Detect uses. " +
+                        "Non-Black Duck SCA libraries that Detect uses are not affected. " +
+                        "However, you can use this property to set the logging level for some of the non-Black Duck SCA libraries that Detect uses by using the appropriate package name. " +
                         "For example, <i>logging.level.org.apache.http=TRACE</i> sets the logging level to TRACE for the Apache HTTP client library. " +
                         "<p/>" +
                         "For log message format, a default value of <i>%d{yyyy-MM-dd HH:mm:ss z} ${LOG_LEVEL_PATTERN:%-6p}[%thread] %clr(---){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}</i> is used. "
@@ -1827,7 +2128,7 @@ public class DetectProperties {
     public static final BooleanProperty DETECT_WAIT_FOR_RESULTS =
         BooleanProperty.newBuilder("detect.wait.for.results", false)
             .setInfo("Wait For Results", DetectPropertyFromVersion.VERSION_5_5_0)
-            .setHelp("If set to true, Detect will wait for Black Duck products until results are available or the detect.timeout is exceeded.")
+            .setHelp("If set to true, Detect will wait for Black Duck SCA products until results are available or the detect.timeout is exceeded.")
             .setGroups(DetectGroup.GENERAL, DetectGroup.GLOBAL)
             .build();
 
@@ -1843,8 +2144,8 @@ public class DetectProperties {
         EnumProperty.newBuilder("detect.blackduck.scan.mode", BlackduckScanMode.INTELLIGENT, BlackduckScanMode.class)
             .setInfo("Detect Scan Mode", DetectPropertyFromVersion.VERSION_6_9_0)
             .setHelp(
-                "Set the Black Duck scanning mode of Detect.",
-                "Set the scanning mode to control how Detect will send data to Black Duck. RAPID will not persist the results and disables select Detect functionality for faster results. INTELLIGENT, referred to as 'Full' scan mode in Black Duck, persists the results and permits all features of Detect."
+                "Set the Black Duck SCA scanning mode of Detect.",
+                "Set the scanning mode to control how Detect will send data to Black Duck SCA. RAPID will not persist the results and disables select Detect functionality for faster results. INTELLIGENT, referred to as 'Full' scan mode in Black Duck SCA, persists the results and permits all features of Detect."
             )
             .setGroups(DetectGroup.BLACKDUCK_SERVER, DetectGroup.BLACKDUCK, DetectGroup.RAPID_SCAN)
             .setCategory(DetectCategory.Advanced)
@@ -1854,8 +2155,8 @@ public class DetectProperties {
         BooleanProperty.newBuilder("detect.blackduck.correlated.scanning.enabled", false)
             .setInfo("Correlated Scanning Enabled", DetectPropertyFromVersion.VERSION_10_0_0)
             .setHelp(
-                "When enabled, Detect activates the Black Duck correlated scanning capability to enhance match accuracy.",
-                "The correlated scanning capability must be present and enabled in your Black Duck server before you enable the correlated scanning feature in Detect."
+                "When enabled, Detect activates the Black Duck SCA correlated scanning capability to enhance match accuracy.",
+                "The correlated scanning capability must be present and enabled in your Black Duck SCA server before you enable the correlated scanning feature in Detect."
             )
             .setGroups(DetectGroup.GENERAL, DetectGroup.GLOBAL)
             .build();
@@ -1864,8 +2165,8 @@ public class DetectProperties {
         EnumProperty.newBuilder("detect.blackduck.rapid.compare.mode", RapidCompareMode.ALL, RapidCompareMode.class)
             .setInfo("Rapid Compare Mode", DetectPropertyFromVersion.VERSION_7_12_0)
             .setHelp(
-                "Controls how rapid scan evaluates policy rules",
-                "Set the compare mode of rapid scan. ALL evaluates all RAPID or FULL policies. BOM_COMPARE_STRICT will only show policy violations not present in an existing project version BOM. BOM_COMPARE depends on the type of policy rule modes and behaves like ALL if the policy rule is only RAPID but like BOM_COMPARE_STRICT when the policy rule is RAPID and FULL. See the Black Duck documentation for complete details."
+                "Controls how Rapid Scan evaluates policy rules.",
+                "Sets the compare mode of Rapid Scan. A setting of ALL evaluates all RAPID or FULL policies. BOM_COMPARE_STRICT shows policy violations not present in a project version BOM that exists in Black Duck SCA. BOM_COMPARE depends on the type of policy rule modes and behaves like ALL if the policy rule is only RAPID and like BOM_COMPARE_STRICT when the policy rule is RAPID and FULL. For further explanation, refer to <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/runningdetect/rapidscan%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Rapid Scan.</xref>"
             )
             .setGroups(DetectGroup.RAPID_SCAN, DetectGroup.BLACKDUCK_SERVER, DetectGroup.BLACKDUCK, DetectGroup.GLOBAL)
             .setCategory(DetectCategory.Advanced)
@@ -1902,29 +2203,6 @@ public class DetectProperties {
 
     //#region Deprecated Properties
 
-    public static final BooleanProperty DETECT_PROJECT_CODELOCATION_UNMAP =
-        BooleanProperty.newBuilder("detect.project.codelocation.unmap", false)
-            .setInfo("Unmap All Other Scans for Project", DetectPropertyFromVersion.VERSION_4_0_0)
-            .setHelp("If set to true, unmaps all other scans mapped to the project version produced by the current run of Detect.")
-            .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
-            .setCategory(DetectCategory.Advanced)
-            .setDeprecated(
-                "This property has been deprecated.",
-                DetectMajorVersion.ELEVEN
-            )
-            .build();
-
-    @Deprecated
-    public static final NullableStringProperty DETECT_THREAT_INTEL_SCAN_FILE =
-            NullableStringProperty.newBuilder("detect.threatintel.scan.file.path")
-                    .setInfo("Threat Intel Scan Target", DetectPropertyFromVersion.VERSION_9_6_0)
-                    .setHelp(
-                            "If specified, this file and this file only will be uploaded for Threat Intel analysis. The THREAT_INTEL tool does not provide project and version name defaults to Detect, so you need to set project and version names via properties when only the THREAT_INTEL tool is invoked.")
-                    .setGroups(DetectGroup.THREAT_INTEL, DetectGroup.SOURCE_PATH)
-                    .setDeprecated("This property has been deprecated.",
-                            DetectMajorVersion.ELEVEN)
-                    .build();
-
     // Can't take in the DetectProperty<?> due to an illegal forward reference :(
     private static String createTypeFilterHelpText(String exclusionTypePlural) {
         return String.format("Set this value to indicate which %s Detect should exclude from the BOM.", exclusionTypePlural);
@@ -1945,9 +2223,8 @@ public class DetectProperties {
                 }
             }
         }
-        DETECT_TOOLS.addDeprecatedValueInfo(DetectTool.THREAT_INTEL.name(), "This tool value has been deprecated.");
-        DETECT_TOOLS_EXCLUDED.addDeprecatedValueInfo(DetectTool.THREAT_INTEL.name(), "This tool value has been deprecated.");
-        DETECT_PROJECT_TOOL.addDeprecatedValueInfo(DetectTool.THREAT_INTEL.name(), "This tool value has been deprecated.");
+        
+        DETECT_PROJECT_VERSION_PHASE.addDeprecatedValueInfo(ProjectVersionPhaseType.ARCHIVED.name(), "This phase has been deprecated.");
 
         return new Properties(properties);
     }

@@ -15,8 +15,8 @@ import com.blackduck.integration.detectable.detectables.conan.cli.ConanResolver;
 
 public class DetectExecutableResolver implements
     JavaResolver, GradleResolver, BashResolver, ConanResolver, CondaResolver, CpanmResolver, CpanResolver, DartResolver, PearResolver, Rebar3Resolver, PythonResolver, PipResolver,
-    PipenvResolver, MavenResolver, NpmResolver, BazelResolver,
-    DockerResolver, GitResolver, SwiftResolver, GoResolver, LernaResolver, SbtResolver, FlutterResolver, OpamResolver, CargoResolver {
+    PipenvResolver, MavenResolver, NpmResolver, BazelResolver, AntResolver,
+    DockerResolver, GitResolver, SwiftResolver, GoResolver, LernaResolver, SbtResolver, FlutterResolver, OpamResolver, CargoResolver, UVResolver, CondaTreeResolver {
 
     private final DirectoryExecutableFinder directoryExecutableFinder;
     private final SystemPathExecutableFinder systemPathExecutableFinder;
@@ -108,6 +108,11 @@ public class DetectExecutableResolver implements
     }
 
     @Override
+    public ExecutableTarget resolveCondaTree() throws DetectableException {
+        return ExecutableTarget.forFile(resolveCachedSystemExecutable("conda-tree", detectExecutableOptions.getCondaTreeUserPath()));
+    }
+
+    @Override
     public ExecutableTarget resolveCpan() throws DetectableException {
         return ExecutableTarget.forFile(resolveCachedSystemExecutable("cpan", detectExecutableOptions.getCpanUserPath()));
     }
@@ -125,6 +130,36 @@ public class DetectExecutableResolver implements
     @Override
     public ExecutableTarget resolveMaven(DetectableEnvironment environment) throws DetectableException {
         return ExecutableTarget.forFile(resolveLocalNonCachedExecutable("mvnw", "mvn", environment, detectExecutableOptions.getMavenUserPath()));
+    }
+
+    @Override
+    public ExecutableTarget resolveAnt() throws DetectableException {
+        Path override = detectExecutableOptions.getAntUserPath();
+        if (override != null) {
+            // If user specified a path, use that exact file
+            return ExecutableTarget.forFile(resolveOverride(override));
+        }
+
+        // On Windows, the DirectoryExecutableFinder searches for extensions in order: .cmd, .bat, .exe
+        // So searching for "ant" finds "ant.cmd" first. We want "ant.bat" instead.
+        // Solution: Search for the full filename "ant.bat" first (bypasses extension search)
+        File antExecutable = systemPathExecutableFinder.findExecutable("ant.bat");
+
+        if (antExecutable == null) {
+            // If ant.bat not found, try ant.exe
+            antExecutable = systemPathExecutableFinder.findExecutable("ant.exe");
+        }
+
+        if (antExecutable == null) {
+            // Last resort: try generic "ant" (will find ant.cmd on Windows)
+            antExecutable = systemPathExecutableFinder.findExecutable("ant");
+        }
+
+        if (antExecutable == null) {
+            throw new DetectableException("Could not find ant executable (ant.bat, ant.exe, or ant) in system PATH. Please ensure ANT_HOME/bin is in your PATH.");
+        }
+
+        return ExecutableTarget.forFile(antExecutable);
     }
 
     @Override
@@ -217,6 +252,12 @@ public class DetectExecutableResolver implements
     @Override
     public ExecutableTarget resolveCargo(DetectableEnvironment environment) throws DetectableException {
         return ExecutableTarget.forFile(resolveCachedSystemExecutable("cargo", detectExecutableOptions.getCargoUserPath()));
+    }
+
+    @Override
+    @Nullable
+    public ExecutableTarget resolveUV() throws DetectableException {
+        return ExecutableTarget.forFile(resolveCachedSystemExecutable("uv", detectExecutableOptions.getUVUserPath()));
     }
 }
 

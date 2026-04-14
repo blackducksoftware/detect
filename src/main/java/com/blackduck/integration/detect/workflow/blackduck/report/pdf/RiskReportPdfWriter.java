@@ -11,6 +11,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.blackduck.integration.detect.workflow.blackduck.report.util.ReportFileUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
@@ -58,16 +59,7 @@ public class RiskReportPdfWriter {
     }
 
     public File createPDFReportFile(File outputDirectory, ReportData report) throws RiskReportException {
-        IntegrationEscapeUtil escapeUtil = new IntegrationEscapeUtil();
-        String escapedProjectName = escapeUtil.replaceWithUnderscore(report.getProjectName());
-        String escapedProjectVersionName = escapeUtil.replaceWithUnderscore(report.getProjectVersion());
-        File pdfFile = new File(outputDirectory, escapedProjectName + "_" + escapedProjectVersionName + "_BlackDuck_RiskReport.pdf");
-        if (pdfFile.exists()) {
-            boolean deleted = pdfFile.delete();
-            if (!deleted) {
-                logger.warn(String.format("Unable to delete existing file %s before re-creating it", pdfFile.getAbsolutePath()));
-            }
-        }
+        File pdfFile = ReportFileUtil.createReportFile(outputDirectory, report.getProjectName(), report.getProjectVersion(), "pdf","_BlackDuck_RiskReport");
         PDDocument document = new PDDocument();
 
         font = fontLoader.loadFont(document);
@@ -75,7 +67,7 @@ public class RiskReportPdfWriter {
 
         document.getDocumentInformation().setAuthor("Black Duck Software");
         document.getDocumentInformation().setCreator("Integrations");
-        document.getDocumentInformation().setSubject("Black Duck Risk Report");
+        document.getDocumentInformation().setSubject("Black Duck SCA Risk Report");
 
         try (PDFBoxManager pdfManager = new PDFBoxManager(pdfFile, document)) {
             this.pdfManager = pdfManager;
@@ -101,7 +93,7 @@ public class RiskReportPdfWriter {
         PDRectangle logoRectangle = pdfManager.drawRectangle(0, startingHeight - 100, pageWidth, 100, Color.WHITE);
         pdfManager.drawImage(30, logoRectangle.getLowerLeftY() + 27.5F, 291, 45, "/riskreport/images/BlackDuckLogo.png");
         PDRectangle titleRectangle = pdfManager.drawRectangle(0, logoRectangle.getLowerLeftY() - 80, pageWidth - 35, 80, new Color(154, 115, 184).darker());
-        pdfManager.writeText(35, titleRectangle.getLowerLeftY() + 32F, "Black Duck Risk Report", boldFont, 20, Color.WHITE);
+        pdfManager.writeText(35, titleRectangle.getLowerLeftY() + 32F, "Black Duck SCA Risk Report", boldFont, 20, Color.WHITE);
         logger.trace("Finished writing the pdf header.");
         return titleRectangle;
     }

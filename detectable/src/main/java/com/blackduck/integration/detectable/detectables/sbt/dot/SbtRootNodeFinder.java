@@ -2,15 +2,18 @@ package com.blackduck.integration.detectable.detectables.sbt.dot;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.List;
 import java.util.stream.Collectors;
 
+import guru.nidi.graphviz.attribute.Label;
+import guru.nidi.graphviz.model.MutableNode;
+import guru.nidi.graphviz.model.MutableGraph;
+import guru.nidi.graphviz.model.LinkSource;
+import guru.nidi.graphviz.model.Link;
 import org.apache.commons.collections4.SetUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.paypal.digraph.parser.GraphEdge;
-import com.paypal.digraph.parser.GraphElement;
-import com.paypal.digraph.parser.GraphParser;
 import com.blackduck.integration.detectable.detectable.exception.DetectableException;
 
 public class SbtRootNodeFinder {
@@ -21,12 +24,16 @@ public class SbtRootNodeFinder {
         this.sbtDotGraphNodeParser = sbtDotGraphNodeParser;
     }
 
-    public Set<String> determineRootIDs(GraphParser graphParser) throws DetectableException {
-        Set<String> nodeIdsUsedInDestination = graphParser.getEdges().values().stream()
-            .map(GraphEdge::getNode2)
-            .map(GraphElement::getId)
-            .collect(Collectors.toSet());
-        Set<String> allNodeIds = new HashSet<>(graphParser.getNodes().keySet());
+    public Set<String> determineRootIDs(MutableGraph mutableGraph) throws DetectableException {
+        Set<String> nodeIdsUsedInDestination = mutableGraph.nodes().stream()
+                .map(MutableNode::links)
+                .flatMap(List::stream)
+                .map(Link::asLinkSource)
+                .map(LinkSource::name)
+                .map(Label::value)
+                .collect(Collectors.toSet());
+
+        Set<String> allNodeIds = mutableGraph.nodes().stream().map(MutableNode::name).map(Label::value).collect(Collectors.toSet());
         return SetUtils.difference(allNodeIds, nodeIdsUsedInDestination);
     }
 }

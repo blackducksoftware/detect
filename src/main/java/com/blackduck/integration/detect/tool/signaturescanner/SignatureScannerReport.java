@@ -61,6 +61,10 @@ public class SignatureScannerReport {
     public boolean isSkipped() {
         return SignatureScanStatusType.SKIPPED.equals(statusType);
     }
+    
+    public boolean isScassError() {
+        return SignatureScanStatusType.SCASS_ERROR.equals(statusType);
+    }    
 
     public Optional<Integer> getExitCode() {
         return Optional.ofNullable(exitCode);

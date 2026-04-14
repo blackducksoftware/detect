@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Set;
 
 import com.blackduck.integration.blackduck.api.generated.component.*;
+import com.blackduck.integration.blackduck.api.generated.enumeration.PolicyRuleSeverityType;
+
 import org.apache.commons.lang3.StringUtils;
 
 import com.blackduck.integration.blackduck.api.generated.view.DeveloperScansScanView;
@@ -12,8 +14,6 @@ import com.blackduck.integration.blackduck.api.generated.view.DeveloperScansScan
 public class RapidScanComponentGroupDetail {
     
     private static final String POLICY_SEPARATOR = "/";
-    private static final String POLICY_SEVERITY_BLOCKER = "BLOCKER";
-    private static final String POLICY_SEVERITY_CRITICAL = "CRITICAL";
     
     private final RapidScanDetailGroup group;
     private final Set<String> errorMessages = new LinkedHashSet<>();
@@ -86,12 +86,14 @@ public class RapidScanComponentGroupDetail {
     // While it may be possible to reduce the overall message generation code in this class by pushing 
     // some common pieces into a parent class or interface, it is likely not worth altering the libraries 
     // as this may be temporary code.
-    public void addComponentMessages(DeveloperScansScanView resultView, DeveloperScansScanItemsComponentViolatingPoliciesView componentPolicyViolation) {
+    public void addComponentMessages(DeveloperScansScanView resultView, DeveloperScansScanItemsComponentViolatingPoliciesView componentPolicyViolation, List<PolicyRuleSeverityType> severitiesToFailPolicyCheck) {
         String baseMessage = getBaseMessage(resultView);
 
         String errorMessage = "", warningMessage = "";
 
-            if (componentPolicyViolation.getPolicySeverity().equals(POLICY_SEVERITY_CRITICAL) || componentPolicyViolation.getPolicySeverity().equals(POLICY_SEVERITY_BLOCKER)) {
+        if (severitiesToFailPolicyCheck.stream()
+                .map(PolicyRuleSeverityType::name)
+                .anyMatch(severity -> severity.equals(componentPolicyViolation.getPolicySeverity()))) {
                 if (errorMessage.equals("")) {
                     errorMessage = baseMessage;
                 } else {
@@ -117,7 +119,7 @@ public class RapidScanComponentGroupDetail {
     // While it may be possible to reduce the overall message generation code in this class by pushing 
     // some common pieces into a parent class or interface, it is likely not worth altering the libraries 
     // as this may be temporary code.
-    public void addLicenseMessages(DeveloperScansScanView resultView, DeveloperScansScanItemsPolicyViolationLicensesView licensePolicyViolation) {
+    public void addLicenseMessages(DeveloperScansScanView resultView, DeveloperScansScanItemsPolicyViolationLicensesView licensePolicyViolation, List<PolicyRuleSeverityType> severitiesToFailPolicyCheck) {
         String baseMessage = getBaseMessage(resultView);
         
         List<DeveloperScansScanItemsPolicyViolationLicensesViolatingPoliciesView> violatingPolicies = licensePolicyViolation.getViolatingPolicies();
@@ -126,8 +128,10 @@ public class RapidScanComponentGroupDetail {
         
         for (int i = 0; i < violatingPolicies.size(); i++) {
             DeveloperScansScanItemsPolicyViolationLicensesViolatingPoliciesView violation = violatingPolicies.get(i);
-                    
-            if (violation.getPolicySeverity().equals(POLICY_SEVERITY_CRITICAL) || violation.getPolicySeverity().equals(POLICY_SEVERITY_BLOCKER)) {
+            
+            if (severitiesToFailPolicyCheck.stream()
+                    .map(PolicyRuleSeverityType::name)
+                    .anyMatch(severity -> severity.equals(violation.getPolicySeverity()))) {
                 if (errorMessage.equals("")) {
                     errorMessage = baseMessage;
                 } else {
@@ -164,7 +168,7 @@ public class RapidScanComponentGroupDetail {
     // some common pieces into a parent class or interface, it is likely not worth altering the libraries 
     // as this may be temporary code.
     public void addVulnerabilityMessages(DeveloperScansScanView resultView,
-            DeveloperScansScanItemsPolicyViolationVulnerabilitiesView vulnerabilityPolicyViolation) {
+            DeveloperScansScanItemsPolicyViolationVulnerabilitiesView vulnerabilityPolicyViolation, List<PolicyRuleSeverityType> severitiesToFailPolicyCheck) {
         String baseMessage = getBaseMessage(resultView);
         
         List<DeveloperScansScanItemsPolicyViolationVulnerabilitiesViolatingPoliciesView> violatingPolicies = vulnerabilityPolicyViolation.getViolatingPolicies();
@@ -174,7 +178,9 @@ public class RapidScanComponentGroupDetail {
         for (int i = 0; i < violatingPolicies.size(); i++) {
             DeveloperScansScanItemsPolicyViolationVulnerabilitiesViolatingPoliciesView violation = violatingPolicies.get(i);
             
-            if (violation.getPolicySeverity().equals(POLICY_SEVERITY_CRITICAL) || violation.getPolicySeverity().equals(POLICY_SEVERITY_BLOCKER)) {
+            if (severitiesToFailPolicyCheck.stream()
+                    .map(PolicyRuleSeverityType::name)
+                    .anyMatch(severity -> severity.equals(violation.getPolicySeverity()))) {
                 errorMessage = constructVulnerabilityMessageSegment(baseMessage, errorMessage, violation);
             } else {
                 warningMessage = constructVulnerabilityMessageSegment(baseMessage, warningMessage, violation);
@@ -212,7 +218,7 @@ public class RapidScanComponentGroupDetail {
     // While it may be possible to reduce the overall message generation code in this class by pushing
     // some common pieces into a parent class or interface, it is likely not worth altering the libraries
     // as this may be temporary code.
-    public void addViolatingPoliciesMessages(DeveloperScansScanView resultView, List<DeveloperScansScanItemsViolatingPoliciesView> violatingPolicies) {
+    public void addViolatingPoliciesMessages(DeveloperScansScanView resultView, List<DeveloperScansScanItemsViolatingPoliciesView> violatingPolicies, List<PolicyRuleSeverityType> severitiesToFailPolicyCheck) {
         String baseMessage = getBaseMessage(resultView);
 
         String errorMessage = "", warningMessage = "";
@@ -220,7 +226,9 @@ public class RapidScanComponentGroupDetail {
         for (int i = 0; i < violatingPolicies.size(); i++) {
             DeveloperScansScanItemsViolatingPoliciesView violation = violatingPolicies.get(i);
 
-            if (violation.getPolicySeverity().equals(POLICY_SEVERITY_CRITICAL) || violation.getPolicySeverity().equals(POLICY_SEVERITY_BLOCKER)) {
+            if (severitiesToFailPolicyCheck.stream()
+                    .map(PolicyRuleSeverityType::name)
+                    .anyMatch(severity -> severity.equals(violation.getPolicySeverity()))) {
                 if (errorMessage.equals("")) {
                     errorMessage = baseMessage;
                 } else {

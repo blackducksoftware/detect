@@ -1,6 +1,6 @@
-# Running the [detect_product_long] script
+# Running the [detect_product_short] script
 
-The primary function of the [detect_product_long] scripts is to download and execute the [detect_product_short] .jar file.
+The primary function of the [detect_product_short] scripts is to download and execute the [detect_product_short] .jar file.
 Several aspects of script functionality can be configured, including:
 
 * The [detect_product_short] version to download/run; by default, the latest version.
@@ -16,13 +16,13 @@ On Linux or Mac, execute the [detect_product_short] script ([bash_script_name], 
 To download and run the latest version of [detect_product_short] in a single command:
 
 ````
-bash <(curl -s -L https://detect.blackduck.com/detect10.sh)
+bash <(curl -s -L https://detect.blackduck.com/detect.sh)
 ````
 
 Append any command line arguments to the end, separated by spaces. For example:
 
 ````
-bash <(curl -s -L https://detect.blackduck.com/detect10.sh) --blackduck.url=https://blackduck.mydomain.com --blackduck.api.token=myaccesstoken
+bash <(curl -s -L https://detect.blackduck.com/detect.sh) --blackduck.url=https://blackduck.mydomain.com --blackduck.api.token=myaccesstoken
 ````
 
 See [Quoting and escaping shell script arguments](../../scripts/script-escaping-special-characters.md) for details about quoting and escaping arguments.
@@ -31,7 +31,7 @@ See [Quoting and escaping shell script arguments](../../scripts/script-escaping-
 
 ````
 export DETECT_LATEST_RELEASE_VERSION={Detect version}
-bash <(curl -s -L https://detect.blackduck.com/detect10.sh)
+bash <(curl -s -L https://detect.blackduck.com/detect11.sh)
 ````
 
 For example, to run [detect_product_short] version 9.10.0:
@@ -51,13 +51,13 @@ from [Command Prompt](https://en.wikipedia.org/wiki/Cmd.exe) or from inside a Po
 To download and run the latest version of [detect_product_short] in a single command from Command Prompt:
 
 ````
-powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect"
+powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect.ps1?$(Get-Random) | iex; detect"
 ````
 
 Append any command line arguments to the end, separated by spaces. For example:
 
 ````
-powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect" --blackduck.url=https://blackduck.mydomain.com --blackduck.api.token=myaccesstoken
+powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect.ps1?$(Get-Random) | iex; detect" --blackduck.url=https://blackduck.mydomain.com --blackduck.api.token=myaccesstoken
 ````
 
 See [Quoting and escaping shell script arguments](../../scripts/script-escaping-special-characters.md) for details about quoting and escaping arguments.
@@ -66,21 +66,21 @@ See [Quoting and escaping shell script arguments](../../scripts/script-escaping-
 
 ````
 set DETECT_LATEST_RELEASE_VERSION={Detect version}
-powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect"
+powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect11.ps1?$(Get-Random) | iex; detect"
 ````
 
-For example, to run [detect_product_short] version 10.0.0:
+For example, to run [detect_product_short] version 11.3.0:
 
 ````
-set DETECT_LATEST_RELEASE_VERSION=10.0.0
-powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect"
+set DETECT_LATEST_RELEASE_VERSION=11.3.0
+powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect11.ps1?$(Get-Random) | iex; detect"
 ````
 
 ### Running from Windows Powershell
 
 To download and run the latest version of [detect_product_short] in a single command from PowerShell:
 ````
-[Net.ServicePointManager]::SecurityProtocol = 'tls12'; $Env:DETECT_EXIT_CODE_PASSTHRU=1; irm https://detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect
+[Net.ServicePointManager]::SecurityProtocol = 'tls12'; $Env:DETECT_EXIT_CODE_PASSTHRU=1; irm https://detect.blackduck.com/detect11.ps1?$(Get-Random) | iex; detect
 ````
 
 _Note that when running the above command, the PowerShell session is not exited. See [here](../../scripts/script-escaping-special-characters.md) for more information on the difference between the two commands._
@@ -93,26 +93,26 @@ See [Quoting and escaping shell script arguments](../../scripts/script-escaping-
 
 ````
 $Env:DETECT_LATEST_RELEASE_VERSION = "{Detect version}"
+[Net.ServicePointManager]::SecurityProtocol = 'tls12'; $Env:DETECT_EXIT_CODE_PASSTHRU=1; irm https://detect.blackduck.com/detect11.ps1?$(Get-Random) | iex; detect
+````
+
+Or:
+
+````
+[Net.ServicePointManager]::SecurityProtocol = 'tls12'; $Env:DETECT_EXIT_CODE_PASSTHRU=1; $Env:DETECT_LATEST_RELEASE_VERSION = "{Detect version}"; irm https://detect.blackduck.com/detect11.ps1?$(Get-Random) | iex; detect
+````
+
+
+For example, to run [detect_product_short] version 10.0.0:
+
+````
+$Env:DETECT_LATEST_RELEASE_VERSION = "10.0.0"
 [Net.ServicePointManager]::SecurityProtocol = 'tls12'; $Env:DETECT_EXIT_CODE_PASSTHRU=1; irm https://detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect
 ````
 
 Or:
 
 ````
-[Net.ServicePointManager]::SecurityProtocol = 'tls12'; $Env:DETECT_EXIT_CODE_PASSTHRU=1; $Env:DETECT_LATEST_RELEASE_VERSION = "{Detect version}"; irm https://detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect
-````
-
-
-For example, to run [detect_product_short] version 9.0.0:
-
-````
-$Env:DETECT_LATEST_RELEASE_VERSION = "9.0.0"
-[Net.ServicePointManager]::SecurityProtocol = 'tls12'; $Env:DETECT_EXIT_CODE_PASSTHRU=1; irm https://detect.blackduck.com/detect9.ps1?$(Get-Random) | iex; detect
-````
-
-Or:
-
-````
-[Net.ServicePointManager]::SecurityProtocol = 'tls12'; $Env:DETECT_EXIT_CODE_PASSTHRU=1; $Env:DETECT_LATEST_RELEASE_VERSION="9.0.0"; irm https://detect.blackduck.com/detect9.ps1?$(Get-Random) | iex; detect
+[Net.ServicePointManager]::SecurityProtocol = 'tls12'; $Env:DETECT_EXIT_CODE_PASSTHRU=1; $Env:DETECT_LATEST_RELEASE_VERSION="10.0.0"; irm https://detect.blackduck.com/detect10.ps1?$(Get-Random) | iex; detect
 ````
 

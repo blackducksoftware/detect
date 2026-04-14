@@ -1,18 +1,17 @@
 package com.blackduck.integration.detectable.detectables.npm.cli.parse;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonPrimitive;
 import com.blackduck.integration.bdio.graph.BasicDependencyGraph;
 import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.Forge;
@@ -21,10 +20,14 @@ import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
+import com.blackduck.integration.detectable.detectables.npm.NpmAliasParser;
 import com.blackduck.integration.detectable.detectables.npm.NpmDependencyType;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.result.NpmPackagerResult;
 import com.blackduck.integration.detectable.detectables.npm.packagejson.CombinedPackageJson;
-import com.blackduck.integration.detectable.detectables.npm.packagejson.model.PackageJson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 
 public class NpmCliParser {
     private final Logger logger = LoggerFactory.getLogger(NpmCliParser.class);
@@ -66,7 +69,10 @@ public class NpmCliParser {
             projectVersion = projectVersionElement.getAsString();
         }
 
-        populateChildren(graph, null, npmJson.getAsJsonObject(JSON_DEPENDENCIES), true, combinedPackageJson);
+        // Build alias mapping once from package.json
+        Map<String, String> aliasMapping = buildAliasMapping(combinedPackageJson);
+
+        populateChildren(graph, null, npmJson.getAsJsonObject(JSON_DEPENDENCIES), true, combinedPackageJson, aliasMapping);
 
         ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.NPMJS, projectName, projectVersion);
 
@@ -76,7 +82,24 @@ public class NpmCliParser {
 
     }
 
-    private void populateChildren(DependencyGraph graph, Dependency parentDependency, JsonObject parentNodeChildren, boolean isRootDependency, CombinedPackageJson combinedPackageJson) {
+    /**
+     * Builds a mapping of alias names to actual package names from CombinedPackageJson.
+     * Scans all dependency maps (dependencies, devDependencies, peerDependencies, optionalDependencies)
+     * looking for entries with "npm:" prefix.
+     *
+     * @param combinedPackageJson The package.json data
+     * @return Map of alias name -> actual package name
+     */
+    private Map<String, String> buildAliasMapping(CombinedPackageJson combinedPackageJson) {
+        return NpmAliasParser.buildAliasMapping(
+            combinedPackageJson.getDependencies(),
+            combinedPackageJson.getDevDependencies(),
+            combinedPackageJson.getPeerDependencies(),
+            combinedPackageJson.getOptionalDependencies()
+        );
+    }
+
+    private void populateChildren(DependencyGraph graph, Dependency parentDependency, JsonObject parentNodeChildren, boolean isRootDependency, CombinedPackageJson combinedPackageJson, Map<String, String> aliasMapping) {
         if (parentNodeChildren == null) {
             return;
         }
@@ -87,16 +110,18 @@ public class NpmCliParser {
             .filter(elementEntry -> elementEntry.getValue().isJsonObject())
             .filter(elementEntry -> {
                 if (!isRootDependency) {
-                    // Transitives can be both application and dev/peer dependency graphs, but Detect shouldn't be walking a dev or peer dependency tree unless it passed the filter already.
+                    // Transitives can be both application and dev/peer/optional dependency graphs, but Detect shouldn't be walking a dev, peer, or optional dependency tree unless it passed the filter already.
                     return true;
                 }
                 boolean excludingBecauseDev = (npmDependencyTypeFilter.shouldExclude(NpmDependencyType.DEV, combinedPackageJson.getDevDependencies()) && combinedPackageJson.getDevDependencies().containsKey(
                     elementEntry.getKey()));
                 boolean excludingBecausePeer = (npmDependencyTypeFilter.shouldExclude(NpmDependencyType.PEER, combinedPackageJson.getPeerDependencies())
                     && combinedPackageJson.getPeerDependencies().containsKey(elementEntry.getKey()));
-                return !excludingBecauseDev && !excludingBecausePeer;
+                boolean excludingBecauseOptional = (npmDependencyTypeFilter.shouldExclude(NpmDependencyType.OPTIONAL, combinedPackageJson.getOptionalDependencies())
+                    && combinedPackageJson.getOptionalDependencies().containsKey(elementEntry.getKey()));
+                return !excludingBecauseDev && !excludingBecausePeer && !excludingBecauseOptional;
             })
-            .forEach(elementEntry -> processChild(elementEntry, graph, parentDependency, isRootDependency, combinedPackageJson));
+            .forEach(elementEntry -> processChild(elementEntry, graph, parentDependency, isRootDependency, combinedPackageJson, aliasMapping));
     }
 
     private void processChild(
@@ -104,10 +129,14 @@ public class NpmCliParser {
         DependencyGraph graph,
         Dependency parentDependency,
         boolean isRootDependency,
-        CombinedPackageJson combinedPackageJson
+        CombinedPackageJson combinedPackageJson,
+        Map<String, String> aliasMapping
     ) {
         JsonObject element = elementEntry.getValue().getAsJsonObject();
         String name = elementEntry.getKey();
+
+        // Check if this is an alias and resolve to actual package name
+        String actualName = aliasMapping.getOrDefault(name, name);
         String version = Optional.ofNullable(element.getAsJsonPrimitive(JSON_VERSION))
             .filter(JsonPrimitive::isString)
             .map(JsonPrimitive::getAsString)
@@ -115,9 +144,9 @@ public class NpmCliParser {
 
         JsonObject children = element.getAsJsonObject(JSON_DEPENDENCIES);
 
-        if (name != null && version != null) {
-            ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.NPMJS, name, version);
-            Dependency child = new Dependency(name, version, externalId);
+        if (actualName != null && version != null) {
+            ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.NPMJS, actualName, version);
+            Dependency child = new Dependency(actualName, version, externalId);
             
             // Any workspace dependency is considered a direct dependency
             boolean directWorkspaceDependency = false;
@@ -136,7 +165,7 @@ public class NpmCliParser {
                         combinedPackageJson.getRelativeWorkspaces().stream().anyMatch(workspace -> workspace.equals(convertedPossibleWorkspaceDependency));
             }
 
-            populateChildren(graph, child, children, directWorkspaceDependency, combinedPackageJson);
+            populateChildren(graph, child, children, directWorkspaceDependency, combinedPackageJson, aliasMapping);
 
             if (isRootDependency || directWorkspaceDependency) {
                 graph.addChildToRoot(child);
@@ -144,7 +173,7 @@ public class NpmCliParser {
                 graph.addParentWithChild(parentDependency, child);
             }
         } else {
-            logger.trace(String.format("Excluding Json Element missing name or version: { name: %s, version: %s }", name, version));
+            logger.trace(String.format("Excluding Json Element missing name or version: { name: %s, version: %s }", actualName, version));
         }
     }
 }

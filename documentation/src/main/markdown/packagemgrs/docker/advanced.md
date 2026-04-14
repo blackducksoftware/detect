@@ -1,4 +1,4 @@
-# Advanced topics
+# Advanced [detect_product_short] topics
 
 This section covers a variety of advanced topics.
 

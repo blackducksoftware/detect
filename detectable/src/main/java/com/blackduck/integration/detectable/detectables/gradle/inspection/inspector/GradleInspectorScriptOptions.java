@@ -9,7 +9,6 @@ public class GradleInspectorScriptOptions {
     private final List<String> includedProjectPaths;
     private final List<String> excludedConfigurationNames;
     private final List<String> includedConfigurationNames;
-    private final String gradleInspectorRepositoryUrl;
     private final boolean rootOnly;
 
     public GradleInspectorScriptOptions(
@@ -19,7 +18,6 @@ public class GradleInspectorScriptOptions {
         List<String> includedProjectPaths,
         List<String> excludedConfigurationNames,
         List<String> includedConfigurationNames,
-        String gradleInspectorRepositoryUrl,
         boolean rootOnly
     ) {
         this.excludedProjectNames = excludedProjectNames;
@@ -28,12 +26,7 @@ public class GradleInspectorScriptOptions {
         this.includedProjectPaths = includedProjectPaths;
         this.excludedConfigurationNames = excludedConfigurationNames;
         this.includedConfigurationNames = includedConfigurationNames;
-        this.gradleInspectorRepositoryUrl = gradleInspectorRepositoryUrl;
         this.rootOnly = rootOnly;
-    }
-
-    public String getGradleInspectorRepositoryUrl() {
-        return gradleInspectorRepositoryUrl;
     }
 
     public List<String> getExcludedProjectNames() {

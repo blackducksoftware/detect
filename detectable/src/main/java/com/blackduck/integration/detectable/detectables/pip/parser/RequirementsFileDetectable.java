@@ -24,7 +24,7 @@ import com.blackduck.integration.detectable.detectable.result.PassedDetectableRe
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 
-@DetectableInfo(name = "PIP Requirements Parse", language = "Python", forge = "PyPi", accuracy = DetectableAccuracyType.LOW, requirementsMarkdown = "File: requirements.txt")
+@DetectableInfo(name = "PIP Requirements File Parse", language = "Python", forge = "PyPi", accuracy = DetectableAccuracyType.LOW, requirementsMarkdown = "File: requirements.txt")
 public class RequirementsFileDetectable extends Detectable {
     public static final String REQUIREMENTS_DEFAULT_FILE_NAME = "requirements.txt";
 

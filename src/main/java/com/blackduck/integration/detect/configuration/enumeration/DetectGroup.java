@@ -36,8 +36,6 @@ public enum DetectGroup implements Group {
     CONTAINER_SCANNER("container scanner"),
     IMPACT_ANALYSIS("impact analysis"),
     IAC_SCAN("iac scan"),
-    @Deprecated
-    THREAT_INTEL("threat intel"),
 
     //Detector Groups
     BAZEL("bazel", DETECTORS),
@@ -51,6 +49,7 @@ public enum DetectGroup implements Group {
     GO("go", DETECTORS),
     GRADLE("gradle", DETECTORS),
     HEX("hex", DETECTORS),
+    IVY("ivy", DETECTORS),
     LERNA("lerna", DETECTORS),
     MAVEN("maven", DETECTORS),
     NPM("npm", DETECTORS),
@@ -66,6 +65,8 @@ public enum DetectGroup implements Group {
     SWIFT("swift", DETECTORS),
     YARN("yarn", DETECTORS),
     OPAM("opam", DETECTORS),
+    UV("uv", DETECTORS),
+    RUSH("rush", DETECTORS),
 
     //Additional groups (should not be used as a primary group
     BLACKDUCK("blackduck"),
@@ -76,7 +77,8 @@ public enum DetectGroup implements Group {
     PROJECT_SETTING("project setting"),
     REPORT_SETTING("report setting"),
     SEARCH("search"),
-    DEFAULT("default");
+    DEFAULT("default"),
+    QUACKPATCH("quack patch");
 
     private final String name;
     private final Group superGroup;

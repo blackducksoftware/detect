@@ -1,0 +1,7 @@
+[project]
+description = "A package to run AI weather models."
+name = "ai-models"
+
+dynamic = ["version"]
+license = { file = "LICENSE" }
+requires-python = ">=3.9"

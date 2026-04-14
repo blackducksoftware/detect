@@ -19,6 +19,7 @@ import com.blackduck.integration.detectable.detectables.npm.lockfile.model.NpmDe
 import com.blackduck.integration.detectable.detectables.npm.lockfile.model.NpmProject;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.model.NpmRequires;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.model.PackageLock;
+import com.blackduck.integration.detectable.detectables.npm.NpmAliasParser;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.model.PackageLockDependency;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.model.PackageLockPackage;
 import com.blackduck.integration.detectable.detectables.npm.packagejson.CombinedPackageJson;
@@ -31,6 +32,7 @@ public class NpmDependencyConverter {
     public NpmProject convertLockFile(PackageLock packageLock, @Nullable CombinedPackageJson combinedPackageJson) {
         List<NpmRequires> declaredDevDependencies = new ArrayList<>();
         List<NpmRequires> declaredPeerDependencies = new ArrayList<>();
+        List<NpmRequires> declaredOptionalDependencies = new ArrayList<>();
         List<NpmRequires> declaredDependencies = new ArrayList<>();
         List<NpmDependency> resolvedDependencies = new ArrayList<>();
 
@@ -57,9 +59,14 @@ public class NpmDependencyConverter {
                 List<NpmRequires> rootPeerRequires = convertNameVersionMapToRequires(combinedPackageJson.getPeerDependencies());
                 declaredPeerDependencies.addAll(rootPeerRequires);
             }
+            
+            if (!combinedPackageJson.getOptionalDependencies().isEmpty()) {
+                List<NpmRequires> rootOptionalRequires = convertNameVersionMapToRequires(combinedPackageJson.getOptionalDependencies());
+                declaredOptionalDependencies.addAll(rootOptionalRequires);
+            }
         }
 
-        return new NpmProject(packageLock.name, packageLock.version, declaredDevDependencies, declaredPeerDependencies, declaredDependencies, resolvedDependencies);
+        return new NpmProject(packageLock.name, packageLock.version, declaredDevDependencies, declaredPeerDependencies, declaredDependencies, declaredOptionalDependencies, resolvedDependencies);
     }
 
     public List<NpmDependency> convertLockPackagesToNpmDependencies(NpmDependency parent, Map<String, PackageLockPackage> packages) {
@@ -70,10 +77,14 @@ public class NpmDependencyConverter {
         }
 
         for (Map.Entry<String, PackageLockPackage> packageEntry : packages.entrySet()) {
-            String packageName = packageEntry.getKey();
+            String packageKey = packageEntry.getKey();
             PackageLockPackage packageLockDependency = packageEntry.getValue();
 
-            NpmDependency dependency = createNpmDependency(packageName, packageLockDependency.version, packageLockDependency.dev, packageLockDependency.peer);
+            // For npm aliases, the 'name' field contains the actual package name, while the key contains the alias.
+            // For regular packages, the 'name' field is null, so we use the key.
+            String packageName = packageLockDependency.name != null ? packageLockDependency.name : packageKey;
+
+            NpmDependency dependency = createNpmDependency(packageName, packageLockDependency.version, packageLockDependency.dev, packageLockDependency.peer, packageLockDependency.optional);
             dependency.setParent(parent);
             children.add(dependency);
 
@@ -97,7 +108,7 @@ public class NpmDependencyConverter {
             String packageName = packageEntry.getKey();
             PackageLockDependency packageLockDependency = packageEntry.getValue();
 
-            NpmDependency dependency = createNpmDependency(packageName, packageLockDependency.version, packageLockDependency.dev, packageLockDependency.peer);
+            NpmDependency dependency = createNpmDependency(packageName, packageLockDependency.version, packageLockDependency.dev, packageLockDependency.peer, packageLockDependency.optional);
             dependency.setParent(parent);
             children.add(dependency);
 
@@ -110,11 +121,12 @@ public class NpmDependencyConverter {
         return children;
     }
 
-    private NpmDependency createNpmDependency(String name, String version, Boolean isDev, Boolean isPeer) {
+    private NpmDependency createNpmDependency(String name, String version, Boolean isDev, Boolean isPeer, Boolean isOptional) {
         boolean dev = isDev != null && isDev;
         boolean peer = isPeer != null && isPeer;
+        boolean optional = isOptional != null && isOptional;
         ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.NPMJS, name, version);
-        return new NpmDependency(name, version, externalId, dev, peer);
+        return new NpmDependency(name, version, externalId, dev, peer, optional);
     }
 
     public List<NpmRequires> convertNameVersionMapToRequires(MultiValuedMap<String, String> requires) {
@@ -206,16 +218,19 @@ public class NpmDependencyConverter {
      */
     private void gatherAllDependencies(PackageLock packageLock, String packageName) {
         PackageLockPackage packageLockPackage = packageLock.packages.get(packageName);
-        if (packageLockPackage.dependencies != null) {
-            if (packageLockPackage.devDependencies != null) {
-                packageLockPackage.dependencies.putAll(packageLockPackage.devDependencies);
-            }
-            if (packageLockPackage.peerDependencies != null) {
-                packageLockPackage.dependencies.putAll(packageLockPackage.peerDependencies);
-            }
-            if (packageLockPackage.optionalDependencies != null) {
-                packageLockPackage.dependencies.putAll(packageLockPackage.optionalDependencies);
-            } 
+
+        if (packageLockPackage.dependencies == null) {
+            packageLockPackage.dependencies = new HashMap<>();
+        }
+
+        if (packageLockPackage.devDependencies != null) {
+            packageLockPackage.dependencies.putAll(packageLockPackage.devDependencies);
+        }
+        if (packageLockPackage.peerDependencies != null) {
+            packageLockPackage.dependencies.putAll(packageLockPackage.peerDependencies);
+        }
+        if (packageLockPackage.optionalDependencies != null) {
+            packageLockPackage.dependencies.putAll(packageLockPackage.optionalDependencies);
         }
     }
 }

@@ -18,6 +18,7 @@ public enum DetectorStatusCode {
     FORCED_NESTED_PASSED("Forced to pass because nested forced by user."),
     GO_PKG_LOCKFILE_NOT_FOUND("A Gopkg.toml was located in the target project, but the Gopkg.lock file was NOT located."),
     INSPECTOR_NOT_FOUND("The necessary inspector was not found"),
+    IVY_DEPENDENCY_TREE_NOT_FOUND("A build.xml file was found, but it does not contain an ivy:dependencytree task."),
     MAX_DEPTH_EXCEEDED("Max depth was exceeded."),
     NOT_NESTABLE("Not nestable and a detector already applied in parent directory."),
     NOT_NESTABLE_BENEATH("Nestable but another detector prevented nesting."),
@@ -34,7 +35,8 @@ public enum DetectorStatusCode {
     SBT_PLUGIN_MISSING("A dependency graph plugin must be installed for the SBT detector to run."),
     UNKNOWN_DETECTOR_RESULT("There was an unknown result."),
     WRONG_OPERATING_SYSTEM_RESULT("Cannot run on the used operating system."),
-    YIELDED("Yielded to other detectors.");
+    YIELDED("Yielded to other detectors."),
+    UV_LOCKFILE_NOT_FOUND("A pyproject.toml was found in the root directory, but a uv.lock file or requirements.txt were NOT found.");
 
     private final String description;
 

@@ -13,6 +13,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.blackduck.integration.blackduck.api.generated.component.*;
+import com.blackduck.integration.blackduck.api.generated.enumeration.PolicyRuleSeverityType;
+
 import org.apache.commons.lang3.StringUtils;
 
 import com.blackduck.integration.blackduck.api.generated.view.DeveloperScansScanView;
@@ -22,8 +24,8 @@ public class RapidScanResultAggregator {
     private final Map<String, Set<String>> directToTransitiveChildren = new HashMap<>();
     private final Map<String, String[]> directUpgradeGuidanceVersions = new HashMap<>();
     
-    public RapidScanAggregateResult aggregateData(List<DeveloperScansScanView> results) {
-        Collection<RapidScanComponentDetail> componentDetails = aggregateComponentData(results);
+    public RapidScanAggregateResult aggregateData(List<DeveloperScansScanView> results, List<PolicyRuleSeverityType> severitiesToFailPolicyCheck) {
+        Collection<RapidScanComponentDetail> componentDetails = aggregateComponentData(results, severitiesToFailPolicyCheck);
         List<RapidScanComponentDetail> sortedByComponent = componentDetails.stream()
                 .sorted(Comparator.comparing(RapidScanComponentDetail::getComponentIdentifier))
                 .collect(Collectors.toList());
@@ -62,7 +64,7 @@ public class RapidScanResultAggregator {
                 transitiveGuidance);
     }
 
-    private List<RapidScanComponentDetail> aggregateComponentData(List<DeveloperScansScanView> results) {
+    private List<RapidScanComponentDetail> aggregateComponentData(List<DeveloperScansScanView> results, List<PolicyRuleSeverityType> severitiesToFailPolicyCheck) {
         // the key is the component identifier
         List<RapidScanComponentDetail> componentDetails = new LinkedList<>();
 
@@ -110,10 +112,10 @@ public class RapidScanResultAggregator {
             licenseGroupDetail.addPolicies(licensePolicyNames);
             violatingPoliciesDetail.addPolicies(allViolatedPolicyNames);
 
-            addComponentData(resultView, componentViolations, componentGroupDetail);
-            addVulnerabilityData(resultView, vulnerabilityViolations, securityGroupDetail);
-            addLicenseData(resultView, licenseViolations, licenseGroupDetail);
-            addViolatingPoliciesData(resultView, policyViolationsSuperset, violatingPoliciesDetail);
+            addComponentData(resultView, componentViolations, componentGroupDetail, severitiesToFailPolicyCheck);
+            addVulnerabilityData(resultView, vulnerabilityViolations, securityGroupDetail, severitiesToFailPolicyCheck);
+            addLicenseData(resultView, licenseViolations, licenseGroupDetail, severitiesToFailPolicyCheck);
+            addViolatingPoliciesData(resultView, policyViolationsSuperset, violatingPoliciesDetail, severitiesToFailPolicyCheck);
         }
         
         return componentDetails;
@@ -190,26 +192,26 @@ public class RapidScanResultAggregator {
                 securityGroupDetail, licenseGroupDetail, violatingPoliciesDetail);
     }
 
-    private void addVulnerabilityData(DeveloperScansScanView resultView, List<DeveloperScansScanItemsPolicyViolationVulnerabilitiesView> vulnerabilities, RapidScanComponentGroupDetail securityDetail) {
+    private void addVulnerabilityData(DeveloperScansScanView resultView, List<DeveloperScansScanItemsPolicyViolationVulnerabilitiesView> vulnerabilities, RapidScanComponentGroupDetail securityDetail, List<PolicyRuleSeverityType> severitiesToFailPolicyCheck) {
         for (DeveloperScansScanItemsPolicyViolationVulnerabilitiesView vulnerabilityPolicyViolation : vulnerabilities) {
-            securityDetail.addVulnerabilityMessages(resultView, vulnerabilityPolicyViolation);
+            securityDetail.addVulnerabilityMessages(resultView, vulnerabilityPolicyViolation, severitiesToFailPolicyCheck);
         }
     }
 
-    private void addLicenseData(DeveloperScansScanView resultView, List<DeveloperScansScanItemsPolicyViolationLicensesView> licenseViolations, RapidScanComponentGroupDetail licenseDetail) {
+    private void addLicenseData(DeveloperScansScanView resultView, List<DeveloperScansScanItemsPolicyViolationLicensesView> licenseViolations, RapidScanComponentGroupDetail licenseDetail, List<PolicyRuleSeverityType> severitiesToFailPolicyCheck) {
         for (DeveloperScansScanItemsPolicyViolationLicensesView licensePolicyViolation : licenseViolations) {
-            licenseDetail.addLicenseMessages(resultView, licensePolicyViolation);
+            licenseDetail.addLicenseMessages(resultView, licensePolicyViolation, severitiesToFailPolicyCheck);
         }
     }
     
-    private void addComponentData(DeveloperScansScanView resultView, List<DeveloperScansScanItemsComponentViolatingPoliciesView> componentViolations, RapidScanComponentGroupDetail componentGroupDetail) {
+    private void addComponentData(DeveloperScansScanView resultView, List<DeveloperScansScanItemsComponentViolatingPoliciesView> componentViolations, RapidScanComponentGroupDetail componentGroupDetail, List<PolicyRuleSeverityType> severitiesToFailPolicyCheck) {
         for (DeveloperScansScanItemsComponentViolatingPoliciesView componentPolicyViolation: componentViolations) {
-            componentGroupDetail.addComponentMessages(resultView, componentPolicyViolation);
+            componentGroupDetail.addComponentMessages(resultView, componentPolicyViolation, severitiesToFailPolicyCheck);
         }
     }
 
-    private void addViolatingPoliciesData(DeveloperScansScanView resultView, List<DeveloperScansScanItemsViolatingPoliciesView> allPolicyViolations, RapidScanComponentGroupDetail violatingPoliciesDetail) {
-        violatingPoliciesDetail.addViolatingPoliciesMessages(resultView, allPolicyViolations);
+    private void addViolatingPoliciesData(DeveloperScansScanView resultView, List<DeveloperScansScanItemsViolatingPoliciesView> allPolicyViolations, RapidScanComponentGroupDetail violatingPoliciesDetail, List<PolicyRuleSeverityType> severitiesToFailPolicyCheck) {
+        violatingPoliciesDetail.addViolatingPoliciesMessages(resultView, allPolicyViolations, severitiesToFailPolicyCheck);
     }
 
     /**

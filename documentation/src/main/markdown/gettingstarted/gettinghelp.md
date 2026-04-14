@@ -1,4 +1,4 @@
-# Command line help options
+# [detect_product_short] command line help options
 
 [detect_product_long] provides the following execution options to assist with configuration, execution and support.
 
