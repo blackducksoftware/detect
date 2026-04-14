@@ -170,19 +170,4 @@ public class ProductBoot {
             return true; // Skip phone home will be applied at the library level.
         }
     }
-
-    @Deprecated
-    private boolean shouldWaitAtScanLevel(BlackDuckConnectivityResult blackDuckConnectivityResult) {
-        BlackDuckVersionParser parser = new BlackDuckVersionParser();
-        Optional<BlackDuckVersion> blackDuckServerVersion = parser.parse(blackDuckConnectivityResult.getContactedServerVersion());
-        BlackDuckVersion minVersion = new BlackDuckVersion(2023, 1, 1);
-        
-        boolean waitAtScanLevel = false;
-        
-        if (blackDuckServerVersion.isPresent() && blackDuckServerVersion.get().isAtLeast(minVersion)) {
-            waitAtScanLevel = true;
-        }
-        
-        return waitAtScanLevel;
-    }
 }
