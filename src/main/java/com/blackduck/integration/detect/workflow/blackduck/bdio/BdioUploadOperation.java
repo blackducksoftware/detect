@@ -19,7 +19,7 @@ import com.blackduck.integration.exception.IntegrationException;
 public abstract class BdioUploadOperation { //TODO: Could use Functional Interface.
     private final Logger logger = LoggerFactory.getLogger(BdioUploadOperation.class);
 
-    public BdioUploadResult uploadBdioFilesWithoutInitiatingNotificationRange(BdioResult bdioResult, String scassScanId, HttpUrl blackDuckUrl) throws DetectUserFriendlyException {
+    public BdioUploadResult uploadBdioFiles(BdioResult bdioResult, String scassScanId, HttpUrl blackDuckUrl) throws DetectUserFriendlyException {
         UploadBatch uploadBatch = createBatch(bdioResult, scassScanId, blackDuckUrl);
         CodeLocationCreationData<UploadBatchOutput> response;
         try {

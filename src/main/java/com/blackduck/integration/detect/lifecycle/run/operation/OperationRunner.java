@@ -1008,7 +1008,7 @@ public class OperationRunner {
             () -> new IntelligentPersistentUploadOperation(
                 blackDuckRunData.getBlackDuckServicesFactory().createIntelligentPersistenceService(),
                 timeout
-            ).uploadBdioFilesWithoutInitiatingNotificationRange(bdioResult, scassScanId, blackDuckRunData.getBlackDuckServerConfig().getBlackDuckUrl())
+            ).uploadBdioFiles(bdioResult, scassScanId, blackDuckRunData.getBlackDuckServerConfig().getBlackDuckUrl())
         );
     }
 
