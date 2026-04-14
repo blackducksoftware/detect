@@ -110,9 +110,8 @@ public class ProductBoot {
             
             BlackDuckServicesFactory blackDuckServicesFactory = blackDuckConnectivityResult.getBlackDuckServicesFactory();
             setBlackDuckVersionLevel(blackDuckServicesFactory, blackDuckConnectivityResult);
-            boolean waitAtScanLevel = shouldWaitAtScanLevel(blackDuckConnectivityResult);
 
-            return createBlackDuckRunDataBasedOnPhoneHomeDecision(blackDuckDecision, blackDuckServicesFactory, blackDuckConnectivityResult, waitAtScanLevel);
+            return createBlackDuckRunDataBasedOnPhoneHomeDecision(blackDuckDecision, blackDuckServicesFactory, blackDuckConnectivityResult);
         } else {
             if (productBootOptions.isIgnoreConnectionFailures()) {
                 logger.info(String.format("Failed to connect to Black Duck SCA: %s", blackDuckConnectivityResult.getFailureReason()));
@@ -130,7 +129,7 @@ public class ProductBoot {
         }
     }
 
-    private BlackDuckRunData createBlackDuckRunDataBasedOnPhoneHomeDecision(BlackDuckDecision blackDuckDecision, BlackDuckServicesFactory blackDuckServicesFactory, BlackDuckConnectivityResult blackDuckConnectivityResult, boolean waitAtScanLevel) {
+    private BlackDuckRunData createBlackDuckRunDataBasedOnPhoneHomeDecision(BlackDuckDecision blackDuckDecision, BlackDuckServicesFactory blackDuckServicesFactory, BlackDuckConnectivityResult blackDuckConnectivityResult) {
         if (shouldUsePhoneHome(analyticsConfigurationService, blackDuckServicesFactory.getApiDiscovery(), blackDuckServicesFactory.getBlackDuckApiClient())) {
             try {
                 PhoneHomeManager phoneHomeManager = productBootFactory.createPhoneHomeManager(blackDuckServicesFactory,
@@ -139,8 +138,7 @@ public class ProductBoot {
                     blackDuckDecision.scanMode(),
                     blackDuckServicesFactory,
                     phoneHomeManager,
-                    blackDuckConnectivityResult,
-                    waitAtScanLevel
+                    blackDuckConnectivityResult
                 );
             } catch (IntegrationException e) {
                 logger.debug("Failed to fetch Analytics credentials. Skipping phone home. Exception: " + e.getMessage());
@@ -150,7 +148,7 @@ public class ProductBoot {
         } else {
             logger.debug("Skipping phone home due to Black Duck SCA global settings.");
         }
-        return BlackDuckRunData.onlineNoPhoneHome(blackDuckDecision.scanMode(), blackDuckServicesFactory, blackDuckConnectivityResult, waitAtScanLevel);
+        return BlackDuckRunData.onlineNoPhoneHome(blackDuckDecision.scanMode(), blackDuckServicesFactory, blackDuckConnectivityResult);
     }
 
     private void setBlackDuckVersionLevel(BlackDuckServicesFactory blackDuckServicesFactory,
