@@ -114,6 +114,18 @@ public class IntelligentModeStepRunner {
         Set<String> binaryTargets
     ) throws OperationException {
 
+        boolean hasAnythingToUploadOrScan = bdioResult.isNotEmpty()
+            || detectToolFilter.shouldInclude(DetectTool.SIGNATURE_SCAN)
+            || detectToolFilter.shouldInclude(DetectTool.BINARY_SCAN)
+            || detectToolFilter.shouldInclude(DetectTool.CONTAINER_SCAN)
+            || detectToolFilter.shouldInclude(DetectTool.IMPACT_ANALYSIS)
+            || detectToolFilter.shouldInclude(DetectTool.IAC_SCAN);
+
+        if (!hasAnythingToUploadOrScan) {
+            logger.info("No scan results were produced and no other scan tools are enabled. Skipping Black Duck project and version creation.");
+            return;
+        }
+
         ProjectVersionWrapper projectVersion = stepHelper.runAsGroup(
             "Create or Locate Project",
             OperationType.INTERNAL,

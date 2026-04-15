@@ -3,6 +3,7 @@ package com.blackduck.integration.detectable.detectables.bazel.v2;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelCommandExecutor;
 import com.blackduck.integration.detectable.detectables.bazel.query.BazelQueryBuilder;
 import com.blackduck.integration.detectable.detectables.bazel.query.OutputFormat;
+import com.blackduck.integration.executable.ExecutableOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +20,8 @@ public class HttpFamilyProber {
     private final BazelEnvironmentAnalyzer.Mode mode;
     // Additional options for bazel query commands (from detect.bazel.query.options)
     private final List<String> queryOptions;
+    // Detected Bazel version; null means unknown (treat as < 7.1)
+    private final BazelVersion bazelVersion;
 
     // Bazel rule kind patterns for queries
     private static final String LIBRARY_RULE_PATTERN = ".*library";
@@ -68,15 +71,27 @@ public class HttpFamilyProber {
 
 
     /**
-     * Constructor for HttpFamilyProber
+     * Constructor for HttpFamilyProber (backward-compatible, treats version as unknown).
      * @param bazel Bazel command executor
      * @param mode Bazel environment mode
      * @param queryOptions Additional options for bazel query commands (from detect.bazel.query.options)
      */
     public HttpFamilyProber(BazelCommandExecutor bazel, BazelEnvironmentAnalyzer.Mode mode, List<String> queryOptions) {
+        this(bazel, mode, queryOptions, null);
+    }
+
+    /**
+     * Constructor for HttpFamilyProber with Bazel version for tiered detection.
+     * @param bazel Bazel command executor
+     * @param mode Bazel environment mode
+     * @param queryOptions Additional options for bazel query commands (from detect.bazel.query.options)
+     * @param bazelVersion Detected Bazel version; null means unknown (fallback to legacy probing)
+     */
+    public HttpFamilyProber(BazelCommandExecutor bazel, BazelEnvironmentAnalyzer.Mode mode, List<String> queryOptions, BazelVersion bazelVersion) {
         this.bazel = bazel;
         this.mode = mode;
         this.queryOptions = queryOptions != null ? queryOptions : Collections.emptyList();
+        this.bazelVersion = bazelVersion;
     }
 
     /**
@@ -112,8 +127,106 @@ public class HttpFamilyProber {
 
     /**
      * Performs the actual probing logic.
+     * For Bazel 7.1+ in BZLMOD mode, attempts fast JSON-based discovery first.
+     * Falls back to per-repo probing if the fast path is unavailable or fails.
      */
     private boolean probeRepositories(Map<String, LinkedHashSet<String>> repoLabels) throws Exception {
+        // Tiered approach: try fast JSON discovery for Bazel 7.1+ BZLMOD
+        if (mode == BazelEnvironmentAnalyzer.Mode.BZLMOD && isModGraphJsonSupported()) {
+            try {
+                Optional<Boolean> fastResult = probeRepositoriesViaModGraphJson();
+                if (fastResult.isPresent()) {
+                    return fastResult.get();
+                }
+                // empty means the JSON approach was inconclusive; fall through to legacy probing
+            } catch (Exception e) {
+                logger.info("Fast mod graph --output json discovery failed, falling back to per-repo probing: {}", e.getMessage());
+                logger.debug("mod graph JSON exception", e);
+            }
+        }
+
+        return probeRepositoriesLegacy(repoLabels);
+    }
+
+    /**
+     * Returns true if the detected Bazel version supports `bazel mod graph --output json` (7.1+).
+     */
+    private boolean isModGraphJsonSupported() {
+        return bazelVersion != null && bazelVersion.isAtLeast(7, 1);
+    }
+
+    /**
+     * Fast-path discovery using `bazel mod graph --output json` (single Bazel invocation).
+     * If the mod graph contains any non-excluded BCR modules, the HTTP pipeline is enabled —
+     * because BCR modules are backed by http_archive rules and their URLs are extractable
+     * via show_repo downstream. This mirrors the old per-repo behavior where bazel_dep,
+     * module_extension, and http_archive all enable the HTTP pipeline.
+     *
+     * @return Optional containing true/false if conclusive, or empty if inconclusive (triggers fallback)
+     */
+    private Optional<Boolean> probeRepositoriesViaModGraphJson() {
+        logger.info("Attempting fast dependency discovery via 'bazel mod graph --output json' (Bazel {})", bazelVersion);
+
+        List<String> modGraphJsonCmd = BazelQueryBuilder.mod()
+            .graph()
+            .withOutputJson()
+            .build();
+
+        ExecutableOutput output = bazel.executeWithoutThrowing(modGraphJsonCmd);
+        if (output.getReturnCode() != 0) {
+            // Don't bail immediately on non-zero exit: a broken module extension (e.g., bazel_jar_jar+
+            // on Bazel 9) poisons the exit code even when the JSON graph was fully emitted to stdout.
+            // Check whether stdout has usable JSON before giving up.
+            String stdout = output.getStandardOutput();
+            if (stdout == null || stdout.trim().isEmpty()) {
+                logger.info("'bazel mod graph --output json' returned exit code {} with no output; falling back to legacy probing.",
+                    output.getReturnCode());
+                return Optional.empty();
+            }
+            logger.info("'bazel mod graph --output json' returned exit code {} but stdout has content; continuing with JSON parsing.",
+                output.getReturnCode());
+        }
+
+        String jsonOutput = output.getStandardOutput();
+        if (jsonOutput == null || jsonOutput.trim().isEmpty()) {
+            logger.info("'bazel mod graph --output json' returned empty output; falling back to legacy probing.");
+            return Optional.empty();
+        }
+
+        BzlmodGraphJsonParser parser = new BzlmodGraphJsonParser();
+        Set<String> moduleKeys = parser.parseModuleKeys(jsonOutput);
+        if (moduleKeys.isEmpty()) {
+            logger.info("Parsed zero module keys from mod graph JSON; falling back to legacy probing.");
+            return Optional.empty();
+        }
+
+        // BCR modules ARE HTTP-family dependencies — they are fetched via http_archive under the hood.
+        // The old per-repo probing (classifyRepoByModShowRepo) enables HTTP for bazel_dep, module_extension,
+        // and http_archive alike. So if the mod graph has any non-excluded modules, enable the HTTP pipeline.
+        // The downstream pipeline (show_repo → URL extraction → GitHub transform) handles the actual extraction.
+        Set<String> relevantModules = new java.util.HashSet<>();
+        for (String key : moduleKeys) {
+            String name = BzlmodGraphJsonParser.extractName(key);
+            if (!isExcludedRepo(name)) {
+                relevantModules.add(key);
+            }
+        }
+
+        if (!relevantModules.isEmpty()) {
+            logger.info("mod graph JSON contains {} non-excluded BCR modules → enabling HTTP pipeline (fast path). Modules: {}",
+                relevantModules.size(), relevantModules);
+            return Optional.of(true);
+        }
+
+        logger.info("mod graph JSON contains only excluded/builtin modules; no HTTP-family repos detected (fast path).");
+        return Optional.of(false);
+    }
+
+    /**
+     * Legacy per-repo probing (original implementation). Used as fallback for Bazel < 7.1
+     * or when the JSON fast path is inconclusive.
+     */
+    private boolean probeRepositoriesLegacy(Map<String, LinkedHashSet<String>> repoLabels) throws Exception {
         logger.debug("Target has {} external repository dependencies (≤{}). Probing for HTTP characteristics.",
                 repoLabels.size(), LARGE_TARGET_THRESHOLD);
 
@@ -275,7 +388,9 @@ public class HttpFamilyProber {
             .showRepo(repo, canonical)
             .build();
 
-        Optional<String> modOut = bazel.executeToString(modArgs);
+        // Use executeModCommandToString: a broken module extension (e.g., bazel_jar_jar+ on Bazel 9)
+        // poisons the exit code to 2 even when show_repo produced valid output in stdout.
+        Optional<String> modOut = bazel.executeModCommandToString(modArgs);
         if (!modOut.isPresent()) {
             return false;
         }

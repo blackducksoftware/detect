@@ -86,12 +86,40 @@ public class ModCommandBuilder {
     }
 
     /**
+     * Adds the show_repo subcommand with multiple pre-formatted repository references.
+     * Bazel 6.x+ supports multiple repos in a single show_repo call:
+     * {@code bazel mod show_repo @repo1 @repo2 @repo3}
+     *
+     * @param repoReferences List of complete repository references including @ prefix
+     * @return This builder for chaining
+     */
+    public ModCommandBuilder showRepoRawBatch(List<String> repoReferences) {
+        validateNotNull(repoReferences, "repoReferences");
+
+        this.subcommand = BazelCommandArguments.MOD_SHOW_REPO;
+        this.subcommandArgs.addAll(repoReferences);
+        return this;
+    }
+
+    /**
      * Adds the graph subcommand to display the module dependency graph.
      *
      * @return This builder for chaining
      */
     public ModCommandBuilder graph() {
         this.subcommand = BazelCommandArguments.MOD_GRAPH;
+        return this;
+    }
+
+    /**
+     * Adds --output json to the command. Typically used with graph() for structured JSON output.
+     * Requires Bazel 7.1+.
+     *
+     * @return This builder for chaining
+     */
+    public ModCommandBuilder withOutputJson() {
+        this.subcommandArgs.add(BazelCommandArguments.OUTPUT_FLAG);
+        this.subcommandArgs.add(BazelCommandArguments.MOD_OUTPUT_JSON);
         return this;
     }
 
