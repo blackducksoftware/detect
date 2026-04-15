@@ -82,7 +82,7 @@ public class AiAssistanceLlmClient {
         //   HTTP call below takes over automatically.
         if (llmApiKey.isEmpty() || llmApiEndpoint.isEmpty() || llmName.isEmpty()) {
             logger.info("[AI Assist] No LLM credentials configured — using mock suggestion.");
-            return buildMockSuggestion(qanda);
+            return buildMockSuggestion(detectorName, qanda);
         }
         // ── END MOCK MODE — real LLM path below ─────────────────────────────────────
 
@@ -178,7 +178,16 @@ public class AiAssistanceLlmClient {
      * mimicking exactly what the real LLM would return. This lets the full
      * interactive flow run end-to-end during demos without a live LLM key.</p>
      */
-    private LlmFlagSuggestion buildMockSuggestion(Map<String, String> qanda) {
+    private LlmFlagSuggestion buildMockSuggestion(String detectorName, Map<String, String> qanda) {
+        if ("MAVEN".equalsIgnoreCase(detectorName)) {
+            return buildMavenMockSuggestion(qanda);
+        } else if ("GRADLE".equalsIgnoreCase(detectorName)) {
+            return buildGradleMockSuggestion(qanda);
+        }
+        return LlmFlagSuggestion.empty();
+    }
+
+    private LlmFlagSuggestion buildMavenMockSuggestion(Map<String, String> qanda) {
         Map<String, String> flags        = new LinkedHashMap<>();
         Map<String, String> explanations = new LinkedHashMap<>();
 
@@ -254,6 +263,47 @@ public class AiAssistanceLlmClient {
                 explanations.put("detect.nuget.excluded.modules",
                     "User excluded '" + a + "' — these are test/utility projects that should not "
                     + "appear in the production Bill of Materials.");
+            }
+        }
+
+        return new LlmFlagSuggestion(flags, explanations);
+    }
+
+    private LlmFlagSuggestion buildGradleMockSuggestion(Map<String, String> qanda) {
+        Map<String, String> flags        = new LinkedHashMap<>();
+        Map<String, String> explanations = new LinkedHashMap<>();
+
+        for (Map.Entry<String, String> entry : qanda.entrySet()) {
+            String q = entry.getKey().toLowerCase();
+            String a = entry.getValue().trim();
+
+            if (q.contains("android build variants") && a.equalsIgnoreCase("yes")) {
+                flags.put("detect.gradle.excluded.configurations", "debug,test");
+                explanations.put("detect.gradle.excluded.configurations",
+                    "User chose to exclude Android debug/test build variants — produces a clean production-only BOM.");
+            } else if (q.contains("test configurations") && a.equalsIgnoreCase("yes")) {
+                flags.put("detect.gradle.excluded.configurations", "testCompileClasspath,testRuntimeClasspath");
+                explanations.put("detect.gradle.excluded.configurations",
+                    "User chose to exclude test configurations — produces a clean production-only BOM.");
+            }
+
+            if (q.contains("sub-projects") && !a.equalsIgnoreCase("(skipped)") && !a.isEmpty()) {
+                flags.put("detect.gradle.excluded.projects", a);
+                explanations.put("detect.gradle.excluded.projects",
+                    "User excluded '" + a + "' — these are test/utility sub-projects that should not "
+                    + "appear in the production Bill of Materials.");
+            }
+
+            if (q.contains("unresolved") && a.equalsIgnoreCase("yes")) {
+                flags.put("detect.gradle.configuration.types.excluded", "UNRESOLVED");
+                explanations.put("detect.gradle.configuration.types.excluded",
+                    "User chose to exclude unresolved configurations — prevents inaccurate dependency versions in the BOM.");
+            }
+
+            if (q.contains("root project") && a.equalsIgnoreCase("yes")) {
+                flags.put("detect.gradle.root.only", "true");
+                explanations.put("detect.gradle.root.only",
+                    "User chose to scan only the root project — ignores all subprojects for a focused BOM.");
             }
         }
 
