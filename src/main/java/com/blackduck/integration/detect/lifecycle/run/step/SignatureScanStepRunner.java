@@ -64,7 +64,7 @@ public class SignatureScanStepRunner {
         try {
             reports = executeScan(scanBatch, scanBatchRunner, scanPaths, scanIdsToWaitFor, gson, blackDuckRunData.shouldWaitAtScanLevel(), true);
         } catch (SocketException e) {
-            if (!operationRunner.isCorrelationScanningEnabled()) {
+            if (!operationRunner.isCorrelationScanningEnabled("SIGNATURE")) {
                 logger.warn("Initial Signature Scan failed due to connectivity issues. Retrying scan. Please allow the SCASS IPs to increase scanning performance.");
                 scanBatch = operationRunner.createScanBatchOnline(detectRunUuid, scanPaths, projectNameVersion, dockerTargetData, blackDuckRunData, true);
                 reports = executeScan(scanBatch, scanBatchRunner, scanPaths, scanIdsToWaitFor, gson, blackDuckRunData.shouldWaitAtScanLevel(), true);

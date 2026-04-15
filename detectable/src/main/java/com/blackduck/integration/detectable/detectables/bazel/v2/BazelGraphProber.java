@@ -26,6 +26,7 @@ public class BazelGraphProber {
     private final BazelEnvironmentAnalyzer.Mode mode;
     private final List<String> cqueryOptions;
     private final List<String> queryOptions;
+    private BazelVersion bazelVersion;
 
     /**
      * Constructor for BazelGraphProber
@@ -42,6 +43,14 @@ public class BazelGraphProber {
         this.mode = mode;
         this.cqueryOptions = cqueryOptions != null ? cqueryOptions : Collections.emptyList();
         this.queryOptions = queryOptions != null ? queryOptions : Collections.emptyList();
+    }
+
+    /**
+     * Sets the detected Bazel version for feature gating (e.g., mod graph --output json for 7.1+).
+     * @param bazelVersion Detected Bazel version; null means unknown
+     */
+    public void setBazelVersion(BazelVersion bazelVersion) {
+        this.bazelVersion = bazelVersion;
     }
 
     /**
@@ -77,7 +86,7 @@ public class BazelGraphProber {
         }
         // Probe for http_archive and related rules
         try {
-            HttpFamilyProber httpProber = new HttpFamilyProber(bazel, mode, queryOptions);
+            HttpFamilyProber httpProber = new HttpFamilyProber(bazel, mode, queryOptions, bazelVersion);
             httpFamily = httpProber.detect(target);
         } catch (Exception e) {
             logger.debug("HTTP_ARCHIVE family probe failed: {}", e.getMessage());

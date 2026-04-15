@@ -45,6 +45,15 @@ public class BazelEnvironmentAnalyzer {
             }
             return Mode.BZLMOD;
         } else if (output.getReturnCode() >= 2 && output.getReturnCode() <= 7) {
+            // Don't give up solely based on exit code: a broken but unrelated module extension
+            // (e.g., bazel_jar_jar+ on Bazel 9) causes exit code 2 even when the module graph
+            // was successfully emitted to stdout. Check stdout before concluding WORKSPACE.
+            String stdout = output.getStandardOutput().trim();
+            if (!isGraphEmpty(stdout)) {
+                logger.info("'bazel mod graph' returned exit code {} but stdout contains a valid module graph; treating as BZLMOD.",
+                    output.getReturnCode());
+                return Mode.BZLMOD;
+            }
             return Mode.WORKSPACE;
         }
         return Mode.UNKNOWN;
