@@ -9,13 +9,16 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tomlj.TomlParseResult;
 
 import com.blackduck.integration.detectable.python.util.PythonDependency;
 import com.blackduck.integration.detectable.python.util.PythonDependencyTransformer;
 
 public class SetupToolsPyParser implements SetupToolsParser {
-    
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
     private TomlParseResult parsedToml;
     
     private List<String> dependencies;
@@ -36,7 +39,7 @@ public class SetupToolsPyParser implements SetupToolsParser {
         
         return new SetupToolsParsedResult(tomlProjectName, projectVersion, parsedDirectDependencies);
     }
-    
+
     public List<String> load(String setupFile) throws IOException {
         // The pattern "\\[?'(.*)'\\s*\\]?,?|\\[?\"(.*)\"\\s*\\]?,?" works as follows:
         // - "\\[?'(.*)'\\s*\\]?,?" matches dependencies that start with an optional '[' followed by a mandatory single quote,
@@ -51,34 +54,40 @@ public class SetupToolsPyParser implements SetupToolsParser {
         try (BufferedReader reader = new BufferedReader(new FileReader(setupFile))) {
             String line;
             boolean isInstallRequiresSection = false;
+            boolean isList = false;
 
             while ((line = reader.readLine()) != null) {
-                line = line.trim();                
-                
-                // If after removing all whitespace the line starts with install_requires=
-                // then we have found the section we are after.
+                line = line.trim();
+
                 if (line.replaceAll("\\s+","").startsWith("install_requires=")) {
                     isInstallRequiresSection = true;
+                    String afterEquals = line.substring(line.indexOf("=") + 1).trim();
+                    if (afterEquals.startsWith("[")) {
+                        isList = true;
+                    }
+                    // If not starting with [, assume it's not a list (could be variable or invalid)
                     continue;
                 }
                 if (isInstallRequiresSection) {
-                    // If the [ is on its own line skip it, it doesn't contain a dependency
                     if (line.equals("[")) {
+                        isList = true;
                         continue;
                     }
-                    
-                    checkLineForDependency(line, patternSingleQuotes, patternDoubleQuotes);
-                    
-                    // If the line ends with ] or ], it means we have reached the end of the dependencies list.
-                    if (line.endsWith("]") || line.endsWith("],")) {
-                        break;
+                    if (isList) {
+                        checkLineForDependency(line, patternSingleQuotes, patternDoubleQuotes);
+                        if (line.endsWith("]") || line.endsWith("],")) {
+                            break;
+                        }
                     }
                 }
             }
+            if (isInstallRequiresSection && !isList) {
+                logger.error("Error: install_requires must be a Python list (e.g., ['dep1', 'dep2']), not a variable reference or other format.");
+            }
         }
-
         return dependencies;
     }
+
     
     private void checkLineForDependency(String line, Pattern patternSingleQuotes, Pattern patternDoubleQuotes) {
         // Using the pattern for double quotes to match the dependencies in the current line.
@@ -113,7 +122,7 @@ public class SetupToolsPyParser implements SetupToolsParser {
             // If we have a ; in our requirements line then there is a condition on this dependency.
             // We want to know this so we don't consider it a failure later if we try to run pip show
             // on it and we don't find it.
-            if (dependencyLine.contains(";")) {
+            if (dependencyLine.contains(";")) { // another possibility oof pip show failing is if the dependency is malformed during parsing for whatever reason
                 dependency.setConditional(true);
             }
 
