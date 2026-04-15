@@ -240,7 +240,7 @@ public class IntelligentModeStepRunner {
                 }
             }
 
-            if (!operationRunner.isCorrelationScanningEnabled()) {
+            if (!operationRunner.isCorrelationScanningEnabled("PACKAGE_MANAGER")) {
                 invokePreScassPackageManagerWorkflow(blackDuckRunData, bdioResult, scanIdsToWaitFor, codeLocationAccumulator, scanId);
             } else {
                 logger.error("Correlation scanning is enabled. Please verify your SCASS configuration, as it is required for correlation scans to function properly.");
