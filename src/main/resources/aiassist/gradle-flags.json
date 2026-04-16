@@ -1,0 +1,37 @@
+{
+  "detector": "GRADLE",
+  "flags": [
+    {
+      "key": "detect.gradle.excluded.configurations",
+      "type": "List<String>",
+      "description": "A comma-separated list of Gradle configurations to exclude. Detect will skip any Gradle configurations specified via this property.",
+      "example": "--detect.gradle.excluded.configurations=testCompileClasspath,testRuntimeClasspath",
+      "signal": "hasTestConfigurations",
+      "guidance": "If the project has test configurations and the user wants a clean, production-only BOM, exclude them here. When isAndroidProject=true, the recommended value is debug,test to exclude all debug and test build variants."
+    },
+    {
+      "key": "detect.gradle.excluded.projects",
+      "type": "List<String>",
+      "description": "A comma-separated list of Gradle subprojects to exclude by name.",
+      "example": "--detect.gradle.excluded.projects=test-utils,integration-tests",
+      "signal": "subProjects",
+      "guidance": "Use if the user wants to skip specific subprojects by their simple name."
+    },
+    {
+      "key": "detect.gradle.configuration.types.excluded",
+      "type": "List<String>",
+      "description": "Gradle configuration types to exclude (e.g., UNRESOLVED). Including unresolved configurations could lead to false positives.",
+      "example": "--detect.gradle.configuration.types.excluded=UNRESOLVED",
+      "signal": "hasUnresolvedConfigurations",
+      "guidance": "If the user wants to reduce BOM clutter and prevent false positives from Gradle configurations that cannot be resolved, set this to 'UNRESOLVED'."
+    },
+    {
+      "key": "detect.gradle.root.only",
+      "type": "Boolean",
+      "description": "If set to true, Gradle Native Inspector will only evaluate root project dependencies.",
+      "example": "--detect.gradle.root.only=true",
+      "signal": "static",
+      "guidance": "Use if the user explicitly states they ONLY want to scan the root project and ignore all subprojects. Do not combine this with included/excluded project flags."
+    }
+  ]
+}
