@@ -35,7 +35,11 @@ public class CodeLocationAccumulator {
         nonWaitableCodeLocations.add(name);
     }
 
-    public void incrementAdditionalCounts(DetectTool tool, int count) {
+    /** Increments the count of code locations for the given tool which will later be used by
+     *  {@link com.blackduck.integration.detect.workflow.blackduck.integratedmatching.ScanCountsPayloadCreator}
+     *  when correlated scanning is enabled. This method must be called whenever a code location is created for a tool
+     *  that supports correlated scanning. */
+    public void incrementCodeLocationCountForTool(DetectTool tool, int count) {
         additionalCountsByTool.put(tool, additionalCountsByTool.getOrDefault(tool, 0) + count);
     }
 

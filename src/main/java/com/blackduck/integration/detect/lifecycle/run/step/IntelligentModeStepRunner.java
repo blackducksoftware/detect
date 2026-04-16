@@ -162,6 +162,7 @@ public class IntelligentModeStepRunner {
             );
             codeLocationAccumulator.addNonWaitableCodeLocations(signatureScannerCodeLocationResult.getWaitableCodeLocationData().getSuccessfulCodeLocationNames());
             codeLocationAccumulator.addNonWaitableCodeLocations(signatureScannerCodeLocationResult.getNonWaitableCodeLocationData());
+            codeLocationAccumulator.incrementCodeLocationCountForTool(DetectTool.SIGNATURE_SCAN, 1);
         });
 
         stepHelper.runToolIfIncluded(DetectTool.BINARY_SCAN, "Binary Scanner", () -> {           
@@ -236,7 +237,7 @@ public class IntelligentModeStepRunner {
                     scanIdsToWaitFor.add(scanId);
                     logger.debug("Added package manager scan {} to list of scanIds to wait for.", scanId);
                     codeLocationAccumulator.addNonWaitableCodeLocation(commonScanResult.getCodeLocationName());
-                    codeLocationAccumulator.incrementAdditionalCounts(DetectTool.DETECTOR, 1);
+                    codeLocationAccumulator.incrementCodeLocationCountForTool(DetectTool.DETECTOR, 1);
                     return;
                 }
             }
@@ -340,7 +341,7 @@ public class IntelligentModeStepRunner {
         codeLocationCreationData.ifPresent(uploadBatchOutputCodeLocationCreationData -> codeLocationAccumulator.addNonWaitableCodeLocations(
                 uploadBatchOutputCodeLocationCreationData.getOutput().getSuccessfulCodeLocationNames()
         ));
-        codeLocationAccumulator.incrementAdditionalCounts(DetectTool.DETECTOR, 1);
+        codeLocationAccumulator.incrementCodeLocationCountForTool(DetectTool.DETECTOR, 1);
         if (uploadResult.getUploadOutput().isPresent()) {
             for (UploadOutput result : uploadResult.getUploadOutput().get().getOutput()) {
                 result.getScanId().ifPresent((scanId) -> {

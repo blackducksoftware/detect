@@ -47,27 +47,27 @@ class CodeLocationAccumulatorTest {
     }
 
     @Test
-    void testIncrementAdditionalCounts() {
-        accumulator.incrementAdditionalCounts(DetectTool.DETECTOR, 5);
+    void testIncrementCodeLocationCountForTool() {
+        accumulator.incrementCodeLocationCountForTool(DetectTool.DETECTOR, 5);
 
         assertEquals(1, accumulator.getAdditionalCountsByTool().size());
         assertEquals(5, accumulator.getAdditionalCountsByTool().get(DetectTool.DETECTOR));
     }
 
     @Test
-    void testIncrementAdditionalCountsMultipleTimes() {
-        accumulator.incrementAdditionalCounts(DetectTool.DETECTOR, 3);
-        accumulator.incrementAdditionalCounts(DetectTool.DETECTOR, 7);
+    void testIncrementCodeLocationCountForToolMultipleTimes() {
+        accumulator.incrementCodeLocationCountForTool(DetectTool.DETECTOR, 3);
+        accumulator.incrementCodeLocationCountForTool(DetectTool.DETECTOR, 7);
 
         assertEquals(1, accumulator.getAdditionalCountsByTool().size());
         assertEquals(10, accumulator.getAdditionalCountsByTool().get(DetectTool.DETECTOR));
     }
 
     @Test
-    void testIncrementAdditionalCountsMultipleTools() {
-        accumulator.incrementAdditionalCounts(DetectTool.DETECTOR, 3);
-        accumulator.incrementAdditionalCounts(DetectTool.SIGNATURE_SCAN, 5);
-        accumulator.incrementAdditionalCounts(DetectTool.BINARY_SCAN, 2);
+    void testIncrementCodeLocationCountForToolMultipleTools() {
+        accumulator.incrementCodeLocationCountForTool(DetectTool.DETECTOR, 3);
+        accumulator.incrementCodeLocationCountForTool(DetectTool.SIGNATURE_SCAN, 5);
+        accumulator.incrementCodeLocationCountForTool(DetectTool.BINARY_SCAN, 2);
 
         assertEquals(3, accumulator.getAdditionalCountsByTool().size());
         assertEquals(3, accumulator.getAdditionalCountsByTool().get(DetectTool.DETECTOR));
@@ -76,8 +76,8 @@ class CodeLocationAccumulatorTest {
     }
 
     @Test
-    void testIncrementAdditionalCountsZero() {
-        accumulator.incrementAdditionalCounts(DetectTool.DETECTOR, 0);
+    void testIncrementCodeLocationCountForToolZero() {
+        accumulator.incrementCodeLocationCountForTool(DetectTool.DETECTOR, 0);
 
         assertEquals(1, accumulator.getAdditionalCountsByTool().size());
         assertEquals(0, accumulator.getAdditionalCountsByTool().get(DetectTool.DETECTOR));
