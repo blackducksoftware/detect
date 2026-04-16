@@ -19,8 +19,7 @@ public class CodeLocationAccumulator {
     public void addWaitableCodeLocations(DetectTool detectTool, CodeLocationCreationData<? extends CodeLocationBatchOutput<?>> creationData) {
         addWaitableCodeLocations(new WaitableCodeLocationData(detectTool,
             creationData.getOutput().getExpectedNotificationCount(),
-            creationData.getOutput().getSuccessfulCodeLocationNames(),
-            creationData.getNotificationTaskRange()
+            creationData.getOutput().getSuccessfulCodeLocationNames()
         ));
     }
 

@@ -66,7 +66,7 @@ public class SignatureScanStepRunner {
             reports = executeScan(scanBatch, scanBatchRunner, scanPaths, scanIdsToWaitFor, gson,true);
         }
 
-        return operationRunner.calculateWaitableSignatureScannerCodeLocations(null, reports);
+        return operationRunner.calculateWaitableSignatureScannerCodeLocations(reports);
     }
     
     public SignatureScanOuputResult runRapidSignatureScannerOnline(String detectRunUuid, BlackDuckRunData blackDuckRunData, NameVersion projectNameVersion, DockerTargetData dockerTargetData)

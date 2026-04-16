@@ -114,11 +114,11 @@ public class IntelligentModeStepRunner {
         logger.debug("Processing Detect Code Locations.");
 
         // Code locations upload waiting mechanisms:
-        // Notifications based (scan level)
+        // Notifications based
         long codeLocationsUploadStartTime = System.currentTimeMillis();
         AtomicBoolean mustWaitAtBomSummaryLevel = new AtomicBoolean(false);
 
-        // BOM status based (BOM summary level)
+        // ScanID based (/bom-status/{scanId} level)
         Set<String> scanIdsToWaitFor = new HashSet<>();
 
         CodeLocationAccumulator codeLocationAccumulator = new CodeLocationAccumulator();

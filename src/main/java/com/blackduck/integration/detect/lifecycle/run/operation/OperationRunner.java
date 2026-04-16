@@ -1304,13 +1304,12 @@ public class OperationRunner {
     }
 
     public SignatureScannerCodeLocationResult calculateWaitableSignatureScannerCodeLocations(
-        NotificationTaskRange notificationTaskRange,
         List<SignatureScannerReport> reports
     ) throws OperationException {
         return auditLog.namedInternal(
             "Calculate Signature Scanner Waitable Code Locations",
             () -> new CalculateWaitableSignatureScanCodeLocations()
-                .calculateWaitableCodeLocations(notificationTaskRange, reports)
+                .calculateWaitableCodeLocations(reports)
         );
     }
 
