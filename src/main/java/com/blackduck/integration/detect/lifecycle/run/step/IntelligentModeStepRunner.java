@@ -188,7 +188,7 @@ public class IntelligentModeStepRunner {
             IacScanStepRunner iacScanStepRunner = new IacScanStepRunner(operationRunner);
             // IAC is not a supported correlated scan type, so pass null for correlation ID
             IacScanCodeLocationData iacScanCodeLocationData = iacScanStepRunner.runIacScanOnline(null, projectNameVersion, blackDuckRunData);
-            codeLocationAccumulator.addNonWaitableCodeLocation(iacScanCodeLocationData.getCodeLocationNames());
+            codeLocationAccumulator.addNonWaitableCodeLocations(iacScanCodeLocationData.getCodeLocationNames());
         });
 
         logger.debug("Completed Detect Code Location processing.");
