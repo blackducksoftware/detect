@@ -1,0 +1,15 @@
+pluginManagement {
+    repositories {
+        google()
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'demo-app'
+
+include 'core'
+include 'api'
+include 'test-fixtures'
+include 'integration-tests'
+

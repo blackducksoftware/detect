@@ -1,0 +1,7 @@
+dependencies {
+    implementation project(':core')
+    implementation 'org.springframework.boot:spring-boot-starter-web:3.2.4'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.0'
+    // compileOnly, annotationProcessor, debug, test — declared in root subprojects block
+}
+

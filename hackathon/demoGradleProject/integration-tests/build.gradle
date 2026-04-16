@@ -1,0 +1,8 @@
+dependencies {
+    implementation project(':core')
+    implementation project(':api')
+    implementation project(':test-fixtures')
+    implementation 'org.testcontainers:testcontainers:1.19.7'
+    implementation 'com.h2database:h2:2.2.224'
+}
+
