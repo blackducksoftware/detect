@@ -149,7 +149,7 @@ public class GradleAiContextAdapter implements AiContextAdapter {
 
         if (ctx.isAndroidProject) {
             questions.add(new AiQuestion(
-                "Android build variants detected. Exclude debug/test configurations from the security scan? (Y|n)",
+                "Android build variants detected. Exclude debug/test configurations from the security scan?",
                 AiQuestion.Type.YES_NO,
                 "Android projects generate noisy BOMs from Debug, Release, Test variants. Excluding them produces a clean production-only scan."
             ));
@@ -177,14 +177,14 @@ public class GradleAiContextAdapter implements AiContextAdapter {
             ? "Unresolved configurations detected (" + String.join(", ", ctx.detectedUnresolvedConfigs) + ")."
             : "No unresolved configurations detected.";
         questions.add(new AiQuestion(
-            "Unresolved configurations can produce inaccurate dependency versions. Exclude them? (Y|n)",
+            "Unresolved configurations can produce inaccurate dependency versions. Exclude them?",
             AiQuestion.Type.YES_NO,
             unresolvedHint
         ));
 
         if (!ctx.subProjects.isEmpty()) {
             questions.add(new AiQuestion(
-                "Would you like to scan only the root project and ignore all subprojects? (y|N)",
+                "Would you like to scan only the root project and ignore all subprojects?",
                 AiQuestion.Type.YES_NO,
                 "Useful for large projects where only the root-level BOM matters."
             ));

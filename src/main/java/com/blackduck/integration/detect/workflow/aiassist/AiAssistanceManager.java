@@ -59,9 +59,9 @@ public class AiAssistanceManager {
      */
     public MapPropertySource run(File sourceDirectory, InteractiveWriter writer, List<PropertySource> propertySources) {
         writer.println();
-        writer.println("╔══════════════════════════════════════════════╗");
-        writer.println("║     Detect AI Assistance — Pre-scan Mode     ║");
-        writer.println("╚══════════════════════════════════════════════╝");
+        writer.println("╔═════════════════════════════════════════════════════════╗");
+        writer.println("║     Detect AI Assistance Quackstart — Pre-scan Mode     ║");
+        writer.println("╚═════════════════════════════════════════════════════════╝");
         writer.println();
         writer.println("Analysing project at: " + sourceDirectory.getAbsolutePath());
         writer.println();
