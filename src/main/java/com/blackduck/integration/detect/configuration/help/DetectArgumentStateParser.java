@@ -12,6 +12,7 @@ public class DetectArgumentStateParser {
         boolean isHelpYamlDocument = parser.isArgumentPresent("-hyaml", "--helpyaml");
         boolean isInteractive = parser.isArgumentPresent("-i", "--interactive");
         boolean isAiAssistance = parser.isArgumentPresent("--quackstart", "--quackstart-assist");
+        boolean isQuackStartExpress = parser.isArgumentPresent("--quackstart.express", "--quackstart-express");
 
         boolean isVerboseHelp = parser.isArgumentPresent("-hv", "--helpVerbose");
         boolean isDeprecatedHelp = parser.isArgumentPresent("-hd", "--helpDeprecated");
@@ -37,7 +38,8 @@ public class DetectArgumentStateParser {
             parsedValue,
             isDiagnostic,
             isGenerateAirGapZip,
-            isAiAssistance
+            isAiAssistance,
+            isQuackStartExpress
         );
     }
 

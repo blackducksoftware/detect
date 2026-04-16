@@ -20,6 +20,8 @@ public class DetectArgumentState {
 
     private final boolean isAiAssistance;
 
+    private final boolean isQuackStartExpress;
+
     public DetectArgumentState(
         boolean isHelp,
         boolean isHelpJsonDocument,
@@ -32,7 +34,7 @@ public class DetectArgumentState {
         boolean isGenerateAirGapZip
     ) {
         this(isHelp, isHelpJsonDocument, isHelpYamlDocument, isInteractive,
-            isVerboseHelp, isDeprecatedHelp, parsedValue, isDiagnostic, isGenerateAirGapZip, false);
+            isVerboseHelp, isDeprecatedHelp, parsedValue, isDiagnostic, isGenerateAirGapZip, false, false);
     }
 
     public DetectArgumentState(
@@ -47,6 +49,23 @@ public class DetectArgumentState {
         boolean isGenerateAirGapZip,
         boolean isAiAssistance
     ) {
+        this(isHelp, isHelpJsonDocument, isHelpYamlDocument, isInteractive,
+            isVerboseHelp, isDeprecatedHelp, parsedValue, isDiagnostic, isGenerateAirGapZip, isAiAssistance, false);
+    }
+
+    public DetectArgumentState(
+        boolean isHelp,
+        boolean isHelpJsonDocument,
+        boolean isHelpYamlDocument,
+        boolean isInteractive,
+        boolean isVerboseHelp,
+        boolean isDeprecatedHelp,
+        @Nullable String parsedValue,
+        boolean isDiagnostic,
+        boolean isGenerateAirGapZip,
+        boolean isAiAssistance,
+        boolean isQuackStartExpress
+    ) {
         this.isHelp = isHelp;
         this.isHelpJsonDocument = isHelpJsonDocument;
         this.isHelpYamlDocument = isHelpYamlDocument;
@@ -57,6 +76,7 @@ public class DetectArgumentState {
         this.isDiagnostic = isDiagnostic;
         this.isGenerateAirGapZip = isGenerateAirGapZip;
         this.isAiAssistance = isAiAssistance;
+        this.isQuackStartExpress = isQuackStartExpress;
     }
 
     public boolean isHelp() {
@@ -98,5 +118,9 @@ public class DetectArgumentState {
 
     public boolean isAiAssistance() {
         return isAiAssistance;
+    }
+
+    public boolean isQuackStartExpress() {
+        return isQuackStartExpress;
     }
 }

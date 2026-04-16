@@ -7,6 +7,8 @@ import com.blackduck.integration.detectable.detectable.ai.AiContextAdapter;
 import com.blackduck.integration.detectable.detectable.ai.AiQuestion;
 import com.blackduck.integration.detectable.detectables.gradle.ai.GradleAiContextAdapter;
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenAiContextAdapter;
+import com.blackduck.integration.detectable.detectables.maven.cli.MavenProjectSummary;
+import com.blackduck.integration.detectable.detectables.maven.cli.MavenProjectSummarizer;
 import com.blackduck.integration.detect.interactive.InteractiveWriter;
 import com.google.gson.Gson;
 import org.slf4j.Logger;
@@ -46,6 +48,108 @@ public class AiAssistanceManager {
     public AiAssistanceManager(Gson gson) {
         this.gson     = gson;
         this.adapters = buildAdapters();
+    }
+
+    /**
+     * Runs the QuackStart Express pre-scan phase (no questions — full project analysis).
+     *
+     * <p>Flow:</p>
+     * <ol>
+     *   <li>Privacy disclaimer — user must accept before any data is sent</li>
+     *   <li>{@link MavenProjectSummarizer} walks all {@code pom.xml} files recursively</li>
+     *   <li>Structured summary is sent to the LLM (or mock) for flag selection</li>
+     *   <li>Suggested flags are presented with module-specific explanations</li>
+     *   <li>User accepts or rejects</li>
+     * </ol>
+     *
+     * @param sourceDirectory project root
+     * @param writer          terminal I/O
+     * @param propertySources raw property sources (used to read LLM credentials)
+     * @return a {@link MapPropertySource} with AI-suggested flags at highest priority
+     */
+    public MapPropertySource runExpress(File sourceDirectory, InteractiveWriter writer, List<PropertySource> propertySources) {
+        writer.println();
+        writer.println("╔══════════════════════════════════════════════╗");
+        writer.println("║     QuackStart Express — Full Analysis       ║");
+        writer.println("╚══════════════════════════════════════════════╝");
+        writer.println();
+        writer.println("Analysing project at: " + sourceDirectory.getAbsolutePath());
+        writer.println();
+
+        // ── Privacy disclaimer ────────────────────────────────────────────────
+        writer.println("  ⚠  Express mode: build metadata (module names, scopes, profiles)");
+        writer.println("     will be sent to the LLM. No source code is included.");
+        writer.println();
+        Boolean proceed = writer.askYesOrNo("Proceed?");
+        writer.println();
+        if (!Boolean.TRUE.equals(proceed)) {
+            writer.println("Express mode cancelled. Running scan with original settings.");
+            writer.println();
+            return new MapPropertySource(PROPERTY_SOURCE_NAME, new LinkedHashMap<>());
+        }
+
+        // ── LLM credentials ───────────────────────────────────────────────────
+        String llmApiKey      = System.getenv("DETECT_LLM_API_KEY");
+        String llmApiEndpoint = System.getenv("DETECT_LLM_API_ENDPOINT");
+        String llmName        = System.getenv("DETECT_LLM_MODEL_NAME");
+        boolean llmAvailable  = llmApiKey != null && !llmApiKey.isEmpty()
+                             && llmApiEndpoint != null && !llmApiEndpoint.isEmpty()
+                             && llmName != null && !llmName.isEmpty();
+        if (!llmAvailable) {
+            writer.println("  LLM credentials not configured — running in MOCK mode.");
+            writer.println("   (Set DETECT_LLM_API_KEY, DETECT_LLM_API_ENDPOINT, DETECT_LLM_MODEL_NAME for real LLM suggestions)");
+            writer.println();
+        }
+
+        // ── Maven: check applicable ───────────────────────────────────────────
+        MavenAiContextAdapter mavenAdapter = new MavenAiContextAdapter();
+        if (!mavenAdapter.isApplicable(sourceDirectory)) {
+            writer.println("No Maven project detected (pom.xml not found). Express mode supports Maven only.");
+            writer.println();
+            return new MapPropertySource(PROPERTY_SOURCE_NAME, new LinkedHashMap<>());
+        }
+
+        // ── Summarise all pom.xml files ───────────────────────────────────────
+        MavenProjectSummarizer summarizer = new MavenProjectSummarizer();
+        writer.println(" Detected: MAVEN project");
+        writer.println("  Reading all pom.xml files...");
+        MavenProjectSummary summary = summarizer.summarize(sourceDirectory);
+        writer.println("  Found " + summary.getModules().size() + " module(s).");
+        writer.println("  Sending project summary to LLM for analysis...");
+        writer.println();
+
+        logger.info("[QuackStart Express] Project summary:\n{}", summary.toPromptString());
+
+        // ── Call LLM ──────────────────────────────────────────────────────────
+        AiFlagsMetadataLoader flagsLoader  = new AiFlagsMetadataLoader();
+        String                flagsCatalog = flagsLoader.loadFlagsJson("MAVEN");
+
+        AiAssistanceLlmClient llmClient = new AiAssistanceLlmClient(llmApiKey, llmApiEndpoint, llmName, gson);
+        LlmFlagSuggestion suggestion    = llmClient.suggestFlagsFromProjectSummary(summary, flagsCatalog);
+
+        logger.info("[QuackStart Express] LLM suggestion: flags={}, explanations={}",
+                suggestion.flags, suggestion.explanations);
+
+        if (suggestion.isEmpty()) {
+            writer.println("No AI configuration suggestions for this Maven project.");
+            writer.println();
+            return new MapPropertySource(PROPERTY_SOURCE_NAME, new LinkedHashMap<>());
+        }
+
+        presentSuggestedCommand(suggestion.flags, suggestion.explanations, writer);
+
+        Boolean accepted = writer.askYesOrNo("Accept this configuration and run the scan?");
+        writer.println();
+
+        if (Boolean.TRUE.equals(accepted)) {
+            writer.println("Configuration accepted. Starting scan with AI-suggested flags.");
+            writer.println();
+            return new MapPropertySource(PROPERTY_SOURCE_NAME, suggestion.flags);
+        } else {
+            writer.println("Configuration declined. Running scan with original settings.");
+            writer.println();
+            return new MapPropertySource(PROPERTY_SOURCE_NAME, new LinkedHashMap<>());
+        }
     }
 
     /**

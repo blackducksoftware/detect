@@ -139,6 +139,12 @@ public class DetectBoot {
             InteractiveWriter writer = InteractiveWriter.defaultWriter(System.console(), System.in, System.out);
             MapPropertySource aiPropertySource = aiAssistanceManager.run(sourceDirectory, writer, propertySources);
             propertySources.add(0, aiPropertySource);
+        } else if (detectArgumentState.isQuackStartExpress()) {
+            File sourceDirectory = resolveSourceDirectory(propertySources);
+            AiAssistanceManager aiAssistanceManager = detectBootFactory.createAiAssistanceManager();
+            InteractiveWriter writer = InteractiveWriter.defaultWriter(System.console(), System.in, System.out);
+            MapPropertySource aiPropertySource = aiAssistanceManager.runExpress(sourceDirectory, writer, propertySources);
+            propertySources.add(0, aiPropertySource);
         }
 
         SortedMap<String, String> scanSettingsProperties = new TreeMap<>();

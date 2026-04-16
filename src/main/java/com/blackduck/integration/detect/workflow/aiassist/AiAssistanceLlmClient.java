@@ -1,5 +1,6 @@
 package com.blackduck.integration.detect.workflow.aiassist;
 
+import com.blackduck.integration.detectable.detectables.maven.cli.MavenProjectSummary;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -17,8 +18,10 @@ import org.apache.http.HttpHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -169,6 +172,148 @@ public class AiAssistanceLlmClient {
             logger.debug("LLM API error details", e);
             return LlmFlagSuggestion.empty();
         }
+    }
+
+    /**
+     * Express mode: sends a full structured project summary (all modules) to the LLM
+     * and asks it to decide which flags to apply without any Q&A.
+     *
+     * @param summary      structured summary from {@code MavenProjectSummarizer}
+     * @param flagsMetadata JSON string from {@link AiFlagsMetadataLoader}
+     * @return an {@link LlmFlagSuggestion}; never {@code null}
+     */
+    public LlmFlagSuggestion suggestFlagsFromProjectSummary(MavenProjectSummary summary, String flagsMetadata) {
+        if (llmApiKey.isEmpty() || llmApiEndpoint.isEmpty() || llmName.isEmpty()) {
+            logger.info("[QuackStart Express] No LLM credentials configured — using mock suggestion.");
+            return buildExpressMockSuggestion(summary);
+        }
+
+        String systemPrompt =
+            "You are a Senior Black Duck Software Composition Analysis (SCA) Engineer.\n"
+            + "You are given a structured summary of a Maven project's build metadata — module names, "
+            + "dependency scopes, and profile information. NO source code is included.\n\n"
+            + "RULES:\n"
+            + "1. You are provided with a strictly allowed catalog of Detect flags. DO NOT invent or guess flags outside this catalog.\n"
+            + "2. Analyse the project summary and determine which flags from the catalog are appropriate.\n"
+            + "3. Do NOT ask clarifying questions. Return flags and explanations directly based on what you observe.\n"
+            + "4. You MUST output your response in strict JSON format. Do not use Markdown formatting.\n\n"
+            + "JSON SCHEMA:\n"
+            + "{\n"
+            + "  \"analysis\": \"<Step-by-step reasoning over the project summary to decide which flags are necessary>\",\n"
+            + "  \"flags\": { \"<detect.property.key>\": \"<exact_value>\" },\n"
+            + "  \"explanations\": { \"<detect.property.key>\": \"<One sentence citing the specific module/scope/profile evidence>\" }\n"
+            + "}\n"
+            + "If no flags are needed, leave 'flags' and 'explanations' empty.";
+
+        String userPrompt =
+            "Target Detector: MAVEN\n\n"
+            + "Maven Project Summary:\n" + summary.toPromptString() + "\n"
+            + "Allowed Flags Catalog:\n" + flagsMetadata + "\n\n"
+            + "Based on the project summary above, determine which flags should be set.\n"
+            + "Return the JSON output now.";
+
+        try {
+            String requestBody = buildRequestBody(systemPrompt, userPrompt);
+
+            IntHttpClient httpClient = new IntHttpClient(
+                new SilentIntLogger(), gson, TIMEOUT_SECONDS, true, ProxyInfo.NO_PROXY_INFO);
+
+            Map<String, String> headers = new HashMap<>();
+            headers.put(HttpHeaders.CONTENT_TYPE, "application/json");
+            headers.put(HttpHeaders.AUTHORIZATION, "Bearer " + llmApiKey);
+
+            Request request = new Request(
+                new HttpUrl(llmApiEndpoint + CHAT_COMPLETIONS_PATH),
+                HttpMethod.POST,
+                null,
+                new HashMap<>(),
+                headers,
+                StringBodyContent.json(requestBody)
+            );
+
+            try (Response response = httpClient.execute(request)) {
+                if (response.isStatusCodeSuccess()) {
+                    String content = extractMessageContent(response.getContentString());
+                    return content != null ? parseSuggestion(content) : LlmFlagSuggestion.empty();
+                } else {
+                    logger.warn("LLM API returned status {}: {}", response.getStatusCode(), response.getStatusMessage());
+                    return LlmFlagSuggestion.empty();
+                }
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to contact LLM API at {}: {}", llmApiEndpoint, e.getMessage());
+            logger.debug("LLM API error details", e);
+            return LlmFlagSuggestion.empty();
+        }
+    }
+
+    /**
+     * Express mock: derives flag suggestions directly from the structured project summary
+     * without calling an LLM. Mirrors the logic the real LLM would apply.
+     */
+    private LlmFlagSuggestion buildExpressMockSuggestion(MavenProjectSummary summary) {
+        Map<String, String> flags        = new LinkedHashMap<>();
+        Map<String, String> explanations = new LinkedHashMap<>();
+
+        List<String> modulesWithTestDeps  = new ArrayList<>();
+        List<String> testOnlyModuleNames  = new ArrayList<>();
+        boolean hasProfiles = false;
+        String  productionProfile = null;
+        String  devProfile        = null;
+
+        for (MavenProjectSummary.ModuleSummary m : summary.getModules()) {
+            // Q1 signal: any module with test-scoped deps
+            if (m.depsByScope.containsKey("test") && !m.depsByScope.get("test").isEmpty()) {
+                modulesWithTestDeps.add(m.artifactId);
+            }
+
+            // Q2 signal: profiles (pick from root module)
+            if (!m.profileCompileDeps.isEmpty() && productionProfile == null) {
+                hasProfiles = true;
+                for (String profileId : m.profileCompileDeps.keySet()) {
+                    if (profileId.toLowerCase().contains("prod")) productionProfile = profileId;
+                    if (profileId.toLowerCase().contains("dev"))  devProfile        = profileId;
+                }
+            }
+
+            // Q3 signal: modules that are test/utility (only have test-scope or no compile deps)
+            boolean hasOnlyTestDeps = !m.depsByScope.isEmpty()
+                && !m.depsByScope.containsKey("compile")
+                && m.depsByScope.containsKey("test");
+            boolean nameIndicatesTest = m.artifactId.toLowerCase().contains("test")
+                || m.artifactId.toLowerCase().contains("integration");
+            if ((hasOnlyTestDeps || nameIndicatesTest) && m.parentArtifactId != null) {
+                testOnlyModuleNames.add(m.artifactId);
+            }
+        }
+
+        // Apply flag 1: exclude test scopes
+        if (!modulesWithTestDeps.isEmpty()) {
+            flags.put("detect.maven.excluded.scopes", "test");
+            explanations.put("detect.maven.excluded.scopes",
+                "Modules " + String.join(", ", modulesWithTestDeps)
+                + " declare test-scoped dependencies — excluding them produces a clean production-only BOM.");
+        }
+
+        // Apply flag 2: activate production profile
+        if (hasProfiles && productionProfile != null) {
+            flags.put("detect.maven.build.command", "-P" + productionProfile);
+            explanations.put("detect.maven.build.command",
+                "The '" + productionProfile + "' profile activates production-specific dependencies"
+                + (devProfile != null ? " (replacing the '" + devProfile + "' dev profile)" : "")
+                + " — ensures the correct environment dependencies are resolved.");
+        }
+
+        // Apply flag 3: exclude test utility modules
+        if (!testOnlyModuleNames.isEmpty()) {
+            flags.put("detect.maven.excluded.modules", String.join(",", testOnlyModuleNames));
+            explanations.put("detect.maven.excluded.modules",
+                "Modules " + String.join(", ", testOnlyModuleNames)
+                + " appear to be test/utility modules — excluding them prevents their "
+                + "transitive dependencies from appearing in the production BOM.");
+        }
+
+        return new LlmFlagSuggestion(flags, explanations);
     }
 
     /**

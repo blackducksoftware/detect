@@ -5,14 +5,14 @@
 
 ## What We Built
 
-A pre-scan mode for Black Duck Detect (`--ai`) that:
+A pre-scan mode for Black Duck Detect (`--quackstart`) that eliminates the need to know Detect flags before running a scan:
 
-1. Detects which build-system is in use (Maven today, extensible to others)
+1. Detects which build system is in use (Maven, Gradle, Bazel, NuGet)
 2. Parses the project's build files silently to gather signals
 3. Asks the developer **3 short, targeted questions** in the terminal
 4. Sends the answers + a flags catalog to an LLM
 5. LLM decides which Detect flags to apply **and explains why**
-6. User accepts or rejects → if accepted the flags are injected at highest priority and the real scan runs
+6. User accepts or rejects → if accepted, the flags are injected at highest priority and the real scan runs
 
 No manual flag knowledge required. No docs to read.
 
@@ -73,7 +73,7 @@ Exclude test dependencies from the scan? (Y|n)
 
 **Default scan result (no profile flag):**
 
-Maven does not auto-activate profiles unless explicitly passed. However, when `mvn dependency:tree` runs without `-P`, it resolves the `dev` profile's H2 dependency as a compile-scope component — so **H2 ends up in the production BOM** while **PostgreSQL does not appear at all**.
+Maven does not auto-activate profiles unless explicitly passed. When `mvn dependency:tree` runs without `-P`, it resolves the `dev` profile's H2 dependency as a compile-scope component — so **H2 ends up in the production BOM** while **PostgreSQL does not appear at all**.
 
 ```
 com.example:demo-app:1.0.0
@@ -162,7 +162,7 @@ Open the Black Duck project and note the BOM. You will see:
 
 ---
 
-### Step 2 — Run with AI assist (mock mode — no LLM key needed)
+### Step 2 — Run with QuackStart guided mode (mock mode — no LLM key needed)
 
 ```bash
 java -jar build/libs/detect-*.jar \
@@ -171,28 +171,28 @@ java -jar build/libs/detect-*.jar \
   --blackduck.api.token=<your-token> \
   --detect.project.name=ai-assist-demo \
   --detect.project.version.name=1.0-ai-assisted \
-  --ai
+  --quackstart
 ```
 
 The terminal will show:
 
 ```
-╔══════════════════════════════════════════════╗
-║     Detect AI Assistance — Pre-scan Mode     ║
-╚══════════════════════════════════════════════╝
+╔═════════════════════════════════════════════════════════╗
+║     Detect AI Assistance Quackstart — Pre-scan Mode     ║
+╚═════════════════════════════════════════════════════════╝
 
 Analysing project at: .../demoMavenProject
 
-⚠  LLM credentials not configured — running in MOCK mode.
-   (Set detect.llm.api.key / detect.llm.api.endpoint / detect.llm.name for real LLM suggestions)
+  LLM credentials not configured — running in MOCK mode.
+   (Set DETECT_LLM_API_KEY, DETECT_LLM_API_ENDPOINT, DETECT_LLM_MODEL_NAME for real LLM suggestions)
 
-✔ Detected: MAVEN project
+ Detected: MAVEN project
   Analysing build files...
 
 Answer a few questions so we can configure the scan correctly:
 
   ℹ  Test-scoped dependencies detected in pom.xml.
-Exclude test dependencies from the scan? (Y|n)
+Exclude test dependencies from the scan? (recommended for a production BOM)
 > y
 
   ℹ  Profiles detected in pom.xml: dev, production
@@ -208,19 +208,14 @@ Exclude any sub-modules from the scan? Enter module name(s) or press Enter to sk
 ─────────────────────────────────────────────────────────
 AI-Suggested Detect Configuration:
 
-  ./detect.sh \
     --detect.maven.excluded.scopes=test \
     --detect.maven.build.command=-Pproduction \
     --detect.maven.excluded.modules=test-utils,integration-tests
 
 Why:
-  ✔ detect.maven.excluded.scopes=test
-    → User chose to exclude test dependencies — produces a clean production-only BOM.
-  ✔ detect.maven.build.command=-Pproduction
-    → User activated the 'production' profile — ensures correct environment-specific
-      dependencies are resolved during the scan.
-  ✔ detect.maven.excluded.modules=test-utils,integration-tests
-    → User excluded test/utility modules that should not appear in the production BOM.
+  ✔ detect.maven.excluded.scopes=test  →  User chose to exclude test dependencies — produces a clean production-only BOM.
+  ✔ detect.maven.build.command=-Pproduction  →  User activated the 'production' profile — ensures correct environment-specific dependencies are resolved during the scan.
+  ✔ detect.maven.excluded.modules=test-utils,integration-tests  →  User excluded test/utility modules that should not appear in the production BOM.
 ─────────────────────────────────────────────────────────
 
 Accept this configuration and run the scan? (Y|n)
@@ -240,10 +235,14 @@ java -jar build/libs/detect-*.jar \
   --blackduck.api.token=<your-token> \
   --detect.project.name=ai-assist-demo \
   --detect.project.version.name=1.0-ai-real-llm \
-  --detect.llm.api.endpoint=https://api.openai.com/v1 \
-  --detect.llm.api.key=<your-openai-key> \
-  --detect.llm.name=gpt-4o \
-  --ai
+  --quackstart
+```
+
+Set credentials via environment variables before running:
+```bash
+export DETECT_LLM_API_KEY=<your-openai-key>
+export DETECT_LLM_API_ENDPOINT=https://api.openai.com/v1
+export DETECT_LLM_MODEL_NAME=gpt-4o
 ```
 
 The flow is identical — the only difference is the flag suggestion comes from the live LLM instead of the local mock. Same 3 questions, same accept/reject step.
@@ -267,48 +266,17 @@ The flow is identical — the only difference is the flag suggestion comes from 
 
 ## Why Use an LLM? (Why not just rules?)
 
-This is a fair question — and the mock mode in the code makes it especially pointed:
-`buildMockSuggestion()` in `AiAssistanceLlmClient` is literally a set of `if` statements that
-produce the same 3 flag suggestions. For today's 3 Maven flags, rules work perfectly.
-So why involve an LLM at all?
-
-### The mock mode IS rules — and that's intentional
-
-The mock path demonstrates the **minimum viable version** of the idea.
-It also serves as a fallback when no LLM credentials are configured, so the full
-interactive flow works in CI and offline demos without an API key.
-Both paths produce an identical `LlmFlagSuggestion` — the architecture treats them as interchangeable.
+For the 3 Maven flags in today's demo, a rules engine works perfectly. So why involve an LLM at all?
 
 ### Where the LLM genuinely adds value
 
-#### 1. The flags catalog is the key architectural bet
+**The flags catalog is the key architectural bet.** The LLM receives a `maven-flags.json` grounding document at runtime. To support a new detector (Gradle, Bazel, npm), you write one JSON file describing its flags — the LLM reads it and decides which flags apply. A pure rules engine requires new branches in code per detector, per flag, per combination.
 
-The LLM receives `maven-flags.json` as a **grounding document at runtime**.
-The promise is: to support a new detector (Gradle, Bazel, npm), you write one JSON file
-describing its flags — the LLM reads it and decides which flags apply.
-A pure rules engine requires new `if/else` branches per detector, per flag, per combination.
+**Flag interactions grow combinatorially with scale.** Three flags are easy to reason about. Detect has dozens of flags across many detectors. Rules for *"if flag A and flag B are both triggered, but B conflicts with C unless D is also set"* become unmaintainable quickly. The LLM reasons over the full catalog naturally.
 
-#### 2. Flag interactions grow combinatorially with scale
+**Free-text answer interpretation.** Profile names and module names are typed by the user. An LLM gracefully handles `"skip"`, `""`, `"none"`, typos, or `"prod,staging"` without case-by-case string matching.
 
-Three flags are easy to reason about with rules.
-Detect has dozens of flags across many detectors.
-Rules for *"if flag A and flag B are both triggered, but B conflicts with C unless D is also set"*
-become unmaintainable quickly. The LLM reasons over the full catalog naturally.
-
-#### 3. Free-text answer interpretation
-
-Questions 2 and 3 accept free-text input (profile names, module names typed by the user).
-Rules handle the happy path.
-An LLM gracefully handles `"skip"`, `""`, `"none"`, typos, or `"prod,staging"` without
-case-by-case string matching.
-
-#### 4. Context-aware, natural-language explanations
-
-The **"Why:"** block needs per-flag, context-sensitive explanations — not canned strings.
-Rules produce `"User activated the 'production' profile"` for every profile name.
-The LLM can explain *why that specific choice matters for this specific project*, e.g.:
-> *"Activating 'production' replaces the H2 in-memory dev DB with PostgreSQL —
-> the correct driver for the production BOM."*
+**Context-aware explanations.** The "Why:" block needs per-flag, context-sensitive explanations. The LLM can explain *why a specific choice matters for this specific project*, rather than returning the same canned string every time.
 
 ### The honest trade-off
 
@@ -321,99 +289,95 @@ The LLM can explain *why that specific choice matters for this specific project*
 | Explanation quality | canned, repetitive strings | context-aware prose per project |
 | New flag added to catalog | requires code change | zero code change — update JSON only |
 
-The mock mode is the rules engine standing in until an LLM is available.
-The real payoff arrives when the catalog grows past what a rules engine can sanely maintain.
+The mock mode is the rules engine standing in until an LLM is available. The real payoff arrives when the catalog grows past what a rules engine can sanely maintain.
 
 ---
 
-## Architecture — How It Works (for technical reviewers)
+## QuackStart Express — Zero-Question Mode
 
-```
-DetectBoot.java
-    └── detectArgumentState.isAiAssistance()   ← triggered by --ai or --ai-assist
-            │
-            ▼
-    AiAssistanceManager.run()
-            │
-            ├── for each AiContextAdapter (Maven today, extensible):
-            │       ├── isApplicable()          ← checks pom.xml exists
-            │       ├── isExtractable()         ← checks mvnw / mvn on PATH
-            │       ├── extractContext()        ← parses pom.xml silently
-            │       │       └── MavenAiContext  (hasTestDeps, profiles[], modules[])
-            │       │
-            │       ├── getQuestions(context)   ← 3 questions with pom.xml hints
-            │       ├── collectUserAnswers()    ← interactive terminal Q&A
-            │       │
-            │       ├── AiFlagsMetadataLoader   ← loads /aiassist/maven-flags.json
-            │       │
-            │       └── AiAssistanceLlmClient.suggestFlags(qanda, flagsJson)
-            │               ├── [mock]  builds LlmFlagSuggestion from answers locally
-            │               └── [real]  POST {endpoint}/chat/completions → parse JSON
-            │
-            ├── presentSuggestedCommand()       ← shows ./detect.sh ... + Why: block
-            ├── writer.askYesOrNo()             ← accept / reject
-            │
-            └── returns MapPropertySource       ← injected at priority 0 (highest)
-                    └── propertySources.add(0, aiPropertySource)
-                            └── normal scan runs with AI flags already set
+### The Problem with Questions
+
+The guided mode (`--quackstart`) works well for first-time users, but it still requires the developer to know what profiles exist, which modules are test-only, and whether they care about test deps. In a large or unfamiliar project, even answering 3 questions correctly takes context.
+
+### What Express Mode Does
+
+`--quackstart.express` removes all questions entirely. Instead of asking the user, it:
+
+1. Walks **all** `pom.xml` files in the project recursively — root and every sub-module
+2. Extracts a compact structured summary of the full project: module names, dependency scopes per module, profile IDs, profile-specific compile dependencies
+3. Sends that summary (not raw XML — only the facts needed for flag decisions) directly to the LLM
+4. The LLM analyses the full picture and selects flags with **module-specific evidence** in its explanations
+5. User accepts or rejects — then the scan runs
+
+### How to Run It
+
+```bash
+java -jar build/libs/detect-*.jar \
+  --detect.source.path=hackathon/demoMavenProject \
+  --blackduck.url=<your-bd-url> \
+  --blackduck.api.token=<your-token> \
+  --detect.project.name=ai-assist-demo \
+  --detect.project.version.name=1.0-express \
+  --quackstart.express
 ```
 
-### Key design decisions
+### What the Terminal Looks Like
 
-| Decision | Rationale |
-|---|---|
-| Q&A lives in `MavenAiContextAdapter.getQuestions()` | Co-located with the detector it knows about; no central if/else |
-| `AiContextAdapter` lives in `detectable` module | Can be extended per-detector without touching the main `detect` module |
-| pom.xml is parsed before questions are asked | Hints shown to user ("Profiles detected: dev, production") make answers obvious |
-| Mock mode when no LLM creds | Full flow works for demos and CI without a live API key |
-| Flags injected as `MapPropertySource` at index 0 | Same mechanism as `--interactive`; no detect internals changed |
-| LLM uses same 3 properties as Quack Patch | Reuses `detect.llm.api.key` / `detect.llm.api.endpoint` / `detect.llm.name` |
+```
+╔══════════════════════════════════════════════╗
+║     QuackStart Express — Full Analysis       ║
+╚══════════════════════════════════════════════╝
 
----
+Analysing project at: .../demoMavenProject
 
-## Extending to a New Detector (e.g. Gradle, Bazel)
+  ⚠  Express mode: build metadata (module names, scopes, profiles)
+     will be sent to the LLM. No source code is included.
 
-1. Create `GradleAiContext implements AiContext` in `detectables/gradle/`
-2. Create `GradleAiContextAdapter implements AiContextAdapter` in the same package
-   - `isApplicable()` — check for `build.gradle`
-   - `isExtractable()` — check for `gradlew` or `gradle` on PATH
-   - `extractContext()` — parse `build.gradle`
-   - `getQuestions()` — return Gradle-specific questions
-3. Create `src/main/resources/aiassist/gradle-flags.json`
-4. Register one line in `AiAssistanceManager.buildAdapters()`:
-   ```java
-   list.add(new GradleAiContextAdapter());
-   ```
+Proceed? (Y|n)
+> y
 
-That's it. The LLM prompt, the Q&A loop, and the accept/reject flow are all generic.
+ Detected: MAVEN project
+  Reading all pom.xml files...
+  Found 4 module(s).
+  Sending project summary to LLM for analysis...
 
----
+─────────────────────────────────────────────────────────
+AI-Suggested Detect Configuration:
 
-## Files Added / Changed (for code reviewers)
+    --detect.maven.excluded.scopes=test \
+    --detect.maven.build.command=-Pproduction \
+    --detect.maven.excluded.modules=test-utils,integration-tests
 
-### New files
-| File | Purpose |
-|---|---|
-| `detectable/.../ai/AiContext.java` | Marker interface — `toPromptString()` |
-| `detectable/.../ai/AiContextAdapter.java` | Extension interface — implement per detector |
-| `detectable/.../ai/AiQuestion.java` | Question descriptor (prompt, type, hint) |
-| `detectables/maven/cli/MavenAiContext.java` | Maven signals: test deps, profiles, modules |
-| `detectables/maven/cli/MavenAiContextAdapter.java` | Maven applicable/extractable/questions logic |
-| `workflow/aiassist/AiAssistanceManager.java` | Orchestrator — runs the full pre-scan phase |
-| `workflow/aiassist/AiAssistanceLlmClient.java` | HTTP call to LLM (mock path if no creds) |
-| `workflow/aiassist/AiFlagsMetadataLoader.java` | Loads `/aiassist/{detector}-flags.json` |
-| `workflow/aiassist/LlmFlagSuggestion.java` | LLM response: `flags{}` + `explanations{}` |
-| `resources/aiassist/maven-flags.json` | Grounding doc — 3 Maven flags with guidance |
+Why:
+  ✔ detect.maven.excluded.scopes=test
+    →  Modules core and api both declare JUnit and Mockito as test-scoped
+       dependencies — excluding them produces a clean production-only BOM.
+  ✔ detect.maven.build.command=-Pproduction
+    →  The 'production' profile activates postgresql (compile scope),
+       replacing the 'dev' profile's h2 in-memory DB that should not
+       appear in the production BOM.
+  ✔ detect.maven.excluded.modules=test-utils,integration-tests
+    →  test-utils contains only test framework deps. integration-tests
+       contains Testcontainers and H2 — not production artifacts.
+─────────────────────────────────────────────────────────
 
-### Modified files
-| File | Change |
-|---|---|
-| `DetectProperties.java` | Added `DETECT_AI_ASSISTANCE_ENABLED` |
-| `DetectGroup.java` | Added `AI_ASSIST` enum value |
-| `DetectArgumentState.java` | Added `isAiAssistance` field + getter |
-| `DetectArgumentStateParser.java` | Parses `--ai` / `--ai-assist` flag |
-| `DetectBoot.java` | Added `else if (isAiAssistance)` branch |
-| `DetectBootFactory.java` | Added `createAiAssistanceManager()` |
+Accept this configuration and run the scan? (Y|n)
+```
 
-**Zero changes to any existing detector, detectable, or scan lifecycle class.**
+Notice the `Why:` block is **richer and more specific** than guided mode — the LLM names the exact modules it observed test deps in, and explains the profile swap in terms of the actual database drivers involved.
 
+### Guided vs. Express — Side by Side
+
+| | `--quackstart` (Guided) | `--quackstart.express` (Express) |
+|---|---|---|
+| User effort | 3 questions | 0 questions |
+| LLM input | User's typed answers | Full project metadata (all modules) |
+| Catches sub-module signals | Root pom only | ✔ All modules scanned |
+| Explanation quality | Generic per-flag | Module-specific, cites evidence |
+| Data sent to LLM | Only typed answers | Module names + scopes + profiles |
+| Privacy disclaimer | No | ✔ Yes — user must confirm before sending |
+| Best for | First-time users, simple projects | CI/CD, power users, large multi-module projects |
+
+### The Demo Story
+
+Run both modes back to back on the same project — guided first (3 questions, user in the loop), then express (zero questions, richer explanations). Both produce the same flags and the same clean BOM. That is the story: **same result, zero effort**.
