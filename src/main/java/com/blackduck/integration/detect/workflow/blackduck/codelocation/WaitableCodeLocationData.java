@@ -9,7 +9,7 @@ public class WaitableCodeLocationData {
     private final int expectedNotificationCount;
     private final Set<String> successfulCodeLocationNames;
 
-    public WaitableCodeLocationData(DetectTool detectTool, int expectedNotificationCount, Set<String> successfulCodeLocationNames ) {
+    public WaitableCodeLocationData(DetectTool detectTool, int expectedNotificationCount, Set<String> successfulCodeLocationNames) {
         this.detectTool = detectTool;
         this.expectedNotificationCount = expectedNotificationCount;
         this.successfulCodeLocationNames = successfulCodeLocationNames;
@@ -22,7 +22,6 @@ public class WaitableCodeLocationData {
     public int getExpectedNotificationCount() {
         return expectedNotificationCount;
     }
-
 
     public Set<String> getSuccessfulCodeLocationNames() {
         return successfulCodeLocationNames;
