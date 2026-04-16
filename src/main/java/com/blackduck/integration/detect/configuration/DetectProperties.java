@@ -1284,6 +1284,13 @@ public class DetectProperties {
             .setGroups(DetectGroup.MAVEN, DetectGroup.GLOBAL)
             .build();
 
+    public static final NullablePathProperty DETECT_ANT_PATH =
+        NullablePathProperty.newBuilder("detect.ant.path")
+            .setInfo("Ant Executable", DetectPropertyFromVersion.VERSION_11_4_0)
+            .setHelp("The path to the Ant executable.", "If set, Detect will use the given Ant executable instead of searching for one.")
+            .setGroups(DetectGroup.IVY, DetectGroup.GLOBAL)
+            .build();
+
     public static final CaseSensitiveStringListProperty DETECT_MAVEN_INCLUDED_SCOPES =
         CaseSensitiveStringListProperty.newBuilder("detect.maven.included.scopes")
             .setInfo("Dependency Scope Included", DetectPropertyFromVersion.VERSION_6_0_0)
@@ -1989,10 +1996,11 @@ public class DetectProperties {
         LongProperty.newBuilder("detect.timeout", 300L)
             .setInfo("Detect Timeout", DetectPropertyFromVersion.VERSION_6_8_0)
             .setHelp(
-                "The amount of time in seconds Detect will wait for network connection, for scans to finish, and to generate reports (i.e. risk and policy check). When changing this value, keep in mind the checking of policies might have to wait for scans to process which can take some time.")
+                "The amount of time in seconds Detect will wait for network connection, for scans to finish, and to generate reports (i.e. risk and policy check). When changing this value, keep in mind the checking of policies might have to wait for scans to process which can take some time.",
+				"Note that timeout will exit with FAILURE_TIMEOUT (2) code."
+				)
             .setExample("600")
             .setGroups(DetectGroup.BLACKDUCK_SERVER, DetectGroup.BLACKDUCK, DetectGroup.GLOBAL)
-            .setCategory(DetectCategory.Advanced)
             .build();
 
     public static final NoneEnumListProperty<DetectTool> DETECT_TOOLS_EXCLUDED =
@@ -2121,7 +2129,9 @@ public class DetectProperties {
     public static final BooleanProperty DETECT_WAIT_FOR_RESULTS =
         BooleanProperty.newBuilder("detect.wait.for.results", false)
             .setInfo("Wait For Results", DetectPropertyFromVersion.VERSION_5_5_0)
-            .setHelp("If set to true, Detect will wait for Black Duck SCA products until results are available or the detect.timeout is exceeded.")
+            .setHelp("If set to true, Detect will wait for Black Duck SCA products until results are available or the detect.timeout is exceeded.",
+					"Note that scan failures will exit with FAILURE_SCAN (6) and time out will exit with FAILURE_TIMEOUT (2) code."
+			)
             .setGroups(DetectGroup.GENERAL, DetectGroup.GLOBAL)
             .build();
 

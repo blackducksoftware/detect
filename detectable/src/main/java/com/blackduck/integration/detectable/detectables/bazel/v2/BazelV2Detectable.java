@@ -151,8 +151,22 @@ public class BazelV2Detectable extends Detectable {
         // Determine mode (either via override or auto-detection)
         BazelEnvironmentAnalyzer.Mode mode = determineMode(bazelCmd);
 
+        // Detect Bazel version only for BZLMOD — the version is used exclusively in BZLMOD-specific
+        // paths (mod graph fast path in HttpFamilyProber, batched show_repo in Pipelines).
+        // Skipping this call for WORKSPACE avoids an extra bazel invocation that is never needed there.
+        BazelVersion bazelVersion = null;
+        if (mode == BazelEnvironmentAnalyzer.Mode.BZLMOD) {
+            bazelVersion = new BazelVersionChecker(bazelCmd).detectVersion().orElse(null);
+            if (bazelVersion != null) {
+                logger.info("Bazel version detected: {}. Features requiring 7.1+ are {}.",
+                    bazelVersion, bazelVersion.isAtLeast(7, 1) ? "ENABLED" : "DISABLED");
+            } else {
+                logger.info("Bazel version could not be detected; 7.1+ optimizations will be disabled.");
+            }
+        }
+
         // Determine pipelines (either from properties or by probing)
-        Set<DependencySource> pipelines = resolvePipelines(bazelCmd, target, mode);
+        Set<DependencySource> pipelines = resolvePipelines(bazelCmd, target, mode, bazelVersion);
 
         // Fail if no supported pipelines are found
         if (pipelines == null || pipelines.isEmpty()) {
@@ -161,7 +175,7 @@ public class BazelV2Detectable extends Detectable {
 
         // Run the extraction using the determined pipelines
         BazelV2Extractor extractor = new BazelV2Extractor(externalIdFactory, bazelVariableSubstitutor, haskellParser, projectNameGenerator);
-        Extraction extraction = extractor.run(bazelCmd, pipelines, target, mode);
+        Extraction extraction = extractor.run(bazelCmd, pipelines, target, mode, bazelVersion);
         logger.info("The Bazel tool actions finished.");
         return extraction;
     }
@@ -227,7 +241,7 @@ public class BazelV2Detectable extends Detectable {
     }
 
     // Helper to resolve pipelines either from properties or by probing
-    private Set<DependencySource> resolvePipelines(BazelCommandExecutor bazelCmd, String target, BazelEnvironmentAnalyzer.Mode mode) {
+    private Set<DependencySource> resolvePipelines(BazelCommandExecutor bazelCmd, String target, BazelEnvironmentAnalyzer.Mode mode, BazelVersion bazelVersion) {
         Set<WorkspaceRule> workspaceRulesFromProperty = options.getWorkspaceRulesFromProperty();
         Set<DependencySource> sourcesFromProperty = options.getDependencySourcesFromProperty();
 
@@ -243,6 +257,7 @@ public class BazelV2Detectable extends Detectable {
 
         BazelGraphProber prober = bazelGraphProberFactory.create(bazelCmd, target, mode,
             options.getBazelCqueryAdditionalOptions(), options.getBazelQueryAdditionalOptions());
+        prober.setBazelVersion(bazelVersion);
         return prober.decidePipelines();
     }
 }

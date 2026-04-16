@@ -42,6 +42,7 @@ import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
 import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
 import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
 import com.blackduck.integration.detect.lifecycle.boot.decision.BlackDuckDecision;
+import com.blackduck.integration.detect.lifecycle.boot.decision.CorrelatedScanningDecision;
 import com.blackduck.integration.detect.lifecycle.boot.decision.RunDecision;
 import com.blackduck.integration.detect.lifecycle.boot.product.ProductBootOptions;
 import com.blackduck.integration.detect.tool.binaryscanner.BinaryScanOptions;
@@ -57,6 +58,7 @@ import com.blackduck.integration.detect.util.finder.DetectExcludedDirectoryFilte
 import com.blackduck.integration.detect.workflow.bdio.BdioOptions;
 import com.blackduck.integration.detect.workflow.blackduck.BlackDuckPostOptions;
 import com.blackduck.integration.detect.workflow.blackduck.developer.RapidScanOptions;
+import com.blackduck.integration.detect.workflow.blackduck.settings.DetectPropertiesSetting;
 import com.blackduck.integration.detect.workflow.blackduck.project.customfields.CustomFieldDocument;
 import com.blackduck.integration.detect.workflow.blackduck.project.options.FindCloneOptions;
 import com.blackduck.integration.detect.workflow.blackduck.project.options.ParentProjectMapOptions;
@@ -426,7 +428,7 @@ public class DetectConfigurationFactory {
         return detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_USER_GROUPS);
     }
 
-    public BlackDuckSignatureScannerOptions createBlackDuckSignatureScannerOptions() {
+    public BlackDuckSignatureScannerOptions createBlackDuckSignatureScannerOptions(CorrelatedScanningDecision correlatedScanningDecision) {
         List<Path> signatureScannerPaths = detectConfiguration.getPaths(DetectProperties.DETECT_BLACKDUCK_SIGNATURE_SCANNER_PATHS);
         List<String> exclusionPatterns = collectSignatureScannerDirectoryExclusions();
 
@@ -441,7 +443,6 @@ public class DetectConfigurationFactory {
         Integer maxDepth = detectConfiguration.getValue(DetectProperties.DETECT_EXCLUDED_DIRECTORIES_SEARCH_DEPTH);
         Boolean treatSkippedScansAsSuccess = detectConfiguration.getValue(DetectProperties.DETECT_FORCE_SUCCESS_ON_SKIP);
         Boolean isStateless = BlackduckScanMode.STATELESS.equals(detectConfiguration.getValue(DetectProperties.DETECT_BLACKDUCK_SCAN_MODE));
-        Boolean correlatedScanningEnabled = detectConfiguration.getValue(DetectProperties.DETECT_CORRELATED_SCANNING_ENABLED);
         RapidCompareMode compareMode = detectConfiguration.getValue(DetectProperties.DETECT_BLACKDUCK_RAPID_COMPARE_MODE);
         Boolean csvArchive = detectConfiguration.getValue(DetectProperties.DETECT_BLACKDUCK_SIGNATURE_SCANNER_CSV_ARCHIVE);
 
@@ -463,7 +464,7 @@ public class DetectConfigurationFactory {
             treatSkippedScansAsSuccess,
             isStateless,
             findReducedPersistence(),
-            correlatedScanningEnabled,
+            correlatedScanningDecision,
             compareMode,
             csvArchive
         );
@@ -473,7 +474,63 @@ public class DetectConfigurationFactory {
         return detectConfiguration.getValue(DetectProperties.DETECT_CORRELATED_SCANNING_ENABLED);
     }
 
-    public BlackDuckPostOptions createBlackDuckPostOptions() {
+    /**
+     * Resolves the correlated scanning decision using three-tier priority logic:
+     * 1. Offline mode -> always disabled (correlation requires server connectivity)
+     * 2. User explicitly set property -> use user value
+     * 3. User didn't set, server available -> use server value
+     * 4. User didn't set, server unavailable -> default to false
+     *
+     * @param serverSettings Optional server settings from /api/settings/detect/properties endpoint
+     * @param blackDuckDecision The BlackDuck decision to check for offline mode
+     * @return CorrelatedScanningDecision with enabled flag, supported scan types, and decision source
+     */
+    public CorrelatedScanningDecision resolveCorrelatedScanningDecision(
+        Optional<DetectPropertiesSetting> serverSettings,
+        BlackDuckDecision blackDuckDecision
+    ) {
+        // Priority 1: Offline mode always disables correlation (requires server connectivity)
+        if (blackDuckDecision.isOffline()) {
+            logger.debug("Correlated scanning disabled: offline mode enabled");
+            return CorrelatedScanningDecision.offlineModeDisabled();
+        }
+
+        // Priority 1b: RAPID/STATELESS modes do not support correlated scanning
+        if (blackDuckDecision.scanMode() != null && blackDuckDecision.scanMode() != BlackduckScanMode.INTELLIGENT) {
+            logger.debug("Correlated scanning disabled: scan mode is {}", blackDuckDecision.scanMode());
+            return CorrelatedScanningDecision.defaultDisabled();
+        }
+
+        // Priority 2: User explicitly set the property
+        if (detectConfiguration.wasPropertyProvided(DetectProperties.DETECT_CORRELATED_SCANNING_ENABLED)) {
+            boolean userValue = detectConfiguration.getValue(DetectProperties.DETECT_CORRELATED_SCANNING_ENABLED);
+            if (userValue) {
+                logger.info("Correlated scanning enabled by user configuration");
+                return CorrelatedScanningDecision.userEnabled();
+            } else {
+                logger.debug("Correlated scanning disabled by user configuration");
+                return CorrelatedScanningDecision.userDisabled();
+            }
+        }
+
+        // Priority 3: Server settings available
+        if (serverSettings.isPresent()) {
+            DetectPropertiesSetting settings = serverSettings.get();
+            if (settings.isCorrelatedScanningEnabled()) {
+                logger.info("Correlated scanning enabled by server configuration for scan types: {}", settings.getCorrelatedScanningScanTypes());
+                return CorrelatedScanningDecision.serverEnabled(settings.getCorrelatedScanningScanTypes());
+            } else {
+                logger.debug("Correlated scanning disabled by server configuration");
+                return CorrelatedScanningDecision.serverDisabled();
+            }
+        }
+
+        // Priority 4: Default to disabled
+        logger.debug("Correlated scanning disabled by default (no user or server configuration)");
+        return CorrelatedScanningDecision.defaultDisabled();
+    }
+
+    public BlackDuckPostOptions createBlackDuckPostOptions(CorrelatedScanningDecision correlatedScanningDecision) {
         Boolean waitForResults = detectConfiguration.getValue(DetectProperties.DETECT_WAIT_FOR_RESULTS);
         Boolean runRiskReportPdf = detectConfiguration.getValue(DetectProperties.DETECT_RISK_REPORT_PDF);
         Boolean runRiskReportJson = detectConfiguration.getValue(DetectProperties.DETECT_RISK_REPORT_JSON);
@@ -483,7 +540,6 @@ public class DetectConfigurationFactory {
         Path noticesReportPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NOTICES_REPORT_PATH);
         List<PolicyRuleSeverityType> severitiesToFailPolicyCheck = detectConfiguration.getValue(DetectProperties.DETECT_POLICY_CHECK_FAIL_ON_SEVERITIES).representedValues();
         List<String> policyNamesToFailPolicyCheck = detectConfiguration.getValue(DetectProperties.DETECT_POLICY_CHECK_FAIL_ON_NAMES);
-        Boolean correlatedScanningEnabled = detectConfiguration.getValue(DetectProperties.DETECT_CORRELATED_SCANNING_ENABLED);
 
         return new BlackDuckPostOptions(
             waitForResults,
@@ -493,7 +549,7 @@ public class DetectConfigurationFactory {
             noticesReportPath,
             severitiesToFailPolicyCheck,
             policyNamesToFailPolicyCheck,
-            correlatedScanningEnabled,
+            correlatedScanningDecision,
             runRiskReportJson,
             riskReportJsonPath
         );
@@ -531,6 +587,7 @@ public class DetectConfigurationFactory {
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_FLUTTER_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_GRADLE_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_MAVEN_PATH),
+            detectConfiguration.getPathOrNull(DetectProperties.DETECT_ANT_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_NPM_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_PEAR_PATH),
             detectConfiguration.getPathOrNull(DetectProperties.DETECT_PIP_PATH),

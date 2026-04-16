@@ -3,16 +3,18 @@ package com.blackduck.integration.detect.lifecycle.run.step;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
+import java.net.SocketException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
+import java.util.ArrayList;
 import java.util.Set;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Collections;
 
 import org.apache.http.conn.HttpHostConnectException;
 import org.jetbrains.annotations.Nullable;
@@ -61,10 +63,15 @@ public class SignatureScanStepRunner {
         List<SignatureScannerReport> reports;
         try {
             reports = executeScan(scanBatch, scanBatchRunner, scanPaths, scanIdsToWaitFor, gson, blackDuckRunData.shouldWaitAtScanLevel(), true);
-        } catch (HttpHostConnectException e) {
-            logger.warn("Initial Signature Scan failed due to connectivity issues. Retrying scan. Please allow the SCASS IPs to increase scanning performance.");
-            scanBatch = operationRunner.createScanBatchOnline(detectRunUuid, scanPaths, projectNameVersion, dockerTargetData, blackDuckRunData, true);
-            reports = executeScan(scanBatch, scanBatchRunner, scanPaths, scanIdsToWaitFor, gson, blackDuckRunData.shouldWaitAtScanLevel(), true);
+        } catch (SocketException e) {
+            if (!operationRunner.isCorrelationScanningEnabled("SIGNATURE")) {
+                logger.warn("Initial Signature Scan failed due to connectivity issues. Retrying scan. Please allow the SCASS IPs to increase scanning performance.");
+                scanBatch = operationRunner.createScanBatchOnline(detectRunUuid, scanPaths, projectNameVersion, dockerTargetData, blackDuckRunData, true);
+                reports = executeScan(scanBatch, scanBatchRunner, scanPaths, scanIdsToWaitFor, gson, blackDuckRunData.shouldWaitAtScanLevel(), true);
+            } else {
+                reports = new ArrayList<>();
+                operationRunner.publishSignatureFailure("Correlation scanning is enabled. Please verify your SCASS configuration ad, as it is required for correlation scans to function properly.");
+            }
         }
 
         return operationRunner.calculateWaitableSignatureScannerCodeLocations(notificationTaskRange, reports);
@@ -183,7 +190,7 @@ public class SignatureScanStepRunner {
 
     private void processOnlineScan(Set<String> scanIdsToWaitFor, Gson gson, boolean shouldWaitAtScanLevel,
             boolean scassScan, Set<String> failedScans, ScanCommandOutput output, File specificRunOutputDirectory,
-            String scanOutputLocation) throws IOException, HttpHostConnectException {
+            String scanOutputLocation) throws IOException, HttpHostConnectException, SocketException {
         try {
             Reader reader = Files.newBufferedReader(Paths.get(scanOutputLocation));
 
@@ -207,10 +214,10 @@ public class SignatureScanStepRunner {
             failedScans.add(output.getCodeLocationName());
             handleNoScanStatusFile(scanIdsToWaitFor, shouldWaitAtScanLevel, scassScan, scanOutputLocation);
         } catch (IntegrationException e) {
-            if (e.getCause() instanceof HttpHostConnectException) {
+            if (e.getCause() instanceof SocketException) {
                 // The most likely cause of a failure like this is that the SCASS URLs are
                 // not accessible. Attempt a legacy scan.
-                throw (HttpHostConnectException) e.getCause();
+                throw (SocketException) e.getCause();
             } else {
                 failedScans.add(output.getCodeLocationName());
                 operationRunner.publishSignatureFailure(e.getMessage());

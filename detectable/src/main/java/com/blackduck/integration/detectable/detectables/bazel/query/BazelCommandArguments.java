@@ -69,6 +69,11 @@ public final class BazelCommandArguments {
      */
     public static final String MOD_GRAPH = "graph";
 
+    /**
+     * JSON output format value for mod commands (e.g., mod graph --output json)
+     */
+    public static final String MOD_OUTPUT_JSON = "json";
+
     // ===== Repository Prefixes =====
 
     /**
