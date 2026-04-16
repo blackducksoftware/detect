@@ -34,7 +34,8 @@
 * (IDETECT‑4979) Updated the NuGet Inspector to prevent duplicate components from being reported which end up unversioned in the BOM.
 * (IDETECT‑5058) Improved the Poetry detector to eliminate errors encountered while parsing pyproject.toml.
 * (IDETECT‑5013) Fixed an issue in the signature scan fallback logic when SCA Scan Service (SCASS) is intentionally bypassed.
+* NuGet Solution Native Inspector now supports .slnx files.
 
 ### Dependency Updates
-
+* Upgraded and released Nuget Inspector version 2.6.0
 * Update tomlj library to version 1.1.1.
