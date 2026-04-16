@@ -1,0 +1,67 @@
+plugins {
+    id 'com.android.application' version '8.3.0' apply false
+}
+
+allprojects {
+    group = 'com.example'
+    version = '1.0.0'
+
+    repositories {
+        mavenCentral()
+        google()
+    }
+}
+
+subprojects {
+    apply plugin: 'java-library'
+
+    // Configurations named EXACTLY 'debug' and 'test' so that
+    // detect.gradle.excluded.configurations = debug,test (exact glob match) removes them in the AI scan.
+    configurations {
+        debug {
+            description = 'Android-style debug-only dependencies'
+            canBeResolved = true
+            canBeConsumed = false
+        }
+        test {
+            description = 'Test-only dependencies'
+            canBeResolved = true
+            canBeConsumed = false
+        }
+    }
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    dependencies {
+        // ── UNRESOLVED configs ────────────────────────────────────────────────
+        // Excluded by: detect.gradle.configuration.types.excluded = UNRESOLVED
+        // compileOnly is marked (n) = not-resolvable → Detect classifies it as UNRESOLVED
+        compileOnly 'org.projectlombok:lombok:1.18.30'
+        compileOnly 'com.google.code.findbugs:annotations:3.0.1'
+        compileOnly 'javax.annotation:javax.annotation-api:1.3.2'
+        compileOnly 'org.checkerframework:checker-qual:3.42.0'
+        annotationProcessor 'org.projectlombok:lombok:1.18.30'
+        annotationProcessor 'com.google.dagger:dagger-compiler:2.51.1'
+
+        // ── DEBUG config (Android-style) ──────────────────────────────────────
+        // Excluded by: detect.gradle.excluded.configurations = debug
+        debug 'com.squareup.leakcanary:leakcanary-android:2.12'
+        debug 'com.jakewharton.timber:timber:5.0.1'
+        debug 'com.facebook.stetho:stetho:1.6.0'
+        debug 'com.facebook.stetho:stetho-okhttp3:1.6.0'
+        debug 'com.squareup.okhttp3:logging-interceptor:4.12.0'
+
+        // ── TEST config ───────────────────────────────────────────────────────
+        // Excluded by: detect.gradle.excluded.configurations = test
+        // NOTE: NOT using testImplementation so these deps do NOT leak into
+        // testCompileClasspath (which would NOT be excluded by the exact-match filter)
+        test 'org.junit.jupiter:junit-jupiter:5.10.2'
+        test 'org.mockito:mockito-core:5.11.0'
+        test 'org.assertj:assertj-core:3.25.3'
+        test 'org.hamcrest:hamcrest:2.2'
+        test 'org.junit.platform:junit-platform-launcher:1.10.2'
+    }
+}
