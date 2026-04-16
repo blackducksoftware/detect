@@ -57,12 +57,43 @@ public interface AiContextAdapter {
      *
      * <p>The {@code context} extracted from the build files is passed so that implementations
      * can include project-specific hints (e.g., list of detected profile names).
-     * The orchestrator handles the actual I/O — this method only defines what to ask.</p>
+     * The orchestrator handles the actual I/O -- this method only defines what to ask.</p>
      *
      * @param context the context previously returned by {@link #extractContext(File)}
      * @return ordered list of questions; never {@code null}
      */
     List<AiQuestion> getQuestions(AiContext context);
+
+    /**
+     * Express mode: derives flag suggestions directly from the project structure
+     * without any user Q&A or LLM call.
+     *
+     * <p>This is the extension point for QuackStart Express. Each adapter that supports
+     * Express mode overrides this method with its own analysis logic. The orchestrator
+     * ({@code AiAssistanceManager.runExpress}) iterates over all registered adapters
+     * and merges their suggestions -- it never needs to know which detectors exist.</p>
+     *
+     * <h3>Current design (rule-based):</h3>
+     * <p>Implementations inspect build files via {@link #extractContext(File)} and apply
+     * deterministic rules to decide which flags are needed. This is fast, requires no
+     * network calls, and works without LLM credentials.</p>
+     *
+     * <h3>Future enhancement (LLM-backed):</h3>
+     * <p>To switch a specific adapter to LLM-backed analysis, replace the body of its
+     * override with an LLM client call. The method signature and return type stay the
+     * same, so the orchestrator and all other adapters are unaffected.</p>
+     *
+     * <p>The default implementation returns an empty suggestion, which signals that
+     * this adapter does not yet support Express mode. The orchestrator silently
+     * skips adapters that return empty suggestions.</p>
+     *
+     * @param sourceDirectory the project root directory
+     * @return an {@link ExpressFlagSuggestion} with recommended flags and explanations;
+     *         never {@code null}
+     */
+    default ExpressFlagSuggestion suggestExpressFlags(File sourceDirectory) {
+        return ExpressFlagSuggestion.empty();
+    }
 }
 
 
