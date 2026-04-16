@@ -183,6 +183,10 @@ public class AiAssistanceLlmClient {
             return buildMavenMockSuggestion(qanda);
         } else if ("GRADLE".equalsIgnoreCase(detectorName)) {
             return buildGradleMockSuggestion(qanda);
+        } else if ("BAZEL".equalsIgnoreCase(detectorName)) {
+            return buildBazelMockSuggestion(qanda);
+        } else if ("NUGET".equalsIgnoreCase(detectorName)) {
+            return buildNuGetMockSuggestion(qanda);
         }
         return LlmFlagSuggestion.empty();
     }
@@ -219,6 +223,18 @@ public class AiAssistanceLlmClient {
                     "User excluded '" + a + "' — these are test/utility modules that should not "
                     + "appear in the production Bill of Materials.");
             }
+        }
+
+        return new LlmFlagSuggestion(flags, explanations);
+    }
+
+    private LlmFlagSuggestion buildBazelMockSuggestion(Map<String, String> qanda) {
+        Map<String, String> flags        = new LinkedHashMap<>();
+        Map<String, String> explanations = new LinkedHashMap<>();
+
+        for (Map.Entry<String, String> entry : qanda.entrySet()) {
+            String q = entry.getKey().toLowerCase();
+            String a = entry.getValue().trim();
 
             // ── Bazel mock rules ──────────────────────────────────────────────
 
@@ -247,10 +263,22 @@ public class AiAssistanceLlmClient {
                     "Skips graph probing and uses the specified sources directly — "
                     + "faster and more deterministic in CI/CD environments.");
             }
+        }
 
-            // ── NuGet mock mappings ──────────────────────────────────────────────
+        return new LlmFlagSuggestion(flags, explanations);
+    }
 
-            // Q1 — dev dependencies (question contains "dev dependencies")
+    private LlmFlagSuggestion buildNuGetMockSuggestion(Map<String, String> qanda) {
+        Map<String, String> flags        = new LinkedHashMap<>();
+        Map<String, String> explanations = new LinkedHashMap<>();
+
+        for (Map.Entry<String, String> entry : qanda.entrySet()) {
+            String q = entry.getKey().toLowerCase();
+            String a = entry.getValue().trim();
+
+            // ── NuGet mock rules ────────────────────��─────────────────────────
+
+            // Q1 — dev dependencies
             if (q.contains("dev dependenc") && a.equalsIgnoreCase("yes")) {
                 flags.put("detect.nuget.dependency.types.excluded", "DEV");
                 explanations.put("detect.nuget.dependency.types.excluded",
@@ -277,6 +305,9 @@ public class AiAssistanceLlmClient {
             String q = entry.getKey().toLowerCase();
             String a = entry.getValue().trim();
 
+            // ── Gradle mock rules ──────────────────────────────────────────────
+
+            // Q1 — Android: exclude debug/test build variants; non-Android: exclude test configurations
             if (q.contains("android build variants") && a.equalsIgnoreCase("yes")) {
                 flags.put("detect.gradle.excluded.configurations", "debug,test");
                 explanations.put("detect.gradle.excluded.configurations",
@@ -287,6 +318,7 @@ public class AiAssistanceLlmClient {
                     "User chose to exclude test configurations — produces a clean production-only BOM.");
             }
 
+            // Q2 — exclude sub-projects
             if (q.contains("sub-projects") && !a.equalsIgnoreCase("(skipped)") && !a.isEmpty()) {
                 flags.put("detect.gradle.excluded.projects", a);
                 explanations.put("detect.gradle.excluded.projects",
@@ -294,12 +326,14 @@ public class AiAssistanceLlmClient {
                     + "appear in the production Bill of Materials.");
             }
 
+            // Q3 — exclude unresolved configurations
             if (q.contains("unresolved") && a.equalsIgnoreCase("yes")) {
                 flags.put("detect.gradle.configuration.types.excluded", "UNRESOLVED");
                 explanations.put("detect.gradle.configuration.types.excluded",
                     "User chose to exclude unresolved configurations — prevents inaccurate dependency versions in the BOM.");
             }
 
+            // Q4 — scan root project only
             if (q.contains("root project") && a.equalsIgnoreCase("yes")) {
                 flags.put("detect.gradle.root.only", "true");
                 explanations.put("detect.gradle.root.only",
