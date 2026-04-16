@@ -8,6 +8,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.jetbrains.annotations.Nullable;
 
 import com.blackduck.integration.blackduck.api.generated.enumeration.PolicyRuleSeverityType;
+import com.blackduck.integration.detect.lifecycle.boot.decision.CorrelatedScanningDecision;
 
 public class BlackDuckPostOptions {
     private final boolean waitForResults;
@@ -20,7 +21,7 @@ public class BlackDuckPostOptions {
     private final @Nullable Path noticesReportPath;
     private final List<PolicyRuleSeverityType> severitiesToFailPolicyCheck;
     private final List<String> policyNamesToFailPolicyCheck;
-    private final boolean correlatedScanningEnabled;
+    private final CorrelatedScanningDecision correlatedScanningDecision;
 
     public BlackDuckPostOptions(
         boolean waitForResults,
@@ -30,7 +31,7 @@ public class BlackDuckPostOptions {
         @Nullable Path noticesReportPath,
         List<PolicyRuleSeverityType> severitiesToFailPolicyCheck,
         List<String> policyNamesToFailPolicyCheck,
-        boolean correlatedScanningEnabled,
+        CorrelatedScanningDecision correlatedScanningDecision,
         boolean generateRiskReportJson,
         @Nullable Path riskReportJsonPath
     ) {
@@ -41,7 +42,7 @@ public class BlackDuckPostOptions {
         this.noticesReportPath = noticesReportPath;
         this.severitiesToFailPolicyCheck = severitiesToFailPolicyCheck;
         this.policyNamesToFailPolicyCheck = policyNamesToFailPolicyCheck;
-        this.correlatedScanningEnabled = correlatedScanningEnabled;
+        this.correlatedScanningDecision = correlatedScanningDecision;
         this.generateRiskReportJson = generateRiskReportJson;
         this.riskReportJsonPath = riskReportJsonPath;
     }
@@ -99,6 +100,10 @@ public class BlackDuckPostOptions {
     }
 
     public boolean isCorrelatedScanningEnabled() {
-        return correlatedScanningEnabled;
+        return correlatedScanningDecision.isEnabled();
+    }
+
+    public CorrelatedScanningDecision getCorrelatedScanningDecision() {
+        return correlatedScanningDecision;
     }
 }

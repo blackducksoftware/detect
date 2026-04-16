@@ -3,33 +3,37 @@ package com.blackduck.integration.detectable.detectables.bitbake.unit;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
+import guru.nidi.graphviz.model.MutableGraph;
+import guru.nidi.graphviz.parse.Parser;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
-import com.paypal.digraph.parser.GraphEdge;
-import com.paypal.digraph.parser.GraphNode;
-import com.paypal.digraph.parser.GraphParser;
 import com.blackduck.integration.detectable.annotations.UnitTest;
 import com.blackduck.integration.detectable.detectables.bitbake.model.BitbakeGraph;
 import com.blackduck.integration.detectable.detectables.bitbake.parse.GraphNodeLabelParser;
 import com.blackduck.integration.detectable.detectables.bitbake.transform.BitbakeGraphTransformer;
-import com.blackduck.integration.exception.IntegrationException;
 
 @UnitTest
 public class BitbakeGraphTransformerTest {
-    @Test
-    public void parsedVersionFromLabel() {
-        HashMap<String, GraphEdge> edges = new HashMap<>();
-        HashMap<String, GraphNode> nodes = new HashMap<>();
 
-        addNode("name", "name\\n:version\\n/some/meta/path/to.bb", nodes);
+    private MutableGraph buildGraph(String content) throws IOException {
+        String dot = "digraph depends {\n" + content + "\n}";
+        InputStream stream = new ByteArrayInputStream(dot.getBytes(StandardCharsets.UTF_8));
+        return new Parser().read(stream);
+    }
+
+    @Test
+    public void parsedVersionFromLabel() throws IOException {
+        String content = "\"name.do_build\" [label = \"name\\n:version\\n/some/meta/path/to.bb\"]\n";
         Set<String> knownLayers = new HashSet<>(Arrays.asList("aaa", "meta", "bbb"));
-        BitbakeGraph bitbakeGraph = buildGraph(nodes, edges, knownLayers);
+        BitbakeGraph bitbakeGraph = new BitbakeGraphTransformer(new GraphNodeLabelParser()).transform(buildGraph(content), knownLayers);
 
         assertEquals(1, bitbakeGraph.getNodes().size());
         assertTrue(bitbakeGraph.getNodes().get(0).getVersion().isPresent());
@@ -39,15 +43,13 @@ public class BitbakeGraphTransformerTest {
     }
 
     @Test
-    public void parsedRelationship() throws IntegrationException {
-        HashMap<String, GraphEdge> edges = new HashMap<>();
-        HashMap<String, GraphNode> nodes = new HashMap<>();
-
-        addNode("parent", "name\\n:parent.version\\n/some/meta/path/to.bb", nodes);
-        addNode("child", "name\\n:child.version\\n/some/meta/path/to.bb", nodes);
-        addEdge("edge1", "parent", "child", nodes, edges);
+    public void parsedRelationship() throws IOException {
+        String content =
+            "\"parent.do_build\" [label = \"name\\n:parent.version\\n/some/meta/path/to.bb\"]\n" +
+            "\"child.do_build\" [label = \"name\\n:child.version\\n/some/meta/path/to.bb\"]\n" +
+            "\"parent.do_build\" -> \"child.do_build\"\n";
         Set<String> knownLayers = new HashSet<>(Arrays.asList("aaa", "meta", "bbb"));
-        BitbakeGraph bitbakeGraph = buildGraph(nodes, edges, knownLayers);
+        BitbakeGraph bitbakeGraph = new BitbakeGraphTransformer(new GraphNodeLabelParser()).transform(buildGraph(content), knownLayers);
 
         assertEquals(2, bitbakeGraph.getNodes().size());
         assertEquals(1, bitbakeGraph.getNodes().get(0).getChildren().size());
@@ -55,47 +57,13 @@ public class BitbakeGraphTransformerTest {
     }
 
     @Test
-    public void removedQuotesFromName() throws IntegrationException {
-        HashMap<String, GraphEdge> edges = new HashMap<>();
-        HashMap<String, GraphNode> nodes = new HashMap<>();
-
-        addNode("quotes\"removed", "example\\n:example\\n/example/meta/some.bb", nodes);
+    public void removedQuotesFromName() throws IOException {
+        String content = "\"quotes\\\"removed.do_build\" [label = \"example\\n:example\\n/example/meta/some.bb\"]\n";
         Set<String> knownLayers = new HashSet<>(Arrays.asList("aaa", "meta", "bbb"));
-        BitbakeGraph bitbakeGraph = buildGraph(nodes, edges, knownLayers);
+        BitbakeGraph bitbakeGraph = new BitbakeGraphTransformer(new GraphNodeLabelParser()).transform(buildGraph(content), knownLayers);
 
         assertEquals(1, bitbakeGraph.getNodes().size());
         assertEquals("quotesremoved", bitbakeGraph.getNodes().get(0).getName());
-    }
-
-    private BitbakeGraph buildGraph(HashMap<String, GraphNode> nodes, HashMap<String, GraphEdge> edges, Set<String> knownLayers) {
-        BitbakeGraphTransformer bitbakeGraphTransformer = new BitbakeGraphTransformer(new GraphNodeLabelParser());
-        return bitbakeGraphTransformer.transform(mockParser(nodes, edges), knownLayers);
-    }
-
-    private GraphParser mockParser(HashMap<String, GraphNode> nodeMap, HashMap<String, GraphEdge> edgeMap) {
-        GraphParser parser = Mockito.mock(GraphParser.class);
-        Mockito.when(parser.getNodes()).thenReturn(nodeMap);
-        Mockito.when(parser.getEdges()).thenReturn(edgeMap);
-        return parser;
-    }
-
-    private void addNode(String id, String labelValue, HashMap<String, GraphNode> nodeMap) {
-        GraphNode graphNode = new GraphNode(id);
-        graphNode.setAttribute("label", labelValue);
-        nodeMap.put(id, graphNode);
-    }
-
-    private void addEdge(String edgeId, String nodeName1, String nodeName2, HashMap<String, GraphNode> nodeMap, HashMap<String, GraphEdge> edgeMap) throws IntegrationException {
-        GraphNode node1 = nodeMap.values().stream()
-            .filter(it -> it.getId().equals(nodeName1))
-            .findFirst()
-            .orElseThrow(() -> new IntegrationException("Failed to find Node " + nodeName1 + " in the graph to be able to add an Edge to " + nodeName2));
-        GraphNode node2 = nodeMap.values().stream()
-            .filter(it -> it.getId().equals(nodeName2))
-            .findFirst()
-            .orElseThrow(() -> new IntegrationException("Failed to find Node " + nodeName2 + " in the graph to be able to add an Edge to " + nodeName1));
-        GraphEdge edge = new GraphEdge(edgeId, node1, node2);
-        edgeMap.put(edgeId, edge);
     }
 
 }
