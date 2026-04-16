@@ -50,7 +50,7 @@ public class NugetInspectorExtractor {
 
             for (int i = 0; i < targets.size(); i++) {
                 File targetDirectory = new File(outputDirectory, "inspection-" + i);
-                results.add(executeTarget(inspector, targets.get(i), targetDirectory, nugetInspectorOptions)); // we call on src path, and a single sln file. What, if anhything, does NI do with the target sln passed here?
+                results.add(executeTarget(inspector, targets.get(i), targetDirectory, nugetInspectorOptions));
             }
 
             List<CodeLocation> codeLocations = results.stream()

@@ -43,8 +43,6 @@ public class NugetSolutionDetectableTest {
         assertTrue(detectable.applicable().getPassed());
     }
 
-    //TODO: add test for directory with nested solution files, are tehy all found? depth is 0?
-
     @Test
     public void notApplicableForPodfile() {
         NugetInspectorResolver nugetInspectorManager = null;
