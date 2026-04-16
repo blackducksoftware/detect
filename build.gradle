@@ -229,7 +229,7 @@ dependencies {
         implementation('org.apache.james:apache-mime4j-core:0.8.10') {
             because 'previous version has a vulnerability'
         }
-        implementation('org.bouncycastle:bcutil-jdk18on:1.83') {
+        implementation('org.bouncycastle:bcutil-jdk18on:1.84') {
             because 'previous version has a vulnerability'
         }
         implementation('com.jayway.jsonpath:json-path:2.9.0') {
