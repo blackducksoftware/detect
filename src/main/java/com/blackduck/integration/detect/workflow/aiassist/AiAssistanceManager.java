@@ -5,10 +5,9 @@ import com.blackduck.integration.configuration.source.PropertySource;
 import com.blackduck.integration.detectable.detectable.ai.AiContext;
 import com.blackduck.integration.detectable.detectable.ai.AiContextAdapter;
 import com.blackduck.integration.detectable.detectable.ai.AiQuestion;
+import com.blackduck.integration.detectable.detectable.ai.ExpressFlagSuggestion;
 import com.blackduck.integration.detectable.detectables.gradle.ai.GradleAiContextAdapter;
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenAiContextAdapter;
-import com.blackduck.integration.detectable.detectables.maven.cli.MavenProjectSummary;
-import com.blackduck.integration.detectable.detectables.maven.cli.MavenProjectSummarizer;
 import com.blackduck.integration.detect.interactive.InteractiveWriter;
 import com.google.gson.Gson;
 import org.slf4j.Logger;
@@ -51,34 +50,41 @@ public class AiAssistanceManager {
     }
 
     /**
-     * Runs the QuackStart Express pre-scan phase (no questions — full project analysis).
+     * Runs the QuackStart Express pre-scan phase (no questions -- full project analysis).
      *
-     * <p>Flow:</p>
+     * <p>Express mode iterates over all registered {@link AiContextAdapter} instances
+     * and calls {@link AiContextAdapter#suggestExpressFlags(java.io.File)} on each
+     * applicable adapter. Each adapter owns its own analysis logic (rule-based today,
+     * potentially LLM-backed in the future). The orchestrator only handles the UI
+     * (privacy disclaimer, presenting suggestions, accept/reject) -- it never needs
+     * to know which detectors exist or how they derive their flags.</p>
+     *
+     * <p>To add Express support for a new detector:</p>
      * <ol>
-     *   <li>Privacy disclaimer — user must accept before any data is sent</li>
-     *   <li>{@link MavenProjectSummarizer} walks all {@code pom.xml} files recursively</li>
-     *   <li>Structured summary is sent to the LLM (or mock) for flag selection</li>
-     *   <li>Suggested flags are presented with module-specific explanations</li>
-     *   <li>User accepts or rejects</li>
+     *   <li>Override {@code suggestExpressFlags()} in the detector's adapter</li>
+     *   <li>Register the adapter in {@link #buildAdapters()}</li>
      * </ol>
+     * <p>No changes to this method are required.</p>
      *
      * @param sourceDirectory project root
      * @param writer          terminal I/O
-     * @param propertySources raw property sources (used to read LLM credentials)
+     * @param propertySources raw property sources (reserved for future use, e.g. LLM credentials)
      * @return a {@link MapPropertySource} with AI-suggested flags at highest priority
      */
     public MapPropertySource runExpress(File sourceDirectory, InteractiveWriter writer, List<PropertySource> propertySources) {
         writer.println();
         writer.println("╔══════════════════════════════════════════════╗");
-        writer.println("║     QuackStart Express — Full Analysis       ║");
+        writer.println("║     QuackStart Express -- Full Analysis       ║");
         writer.println("╚══════════════════════════════════════════════╝");
         writer.println();
         writer.println("Analysing project at: " + sourceDirectory.getAbsolutePath());
         writer.println();
 
         // ── Privacy disclaimer ────────────────────────────────────────────────
-        writer.println("  ⚠  Express mode: build metadata (module names, scopes, profiles)");
-        writer.println("     will be sent to the LLM. No source code is included.");
+        // Express mode reads build metadata (module names, scopes, configurations)
+        // from the project. No source code is included.
+        writer.println("  NOTE: Express mode analyses build metadata (module names, scopes, configurations).");
+        writer.println("        No source code is read or transmitted.");
         writer.println();
         Boolean proceed = writer.askYesOrNo("Proceed?");
         writer.println();
@@ -88,55 +94,48 @@ public class AiAssistanceManager {
             return new MapPropertySource(PROPERTY_SOURCE_NAME, new LinkedHashMap<>());
         }
 
-        // ── LLM credentials ───────────────────────────────────────────────────
-        String llmApiKey      = System.getenv("DETECT_LLM_API_KEY");
-        String llmApiEndpoint = System.getenv("DETECT_LLM_API_ENDPOINT");
-        String llmName        = System.getenv("DETECT_LLM_MODEL_NAME");
-        boolean llmAvailable  = llmApiKey != null && !llmApiKey.isEmpty()
-                             && llmApiEndpoint != null && !llmApiEndpoint.isEmpty()
-                             && llmName != null && !llmName.isEmpty();
-        if (!llmAvailable) {
-            writer.println("  LLM credentials not configured — running in MOCK mode.");
-            writer.println("   (Set DETECT_LLM_API_KEY, DETECT_LLM_API_ENDPOINT, DETECT_LLM_MODEL_NAME for real LLM suggestions)");
+        // ── Iterate over all registered adapters ──────────────────────────────
+        // Each adapter decides independently whether it is applicable and what
+        // flags to suggest. The orchestrator just merges and presents.
+        Map<String, String> allFlags   = new LinkedHashMap<>();
+        Map<String, String> allExplain = new LinkedHashMap<>();
+
+        for (AiContextAdapter adapter : adapters) {
+            // Skip adapters that are not applicable to this project
+            if (!adapter.isApplicable(sourceDirectory)) {
+                logger.debug("[QuackStart Express] Adapter '{}' not applicable, skipping.", adapter.getDetectorName());
+                continue;
+            }
+
+            writer.println("  Detected: " + adapter.getDetectorName() + " project");
+            writer.println("  Analysing build files...");
             writer.println();
+
+            // Each adapter owns its Express logic via suggestExpressFlags().
+            // Adapters that do not support Express return empty (the default).
+            ExpressFlagSuggestion suggestion = adapter.suggestExpressFlags(sourceDirectory);
+
+            logger.info("[QuackStart Express] {} suggestion: flags={}, explanations={}",
+                    adapter.getDetectorName(), suggestion.flags, suggestion.explanations);
+
+            if (!suggestion.isEmpty()) {
+                allFlags.putAll(suggestion.flags);
+                allExplain.putAll(suggestion.explanations);
+            } else {
+                writer.println("  No Express suggestions for " + adapter.getDetectorName() + ".");
+                writer.println();
+            }
         }
 
-        // ── Maven: check applicable ───────────────────────────────────────────
-        MavenAiContextAdapter mavenAdapter = new MavenAiContextAdapter();
-        if (!mavenAdapter.isApplicable(sourceDirectory)) {
-            writer.println("No Maven project detected (pom.xml not found). Express mode supports Maven only.");
-            writer.println();
-            return new MapPropertySource(PROPERTY_SOURCE_NAME, new LinkedHashMap<>());
-        }
-
-        // ── Summarise all pom.xml files ───────────────────────────────────────
-        MavenProjectSummarizer summarizer = new MavenProjectSummarizer();
-        writer.println(" Detected: MAVEN project");
-        writer.println("  Reading all pom.xml files...");
-        MavenProjectSummary summary = summarizer.summarize(sourceDirectory);
-        writer.println("  Found " + summary.getModules().size() + " module(s).");
-        writer.println("  Sending project summary to LLM for analysis...");
-        writer.println();
-
-        logger.info("[QuackStart Express] Project summary:\n{}", summary.toPromptString());
-
-        // ── Call LLM ──────────────────────────────────────────────────────────
-        AiFlagsMetadataLoader flagsLoader  = new AiFlagsMetadataLoader();
-        String                flagsCatalog = flagsLoader.loadFlagsJson("MAVEN");
-
-        AiAssistanceLlmClient llmClient = new AiAssistanceLlmClient(llmApiKey, llmApiEndpoint, llmName, gson);
-        LlmFlagSuggestion suggestion    = llmClient.suggestFlagsFromProjectSummary(summary, flagsCatalog);
-
-        logger.info("[QuackStart Express] LLM suggestion: flags={}, explanations={}",
-                suggestion.flags, suggestion.explanations);
-
-        if (suggestion.isEmpty()) {
-            writer.println("No AI configuration suggestions for this Maven project.");
+        // ── No suggestions from any adapter ───────────────────────────────────
+        if (allFlags.isEmpty()) {
+            writer.println("No AI configuration suggestions for this project.");
             writer.println();
             return new MapPropertySource(PROPERTY_SOURCE_NAME, new LinkedHashMap<>());
         }
 
-        presentSuggestedCommand(suggestion.flags, suggestion.explanations, writer);
+        // ── Present and confirm ───────────────────────────────────────────────
+        presentSuggestedCommand(allFlags, allExplain, writer);
 
         Boolean accepted = writer.askYesOrNo("Accept this configuration and run the scan?");
         writer.println();
@@ -144,7 +143,7 @@ public class AiAssistanceManager {
         if (Boolean.TRUE.equals(accepted)) {
             writer.println("Configuration accepted. Starting scan with AI-suggested flags.");
             writer.println();
-            return new MapPropertySource(PROPERTY_SOURCE_NAME, suggestion.flags);
+            return new MapPropertySource(PROPERTY_SOURCE_NAME, allFlags);
         } else {
             writer.println("Configuration declined. Running scan with original settings.");
             writer.println();

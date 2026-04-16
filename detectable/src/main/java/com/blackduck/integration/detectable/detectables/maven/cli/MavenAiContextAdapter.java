@@ -3,6 +3,7 @@ package com.blackduck.integration.detectable.detectables.maven.cli;
 import com.blackduck.integration.detectable.detectable.ai.AiContext;
 import com.blackduck.integration.detectable.detectable.ai.AiContextAdapter;
 import com.blackduck.integration.detectable.detectable.ai.AiQuestion;
+import com.blackduck.integration.detectable.detectable.ai.ExpressFlagSuggestion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -12,7 +13,9 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * AI context adapter for the Maven detector.
@@ -150,6 +153,110 @@ public class MavenAiContextAdapter implements AiContextAdapter {
         }
         return modules;
     }
+
+    // ── Express mode ────────────────────────────────────────────────────────
+    //
+    // The methods below implement QuackStart Express for Maven projects.
+    // They use MavenProjectSummarizer (same package) to walk all pom.xml files
+    // recursively, then apply deterministic rules to derive flag suggestions.
+    //
+    // FUTURE: to switch to LLM-backed analysis, replace the body of
+    // suggestExpressFlags() with an LLM client call using
+    // summary.toPromptString() and the /aiassist/maven-flags.json catalog.
+    // No other method or caller needs to change.
+
+    /**
+     * Derives Express flag suggestions by walking all pom.xml files recursively
+     * and applying deterministic rules based on the project structure.
+     *
+     * <p>Uses {@link MavenProjectSummarizer} (same package, no cross-module dependency)
+     * to build a structured summary of all modules, then delegates to
+     * {@link #deriveExpressFlags(MavenProjectSummary)} for rule-based analysis.</p>
+     *
+     * @param sourceDirectory the project root directory
+     * @return flag suggestions based on static analysis of all pom.xml files
+     */
+    @Override
+    public ExpressFlagSuggestion suggestExpressFlags(File sourceDirectory) {
+        MavenProjectSummarizer summarizer = new MavenProjectSummarizer();
+        MavenProjectSummary summary = summarizer.summarize(sourceDirectory);
+        return deriveExpressFlags(summary);
+    }
+
+    /**
+     * Rule-based Express flag derivation from the full Maven project summary.
+     * This logic was previously in AiAssistanceLlmClient.buildExpressMockSuggestion
+     * and has been moved here so each adapter owns its own Express analysis.
+     *
+     * @param summary the structured summary of all Maven modules
+     * @return an ExpressFlagSuggestion with all applicable flags and explanations
+     */
+    private ExpressFlagSuggestion deriveExpressFlags(MavenProjectSummary summary) {
+        Map<String, String> flags        = new LinkedHashMap<>();
+        Map<String, String> explanations = new LinkedHashMap<>();
+
+        List<String> modulesWithTestDeps  = new ArrayList<>();
+        List<String> testOnlyModuleNames  = new ArrayList<>();
+        boolean hasProfiles = false;
+        String  productionProfile = null;
+        String  devProfile        = null;
+
+        for (MavenProjectSummary.ModuleSummary m : summary.getModules()) {
+            // Signal: any module with test-scoped deps
+            if (m.depsByScope.containsKey("test") && !m.depsByScope.get("test").isEmpty()) {
+                modulesWithTestDeps.add(m.artifactId);
+            }
+
+            // Signal: profiles (pick from root module)
+            if (!m.profileCompileDeps.isEmpty() && productionProfile == null) {
+                hasProfiles = true;
+                for (String profileId : m.profileCompileDeps.keySet()) {
+                    if (profileId.toLowerCase().contains("prod")) productionProfile = profileId;
+                    if (profileId.toLowerCase().contains("dev"))  devProfile        = profileId;
+                }
+            }
+
+            // Signal: modules that are test/utility only
+            boolean hasOnlyTestDeps = !m.depsByScope.isEmpty()
+                && !m.depsByScope.containsKey("compile")
+                && m.depsByScope.containsKey("test");
+            boolean nameIndicatesTest = m.artifactId.toLowerCase().contains("test")
+                || m.artifactId.toLowerCase().contains("integration");
+            if ((hasOnlyTestDeps || nameIndicatesTest) && m.parentArtifactId != null) {
+                testOnlyModuleNames.add(m.artifactId);
+            }
+        }
+
+        // Rule: exclude test scopes when test-scoped dependencies are found
+        if (!modulesWithTestDeps.isEmpty()) {
+            flags.put("detect.maven.excluded.scopes", "test");
+            explanations.put("detect.maven.excluded.scopes",
+                "Modules " + String.join(", ", modulesWithTestDeps)
+                + " declare test-scoped dependencies. Excluding them produces a clean production-only BOM.");
+        }
+
+        // Rule: activate production profile when one is detected
+        if (hasProfiles && productionProfile != null) {
+            flags.put("detect.maven.build.command", "-P" + productionProfile);
+            explanations.put("detect.maven.build.command",
+                "The '" + productionProfile + "' profile activates production-specific dependencies"
+                + (devProfile != null ? " (replacing the '" + devProfile + "' dev profile)" : "")
+                + ". Ensures the correct environment dependencies are resolved.");
+        }
+
+        // Rule: exclude test utility modules
+        if (!testOnlyModuleNames.isEmpty()) {
+            flags.put("detect.maven.excluded.modules", String.join(",", testOnlyModuleNames));
+            explanations.put("detect.maven.excluded.modules",
+                "Modules " + String.join(", ", testOnlyModuleNames)
+                + " appear to be test/utility modules. Excluding them prevents their "
+                + "transitive dependencies from appearing in the production BOM.");
+        }
+
+        return new ExpressFlagSuggestion(flags, explanations);
+    }
+
+    // ── Detector identity ─────────────────────────────────────────────────────
 
     @Override
     public String getDetectorName() {

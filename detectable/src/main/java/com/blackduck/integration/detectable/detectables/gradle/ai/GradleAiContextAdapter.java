@@ -3,6 +3,7 @@ package com.blackduck.integration.detectable.detectables.gradle.ai;
 import com.blackduck.integration.detectable.detectable.ai.AiContext;
 import com.blackduck.integration.detectable.detectable.ai.AiContextAdapter;
 import com.blackduck.integration.detectable.detectable.ai.AiQuestion;
+import com.blackduck.integration.detectable.detectable.ai.ExpressFlagSuggestion;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,7 +11,9 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -136,6 +139,115 @@ public class GradleAiContextAdapter implements AiContextAdapter {
             }
         }
     }
+
+    // ── Express mode ────────────────────────────────────────────────────────
+    //
+    // The methods below implement QuackStart Express for Gradle projects.
+    // They are rule-based: no LLM call, no user questions -- just static
+    // analysis of the build files followed by deterministic flag selection.
+    //
+    // FUTURE: to switch to LLM-backed analysis, replace the body of
+    // suggestExpressFlags() with an LLM client call. The ctx.toPromptString()
+    // output and /aiassist/gradle-flags.json catalog are already in place
+    // to support that path. No other method or caller needs to change.
+
+    /**
+     * Derives Express flag suggestions from the Gradle project context without
+     * any user interaction or LLM call.
+     *
+     * <p>This is the main seam for future enhancement. The current implementation
+     * delegates to {@link #deriveExpressFlags(GradleAiContext)} which applies
+     * deterministic rules. To switch to an LLM-backed analysis later, replace
+     * the body of this method with an LLM client call. No callers in the
+     * orchestrator need to change.</p>
+     *
+     * @param sourceDirectory the project root directory
+     * @return flag suggestions based on static analysis of the build files
+     */
+    @Override
+    public ExpressFlagSuggestion suggestExpressFlags(File sourceDirectory) {
+        GradleAiContext ctx = extractContext(sourceDirectory);
+        return deriveExpressFlags(ctx);
+    }
+
+    /**
+     * Rule-based Express flag derivation. Each flag concern is isolated in its
+     * own private method so new rules can be added without modifying existing
+     * logic (Open/Closed Principle).
+     *
+     * <p>To add a new flag rule in the future:</p>
+     * <ol>
+     *   <li>Create a new private {@code applyXxx()} method below</li>
+     *   <li>Add one call to it here</li>
+     * </ol>
+     *
+     * @param ctx the Gradle project context extracted from build files
+     * @return an ExpressFlagSuggestion with all applicable flags and explanations
+     */
+    private ExpressFlagSuggestion deriveExpressFlags(GradleAiContext ctx) {
+        Map<String, String> flags        = new LinkedHashMap<>();
+        Map<String, String> explanations = new LinkedHashMap<>();
+
+        // Apply each flag rule independently
+        applyConfigurationExclusions(ctx, flags, explanations);
+        applyUnresolvedConfigExclusions(ctx, flags, explanations);
+        // FUTURE: add more rules here as needed, for example:
+        // applySubProjectExclusions(ctx, flags, explanations);
+        // applyRootOnlyFlag(ctx, flags, explanations);
+
+        return new ExpressFlagSuggestion(flags, explanations);
+    }
+
+    /**
+     * Rule: exclude debug/test configurations for Android projects,
+     * or test configurations for standard Gradle projects.
+     *
+     * <p>Android projects produce noisy BOMs from debug and test build variants.
+     * Standard projects with testImplementation/testCompile dependencies should
+     * also have those configurations excluded for a clean production BOM.</p>
+     */
+    private void applyConfigurationExclusions(GradleAiContext ctx,
+            Map<String, String> flags, Map<String, String> explanations) {
+
+        if (ctx.isAndroidProject) {
+            // Android projects carry debug and test build variants that inflate the BOM
+            // with non-production dependencies. Excluding them yields a focused scan.
+            flags.put("detect.gradle.excluded.configurations", "debug,test");
+            explanations.put("detect.gradle.excluded.configurations",
+                "Android project detected. Debug and test build variants excluded "
+                + "for a clean production-only BOM.");
+        } else if (ctx.hasTestConfigurations) {
+            // Standard Gradle projects with test dependencies (testImplementation, etc.)
+            // should have those configurations excluded for a production-only BOM.
+            String configs = String.join(",", ctx.detectedTestConfigs);
+            flags.put("detect.gradle.excluded.configurations", configs);
+            explanations.put("detect.gradle.excluded.configurations",
+                "Test configurations detected (" + configs
+                + "). Excluded to produce a production-only BOM.");
+        }
+    }
+
+    /**
+     * Rule: exclude UNRESOLVED configuration types when unresolvable
+     * configurations (compileOnly, annotationProcessor, kapt) are detected.
+     *
+     * <p>Unresolved configurations can produce inaccurate dependency versions
+     * and false positives in the BOM. Excluding them ensures only fully resolved
+     * dependency graphs are included in the scan results.</p>
+     */
+    private void applyUnresolvedConfigExclusions(GradleAiContext ctx,
+            Map<String, String> flags, Map<String, String> explanations) {
+
+        if (ctx.hasUnresolvedConfigurations) {
+            flags.put("detect.gradle.configuration.types.excluded", "UNRESOLVED");
+            explanations.put("detect.gradle.configuration.types.excluded",
+                "Unresolved configurations detected ("
+                + String.join(", ", ctx.detectedUnresolvedConfigs)
+                + "). Excluded to prevent false positives from unresolvable dependency versions.");
+        }
+    }
+
+    // ── Detector identity ─────────────────────────────────────────────────────
 
     @Override
     public String getDetectorName() {
