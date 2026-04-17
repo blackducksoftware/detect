@@ -65,18 +65,17 @@ public class SignatureScanStepRunnerTest {
                 blackDuckRunData, false)).thenReturn(scanBatch);
         when(operationRunner.createScanBatchOnline(TEST_UUID, scanPaths, projectNameVersion, dockerTargetData,
                 blackDuckRunData, true)).thenReturn(scanBatch);
-        when(blackDuckRunData.shouldWaitAtScanLevel()).thenReturn(true);
 
         SignatureScanStepRunner spyRunner = spy(signatureScanStepRunner);
 
         HttpHostConnectException httpException = createHttpHostConnectException();
 
         doThrow(httpException).doReturn(Collections.emptyList()).when(spyRunner).executeScan(any(), any(), any(), any(),
-                any(), anyBoolean(), anyBoolean());
+                any(), anyBoolean());
 
         spyRunner.runSignatureScannerOnline(TEST_UUID, projectNameVersion, dockerTargetData, scanIdsToWaitFor, gson);
 
-        verify(spyRunner, times(2)).executeScan(any(), any(), any(), any(), any(), anyBoolean(), anyBoolean());
+        verify(spyRunner, times(2)).executeScan(any(), any(), any(), any(), any(), anyBoolean());
     }
 
     @Test
@@ -89,16 +88,14 @@ public class SignatureScanStepRunnerTest {
         when(operationRunner.createScanPaths(projectNameVersion, dockerTargetData)).thenReturn(scanPaths);
         when(operationRunner.createScanBatchOnline(TEST_UUID, scanPaths, projectNameVersion, dockerTargetData,
                 blackDuckRunData, false)).thenReturn(scanBatch);
-        when(blackDuckRunData.shouldWaitAtScanLevel()).thenReturn(true);
 
         SignatureScanStepRunner spyRunner = spy(signatureScanStepRunner);
 
-        doReturn(Collections.emptyList()).when(spyRunner).executeScan(any(), any(), any(), any(), any(), anyBoolean(),
-                anyBoolean());
+        doReturn(Collections.emptyList()).when(spyRunner).executeScan(any(), any(), any(), any(), any(), anyBoolean());
 
         spyRunner.runSignatureScannerOnline(TEST_UUID, projectNameVersion, dockerTargetData, scanIdsToWaitFor, gson);
 
-        verify(spyRunner, times(1)).executeScan(any(), any(), any(), any(), any(), anyBoolean(), anyBoolean());
+        verify(spyRunner, times(1)).executeScan(any(), any(), any(), any(), any(), anyBoolean());
     }
 
     private HttpHostConnectException createHttpHostConnectException() {

@@ -82,6 +82,8 @@ import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
 import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
 import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.autonomous.AutonomousManager;
+import com.blackduck.integration.detect.lifecycle.boot.decision.CorrelatedScanningDecision;
+import com.blackduck.integration.detect.workflow.DetectRunId;
 import com.blackduck.integration.detect.lifecycle.run.DetectFontLoaderFactory;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.data.DockerTargetData;
@@ -122,6 +124,7 @@ import com.blackduck.integration.detect.tool.impactanalysis.ImpactAnalysisNaming
 import com.blackduck.integration.detect.tool.impactanalysis.ImpactAnalysisUploadOperation;
 import com.blackduck.integration.detect.tool.impactanalysis.service.ImpactAnalysisBatchOutput;
 import com.blackduck.integration.detect.tool.impactanalysis.service.ImpactAnalysisUploadService;
+import com.blackduck.integration.detect.tool.signaturescanner.BlackDuckSignatureScannerOptions;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScanPath;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerCodeLocationResult;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerReport;
@@ -254,6 +257,8 @@ public class OperationRunner {
     private final ProjectEventPublisher projectEventPublisher;
     private final DetectExecutableRunner executableRunner;
     private final OperationAuditLog auditLog;
+    private final CorrelatedScanningDecision correlatedScanningDecision;
+    private final DetectRunId detectRunId;
     private static final int[] LIMITED_FIBONACCI_SEQUENCE = {0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55};
     private static final int MIN_POLLING_INTERVAL_THRESHOLD_IN_SECONDS = 5;
     private static final String DEVELOPER_SCAN_ENDPOINT = ApiDiscovery.DEVELOPER_SCANS_PATH.getPath();
@@ -293,6 +298,8 @@ public class OperationRunner {
         fileFinder = bootSingletons.getFileFinder();
         detectInfo = bootSingletons.getDetectInfo();
         executableRunner = utilitySingletons.getExecutableRunner();
+        correlatedScanningDecision = bootSingletons.getCorrelatedScanningDecision();
+        detectRunId = bootSingletons.getDetectRunId();
 
         OperationSystem operationSystem = utilitySingletons.getOperationSystem();
         codeLocationNameManager = utilitySingletons.getCodeLocationNameManager();
@@ -685,6 +692,7 @@ public class OperationRunner {
     private File createProtobufHeaderFile(String type, NameVersion projectNameVersion, String codeLocationName, File scanFile, ScassScanInitiationResult initResult, File outputDirectory) throws OperationException, IntegrationException {
         try {
             String projectGroupName = calculateProjectGroupOptions().getProjectGroup();
+            String correlationId = getCorrelationIdForScanType(type);
 
             DetectProtobufBdioHeaderUtil detectProtobufBdioHeaderUtil = new DetectProtobufBdioHeaderUtil(
                     UUID.randomUUID().toString(),
@@ -692,7 +700,8 @@ public class OperationRunner {
                     projectNameVersion,
                     projectGroupName,
                     codeLocationName,
-                    scanFile.length());
+                    scanFile.length(),
+                    correlationId);
 
 
             File bdioHeaderFile = detectProtobufBdioHeaderUtil.createProtobufBdioHeader(outputDirectory);
@@ -703,7 +712,7 @@ public class OperationRunner {
         }
     }
 
-    public void uploadBdioEntries(BlackDuckRunData blackDuckRunData, UUID bdScanId) throws IntegrationException, IOException {
+    public void uploadBdioEntriesForRapidMode(BlackDuckRunData blackDuckRunData, UUID bdScanId) throws IntegrationException, IOException {
         // parse directory and upload all chunks
         File bdioDirectory = directoryManager.getBdioOutputDirectory();
 
@@ -1004,7 +1013,7 @@ public class OperationRunner {
     //Post actions
     //End post actions
 
-    public final BdioUploadResult uploadBdioIntelligentPersistent(BlackDuckRunData blackDuckRunData, BdioResult bdioResult, Long timeout, String scassScanId) throws OperationException {
+    public final BdioUploadResult uploadBdioForIntelligentPersistentMode(BlackDuckRunData blackDuckRunData, BdioResult bdioResult, Long timeout, String scassScanId) throws OperationException {
         return auditLog.namedPublic(
             "Upload Intelligent Persistent Bdio",
             () -> new IntelligentPersistentUploadOperation(
@@ -1014,8 +1023,8 @@ public class OperationRunner {
         );
     }
 
-    public final CodeLocationWaitData calculateCodeLocationWaitData(List<WaitableCodeLocationData> codeLocationCreationDatas) throws OperationException {
-        return auditLog.namedInternal("Calculate Code Location Wait Data", () -> new CodeLocationWaitCalculator().calculateWaitData(codeLocationCreationDatas));
+    public final CodeLocationWaitData calculateCodeLocationWaitDataGivenNotificationRangeStart(List<WaitableCodeLocationData> codeLocationCreationDatas, long codeLocationsUploadStartTime) throws OperationException {
+        return auditLog.namedInternal("Calculate Code Location Wait Data", () -> new CodeLocationWaitCalculator().calculateWaitData(codeLocationCreationDatas, codeLocationsUploadStartTime));
     }
 
     public final void publishCodeLocationData(Set<FormattedCodeLocation> codeLocationData) throws OperationException {
@@ -1084,7 +1093,7 @@ public class OperationRunner {
                 blackDuckRunData.getBlackDuckServicesFactory().getBlackDuckApiClient(),
                 blackDuckRunData.getBlackDuckServicesFactory().createProjectBomService()
             );
-            BlackDuckPostOptions blackDuckPostOptions = detectConfigurationFactory.createBlackDuckPostOptions();
+            BlackDuckPostOptions blackDuckPostOptions = createBlackDuckPostOptions();
             List<PolicyRuleSeverityType> severitiesToFailPolicyCheck = blackDuckPostOptions.getSeveritiesToFailPolicyCheck();
             policyChecker.checkPolicyBySeverity(severitiesToFailPolicyCheck, projectVersionView);
         });
@@ -1097,7 +1106,7 @@ public class OperationRunner {
                 blackDuckRunData.getBlackDuckServicesFactory().getBlackDuckApiClient(),
                 blackDuckRunData.getBlackDuckServicesFactory().createProjectBomService()
             );
-            BlackDuckPostOptions blackDuckPostOptions = detectConfigurationFactory.createBlackDuckPostOptions();
+            BlackDuckPostOptions blackDuckPostOptions = createBlackDuckPostOptions();
             List<String> policyNamesToFailPolicyCheck = blackDuckPostOptions.getPolicyNamesToFailPolicyCheck();
             policyChecker.checkPolicyByName(policyNamesToFailPolicyCheck, projectVersionView);
         });
@@ -1188,10 +1197,11 @@ public class OperationRunner {
             () -> {
                 List<String> exclusions = detectConfigurationFactory.collectSignatureScannerDirectoryExclusions();
                 DetectExcludedDirectoryFilter detectExcludedDirectoryFilter = new DetectExcludedDirectoryFilter(exclusions);
-                return new CalculateScanPathsOperation(detectConfigurationFactory.createBlackDuckSignatureScannerOptions(), directoryManager, fileFinder,
+                BlackDuckSignatureScannerOptions scannerOptions = detectConfigurationFactory.createBlackDuckSignatureScannerOptions(correlatedScanningDecision);
+                return new CalculateScanPathsOperation(scannerOptions, directoryManager, fileFinder,
                     detectExcludedDirectoryFilter::isExcluded
                 )
-                    .determinePathsAndExclusions(projectNameVersion, detectConfigurationFactory.createBlackDuckSignatureScannerOptions().getMaxDepth(), dockerTargetData);
+                    .determinePathsAndExclusions(projectNameVersion, scannerOptions.getMaxDepth(), dockerTargetData);
             }
         );
     }
@@ -1201,12 +1211,12 @@ public class OperationRunner {
         List<SignatureScanPath> scanPaths,
         NameVersion projectNameVersion,
         DockerTargetData dockerTargetData,
-        BlackDuckRunData blackDuckRunData, 
+        BlackDuckRunData blackDuckRunData,
         boolean isScassFallback
     )
         throws OperationException {
         return auditLog.namedPublic("Create Online Signature Scan Batch", "OnlineSigScan",
-            () -> new CreateScanBatchOperation(detectConfigurationFactory.createBlackDuckSignatureScannerOptions(), directoryManager, codeLocationNameManager)
+            () -> new CreateScanBatchOperation(detectConfigurationFactory.createBlackDuckSignatureScannerOptions(correlatedScanningDecision), directoryManager, codeLocationNameManager)
                 .createScanBatchWithBlackDuck(detectRunUuid, projectNameVersion, scanPaths, blackDuckRunData, dockerTargetData, isScassFallback)
         );
     }
@@ -1214,7 +1224,7 @@ public class OperationRunner {
     public ScanBatch createScanBatchOffline(String detectRunUuid, List<SignatureScanPath> scanPaths, NameVersion projectNameVersion, DockerTargetData dockerTargetData)
         throws OperationException {
         return auditLog.namedPublic("Create Offline Signature Scan Batch", "OfflineSigScan",
-            () -> new CreateScanBatchOperation(detectConfigurationFactory.createBlackDuckSignatureScannerOptions(), directoryManager, codeLocationNameManager)
+            () -> new CreateScanBatchOperation(detectConfigurationFactory.createBlackDuckSignatureScannerOptions(correlatedScanningDecision), directoryManager, codeLocationNameManager)
                 .createScanBatchWithoutBlackDuck(detectRunUuid, projectNameVersion, scanPaths, dockerTargetData)
         );
     }
@@ -1226,7 +1236,7 @@ public class OperationRunner {
     public Optional<File> calculateOnlineLocalScannerInstallPath() throws OperationException {
         return auditLog.namedInternal(
             "Calculate Online Local Scanner Path",
-            () -> detectConfigurationFactory.createBlackDuckSignatureScannerOptions().getLocalScannerInstallPath().map(Path::toFile)
+            () -> detectConfigurationFactory.createBlackDuckSignatureScannerOptions(correlatedScanningDecision).getLocalScannerInstallPath().map(Path::toFile)
         );
     }
 
@@ -1236,7 +1246,7 @@ public class OperationRunner {
 
     public ScanBatchRunner createScanBatchRunnerWithBlackDuck(BlackDuckRunData blackDuckRunData, File installDirectory) throws OperationException {
         return auditLog.namedInternal("Create Scan Batch Runner with Black Duck SCA", () -> {
-            ExecutorService executorService = Executors.newFixedThreadPool(detectConfigurationFactory.createBlackDuckSignatureScannerOptions().getParallelProcessors());
+            ExecutorService executorService = Executors.newFixedThreadPool(detectConfigurationFactory.createBlackDuckSignatureScannerOptions(correlatedScanningDecision).getParallelProcessors());
             IntEnvironmentVariables intEnvironmentVariables = IntEnvironmentVariables.includeSystemEnv();
             Optional<BlackDuckVersion> blackDuckVersion = blackDuckRunData.getBlackDuckServerVersion();
 
@@ -1289,13 +1299,6 @@ public class OperationRunner {
         });
     }
 
-    public NotificationTaskRange createCodeLocationRange(BlackDuckRunData blackDuckRunData) throws OperationException {
-        return auditLog.namedInternal(
-            "Create Code Location Task Range",
-            () -> blackDuckRunData.getBlackDuckServicesFactory().createCodeLocationCreationService().calculateCodeLocationRange()
-        );
-    }
-
     public SignatureScanOuputResult signatureScan(ScanBatch scanBatch, ScanBatchRunner scanBatchRunner) throws OperationException {
         return auditLog.namedPublic("Execute Signature Scan CLI", "SigScan", () -> new SignatureScanOperation().performScanActions(scanBatch, scanBatchRunner));
     }
@@ -1307,19 +1310,18 @@ public class OperationRunner {
 
     public void publishSignatureScanReport(List<SignatureScannerReport> report) throws OperationException {
         auditLog.namedInternal("Publish Signature Scan Report", () -> {
-            Boolean treatSkippedAsFailure = detectConfigurationFactory.createBlackDuckSignatureScannerOptions().getTreatSkippedScansAsSuccess();
+            Boolean treatSkippedAsFailure = detectConfigurationFactory.createBlackDuckSignatureScannerOptions(correlatedScanningDecision).getTreatSkippedScansAsSuccess();
             new PublishSignatureScanReports(exitCodePublisher, statusEventPublisher, treatSkippedAsFailure).publishReports(report);
         });
     }
 
     public SignatureScannerCodeLocationResult calculateWaitableSignatureScannerCodeLocations(
-        NotificationTaskRange notificationTaskRange,
         List<SignatureScannerReport> reports
     ) throws OperationException {
         return auditLog.namedInternal(
             "Calculate Signature Scanner Waitable Code Locations",
             () -> new CalculateWaitableSignatureScanCodeLocations()
-                .calculateWaitableCodeLocations(notificationTaskRange, reports)
+                .calculateWaitableCodeLocations(reports)
         );
     }
 
@@ -1385,7 +1387,7 @@ public class OperationRunner {
 
     public Optional<File> calculateNoticesDirectory() throws OperationException { //TODO Should be a decision in boot
         return auditLog.namedInternal("Decide Notices Report Path", () -> {
-            BlackDuckPostOptions postOptions = detectConfigurationFactory.createBlackDuckPostOptions();
+            BlackDuckPostOptions postOptions = createBlackDuckPostOptions();
             if (postOptions.shouldGenerateNoticesReport()) {
                 return Optional.of(postOptions.getNoticesReportPath().map(Path::toFile)
                     .orElse(directoryManager.getSourceDirectory()));
@@ -1396,7 +1398,7 @@ public class OperationRunner {
 
     public Optional<File> calculateRiskReportPdfFileLocation() throws OperationException { //TODO Should be a decision in boot
         return auditLog.namedInternal("Decide Risk Report Path", () -> {
-            BlackDuckPostOptions postOptions = detectConfigurationFactory.createBlackDuckPostOptions();
+            BlackDuckPostOptions postOptions = createBlackDuckPostOptions();
             if (postOptions.shouldGenerateRiskReportPdf()) {
                 return Optional.of(postOptions.getRiskReportPdfPath().map(Path::toFile)
                     .orElse(directoryManager.getSourceDirectory()));
@@ -1407,7 +1409,7 @@ public class OperationRunner {
 
     public Optional<File> calculateRiskReportJsonFileLocation() throws OperationException { //TODO Should be a decision in boot
         return auditLog.namedInternal("Decide Risk Report Path", () -> {
-            BlackDuckPostOptions postOptions = detectConfigurationFactory.createBlackDuckPostOptions();
+            BlackDuckPostOptions postOptions = createBlackDuckPostOptions();
             if (postOptions.shouldGenerateRiskReportJson()) {
                 return Optional.of(postOptions.getRiskReportJsonPath().map(Path::toFile)
                         .orElse(directoryManager.getSourceDirectory()));
@@ -1477,11 +1479,35 @@ public class OperationRunner {
     }
 
     private ExecutorService createExecutorServiceForScanner() {
-        return Executors.newFixedThreadPool(detectConfigurationFactory.createBlackDuckSignatureScannerOptions().getParallelProcessors());
+        return Executors.newFixedThreadPool(detectConfigurationFactory.createBlackDuckSignatureScannerOptions(correlatedScanningDecision).getParallelProcessors());
     }
 
     public BlackDuckPostOptions createBlackDuckPostOptions() {
-        return detectConfigurationFactory.createBlackDuckPostOptions();
+        return detectConfigurationFactory.createBlackDuckPostOptions(correlatedScanningDecision);
+    }
+
+    /**
+     * Gets the correlation ID if correlated scanning is enabled and the scan type is supported.
+     * @param scanType The scan type to check (e.g., "BINARY", "SIGNATURE", "PACKAGE_MANAGER")
+     * @return The correlation ID string if enabled and supported, null otherwise
+     */
+    public String getCorrelationIdForScanType(String scanType) {
+        if (correlatedScanningDecision.isEnabled() && correlatedScanningDecision.isScanTypeSupported(scanType)) {
+            return detectRunId.getCorrelationId();
+        }
+        return null;
+    }
+
+    /**
+     * Gets the correlation ID if correlated scanning is enabled (regardless of specific scan type).
+     * Use this for operations that aggregate data across all supported scan types, like uploading scan counts.
+     * @return The correlation ID string if correlated scanning is enabled, null otherwise
+     */
+    public String getCorrelationIdIfEnabled() {
+        if (correlatedScanningDecision.isEnabled()) {
+            return detectRunId.getCorrelationId();
+        }
+        return null;
     }
 
     public BinaryScanOptions calculateBinaryScanOptions() {
@@ -1802,8 +1828,8 @@ public class OperationRunner {
         }
     }
 
-    public boolean isCorrelationScanningEnabled() {
-        return detectConfigurationFactory.isCorrelatedScanningEnabled();
+    public boolean isCorrelationScanningEnabled(String scanType) {
+        return correlatedScanningDecision.isEnabled() && correlatedScanningDecision.isScanTypeSupported(scanType);
     }
 
     public UUID getScanIdFromScanUrl(HttpUrl blackDuckScanUrl) {

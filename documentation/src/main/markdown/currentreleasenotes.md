@@ -15,6 +15,8 @@
 	* na.store.scass.blackduck.com - 34.54.95.139
 	* eu.store.scass.blackduck.com - 34.54.213.11
 	* eu.scass.blackduck.com - 34.54.38.252
+	
+* **Deprecation of Java 8 support** - In alignment with EU Cyber Resilience Act (CRA) requirements and compliance timelines, Java 8 support will be deprecated in the anticipated 2026 Q3 Detect 12.0.0 release.
 
 ## Version 11.4.0
 
@@ -34,3 +36,11 @@
 
 * (IDETECT-5014) npm CLI detector now handles components that do not have a version specified, preventing those components from being silently dropped from results.
 * (IDETECT-4980) When `detect.clone.project.version.latest` is set to true, an INFO-level log message will be written to identify the exact project version selected as the clone source.
+* (IDETECT‑4979) Updated the NuGet Inspector to prevent duplicate components from being reported which end up unversioned in the BOM.
+* (IDETECT‑5058) Improved the Poetry detector to eliminate errors encountered while parsing pyproject.toml.
+* (IDETECT‑5013) Fixed an issue in the signature scan fallback logic when SCA Scan Service (SCASS) is intentionally bypassed.
+* NuGet Solution Native Inspector now supports .slnx files.
+
+### Dependency Updates
+* Upgraded and released Nuget Inspector version 2.6.0
+* Update tomlj library to version 1.1.1.

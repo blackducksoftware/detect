@@ -39,7 +39,7 @@ public class PreScassBinaryScanStepRunner extends AbstractBinaryScanStepRunner {
 
     @Override
     protected UUID performBlackduckInteractions(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData,
-            Optional<File> binaryScanFile) throws OperationException, IntegrationException {
+            Optional<File> binaryScanFile) throws OperationException {
         if (isMultipartUploadPossible(blackDuckRunData)) {            
             BinaryUploadStatus status = operationRunner.uploadBinaryScanFile(binaryScanFile.get(), projectNameVersion,
                     blackDuckRunData);
