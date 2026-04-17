@@ -22,6 +22,8 @@ public class DetectArgumentState {
 
     private final boolean isQuackStartExpress;
 
+    private final boolean isCacheConfig;
+
     public DetectArgumentState(
         boolean isHelp,
         boolean isHelpJsonDocument,
@@ -34,7 +36,7 @@ public class DetectArgumentState {
         boolean isGenerateAirGapZip
     ) {
         this(isHelp, isHelpJsonDocument, isHelpYamlDocument, isInteractive,
-            isVerboseHelp, isDeprecatedHelp, parsedValue, isDiagnostic, isGenerateAirGapZip, false, false);
+            isVerboseHelp, isDeprecatedHelp, parsedValue, isDiagnostic, isGenerateAirGapZip, false, false, false);
     }
 
     public DetectArgumentState(
@@ -50,7 +52,7 @@ public class DetectArgumentState {
         boolean isAiAssistance
     ) {
         this(isHelp, isHelpJsonDocument, isHelpYamlDocument, isInteractive,
-            isVerboseHelp, isDeprecatedHelp, parsedValue, isDiagnostic, isGenerateAirGapZip, isAiAssistance, false);
+            isVerboseHelp, isDeprecatedHelp, parsedValue, isDiagnostic, isGenerateAirGapZip, isAiAssistance, false, false);
     }
 
     public DetectArgumentState(
@@ -66,6 +68,24 @@ public class DetectArgumentState {
         boolean isAiAssistance,
         boolean isQuackStartExpress
     ) {
+        this(isHelp, isHelpJsonDocument, isHelpYamlDocument, isInteractive,
+            isVerboseHelp, isDeprecatedHelp, parsedValue, isDiagnostic, isGenerateAirGapZip, isAiAssistance, isQuackStartExpress, false);
+    }
+
+    public DetectArgumentState(
+        boolean isHelp,
+        boolean isHelpJsonDocument,
+        boolean isHelpYamlDocument,
+        boolean isInteractive,
+        boolean isVerboseHelp,
+        boolean isDeprecatedHelp,
+        @Nullable String parsedValue,
+        boolean isDiagnostic,
+        boolean isGenerateAirGapZip,
+        boolean isAiAssistance,
+        boolean isQuackStartExpress,
+        boolean isCacheConfig
+    ) {
         this.isHelp = isHelp;
         this.isHelpJsonDocument = isHelpJsonDocument;
         this.isHelpYamlDocument = isHelpYamlDocument;
@@ -77,6 +97,7 @@ public class DetectArgumentState {
         this.isGenerateAirGapZip = isGenerateAirGapZip;
         this.isAiAssistance = isAiAssistance;
         this.isQuackStartExpress = isQuackStartExpress;
+        this.isCacheConfig = isCacheConfig;
     }
 
     public boolean isHelp() {
@@ -122,5 +143,9 @@ public class DetectArgumentState {
 
     public boolean isQuackStartExpress() {
         return isQuackStartExpress;
+    }
+
+    public boolean isCacheConfig() {
+        return isCacheConfig;
     }
 }

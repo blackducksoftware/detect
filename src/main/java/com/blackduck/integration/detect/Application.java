@@ -34,6 +34,7 @@ import com.blackduck.integration.detect.lifecycle.autonomous.AutonomousManager;
 import com.blackduck.integration.detect.lifecycle.boot.DetectBoot;
 import com.blackduck.integration.detect.lifecycle.boot.DetectBootFactory;
 import com.blackduck.integration.detect.lifecycle.boot.DetectBootResult;
+import com.blackduck.integration.detect.lifecycle.boot.cache.ScanConfigCacheService;
 import com.blackduck.integration.detect.lifecycle.exit.ExitManager;
 import com.blackduck.integration.detect.lifecycle.exit.ExitOptions;
 import com.blackduck.integration.detect.lifecycle.exit.ExitResult;
@@ -64,6 +65,7 @@ public class Application implements ApplicationRunner {
     private static final Logger logger = LoggerFactory.getLogger(Application.class);
 
     private static boolean SHOULD_EXIT = true;
+    private boolean isCacheConfig = false;
     
     private static final String STATUS_JSON_FILE_NAME = "status.json";
     public static final Long START_TIME = System.currentTimeMillis();
@@ -192,6 +194,17 @@ public class Application implements ApplicationRunner {
             //Create installed tool data file.
             detectBootResult.getDirectoryManager().ifPresent(directoryManager -> createOrUpdateInstalledToolsFile(installedToolManager, directoryManager.getPermanentDirectory()));
 
+            // Cache save logic
+            if (isCacheConfig) {
+                ExitCodeType winningExitCode = exitCodeRequest.getExitCodeType();
+                if (winningExitCode == ExitCodeType.SUCCESS) {
+                    detectBootResult.getDetectConfiguration().ifPresent(config -> {
+                        ScanConfigCacheService cacheService = new ScanConfigCacheService();
+                        cacheService.promptAndSaveConfiguration(config);
+                    });
+                }
+            }
+
             shutdownApplication(detectBootResult, exitCodeManager);
         } else {
             autonomousManagerOptional = Optional.empty();
@@ -220,6 +233,7 @@ public class Application implements ApplicationRunner {
             logger.debug("Detect boot begin.");
             DetectArgumentStateParser detectArgumentStateParser = new DetectArgumentStateParser();
             DetectArgumentState detectArgumentState = detectArgumentStateParser.parseArgs(sourceArgs);
+            this.isCacheConfig = detectArgumentState.isCacheConfig();
             List<PropertySource> propertySources = new ArrayList<>(SpringConfigurationPropertySource.fromConfigurableEnvironmentSafely(environment, logger::error));
 
             DetectBootFactory detectBootFactory = new DetectBootFactory(detectRunId, detectInfo, gson, eventSystem, fileFinder);

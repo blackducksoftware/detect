@@ -49,6 +49,7 @@ import com.blackduck.integration.detect.interactive.InteractiveWriter;
 import com.blackduck.integration.detect.lifecycle.autonomous.AutonomousManager;
 import com.blackduck.integration.detect.workflow.aiassist.AiAssistanceManager;
 import com.blackduck.integration.detect.lifecycle.boot.decision.BlackDuckDecision;
+import com.blackduck.integration.detect.lifecycle.boot.cache.ScanConfigCacheService;
 import com.blackduck.integration.detect.lifecycle.boot.decision.ProductDecider;
 import com.blackduck.integration.detect.lifecycle.boot.decision.RunDecision;
 import com.blackduck.integration.detect.lifecycle.boot.product.ProductBoot;
@@ -145,6 +146,11 @@ public class DetectBoot {
             InteractiveWriter writer = InteractiveWriter.defaultWriter(System.console(), System.in, System.out);
             MapPropertySource aiPropertySource = aiAssistanceManager.runExpress(sourceDirectory, writer, propertySources);
             propertySources.add(0, aiPropertySource);
+        } else if (detectArgumentState.isCacheConfig()) {
+            logger.info("Cache config mode enabled (--cache.config).");
+            ScanConfigCacheService cacheService = new ScanConfigCacheService();
+            Optional<MapPropertySource> cachedSource = cacheService.loadCachedProperties();
+            cachedSource.ifPresent(propertySources::add);
         }
 
         SortedMap<String, String> scanSettingsProperties = new TreeMap<>();

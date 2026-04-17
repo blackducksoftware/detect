@@ -13,6 +13,7 @@ public class DetectArgumentStateParser {
         boolean isInteractive = parser.isArgumentPresent("-i", "--interactive");
         boolean isAiAssistance = parser.isArgumentPresent("--quackstart", "--quackstart-assist");
         boolean isQuackStartExpress = parser.isArgumentPresent("--quackstart.express", "--quackstart-express");
+        boolean isCacheConfig = parser.isArgumentPresent("-cc", "--cache.config");
 
         boolean isVerboseHelp = parser.isArgumentPresent("-hv", "--helpVerbose");
         boolean isDeprecatedHelp = parser.isArgumentPresent("-hd", "--helpDeprecated");
@@ -39,7 +40,8 @@ public class DetectArgumentStateParser {
             isDiagnostic,
             isGenerateAirGapZip,
             isAiAssistance,
-            isQuackStartExpress
+            isQuackStartExpress,
+            isCacheConfig
         );
     }
 
