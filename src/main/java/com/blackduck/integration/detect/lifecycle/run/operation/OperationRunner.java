@@ -72,6 +72,7 @@ import com.blackduck.integration.common.util.finder.FileFinder;
 import com.blackduck.integration.componentlocator.beans.Component;
 import com.blackduck.integration.detect.configuration.DetectConfigurationFactory;
 import com.blackduck.integration.detect.configuration.DetectInfo;
+import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detect.configuration.DetectUserFriendlyException;
 import com.blackduck.integration.detect.configuration.DetectorToolOptions;
 import com.blackduck.integration.detect.configuration.connection.ConnectionFactory;
@@ -378,7 +379,8 @@ public class OperationRunner {
                 statusEventPublisher,
                 exitCodePublisher,
                 detectorEventPublisher,
-                directoryEvaluator
+                directoryEvaluator,
+                detectConfigurationFactory
             );
             DetectorToolResult toolResult =  detectorTool.performDetectors(
                 directoryManager,
@@ -392,7 +394,7 @@ public class OperationRunner {
 
             if (detectConfigurationFactory.isQuackPatchPossible()) {
                 try {
-                    detectorTool.saveExtractedDetectorsAndTheirRelevantFilePaths(directoryManager, toolResult);
+                    detectorTool.saveExtractedDetectorsAndTheirRelevantFilePaths(toolResult);
                 } catch (IOException e) {
                     throw new RuntimeException("Something went wrong writing relevant files: " + e.getMessage());
                 }
@@ -861,7 +863,7 @@ public class OperationRunner {
         return auditLog.namedPublic(
                 "Generate Rapid Full Json File",
                 "RapidScan",
-                () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFileFromString(scanResults.get(0).getContentString())
+                () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFileFromString(scanResults.get(0).getContentString(), detectConfigurationFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT))
         );
     }
 
@@ -875,7 +877,7 @@ public class OperationRunner {
                 () -> {
                     publishResult(
                             new GenerateComponentLocationAnalysisOperation(detectConfigurationFactory, statusEventPublisher, exitCodePublisher)
-                                    .runQuackPatch(directoryManager.getScanOutputDirectory(), rapidFullResultsJson, detectConfigurationFactory)
+                                    .runQuackPatch(rapidFullResultsJson, detectConfigurationFactory)
                     );
                 }
         );

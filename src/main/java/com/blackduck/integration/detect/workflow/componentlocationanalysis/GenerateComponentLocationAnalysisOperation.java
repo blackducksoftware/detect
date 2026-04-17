@@ -85,16 +85,16 @@ public class GenerateComponentLocationAnalysisOperation {
         return new ComponentLocatorResult(outputFilepath);
     }
 
-    public QuackPatchResult runQuackPatch(File scanOutputFolder, File rapidFullResultsFile, DetectConfigurationFactory configFactory) {
+    public QuackPatchResult runQuackPatch(File rapidFullResultsFile, DetectConfigurationFactory configFactory) {
         logger.info("Attempting Quack Patch.");
-            Map<String, List<String>> relevantDetectorsAndFiles = loadDetectorsAndFiles(getQuackPatchOutputDirectory(scanOutputFolder) + File.separator + INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON);
-            String llmKey = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_KEY);
-            String llmName = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_NAME);
-            String llmURL = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_ENDPOINT);
-            // if the detect.quack.patch.output property value set use that as output folder, otherwise default it to current working directory
-            String quackPatchOutputDir = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT);
-            logger.debug("Quack Patch output directory set to: {}", quackPatchOutputDir);
-            ComponentLocator.runQuackPatch(rapidFullResultsFile, relevantDetectorsAndFiles, llmKey, llmName, llmURL, quackPatchOutputDir);
+        // if the detect.quack.patch.output property value set use that as output folder, otherwise default it to current working directory
+        String quackPatchOutputDir = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT);
+        logger.debug("Quack Patch output directory set to: {}", quackPatchOutputDir);
+        Map<String, List<String>> relevantDetectorsAndFiles = loadDetectorsAndFiles(quackPatchOutputDir + File.separator + QUACKPATCH_SUBDIRECTORY_NAME + File.separator + INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON);
+        String llmKey = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_KEY);
+        String llmName = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_NAME);
+        String llmURL = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_ENDPOINT);        
+        ComponentLocator.runQuackPatch(rapidFullResultsFile, relevantDetectorsAndFiles, llmKey, llmName, llmURL, quackPatchOutputDir);
         return new QuackPatchResult(getQuackPatchOutputDirectory(new File(quackPatchOutputDir)));
     }
 
