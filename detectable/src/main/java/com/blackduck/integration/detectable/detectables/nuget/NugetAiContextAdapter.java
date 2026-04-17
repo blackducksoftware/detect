@@ -63,23 +63,17 @@ public class NugetAiContextAdapter implements AiContextAdapter {
     }
 
     /**
-     * Extractable if {@code dotnet} is found on the system PATH.
-     * The NuGet inspector requires the .NET SDK to function.
+     * Always returns {@code true} for the AI context adapter.
+     *
+     * <p>The AI pre-scan phase only parses {@code .sln} and {@code .csproj} files to extract
+     * project metadata — it does <em>not</em> invoke the {@code dotnet} CLI or the NuGet
+     * inspector. Requiring {@code dotnet} on PATH would incorrectly skip AI assistance for
+     * developers who have the project files but not the .NET SDK installed in the current
+     * environment (e.g. CI agents, cross-platform workstations).</p>
      */
     @Override
     public boolean isExtractable(File sourceDirectory) {
-        try {
-            Process process = Runtime.getRuntime().exec(new String[]{"dotnet", "--version"});
-            int exitCode = process.waitFor();
-            return exitCode == 0;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            logger.debug("Interrupted while checking for dotnet on PATH");
-            return false;
-        } catch (Exception e) {
-            logger.debug("dotnet not found on PATH: {}", e.getMessage());
-            return false;
-        }
+        return true;
     }
 
     /**

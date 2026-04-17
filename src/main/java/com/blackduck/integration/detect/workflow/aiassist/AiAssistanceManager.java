@@ -11,6 +11,7 @@ import com.blackduck.integration.detectable.detectables.bazel.BazelAiContextAdap
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenProjectSummary;
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenProjectSummarizer;
 import com.blackduck.integration.detect.interactive.InteractiveWriter;
+import com.blackduck.integration.detectable.detectables.nuget.NugetAiContextAdapter;
 import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -314,6 +315,7 @@ public class AiAssistanceManager {
         list.add(new MavenAiContextAdapter());
         list.add(new GradleAiContextAdapter());
         list.add(new BazelAiContextAdapter());
+        list.add(new NugetAiContextAdapter());
         return list;
     }
 }
