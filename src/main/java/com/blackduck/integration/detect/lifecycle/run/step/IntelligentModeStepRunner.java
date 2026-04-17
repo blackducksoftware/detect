@@ -134,9 +134,14 @@ public class IntelligentModeStepRunner {
 
         logger.debug("Completed project and version actions.");
         logger.debug("Processing Detect Code Locations.");
-        
-        Set<String> scanIdsToWaitFor = new HashSet<>();
+
+        // Code locations upload waiting mechanisms:
+        // Notifications based
+        long codeLocationsUploadStartTime = System.currentTimeMillis();
         AtomicBoolean mustWaitAtBomSummaryLevel = new AtomicBoolean(false);
+
+        // ScanID based (/bom-status/{scanId} level)
+        Set<String> scanIdsToWaitFor = new HashSet<>();
 
         CodeLocationAccumulator codeLocationAccumulator = new CodeLocationAccumulator();
 
@@ -145,8 +150,6 @@ public class IntelligentModeStepRunner {
         } else {
             logger.debug("No BDIO results to upload. Skipping.");
         }
-
-        logger.debug("Completed Detect Code Location processing.");
 
         stepHelper.runToolIfIncluded(DetectTool.SIGNATURE_SCAN, "Signature Scanner", () -> {
             SignatureScanStepRunner signatureScanStepRunner = new SignatureScanStepRunner(operationRunner, blackDuckRunData);
@@ -157,8 +160,9 @@ public class IntelligentModeStepRunner {
                 scanIdsToWaitFor,
                 gson
             );
-            codeLocationAccumulator.addWaitableCodeLocations(signatureScannerCodeLocationResult.getWaitableCodeLocationData());
-            codeLocationAccumulator.addNonWaitableCodeLocation(signatureScannerCodeLocationResult.getNonWaitableCodeLocationData());
+            codeLocationAccumulator.addNonWaitableCodeLocations(signatureScannerCodeLocationResult.getWaitableCodeLocationData().getSuccessfulCodeLocationNames());
+            codeLocationAccumulator.addNonWaitableCodeLocations(signatureScannerCodeLocationResult.getNonWaitableCodeLocationData());
+            codeLocationAccumulator.incrementCodeLocationCountForTool(DetectTool.SIGNATURE_SCAN, 1);
         });
 
         stepHelper.runToolIfIncluded(DetectTool.BINARY_SCAN, "Binary Scanner", () -> {           
@@ -176,7 +180,6 @@ public class IntelligentModeStepRunner {
             "Vulnerability Impact Analysis",
             () -> {
                 runImpactAnalysisOnline(projectNameVersion, projectVersion, codeLocationAccumulator, blackDuckRunData.getBlackDuckServicesFactory());
-                mustWaitAtBomSummaryLevel.set(true);
             },
             operationRunner::publishImpactSuccess,
             operationRunner::publishImpactFailure
@@ -186,9 +189,10 @@ public class IntelligentModeStepRunner {
             IacScanStepRunner iacScanStepRunner = new IacScanStepRunner(operationRunner);
             // IAC is not a supported correlated scan type, so pass null for correlation ID
             IacScanCodeLocationData iacScanCodeLocationData = iacScanStepRunner.runIacScanOnline(null, projectNameVersion, blackDuckRunData);
-            codeLocationAccumulator.addNonWaitableCodeLocation(iacScanCodeLocationData.getCodeLocationNames());
-            mustWaitAtBomSummaryLevel.set(true);
+            codeLocationAccumulator.addNonWaitableCodeLocations(iacScanCodeLocationData.getCodeLocationNames());
         });
+
+        logger.debug("Completed Detect Code Location processing.");
 
         if (correlatedScanningDecision.isEnabled()) {
             stepHelper.runAsGroup("Upload Correlated Scan Counts", OperationType.INTERNAL, () -> {
@@ -200,18 +204,15 @@ public class IntelligentModeStepRunner {
         stepHelper.runAsGroup("Wait for Results", OperationType.INTERNAL, () -> {
             // Calculate code locations. We do this even if we don't wait as we want to report code location data 
             // in various reports.
-            CodeLocationResults codeLocationResults = calculateCodeLocations(codeLocationAccumulator);
-            
-            if (operationRunner.createBlackDuckPostOptions().shouldWaitForResults()) {                  
-                // Waiting at the scan level is more reliable, do that if the BD server is new enough.
-                if (blackDuckRunData.shouldWaitAtScanLevel()) {
-                    pollForBomScanCompletion(blackDuckRunData, projectVersion, scanIdsToWaitFor);
-                } 
+            CodeLocationResults codeLocationResults = calculateCodeLocations(codeLocationAccumulator, codeLocationsUploadStartTime);
 
-                // If the BD server is older, or we can't detect its version, or if we have scans that we are 
-                // not yet able to obtain the scanID for, use the original notification based waiting.
-                if (!blackDuckRunData.shouldWaitAtScanLevel() || mustWaitAtBomSummaryLevel.get()) {
-                    waitForCodeLocations(codeLocationResults.getCodeLocationWaitData(), projectNameVersion, blackDuckRunData);
+            if (operationRunner.createBlackDuckPostOptions().shouldWaitForResults()) {
+                // Waiting at the scan level is more reliable, do that if the BD server is >= 2023.1.1
+                    pollForBomScanCompletion(blackDuckRunData, projectVersion, scanIdsToWaitFor);
+
+                // If we have scans that we are not yet able to obtain the scanID for, use the original notification based waiting.
+                if (mustWaitAtBomSummaryLevel.get()) {
+                    waitForWaitableCodeLocations(codeLocationResults.getCodeLocationWaitData(), projectNameVersion, blackDuckRunData);
                 }
             }
         });
@@ -234,8 +235,9 @@ public class IntelligentModeStepRunner {
                 scanId = commonScanResult.getScanId() == null ? null : commonScanResult.getScanId().toString();
                 if(commonScanResult.isPackageManagerScassPossible()) {
                     scanIdsToWaitFor.add(scanId);
+                    logger.debug("Added package manager scan {} to list of scanIds to wait for.", scanId);
                     codeLocationAccumulator.addNonWaitableCodeLocation(commonScanResult.getCodeLocationName());
-                    codeLocationAccumulator.incrementAdditionalCounts(DetectTool.DETECTOR, 1);
+                    codeLocationAccumulator.incrementCodeLocationCountForTool(DetectTool.DETECTOR, 1);
                     return;
                 }
             }
@@ -280,9 +282,11 @@ public class IntelligentModeStepRunner {
         
         if (scanId.isPresent()) {
             scanIdsToWaitFor.add(scanId.get().toString());
+            logger.debug("Added binary scan {} to list of scanIds to wait for.", scanId);
         } else {
             Optional<CodeLocationCreationData<BinaryScanBatchOutput>> codeLocations = binaryScanStepRunner.getCodeLocations();
-            
+
+            // Waitable code Locations are only present if server version was too old for multipart binary upload (<2024.7.0)
             if (codeLocations.isPresent()) {
                 codeLocationAccumulator.addWaitableCodeLocations(detectTool, codeLocations.get());
                 mustWaitAtBomSummaryLevel.set(true);
@@ -306,10 +310,13 @@ public class IntelligentModeStepRunner {
         }
 
         Optional<UUID> scanId = containerScanStepRunner.invokeContainerScanningWorkflow();
-        scanId.ifPresent(uuid -> scanIdsToWaitFor.add(uuid.toString()));
+        scanId.ifPresent(uuid -> {
+            scanIdsToWaitFor.add(uuid.toString());
+            logger.debug("Added container scan {} to list of scanIds to wait for.", uuid);
+        });
         Set<String> containerScanCodeLocations = new HashSet<>();
         containerScanCodeLocations.add(containerScanStepRunner.getCodeLocationName());
-        codeLocationAccumulator.addNonWaitableCodeLocation(containerScanCodeLocations);
+        codeLocationAccumulator.addNonWaitableCodeLocations(containerScanCodeLocations);
     }
 
     private void pollForBomScanCompletion(BlackDuckRunData blackDuckRunData, ProjectVersionWrapper projectVersion,
@@ -329,15 +336,19 @@ public class IntelligentModeStepRunner {
     }
 
     public void uploadBdio(BlackDuckRunData blackDuckRunData, BdioResult bdioResult, Set<String> scanIdsToWaitFor, CodeLocationAccumulator codeLocationAccumulator, Long timeout, String scassScanId) throws OperationException {
-        BdioUploadResult uploadResult = operationRunner.uploadBdioIntelligentPersistent(blackDuckRunData, bdioResult, timeout, scassScanId);
+        BdioUploadResult uploadResult = operationRunner.uploadBdioForIntelligentPersistentMode(blackDuckRunData, bdioResult, timeout, scassScanId);
         Optional<CodeLocationCreationData<UploadBatchOutput>> codeLocationCreationData = uploadResult.getUploadOutput();
-        codeLocationCreationData.ifPresent(uploadBatchOutputCodeLocationCreationData -> codeLocationAccumulator.addWaitableCodeLocations(
-            DetectTool.DETECTOR,
-            uploadBatchOutputCodeLocationCreationData
+        codeLocationCreationData.ifPresent(uploadBatchOutputCodeLocationCreationData -> codeLocationAccumulator.addNonWaitableCodeLocations(
+                uploadBatchOutputCodeLocationCreationData.getOutput().getSuccessfulCodeLocationNames()
         ));
+        codeLocationAccumulator.incrementCodeLocationCountForTool(DetectTool.DETECTOR, 1);
         if (uploadResult.getUploadOutput().isPresent()) {
             for (UploadOutput result : uploadResult.getUploadOutput().get().getOutput()) {
-                result.getScanId().ifPresent((scanId) -> scanIdsToWaitFor.add(scanId));
+                result.getScanId().ifPresent((scanId) -> {
+                    scanIdsToWaitFor.add(scanId);
+                    logger.debug("Added BDIO upload (prescass pkg mngr) scan ID to list of scanIds to wait for: {}", scanId);
+                        }
+                );
             }
         }
     }
@@ -358,11 +369,11 @@ public class IntelligentModeStepRunner {
         }
     }
 
-    public CodeLocationResults calculateCodeLocations(CodeLocationAccumulator codeLocationAccumulator) throws OperationException { //this is waiting....
+    public CodeLocationResults calculateCodeLocations(CodeLocationAccumulator codeLocationAccumulator, long codeLocationsUploadStartTime) throws OperationException {
         logger.info(ReportConstants.RUN_SEPARATOR);
 
         Set<String> allCodeLocationNames = new HashSet<>(codeLocationAccumulator.getNonWaitableCodeLocations());
-        CodeLocationWaitData waitData = operationRunner.calculateCodeLocationWaitData(codeLocationAccumulator.getWaitableCodeLocations());
+        CodeLocationWaitData waitData = operationRunner.calculateCodeLocationWaitDataGivenNotificationRangeStart(codeLocationAccumulator.getWaitableCodeLocations(), codeLocationsUploadStartTime);
         allCodeLocationNames.addAll(waitData.getCodeLocationNames());
         
         Set<FormattedCodeLocation> allCodeLocationData = new HashSet<>();
@@ -405,10 +416,12 @@ public class IntelligentModeStepRunner {
         }
     }
     
-    public void waitForCodeLocations(CodeLocationWaitData codeLocationWaitData, NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData)
+    public void waitForWaitableCodeLocations(CodeLocationWaitData codeLocationWaitData, NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData)
             throws OperationException {
             logger.info("Checking to see if Detect should wait for bom tool calculations to finish.");
-            if (operationRunner.createBlackDuckPostOptions().shouldWaitForResults() && codeLocationWaitData.getExpectedNotificationCount() > 0) {
+            if (codeLocationWaitData.getExpectedNotificationCount() > 0) {
+                logger.debug("Will use old notifications based waiting for the following code locations: {}", codeLocationWaitData.getCodeLocationNames());
+                logger.debug("Notifications after {} will be considered.", codeLocationWaitData.getNotificationRange().getStartDate());
                 operationRunner.waitForCodeLocations(blackDuckRunData, codeLocationWaitData, projectNameVersion);
             }
         }
@@ -429,7 +442,7 @@ public class IntelligentModeStepRunner {
         );
         operationRunner.mapImpactAnalysisCodeLocations(impactFile, uploadData, projectVersionWrapper, blackDuckServicesFactory);
         /* TODO: There is currently no mechanism within Black Duck for checking the completion status of an Impact Analysis code location. Waiting should happen here when such a mechanism exists. See HUB-25142. JM - 08/2020 */
-        codeLocationAccumulator.addNonWaitableCodeLocation(uploadData.getOutput().getSuccessfulCodeLocationNames());
+        codeLocationAccumulator.addNonWaitableCodeLocations(uploadData.getOutput().getSuccessfulCodeLocationNames());
     }
 
     private Path generateImpactAnalysis(NameVersion projectNameVersion) throws OperationException {

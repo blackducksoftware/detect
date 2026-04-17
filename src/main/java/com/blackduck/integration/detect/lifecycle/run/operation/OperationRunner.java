@@ -710,7 +710,7 @@ public class OperationRunner {
         }
     }
 
-    public void uploadBdioEntries(BlackDuckRunData blackDuckRunData, UUID bdScanId) throws IntegrationException, IOException {
+    public void uploadBdioEntriesForRapidMode(BlackDuckRunData blackDuckRunData, UUID bdScanId) throws IntegrationException, IOException {
         // parse directory and upload all chunks
         File bdioDirectory = directoryManager.getBdioOutputDirectory();
 
@@ -1011,7 +1011,7 @@ public class OperationRunner {
     //Post actions
     //End post actions
 
-    public final BdioUploadResult uploadBdioIntelligentPersistent(BlackDuckRunData blackDuckRunData, BdioResult bdioResult, Long timeout, String scassScanId) throws OperationException {
+    public final BdioUploadResult uploadBdioForIntelligentPersistentMode(BlackDuckRunData blackDuckRunData, BdioResult bdioResult, Long timeout, String scassScanId) throws OperationException {
         return auditLog.namedPublic(
             "Upload Intelligent Persistent Bdio",
             () -> new IntelligentPersistentUploadOperation(
@@ -1021,8 +1021,8 @@ public class OperationRunner {
         );
     }
 
-    public final CodeLocationWaitData calculateCodeLocationWaitData(List<WaitableCodeLocationData> codeLocationCreationDatas) throws OperationException {
-        return auditLog.namedInternal("Calculate Code Location Wait Data", () -> new CodeLocationWaitCalculator().calculateWaitData(codeLocationCreationDatas));
+    public final CodeLocationWaitData calculateCodeLocationWaitDataGivenNotificationRangeStart(List<WaitableCodeLocationData> codeLocationCreationDatas, long codeLocationsUploadStartTime) throws OperationException {
+        return auditLog.namedInternal("Calculate Code Location Wait Data", () -> new CodeLocationWaitCalculator().calculateWaitData(codeLocationCreationDatas, codeLocationsUploadStartTime));
     }
 
     public final void publishCodeLocationData(Set<FormattedCodeLocation> codeLocationData) throws OperationException {
@@ -1297,13 +1297,6 @@ public class OperationRunner {
         });
     }
 
-    public NotificationTaskRange createCodeLocationRange(BlackDuckRunData blackDuckRunData) throws OperationException {
-        return auditLog.namedInternal(
-            "Create Code Location Task Range",
-            () -> blackDuckRunData.getBlackDuckServicesFactory().createCodeLocationCreationService().calculateCodeLocationRange()
-        );
-    }
-
     public SignatureScanOuputResult signatureScan(ScanBatch scanBatch, ScanBatchRunner scanBatchRunner) throws OperationException {
         return auditLog.namedPublic("Execute Signature Scan CLI", "SigScan", () -> new SignatureScanOperation().performScanActions(scanBatch, scanBatchRunner));
     }
@@ -1321,13 +1314,12 @@ public class OperationRunner {
     }
 
     public SignatureScannerCodeLocationResult calculateWaitableSignatureScannerCodeLocations(
-        NotificationTaskRange notificationTaskRange,
         List<SignatureScannerReport> reports
     ) throws OperationException {
         return auditLog.namedInternal(
             "Calculate Signature Scanner Waitable Code Locations",
             () -> new CalculateWaitableSignatureScanCodeLocations()
-                .calculateWaitableCodeLocations(notificationTaskRange, reports)
+                .calculateWaitableCodeLocations(reports)
         );
     }
 
