@@ -57,8 +57,7 @@ public class CalculateWaitableSignatureScanCodeLocationsTest {
     }
 
     public SignatureScannerCodeLocationResult calculate(List<SignatureScannerReport> reports) {
-        return new CalculateWaitableSignatureScanCodeLocations().calculateWaitableCodeLocations(
-            null, reports);
+        return new CalculateWaitableSignatureScanCodeLocations().calculateWaitableCodeLocations(reports);
     }
 
     public void assertWaited(SignatureScannerCodeLocationResult result, Set<String> waited, int notificationCount) {

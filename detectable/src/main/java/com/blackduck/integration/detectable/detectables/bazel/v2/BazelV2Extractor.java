@@ -63,6 +63,7 @@ public class BazelV2Extractor {
      * @param sources Set of dependency sources to execute
      * @param bazelTarget Bazel target to analyze
      * @param mode Bazel environment mode (for HTTP variant selection)
+     * @param bazelVersion Detected Bazel version for feature gating; may be null
      * @return Extraction result containing discovered dependencies and project name
      * @throws ExecutableFailedException if a Bazel command fails
      * @throws DetectableException if extraction fails
@@ -70,10 +71,11 @@ public class BazelV2Extractor {
     public Extraction run(BazelCommandExecutor bazelCmd,
                           Set<DependencySource> sources,
                           String bazelTarget,
-                          BazelEnvironmentAnalyzer.Mode mode) throws ExecutableFailedException, DetectableException {
+                          BazelEnvironmentAnalyzer.Mode mode,
+                          BazelVersion bazelVersion) throws ExecutableFailedException, DetectableException {
         logger.info("Starting the Bazel tool extraction. Target: {}. Pipelines: {}", bazelTarget, sources);
         // Create pipelines for each dependency source
-        Pipelines pipelines = new Pipelines(bazelCmd, bazelVariableSubstitutor, externalIdFactory, haskellParser, mode);
+        Pipelines pipelines = new Pipelines(bazelCmd, bazelVariableSubstitutor, externalIdFactory, haskellParser, mode, bazelVersion);
 
         // Sort sources by priority for deterministic execution
         List<DependencySource> ordered = sources.stream()

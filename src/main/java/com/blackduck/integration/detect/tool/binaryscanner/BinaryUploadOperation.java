@@ -107,6 +107,7 @@ public class BinaryUploadOperation {
             NameVersion projectNameVersion
         )
             throws DetectUserFriendlyException {
+            logger.debug("Using legacy binary scan upload method. This can be slow, consider upgrading to a newer version of Black Duck SCA to enable multipart uploading if possible.");
             String codeLocationName = codeLocationNameManager.createBinaryScanCodeLocationName(
                 binaryScanFile,
                 projectNameVersion.getName(),
@@ -116,7 +117,7 @@ public class BinaryUploadOperation {
                 logger.info("Preparing to upload binary scan file: " + binaryScanFile.getAbsolutePath());
                 BinaryScan binaryScan = new BinaryScan(binaryScanFile, projectNameVersion.getName(), projectNameVersion.getVersion(), codeLocationName);
                 BinaryScanBatch binaryScanBatch = new BinaryScanBatch(binaryScan);
-                CodeLocationCreationData<BinaryScanBatchOutput> codeLocationCreationData = binaryScanUploadService.uploadBinaryScan(binaryScanBatch);
+                CodeLocationCreationData<BinaryScanBatchOutput> codeLocationCreationData = binaryScanUploadService.uploadBinaryScanWithoutNotificationsQuery(binaryScanBatch);
 
                 BinaryScanBatchOutput binaryScanBatchOutput = codeLocationCreationData.getOutput();
                 // The throwExceptionForError() in BinaryScanBatchOutput has a bug, so doing that work here

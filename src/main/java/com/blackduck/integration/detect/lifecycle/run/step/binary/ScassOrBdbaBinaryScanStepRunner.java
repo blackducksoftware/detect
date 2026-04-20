@@ -23,7 +23,7 @@ public class ScassOrBdbaBinaryScanStepRunner extends AbstractBinaryScanStepRunne
 
     @Override
     public UUID performBlackduckInteractions(NameVersion projectNameVersion, BlackDuckRunData blackDuckRunData,
-            Optional<File> binaryScanFile) throws OperationException, IntegrationException {
+            Optional<File> binaryScanFile) {
         try {
             CommonScanResult scanResult = commonScanStepRunner.performCommonScan(
                     projectNameVersion, 
