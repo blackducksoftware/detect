@@ -23,7 +23,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -79,6 +81,20 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
             logger.warn("[Method 1] Host artifact not provided. Delta analysis skipped.");
             return discoveredDependencies;
         }
+
+        // Pre-scan JAR for .class file directory prefixes to filter ghost deps (POM lists them but classes weren't bundled)
+        NavigableSet<String> classPathPrefixes = new TreeSet<String>();
+        Enumeration<JarEntry> classEntries = jarFile.entries();
+        while (classEntries.hasMoreElements()) {
+            String entryName = classEntries.nextElement().getName();
+            if (entryName.endsWith(".class")) {
+                int lastSlash = entryName.lastIndexOf('/');
+                if (lastSlash > 0) {
+                    classPathPrefixes.add(entryName.substring(0, lastSlash + 1));
+                }
+            }
+        }
+        logger.debug("[Method 1] Pre-scanned {} unique class path prefixes for ghost detection.", classPathPrefixes.size());
 
         JarEntry originalPomEntry = null;
 
@@ -190,16 +206,30 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
             }
             logger.debug("[Method 1] Step 5 - Built {} GA keys from Aether children for comparison.", aetherGaKeys.size());
 
-            // GA-based Delta: If original GA is NOT in Aether GA keys, it's shaded
+            // GA-based Delta: If original GA is NOT in Aether GA keys, it's a shaded candidate.
+            // Ghost filter: verify .class files actually exist in the JAR for each candidate's groupId.
+            // Without this, deps listed in the POM but excluded by shade plugin config are false positives.
             int originalSize = originalDepsByGa.size();
             int shadedCount = 0;
+            int ghostCount = 0;
 
             for (Map.Entry<String, String> depEntry : originalDepsByGa.entrySet()) {
                 String gaKey = depEntry.getKey();
                 String gavValue = depEntry.getValue();
 
                 if (!aetherGaKeys.contains(gaKey)) {
-                    // This GA is not in the Aether graph -> shaded dependency
+                    // Candidate shaded dep — verify classes are actually bundled in the JAR
+                    String groupId = gaKey.split(":")[0];
+                    String expectedClassPrefix = groupId.replace('.', '/') + "/";
+                    String ceiling = classPathPrefixes.ceiling(expectedClassPrefix);
+                    boolean hasClasses = ceiling != null && ceiling.startsWith(expectedClassPrefix);
+
+                    if (!hasClasses) {
+                        logger.debug("[Method 1] Step 5 - Ghost dependency filtered (no .class files for '{}'): {}", expectedClassPrefix, gavValue);
+                        ghostCount++;
+                        continue;
+                    }
+
                     logger.info("[Method 1] Step 5 - Shaded dependency detected: {}", gavValue);
                     discoveredDependencies.add(new DiscoveredDependency(gavValue, "Delta Analysis (ProjectBuilder)"));
                     shadedCount++;
@@ -208,7 +238,8 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
                 }
             }
 
-            logger.debug("[Method 1] Step 5 - GA-based delta calculation: {} original - {} aether GA keys = {} shaded dependency(ies).", originalSize, aetherGaKeys.size(), shadedCount);
+            logger.debug("[Method 1] Step 5 - Delta: {} original, {} aether GA keys, {} shaded, {} ghosts filtered.",
+                    originalSize, aetherGaKeys.size(), shadedCount, ghostCount);
 
         } catch (Exception e) {
             logger.error("[Method 1] Failed to process ProjectBuilder delta math for JAR {}: {}", jarFile.getName(), e.getMessage(), e);

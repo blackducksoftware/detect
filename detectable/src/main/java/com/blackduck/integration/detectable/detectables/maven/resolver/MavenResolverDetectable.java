@@ -617,9 +617,17 @@ public class MavenResolverDetectable extends Detectable {
                                 shadedPomFile, shadedProject, localRepoPath, MAVEN_SCOPE_COMPILE);
                         logger.debug("Resolved Aether tree for shaded dependency: {}", identifier);
 
-                        //TODO : FIND SHADED DEPENDENCIES OF THESE SHADED DEPENDENCIES
+                        //TODO : RECURSIVE SHADED INSPECTION - FIND SHADED DEPENDENCIES OF THESE SHADED DEPENDENCIES
                         //Aether only resolves unshaded dependencies, leaving shaded deps as gaps
                         //in the tree which may result in false negatives for vulnerabilities.
+
+                        //TODO : ADD CYCLE DETECTION BEFORE IMPLEMENTING RECURSIVE SHADED INSPECTION
+                        //If A shades B and B shades A (or any longer chain), recursive inspection
+                        //will loop infinitely or blow the stack. Before making the above TODO work,
+                        //add a Set<String> currentlyInspecting (artifact GAV keys) — skip any artifact
+                        //already in the set to break cycles. PI does this with resolvingShadedDeps /
+                        //resolvedShadedDeps maps. Same pattern applies to MavenModuleProcessor's
+                        //processModuleShadedDependencies and ShadedDependencyScanner.
 
                         // ==========================================
                         // STEP 4: Convert to isolated BDIO DependencyGraph

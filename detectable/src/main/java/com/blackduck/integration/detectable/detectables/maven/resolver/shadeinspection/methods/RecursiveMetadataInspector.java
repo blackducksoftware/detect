@@ -15,10 +15,10 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.HashSet;
 import java.util.List;
+import java.util.NavigableSet;
 import java.util.Properties;
-import java.util.Set;
+import java.util.TreeSet;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -78,7 +78,8 @@ public class RecursiveMetadataInspector implements ShadedDependencyInspector {
         // Step 1.5: Pre-scan all JAR entries to build a set of class file directory prefixes
         // This is used to detect ghost dependencies (metadata without classes)
         logger.debug("[Method 2] Step 1.5 - Pre-scanning JAR entries for .class file prefixes...");
-        Set<String> classPathPrefixes = new HashSet<String>();
+        // TreeSet gives O(log N) ghost lookups via ceiling() instead of O(N) linear scan
+        NavigableSet<String> classPathPrefixes = new TreeSet<String>();
         Enumeration<JarEntry> prePassEntries = jarFile.entries();
         while (prePassEntries.hasMoreElements()) {
             String entryName = prePassEntries.nextElement().getName();
@@ -163,13 +164,8 @@ public class RecursiveMetadataInspector implements ShadedDependencyInspector {
 
                     // Check for ghost dependency: metadata exists but no .class files for this groupId
                     String expectedClassPrefix = groupId.replace('.', '/') + "/";
-                    boolean hasClasses = false;
-                    for (String prefix : classPathPrefixes) {
-                        if (prefix.startsWith(expectedClassPrefix)) {
-                            hasClasses = true;
-                            break;
-                        }
-                    }
+                    String ceiling = classPathPrefixes.ceiling(expectedClassPrefix);
+                    boolean hasClasses = ceiling != null && ceiling.startsWith(expectedClassPrefix);
                     if (!hasClasses) {
                         logger.debug("[Method 2] Step 2 - Skipping ghost dependency (no .class files found "
                                 + "for prefix '{}'): {}:{}:{}", expectedClassPrefix, groupId, artifactId, version);
