@@ -24,7 +24,7 @@ public class BazelEnvironmentAnalyzer {
 
     public Mode getMode() {
         Mode mode = detectMode();
-        logger.info("Bazel mode detected: {}", mode);
+        logger.debug("Bazel mode detected: {}", mode);
         return mode;
     }
 
@@ -40,7 +40,7 @@ public class BazelEnvironmentAnalyzer {
             // If the graph only contains the root module, Bzlmod is active but empty.
             // Look for typical empty signals like "<root> (@_)" or just a single line.
             if (isGraphEmpty(stdout)) {
-                logger.info("Bzlmod is enabled but graph is empty; falling back to WORKSPACE.");
+                logger.debug("Bzlmod is enabled but graph is empty; falling back to WORKSPACE.");
                 return Mode.WORKSPACE;
             }
             return Mode.BZLMOD;
@@ -50,7 +50,7 @@ public class BazelEnvironmentAnalyzer {
             // was successfully emitted to stdout. Check stdout before concluding WORKSPACE.
             String stdout = output.getStandardOutput().trim();
             if (!isGraphEmpty(stdout)) {
-                logger.info("'bazel mod graph' returned exit code {} but stdout contains a valid module graph; treating as BZLMOD.",
+                logger.debug("'bazel mod graph' returned exit code {} but stdout contains a valid module graph; treating as BZLMOD.",
                     output.getReturnCode());
                 return Mode.BZLMOD;
             }

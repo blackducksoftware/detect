@@ -85,7 +85,7 @@ public class BazelV2Extractor {
         List<Dependency> aggregated = new ArrayList<>();
         // Execute each pipeline and aggregate discovered dependencies
         for (DependencySource source : ordered) {
-            logger.info("Executing pipeline for dependency source: {}", source);
+            logger.debug("Executing pipeline for dependency source: {}", source);
             List<Dependency> deps = pipelines.get(source).run();
             logger.info("Number of dependencies discovered for source {}: {}", source, deps.size());
             if (logger.isDebugEnabled()) {
