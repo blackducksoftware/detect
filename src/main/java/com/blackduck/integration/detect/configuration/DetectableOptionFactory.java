@@ -232,7 +232,11 @@ public class DetectableOptionFactory {
         String cliMirrorOf       = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_BUILDLESS_MIRROR_OF);
         String cliMirrorUsername = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_BUILDLESS_MIRROR_USERNAME);
         String cliMirrorPassword = detectConfiguration.getNullableValue(DetectProperties.DETECT_MAVEN_BUILDLESS_MIRROR_PASSWORD);
-        Path   settingsFilePath  = detectConfiguration.getPathOrNull(DetectProperties.DETECT_MAVEN_BUILDLESS_SETTINGS_FILE_PATH);
+
+        // Unified .m2 path — derive settings.xml and local repository from it
+        Path m2Path = detectConfiguration.getPathOrNull(DetectProperties.DETECT_MAVEN_BUILDLESS_M2_PATH);
+        Path settingsFilePath = m2Path != null ? m2Path.resolve("settings.xml") : null;
+        Path jarRepositoryPath = m2Path != null ? m2Path.resolve("repository") : null;
 
         // Delegate proxy precedence logic: settings.xml → CLI → none
         // settings.xml takes priority because it represents Maven-specific proxy configuration
@@ -250,7 +254,10 @@ public class DetectableOptionFactory {
         List<String> resolverExcludedScopes = detectConfiguration.getValue(DetectProperties.DETECT_MAVEN_EXCLUDED_SCOPES);
         boolean includeTestScope = !resolverExcludedScopes.contains("test");
 
-        return new MavenResolverOptions(externalRepositories, proxyConfig, mirrorConfigurations, includeTestScope);
+        // Read shaded dependency detection flag
+        boolean includeShadedDependencies = detectConfiguration.getValue(DetectProperties.DETECT_MAVEN_INCLUDE_SHADED_DEPENDENCIES);
+
+        return new MavenResolverOptions(externalRepositories, proxyConfig, mirrorConfigurations, includeTestScope, includeShadedDependencies, jarRepositoryPath);
 
     }
 

@@ -34,7 +34,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Maven Resolver Detectable - Detects and resolves Maven project dependencies.
@@ -284,6 +286,25 @@ public class MavenResolverDetectable extends Detectable {
                 dependencyGraphTest = mavenGraphTransformer.transform(parseResultTest);
             }
 
+            // PHASE 4.5: Shaded dependency detection
+            Map<String, DependencyGraph> shadedSubTreeCache = new HashMap<>();
+            ShadedDependencyScanner shadedDependencyScanner = null;
+            if (mavenResolverOptions != null && mavenResolverOptions.isIncludeShadedDependenciesEnabled()) {
+                logger.info("Shaded dependency detection is enabled. Initializing scanner...");
+                shadedDependencyScanner = new ShadedDependencyScanner(
+                    externalIdFactory, projectBuilder, dependencyResolver,
+                    mavenGraphParser, mavenGraphTransformer,
+                    mavenResolverOptions.getProxyConfig()
+                );
+                shadedDependencyScanner.processShading(
+                    collectResultCompile, collectResultTest,
+                    dependencyGraphCompile, dependencyGraphTest,
+                    localRepoPath, downloadDir,
+                    mavenProject.getRepositories(),
+                    shadedSubTreeCache, mavenResolverOptions
+                );
+            }
+
             // Create CodeLocations for the root project (both compile and test scopes)
             // CodeLocation ties together the dependency graph, external ID, and source path
             List<CodeLocation> codeLocations = new ArrayList<>();
@@ -318,6 +339,11 @@ public class MavenResolverDetectable extends Detectable {
                     .codeLocations(codeLocations)
                     .compileScope(MAVEN_SCOPE_COMPILE)
                     .testScope(MAVEN_SCOPE_TEST)
+                    .shadedDependencyScanner(shadedDependencyScanner)
+                    .shadedSubTreeCache(shadedSubTreeCache)
+                    .includeShadedDependencies(mavenResolverOptions != null && mavenResolverOptions.isIncludeShadedDependenciesEnabled())
+                    .mavenResolverOptions(mavenResolverOptions)
+                    .downloadDir(downloadDir)
                     .build();
 
                 // Process all modules using the module processor
