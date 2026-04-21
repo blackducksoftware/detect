@@ -5,8 +5,12 @@ import com.blackduck.integration.bdio.model.dependency.Dependency;
 import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.detectable.detectables.maven.resolver.model.JavaCoordinates;
 import com.blackduck.integration.detectable.detectables.maven.resolver.model.JavaRepository;
+import com.blackduck.integration.detectable.detectables.maven.resolver.model.PomXml;
+import com.blackduck.integration.detectable.detectables.maven.resolver.model.PomXmlPlugin;
 import com.blackduck.integration.detectable.detectables.maven.resolver.result.MavenParseResult;
 import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.model.DiscoveredDependency;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.graph.DependencyNode;
@@ -435,6 +439,13 @@ class MavenModuleProcessor {
                 return;
             }
 
+            // Step 1.5: Pre-filter — only keep deps whose POM declares maven-shade-plugin
+            aetherDependencies = filterToShadedCandidates(aetherDependencies, context.getLocalRepoPath());
+            if (aetherDependencies.isEmpty()) {
+                logger.info("Module {} - No dependencies use maven-shade-plugin, skipping JAR downloads", moduleGav);
+                return;
+            }
+
             // Step 2: Set up download paths
             Path downloadDir = context.getDownloadDir();
             if (downloadDir == null) {
@@ -499,6 +510,83 @@ class MavenModuleProcessor {
             logger.warn("Module {} - Failed to process shaded dependencies: {}", moduleGav, e.getMessage());
             logger.debug("Module shaded dependency processing error:", e);
         }
+    }
+
+    /**
+     * Filters dependencies to only those whose POM declares maven-shade-plugin.
+     * Reads POMs from Aether's local repo cache (zero network calls).
+     * Fails open: if a POM is missing or unparseable, the dep is kept to avoid false negatives.
+     */
+    private List<org.eclipse.aether.graph.Dependency> filterToShadedCandidates(
+        List<org.eclipse.aether.graph.Dependency> allDeps,
+        Path localRepoPath
+    ) {
+        int total = allDeps.size();
+        List<org.eclipse.aether.graph.Dependency> candidates = new ArrayList<>();
+        int keptShaded = 0;
+        int keptFailOpen = 0;
+        int skipped = 0;
+
+        XmlMapper xmlMapper = new XmlMapper();
+        xmlMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        for (org.eclipse.aether.graph.Dependency dep : allDeps) {
+            Artifact artifact = dep.getArtifact();
+            if (artifact == null) {
+                continue;
+            }
+
+            String groupId = artifact.getGroupId();
+            String artifactId = artifact.getArtifactId();
+            String version = artifact.getVersion();
+
+            Path pomPath = localRepoPath
+                .resolve(groupId.replace('.', '/'))
+                .resolve(artifactId)
+                .resolve(version)
+                .resolve(artifactId + "-" + version + ".pom");
+
+            if (!Files.exists(pomPath)) {
+                // POM missing — shouldn't happen after Aether resolution, but fail open
+                logger.debug("Pre-filter: POM not found for {}:{}:{}, keeping as candidate (fail open)", groupId, artifactId, version);
+                candidates.add(dep);
+                keptFailOpen++;
+                continue;
+            }
+
+            try {
+                PomXml pomXml = xmlMapper.readValue(pomPath.toFile(), PomXml.class);
+
+                if (hasShadePlugin(pomXml)) {
+                    logger.debug("Pre-filter: maven-shade-plugin found in {}:{}:{}", groupId, artifactId, version);
+                    candidates.add(dep);
+                    keptShaded++;
+                } else {
+                    skipped++;
+                }
+            } catch (Exception e) {
+                // Parse failure — fail open
+                logger.debug("Pre-filter: failed to parse POM for {}:{}:{}, keeping as candidate: {}", groupId, artifactId, version, e.getMessage());
+                candidates.add(dep);
+                keptFailOpen++;
+            }
+        }
+
+        logger.info("Pre-filter complete: {} total deps, {} with shade plugin, {} skipped (no plugin), {} kept due to missing/unparseable POM",
+            total, keptShaded, skipped, keptFailOpen);
+        return candidates;
+    }
+
+    private boolean hasShadePlugin(PomXml pomXml) {
+        if (pomXml.getBuild() == null || pomXml.getBuild().getPlugins() == null) {
+            return false;
+        }
+        for (PomXmlPlugin plugin : pomXml.getBuild().getPlugins()) {
+            if ("maven-shade-plugin".equals(plugin.getArtifactId())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
