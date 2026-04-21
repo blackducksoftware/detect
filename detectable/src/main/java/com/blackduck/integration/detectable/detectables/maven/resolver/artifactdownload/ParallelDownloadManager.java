@@ -169,8 +169,7 @@ public class ParallelDownloadManager {
             Path customRepoPath,
             Path defaultRepoPath,
             DownloadConfiguration downloadConfig) {
-        // Delegate to new method with empty POM repositories
-        return downloadArtifacts(dependencies, customRepoPath, defaultRepoPath,
+        return downloadArtifacts(dependencies, customRepoPath, null, defaultRepoPath,
                                 new ArrayList<>(), downloadConfig);
     }
 
@@ -183,7 +182,8 @@ public class ParallelDownloadManager {
      *
      * @param dependencies List of dependencies to download
      * @param customRepoPath Custom repository path (optional)
-     * @param defaultRepoPath Default repository path
+     * @param homeM2RepoPath User's home ~/.m2/repository path (optional)
+     * @param defaultRepoPath Default repository path (download cache)
      * @param pomRepositories List of POM-declared repositories (Tier-2)
      * @param downloadConfig Download configuration
      * @return Result containing download outcomes
@@ -191,6 +191,7 @@ public class ParallelDownloadManager {
     public ParallelDownloadResult downloadArtifacts(
             List<Dependency> dependencies,
             Path customRepoPath,
+            Path homeM2RepoPath,
             Path defaultRepoPath,
             List<JavaRepository> pomRepositories,
             DownloadConfiguration downloadConfig) {
@@ -239,6 +240,7 @@ public class ParallelDownloadManager {
                 return downloadSingleArtifact(
                     dependency.getArtifact(),
                     customRepoPath,
+                    homeM2RepoPath,
                     defaultRepoPath,
                     pomRepositories,
                     remoteDownloaders,
@@ -356,6 +358,7 @@ public class ParallelDownloadManager {
     private DownloadOutcome downloadSingleArtifact(
             Artifact artifact,
             Path customRepoPath,
+            Path homeM2RepoPath,
             Path defaultRepoPath,
             List<JavaRepository> pomRepositories,
             Map<String, HttpArtifactDownloader> remoteDownloaders,
@@ -364,7 +367,7 @@ public class ParallelDownloadManager {
 
         List<String> messageBuffer = new ArrayList<>();
         DownloadOutcome outcome = doDownloadSingleArtifact(
-            artifact, customRepoPath, defaultRepoPath,
+            artifact, customRepoPath, homeM2RepoPath, defaultRepoPath,
             pomRepositories, remoteDownloaders, downloadConfig,
             cancelFlag, messageBuffer);
 
@@ -390,6 +393,7 @@ public class ParallelDownloadManager {
     private DownloadOutcome doDownloadSingleArtifact(
             Artifact artifact,
             Path customRepoPath,
+            Path homeM2RepoPath,
             Path defaultRepoPath,
             List<JavaRepository> pomRepositories,
             Map<String, HttpArtifactDownloader> remoteDownloaders,
@@ -417,11 +421,20 @@ public class ParallelDownloadManager {
                 }
             }
 
-            // Check default repository
+            // Check home ~/.m2/repository
+            if (homeM2RepoPath != null) {
+                Path homeJar = localChecker.checkDefaultRepository(artifact, homeM2RepoPath);
+                if (homeJar != null) {
+                    messageBuffer.add(String.format("[%s] Found in home .m2 repository: %s", threadName, coordinate));
+                    return DownloadOutcome.skippedLocal(coordinate, "home-m2-repository", homeJar);
+                }
+            }
+
+            // Check download cache
             Path defaultJar = localChecker.checkDefaultRepository(artifact, defaultRepoPath);
             if (defaultJar != null) {
-                messageBuffer.add(String.format("[%s] Found in default repository: %s", threadName, coordinate));
-                return DownloadOutcome.skippedLocal(coordinate, "m2-repository", defaultJar);
+                messageBuffer.add(String.format("[%s] Found in download cache: %s", threadName, coordinate));
+                return DownloadOutcome.skippedLocal(coordinate, "download-cache", defaultJar);
             }
 
             // Check cancellation before download
