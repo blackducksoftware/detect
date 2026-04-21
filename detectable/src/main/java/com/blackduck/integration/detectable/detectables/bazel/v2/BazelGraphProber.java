@@ -58,7 +58,7 @@ public class BazelGraphProber {
      * @return Set of enabled DependencySource
      */
     public Set<DependencySource> decidePipelines() {
-        logger.info("Starting Bazel graph probing for target: {}", target);
+        logger.debug("Starting Bazel graph probing for target: {}", target);
         Set<DependencySource> enabled = new HashSet<>();
 
         boolean mavenInstall = false;
@@ -96,7 +96,7 @@ public class BazelGraphProber {
         if (mavenInstall) {
             enabled.add(DependencySource.MAVEN_INSTALL);
             if (mavenJar) {
-                logger.info("Both MAVEN_INSTALL and MAVEN_JAR indicated; preferring MAVEN_INSTALL and suppressing MAVEN_JAR.");
+                logger.debug("Both MAVEN_INSTALL and MAVEN_JAR indicated; preferring MAVEN_INSTALL and suppressing MAVEN_JAR.");
             }
         } else if (mavenJar) {
             enabled.add(DependencySource.MAVEN_JAR);
