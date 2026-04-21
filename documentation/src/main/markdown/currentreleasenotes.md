@@ -24,7 +24,8 @@
 * Support for pnpm now extends to 10.32.1.
 * npm detectors now allow for aliases to be used when specifying dependencies in the package.json file.
 * Ivy CLI Detector, leveraging the `ivy:dependencytree` Ant task to extract direct and transitive dependencies for Ant + Ivy projects. For further information, see [Ivy (Ant) support](packagemgrs/ivy.md).
-* If enabled, [detect_product_short] will now pull certain configured properties from [bd_product_long]. In [bd_product_long] version 2026.4 this will start with the `detect.blackduck.correlated.scanning.enabled` property.
+* When [detect_product_short] is integrated with [bd_product_long] version 2026.4 or later, relevant [bd_product_short] server configuration details will be retrieved for use by [detect_product_short]. With this release of [detect_product_short], the [bd_product_short] server administrator can choose to set the detect.blackduck.correlated.scanning.enabled property, which will be retrieved and used if the user has not specified this property locally.
+    * In future releases the retrieval of additional [bd_product_short] server properties will be supported.
 
 ### Resolved issues
 
