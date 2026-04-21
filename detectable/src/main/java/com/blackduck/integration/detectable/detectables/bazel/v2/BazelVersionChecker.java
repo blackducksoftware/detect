@@ -35,7 +35,7 @@ public class BazelVersionChecker {
             String stdout = output.getStandardOutput();
             Optional<BazelVersion> version = BazelVersion.parse(stdout);
             if (version.isPresent()) {
-                logger.debug("Detected Bazel version: {}", version.get());
+                logger.info("Detected Bazel version: {}", version.get());
             } else {
                 logger.warn("Could not parse Bazel version from output: {}", stdout);
             }

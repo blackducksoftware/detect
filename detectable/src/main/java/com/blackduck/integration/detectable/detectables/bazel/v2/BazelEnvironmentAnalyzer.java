@@ -24,7 +24,7 @@ public class BazelEnvironmentAnalyzer {
 
     public Mode getMode() {
         Mode mode = detectMode();
-        logger.debug("Bazel mode detected: {}", mode);
+        logger.info("Bazel mode detected: {}", mode);
         return mode;
     }
 
