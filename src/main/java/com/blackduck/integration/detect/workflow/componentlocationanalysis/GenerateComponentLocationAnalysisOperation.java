@@ -2,16 +2,10 @@ package com.blackduck.integration.detect.workflow.componentlocationanalysis;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.blackduck.integration.detect.workflow.file.DirectoryManager;
-import com.blackduck.integration.detect.workflow.result.QuackPatchResult;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,9 +22,12 @@ import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodePublisher;
 import com.blackduck.integration.detect.workflow.file.DetectFileUtils;
 import com.blackduck.integration.detect.workflow.report.util.ReportConstants;
 import com.blackduck.integration.detect.workflow.result.ComponentLocatorResult;
+import com.blackduck.integration.detect.workflow.result.QuackPatchResult;
 import com.blackduck.integration.detect.workflow.status.Status;
 import com.blackduck.integration.detect.workflow.status.StatusEventPublisher;
 import com.blackduck.integration.detect.workflow.status.StatusType;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
@@ -88,15 +85,17 @@ public class GenerateComponentLocationAnalysisOperation {
         return new ComponentLocatorResult(outputFilepath);
     }
 
-    public QuackPatchResult runQuackPatch(File scanOutputFolder, File rapidFullResultsFile, DetectConfigurationFactory configFactory) {
+    public QuackPatchResult runQuackPatch(File rapidFullResultsFile, DetectConfigurationFactory configFactory) {
         logger.info("Attempting Quack Patch.");
-            Map<String, List<String>> relevantDetectorsAndFiles = loadDetectorsAndFiles(getQuackPatchOutputDirectory(scanOutputFolder) + File.separator + INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON);
-            String llmKey = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_KEY);
-            String llmName = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_NAME);
-            String llmURL = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_ENDPOINT);
-
-            ComponentLocator.runQuackPatch(rapidFullResultsFile, relevantDetectorsAndFiles, llmKey, llmName, llmURL, scanOutputFolder.getPath());
-        return new QuackPatchResult(getQuackPatchOutputDirectory(scanOutputFolder));
+        // if the detect.quack.patch.output property value set use that as output folder, otherwise default it to current working directory
+        String quackPatchOutputDir = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT).trim();
+        logger.debug("Quack Patch output directory set to: {}", quackPatchOutputDir);
+        Map<String, List<String>> relevantDetectorsAndFiles = loadDetectorsAndFiles(quackPatchOutputDir + File.separator + QUACKPATCH_SUBDIRECTORY_NAME + File.separator + INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON);
+        String llmKey = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_KEY);
+        String llmName = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_NAME);
+        String llmURL = configFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_LLM_API_ENDPOINT);        
+        ComponentLocator.runQuackPatch(rapidFullResultsFile, relevantDetectorsAndFiles, llmKey, llmName, llmURL, quackPatchOutputDir);
+        return new QuackPatchResult(getQuackPatchOutputDirectory(new File(quackPatchOutputDir)));
     }
 
 

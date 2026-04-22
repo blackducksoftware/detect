@@ -1,25 +1,28 @@
 package com.blackduck.integration.detect.tool.detector;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import com.blackduck.integration.detect.tool.detector.report.detectable.ExtractedDetectableReport;
-import com.blackduck.integration.detect.workflow.file.DirectoryManager;
-import com.blackduck.integration.detector.base.DetectorStatusCode;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.blackduck.integration.blackduck.bdio2.model.GitInfo;
 import com.blackduck.integration.common.util.finder.FileFinder;
+import com.blackduck.integration.detect.configuration.DetectConfigurationFactory;
+import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detect.configuration.ExcludeIncludeEnumFilter;
 import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
 import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodePublisher;
@@ -28,6 +31,9 @@ import com.blackduck.integration.detect.tool.detector.report.rule.EvaluatedDetec
 import com.blackduck.integration.detect.tool.detector.report.rule.ExtractedDetectorRuleReport;
 import com.blackduck.integration.detect.tool.detector.report.util.DetectorReporter;
 import com.blackduck.integration.detect.workflow.codelocation.DetectCodeLocation;
+import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON;
+import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.QUACKPATCH_SUBDIRECTORY_NAME;
+import com.blackduck.integration.detect.workflow.file.DirectoryManager;
 import com.blackduck.integration.detect.workflow.git.DetectorGitProjectInfoDecider;
 import com.blackduck.integration.detect.workflow.nameversion.DetectorEvaluationNameVersionDecider;
 import com.blackduck.integration.detect.workflow.nameversion.DetectorNameVersionDecider;
@@ -42,6 +48,7 @@ import com.blackduck.integration.detectable.detectable.DetectableAccuracyType;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import com.blackduck.integration.detector.accuracy.directory.DirectoryEvaluation;
 import com.blackduck.integration.detector.accuracy.directory.DirectoryEvaluator;
+import com.blackduck.integration.detector.base.DetectorStatusCode;
 import com.blackduck.integration.detector.base.DetectorType;
 import com.blackduck.integration.detector.finder.DirectoryFindResult;
 import com.blackduck.integration.detector.finder.DirectoryFinder;
@@ -50,9 +57,8 @@ import com.blackduck.integration.detector.rule.DetectableDefinition;
 import com.blackduck.integration.detector.rule.DetectorRule;
 import com.blackduck.integration.detector.rule.DetectorRuleSet;
 import com.blackduck.integration.util.NameVersion;
-
-import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON;
-import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.QUACKPATCH_SUBDIRECTORY_NAME;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class DetectorTool {
     private static final String THREE_TABS = "\t\t\t";
@@ -67,6 +73,7 @@ public class DetectorTool {
     private final ExitCodePublisher exitCodePublisher;
     private final DetectorEventPublisher detectorEventPublisher;
     private final DirectoryEvaluator directoryEvaluator;
+    private final DetectConfigurationFactory detectConfigurationFactory;
 
     public DetectorTool(
         DirectoryFinder directoryFinder,
@@ -75,7 +82,8 @@ public class DetectorTool {
         StatusEventPublisher statusEventPublisher,
         ExitCodePublisher exitCodePublisher,
         DetectorEventPublisher detectorEventPublisher,
-        DirectoryEvaluator directoryEvaluator
+        DirectoryEvaluator directoryEvaluator,
+        DetectConfigurationFactory detectConfigurationFactory
     ) {
         this.directoryFinder = directoryFinder;
         this.codeLocationConverter = codeLocationConverter;
@@ -84,13 +92,13 @@ public class DetectorTool {
         this.exitCodePublisher = exitCodePublisher;
         this.detectorEventPublisher = detectorEventPublisher;
         this.directoryEvaluator = directoryEvaluator;
+        this.detectConfigurationFactory = detectConfigurationFactory;
     }
 
-    public void saveExtractedDetectorsAndTheirRelevantFilePaths(DirectoryManager directoryManager, DetectorToolResult toolResult) throws IOException {
+    public void saveExtractedDetectorsAndTheirRelevantFilePaths(DetectorToolResult toolResult) throws IOException {
         // Create map of extracted detectors and their relevant files
         Map<String, List<String>> detectorsAndFiles = new HashMap<>();
-        Path workingDir = directoryManager.getScanOutputDirectory().toPath();
-        Path quackDir = workingDir.resolve(QUACKPATCH_SUBDIRECTORY_NAME);
+        Path quackDir = Path.of(detectConfigurationFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT).trim(), QUACKPATCH_SUBDIRECTORY_NAME);
         ObjectMapper mapper = new ObjectMapper();
         Path jsonFile = quackDir.resolve(INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON);
 
