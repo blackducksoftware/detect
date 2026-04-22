@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -99,7 +98,7 @@ public class DetectorTool {
     public void saveExtractedDetectorsAndTheirRelevantFilePaths(DetectorToolResult toolResult) throws IOException {
         // Create map of extracted detectors and their relevant files
         Map<String, List<String>> detectorsAndFiles = new HashMap<>();
-        Path quackDir = Path.of(detectConfigurationFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT), QUACKPATCH_SUBDIRECTORY_NAME);
+        Path quackDir = Path.of(detectConfigurationFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT).trim(), QUACKPATCH_SUBDIRECTORY_NAME);
         ObjectMapper mapper = new ObjectMapper();
         Path jsonFile = quackDir.resolve(INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON);
 

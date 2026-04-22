@@ -1,10 +1,5 @@
 package com.blackduck.integration.detect.lifecycle.run.operation;
 
-import static com.blackduck.integration.blackduck.codelocation.signaturescanner.command.ToolsApiScannerInstaller.MIN_ARM_BLACK_DUCK_VERSION;
-import static com.blackduck.integration.componentlocator.ComponentLocator.SUPPORTED_DETECTORS;
-import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.OPERATION_NAME;
-import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.SUPPORTED_DETECTORS_LOG_MSG;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -61,6 +56,7 @@ import com.blackduck.integration.blackduck.codelocation.signaturescanner.ScanBat
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.ScanCommandOutput;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.ScanCommandRunner;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.ScanPathsUtility;
+import static com.blackduck.integration.blackduck.codelocation.signaturescanner.command.ToolsApiScannerInstaller.MIN_ARM_BLACK_DUCK_VERSION;
 import com.blackduck.integration.blackduck.http.BlackDuckRequestBuilder;
 import com.blackduck.integration.blackduck.service.BlackDuckApiClient;
 import com.blackduck.integration.blackduck.service.BlackDuckServicesFactory;
@@ -69,6 +65,7 @@ import com.blackduck.integration.blackduck.service.model.ProjectVersionWrapper;
 import com.blackduck.integration.blackduck.service.request.BlackDuckResponseRequest;
 import com.blackduck.integration.blackduck.version.BlackDuckVersion;
 import com.blackduck.integration.common.util.finder.FileFinder;
+import static com.blackduck.integration.componentlocator.ComponentLocator.SUPPORTED_DETECTORS;
 import com.blackduck.integration.componentlocator.beans.Component;
 import com.blackduck.integration.detect.configuration.DetectConfigurationFactory;
 import com.blackduck.integration.detect.configuration.DetectInfo;
@@ -83,7 +80,6 @@ import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMo
 import com.blackduck.integration.detect.lifecycle.OperationException;
 import com.blackduck.integration.detect.lifecycle.autonomous.AutonomousManager;
 import com.blackduck.integration.detect.lifecycle.boot.decision.CorrelatedScanningDecision;
-import com.blackduck.integration.detect.workflow.DetectRunId;
 import com.blackduck.integration.detect.lifecycle.run.DetectFontLoaderFactory;
 import com.blackduck.integration.detect.lifecycle.run.data.BlackDuckRunData;
 import com.blackduck.integration.detect.lifecycle.run.data.DockerTargetData;
@@ -111,7 +107,6 @@ import com.blackduck.integration.detect.tool.detector.DetectorToolResult;
 import com.blackduck.integration.detect.tool.detector.executable.DetectExecutableRunner;
 import com.blackduck.integration.detect.tool.detector.extraction.ExtractionEnvironmentProvider;
 import com.blackduck.integration.detect.tool.detector.factory.DetectDetectableFactory;
-import com.blackduck.integration.detector.accuracy.detectable.DetectableExclusionEvaluator;
 import com.blackduck.integration.detect.tool.iac.CalculateIacScanTargetsOperation;
 import com.blackduck.integration.detect.tool.iac.IacScanOperation;
 import com.blackduck.integration.detect.tool.iac.IacScanReport;
@@ -140,6 +135,7 @@ import com.blackduck.integration.detect.tool.signaturescanner.operation.Signatur
 import com.blackduck.integration.detect.util.bdio.protobuf.DetectProtobufBdioHeaderUtil;
 import com.blackduck.integration.detect.util.finder.DetectExcludedDirectoryFilter;
 import com.blackduck.integration.detect.workflow.ArtifactResolver;
+import com.blackduck.integration.detect.workflow.DetectRunId;
 import com.blackduck.integration.detect.workflow.bdio.AggregateCodeLocation;
 import com.blackduck.integration.detect.workflow.bdio.BdioResult;
 import com.blackduck.integration.detect.workflow.bdio.CreateAggregateBdio2FileOperation;
@@ -190,6 +186,8 @@ import com.blackduck.integration.detect.workflow.codelocation.CodeLocationNameMa
 import com.blackduck.integration.detect.workflow.codelocation.DetectCodeLocation;
 import com.blackduck.integration.detect.workflow.componentlocationanalysis.BdioToComponentListTransformer;
 import com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation;
+import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.OPERATION_NAME;
+import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.SUPPORTED_DETECTORS_LOG_MSG;
 import com.blackduck.integration.detect.workflow.componentlocationanalysis.ScanResultToComponentListTransformer;
 import com.blackduck.integration.detect.workflow.event.EventSystem;
 import com.blackduck.integration.detect.workflow.file.DirectoryManager;
@@ -207,6 +205,7 @@ import com.blackduck.integration.detect.workflow.status.Status;
 import com.blackduck.integration.detect.workflow.status.StatusEventPublisher;
 import com.blackduck.integration.detect.workflow.status.StatusType;
 import com.blackduck.integration.detector.accuracy.detectable.DetectableEvaluator;
+import com.blackduck.integration.detector.accuracy.detectable.DetectableExclusionEvaluator;
 import com.blackduck.integration.detector.accuracy.directory.DirectoryEvaluator;
 import com.blackduck.integration.detector.accuracy.entrypoint.DetectorRuleEvaluator;
 import com.blackduck.integration.detector.accuracy.search.SearchEvaluator;
@@ -872,7 +871,7 @@ public class OperationRunner {
         return auditLog.namedPublic(
                 "Generate Rapid Full Json File",
                 "RapidScan",
-                () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFileFromString(scanResults.get(0).getContentString(), detectConfigurationFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT))
+                () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFileFromString(scanResults.get(0).getContentString(), detectConfigurationFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT).trim())
         );
     }
 
