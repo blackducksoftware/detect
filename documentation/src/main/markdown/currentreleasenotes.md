@@ -30,7 +30,7 @@
 
 ### Changed features
 
-* Changed the default output directory of the Quack Patch feature to current working directory.
+* The default output directory of the Quack Patch feature has been updated to use a quack-patch subdirectory of the present working directory.
 
 ### Resolved issues
 
