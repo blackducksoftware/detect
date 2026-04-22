@@ -140,7 +140,7 @@ public class HttpFamilyProber {
                 }
                 // empty means the JSON approach was inconclusive; fall through to legacy probing
             } catch (Exception e) {
-                logger.info("Fast mod graph --output json discovery failed, falling back to per-repo probing: {}", e.getMessage());
+                logger.debug("Fast mod graph --output json discovery failed, falling back to per-repo probing: {}", e.getMessage());
                 logger.debug("mod graph JSON exception", e);
             }
         }
@@ -165,7 +165,7 @@ public class HttpFamilyProber {
      * @return Optional containing true/false if conclusive, or empty if inconclusive (triggers fallback)
      */
     private Optional<Boolean> probeRepositoriesViaModGraphJson() {
-        logger.info("Attempting fast dependency discovery via 'bazel mod graph --output json' (Bazel {})", bazelVersion);
+        logger.debug("Attempting fast dependency discovery via 'bazel mod graph --output json' (Bazel {})", bazelVersion);
 
         List<String> modGraphJsonCmd = BazelQueryBuilder.mod()
             .graph()
@@ -179,24 +179,24 @@ public class HttpFamilyProber {
             // Check whether stdout has usable JSON before giving up.
             String stdout = output.getStandardOutput();
             if (stdout == null || stdout.trim().isEmpty()) {
-                logger.info("'bazel mod graph --output json' returned exit code {} with no output; falling back to legacy probing.",
+                logger.debug("'bazel mod graph --output json' returned exit code {} with no output; falling back to legacy probing.",
                     output.getReturnCode());
                 return Optional.empty();
             }
-            logger.info("'bazel mod graph --output json' returned exit code {} but stdout has content; continuing with JSON parsing.",
+            logger.debug("'bazel mod graph --output json' returned exit code {} but stdout has content; continuing with JSON parsing.",
                 output.getReturnCode());
         }
 
         String jsonOutput = output.getStandardOutput();
         if (jsonOutput == null || jsonOutput.trim().isEmpty()) {
-            logger.info("'bazel mod graph --output json' returned empty output; falling back to legacy probing.");
+            logger.debug("'bazel mod graph --output json' returned empty output; falling back to legacy probing.");
             return Optional.empty();
         }
 
         BzlmodGraphJsonParser parser = new BzlmodGraphJsonParser();
         Set<String> moduleKeys = parser.parseModuleKeys(jsonOutput);
         if (moduleKeys.isEmpty()) {
-            logger.info("Parsed zero module keys from mod graph JSON; falling back to legacy probing.");
+            logger.debug("Parsed zero module keys from mod graph JSON; falling back to legacy probing.");
             return Optional.empty();
         }
 
@@ -213,12 +213,12 @@ public class HttpFamilyProber {
         }
 
         if (!relevantModules.isEmpty()) {
-            logger.info("mod graph JSON contains {} non-excluded BCR modules → enabling HTTP pipeline (fast path). Modules: {}",
+            logger.debug("mod graph JSON contains {} non-excluded BCR modules → enabling HTTP pipeline (fast path). Modules: {}",
                 relevantModules.size(), relevantModules);
             return Optional.of(true);
         }
 
-        logger.info("mod graph JSON contains only excluded/builtin modules; no HTTP-family repos detected (fast path).");
+        logger.debug("mod graph JSON contains only excluded/builtin modules; no HTTP-family repos detected (fast path).");
         return Optional.of(false);
     }
 
@@ -234,7 +234,7 @@ public class HttpFamilyProber {
         for (Map.Entry<String, LinkedHashSet<String>> entry : repoLabels.entrySet()) {
             checkedRepos++;
             if (probeRepo(entry.getKey(), entry.getValue())) {
-                logger.info("HTTP repository '{}' detected at probe #{} of {}. Enabling HTTP pipeline.",
+                logger.debug("HTTP repository '{}' detected at probe #{} of {}. Enabling HTTP pipeline.",
                         entry.getKey(), checkedRepos, repoLabels.size());
                 return true;
             }
@@ -272,7 +272,7 @@ public class HttpFamilyProber {
     private boolean shouldEnableHttpForLargeTargets(Map<String, LinkedHashSet<String>> repoLabels) {
         int totalRepos = repoLabels.size();
         if (totalRepos > LARGE_TARGET_THRESHOLD) {
-            logger.info("Target has {} external repository dependencies (>{}). " +
+            logger.debug("Target has {} external repository dependencies (>{}). " +
                        "Enabling HTTP pipeline to ensure completeness without probing overhead.",
                        totalRepos, LARGE_TARGET_THRESHOLD);
             return true;
@@ -359,7 +359,7 @@ public class HttpFamilyProber {
 
             Optional<String> result = bazel.executeToString(queryArgs);
             if (result.isPresent() && !result.get().trim().isEmpty()) {
-                logger.info("HTTP pipeline enabled for repo {}: {} probe found build targets", repo, strategyName);
+                logger.debug("HTTP pipeline enabled for repo {}: {} probe found build targets", repo, strategyName);
                 return true;
             }
         } catch (Exception e) {

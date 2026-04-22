@@ -100,7 +100,7 @@ public class IntermediateStepExecuteShowRepoHeuristic implements IntermediateSte
         if (repoArgs.isEmpty()) return Optional.of(new ArrayList<>());
 
         try {
-            logger.info("Attempting batched show_repo for {} repos (Bazel {})", repoArgs.size(), bazelVersion);
+            logger.debug("Attempting batched show_repo for {} repos (Bazel {})", repoArgs.size(), bazelVersion);
             List<String> modArgs = BazelQueryBuilder.mod()
                 .showRepoRawBatch(repoArgs)
                 .build();
@@ -110,7 +110,7 @@ public class IntermediateStepExecuteShowRepoHeuristic implements IntermediateSte
             Optional<String> result = bazel.executeModCommandToString(modArgs);
             if (result.isPresent() && !result.get().trim().isEmpty()) {
                 List<String> blocks = splitShowRepoOutput(result.get());
-                logger.info("Batched show_repo succeeded: {} blocks from {} repos", blocks.size(), repoArgs.size());
+                logger.debug("Batched show_repo succeeded: {} blocks from {} repos", blocks.size(), repoArgs.size());
                 return Optional.of(blocks);
             }
         } catch (Exception e) {
