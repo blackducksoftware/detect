@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '11.5.0-SIGQA2-shanty.merge_11.4.z_to_main'
+version = '11.5.0-SIGQA3-shanty.merge_11.4.z_to_main-SNAPSHOT'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
