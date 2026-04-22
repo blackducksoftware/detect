@@ -21,6 +21,8 @@ import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinsp
 import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.methods.DeltaAnalysisInspector;
 import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.methods.RecursiveMetadataInspector;
 import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.model.DiscoveredDependency;
+import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.model.ShadePluginConfig;
+import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.util.ShadePluginConfigExtractor;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import org.eclipse.aether.artifact.Artifact;
@@ -347,9 +349,27 @@ public class ShadedDependencyScanner {
                 continue;
             }
 
+            // Extract shade plugin config from the JAR's embedded pom.xml before creating inspectors.
+            // This provides the explicit <artifactSet><excludes> and <relocations> data needed for
+            // the relocation-aware ghost filter. Both inspectors receive the same config instance.
+            ShadePluginConfig shadePluginConfig = null;
+            try (JarFile configJar = new JarFile(jarPath.toFile())) {
+                shadePluginConfig = ShadePluginConfigExtractor.extract(configJar, artifact);
+                if (shadePluginConfig != null) {
+                    logger.debug("Extracted ShadePluginConfig for {}: {} exclusion(s), {} relocation(s)",
+                            artifactGav,
+                            shadePluginConfig.getExcludedGavPatterns().size(),
+                            shadePluginConfig.getRelocatedPackagePrefixes().size());
+                } else {
+                    logger.debug("No ShadePluginConfig available for {} — inspectors will use legacy class-path fallback", artifactGav);
+                }
+            } catch (Exception e) {
+                logger.debug("Could not extract ShadePluginConfig for {}: {}", artifactGav, e.getMessage());
+            }
+
             List<ShadedDependencyInspector> inspectors = new ArrayList<>();
-            inspectors.add(new DeltaAnalysisInspector(aetherDirectChildrenByGa, projectBuilder, artifact));
-            inspectors.add(new RecursiveMetadataInspector(artifact));
+            inspectors.add(new DeltaAnalysisInspector(aetherDirectChildrenByGa, projectBuilder, artifact, shadePluginConfig));
+            inspectors.add(new RecursiveMetadataInspector(artifact, shadePluginConfig));
             logger.debug("Created {} inspector(s) for artifact: {}", inspectors.size(), artifactGav);
 
             try {

@@ -6,7 +6,9 @@ import com.blackduck.integration.detectable.detectables.maven.resolver.model.Jav
 import com.blackduck.integration.detectable.detectables.maven.resolver.model.JavaDependency;
 import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.ShadedDependencyInspector;
 import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.model.DiscoveredDependency;
+import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.model.ShadePluginConfig;
 import org.eclipse.aether.artifact.Artifact;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +44,14 @@ import java.util.jar.JarFile;
  *   <li>Multi-level dependency management merging</li>
  * </ul>
  *
- * The difference = the shaded dependencies.
+ * <h2>Ghost Filter (relocation-aware)</h2>
+ * <p>A dependency found by delta math is a "ghost" — not actually bundled — only if it is
+ * listed in the shade plugin's {@code <artifactSet><excludes>}. This replaces the old
+ * class-path prefix heuristic, which incorrectly dropped relocated dependencies because
+ * their classes live under the {@code <shadedPattern>} path, not the original groupId path.
+ *
+ * <p>If no {@link ShadePluginConfig} is available (e.g., the embedded POM could not be parsed),
+ * the inspector falls back to the legacy class-path prefix heuristic so detection is not lost.
  */
 public class DeltaAnalysisInspector implements ShadedDependencyInspector {
 
@@ -58,17 +67,34 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
     private final Artifact hostArtifact;
 
     /**
-     * Initializes the inspector with the Aether graph context, ProjectBuilder, and host artifact.
+     * Parsed shade plugin configuration for the host artifact's JAR.
+     * Provides explicit exclude list and relocation patterns for an accurate ghost filter.
+     * May be null — in that case the legacy class-path heuristic is used as fallback.
+     */
+    @Nullable
+    private final ShadePluginConfig shadePluginConfig;
+
+    /**
+     * Initializes the inspector with the Aether graph context, ProjectBuilder, host artifact,
+     * and the parsed shade plugin configuration.
      *
      * @param aetherDirectChildrenByGa A map of Artifact GA to a Set of its direct children GAVs from Aether resolution
-     * @param projectBuilder The ProjectBuilder instance used to parse and resolve POMs with full BOM/Parent support
-     * @param hostArtifact The host artifact whose JAR is being inspected (used to locate the correct POM)
+     * @param projectBuilder           The ProjectBuilder instance used to parse and resolve POMs
+     * @param hostArtifact             The host artifact whose JAR is being inspected
+     * @param shadePluginConfig        Parsed shade config (excludes + relocations); may be null → fallback to legacy heuristic
      */
-    public DeltaAnalysisInspector(Map<String, Set<String>> aetherDirectChildrenByGa, ProjectBuilder projectBuilder, Artifact hostArtifact) {
+    public DeltaAnalysisInspector(
+            Map<String, Set<String>> aetherDirectChildrenByGa,
+            ProjectBuilder projectBuilder,
+            Artifact hostArtifact,
+            @Nullable ShadePluginConfig shadePluginConfig
+    ) {
         this.aetherDirectChildrenByGa = aetherDirectChildrenByGa != null ? aetherDirectChildrenByGa : new HashMap<String, Set<String>>();
         this.projectBuilder = projectBuilder;
         this.hostArtifact = hostArtifact;
-        logger.debug("[Method 1] DeltaAnalysisInspector initialized with {} GA entries in Aether map.", this.aetherDirectChildrenByGa.size());
+        this.shadePluginConfig = shadePluginConfig;
+        logger.debug("[Method 1] DeltaAnalysisInspector initialized with {} GA entries in Aether map. ShadeConfig available: {}",
+                this.aetherDirectChildrenByGa.size(), shadePluginConfig != null);
     }
 
     @Override
@@ -82,19 +108,26 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
             return discoveredDependencies;
         }
 
-        // Pre-scan JAR for .class file directory prefixes to filter ghost deps (POM lists them but classes weren't bundled)
-        NavigableSet<String> classPathPrefixes = new TreeSet<String>();
-        Enumeration<JarEntry> classEntries = jarFile.entries();
-        while (classEntries.hasMoreElements()) {
-            String entryName = classEntries.nextElement().getName();
-            if (entryName.endsWith(".class")) {
-                int lastSlash = entryName.lastIndexOf('/');
-                if (lastSlash > 0) {
-                    classPathPrefixes.add(entryName.substring(0, lastSlash + 1));
+        // Legacy fallback: pre-scan .class file path prefixes only if we have no shade config.
+        // When shade config IS available, we use the explicit <artifactSet><excludes> list instead,
+        // which correctly handles relocated deps (their classes live at the shadedPattern path,
+        // not the original groupId path, so class-path scanning would give wrong results).
+        NavigableSet<String> classPathPrefixes = null;
+        if (shadePluginConfig == null) {
+            logger.debug("[Method 1] No ShadePluginConfig available — falling back to legacy class-path ghost filter.");
+            classPathPrefixes = new TreeSet<String>();
+            Enumeration<JarEntry> classEntries = jarFile.entries();
+            while (classEntries.hasMoreElements()) {
+                String entryName = classEntries.nextElement().getName();
+                if (entryName.endsWith(".class")) {
+                    int lastSlash = entryName.lastIndexOf('/');
+                    if (lastSlash > 0) {
+                        classPathPrefixes.add(entryName.substring(0, lastSlash + 1));
+                    }
                 }
             }
+            logger.debug("[Method 1] Pre-scanned {} unique class path prefixes for legacy ghost detection.", classPathPrefixes.size());
         }
-        logger.debug("[Method 1] Pre-scanned {} unique class path prefixes for ghost detection.", classPathPrefixes.size());
 
         JarEntry originalPomEntry = null;
 
@@ -107,12 +140,9 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
         Enumeration<JarEntry> entries = jarFile.entries();
         while (entries.hasMoreElements()) {
             JarEntry entry = entries.nextElement();
-            String name = entry.getName();
-
-            // Match only the exact expected path for the host artifact's POM
-            if (name.equals(targetPath)) {
+            if (entry.getName().equals(targetPath)) {
                 originalPomEntry = entry;
-                logger.debug("[Method 1] Step 1 - Found original POM: {}", name);
+                logger.debug("[Method 1] Step 1 - Found original POM: {}", entry.getName());
                 break;
             }
         }
@@ -125,15 +155,13 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
         File tempPomFile = null;
         Path tempDir = null;
         try {
-            // Step 2: Extract the POM to a deterministic temporary directory so ProjectBuilder cache works
-            // Use GAV-based naming for cache hits and better debugging
+            // Step 2: Extract the POM to a temp directory so ProjectBuilder can process it
             logger.debug("[Method 1] Step 2 - Extracting original POM to temporary file...");
             tempDir = Files.createTempDirectory(
-                "extracted-pom-" + hostArtifact.getGroupId()
-                + "_" + hostArtifact.getArtifactId()
-                + "_" + hostArtifact.getVersion());
+                    "extracted-pom-" + hostArtifact.getGroupId()
+                    + "_" + hostArtifact.getArtifactId()
+                    + "_" + hostArtifact.getVersion());
             tempPomFile = tempDir.resolve("pom.xml").toFile();
-            logger.trace("[Method 1] Step 2 - Temporary POM file: {}", tempPomFile.getAbsolutePath());
 
             try (InputStream is = jarFile.getInputStream(originalPomEntry)) {
                 Files.copy(is, tempPomFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -141,7 +169,7 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
             logger.debug("[Method 1] Step 2 - Successfully extracted POM to temporary file.");
 
             // Step 3: Delegate to ProjectBuilder to resolve properties, BOMs, and Parents
-            logger.debug("[Method 1] Step 3 - Passing extracted POM to ProjectBuilder for full resolution (BOMs, Parents, Properties)...");
+            logger.debug("[Method 1] Step 3 - Passing extracted POM to ProjectBuilder for full resolution...");
             MavenProject mavenProject = projectBuilder.buildProject(tempPomFile);
             logger.debug("[Method 1] Step 3 - ProjectBuilder successfully built MavenProject model.");
 
@@ -152,51 +180,33 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
             }
 
             String hostGa = hostCoords.getGroupId() + ":" + hostCoords.getArtifactId();
-            logger.debug("[Method 1] Step 3 - Host artifact coordinates - GroupId: {}, ArtifactId: {}", hostCoords.getGroupId(), hostCoords.getArtifactId());
             logger.debug("[Method 1] Step 3 - Host GA: {}", hostGa);
 
-            // Step 4: Extract and format the resolved dependencies from MavenProject using GA-based map
-            logger.debug("[Method 1] Step 4 - Extracting resolved dependencies from MavenProject (GA-based)...");
+            // Step 4: Extract resolved dependencies from MavenProject (GA-keyed map)
+            logger.debug("[Method 1] Step 4 - Extracting resolved dependencies from MavenProject...");
             Map<String, String> originalDepsByGa = new HashMap<String, String>();
             if (mavenProject.getDependencies() != null) {
-                logger.debug("[Method 1] Step 4 - MavenProject has {} total dependencies.", mavenProject.getDependencies().size());
-
                 for (JavaDependency dep : mavenProject.getDependencies()) {
                     String scope = dep.getScope() != null ? dep.getScope().toLowerCase() : "compile";
-
                     if (EXCLUDED_SCOPES.contains(scope)) {
-                        logger.trace("[Method 1] Step 4 - Skipping dependency with excluded scope '{}': {}", scope, dep.getCoordinates());
                         continue;
                     }
-
                     JavaCoordinates coords = dep.getCoordinates();
                     if (coords != null && coords.getGroupId() != null && coords.getArtifactId() != null && coords.getVersion() != null) {
                         String ga = coords.getGroupId() + ":" + coords.getArtifactId();
                         String gav = coords.getGroupId() + ":" + coords.getArtifactId() + ":" + coords.getVersion();
                         originalDepsByGa.put(ga, gav);
-                        logger.trace("[Method 1] Step 4 - Added original dependency GA '{}' -> GAV '{}'", ga, gav);
-                    } else {
-                        logger.trace("[Method 1] Step 4 - Skipping dependency with incomplete coordinates: {}", coords);
                     }
                 }
-            } else {
-                logger.debug("[Method 1] Step 4 - MavenProject has no dependencies.");
             }
-
             logger.debug("[Method 1] Step 4 - Original POM has {} dependencies (GA-keyed) after scope filtering.", originalDepsByGa.size());
 
-            // Step 5: Compare with Aether using GA-based lookup to handle version bumps
+            // Step 5: Compare with Aether (GA-based) to find shaded candidates
             logger.debug("[Method 1] Step 5 - Retrieving Aether graph dependencies for host: {}", hostGa);
             Set<String> aetherChildren = aetherDirectChildrenByGa.containsKey(hostGa)
                     ? aetherDirectChildrenByGa.get(hostGa)
                     : Collections.<String>emptySet();
 
-            logger.debug("[Method 1] Step 5 - Aether graph lists {} direct dependencies for host {}.", aetherChildren.size(), hostGa);
-            for (String aetherDep : aetherChildren) {
-                logger.trace("[Method 1] Step 5 - Aether dependency: {}", aetherDep);
-            }
-
-            // Build GA key set from Aether children for GA-based comparison
             Set<String> aetherGaKeys = new HashSet<String>();
             for (String aetherGav : aetherChildren) {
                 String[] parts = aetherGav.split(":");
@@ -204,11 +214,10 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
                     aetherGaKeys.add(parts[0] + ":" + parts[1]);
                 }
             }
-            logger.debug("[Method 1] Step 5 - Built {} GA keys from Aether children for comparison.", aetherGaKeys.size());
 
-            // GA-based Delta: If original GA is NOT in Aether GA keys, it's a shaded candidate.
-            // Ghost filter: verify .class files actually exist in the JAR for each candidate's groupId.
-            // Without this, deps listed in the POM but excluded by shade plugin config are false positives.
+            // Step 6: Ghost filter + reporting
+            // A candidate is a genuine ghost ONLY if it is explicitly excluded via <artifactSet><excludes>.
+            // Relocated deps are NOT excluded — their classes are in the JAR under the shadedPattern path.
             int originalSize = originalDepsByGa.size();
             int shadedCount = 0;
             int ghostCount = 0;
@@ -217,52 +226,37 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
                 String gaKey = depEntry.getKey();
                 String gavValue = depEntry.getValue();
 
-                if (!aetherGaKeys.contains(gaKey)) {
-                    // Candidate shaded dep — verify classes are actually bundled in the JAR
-                    String groupId = gaKey.split(":")[0];
-                    String expectedClassPrefix = groupId.replace('.', '/') + "/";
-                    String ceiling = classPathPrefixes.ceiling(expectedClassPrefix);
-                    boolean hasClasses = ceiling != null && ceiling.startsWith(expectedClassPrefix);
-
-                    if (!hasClasses) {
-                        logger.debug("[Method 1] Step 5 - Ghost dependency filtered (no .class files for '{}'): {}", expectedClassPrefix, gavValue);
-                        ghostCount++;
-                        continue;
-                    }
-
-                    logger.info("[Method 1] Step 5 - Shaded dependency detected: {}", gavValue);
-                    discoveredDependencies.add(new DiscoveredDependency(gavValue, "Delta Analysis (ProjectBuilder)"));
-                    shadedCount++;
-                } else {
-                    logger.trace("[Method 1] Step 5 - Dependency resolved by Aether (GA match): {}", gaKey);
+                if (aetherGaKeys.contains(gaKey)) {
+                    logger.trace("[Method 1] Step 6 - Dependency resolved by Aether (GA match): {}", gaKey);
+                    continue;
                 }
+
+                // Candidate: in original POM but not in Aether → potentially shaded
+                String[] gaParts = gaKey.split(":", 2);
+                String candidateGroupId = gaParts.length > 0 ? gaParts[0] : "";
+                String candidateArtifactId = gaParts.length > 1 ? gaParts[1] : "";
+
+                if (isGhost(candidateGroupId, candidateArtifactId, gavValue, classPathPrefixes)) {
+                    ghostCount++;
+                    continue;
+                }
+
+                logger.info("[Method 1] Step 6 - Shaded dependency detected: {}", gavValue);
+                discoveredDependencies.add(new DiscoveredDependency(gavValue, "Delta Analysis (ProjectBuilder)"));
+                shadedCount++;
             }
 
-            logger.debug("[Method 1] Step 5 - Delta: {} original, {} aether GA keys, {} shaded, {} ghosts filtered.",
+            logger.debug("[Method 1] Step 6 - Delta: {} original, {} aether GA keys, {} shaded, {} ghosts filtered.",
                     originalSize, aetherGaKeys.size(), shadedCount, ghostCount);
 
         } catch (Exception e) {
             logger.error("[Method 1] Failed to process ProjectBuilder delta math for JAR {}: {}", jarFile.getName(), e.getMessage(), e);
         } finally {
-            // Step 6: Graceful cleanup to prevent disk leaks (delete file and directory)
             if (tempPomFile != null && tempPomFile.exists()) {
-                logger.trace("[Method 1] Step 6 - Cleaning up temporary POM file: {}", tempPomFile.getAbsolutePath());
-                try {
-                    Files.delete(tempPomFile.toPath());
-                    logger.trace("[Method 1] Step 6 - Successfully deleted temporary POM file.");
-                } catch (Exception e) {
-                    logger.warn("[Method 1] Step 6 - Failed to delete temporary POM file: {}", tempPomFile.getAbsolutePath());
-                    tempPomFile.deleteOnExit();
-                }
+                try { Files.delete(tempPomFile.toPath()); } catch (Exception ignored) { tempPomFile.deleteOnExit(); }
             }
             if (tempDir != null) {
-                try {
-                    Files.delete(tempDir);
-                    logger.trace("[Method 1] Step 6 - Successfully deleted temporary directory.");
-                } catch (Exception e) {
-                    logger.warn("[Method 1] Step 6 - Failed to delete temporary directory: {}", tempDir);
-                    tempDir.toFile().deleteOnExit();
-                }
+                try { Files.delete(tempDir); } catch (Exception ignored) { tempDir.toFile().deleteOnExit(); }
             }
         }
 
@@ -270,5 +264,48 @@ public class DeltaAnalysisInspector implements ShadedDependencyInspector {
         return discoveredDependencies;
     }
 
-}
+    /**
+     * Determines whether a delta candidate is a ghost (not actually bundled in the JAR).
+     *
+     * <p><strong>Primary path (ShadePluginConfig available):</strong>
+     * A dep is a ghost if and only if it is explicitly listed in {@code <artifactSet><excludes>}.
+     * This correctly handles relocated deps — their groupId is NOT in the excludes list, so they pass.
+     *
+     * <p><strong>Fallback path (ShadePluginConfig null):</strong>
+     * Falls back to the legacy class-path prefix heuristic: if no {@code .class} files exist under
+     * the dep's groupId package path, treat it as a ghost.
+     * <em>Note:</em> this fallback incorrectly drops relocated deps (known limitation when shade config
+     * is unavailable).
+     */
+    private boolean isGhost(
+            String groupId,
+            String artifactId,
+            String gavValue,
+            @Nullable NavigableSet<String> classPathPrefixesFallback
+    ) {
+        if (shadePluginConfig != null) {
+            // Primary: use explicit exclude list — relocation-aware and intent-driven
+            if (shadePluginConfig.isExcluded(groupId, artifactId)) {
+                logger.debug("[Method 1] Ghost (explicitly excluded in shade config): {}", gavValue);
+                return true;
+            }
+            if (shadePluginConfig.isRelocated(groupId)) {
+                logger.debug("[Method 1] Dep was relocated, confirming as shaded: {}", gavValue);
+            }
+            return false;
+        }
 
+        // Fallback: legacy class-path heuristic
+        if (classPathPrefixesFallback != null) {
+            String expectedClassPrefix = groupId.replace('.', '/') + "/";
+            String ceiling = classPathPrefixesFallback.ceiling(expectedClassPrefix);
+            boolean hasClasses = ceiling != null && ceiling.startsWith(expectedClassPrefix);
+            if (!hasClasses) {
+                logger.debug("[Method 1] Ghost (legacy fallback — no .class files for '{}'): {}", expectedClassPrefix, gavValue);
+                return true;
+            }
+        }
+
+        return false;
+    }
+}

@@ -4,8 +4,10 @@ package com.blackduck.integration.detectable.detectables.maven.resolver.shadeins
 
 import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.ShadedDependencyInspector;
 import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.model.DiscoveredDependency;
+import com.blackduck.integration.detectable.detectables.maven.resolver.shadeinspection.model.ShadePluginConfig;
 
 import org.eclipse.aether.artifact.Artifact;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +31,14 @@ import java.util.jar.JarFile;
  * <p>This is a DETERMINISTIC (HIGH confidence) detection method because pom.properties
  * files contain exact Maven coordinates.
  *
- * <p>The detector excludes the host JAR's own coordinates to avoid self-referencing.
+ * <h2>Ghost Filter (relocation-aware)</h2>
+ * <p>A dep found via pom.properties is a ghost only if it is explicitly listed in the
+ * shade plugin's {@code <artifactSet><excludes>}. This replaces the old class-path prefix
+ * heuristic which incorrectly dropped relocated deps because their classes live at the
+ * relocated path, not the original groupId path.
+ *
+ * <p>If no {@link ShadePluginConfig} is available, falls back to the legacy class-path
+ * prefix heuristic.
  */
 public class RecursiveMetadataInspector implements ShadedDependencyInspector {
 
@@ -38,12 +47,21 @@ public class RecursiveMetadataInspector implements ShadedDependencyInspector {
     private final Artifact hostArtifact;
 
     /**
-     * Initializes the inspector with the host artifact for reliable self-reference exclusion.
-     *
-     * @param hostArtifact The host artifact whose JAR is being inspected (used to exclude self-reference)
+     * Parsed shade plugin configuration for the host artifact's JAR.
+     * May be null — in that case the legacy class-path heuristic is used as fallback.
      */
-    public RecursiveMetadataInspector(Artifact hostArtifact) {
+    @Nullable
+    private final ShadePluginConfig shadePluginConfig;
+
+    /**
+     * Initializes the inspector with the host artifact and parsed shade configuration.
+     *
+     * @param hostArtifact     The host artifact whose JAR is being inspected (used to exclude self-reference)
+     * @param shadePluginConfig Parsed shade config (excludes + relocations); may be null → fallback to legacy heuristic
+     */
+    public RecursiveMetadataInspector(Artifact hostArtifact, @Nullable ShadePluginConfig shadePluginConfig) {
         this.hostArtifact = hostArtifact;
+        this.shadePluginConfig = shadePluginConfig;
     }
 
     /**
@@ -61,38 +79,35 @@ public class RecursiveMetadataInspector implements ShadedDependencyInspector {
 
         logger.debug("========================================================================");
         logger.debug("[Method 2] Starting Recursive Metadata Detection...");
-        logger.debug("[Method 2] Scanning all entries for embedded pom.properties files.");
+        logger.debug("[Method 2] ShadePluginConfig available: {}", shadePluginConfig != null);
         logger.debug("========================================================================");
-
-        // Step 1: Host JAR coordinates are provided via constructor
-        logger.debug("[Method 2] Step 1 - Using provided host artifact coordinates for self-reference exclusion...");
 
         if (hostArtifact != null) {
             logger.debug("[Method 2] Step 1 - Host JAR identified as: {}:{}:{}",
                     hostArtifact.getGroupId(), hostArtifact.getArtifactId(), hostArtifact.getVersion());
         } else {
-            logger.warn("[Method 2] Step 1 - Host artifact not provided. " +
-                    "Self-reference exclusion may not work correctly.");
+            logger.warn("[Method 2] Step 1 - Host artifact not provided. Self-reference exclusion may not work correctly.");
         }
 
-        // Step 1.5: Pre-scan all JAR entries to build a set of class file directory prefixes
-        // This is used to detect ghost dependencies (metadata without classes)
-        logger.debug("[Method 2] Step 1.5 - Pre-scanning JAR entries for .class file prefixes...");
-        // TreeSet gives O(log N) ghost lookups via ceiling() instead of O(N) linear scan
-        NavigableSet<String> classPathPrefixes = new TreeSet<String>();
-        Enumeration<JarEntry> prePassEntries = jarFile.entries();
-        while (prePassEntries.hasMoreElements()) {
-            String entryName = prePassEntries.nextElement().getName();
-            if (entryName.endsWith(".class")) {
-                int lastSlash = entryName.lastIndexOf('/');
-                if (lastSlash > 0) {
-                    classPathPrefixes.add(entryName.substring(0, lastSlash + 1));
+        // Legacy fallback: pre-scan .class file path prefixes only if we have no shade config.
+        NavigableSet<String> classPathPrefixes = null;
+        if (shadePluginConfig == null) {
+            logger.debug("[Method 2] Step 1.5 - No ShadePluginConfig — falling back to legacy class-path ghost filter.");
+            classPathPrefixes = new TreeSet<String>();
+            Enumeration<JarEntry> prePassEntries = jarFile.entries();
+            while (prePassEntries.hasMoreElements()) {
+                String entryName = prePassEntries.nextElement().getName();
+                if (entryName.endsWith(".class")) {
+                    int lastSlash = entryName.lastIndexOf('/');
+                    if (lastSlash > 0) {
+                        classPathPrefixes.add(entryName.substring(0, lastSlash + 1));
+                    }
                 }
             }
+            logger.debug("[Method 2] Step 1.5 - Found {} unique class path prefixes in JAR.", classPathPrefixes.size());
         }
-        logger.debug("[Method 2] Step 1.5 - Found {} unique class path prefixes in JAR.", classPathPrefixes.size());
 
-        // Step 2: Walk through every entry inside the JAR archive
+        // Walk through every entry inside the JAR archive looking for pom.properties files
         logger.debug("[Method 2] Step 2 - Scanning all JAR entries for pom.properties files...");
         Enumeration<JarEntry> entries = jarFile.entries();
         int scannedCount = 0;
@@ -106,27 +121,18 @@ public class RecursiveMetadataInspector implements ShadedDependencyInspector {
             String name = entry.getName();
             scannedCount++;
 
-            // When a dependency is shaded, its unique pom.properties file is usually dragged into the JAR
-            // under META-INF/maven/<groupId>/<artifactId>/pom.properties
             if (name.startsWith("META-INF/maven/") && name.endsWith("pom.properties")) {
 
                 logger.debug("[Method 2] Step 2 - Found pom.properties -> {}", name);
 
-                // Use try-with-resources to ensure we don't leak memory while reading the ZIP stream
                 try (InputStream is = jarFile.getInputStream(entry)) {
 
-                    // Load the key-value pairs from the properties file
-                    // Using InputStreamReader with UTF-8 encoding to handle international characters
-                    // Note: Standard Properties.load(InputStream) uses ISO-8859-1 which garbles UTF-8
                     Properties props = loadPropertiesWithUtf8(is);
 
-                    // Extract the standard Maven coordinates with null-safety
                     String groupId = props.getProperty("groupId");
                     String artifactId = props.getProperty("artifactId");
                     String version = props.getProperty("version");
 
-                    // Validate that required fields are present
-                    // groupId and artifactId are mandatory; version can be missing, but we will mark it
                     if (groupId == null || groupId.trim().isEmpty()) {
                         logger.warn("[Method 2] Step 2 - Skipping entry (missing groupId): {}", name);
                         skippedInvalidCount++;
@@ -139,11 +145,9 @@ public class RecursiveMetadataInspector implements ShadedDependencyInspector {
                         continue;
                     }
 
-                    // Trim whitespace from extracted values
                     groupId = groupId.trim();
                     artifactId = artifactId.trim();
 
-                    // Handle missing or empty version - mark as UNKNOWN instead of null
                     if (version == null || version.trim().isEmpty()) {
                         logger.warn("[Method 2] Step 2 - Version missing for {}:{}, marking as UNKNOWN", groupId, artifactId);
                         version = "UNKNOWN";
@@ -151,29 +155,21 @@ public class RecursiveMetadataInspector implements ShadedDependencyInspector {
                         version = version.trim();
                     }
 
-                    // Check if this is the host JAR's own pom.properties - skip if so
-                    // This prevents the JAR from reporting itself as a shaded dependency
+                    // Skip the host JAR's own pom.properties — prevents self-reporting
                     if (hostArtifact != null
                             && hostArtifact.getGroupId().equals(groupId)
                             && hostArtifact.getArtifactId().equals(artifactId)) {
-                        logger.debug("[Method 2] Step 2 - Skipping host JAR's own coordinates: {}:{}:{}",
-                                groupId, artifactId, version);
+                        logger.debug("[Method 2] Step 2 - Skipping host JAR's own coordinates: {}:{}:{}", groupId, artifactId, version);
                         skippedHostCount++;
                         continue;
                     }
 
-                    // Check for ghost dependency: metadata exists but no .class files for this groupId
-                    String expectedClassPrefix = groupId.replace('.', '/') + "/";
-                    String ceiling = classPathPrefixes.ceiling(expectedClassPrefix);
-                    boolean hasClasses = ceiling != null && ceiling.startsWith(expectedClassPrefix);
-                    if (!hasClasses) {
-                        logger.debug("[Method 2] Step 2 - Skipping ghost dependency (no .class files found "
-                                + "for prefix '{}'): {}:{}:{}", expectedClassPrefix, groupId, artifactId, version);
+                    // Ghost filter: only drop the dep if it was explicitly excluded from the bundle
+                    if (isGhost(groupId, artifactId, version, classPathPrefixes)) {
                         skippedGhostCount++;
                         continue;
                     }
 
-                    // Build the GAV (GroupId:ArtifactId:Version) string
                     String gav = groupId + ":" + artifactId + ":" + version;
                     logger.debug("[Method 2] Step 2 - Extracted shaded artifact: {}", gav);
                     discoveredDependencies.add(new DiscoveredDependency(gav, "Recursive Metadata Extraction"));
@@ -185,17 +181,58 @@ public class RecursiveMetadataInspector implements ShadedDependencyInspector {
             }
         }
 
-        // Step 3: Final summary
         logger.debug("------------------------------------------------------------------------");
         logger.debug("[Method 2] Step 3 - Scan complete.");
         logger.debug("[Method 2] Step 3 - Total entries scanned: {}", scannedCount);
         logger.debug("[Method 2] Step 3 - Host JAR entries skipped (self-reference): {}", skippedHostCount);
         logger.debug("[Method 2] Step 3 - Invalid entries skipped (missing fields): {}", skippedInvalidCount);
-        logger.debug("[Method 2] Step 3 - Ghost entries skipped (metadata without classes): {}", skippedGhostCount);
+        logger.debug("[Method 2] Step 3 - Ghost entries skipped: {}", skippedGhostCount);
         logger.debug("[Method 2] Step 3 - Shaded dependencies found: {}", discoveredDependencies.size());
         logger.debug("------------------------------------------------------------------------");
 
         return discoveredDependencies;
+    }
+
+    /**
+     * Determines whether a pom.properties candidate is a ghost (not actually bundled).
+     *
+     * <p><strong>Primary path (ShadePluginConfig available):</strong>
+     * A dep is a ghost if and only if it is explicitly listed in {@code <artifactSet><excludes>}.
+     * Relocated deps are NOT in the excludes list, so they correctly pass through.
+     *
+     * <p><strong>Fallback path (ShadePluginConfig null):</strong>
+     * Legacy class-path prefix heuristic — incorrectly drops relocated deps (known limitation).
+     */
+    private boolean isGhost(
+            String groupId,
+            String artifactId,
+            String version,
+            @Nullable NavigableSet<String> classPathPrefixesFallback
+    ) {
+        if (shadePluginConfig != null) {
+            if (shadePluginConfig.isExcluded(groupId, artifactId)) {
+                logger.debug("[Method 2] Ghost (explicitly excluded in shade config): {}:{}:{}", groupId, artifactId, version);
+                return true;
+            }
+            if (shadePluginConfig.isRelocated(groupId)) {
+                logger.debug("[Method 2] Dep was relocated, confirming as shaded: {}:{}:{}", groupId, artifactId, version);
+            }
+            return false;
+        }
+
+        // Fallback: legacy class-path heuristic
+        if (classPathPrefixesFallback != null) {
+            String expectedClassPrefix = groupId.replace('.', '/') + "/";
+            String ceiling = classPathPrefixesFallback.ceiling(expectedClassPrefix);
+            boolean hasClasses = ceiling != null && ceiling.startsWith(expectedClassPrefix);
+            if (!hasClasses) {
+                logger.debug("[Method 2] Ghost (legacy fallback — no .class files for '{}'): {}:{}:{}",
+                        expectedClassPrefix, groupId, artifactId, version);
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -209,22 +246,15 @@ public class RecursiveMetadataInspector implements ShadedDependencyInspector {
      */
     private Properties loadPropertiesWithUtf8(InputStream is) throws Exception {
         Properties props = new Properties();
-        // Use InputStreamReader with explicit UTF-8 charset to handle international characters
-        // This fixes the ISO-8859-1 limitation of Properties.load(InputStream)
         BufferedReader reader = null;
         try {
             reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
             props.load(reader);
         } finally {
             if (reader != null) {
-                try {
-                    reader.close();
-                } catch (Exception ignored) {
-                    // Ignore close exceptions
-                }
+                try { reader.close(); } catch (Exception ignored) {}
             }
         }
         return props;
     }
-
 }
