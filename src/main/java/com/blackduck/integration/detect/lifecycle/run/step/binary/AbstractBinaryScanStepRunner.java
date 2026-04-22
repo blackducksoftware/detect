@@ -68,7 +68,11 @@ public abstract class AbstractBinaryScanStepRunner {
                 List<File> multiTargets = operationRunner.getMultiBinaryTargets();
                 multiTargets.forEach(operationRunner::updateBinaryUserTargets);
             } else {
-                operationRunner.publishBinaryFailure("Binary scanner did not find any files matching any pattern.");
+                String message = "Binary scanner did not find any files matching the configured patterns.";
+                if (binaryScanOptions.getSearchDepth() == 0) {
+                    message += " Consider using detect.binary.scan.search.depth if binary files exist in subdirectories.";
+                }
+                logger.warn(message);
             }
         } else if (dockerTargetData != null && dockerTargetData.getContainerFilesystem().isPresent()) {
             logger.info("Binary Scanner will upload docker container file system.");
