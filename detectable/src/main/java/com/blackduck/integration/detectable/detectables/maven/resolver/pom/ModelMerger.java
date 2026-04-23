@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -65,14 +66,14 @@ class ModelMerger {
     }
 
     private void mergeDependencyManagement(PartialMavenProject child, PartialMavenProject parent) {
-        Map<String, PomXmlDependency> depMgmtMap = new HashMap<>();
+        Map<String, PomXmlDependency> depMgmtMap = new LinkedHashMap<>();
         addDependenciesToMap(depMgmtMap, parent.getDependencyManagement());
         addDependenciesToMap(depMgmtMap, child.getDependencyManagement());
         child.setDependencyManagement(new ArrayList<>(depMgmtMap.values()));
     }
 
     private void mergeDependencies(PartialMavenProject child, PartialMavenProject parent) {
-        Map<String, PomXmlDependency> dependenciesMap = new HashMap<>();
+        Map<String, PomXmlDependency> dependenciesMap = new LinkedHashMap<>();
         addDependenciesToMap(dependenciesMap, parent.getDependencies());
         addDependenciesToMap(dependenciesMap, child.getDependencies());
         child.setDependencies(new ArrayList<>(dependenciesMap.values()));

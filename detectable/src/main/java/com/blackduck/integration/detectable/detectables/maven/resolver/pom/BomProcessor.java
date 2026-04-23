@@ -12,6 +12,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -200,7 +201,7 @@ class BomProcessor {
      * Merges dependency management from BOM into partial model. Original entries take precedence.
      */
     private void mergeDependencyManagement(PartialMavenProject bomProject, PartialMavenProject partialModel) {
-        Map<String, PomXmlDependency> depMgmtMap = new HashMap<>();
+        Map<String, PomXmlDependency> depMgmtMap = new LinkedHashMap<>();
         if (bomProject.getDependencyManagement() != null) {
             bomProject.getDependencyManagement().forEach(dep ->
                 depMgmtMap.put(dep.getGroupId() + ":" + dep.getArtifactId(), dep));
