@@ -201,13 +201,15 @@ class BomProcessor {
      * Merges dependency management from BOM into partial model. Original entries take precedence.
      */
     private void mergeDependencyManagement(PartialMavenProject bomProject, PartialMavenProject partialModel) {
+        // Maven BOM semantics: project's own depMgmt takes precedence and comes first;
+        // BOM entries are appended only if not already declared in the project
         Map<String, PomXmlDependency> depMgmtMap = new LinkedHashMap<>();
-        if (bomProject.getDependencyManagement() != null) {
-            bomProject.getDependencyManagement().forEach(dep ->
-                depMgmtMap.put(dep.getGroupId() + ":" + dep.getArtifactId(), dep));
-        }
         partialModel.getDependencyManagement().forEach(dep ->
             depMgmtMap.put(dep.getGroupId() + ":" + dep.getArtifactId(), dep));
+        if (bomProject.getDependencyManagement() != null) {
+            bomProject.getDependencyManagement().forEach(dep ->
+                depMgmtMap.putIfAbsent(dep.getGroupId() + ":" + dep.getArtifactId(), dep));
+        }
         partialModel.setDependencyManagement(new ArrayList<>(depMgmtMap.values()));
     }
 
