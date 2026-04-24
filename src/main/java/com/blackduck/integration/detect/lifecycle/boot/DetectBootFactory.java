@@ -31,6 +31,7 @@ import com.blackduck.integration.detect.interactive.InteractiveModeDecisionTree;
 import com.blackduck.integration.detect.interactive.InteractivePropertySourceBuilder;
 import com.blackduck.integration.detect.interactive.InteractiveWriter;
 import com.blackduck.integration.detect.lifecycle.autonomous.AutonomousManager;
+import com.blackduck.integration.detect.lifecycle.boot.decision.CorrelatedScanningDecision;
 import com.blackduck.integration.detect.lifecycle.boot.product.BlackDuckConnectivityChecker;
 import com.blackduck.integration.detect.lifecycle.boot.product.ProductBoot;
 import com.blackduck.integration.detect.lifecycle.boot.product.ProductBootFactory;
@@ -64,6 +65,7 @@ import com.blackduck.integration.detect.workflow.airgap.DockerAirGapCreator;
 import com.blackduck.integration.detect.workflow.airgap.NugetInspectorAirGapCreator;
 import com.blackduck.integration.detect.workflow.airgap.ProjectInspectorAirGapCreator;
 import com.blackduck.integration.detect.workflow.blackduck.analytics.AnalyticsConfigurationService;
+import com.blackduck.integration.detect.workflow.blackduck.settings.DetectPropertiesService;
 import com.blackduck.integration.detect.workflow.blackduck.font.DetectFontInstaller;
 import com.blackduck.integration.detect.workflow.diagnostic.DiagnosticSystem;
 import com.blackduck.integration.detect.workflow.event.EventSystem;
@@ -101,7 +103,8 @@ public class DetectBootFactory {
         Configuration configuration,
         InstalledToolManager installedToolManager,
         InstalledToolLocator installedToolLocator,
-        AutonomousManager autonomousManager
+        AutonomousManager autonomousManager,
+        CorrelatedScanningDecision correlatedScanningDecision
     ) {
         return new BootSingletons(
             productRunData,
@@ -118,7 +121,8 @@ public class DetectBootFactory {
             configuration,
             installedToolManager,
             installedToolLocator,
-            autonomousManager
+            autonomousManager,
+            correlatedScanningDecision
         );
     }
 
@@ -223,6 +227,7 @@ public class DetectBootFactory {
         return new ProductBoot(
             blackDuckConnectivityChecker,
             createAnalyticsConfigurationService(),
+            createDetectPropertiesService(),
             createProductBootFactory(detectConfigurationFactory),
             productBootOptions,
             blackDuckVersionChecker
@@ -231,6 +236,10 @@ public class DetectBootFactory {
 
     public AnalyticsConfigurationService createAnalyticsConfigurationService() {
         return new AnalyticsConfigurationService();
+    }
+
+    public DetectPropertiesService createDetectPropertiesService() {
+        return new DetectPropertiesService();
     }
 
     public InteractiveManager createInteractiveManager(List<PropertySource> propertySources) {
