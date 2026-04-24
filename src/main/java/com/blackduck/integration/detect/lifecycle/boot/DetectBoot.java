@@ -131,6 +131,8 @@ public class DetectBoot {
         DEFAULT_PRINT_STREAM.println("Detect Version: " + detectVersion);
         DEFAULT_PRINT_STREAM.println();
 
+        warnIfJava8();
+
         if (detectArgumentState.isInteractive()) {
             InteractiveManager interactiveManager = detectBootFactory.createInteractiveManager(propertySources);
             MapPropertySource interactivePropertySource = interactiveManager.executeInteractiveMode();
@@ -289,6 +291,25 @@ public class DetectBoot {
             );
 
         return Optional.of(DetectBootResult.run(bootSingletons, propertyConfiguration, productRunData, directoryManager, diagnosticSystem));
+    }
+
+    private void warnIfJava8() {
+        String javaSpecVersion = System.getProperty("java.specification.version");
+        if ("1.8".equals(javaSpecVersion) || javaSpecVersion.equals("11")) {
+            logger.warn("");
+            logger.warn("--------------------------------------------------------------------------------");
+            logger.warn("  DEPRECATION NOTICE: Java 8 End of Support");
+            logger.warn("--------------------------------------------------------------------------------");
+            logger.warn("  Detect is currently running on Java 8. Java 8 will no longer be supported");
+            logger.warn("  in the next major release of Detect (12.0.0). The minimum required JVM");
+            logger.warn("  version is moving to Java 11.");
+            logger.warn("");
+            logger.warn("  Action required: Upgrade your JVM to Java 11 or later before upgrading");
+            logger.warn("  to Detect 12.0.0. Running Detect 12.0.0+ on Java 8 will not be supported");
+            logger.warn("  and may result in failures.");
+            logger.warn("--------------------------------------------------------------------------------");
+            logger.warn("");
+        }
     }
 
     private Optional<DetectBootResult> generateAirGap(DetectConfigurationFactory detectConfigurationFactory,
