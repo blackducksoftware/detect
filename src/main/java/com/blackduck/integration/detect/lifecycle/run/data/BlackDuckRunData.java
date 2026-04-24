@@ -16,7 +16,6 @@ public class BlackDuckRunData {
     private final BlackDuckServerConfig blackDuckServerConfig;
     private final BlackDuckServicesFactory blackDuckServicesFactory;
     private final BlackduckScanMode scanMode;
-    private final boolean waitAtScanLevel;
     private final Optional<DetectPropertiesSetting> serverDetectProperties;
     private Optional<BlackDuckVersion> blackDuckServerVersion;
 
@@ -25,7 +24,6 @@ public class BlackDuckRunData {
         this.blackDuckServerConfig = null;
         this.blackDuckServicesFactory = null;
         this.scanMode = null;
-        this.waitAtScanLevel = false;
         this.serverDetectProperties = Optional.empty();
         this.blackDuckServerVersion = Optional.empty();
     }
@@ -35,16 +33,14 @@ public class BlackDuckRunData {
         BlackDuckConnectivityResult blackDuckConnectivityResult,
         BlackDuckServicesFactory blackDuckServicesFactory,
         BlackduckScanMode scanMode,
-        boolean waitAtScanLevel,
         Optional<DetectPropertiesSetting> serverDetectProperties
     ) {
         this.phoneHomeManager = phoneHomeManager;
         this.blackDuckServerConfig = blackDuckConnectivityResult != null ? blackDuckConnectivityResult.getBlackDuckServerConfig() : null;
         this.blackDuckServicesFactory = blackDuckServicesFactory;
         this.scanMode = scanMode;
-        this.waitAtScanLevel = waitAtScanLevel;
-        this.serverDetectProperties = serverDetectProperties;
 
+        this.serverDetectProperties = serverDetectProperties;
         determineBlackDuckServerVersion(blackDuckConnectivityResult);
     }
 
@@ -73,20 +69,18 @@ public class BlackDuckRunData {
         BlackDuckServicesFactory blackDuckServicesFactory,
         PhoneHomeManager phoneHomeManager,
         BlackDuckConnectivityResult blackDuckConnectivityResult,
-        boolean waitAtScanLevel,
         Optional<DetectPropertiesSetting> serverDetectProperties
     ) {
-        return new BlackDuckRunData(phoneHomeManager, blackDuckConnectivityResult, blackDuckServicesFactory, scanMode, waitAtScanLevel, serverDetectProperties);
+        return new BlackDuckRunData(phoneHomeManager, blackDuckConnectivityResult, blackDuckServicesFactory, scanMode, serverDetectProperties);
     }
 
     public static BlackDuckRunData onlineNoPhoneHome(
         BlackduckScanMode scanMode,
         BlackDuckServicesFactory blackDuckServicesFactory,
         BlackDuckConnectivityResult blackDuckConnectivityResult,
-        boolean waitAtScanLevel,
         Optional<DetectPropertiesSetting> serverDetectProperties
     ) {
-        return new BlackDuckRunData(null, blackDuckConnectivityResult, blackDuckServicesFactory, scanMode, waitAtScanLevel, serverDetectProperties);
+        return new BlackDuckRunData(null, blackDuckConnectivityResult, blackDuckServicesFactory, scanMode, serverDetectProperties);
     }
 
     public Boolean isNonPersistent() {
@@ -95,10 +89,6 @@ public class BlackDuckRunData {
 
     public BlackduckScanMode getScanMode() {
         return scanMode;
-    }
-    
-    public boolean shouldWaitAtScanLevel() {
-        return waitAtScanLevel;
     }
 
     public Optional<BlackDuckVersion> getBlackDuckServerVersion() {

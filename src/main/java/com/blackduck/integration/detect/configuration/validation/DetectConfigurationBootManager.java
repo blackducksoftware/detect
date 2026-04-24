@@ -1,5 +1,7 @@
 package com.blackduck.integration.detect.configuration.validation;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -17,6 +19,7 @@ import com.blackduck.integration.configuration.help.PropertyConfigurationHelpCon
 import com.blackduck.integration.configuration.property.base.TypedProperty;
 import com.blackduck.integration.configuration.property.deprecation.DeprecatedValueUsage;
 import com.blackduck.integration.detect.configuration.DetectProperties;
+import com.blackduck.integration.detect.configuration.DetectPropertyConfiguration;
 import com.blackduck.integration.detect.configuration.DetectUserFriendlyException;
 import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
 import com.blackduck.integration.detect.workflow.event.EventSystem;
@@ -100,6 +103,50 @@ public class DetectConfigurationBootManager {
             Map.Entry<String, List<String>> entry = errorMap.entrySet().iterator().next();
             return Optional.of(new DetectUserFriendlyException(entry.getKey() + ": " + entry.getValue().get(0), ExitCodeType.FAILURE_GENERAL_ERROR));
         }
+        return Optional.empty();
+    }
+
+    // Method to validate Quack Patch output path and return an Optional containing a DetectUserFriendlyException if the validation fails, or an empty Optional if it passes.
+    public Optional<DetectUserFriendlyException> validateQuackPatchOutputPath(DetectPropertyConfiguration detectConfiguration) {
+        String quackPatchOutput = detectConfiguration.getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT).trim();
+        
+        // Fail for empty string since that would cause issues later on when we try to write to it, and it's likely the user just forgot to set it if they enabled Quack Patch but left this blank.
+        if (quackPatchOutput.isEmpty()) {
+            return Optional.of(new DetectUserFriendlyException(
+                "Invalid value for Quack Patch output path: " + quackPatchOutput, 
+                ExitCodeType.FAILURE_CONFIGURATION
+            ));
+        }
+        // Validate the path exists and is a directory
+        Path path = Path.of(quackPatchOutput);
+        
+        if (!Files.exists(path)) {
+            // create the directory if it doesn't exist, since that would cause issues later on when we try to write to it, and it's likely the user just forgot to create it if they enabled Quack Patch and set a path that doesn't exist.
+            try {
+                logger.debug("Creating quack patch output path: {}", quackPatchOutput);
+                Files.createDirectories(path);
+            } catch (Exception e) {
+                return Optional.of(new DetectUserFriendlyException(
+                    "Quack Patch output path does not exist and could not be created: " + quackPatchOutput, 
+                    ExitCodeType.FAILURE_CONFIGURATION
+                ));
+            }
+        }
+        
+        if (!Files.isDirectory(path)) {
+            return Optional.of(new DetectUserFriendlyException(
+                "Quack Patch output path is not a directory: " + quackPatchOutput, 
+                ExitCodeType.FAILURE_CONFIGURATION
+            ));
+        }
+        
+        if (!Files.isWritable(path)) {
+            return Optional.of(new DetectUserFriendlyException(
+                "Quack Patch output path is not writable: " + quackPatchOutput, 
+                ExitCodeType.FAILURE_CONFIGURATION
+            ));
+        }
+        
         return Optional.empty();
     }
 }

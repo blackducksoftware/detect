@@ -59,22 +59,21 @@ public class SignatureScanStepRunner {
         List<SignatureScanPath> scanPaths = operationRunner.createScanPaths(projectNameVersion, dockerTargetData);
         ScanBatch scanBatch = operationRunner.createScanBatchOnline(detectRunUuid, scanPaths, projectNameVersion, dockerTargetData, blackDuckRunData, false);
 
-        NotificationTaskRange notificationTaskRange = operationRunner.createCodeLocationRange(blackDuckRunData);
         List<SignatureScannerReport> reports;
         try {
-            reports = executeScan(scanBatch, scanBatchRunner, scanPaths, scanIdsToWaitFor, gson, blackDuckRunData.shouldWaitAtScanLevel(), true);
+            reports = executeScan(scanBatch, scanBatchRunner, scanPaths, scanIdsToWaitFor, gson, true);
         } catch (SocketException e) {
             if (!operationRunner.isCorrelationScanningEnabled("SIGNATURE")) {
                 logger.warn("Initial Signature Scan failed due to connectivity issues. Retrying scan. Please allow the SCASS IPs to increase scanning performance.");
                 scanBatch = operationRunner.createScanBatchOnline(detectRunUuid, scanPaths, projectNameVersion, dockerTargetData, blackDuckRunData, true);
-                reports = executeScan(scanBatch, scanBatchRunner, scanPaths, scanIdsToWaitFor, gson, blackDuckRunData.shouldWaitAtScanLevel(), true);
+                reports = executeScan(scanBatch, scanBatchRunner, scanPaths, scanIdsToWaitFor, gson, true);
             } else {
                 reports = new ArrayList<>();
                 operationRunner.publishSignatureFailure("Correlation scanning is enabled. Please verify your SCASS configuration ad, as it is required for correlation scans to function properly.");
             }
         }
 
-        return operationRunner.calculateWaitableSignatureScannerCodeLocations(notificationTaskRange, reports);
+        return operationRunner.calculateWaitableSignatureScannerCodeLocations(reports);
     }
     
     public SignatureScanOuputResult runRapidSignatureScannerOnline(String detectRunUuid, BlackDuckRunData blackDuckRunData, NameVersion projectNameVersion, DockerTargetData dockerTargetData)
@@ -99,15 +98,15 @@ public class SignatureScanStepRunner {
         List<SignatureScanPath> scanPaths = operationRunner.createScanPaths(projectNameVersion, dockerTargetData);
         ScanBatch scanBatch = operationRunner.createScanBatchOffline(detectRunUuid, scanPaths, projectNameVersion, dockerTargetData);
 
-        executeScan(scanBatch, scanBatchRunner, scanPaths, null, null, false, false);
+        executeScan(scanBatch, scanBatchRunner, scanPaths, null, null,false);
     }
 
-    protected List<SignatureScannerReport> executeScan(ScanBatch scanBatch, ScanBatchRunner scanBatchRunner, List<SignatureScanPath> scanPaths, Set<String> scanIdsToWaitFor, Gson gson, boolean shouldWaitAtScanLevel, boolean isOnline) throws OperationException, IOException {
+    protected List<SignatureScannerReport> executeScan(ScanBatch scanBatch, ScanBatchRunner scanBatchRunner, List<SignatureScanPath> scanPaths, Set<String> scanIdsToWaitFor, Gson gson, boolean isOnline) throws OperationException, IOException {
         // Step 1: Run Scan CLI
         SignatureScanOuputResult scanOuputResult = operationRunner.signatureScan(scanBatch, scanBatchRunner);      
 
         // Step 2: Check results and upload BDIO
-        Set<String> failedScans = processEachScan(scanIdsToWaitFor, scanOuputResult, gson, shouldWaitAtScanLevel, scanBatch.isScassScan(), isOnline, scanBatch.isCsvArchive()); 
+        Set<String> failedScans = processEachScan(scanIdsToWaitFor, scanOuputResult, gson, scanBatch.isScassScan(), isOnline, scanBatch.isCsvArchive());
 
         // Step 3: Report on results
         List<SignatureScannerReport> reports = operationRunner.createSignatureScanReport(scanPaths, scanOuputResult.getScanBatchOutput().getOutputs(), failedScans);
@@ -159,7 +158,7 @@ public class SignatureScanStepRunner {
         return ScanBatchRunnerUserResult.none();
     }
 
-    private Set<String> processEachScan(Set<String> scanIdsToWaitFor, SignatureScanOuputResult signatureScanOutputResult, Gson gson, boolean shouldWaitAtScanLevel, boolean scassScan, boolean isOnline, boolean isCsvArchive) throws IOException {
+    private Set<String> processEachScan(Set<String> scanIdsToWaitFor, SignatureScanOuputResult signatureScanOutputResult, Gson gson, boolean scassScan, boolean isOnline, boolean isCsvArchive) throws IOException {
         List<ScanCommandOutput> outputs = signatureScanOutputResult.getScanBatchOutput().getOutputs();
         Set<String> failedScans = new HashSet<>();
 
@@ -180,7 +179,7 @@ public class SignatureScanStepRunner {
                 String scanOutputLocation = specificRunOutputDirectory.toString()
                         + SignatureScanResult.OUTPUT_FILE_PATH;
 
-                processOnlineScan(scanIdsToWaitFor, gson, shouldWaitAtScanLevel, scassScan, failedScans, output,
+                processOnlineScan(scanIdsToWaitFor, gson, scassScan, failedScans, output,
                         specificRunOutputDirectory, scanOutputLocation);
             }
         }
@@ -188,14 +187,19 @@ public class SignatureScanStepRunner {
         return failedScans;
     }
 
-    private void processOnlineScan(Set<String> scanIdsToWaitFor, Gson gson, boolean shouldWaitAtScanLevel,
+    private void processOnlineScan(Set<String> scanIdsToWaitFor, Gson gson,
             boolean scassScan, Set<String> failedScans, ScanCommandOutput output, File specificRunOutputDirectory,
             String scanOutputLocation) throws IOException, HttpHostConnectException, SocketException {
-        try {
-            Reader reader = Files.newBufferedReader(Paths.get(scanOutputLocation));
+        SignatureScanResult result;
+        try (Reader reader = Files.newBufferedReader(Paths.get(scanOutputLocation))) {
+            result = gson.fromJson(reader, SignatureScanResult.class);
+        } catch (NoSuchFileException e) {
+            failedScans.add(output.getCodeLocationName());
+            handleNoScanStatusFile(scassScan, scanOutputLocation);
+            return;
+        }
 
-            SignatureScanResult result = gson.fromJson(reader, SignatureScanResult.class);
-            
+        try {
             // This is a SCASS scan if we have an upload URL. We'll need to upload the BDIO.
             // If it is not a SCASS scan skip this section as the signature scanner already uploaded
             // the BDIO.
@@ -207,12 +211,10 @@ public class SignatureScanStepRunner {
                 scassScanStepRunner.runScassScan(optionalBdio, result);
             }
             
-            if (shouldWaitAtScanLevel && scanIdsToWaitFor != null) {
+            if (scanIdsToWaitFor != null) {
                 scanIdsToWaitFor.addAll(result.parseScanIds());
+                logger.debug("Added the following signature scans to list of scanIds to wait for: {}." , result.parseScanIds());
             }
-        } catch (NoSuchFileException e) {
-            failedScans.add(output.getCodeLocationName());
-            handleNoScanStatusFile(scanIdsToWaitFor, shouldWaitAtScanLevel, scassScan, scanOutputLocation);
         } catch (IntegrationException e) {
             if (e.getCause() instanceof SocketException) {
                 // The most likely cause of a failure like this is that the SCASS URLs are
@@ -225,12 +227,12 @@ public class SignatureScanStepRunner {
         }
     }
 
-    private void handleNoScanStatusFile(Set<String> scanIdsToWaitFor, boolean shouldWaitAtScanLevel, boolean scassScan,
+    private void handleNoScanStatusFile(boolean scassScan,
             String scanOutputLocation) {        
         if (scassScan) {
             String errorMessage = String.format("Unable to find scanOutput.json file at location: {}. Unable to upload BDIO to continue signature scan.", scanOutputLocation);
             operationRunner.publishSignatureFailure(errorMessage);
-        } else if (shouldWaitAtScanLevel && scanIdsToWaitFor != null) {
+        } else {
             logger.warn("Unable to find scanOutput.json file at location: " + scanOutputLocation
                     + ". Will skip waiting for this signature scan.");
         }
