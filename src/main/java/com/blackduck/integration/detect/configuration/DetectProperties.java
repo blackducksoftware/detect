@@ -2031,9 +2031,21 @@ public class DetectProperties {
                     .setGroups(DetectGroup.UV, DetectGroup.GLOBAL)
                     .build();
 
+    // TODO: Add support for this property in the UV Lockfile Detector (buildless mode) and update the description accordingly.
+    public static final CaseSensitiveStringListProperty DETECT_UV_DEPENDENCY_GROUPS_INCLUDED =
+            CaseSensitiveStringListProperty.newBuilder("detect.uv.dependency.groups.included")
+                    .setInfo("uv Included Dependency Groups", DetectPropertyFromVersion.VERSION_11_4_0)
+                    .setHelp(
+                            "A comma-separated list of uv dependency groups to include in the scan.",
+                            "This property is currently supported only in the UV Build Detector (CLI mode). If left empty (the default), the detector scans only main dependencies and the dev group, maintaining backward compatibility. Set to 'ALL' to include all dependency groups and optional dependencies. Alternatively, specify group names as a comma-separated list (e.g., 'dev,test,docs') to include only those groups. The excluded property takes precedence over this property."
+                    )
+                    .setGroups(DetectGroup.UV, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
+
     public static final CaseSensitiveStringListProperty DETECT_UV_DEPENDENCY_GROUPS_EXCLUDED =
             CaseSensitiveStringListProperty.newBuilder("detect.uv.dependency.groups.excluded")
-                    .setInfo("uv dependency groups", DetectPropertyFromVersion.VERSION_10_5_0)
+                    .setInfo("uv Excluded Dependency Groups", DetectPropertyFromVersion.VERSION_10_5_0)
                     .setHelp(
                             createTypeFilterHelpText("UV dependency groups"),
                             "When specified, a pyproject.toml file and uv executable are required, or pyproject.toml file and either uv.lock or requirements.txt file are required. Components and related dependencies that belong to excluded groups will not be in the BOM unless the component also belongs to a non-excluded group. For example, to recursively exclude all components under the `[dependency-groups]` section of `pyproject.toml`: `detect.uv.dependency.groups.excluded='dev,abc'`"

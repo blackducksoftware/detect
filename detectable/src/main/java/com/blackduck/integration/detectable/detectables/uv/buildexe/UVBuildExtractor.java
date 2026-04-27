@@ -18,6 +18,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public class UVBuildExtractor {
 
@@ -39,11 +40,26 @@ public class UVBuildExtractor {
             arguments.add("tree");
             arguments.add("--no-dedupe");
 
-            if(!uvDetectorOptions.getExcludedDependencyGroups().isEmpty()) {
-                for(String group : uvDetectorOptions.getExcludedDependencyGroups()) {
-                    arguments.add("--no-group");
-                    arguments.add(group);
+            Set<String> includedGroups = uvDetectorOptions.getIncludedDependencyGroups();
+            Set<String> excludedGroups = uvDetectorOptions.getExcludedDependencyGroups();
+
+            if (!includedGroups.isEmpty()) {
+                boolean includeAll = includedGroups.stream().anyMatch(group -> group.equalsIgnoreCase("all"));
+                if (includeAll) {
+                    arguments.add("--all-groups");
+                } else {
+                    for (String group : includedGroups) {
+                        if (!excludedGroups.contains(group)) {
+                            arguments.add("--group");
+                            arguments.add(group);
+                        }
+                    }
                 }
+            }
+
+            for (String group : excludedGroups) {
+                arguments.add("--no-group");
+                arguments.add(group);
             }
 
             // run uv tree command
