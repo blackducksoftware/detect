@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -65,16 +66,18 @@ class ModelMerger {
     }
 
     private void mergeDependencyManagement(PartialMavenProject child, PartialMavenProject parent) {
-        Map<String, PomXmlDependency> depMgmtMap = new HashMap<>();
-        addDependenciesToMap(depMgmtMap, parent.getDependencyManagement());
+        // Maven merge semantics: child depMgmt first, parent appended only if not in child
+        Map<String, PomXmlDependency> depMgmtMap = new LinkedHashMap<>();
         addDependenciesToMap(depMgmtMap, child.getDependencyManagement());
+        addDependenciesIfAbsent(depMgmtMap, parent.getDependencyManagement());
         child.setDependencyManagement(new ArrayList<>(depMgmtMap.values()));
     }
 
     private void mergeDependencies(PartialMavenProject child, PartialMavenProject parent) {
-        Map<String, PomXmlDependency> dependenciesMap = new HashMap<>();
-        addDependenciesToMap(dependenciesMap, parent.getDependencies());
+        // Maven merge semantics: child deps first (declaration order), parent appended only if not in child
+        Map<String, PomXmlDependency> dependenciesMap = new LinkedHashMap<>();
         addDependenciesToMap(dependenciesMap, child.getDependencies());
+        addDependenciesIfAbsent(dependenciesMap, parent.getDependencies());
         child.setDependencies(new ArrayList<>(dependenciesMap.values()));
     }
 
@@ -87,6 +90,12 @@ class ModelMerger {
     private void addDependenciesToMap(Map<String, PomXmlDependency> map, java.util.List<PomXmlDependency> dependencies) {
         if (dependencies != null) {
             dependencies.forEach(dep -> map.put(dep.getGroupId() + ":" + dep.getArtifactId(), dep));
+        }
+    }
+
+    private void addDependenciesIfAbsent(Map<String, PomXmlDependency> map, java.util.List<PomXmlDependency> dependencies) {
+        if (dependencies != null) {
+            dependencies.forEach(dep -> map.putIfAbsent(dep.getGroupId() + ":" + dep.getArtifactId(), dep));
         }
     }
 }

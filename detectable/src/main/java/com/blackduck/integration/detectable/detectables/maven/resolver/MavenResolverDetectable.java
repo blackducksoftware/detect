@@ -18,6 +18,7 @@ import com.blackduck.integration.detectable.detectables.maven.resolver.graph.Mav
 import com.blackduck.integration.detectable.detectables.maven.resolver.graph.MavenParseResult;
 import com.blackduck.integration.detectable.detectables.maven.resolver.module.MavenModuleProcessor;
 import com.blackduck.integration.detectable.detectables.maven.resolver.module.MavenModuleProcessingContext;
+import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenMirrorConfig;
 import com.blackduck.integration.detectable.detectables.maven.resolver.output.CodeLocationFactory;
 import com.blackduck.integration.detectable.detectables.maven.resolver.output.DependencyTreeFileWriter;
 import com.blackduck.integration.detectable.detectables.maven.resolver.output.MavenCoordinateFormatter;
@@ -34,7 +35,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Maven Resolver Detectable - Detects and resolves Maven project dependencies.
@@ -196,7 +199,8 @@ public class MavenResolverDetectable extends Detectable {
             // Create a download directory for parent POMs and BOM imports that need to be fetched from remote repositories
             Path downloadDir = extractionEnvironment.getOutputDirectory().toPath().resolve(DOWNLOADS_DIR_NAME);
             Files.createDirectories(downloadDir);
-            ProjectBuilder projectBuilder = new ProjectBuilder(downloadDir);
+            ProjectBuilder projectBuilder = new ProjectBuilder(downloadDir,
+                mavenResolverOptions != null ? mavenResolverOptions.getMirrorConfigurations() : Collections.<MavenMirrorConfig>emptyList());
             MavenProject mavenProject = projectBuilder.buildProject(pomFile);
 
             // Log the constructed MavenProject details for verification and debugging
@@ -284,6 +288,25 @@ public class MavenResolverDetectable extends Detectable {
                 dependencyGraphTest = mavenGraphTransformer.transform(parseResultTest);
             }
 
+            // PHASE 4.5: Shaded dependency detection
+            Map<String, DependencyGraph> shadedSubTreeCache = new HashMap<>();
+            ShadedDependencyScanner shadedDependencyScanner = null;
+            if (mavenResolverOptions != null && mavenResolverOptions.isIncludeShadedDependenciesEnabled()) {
+                logger.info("Shaded dependency detection is enabled. Initializing scanner...");
+                shadedDependencyScanner = new ShadedDependencyScanner(
+                    externalIdFactory, projectBuilder, dependencyResolver,
+                    mavenGraphParser, mavenGraphTransformer,
+                    mavenResolverOptions.getProxyConfig()
+                );
+                shadedDependencyScanner.processShading(
+                    collectResultCompile, collectResultTest,
+                    dependencyGraphCompile, dependencyGraphTest,
+                    localRepoPath, downloadDir,
+                    mavenProject.getRepositories(),
+                    shadedSubTreeCache, mavenResolverOptions
+                );
+            }
+
             // Create CodeLocations for the root project (both compile and test scopes)
             // CodeLocation ties together the dependency graph, external ID, and source path
             List<CodeLocation> codeLocations = new ArrayList<>();
@@ -318,6 +341,11 @@ public class MavenResolverDetectable extends Detectable {
                     .codeLocations(codeLocations)
                     .compileScope(MAVEN_SCOPE_COMPILE)
                     .testScope(MAVEN_SCOPE_TEST)
+                    .shadedDependencyScanner(shadedDependencyScanner)
+                    .shadedSubTreeCache(shadedSubTreeCache)
+                    .includeShadedDependencies(mavenResolverOptions != null && mavenResolverOptions.isIncludeShadedDependenciesEnabled())
+                    .mavenResolverOptions(mavenResolverOptions)
+                    .downloadDir(downloadDir)
                     .build();
 
                 // Process all modules using the module processor

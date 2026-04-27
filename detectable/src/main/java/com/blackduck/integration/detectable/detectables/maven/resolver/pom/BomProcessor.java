@@ -1,17 +1,21 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver.pom;
 
 import com.blackduck.integration.detectable.detectables.maven.resolver.mavendownload.MavenDownloader;
+import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenMirrorConfig;
 import com.blackduck.integration.detectable.detectables.maven.resolver.model.*;
 import com.blackduck.integration.detectable.detectables.maven.resolver.model.pomxml.*;
 import com.blackduck.integration.detectable.detectables.maven.resolver.pom.property.PropertiesResolverProvider;
 import org.apache.commons.text.StringSubstitutor;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -48,11 +52,18 @@ class BomProcessor {
     private final Path downloadDir;
     private final ProjectBuilder projectBuilder;
     private final PropertiesResolverProvider propertiesResolverProvider;
+    private final List<MavenMirrorConfig> mirrorConfigs;
 
     BomProcessor(Path downloadDir, ProjectBuilder projectBuilder, PropertiesResolverProvider propertiesResolverProvider) {
+        this(downloadDir, projectBuilder, propertiesResolverProvider, Collections.emptyList());
+    }
+
+    BomProcessor(Path downloadDir, ProjectBuilder projectBuilder, PropertiesResolverProvider propertiesResolverProvider,
+                 @Nullable List<MavenMirrorConfig> mirrorConfigs) {
         this.downloadDir = downloadDir;
         this.projectBuilder = projectBuilder;
         this.propertiesResolverProvider = propertiesResolverProvider;
+        this.mirrorConfigs = (mirrorConfigs != null) ? mirrorConfigs : Collections.emptyList();
     }
 
     PartialMavenProject processBoms(String pomFilePath, PartialMavenProject partialModel, Set<String> visitedBoms) throws Exception {
@@ -156,7 +167,7 @@ class BomProcessor {
         JavaCoordinates bomCoords,
         PartialMavenProject partialModel
     ) throws Exception {
-        MavenDownloader mavenDownloader = new MavenDownloader(partialModel.getRepositories(), downloadDir);
+        MavenDownloader mavenDownloader = new MavenDownloader(partialModel.getRepositories(), downloadDir, mirrorConfigs);
         File bomPomFile = mavenDownloader.downloadPom(bomCoords);
 
         if (bomPomFile == null) {
@@ -200,13 +211,15 @@ class BomProcessor {
      * Merges dependency management from BOM into partial model. Original entries take precedence.
      */
     private void mergeDependencyManagement(PartialMavenProject bomProject, PartialMavenProject partialModel) {
-        Map<String, PomXmlDependency> depMgmtMap = new HashMap<>();
-        if (bomProject.getDependencyManagement() != null) {
-            bomProject.getDependencyManagement().forEach(dep ->
-                depMgmtMap.put(dep.getGroupId() + ":" + dep.getArtifactId(), dep));
-        }
+        // Maven BOM semantics: project's own depMgmt takes precedence and comes first;
+        // BOM entries are appended only if not already declared in the project
+        Map<String, PomXmlDependency> depMgmtMap = new LinkedHashMap<>();
         partialModel.getDependencyManagement().forEach(dep ->
             depMgmtMap.put(dep.getGroupId() + ":" + dep.getArtifactId(), dep));
+        if (bomProject.getDependencyManagement() != null) {
+            bomProject.getDependencyManagement().forEach(dep ->
+                depMgmtMap.putIfAbsent(dep.getGroupId() + ":" + dep.getArtifactId(), dep));
+        }
         partialModel.setDependencyManagement(new ArrayList<>(depMgmtMap.values()));
     }
 
