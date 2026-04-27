@@ -18,6 +18,7 @@ import com.blackduck.integration.detectable.detectables.maven.resolver.graph.Mav
 import com.blackduck.integration.detectable.detectables.maven.resolver.graph.MavenParseResult;
 import com.blackduck.integration.detectable.detectables.maven.resolver.module.MavenModuleProcessor;
 import com.blackduck.integration.detectable.detectables.maven.resolver.module.MavenModuleProcessingContext;
+import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenMirrorConfig;
 import com.blackduck.integration.detectable.detectables.maven.resolver.output.CodeLocationFactory;
 import com.blackduck.integration.detectable.detectables.maven.resolver.output.DependencyTreeFileWriter;
 import com.blackduck.integration.detectable.detectables.maven.resolver.output.MavenCoordinateFormatter;
@@ -198,7 +199,8 @@ public class MavenResolverDetectable extends Detectable {
             // Create a download directory for parent POMs and BOM imports that need to be fetched from remote repositories
             Path downloadDir = extractionEnvironment.getOutputDirectory().toPath().resolve(DOWNLOADS_DIR_NAME);
             Files.createDirectories(downloadDir);
-            ProjectBuilder projectBuilder = new ProjectBuilder(downloadDir);
+            ProjectBuilder projectBuilder = new ProjectBuilder(downloadDir,
+                mavenResolverOptions != null ? mavenResolverOptions.getMirrorConfigurations() : Collections.<MavenMirrorConfig>emptyList());
             MavenProject mavenProject = projectBuilder.buildProject(pomFile);
 
             // Log the constructed MavenProject details for verification and debugging

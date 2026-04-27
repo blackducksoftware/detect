@@ -7,10 +7,10 @@ import com.blackduck.integration.detectable.detectables.maven.resolver.artifactd
 import com.blackduck.integration.detectable.detectables.maven.resolver.artifactdownload.ParallelDownloadManager;
 import com.blackduck.integration.detectable.detectables.maven.resolver.artifactdownload.RemoteRepositoryDownloader;
 import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenMirrorConfig;
+import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenMirrorResolver;
 import com.blackduck.integration.detectable.detectables.maven.resolver.model.JavaRepository;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.graph.Dependency;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,7 +105,7 @@ public class ArtifactDownloader {
 
         this.pomRepoDownloaders = new LinkedHashMap<>();
         for (JavaRepository repo : this.pomRepositories) {
-            MavenMirrorConfig mirror = findMatchingMirror(mirrorConfigs, repo.getId());
+            MavenMirrorConfig mirror = MavenMirrorResolver.findMatchingMirror(mirrorConfigs, repo.getId());
             if (mirror != null) {
                 logger.info("Mirror '{}' redirects repository '{}' ({}) to {}", mirror.getId(), repo.getId(), repo.getUrl(), mirror.getUrl());
                 pomRepoDownloaders.put(repo.getId(), new RemoteRepositoryDownloader(mirror.getUrl(), mirror.getUsername(), mirror.getPassword()));
@@ -114,7 +114,7 @@ public class ArtifactDownloader {
             }
         }
 
-        MavenMirrorConfig centralMirror = findMatchingMirror(mirrorConfigs, "central");
+        MavenMirrorConfig centralMirror = MavenMirrorResolver.findMatchingMirror(mirrorConfigs, "central");
         if (centralMirror != null) {
             logger.info("Mirror '{}' redirects Maven Central fallback to {}", centralMirror.getId(), centralMirror.getUrl());
             this.fallbackDownloader = new FallbackRepositoryDownloader(centralMirror.getUrl(), centralMirror.getUsername(), centralMirror.getPassword());
@@ -315,43 +315,6 @@ public class ArtifactDownloader {
         }
     }
 
-    @Nullable
-    private static MavenMirrorConfig findMatchingMirror(List<MavenMirrorConfig> mirrors, String repoId) {
-        if (mirrors == null || mirrors.isEmpty()) {
-            return null;
-        }
-        for (MavenMirrorConfig mirror : mirrors) {
-            if (matchesMirrorOf(mirror.getMirrorOf(), repoId)) {
-                return mirror;
-            }
-        }
-        return null;
-    }
-
-    private static boolean matchesMirrorOf(String mirrorOf, String repoId) {
-        if (mirrorOf == null || mirrorOf.trim().isEmpty()) {
-            return false;
-        }
-
-        String[] parts = mirrorOf.split(",");
-        boolean included = false;
-        boolean excluded = false;
-
-        for (String part : parts) {
-            String trimmed = part.trim();
-            if (trimmed.startsWith("!")) {
-                if (trimmed.substring(1).equals(repoId)) {
-                    excluded = true;
-                }
-            } else if ("*".equals(trimmed) || "external:*".equals(trimmed)) {
-                included = true;
-            } else if (trimmed.equals(repoId)) {
-                included = true;
-            }
-        }
-
-        return included && !excluded;
-    }
 
     private String formatCoords(Artifact artifact) {
         return artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion();

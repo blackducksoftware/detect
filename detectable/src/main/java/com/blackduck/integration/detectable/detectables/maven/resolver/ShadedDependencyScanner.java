@@ -10,6 +10,7 @@ import com.blackduck.integration.detectable.detectables.maven.resolver.graph.Mav
 import com.blackduck.integration.detectable.detectables.maven.resolver.graph.MavenGraphTransformer;
 import com.blackduck.integration.detectable.detectables.maven.resolver.graph.MavenParseResult;
 import com.blackduck.integration.detectable.detectables.maven.resolver.mavendownload.MavenDownloader;
+import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenMirrorConfig;
 import com.blackduck.integration.detectable.detectables.maven.resolver.model.pomxml.PomXml;
 import com.blackduck.integration.detectable.detectables.maven.resolver.model.pomxml.PomXmlPlugin;
 import com.blackduck.integration.detectable.detectables.maven.resolver.pom.MavenProject;
@@ -176,14 +177,15 @@ public class ShadedDependencyScanner {
                 File downloadDirFile = downloadDir.toFile();
                 File localRepoFile = localRepoPath.toFile();
                 List<JavaRepository> repos = repositories != null ? repositories : new ArrayList<>();
+                List<MavenMirrorConfig> mirrorConfigs = options != null ? options.getMirrorConfigurations() : Collections.emptyList();
 
                 int addedToCompile = addShadedDependenciesToGraph(
-                        compileGraph, shadedDepsMap, downloadDirFile, localRepoFile, repos, shadedSubTreeCache);
+                        compileGraph, shadedDepsMap, downloadDirFile, localRepoFile, repos, shadedSubTreeCache, mirrorConfigs);
                 logger.info("Grafted {} shaded dependency nodes into compile graph", addedToCompile);
 
                 if (testGraph != null) {
                     int addedToTest = addShadedDependenciesToGraph(
-                            testGraph, shadedDepsMap, downloadDirFile, localRepoFile, repos, shadedSubTreeCache);
+                            testGraph, shadedDepsMap, downloadDirFile, localRepoFile, repos, shadedSubTreeCache, mirrorConfigs);
                     logger.info("Grafted {} shaded dependency nodes into test graph", addedToTest);
                 }
             } finally {
@@ -450,7 +452,8 @@ public class ShadedDependencyScanner {
             File downloadDir,
             File localRepoPath,
             List<JavaRepository> repositories,
-            Map<String, DependencyGraph> shadedSubTreeCache) {
+            Map<String, DependencyGraph> shadedSubTreeCache,
+            List<MavenMirrorConfig> mirrorConfigs) {
 
         int graftedNodeCount = 0;
 
@@ -505,7 +508,7 @@ public class ShadedDependencyScanner {
                         logger.debug("Resolving sub-tree for shaded dependency: {}", identifier);
 
                         JavaCoordinates coords = new JavaCoordinates(groupId, artifactId, version, "pom");
-                        MavenDownloader downloader = new MavenDownloader(repositories, downloadDir.toPath());
+                        MavenDownloader downloader = new MavenDownloader(repositories, downloadDir.toPath(), mirrorConfigs);
                         File shadedPomFile = downloader.downloadPom(coords);
 
                         if (shadedPomFile == null || !shadedPomFile.exists()) {
