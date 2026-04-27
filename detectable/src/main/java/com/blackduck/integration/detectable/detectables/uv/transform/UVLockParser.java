@@ -116,8 +116,10 @@ public class UVLockParser {
         if(dependencyTable.contains(OPTIONAL_DEPENDENCIES_KEY)) {
             TomlTable optionalDependencyTable = dependencyTable.getTable(OPTIONAL_DEPENDENCIES_KEY);
             for(List<String> key: optionalDependencyTable.keyPathSet()) {
-                TomlArray optionalDependencyArray = optionalDependencyTable.getArray(key.get(0));
-                parseTransitiveDependencies(optionalDependencyArray, dependencyName);
+                if(!uvDetectorOptions.getExcludedDependencyGroups().contains(key.get(0))) {
+                    TomlArray optionalDependencyArray = optionalDependencyTable.getArray(key.get(0));
+                    parseTransitiveDependencies(optionalDependencyArray, dependencyName);
+                }
             }
         }
     }
