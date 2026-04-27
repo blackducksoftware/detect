@@ -295,7 +295,7 @@ public class DetectBoot {
 
     private void warnIfJava8() {
         String javaSpecVersion = System.getProperty("java.specification.version");
-        if ("1.8".equals(javaSpecVersion) || javaSpecVersion.equals("11")) {
+        if ("1.8".equals(javaSpecVersion)) {
             logger.warn("");
             logger.warn("--------------------------------------------------------------------------------");
             logger.warn("  DEPRECATION NOTICE: Java 8 End of Support");
@@ -305,6 +305,11 @@ public class DetectBoot {
             logger.warn("  Detect 12.0.0.");
             logger.warn("--------------------------------------------------------------------------------");
             logger.warn("");
+
+            DetectIssue.publish(eventSystem, DetectIssueType.DEPRECATION,
+                    "Java 8",
+                    "Java 8 support is deprecated and will be removed in the next major release of Detect.",
+                    "Please upgrade to Java 11 or higher.");
         }
     }
 
