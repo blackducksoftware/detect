@@ -2,6 +2,7 @@ package com.blackduck.integration.detect.configuration.validation;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -118,7 +119,7 @@ public class DetectConfigurationBootManager {
             ));
         }
         // Validate the path exists and is a directory
-        Path path = Path.of(quackPatchOutput);
+        Path path = Paths.get(quackPatchOutput);
         
         if (!Files.exists(path)) {
             // create the directory if it doesn't exist, since that would cause issues later on when we try to write to it, and it's likely the user just forgot to create it if they enabled Quack Patch and set a path that doesn't exist.
