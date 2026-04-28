@@ -165,6 +165,20 @@ public class BazelV2Detectable extends Detectable {
             }
         }
 
+        // Detect Bazel version only for BZLMOD — the version is used exclusively in BZLMOD-specific
+        // paths (mod graph fast path in HttpFamilyProber, batched show_repo in Pipelines).
+        // Skipping this call for WORKSPACE avoids an extra bazel invocation that is never needed there.
+        BazelVersion bazelVersion = null;
+        if (mode == BazelEnvironmentAnalyzer.Mode.BZLMOD) {
+            bazelVersion = new BazelVersionChecker(bazelCmd).detectVersion().orElse(null);
+            if (bazelVersion != null) {
+                logger.debug("Bazel version detected: {}. Features requiring 7.1+ are {}.",
+                    bazelVersion, bazelVersion.isAtLeast(7, 1) ? "ENABLED" : "DISABLED");
+            } else {
+                logger.debug("Bazel version could not be detected; 7.1+ optimizations will be disabled.");
+            }
+        }
+
         // Determine pipelines (either from properties or by probing)
         Set<DependencySource> pipelines = resolvePipelines(bazelCmd, target, mode, bazelVersion);
 
@@ -192,7 +206,7 @@ public class BazelV2Detectable extends Detectable {
         File workspaceDir = environment.getDirectory();
         File moduleFile = new File(workspaceDir, "MODULE.bazel");
         if (!moduleFile.exists()) {
-            logger.info("No MODULE.bazel found at {}. Skipping 'bazel mod graph' to avoid file generation; assuming WORKSPACE mode.", workspaceDir.getAbsolutePath());
+            logger.debug("No MODULE.bazel found at {}. Skipping 'bazel mod graph' to avoid file generation; assuming WORKSPACE mode.", workspaceDir.getAbsolutePath());
             return BazelEnvironmentAnalyzer.Mode.WORKSPACE;
         }
 
@@ -208,7 +222,7 @@ public class BazelV2Detectable extends Detectable {
             );
         }
 
-        logger.info("Using Bazel mode from auto-detection: {}", mode);
+        logger.debug("Using Bazel mode from auto-detection: {}", mode);
         return mode;
     }
 

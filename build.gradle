@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '11.5.0-SIGQA3-shanty.merge_11.4.z_to_main-SNAPSHOT'
+version = '11.5.0-SIGQA4-SNAPSHOT'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
@@ -229,7 +229,7 @@ dependencies {
         implementation('org.apache.james:apache-mime4j-core:0.8.10') {
             because 'previous version has a vulnerability'
         }
-        implementation('org.bouncycastle:bcutil-jdk18on:1.78') {
+        implementation('org.bouncycastle:bcutil-jdk18on:1.84') {
             because 'previous version has a vulnerability'
         }
         implementation('com.jayway.jsonpath:json-path:2.9.0') {

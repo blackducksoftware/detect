@@ -227,6 +227,102 @@ public class HttpFamilyProber {
      * or when the JSON fast path is inconclusive.
      */
     private boolean probeRepositoriesLegacy(Map<String, LinkedHashSet<String>> repoLabels) throws Exception {
+        // Tiered approach: try fast JSON discovery for Bazel 7.1+ BZLMOD
+        if (mode == BazelEnvironmentAnalyzer.Mode.BZLMOD && isModGraphJsonSupported()) {
+            try {
+                Optional<Boolean> fastResult = probeRepositoriesViaModGraphJson();
+                if (fastResult.isPresent()) {
+                    return fastResult.get();
+                }
+                // empty means the JSON approach was inconclusive; fall through to legacy probing
+            } catch (Exception e) {
+                logger.debug("Fast mod graph --output json discovery failed, falling back to per-repo probing: {}", e.getMessage());
+                logger.debug("mod graph JSON exception", e);
+            }
+        }
+
+        return probeRepositoriesLegacy(repoLabels);
+    }
+
+    /**
+     * Returns true if the detected Bazel version supports `bazel mod graph --output json` (7.1+).
+     */
+    private boolean isModGraphJsonSupported() {
+        return bazelVersion != null && bazelVersion.isAtLeast(7, 1);
+    }
+
+    /**
+     * Fast-path discovery using `bazel mod graph --output json` (single Bazel invocation).
+     * If the mod graph contains any non-excluded BCR modules, the HTTP pipeline is enabled —
+     * because BCR modules are backed by http_archive rules and their URLs are extractable
+     * via show_repo downstream. This mirrors the old per-repo behavior where bazel_dep,
+     * module_extension, and http_archive all enable the HTTP pipeline.
+     *
+     * @return Optional containing true/false if conclusive, or empty if inconclusive (triggers fallback)
+     */
+    private Optional<Boolean> probeRepositoriesViaModGraphJson() {
+        logger.debug("Attempting fast dependency discovery via 'bazel mod graph --output json' (Bazel {})", bazelVersion);
+
+        List<String> modGraphJsonCmd = BazelQueryBuilder.mod()
+            .graph()
+            .withOutputJson()
+            .build();
+
+        ExecutableOutput output = bazel.executeWithoutThrowing(modGraphJsonCmd);
+        if (output.getReturnCode() != 0) {
+            // Don't bail immediately on non-zero exit: a broken module extension (e.g., bazel_jar_jar+
+            // on Bazel 9) poisons the exit code even when the JSON graph was fully emitted to stdout.
+            // Check whether stdout has usable JSON before giving up.
+            String stdout = output.getStandardOutput();
+            if (stdout == null || stdout.trim().isEmpty()) {
+                logger.debug("'bazel mod graph --output json' returned exit code {} with no output; falling back to legacy probing.",
+                    output.getReturnCode());
+                return Optional.empty();
+            }
+            logger.debug("'bazel mod graph --output json' returned exit code {} but stdout has content; continuing with JSON parsing.",
+                output.getReturnCode());
+        }
+
+        String jsonOutput = output.getStandardOutput();
+        if (jsonOutput == null || jsonOutput.trim().isEmpty()) {
+            logger.debug("'bazel mod graph --output json' returned empty output; falling back to legacy probing.");
+            return Optional.empty();
+        }
+
+        BzlmodGraphJsonParser parser = new BzlmodGraphJsonParser();
+        Set<String> moduleKeys = parser.parseModuleKeys(jsonOutput);
+        if (moduleKeys.isEmpty()) {
+            logger.debug("Parsed zero module keys from mod graph JSON; falling back to legacy probing.");
+            return Optional.empty();
+        }
+
+        // BCR modules ARE HTTP-family dependencies — they are fetched via http_archive under the hood.
+        // The old per-repo probing (classifyRepoByModShowRepo) enables HTTP for bazel_dep, module_extension,
+        // and http_archive alike. So if the mod graph has any non-excluded modules, enable the HTTP pipeline.
+        // The downstream pipeline (show_repo → URL extraction → GitHub transform) handles the actual extraction.
+        Set<String> relevantModules = new java.util.HashSet<>();
+        for (String key : moduleKeys) {
+            String name = BzlmodGraphJsonParser.extractName(key);
+            if (!isExcludedRepo(name)) {
+                relevantModules.add(key);
+            }
+        }
+
+        if (!relevantModules.isEmpty()) {
+            logger.debug("mod graph JSON contains {} non-excluded BCR modules → enabling HTTP pipeline (fast path). Modules: {}",
+                relevantModules.size(), relevantModules);
+            return Optional.of(true);
+        }
+
+        logger.debug("mod graph JSON contains only excluded/builtin modules; no HTTP-family repos detected (fast path).");
+        return Optional.of(false);
+    }
+
+    /**
+     * Legacy per-repo probing (original implementation). Used as fallback for Bazel < 7.1
+     * or when the JSON fast path is inconclusive.
+     */
+    private boolean probeRepositoriesLegacy(Map<String, LinkedHashSet<String>> repoLabels) throws Exception {
         logger.debug("Target has {} external repository dependencies (≤{}). Probing for HTTP characteristics.",
                 repoLabels.size(), LARGE_TARGET_THRESHOLD);
 
@@ -234,7 +330,7 @@ public class HttpFamilyProber {
         for (Map.Entry<String, LinkedHashSet<String>> entry : repoLabels.entrySet()) {
             checkedRepos++;
             if (probeRepo(entry.getKey(), entry.getValue())) {
-                logger.info("HTTP repository '{}' detected at probe #{} of {}. Enabling HTTP pipeline.",
+                logger.debug("HTTP repository '{}' detected at probe #{} of {}. Enabling HTTP pipeline.",
                         entry.getKey(), checkedRepos, repoLabels.size());
                 return true;
             }
@@ -272,7 +368,7 @@ public class HttpFamilyProber {
     private boolean shouldEnableHttpForLargeTargets(Map<String, LinkedHashSet<String>> repoLabels) {
         int totalRepos = repoLabels.size();
         if (totalRepos > LARGE_TARGET_THRESHOLD) {
-            logger.info("Target has {} external repository dependencies (>{}). " +
+            logger.debug("Target has {} external repository dependencies (>{}). " +
                        "Enabling HTTP pipeline to ensure completeness without probing overhead.",
                        totalRepos, LARGE_TARGET_THRESHOLD);
             return true;
@@ -359,7 +455,7 @@ public class HttpFamilyProber {
 
             Optional<String> result = bazel.executeToString(queryArgs);
             if (result.isPresent() && !result.get().trim().isEmpty()) {
-                logger.info("HTTP pipeline enabled for repo {}: {} probe found build targets", repo, strategyName);
+                logger.debug("HTTP pipeline enabled for repo {}: {} probe found build targets", repo, strategyName);
                 return true;
             }
         } catch (Exception e) {
