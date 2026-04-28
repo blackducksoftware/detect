@@ -24,15 +24,18 @@
 
 * Support for the Conda Tree–based detector has been added. For more details, see [Conda Tree](packagemgrs/conda.md#conda-tree-detector).
 * Support for pnpm now extends to 10.32.1.
+* NuGet Solution Native Inspector now supports .slnx files.
+* Added support for Bazel 9.
+* PIP Native Inspector now supports Setuptools version 82.0.0.
 * npm detectors now allow for aliases to be used when specifying dependencies in the package.json file.
 * Ivy CLI Detector, leveraging the `ivy:dependencytree` Ant task to extract direct and transitive dependencies for Ant + Ivy projects. For further information, see [Ivy (Ant) support](packagemgrs/ivy.md).
-* Introduced the `detect.quack.patch.output property` to control the Quack Patch output information path. If not set, the current working directory will be used as the default.
+* Introduced the `detect.quack.patch.output` property to control the Quack Patch output information path. If not set, the current working directory will be used as the default.
 * When [detect_product_short] is integrated with [bd_product_long] version 2026.4 or later, relevant [bd_product_short] server configuration details will be retrieved for use by [detect_product_short]. With this release of [detect_product_short], the [bd_product_short] server administrator can choose to set the detect.blackduck.correlated.scanning.enabled property, which will be retrieved and used if the user has not specified this property locally.
   * In future releases the retrieval of additional [bd_product_short] server properties will be supported.
 
 ### Changed features
 
-* The default output directory of the Quack Patch feature has been updated to use a quack-patch subdirectory of the present working directory.
+* The default output directory of the Quack Patch feature has been updated to use a `quack-patch` subdirectory of the present working directory.
 
 ### Resolved issues
 
@@ -41,7 +44,7 @@
 * (IDETECT‑4979) Updated the NuGet Inspector to prevent duplicate components from being reported which end up unversioned in the BOM.
 * (IDETECT‑5058) Improved the Poetry detector to eliminate errors encountered while parsing pyproject.toml.
 * (IDETECT‑5013) Fixed an issue in the signature scan fallback logic when SCA Scan Service (SCASS) is intentionally bypassed.
-* NuGet Solution Native Inspector now supports .slnx files.
+* (IDETECT-4993) Fixed an issue where the Go Module Detector entered an infinite loop while scanning `go.mod` files containing circular dependencies.
 
 ### Dependency Updates
 * Upgraded and released Nuget Inspector version 2.6.0
