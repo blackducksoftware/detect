@@ -131,6 +131,8 @@ public class DetectBoot {
         DEFAULT_PRINT_STREAM.println("Detect Version: " + detectVersion);
         DEFAULT_PRINT_STREAM.println();
 
+        warnIfJava8();
+
         if (detectArgumentState.isInteractive()) {
             InteractiveManager interactiveManager = detectBootFactory.createInteractiveManager(propertySources);
             MapPropertySource interactivePropertySource = interactiveManager.executeInteractiveMode();
@@ -289,6 +291,26 @@ public class DetectBoot {
             );
 
         return Optional.of(DetectBootResult.run(bootSingletons, propertyConfiguration, productRunData, directoryManager, diagnosticSystem));
+    }
+
+    private void warnIfJava8() {
+        String javaSpecVersion = System.getProperty("java.specification.version");
+        if ("1.8".equals(javaSpecVersion)) {
+            logger.warn("");
+            logger.warn("--------------------------------------------------------------------------------");
+            logger.warn("  DEPRECATION NOTICE: Java 8 End of Support");
+            logger.warn("  In alignment with EU Cyber Resilience Act (CRA) requirements and compliance");
+            logger.warn("  timelines, Java 8 support will be deprecated in the anticipated 2026 Q3");
+            logger.warn("  Detect 12.0.0 release. Please upgrade to Java 11+ before upgrading to");
+            logger.warn("  Detect 12.0.0.");
+            logger.warn("--------------------------------------------------------------------------------");
+            logger.warn("");
+
+            DetectIssue.publish(eventSystem, DetectIssueType.DEPRECATION,
+                    "Java 8",
+                    "Java 8 support is deprecated and will be removed in the next major release of Detect.",
+                    "Please upgrade to Java 11 or higher.");
+        }
     }
 
     private Optional<DetectBootResult> generateAirGap(DetectConfigurationFactory detectConfigurationFactory,
