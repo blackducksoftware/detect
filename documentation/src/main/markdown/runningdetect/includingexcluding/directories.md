@@ -1,6 +1,6 @@
 # Directory Exclusions
 
-Use [detect.excluded.directories](../../properties/configuration/paths.md#detect-excluded-directories-advanced) to exclude directories from search when looking for detectors, searching for files to binary scan when using property detect.binary.scan.file.name.patterns, and when finding paths to pass to the signature scanner as values for an '--exclude' flag.
+Use [detect.excluded.directories](../../properties/configuration/paths.md#detect-excluded-directories-advanced) to exclude directories from search when looking for detectors, searching for files to binary scan when using property `detect.binary.scan.file.name.patterns`, and when finding paths to pass to the signature scanner as values for an '--exclude' flag.
 
 ## Exclude directories by name
 
@@ -24,10 +24,12 @@ See [configuring property wildcards](../../configuring/propertywildcards.md) for
 
 This property accepts explicit paths relative to the project's root, or you may specify glob-style patterns.
 
+<note type="important">
 When specifying path patterns:
 
-* Use '*' to match 0 or more directory name characters (will not cross directory boundaries).
-* Use '**' to match 0 or more directory path characters (will cross directory boundaries).
+<li>* Use '*' to match 0 or more directory name characters (will not cross directory boundaries).</li>
+<li>* Use '**' to match 0 or more directory path characters (will cross directory boundaries).</li>
+</note>
 
 **Examples with a folder structure containing:**
 <ul>
@@ -66,20 +68,27 @@ When excluding paths, if you want to use wildcards in an exclusion pattern for a
 Name-wildcards ('*'), unless appearing in a pattern that begins with path-wildcards ('**'), will only work if the pattern refers to one-level below the source path root.  
 
 To exclude /projectRoot/folder while scanning /projectRoot with the following structure:
+
 **Examples with a folder structure containing:**
 <ul>
 <li><codeph>/projectRoot/folder</codeph></li>
 <li><codeph>/projectRoot/folder/dir</codeph></li>
 </ul>
 
-| Value         | Excluded                   | Not Excluded                                       |
-|---------------|----------------------------|----------------------------------------------------|
-| `*older`      | `/projectRoot/folder`      | NA                                                 |
-| `f*`          | `/projectRoot/folder`      | NA                                                 |
-| `folder/*`    | NA                         | `/projectRoot/folder` or `/projectRoot/folder/dir` |
-| `**folder/*`  | `/projectRoot/folder/dir`  | `/projectRoot/folder`                              |
-| `*older/*`    | NA                         | `/projectRoot/folder` or `/projectRoot/folder/dir` |
-| `**/*older/*` | `/projectRoot/folder/dir`  | `/projectRoot/folder`                              |
+| Value         | Excluded at default exclusion depth| Not Excluded                                       |
+|---------------|------------------------------------|----------------------------------------------------|
+| `f*`          | `/projectRoot/folder`              | NA                                                 |
+| `folder/*`    | NA                                 | `/projectRoot/folder` or `/projectRoot/folder/dir` |
+| `**folder/*`  | `/projectRoot/folder/dir`          | `/projectRoot/folder`                              |
+| `*older/*`    | NA                                 | `/projectRoot/folder` or `/projectRoot/folder/dir` |
+| `**/*older/*` | `/projectRoot/folder/dir`          | `/projectRoot/folder`                              |
+
+
+With the search depth set to 10 via the following properties: `--detect.detector.search.depth=10` and `--detect.excluded.directories.search.depth=10`
+
+| Value         | Excluded at depth 10                            | Not Excluded |
+|---------------|-------------------------------------------------|--------------|
+| `f*`          | `/projectRoot/folder` `/projectRoot/folder/dir` | NA           |
 
 ## Related properties:
 
