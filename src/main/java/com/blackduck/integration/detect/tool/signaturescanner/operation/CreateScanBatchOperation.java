@@ -107,7 +107,9 @@ public class CreateScanBatchOperation {
 
         // Someday the integrated matching enabled option will (we think) go away, and we'll always provide
         // detectRunUuid as correlationId, but for now it's optional.
-        if (signatureScannerOptions.isCorrelatedScanningEnabled()) {
+        // Use the decision object to check if signature scans are supported for correlated scanning
+        if (signatureScannerOptions.getCorrelatedScanningDecision().isEnabled()
+                && signatureScannerOptions.getCorrelatedScanningDecision().isScanTypeSupported("SIGNATURE")) {
             scanJobBuilder.correlationId(detectRunUuid);
         }
 
@@ -173,7 +175,8 @@ public class CreateScanBatchOperation {
 
     private boolean conditionalCorrelationFilter(boolean toCheck, String toWarn) {
         if (toCheck) {
-            if (signatureScannerOptions.isCorrelatedScanningEnabled()) {
+            if (signatureScannerOptions.getCorrelatedScanningDecision().isEnabled()
+                    && signatureScannerOptions.getCorrelatedScanningDecision().isScanTypeSupported("SIGNATURE")) {
                 logger.warn("{} is not compatible with Integrated Matching feature and will be skipped. Please re-run {} with integrated matching disabled.", toWarn, toWarn.toLowerCase());
             } else {
                 return true;

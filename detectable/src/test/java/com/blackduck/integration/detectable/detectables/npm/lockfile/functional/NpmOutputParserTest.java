@@ -121,6 +121,32 @@ public class NpmOutputParserTest {
     }
     
     @Test
+    public void npmCliDependencyWithoutVersionIsIncluded() {
+        NpmCliParser parser = new NpmCliParser(new ExternalIdFactory(), EnumListFilter.excludeNone());
+        String testIn = String.join(System.lineSeparator(), Arrays.asList(
+            "{",
+            "   \"name\": \"node-js\",",
+            "   \"version\": \"1.0.0\",",
+            "   \"dependencies\": {",
+            "       \"with-version\": {",
+            "           \"version\": \"1.2.3\"",
+            "       },",
+            "       \"without-version\": {",
+            "       }",
+            "   }",
+            "}"
+        ));
+        CombinedPackageJson combinedPackageJson = new CombinedPackageJson();
+        NpmPackagerResult result = parser.convertNpmJsonFileToCodeLocation(testIn, combinedPackageJson);
+
+        NameVersionGraphAssert graphAssert = new NameVersionGraphAssert(Forge.NPMJS, result.getCodeLocation().getDependencyGraph());
+
+        graphAssert.hasRootSize(2);
+        graphAssert.hasRootDependency("with-version", "1.2.3");
+        graphAssert.hasRootDependency("without-version", null);
+    }
+
+    @Test
     public void npmCliDependencyFinder() {
         NpmCliParser parser = new NpmCliParser(new ExternalIdFactory(), EnumListFilter.excludeNone());
         String testIn = String.join(System.lineSeparator(), Arrays.asList(

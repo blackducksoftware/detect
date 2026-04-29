@@ -43,6 +43,45 @@ public class BazelCommandExecutor {
     }
 
     /**
+     * Executes a Bazel {@code mod} command (e.g., {@code mod show_repo}, {@code mod graph}),
+     * accepting stdout even when the exit code is non-zero.
+     *
+     * <p>This is intentionally permissive for {@code mod} commands because a broken but unrelated
+     * module extension (e.g., {@code bazel_jar_jar+} on Bazel 9) poisons the process exit code to 2
+     * while the requested output is still fully and correctly written to stdout. For these commands,
+     * stdout presence is the authoritative success signal — if Bazel resolved the repo/graph it
+     * writes the definition to stdout; if it genuinely failed (e.g., "no such repo") stdout is empty.</p>
+     *
+     * <p><b>NOT</b> safe for {@code query}/{@code cquery}: partial query output on a non-zero exit
+     * could be misleading (some targets resolved before the failure). Use {@link #executeToString}
+     * for those commands.</p>
+     *
+     * @param args Bazel command arguments (should start with "mod")
+     * @return stdout content if non-empty, {@link Optional#empty()} otherwise
+     */
+    public Optional<String> executeModCommandToString(List<String> args) {
+        ExecutableOutput result = executeWithoutThrowing(args);
+        int exitCode = result.getReturnCode();
+        if (exitCode != 0) {
+            String stderr = result.getErrorOutput();
+            String firstStderrLine = "";
+            if (!StringUtils.isBlank(stderr)) {
+                String[] lines = stderr.split("\\r?\\n", 2);
+                firstStderrLine = lines.length > 0 ? lines[0] : "(none)";
+            } else {
+                firstStderrLine = "(none)";
+            }
+            logger.debug("Bazel mod command returned exit code {}; first stderr line: {}", exitCode, firstStderrLine);
+        }
+        String stdout = result.getStandardOutput();
+        if (StringUtils.isBlank(stdout)) {
+            logger.debug("Bazel mod command produced no stdout output");
+            return Optional.empty();
+        }
+        return Optional.of(stdout);
+    }
+
+    /**
      * Executes a Bazel command without throwing on failure, allowing caller to inspect exit code and error output.
      * Used for probing commands where we need to distinguish different failure modes.
      * @param args Bazel command arguments

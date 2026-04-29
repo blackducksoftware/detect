@@ -40,11 +40,20 @@ public class BazelEnvironmentAnalyzer {
             // If the graph only contains the root module, Bzlmod is active but empty.
             // Look for typical empty signals like "<root> (@_)" or just a single line.
             if (isGraphEmpty(stdout)) {
-                logger.info("Bzlmod is enabled but graph is empty; falling back to WORKSPACE.");
+                logger.debug("Bzlmod is enabled but graph is empty; falling back to WORKSPACE.");
                 return Mode.WORKSPACE;
             }
             return Mode.BZLMOD;
         } else if (output.getReturnCode() >= 2 && output.getReturnCode() <= 7) {
+            // Don't give up solely based on exit code: a broken but unrelated module extension
+            // (e.g., bazel_jar_jar+ on Bazel 9) causes exit code 2 even when the module graph
+            // was successfully emitted to stdout. Check stdout before concluding WORKSPACE.
+            String stdout = output.getStandardOutput().trim();
+            if (!isGraphEmpty(stdout)) {
+                logger.debug("'bazel mod graph' returned exit code {} but stdout contains a valid module graph; treating as BZLMOD.",
+                    output.getReturnCode());
+                return Mode.BZLMOD;
+            }
             return Mode.WORKSPACE;
         }
         return Mode.UNKNOWN;

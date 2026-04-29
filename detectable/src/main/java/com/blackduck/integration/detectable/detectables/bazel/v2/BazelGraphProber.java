@@ -26,6 +26,7 @@ public class BazelGraphProber {
     private final BazelEnvironmentAnalyzer.Mode mode;
     private final List<String> cqueryOptions;
     private final List<String> queryOptions;
+    private BazelVersion bazelVersion;
 
     /**
      * Constructor for BazelGraphProber
@@ -45,11 +46,19 @@ public class BazelGraphProber {
     }
 
     /**
+     * Sets the detected Bazel version for feature gating (e.g., mod graph --output json for 7.1+).
+     * @param bazelVersion Detected Bazel version; null means unknown
+     */
+    public void setBazelVersion(BazelVersion bazelVersion) {
+        this.bazelVersion = bazelVersion;
+    }
+
+    /**
      * Probes the Bazel dependency graph to decide which pipelines (dependency sources) are enabled for the given target.
      * @return Set of enabled DependencySource
      */
     public Set<DependencySource> decidePipelines() {
-        logger.info("Starting Bazel graph probing for target: {}", target);
+        logger.debug("Starting Bazel graph probing for target: {}", target);
         Set<DependencySource> enabled = new HashSet<>();
 
         boolean mavenInstall = false;
@@ -77,7 +86,7 @@ public class BazelGraphProber {
         }
         // Probe for http_archive and related rules
         try {
-            HttpFamilyProber httpProber = new HttpFamilyProber(bazel, mode, queryOptions);
+            HttpFamilyProber httpProber = new HttpFamilyProber(bazel, mode, queryOptions, bazelVersion);
             httpFamily = httpProber.detect(target);
         } catch (Exception e) {
             logger.debug("HTTP_ARCHIVE family probe failed: {}", e.getMessage());
@@ -87,7 +96,7 @@ public class BazelGraphProber {
         if (mavenInstall) {
             enabled.add(DependencySource.MAVEN_INSTALL);
             if (mavenJar) {
-                logger.info("Both MAVEN_INSTALL and MAVEN_JAR indicated; preferring MAVEN_INSTALL and suppressing MAVEN_JAR.");
+                logger.debug("Both MAVEN_INSTALL and MAVEN_JAR indicated; preferring MAVEN_INSTALL and suppressing MAVEN_JAR.");
             }
         } else if (mavenJar) {
             enabled.add(DependencySource.MAVEN_JAR);

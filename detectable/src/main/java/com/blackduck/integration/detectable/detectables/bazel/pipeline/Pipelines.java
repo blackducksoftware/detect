@@ -14,6 +14,7 @@ import com.blackduck.integration.detectable.detectables.bazel.pipeline.xpathquer
 import com.blackduck.integration.detectable.detectables.bazel.query.BazelQueryBuilder;
 import com.blackduck.integration.detectable.detectables.bazel.query.OutputFormat;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelEnvironmentAnalyzer;
+import com.blackduck.integration.detectable.detectables.bazel.v2.BazelVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,7 +75,7 @@ public class Pipelines {
         // Auto-detect mode for legacy callers and delegate to the mode-aware constructor.
         BazelEnvironmentAnalyzer analyzer = new BazelEnvironmentAnalyzer(bazelCommandExecutor);
         BazelEnvironmentAnalyzer.Mode mode = analyzer.getMode();
-        this.init(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, mode);
+        this.init(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, mode, null);
     }
 
     /**
@@ -87,7 +88,22 @@ public class Pipelines {
         HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser,
         BazelEnvironmentAnalyzer.Mode mode
     ) {
-        this.init(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, mode);
+        this.init(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, mode, null);
+    }
+
+    /**
+     * Constructs pipelines for the specified Bazel mode and version.
+     * When bazelVersion is 7.1+, the bzlmod HTTP pipeline uses batched show_repo for better performance.
+     */
+    public Pipelines(
+        BazelCommandExecutor bazelCommandExecutor,
+        BazelVariableSubstitutor bazelVariableSubstitutor,
+        ExternalIdFactory externalIdFactory,
+        HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser,
+        BazelEnvironmentAnalyzer.Mode mode,
+        BazelVersion bazelVersion
+    ) {
+        this.init(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, mode, bazelVersion);
     }
 
     /**
@@ -99,7 +115,8 @@ public class Pipelines {
                       BazelVariableSubstitutor bazelVariableSubstitutor,
                       ExternalIdFactory externalIdFactory,
                       HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser,
-                      BazelEnvironmentAnalyzer.Mode mode) {
+                      BazelEnvironmentAnalyzer.Mode mode,
+                      BazelVersion bazelVersion) {
         // Pipeline for maven_jar: extracts Maven dependencies from maven_jar rules
         // Use cquery here because we want action-graph / build-time labels (what Bazel will actually use at build time).
         // cquery gives higher fidelity for detecting repo labels like @repo//jar:jar and avoids some declared-but-not-built noise.
@@ -188,7 +205,8 @@ public class Pipelines {
             .parseReplaceInEachLine("^", PREPEND_AT)
             // Add intermediate step to run 'bazel mod show_repo' for each repo
             .addIntermediateStep(new IntermediateStepExecuteShowRepoHeuristic(
-                bazelCommandExecutor
+                bazelCommandExecutor,
+                bazelVersion
             ))
             .parseShowRepoToUrlCandidates()
             .transformGithubUrl()
