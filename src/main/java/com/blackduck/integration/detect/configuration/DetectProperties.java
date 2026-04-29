@@ -1252,16 +1252,16 @@ public class DetectProperties {
                     .setCategory(DetectCategory.Advanced)
                     .build();
 
-    public static final NullablePathProperty DETECT_MAVEN_BUILDLESS_SETTINGS_FILE_PATH =
-            NullablePathProperty.newBuilder("detect.maven.buildless.settings.file.path")
-                    .setInfo("Maven Buildless Settings File Path", DetectPropertyFromVersion.VERSION_11_1_0)
+    public static final NullablePathProperty DETECT_MAVEN_BUILDLESS_M2_PATH =
+            NullablePathProperty.newBuilder("detect.maven.buildless.m2.path")
+                    .setInfo("Maven Buildless M2 Directory Path", DetectPropertyFromVersion.VERSION_11_1_0)
                     .setHelp(
-                            "Path to a Maven settings.xml file to parse for mirror configurations.",
-                            "If not specified, defaults to ~/.m2/settings.xml. The parser extracts <mirror> and <server> elements to configure corporate repository managers. CLI mirror properties (detect.maven.buildless.mirror.*) take precedence over settings.xml configuration. If the specified file does not exist, extraction will fail."
+                            "Path to a custom Maven .m2 directory.",
+                            "Used to locate settings.xml (for mirror and proxy configuration) at {m2Path}/settings.xml and the local repository (for JAR downloads during shaded dependency detection) at {m2Path}/repository. If not specified, defaults to ~/.m2. If the specified directory does not exist, the features that depend on it will fall back to default behavior."
                     )
                     .setGroups(DetectGroup.MAVEN, DetectGroup.SOURCE_SCAN)
                     .setCategory(DetectCategory.Advanced)
-                    .setExample("/path/to/custom/settings.xml")
+                    .setExample("/custom/path/.m2")
                     .build();
 
     public static final BooleanProperty DETECT_NOTICES_REPORT =

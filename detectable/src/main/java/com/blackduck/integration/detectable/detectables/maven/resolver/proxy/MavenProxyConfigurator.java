@@ -376,6 +376,32 @@ public class MavenProxyConfigurator {
     }
 
     /**
+     * Configures only Java system proxy properties without an Aether SessionBuilder.
+     *
+     * <p>Use this for HTTP operations outside Aether (e.g., JAR downloads via HttpURLConnection)
+     * that still need to respect the proxy. Pairs with {@link #restoreOriginalProxyProperties()}.
+     */
+    public void configureSystemProxyProperties() {
+        try {
+            if (isProxyAlreadyConfigured()) {
+                logger.info("System proxy already configured with matching values ({}:{}). No changes needed.",
+                    proxyConfig.getHost(), proxyConfig.getPort());
+                return;
+            }
+
+            logger.info("Configuring system proxy properties for JAR downloads: {}:{}", proxyConfig.getHost(), proxyConfig.getPort());
+            saveOriginalProxyProperties();
+            String nonProxyHostsPattern = buildNonProxyHostsPattern();
+            setJavaSystemProxyProperties(nonProxyHostsPattern);
+            logger.info("System proxy properties set for HTTP/HTTPS JAR downloads");
+        } catch (Exception e) {
+            logger.warn("Failed to configure system proxy properties ({}:{}). Continuing without proxy. Error: {}",
+                proxyConfig.getHost(), proxyConfig.getPort(), e.getMessage());
+            logger.debug("System proxy configuration exception details:", e);
+        }
+    }
+
+    /**
      * Restores the original Java system proxy properties that were saved by
      * {@link #saveOriginalProxyProperties()}.
      *

@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -357,6 +358,18 @@ public class MavenModuleProcessor {
         if (testResult != null) {
             MavenParseResult testParseResult = context.getGraphParser().parse(testResult);
             testGraph = context.getGraphTransformer().transform(testParseResult);
+        }
+
+        // Shaded dependency detection for this module
+        if (context.isIncludeShadedDependencies() && context.getShadedDependencyScanner() != null) {
+            context.getShadedDependencyScanner().processShading(
+                compileResult, testResult,
+                compileGraph, testGraph,
+                context.getLocalRepoPath(), context.getDownloadDir(),
+                moduleProject.getRepositories() != null ? moduleProject.getRepositories() : Collections.emptyList(),
+                context.getShadedSubTreeCache(),
+                context.getMavenResolverOptions()
+            );
         }
 
         // Create and add CodeLocations

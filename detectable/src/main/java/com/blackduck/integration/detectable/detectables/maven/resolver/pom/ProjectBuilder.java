@@ -1,9 +1,11 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver.pom;
 
 import com.blackduck.integration.detectable.detectables.maven.resolver.mavendownload.MavenDownloader;
+import com.blackduck.integration.detectable.detectables.maven.resolver.mirror.MavenMirrorConfig;
 import com.blackduck.integration.detectable.detectables.maven.resolver.model.*;
 import com.blackduck.integration.detectable.detectables.maven.resolver.model.pomxml.*;
 import com.blackduck.integration.detectable.detectables.maven.resolver.pom.property.PropertiesResolverProvider;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,6 +13,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -49,17 +52,35 @@ public class ProjectBuilder {
     private final PropertiesResolverProvider propertiesResolverProvider;
     private final Map<String, PartialMavenProject> pomCache = new HashMap<>();
     private final Path downloadDir;
+    private final List<MavenMirrorConfig> mirrorConfigs;
 
     private final BomProcessor bomProcessor;
     private final ModelMerger modelMerger;
     private final DependencyConverter dependencyConverter;
 
+    /**
+     * Constructs a ProjectBuilder without mirror support. Equivalent to passing an empty mirror list.
+     * Retained for callers that have not yet been threaded for mirror configuration.
+     */
     public ProjectBuilder(Path downloadDir) {
+        this(downloadDir, Collections.emptyList());
+    }
+
+    /**
+     * Constructs a mirror-aware ProjectBuilder. Mirror configurations are propagated to the
+     * internal {@link BomProcessor} and to every {@link MavenDownloader} created during parent
+     * POM resolution, so that all bootstrap-phase HTTP traffic honors corporate mirror settings.
+     *
+     * @param downloadDir   directory where downloaded parent/BOM POMs will be written
+     * @param mirrorConfigs mirror configurations to apply; may be null or empty for none
+     */
+    public ProjectBuilder(Path downloadDir, @Nullable List<MavenMirrorConfig> mirrorConfigs) {
         this.pomParser = new PomParser();
         this.propertiesResolverProvider = new PropertiesResolverProvider(null, System::getenv);
         this.downloadDir = downloadDir;
+        this.mirrorConfigs = (mirrorConfigs != null) ? mirrorConfigs : Collections.emptyList();
 
-        this.bomProcessor = new BomProcessor(downloadDir, this, propertiesResolverProvider);
+        this.bomProcessor = new BomProcessor(downloadDir, this, propertiesResolverProvider, this.mirrorConfigs);
         this.modelMerger = new ModelMerger();
         this.dependencyConverter = new DependencyConverter(propertiesResolverProvider);
     }
@@ -143,7 +164,7 @@ public class ProjectBuilder {
         String pomFilePath,
         Set<String> identifiedParents
     ) throws Exception {
-        MavenDownloader mavenDownloader = new MavenDownloader(pomFileInfo.getRepositories(), downloadDir);
+        MavenDownloader mavenDownloader = new MavenDownloader(pomFileInfo.getRepositories(), downloadDir, mirrorConfigs);
         File parentPomFile = mavenDownloader.downloadPom(parentCoords);
 
         if (parentPomFile == null) {

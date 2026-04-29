@@ -1,5 +1,6 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver;
 
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 
@@ -53,26 +54,37 @@ public class MavenResolverOptions {
     // Configuration for including test-scope dependencies
     private final boolean includeTestScope;
 
+    // Shaded dependency detection
+    private final boolean includeShadedDependencies;
+
+    // Custom .m2/repository path for JAR downloads (derived from detect.maven.buildless.m2.path)
+    @Nullable
+    private final Path jarRepositoryPath;
+
     /**
-     * Constructs MavenResolverOptions with external repositories, proxy, and mirror configuration.
+     * Constructs MavenResolverOptions with all configuration.
      *
-     * @param externalRepositories  List of external Maven repository URLs to use during resolution.
-     *                              These are used alongside repositories declared in pom.xml.
-     * @param proxyConfig           Proxy configuration (may be null if no proxy is configured).
-     * @param mirrorConfigurations  List of mirror configurations for corporate repository managers.
-     *                              May be empty if no mirrors are configured.
-     * @param includeTestScope      Whether to include test-scope dependencies in resolution.
+     * @param externalRepositories      List of external Maven repository URLs to use during resolution.
+     * @param proxyConfig               Proxy configuration (may be null if no proxy is configured).
+     * @param mirrorConfigurations      List of mirror configurations for corporate repository managers.
+     * @param includeTestScope          Whether to include test-scope dependencies in resolution.
+     * @param includeShadedDependencies Whether to detect shaded dependencies inside JARs.
+     * @param jarRepositoryPath         Custom .m2/repository path for JAR downloads (may be null).
      */
     public MavenResolverOptions(
         List<String> externalRepositories,
         @Nullable MavenProxyConfig proxyConfig,
         List<MavenMirrorConfig> mirrorConfigurations,
-        boolean includeTestScope
+        boolean includeTestScope,
+        boolean includeShadedDependencies,
+        @Nullable Path jarRepositoryPath
     ) {
         this.externalRepositories = externalRepositories != null ? externalRepositories : Collections.emptyList();
         this.proxyConfig = proxyConfig;
         this.mirrorConfigurations = mirrorConfigurations != null ? mirrorConfigurations : Collections.emptyList();
         this.includeTestScope = includeTestScope;
+        this.includeShadedDependencies = includeShadedDependencies;
+        this.jarRepositoryPath = jarRepositoryPath;
     }
 
     /**
@@ -137,6 +149,25 @@ public class MavenResolverOptions {
      */
     public boolean getIncludeTestScope() {
         return includeTestScope;
+    }
+
+    /**
+     * Returns whether shaded dependency detection is enabled.
+     *
+     * @return true if shaded dependencies should be detected inside JARs
+     */
+    public boolean isIncludeShadedDependenciesEnabled() {
+        return includeShadedDependencies;
+    }
+
+    /**
+     * Returns the custom .m2/repository path for JAR downloads.
+     *
+     * @return custom repository path, or null if not configured
+     */
+    @Nullable
+    public Path getJarRepositoryPath() {
+        return jarRepositoryPath;
     }
 }
 

@@ -1,6 +1,9 @@
 package com.blackduck.integration.detectable.detectables.maven.resolver.module;
 
+import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
+import com.blackduck.integration.detectable.detectables.maven.resolver.MavenResolverOptions;
+import com.blackduck.integration.detectable.detectables.maven.resolver.ShadedDependencyScanner;
 import com.blackduck.integration.detectable.detectables.maven.resolver.graph.MavenGraphParser;
 import com.blackduck.integration.detectable.detectables.maven.resolver.graph.MavenGraphTransformer;
 import com.blackduck.integration.detectable.detectables.maven.resolver.output.CodeLocationFactory;
@@ -8,11 +11,14 @@ import com.blackduck.integration.detectable.detectables.maven.resolver.output.De
 import com.blackduck.integration.detectable.detectables.maven.resolver.output.MavenCoordinateFormatter;
 import com.blackduck.integration.detectable.detectables.maven.resolver.pom.ProjectBuilder;
 import com.blackduck.integration.detectable.detectables.maven.resolver.resolution.MavenDependencyResolver;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -55,6 +61,15 @@ public class MavenModuleProcessingContext {
     private final String compileScope;
     private final String testScope;
 
+    // Shaded dependency detection
+    @Nullable
+    private final ShadedDependencyScanner shadedDependencyScanner;
+    private final Map<String, DependencyGraph> shadedSubTreeCache;
+    private final boolean includeShadedDependencies;
+    @Nullable
+    private final MavenResolverOptions mavenResolverOptions;
+    private final Path downloadDir;
+
     /**
      * Private constructor - use Builder to create instances.
      */
@@ -72,7 +87,12 @@ public class MavenModuleProcessingContext {
         List<CodeLocation> codeLocations,
         Set<String> visitedModulePomPaths,
         String compileScope,
-        String testScope
+        String testScope,
+        @Nullable ShadedDependencyScanner shadedDependencyScanner,
+        Map<String, DependencyGraph> shadedSubTreeCache,
+        boolean includeShadedDependencies,
+        @Nullable MavenResolverOptions mavenResolverOptions,
+        Path downloadDir
     ) {
         this.projectBuilder = projectBuilder;
         this.dependencyResolver = dependencyResolver;
@@ -88,6 +108,11 @@ public class MavenModuleProcessingContext {
         this.visitedModulePomPaths = visitedModulePomPaths;
         this.compileScope = compileScope;
         this.testScope = testScope;
+        this.shadedDependencyScanner = shadedDependencyScanner;
+        this.shadedSubTreeCache = shadedSubTreeCache;
+        this.includeShadedDependencies = includeShadedDependencies;
+        this.mavenResolverOptions = mavenResolverOptions;
+        this.downloadDir = downloadDir;
     }
 
     // Getters
@@ -105,6 +130,13 @@ public class MavenModuleProcessingContext {
     public Set<String> getVisitedModulePomPaths() { return visitedModulePomPaths; }
     public String getCompileScope() { return compileScope; }
     public String getTestScope() { return testScope; }
+    @Nullable
+    public ShadedDependencyScanner getShadedDependencyScanner() { return shadedDependencyScanner; }
+    public Map<String, DependencyGraph> getShadedSubTreeCache() { return shadedSubTreeCache; }
+    public boolean isIncludeShadedDependencies() { return includeShadedDependencies; }
+    @Nullable
+    public MavenResolverOptions getMavenResolverOptions() { return mavenResolverOptions; }
+    public Path getDownloadDir() { return downloadDir; }
 
     /**
      * Builder for creating MavenModuleProcessingContext instances.
@@ -123,6 +155,11 @@ public class MavenModuleProcessingContext {
         private List<CodeLocation> codeLocations;
         private String compileScope = "compile";
         private String testScope = "test";
+        private ShadedDependencyScanner shadedDependencyScanner;
+        private Map<String, DependencyGraph> shadedSubTreeCache;
+        private boolean includeShadedDependencies;
+        private MavenResolverOptions mavenResolverOptions;
+        private Path downloadDir;
 
         public Builder projectBuilder(ProjectBuilder projectBuilder) {
             this.projectBuilder = projectBuilder;
@@ -189,8 +226,32 @@ public class MavenModuleProcessingContext {
             return this;
         }
 
+        public Builder shadedDependencyScanner(ShadedDependencyScanner shadedDependencyScanner) {
+            this.shadedDependencyScanner = shadedDependencyScanner;
+            return this;
+        }
+
+        public Builder shadedSubTreeCache(Map<String, DependencyGraph> shadedSubTreeCache) {
+            this.shadedSubTreeCache = shadedSubTreeCache;
+            return this;
+        }
+
+        public Builder includeShadedDependencies(boolean includeShadedDependencies) {
+            this.includeShadedDependencies = includeShadedDependencies;
+            return this;
+        }
+
+        public Builder mavenResolverOptions(MavenResolverOptions mavenResolverOptions) {
+            this.mavenResolverOptions = mavenResolverOptions;
+            return this;
+        }
+
+        public Builder downloadDir(Path downloadDir) {
+            this.downloadDir = downloadDir;
+            return this;
+        }
+
         public MavenModuleProcessingContext build() {
-            // Initialize visitedModulePomPaths if needed
             Set<String> visitedPaths = new HashSet<>();
 
             return new MavenModuleProcessingContext(
@@ -207,7 +268,12 @@ public class MavenModuleProcessingContext {
                 codeLocations,
                 visitedPaths,
                 compileScope,
-                testScope
+                testScope,
+                shadedDependencyScanner,
+                shadedSubTreeCache != null ? shadedSubTreeCache : new HashMap<>(),
+                includeShadedDependencies,
+                mavenResolverOptions,
+                downloadDir
             );
         }
     }
