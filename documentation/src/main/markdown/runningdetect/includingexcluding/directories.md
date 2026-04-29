@@ -61,11 +61,11 @@ you must configure the following properties:
 
 ### Wildcards in relative path patterns
 
-When excluding paths, if you want to use wildcards in an exclusion pattern for a relative path, there are some confusing rules.
+When excluding paths, if you want to use wildcards in an exclusion pattern for a relative path, there are some important rules.
 
 Name-wildcards ('*'), unless appearing in a pattern that begins with path-wildcards ('**'), will only work if the pattern refers to one-level below the source path root.  
 
-To exclude /projectRoot/folder while scanning /projectRoot as an example with the following structure:
+To exclude /projectRoot/folder while scanning /projectRoot with the following structure:
 **Examples with a folder structure containing:**
 <ul>
 <li><codeph>/projectRoot/folder</codeph></li>
