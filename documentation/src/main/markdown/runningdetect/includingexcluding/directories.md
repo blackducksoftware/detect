@@ -26,9 +26,10 @@ This property accepts explicit paths relative to the project's root, or you may 
 
 <note type="important">
 When specifying path patterns:
-
-<li>* Use '*' to match 0 or more directory name characters (will not cross directory boundaries).</li>
-<li>* Use '**' to match 0 or more directory path characters (will cross directory boundaries).</li>
+	<ul>
+		<li>* Use '*' to match 0 or more directory name characters (will not cross directory boundaries).</li>
+		<li>* Use '**' to match 0 or more directory path characters (will cross directory boundaries).</li>
+	</ul>
 </note>
 
 **Examples with a folder structure containing:**
@@ -84,7 +85,9 @@ To exclude /projectRoot/folder while scanning /projectRoot with the following st
 | `**/*older/*` | `/projectRoot/folder/dir`          | `/projectRoot/folder`                              |
 
 
-With the search depth set to 10 via the following properties: `--detect.detector.search.depth=10` and `--detect.excluded.directories.search.depth=10`
+With the search depth set to 10 via the following properties:
+`--detect.detector.search.depth=10`
+`--detect.excluded.directories.search.depth=10`
 
 | Value         | Excluded at depth 10                            | Not Excluded |
 |---------------|-------------------------------------------------|--------------|
