@@ -19,8 +19,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class UVBuildExtractor {
+
+    private static final String TREE_COMMAND = "tree";
+    private static final String NO_DEDUPE_FLAG = "--no-dedupe";
+    private static final String ALL_GROUPS_FLAG = "--all-groups";
+    private static final String GROUP_FLAG = "--group";
+    private static final String NO_GROUP_FLAG = "--no-group";
+    private static final String ALL_GROUPS_KEYWORD = "all";
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final DetectableExecutableRunner executableRunner;
@@ -36,31 +44,7 @@ public class UVBuildExtractor {
 
     public Extraction extract(ExecutableTarget uvExe, UVDetectorOptions uvDetectorOptions, UVTomlParser uvTomlParser) throws ExecutableRunnerException {
         try {
-            List<String> arguments = new ArrayList<>();
-            arguments.add("tree");
-            arguments.add("--no-dedupe");
-
-            Set<String> includedGroups = uvDetectorOptions.getIncludedDependencyGroups();
-            Set<String> excludedGroups = uvDetectorOptions.getExcludedDependencyGroups();
-
-            if (!includedGroups.isEmpty()) {
-                boolean includeAll = includedGroups.stream().anyMatch(group -> group.equalsIgnoreCase("all"));
-                if (includeAll) {
-                    arguments.add("--all-groups");
-                } else {
-                    for (String group : includedGroups) {
-                        if (!excludedGroups.contains(group)) {
-                            arguments.add("--group");
-                            arguments.add(group);
-                        }
-                    }
-                }
-            }
-
-            for (String group : excludedGroups) {
-                arguments.add("--no-group");
-                arguments.add(group);
-            }
+            List<String> arguments = buildTreeCommandArguments(uvDetectorOptions);
 
             // run uv tree command
             ExecutableOutput executableOutput = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(sourceDirectory, uvExe, arguments));
@@ -77,5 +61,43 @@ public class UVBuildExtractor {
         } catch (Exception e) {
             return new Extraction.Builder().exception(e).build();
         }
+    }
+
+    private List<String> buildTreeCommandArguments(UVDetectorOptions uvDetectorOptions) {
+        List<String> arguments = new ArrayList<>();
+        arguments.add(TREE_COMMAND);
+        arguments.add(NO_DEDUPE_FLAG);
+
+        Set<String> includedGroups = uvDetectorOptions.getIncludedDependencyGroups();
+        Set<String> excludedGroups = uvDetectorOptions.getExcludedDependencyGroups();
+
+        Set<String> conflictingGroups = includedGroups.stream()
+                .filter(excludedGroups::contains)
+                .collect(Collectors.toSet());
+
+        if (!conflictingGroups.isEmpty()) {
+            logger.warn("Dependency groups {} appear in both included and excluded sets. They will be excluded.", conflictingGroups);
+        }
+
+        if (!includedGroups.isEmpty()) {
+            boolean includeAll = includedGroups.stream().anyMatch(group -> group.equalsIgnoreCase(ALL_GROUPS_KEYWORD));
+            if (includeAll) {
+                arguments.add(ALL_GROUPS_FLAG);
+            } else {
+                for (String group : includedGroups) {
+                    if (!excludedGroups.contains(group)) {
+                        arguments.add(GROUP_FLAG);
+                        arguments.add(group);
+                    }
+                }
+            }
+        }
+
+        for (String group : excludedGroups) {
+            arguments.add(NO_GROUP_FLAG);
+            arguments.add(group);
+        }
+
+        return arguments;
     }
 }
