@@ -162,7 +162,8 @@ public class IntelligentModeStepRunner {
             );
             codeLocationAccumulator.addNonWaitableCodeLocations(signatureScannerCodeLocationResult.getWaitableCodeLocationData().getSuccessfulCodeLocationNames());
             codeLocationAccumulator.addNonWaitableCodeLocations(signatureScannerCodeLocationResult.getNonWaitableCodeLocationData());
-            codeLocationAccumulator.incrementCodeLocationCountForTool(DetectTool.SIGNATURE_SCAN, 1);
+            int scanPathCount = signatureScannerCodeLocationResult.getWaitableCodeLocationData().getSuccessfulCodeLocationNames().size();
+            codeLocationAccumulator.incrementCodeLocationCountForTool(DetectTool.SIGNATURE_SCAN, scanPathCount);
         });
 
         stepHelper.runToolIfIncluded(DetectTool.BINARY_SCAN, "Binary Scanner", () -> {           
