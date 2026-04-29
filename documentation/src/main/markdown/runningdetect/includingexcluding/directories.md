@@ -7,31 +7,43 @@ Use [detect.excluded.directories](../../properties/configuration/paths.md#detect
 This property accepts explicit directory names, as well as globbing-style wildcard patterns. 
 See [configuring property wildcards](../../configuring/propertywildcards.md) for more info.
 
-**Examples**
+**Examples with a folder structure containing:**
+<ul>
+<li><codeph>/projectRoot/foobar</codeph></li>
+<li><codeph>/projectRoot/bar</codeph></li>
+<li><codeph>/projectRoot/foo/bar</codeph></li>
+<li><codeph>/projectRoot/foo/bar2</codeph></li>
+</ul>
 
-| Value   | Excluded                                      | Not Excluded          |
-|---------|-----------------------------------------------|-----------------------|
-| `foo`   | `/projectRoot/foo`                            | `/projectRoot/foobar` |
-| `*bar`  | `/projectRoot/bar` & `/projectRoot/foobar`    | NA                    |
+| Value   | Excluded at default exclusion depth                               | Not Excluded                                |
+|---------|-------------------------------------------------------------------|---------------------------------------------|
+| `foo`   | `/projectRoot/foo`                                                | `/projectRoot/foobar` & `/projectRoot/bar`  |
+| `*bar`  | `/projectRoot/foo/bar`, `/projectRoot/bar` & `/projectRoot/foobar`| `/projectRoot/foo/bar2`                     |
 
 ## Exclude directories by path
 
 This property accepts explicit paths relative to the project's root, or you may specify glob-style patterns.
-
 
 When specifying path patterns:
 
 * Use '*' to match 0 or more directory name characters (will not cross directory boundaries).
 * Use '**' to match 0 or more directory path characters (will cross directory boundaries).
 
-**Examples**
+**Examples with a folder structure containing:**
+<ul>
+<li><codeph>/projectRoot/foobar</codeph></li>
+<li><codeph>/projectRoot/bar</codeph></li>
+<li><codeph>/projectRoot/foo/bar</codeph></li>
+<li><codeph>/projectRoot/dir/foo</codeph></li>
+<li><codeph>/projectRoot/dir/foo/bar</codeph></li>
+<li><codeph>/projectRoot/directory/bar</codeph></li>
+</ul>
 
-| Value              | Excluded                                                        | Not Excluded                    | Notes                                        |
-|--------------------|-----------------------------------------------------------------|---------------------------------|----------------------------------------------|
-| `foo/bar`          | `/projectRoot/foo/bar`                                          | `/projectRoot/dir/foo/bar`      | Excludes matching directories at any depth   |
-| `**/foo/bar/`      | `/projectRoot/dir/foo/bar` & `/projectRoot/directory/foo/bar`  | NA                              | Excludes only the project-root directory     |
-| `/foo/bar`       | NA                                                              | NA                              | Does not match and should not be used        |
-| `/projectRoot/d*/*`| `/projectRoot/dir/foo` & `/projectRoot/directory/bar`          | NA                              | Excludes matching directories                |
+| Value               | Excluded at default exclusion depth                                                | Not Excluded                                                                                 |
+|---------------------|------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
+| `foo/bar`           | `/projectRoot/foo/bar` `/projectRoot/dir/foo/bar`                                  | `/projectRoot/bar` `/projectRoot/dir/foo` `/projectRoot/foobar` `/projectRoot/directory/bar` |
+| `**/foo/bar/`       | `/projectRoot/foo/bar` `/projectRoot/dir/foo/bar` `/projectRoot/directory/foo/bar` | `/projectRoot/foobar` `/projectRoot/bar` `/projectRoot/directory/bar`                        |
+| `/projectRoot/d*/*` | `/projectRoot/dir/foo` `/projectRoot/dir/foo/bar` `/projectRoot/directory/bar`     | `/projectRoot/foobar` `/projectRoot/bar` `/projectRoot/foo/bar`                              |
 
 [detect_product_short] uses FileSystem::getPatchMatcher and its glob syntax implementation to exclude path patterns. See [Oracle FileSystem::getPatchMatcher](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/nio/file/FileSystem.html#getPathMatcher(java.lang.String)) for more info.
 
@@ -53,16 +65,21 @@ When excluding paths, if you want to use wildcards in an exclusion pattern for a
 
 Name-wildcards ('*'), unless appearing in a pattern that begins with path-wildcards ('**'), will only work if the pattern refers to one-level below the source path root.  
 
-To exclude /project/folder while scanning /project as an example:
+To exclude /projectRoot/folder while scanning /projectRoot as an example with the following structure:
+**Examples with a folder structure containing:**
+<ul>
+<li><codeph>/projectRoot/folder</codeph></li>
+<li><codeph>/projectRoot/folder/dir</codeph></li>
+</ul>
 
-| Value         | Excluded               | Not Excluded                                  |
-|---------------|------------------------|-----------------------------------------------|
-| `*older`      | `/project/folder`      | NA                                            |
-| `f*`          | `/project/folder`      | NA                                            |
-| `folder/*`    | NA                     | `/project/folder` or `/project/folder/dir`    |
-| `**folder/*`  | `/project/folder/dir`  | `/project/folder`                             |
-| `*older/*`    | NA                     | `/project/folder` or `/project/folder/dir`    |
-| `**/*older/*` | `/project/folder/dir`  | `/project/folder`                             |
+| Value         | Excluded                   | Not Excluded                                       |
+|---------------|----------------------------|----------------------------------------------------|
+| `*older`      | `/projectRoot/folder`      | NA                                                 |
+| `f*`          | `/projectRoot/folder`      | NA                                                 |
+| `folder/*`    | NA                         | `/projectRoot/folder` or `/projectRoot/folder/dir` |
+| `**folder/*`  | `/projectRoot/folder/dir`  | `/projectRoot/folder`                              |
+| `*older/*`    | NA                         | `/projectRoot/folder` or `/projectRoot/folder/dir` |
+| `**/*older/*` | `/projectRoot/folder/dir`  | `/projectRoot/folder`                              |
 
 ## Related properties:
 
