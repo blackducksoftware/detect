@@ -104,9 +104,10 @@ public class UVLockParser {
         //parse dev dependencies, it is a toml table with group name as the key and dependencies as list, check if that group is not included then do not parse them
         if(dependencyTable.contains(DEV_DEPENDENCIES_KEY)) {
             TomlTable devDependencyTable = dependencyTable.getTable(DEV_DEPENDENCIES_KEY);
-            for(List<String> key: devDependencyTable.keyPathSet()) {
-                if(!uvDetectorOptions.getExcludedDependencyGroups().contains(key.get(0))) {
-                    TomlArray devDependencyArray = devDependencyTable.getArray(key.get(0));
+            for(List<String> keyPath: devDependencyTable.keyPathSet()) {
+                String groupName = keyPath.get(0);
+                if(!uvDetectorOptions.getExcludedDependencyGroups().contains(groupName)) {
+                    TomlArray devDependencyArray = devDependencyTable.getArray(groupName);
                     parseTransitiveDependencies(devDependencyArray, dependencyName);
                 }
             }
@@ -115,9 +116,10 @@ public class UVLockParser {
         //parse optional dependencies which is part of uv tree command, it can be excluded by users using uv configuration
         if(dependencyTable.contains(OPTIONAL_DEPENDENCIES_KEY)) {
             TomlTable optionalDependencyTable = dependencyTable.getTable(OPTIONAL_DEPENDENCIES_KEY);
-            for(List<String> key: optionalDependencyTable.keyPathSet()) {
-                if(!uvDetectorOptions.getExcludedDependencyGroups().contains(key.get(0))) {
-                    TomlArray optionalDependencyArray = optionalDependencyTable.getArray(key.get(0));
+            for(List<String> keyPath: optionalDependencyTable.keyPathSet()) {
+                String groupName = keyPath.get(0);
+                if(!uvDetectorOptions.getExcludedDependencyGroups().contains(groupName)) {
+                    TomlArray optionalDependencyArray = optionalDependencyTable.getArray(groupName);
                     parseTransitiveDependencies(optionalDependencyArray, dependencyName);
                 }
             }
@@ -171,7 +173,7 @@ public class UVLockParser {
             addDependencyToGraph(currentDependency,parentDependency);
             loopOverDependencies(transitiveDependency, currentDependency, uvDetectorOptions);
         } else {
-            logger.warn("There seems to be a mismatch in the uv.lock. A dependency could not be found: " + transitiveDependency);
+            logger.warn("There seems to be a mismatch in the uv.lock. A dependency could not be found: {}", transitiveDependency);
         }
     }
 
