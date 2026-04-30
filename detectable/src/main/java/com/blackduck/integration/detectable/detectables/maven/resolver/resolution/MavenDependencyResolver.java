@@ -58,7 +58,33 @@ import org.slf4j.LoggerFactory;
 public class MavenDependencyResolver {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    private final RepositorySystem repositorySystem;
+    /**
+     * Shared, lazily-initialized RepositorySystem.
+     *
+     * <p>{@link RepositorySystem} is explicitly documented as thread-safe and is intended to be
+     * created once and shared across all resolution sessions. Initialization via a static block
+     * guarantees it happens exactly once per JVM regardless of how many
+     * {@link MavenDependencyResolver} instances are created.
+     *
+     * <p>The anonymous {@link RepositorySystemSupplier} subclass is necessary only to register the
+     * {@link JdkTransporterFactory} — the supplier's own {@code getChecksumExtractor()} and
+     * {@code getPathProcessor()} helpers are only callable on an instance, so we use an anonymous
+     * subclass defined right here to access them during static initialization.
+     */
+    private static final RepositorySystem SHARED_REPOSITORY_SYSTEM;
+
+    static {
+        SHARED_REPOSITORY_SYSTEM = new RepositorySystemSupplier() {
+            @Override
+            protected Map<String, TransporterFactory> createTransporterFactories() {
+                Map<String, TransporterFactory> result = super.createTransporterFactories();
+                result.put(
+                    JdkTransporterFactory.NAME,
+                    new JdkTransporterFactory(getChecksumExtractor(), getPathProcessor()));
+                return result;
+            }
+        }.get();
+    }
 
     // Proxy configurator — handles all forward-proxy configuration.
     // Null if no proxy is configured.
@@ -71,15 +97,23 @@ public class MavenDependencyResolver {
     private final MavenMirrorConfigurator mirrorConfigurator;
 
     /**
-     * No-arg constructor: no proxy or mirrors configured.
-     * Kept for backward compatibility with existing callers (e.g. module processor).
+     * When {@code true}, per-repository diagnostic probes are fired between Attempt 1 and Attempt 2
+     * of the 3-tier collection strategy. These probes are expensive (one full traversal per repo)
+     * and should only be enabled when actively debugging a resolution failure.
+     */
+    private final boolean diagnosticsEnabled;
+
+    /**
+     * No-arg constructor: no proxy, no mirrors, diagnostics disabled.
+     * Kept for backward compatibility with existing callers.
      */
     public MavenDependencyResolver() {
-        this(null, Collections.emptyList());
+        this(null, Collections.emptyList(), false);
     }
 
     /**
      * Constructs a resolver with forward-proxy and corporate mirror support.
+     * Diagnostics default to {@code false}.
      *
      * @param proxyConfig          Proxy configuration (may be null if no proxy is configured).
      * @param mirrorConfigurations List of mirror configurations for corporate repository managers.
@@ -87,6 +121,21 @@ public class MavenDependencyResolver {
     public MavenDependencyResolver(
         @Nullable MavenProxyConfig proxyConfig,
         List<MavenMirrorConfig> mirrorConfigurations
+    ) {
+        this(proxyConfig, mirrorConfigurations, false);
+    }
+
+    /**
+     * Constructs a resolver with full configuration including diagnostics control.
+     *
+     * @param proxyConfig          Proxy configuration (may be null if no proxy is configured).
+     * @param mirrorConfigurations List of mirror configurations for corporate repository managers.
+     * @param diagnosticsEnabled   {@code true} to run per-repo diagnostic probes on union failure.
+     */
+    public MavenDependencyResolver(
+        @Nullable MavenProxyConfig proxyConfig,
+        List<MavenMirrorConfig> mirrorConfigurations,
+        boolean diagnosticsEnabled
     ) {
         // Create MavenProxyConfigurator only if proxy config is provided
         if (proxyConfig != null) {
@@ -103,16 +152,11 @@ public class MavenDependencyResolver {
             this.mirrorConfigurator = null;
         }
 
-        this.repositorySystem = new RepositorySystemSupplier() {
-            @Override
-            protected Map<String, TransporterFactory> createTransporterFactories() {
-                Map<String, TransporterFactory> result = super.createTransporterFactories();
-                result.put(
-                        JdkTransporterFactory.NAME,
-                        new JdkTransporterFactory(getChecksumExtractor(), getPathProcessor()));
-                return result;
-            }
-        }.get();
+        this.diagnosticsEnabled = diagnosticsEnabled;
+        if (diagnosticsEnabled) {
+            logger.info("Diagnostic probes enabled — per-repo Aether collection will run on union failure.");
+        }
+        // RepositorySystem is shared — no per-instance initialization needed.
     }
 
     /**
@@ -178,7 +222,7 @@ public class MavenDependencyResolver {
 
         // Step 1: Create session with appropriate scope configuration
         boolean includeTestScope = "test".equalsIgnoreCase(rootScope);
-        SessionFactory sessionFactory = new SessionFactory(repositorySystem, proxyConfigurator, mirrorConfigurator);
+        SessionFactory sessionFactory = new SessionFactory(SHARED_REPOSITORY_SYSTEM, proxyConfigurator, mirrorConfigurator);
         RepositorySystemSession session = sessionFactory.createSession(localRepoDir, includeTestScope);
 
         // Step 2: Map dependencies (applying managed versions when needed)
@@ -196,7 +240,7 @@ public class MavenDependencyResolver {
         CollectRequest request = createCollectRequest(mavenProject, rootScope, dependencies, managedDependencies);
 
         // Step 5: Execute 3-tier collection strategy (union → declared → central)
-        CollectionStrategy strategy = new CollectionStrategy(repositorySystem);
+        CollectionStrategy strategy = new CollectionStrategy(SHARED_REPOSITORY_SYSTEM, diagnosticsEnabled);
         return strategy.executeCollection(request, session, repositories, pomFile);
     }
 

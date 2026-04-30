@@ -62,6 +62,26 @@ public class MavenResolverOptions {
     private final Path jarRepositoryPath;
 
     /**
+     * When {@code true}, the 3-tier collection strategy will run one full Aether
+     * {@code collectDependencies()} call per declared repository between Attempt 1 and Attempt 2
+     * in order to identify which specific repository caused a union-collection failure.
+     *
+     * <p><strong>Default: {@code false}.</strong>
+     * Wired from: {@code detect.maven.buildless.diagnostics.enabled}
+     */
+    private final boolean diagnosticsEnabled;
+
+    /**
+     * Number of threads used for parallel module processing.
+     *
+     * <p>Each thread handles one Maven module (POM build + Aether resolution).
+     * Defaults to the number of available processors. Set to {@code 1} to disable parallelism.
+     *
+     * <p>Wired from: {@code detect.maven.buildless.module.threads}
+     */
+    private final int moduleThreadCount;
+
+    /**
      * Constructs MavenResolverOptions with all configuration.
      *
      * @param externalRepositories      List of external Maven repository URLs to use during resolution.
@@ -79,12 +99,48 @@ public class MavenResolverOptions {
         boolean includeShadedDependencies,
         @Nullable Path jarRepositoryPath
     ) {
+        this(externalRepositories, proxyConfig, mirrorConfigurations, includeTestScope,
+             includeShadedDependencies, jarRepositoryPath, false);
+    }
+
+    public MavenResolverOptions(
+        List<String> externalRepositories,
+        @Nullable MavenProxyConfig proxyConfig,
+        List<MavenMirrorConfig> mirrorConfigurations,
+        boolean includeTestScope,
+        boolean includeShadedDependencies,
+        @Nullable Path jarRepositoryPath,
+        boolean diagnosticsEnabled
+    ) {
+        this(externalRepositories, proxyConfig, mirrorConfigurations, includeTestScope,
+             includeShadedDependencies, jarRepositoryPath, diagnosticsEnabled,
+             Runtime.getRuntime().availableProcessors());
+    }
+
+    /**
+     * Full constructor.
+     *
+     * @param moduleThreadCount number of threads for parallel module processing;
+     *                          use {@code 1} to disable parallelism
+     */
+    public MavenResolverOptions(
+        List<String> externalRepositories,
+        @Nullable MavenProxyConfig proxyConfig,
+        List<MavenMirrorConfig> mirrorConfigurations,
+        boolean includeTestScope,
+        boolean includeShadedDependencies,
+        @Nullable Path jarRepositoryPath,
+        boolean diagnosticsEnabled,
+        int moduleThreadCount
+    ) {
         this.externalRepositories = externalRepositories != null ? externalRepositories : Collections.emptyList();
         this.proxyConfig = proxyConfig;
         this.mirrorConfigurations = mirrorConfigurations != null ? mirrorConfigurations : Collections.emptyList();
         this.includeTestScope = includeTestScope;
         this.includeShadedDependencies = includeShadedDependencies;
         this.jarRepositoryPath = jarRepositoryPath;
+        this.diagnosticsEnabled = diagnosticsEnabled;
+        this.moduleThreadCount = moduleThreadCount > 0 ? moduleThreadCount : Runtime.getRuntime().availableProcessors();
     }
 
     /**
@@ -168,6 +224,27 @@ public class MavenResolverOptions {
     @Nullable
     public Path getJarRepositoryPath() {
         return jarRepositoryPath;
+    }
+
+    /**
+     * Returns whether per-repository diagnostic probes are enabled.
+     *
+     * <p>When {@code true}, a full Aether collection is fired against each declared repository
+     * in isolation between Attempt 1 (union) and Attempt 2 (declared) of the 3-tier strategy.
+     * This is expensive — default is {@code false}.
+     *
+     * @return {@code true} if diagnostic probes should run on union failure
+     */
+    public boolean isDiagnosticsEnabled() {
+        return diagnosticsEnabled;
+    }
+
+    /**
+     * Returns the number of threads to use for parallel module processing.
+     * Always {@code >= 1}.
+     */
+    public int getModuleThreadCount() {
+        return moduleThreadCount;
     }
 }
 

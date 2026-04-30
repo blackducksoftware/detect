@@ -46,17 +46,16 @@ public class MavenProxyConfigurator {
 
     private final MavenProxyConfig proxyConfig;
 
-    // Store original system properties so we can restore them later
-    // These are captured when configureProxy() is called
-    private String originalHttpProxyHost;
-    private String originalHttpProxyPort;
-    private String originalHttpProxyUser;
-    private String originalHttpProxyPassword;
-    private String originalHttpsProxyHost;
-    private String originalHttpsProxyPort;
-    private String originalHttpsProxyUser;
-    private String originalHttpsProxyPassword;
-    private String originalHttpNonProxyHosts;
+    /**
+     * Per-thread snapshot of the JVM proxy system properties captured just before we overwrite them.
+     *
+     * <p>Using a {@code ThreadLocal} instead of plain instance fields makes
+     * {@link #configureProxy}/{@link #restoreOriginalProxyProperties} safe to call from
+     * concurrent threads (e.g., parallel compile + test Aether collections sharing the same
+     * {@code MavenProxyConfigurator} instance). Each thread saves and restores its own
+     * independent snapshot without interfering with other threads.
+     */
+    private final ThreadLocal<java.util.Map<String, String>> savedProxyProperties = new ThreadLocal<>();
 
     /**
      * Constructs a proxy configurator with the given proxy configuration.
@@ -347,28 +346,26 @@ public class MavenProxyConfigurator {
     }
 
     /**
-     * Saves the current Java system proxy properties so they can be restored later.
+     * Saves the current Java system proxy properties into a per-thread snapshot so they can be
+     * restored after Maven resolution completes.
      *
-     * <p>This method captures the current state of all proxy-related system properties
-     * BEFORE we modify them. This allows us to restore the original state after Maven
-     * resolution completes, preventing our temporary proxy settings from leaking to
-     * other parts of the application.
-     *
-     * <p>This method is called automatically by {@link #configureProxy(SessionBuilder)}.
+     * <p>Using a {@code ThreadLocal} means concurrent callers on different threads each save and
+     * restore their own independent snapshot, preventing one thread's restore from clobbering
+     * another thread's saved state (e.g., parallel compile + test Aether collections).
      */
     private void saveOriginalProxyProperties() {
         try {
-            originalHttpProxyHost = System.getProperty(HTTP_PROXY_HOST);
-            originalHttpProxyPort = System.getProperty(HTTP_PROXY_PORT);
-            originalHttpProxyUser = System.getProperty(HTTP_PROXY_USER);
-            originalHttpProxyPassword = System.getProperty(HTTP_PROXY_PASSWORD);
-            originalHttpsProxyHost = System.getProperty(HTTPS_PROXY_HOST);
-            originalHttpsProxyPort = System.getProperty(HTTPS_PROXY_PORT);
-            originalHttpsProxyUser = System.getProperty(HTTPS_PROXY_USER);
-            originalHttpsProxyPassword = System.getProperty(HTTPS_PROXY_PASSWORD);
-            originalHttpNonProxyHosts = System.getProperty(HTTP_NON_PROXY_HOSTS);
-
-            logger.debug("Original proxy properties saved for later restoration");
+            java.util.Map<String, String> snapshot = new java.util.HashMap<>();
+            for (String key : new String[]{
+                HTTP_PROXY_HOST, HTTP_PROXY_PORT, HTTP_PROXY_USER, HTTP_PROXY_PASSWORD,
+                HTTPS_PROXY_HOST, HTTPS_PROXY_PORT, HTTPS_PROXY_USER, HTTPS_PROXY_PASSWORD,
+                HTTP_NON_PROXY_HOSTS
+            }) {
+                // null entry means "property was absent" — restoreProperty handles both cases
+                snapshot.put(key, System.getProperty(key));
+            }
+            savedProxyProperties.set(snapshot);
+            logger.debug("Original proxy properties saved for later restoration (thread: {})", Thread.currentThread().getName());
         } catch (Exception e) {
             logger.warn("Failed to save original proxy properties. Restoration may not work correctly. Error: {}", e.getMessage());
             logger.debug("Save exception details:", e);
@@ -402,44 +399,30 @@ public class MavenProxyConfigurator {
     }
 
     /**
-     * Restores the original Java system proxy properties that were saved by
+     * Restores the Java system proxy properties from the per-thread snapshot saved by
      * {@link #saveOriginalProxyProperties()}.
      *
-     * <p><strong>MUST</strong> be called after Maven dependency resolution completes
-     * to ensure other HTTP calls in the application are not affected by Maven's
-     * proxy configuration.
+     * <p><strong>MUST</strong> be called after Maven dependency resolution completes.
+     * Safe to call from multiple concurrent threads — each thread restores only its own snapshot.
+     * Always call in a {@code finally} block.
      *
-     * <p><strong>Best Practice:</strong> Call this in a finally block to guarantee
-     * cleanup happens even if Maven resolution fails:
-     * <pre>{@code
-     * MavenProxyConfigurator proxyConfig = new MavenProxyConfigurator(...);
-     * try {
-     *     proxyConfig.configureProxy(sessionBuilder);
-     *     // ... do Maven resolution ...
-     * } finally {
-     *     proxyConfig.restoreOriginalProxyProperties();
-     * }
-     * }</pre>
-     *
-     * <p>If restoration fails (which is rare), a warning is logged but no exception
-     * is thrown to prevent disrupting the main Maven resolution flow.
+     * <p>If no snapshot exists for the current thread (because {@link #configureProxy} took the
+     * already-configured fast-path), this method is a no-op.
      */
     public void restoreOriginalProxyProperties() {
         try {
-            restoreProperty(HTTP_PROXY_HOST, originalHttpProxyHost);
-            restoreProperty(HTTP_PROXY_PORT, originalHttpProxyPort);
-            restoreProperty(HTTP_PROXY_USER, originalHttpProxyUser);
-            restoreProperty(HTTP_PROXY_PASSWORD, originalHttpProxyPassword);
-            restoreProperty(HTTPS_PROXY_HOST, originalHttpsProxyHost);
-            restoreProperty(HTTPS_PROXY_PORT, originalHttpsProxyPort);
-            restoreProperty(HTTPS_PROXY_USER, originalHttpsProxyUser);
-            restoreProperty(HTTPS_PROXY_PASSWORD, originalHttpsProxyPassword);
-            restoreProperty(HTTP_NON_PROXY_HOSTS, originalHttpNonProxyHosts);
-
-            logger.debug("Original Java system proxy properties restored successfully");
+            java.util.Map<String, String> snapshot = savedProxyProperties.get();
+            if (snapshot == null) {
+                // configureProxy was skipped (already-configured fast-path) — nothing to restore
+                logger.debug("No proxy snapshot to restore for thread: {}", Thread.currentThread().getName());
+                return;
+            }
+            for (java.util.Map.Entry<String, String> entry : snapshot.entrySet()) {
+                restoreProperty(entry.getKey(), entry.getValue());
+            }
+            savedProxyProperties.remove(); // Prevent ThreadLocal memory leak
+            logger.debug("Original Java system proxy properties restored successfully (thread: {})", Thread.currentThread().getName());
         } catch (Exception e) {
-            // Don't throw - just log the warning and continue
-            // Better to have a leaked proxy config than to crash the entire scan
             logger.warn("Failed to restore original proxy properties. System proxy settings may be modified. Error: {}", e.getMessage());
             logger.debug("Restore exception details:", e);
         }

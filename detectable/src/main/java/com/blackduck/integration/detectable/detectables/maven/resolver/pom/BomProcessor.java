@@ -54,6 +54,12 @@ class BomProcessor {
     private final PropertiesResolverProvider propertiesResolverProvider;
     private final List<MavenMirrorConfig> mirrorConfigs;
 
+    /**
+     * Single shared {@link MavenDownloader} for all BOM downloads within this processor's lifetime.
+     * Repositories are supplied per-call so the instance itself holds no per-BOM state.
+     */
+    private final MavenDownloader bomDownloader;
+
     BomProcessor(Path downloadDir, ProjectBuilder projectBuilder, PropertiesResolverProvider propertiesResolverProvider) {
         this(downloadDir, projectBuilder, propertiesResolverProvider, Collections.emptyList());
     }
@@ -64,13 +70,21 @@ class BomProcessor {
         this.projectBuilder = projectBuilder;
         this.propertiesResolverProvider = propertiesResolverProvider;
         this.mirrorConfigs = (mirrorConfigs != null) ? mirrorConfigs : Collections.emptyList();
+        // Single shared downloader — repos supplied per downloadPom() call.
+        this.bomDownloader = new MavenDownloader(downloadDir, this.mirrorConfigs);
     }
 
     PartialMavenProject processBoms(String pomFilePath, PartialMavenProject partialModel, Set<String> visitedBoms) throws Exception {
         int iteration = 0;
 
         while (iteration < MAX_BOM_ITERATIONS) {
-            List<PomXmlDependency> unprocessedBoms = findUnprocessedBoms(partialModel, visitedBoms);
+            // Build the combined property map ONCE per iteration. This map does not change
+            // within a single iteration pass — individual BOM merges are staged and only
+            // visible in the next iteration — so it is safe to share across all BOM lookups
+            // in this pass and avoids O(BOMs) redundant map constructions.
+            Map<String, String> iterationProps = buildCombinedProperties(partialModel);
+
+            List<PomXmlDependency> unprocessedBoms = findUnprocessedBoms(partialModel, visitedBoms, iterationProps);
 
             if (unprocessedBoms.isEmpty()) {
                 logger.debug("No more unprocessed BOMs found after {} iteration(s)", iteration);
@@ -80,7 +94,7 @@ class BomProcessor {
             logger.info("BOM processing iteration {}: found {} unprocessed BOM(s) in {}",
                 iteration + 1, unprocessedBoms.size(), pomFilePath);
 
-            processUnprocessedBoms(unprocessedBoms, partialModel, visitedBoms, iteration);
+            processUnprocessedBoms(unprocessedBoms, partialModel, visitedBoms, iteration, iterationProps);
             iteration++;
         }
 
@@ -95,10 +109,12 @@ class BomProcessor {
 
     /**
      * Finds all unprocessed BOMs (scope=import entries not yet visited).
+     *
+     * @param partialModel  the current partial model
+     * @param visitedBoms   set of already-processed BOM keys
+     * @param currentProps  pre-built combined properties map for this iteration (avoids rebuilding per BOM)
      */
-    private List<PomXmlDependency> findUnprocessedBoms(PartialMavenProject partialModel, Set<String> visitedBoms) {
-        final Map<String, String> currentProps = buildCombinedProperties(partialModel);
-
+    private List<PomXmlDependency> findUnprocessedBoms(PartialMavenProject partialModel, Set<String> visitedBoms, Map<String, String> currentProps) {
         return partialModel.getDependencyManagement().stream()
             .filter(dep -> SCOPE_IMPORT.equals(dep.getScope()))
             .filter(dep -> !visitedBoms.contains(buildBomKey(dep, currentProps)))
@@ -112,23 +128,25 @@ class BomProcessor {
         List<PomXmlDependency> unprocessedBoms,
         PartialMavenProject partialModel,
         Set<String> visitedBoms,
-        int iteration
+        int iteration,
+        Map<String, String> iterationProps
     ) throws Exception {
         for (PomXmlDependency bom : unprocessedBoms) {
-            processSingleBom(bom, partialModel, visitedBoms, iteration);
+            processSingleBom(bom, partialModel, visitedBoms, iteration, iterationProps);
         }
     }
 
     /**
      * Processes a single BOM: resolves coordinates, downloads, merges, and removes from depMgmt.
+     * Accepts the pre-built iteration props map to avoid rebuilding it per BOM.
      */
     private void processSingleBom(
         PomXmlDependency bom,
         PartialMavenProject partialModel,
         Set<String> visitedBoms,
-        int iteration
+        int iteration,
+        Map<String, String> combinedProps
     ) throws Exception {
-        final Map<String, String> combinedProps = buildCombinedProperties(partialModel);
         ResolvedBomCoordinates resolved = resolveAndMarkBomAsVisited(bom, combinedProps, visitedBoms, iteration);
 
         PartialMavenProject bomProject = downloadAndBuildBomProject(resolved.coordinates, partialModel);
@@ -167,8 +185,8 @@ class BomProcessor {
         JavaCoordinates bomCoords,
         PartialMavenProject partialModel
     ) throws Exception {
-        MavenDownloader mavenDownloader = new MavenDownloader(partialModel.getRepositories(), downloadDir, mirrorConfigs);
-        File bomPomFile = mavenDownloader.downloadPom(bomCoords);
+        // Reuse the single shared downloader — supply this BOM's repos per-call.
+        File bomPomFile = bomDownloader.downloadPom(bomCoords, partialModel.getRepositories());
 
         if (bomPomFile == null) {
             logger.warn("Could not download BOM POM for coordinates: {}:{}:{}",

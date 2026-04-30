@@ -15,23 +15,27 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Context object encapsulating all state and dependencies needed for Maven module processing.
  *
- * <p>This context object groups together the various components and state needed to process
- * multi-module Maven projects, reducing parameter count and making the processing logic cleaner.
- *
- * <p><strong>Design Pattern:</strong> Context Object pattern - reduces parameter proliferation
- * by bundling related parameters into a cohesive object.
- *
- * <p><strong>Thread Safety:</strong> This class is NOT thread-safe. The mutable collections
- * (codeLocations, visitedModulePomPaths) are shared across recursive calls.
+ * <p><strong>Thread Safety (prerequisites for parallel module processing):</strong>
+ * <ul>
+ *   <li>{@code codeLocations} — {@code synchronizedList}, safe for concurrent {@code add()}</li>
+ *   <li>{@code visitedModulePomPaths} — {@link ConcurrentHashMap} key-set, safe for concurrent contains/add</li>
+ *   <li>{@code shadedSubTreeCache} — {@link ConcurrentHashMap}, safe for concurrent reads/writes</li>
+ *   <li>{@code treeWriteFutures} — {@code synchronizedList}, safe for concurrent {@code add()}</li>
+ *   <li>{@code ProjectBuilder.pomCache} — {@link ConcurrentHashMap}</li>
+ *   <li>{@code PropertiesResolverProvider.parentProperties} — {@link ThreadLocal}</li>
+ * </ul>
  */
 public class MavenModuleProcessingContext {
 
@@ -56,6 +60,13 @@ public class MavenModuleProcessingContext {
     // Shared mutable state (modified during processing)
     private final List<CodeLocation> codeLocations;
     private final Set<String> visitedModulePomPaths;
+
+    /**
+     * Futures for async dependency-tree file writes (#4 optimization).
+     * Modules add their write futures here; the caller joins all futures before returning
+     * from {@code extract()} to guarantee tree files are flushed before the JVM exits.
+     */
+    private final List<CompletableFuture<Void>> treeWriteFutures;
 
     // Maven scope constants
     private final String compileScope;
@@ -92,7 +103,8 @@ public class MavenModuleProcessingContext {
         Map<String, DependencyGraph> shadedSubTreeCache,
         boolean includeShadedDependencies,
         @Nullable MavenResolverOptions mavenResolverOptions,
-        Path downloadDir
+        Path downloadDir,
+        List<CompletableFuture<Void>> treeWriteFutures
     ) {
         this.projectBuilder = projectBuilder;
         this.dependencyResolver = dependencyResolver;
@@ -113,6 +125,7 @@ public class MavenModuleProcessingContext {
         this.includeShadedDependencies = includeShadedDependencies;
         this.mavenResolverOptions = mavenResolverOptions;
         this.downloadDir = downloadDir;
+        this.treeWriteFutures = treeWriteFutures;
     }
 
     // Getters
@@ -137,6 +150,7 @@ public class MavenModuleProcessingContext {
     @Nullable
     public MavenResolverOptions getMavenResolverOptions() { return mavenResolverOptions; }
     public Path getDownloadDir() { return downloadDir; }
+    public List<CompletableFuture<Void>> getTreeWriteFutures() { return treeWriteFutures; }
 
     /**
      * Builder for creating MavenModuleProcessingContext instances.
@@ -252,7 +266,9 @@ public class MavenModuleProcessingContext {
         }
 
         public MavenModuleProcessingContext build() {
-            Set<String> visitedPaths = new HashSet<>();
+            // ConcurrentHashMap key-set — safe for concurrent contains/add when parallel
+            // module processing is enabled.
+            Set<String> visitedPaths = ConcurrentHashMap.newKeySet();
 
             return new MavenModuleProcessingContext(
                 projectBuilder,
@@ -270,10 +286,13 @@ public class MavenModuleProcessingContext {
                 compileScope,
                 testScope,
                 shadedDependencyScanner,
-                shadedSubTreeCache != null ? shadedSubTreeCache : new HashMap<>(),
+                // ConcurrentHashMap — safe for concurrent shaded sub-tree cache access.
+                shadedSubTreeCache != null ? shadedSubTreeCache : new ConcurrentHashMap<>(),
                 includeShadedDependencies,
                 mavenResolverOptions,
-                downloadDir
+                downloadDir,
+                // synchronizedList — safe for concurrent future additions.
+                Collections.synchronizedList(new ArrayList<>())
             );
         }
     }

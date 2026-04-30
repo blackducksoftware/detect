@@ -95,15 +95,23 @@ public class MavenDownloader {
     }
 
     /**
-     * Constructs a downloader without mirror support. Equivalent to passing an empty mirror list.
-     * Retained for callers that have not yet been threaded for mirror configuration.
+     * Constructs a stateless downloader with no pre-configured repositories.
+     *
+     * <p>Use with {@link #downloadPom(JavaCoordinates, List)} to supply the repository list
+     * per-call. This allows a single {@code MavenDownloader} instance to be shared across many
+     * POM download operations (e.g., as a field of {@code ProjectBuilder} or {@code BomProcessor})
+     * without paying the object-allocation cost on every parent/BOM lookup.
+     *
+     * @param downloadDir   directory where downloaded POMs will be written
+     * @param mirrorConfigs mirror configurations to apply; may be null or empty for none
      */
-    public MavenDownloader(List<JavaRepository> remoteRepositories, Path downloadDir) {
-        this(remoteRepositories, downloadDir, Collections.emptyList());
+    public MavenDownloader(Path downloadDir, @Nullable List<MavenMirrorConfig> mirrorConfigs) {
+        this(Collections.emptyList(), downloadDir, mirrorConfigs);
     }
 
     /**
-     * Constructs a mirror-aware downloader.
+     * Constructs a mirror-aware downloader with pre-configured repositories.
+     * Central is added automatically if not already present.
      *
      * @param remoteRepositories repositories declared in the POM being processed; may be null
      * @param downloadDir        directory where downloaded POMs will be written
@@ -127,7 +135,41 @@ public class MavenDownloader {
         }
     }
 
+    /**
+     * Downloads the POM for the given coordinates using the pre-configured repository list
+     * (supplied at construction time).
+     */
     public File downloadPom(JavaCoordinates coordinates) {
+        return doDownloadPom(coordinates, this.remoteRepositories);
+    }
+
+    /**
+     * Downloads the POM for the given coordinates using the supplied repository list.
+     *
+     * <p>This overload is preferred when the caller holds a single long-lived
+     * {@code MavenDownloader} instance (constructed via
+     * {@link #MavenDownloader(Path, List)}) and provides repositories per-call,
+     * avoiding repeated object allocation. Maven Central is added automatically
+     * if not already present in {@code repositories}.
+     *
+     * @param coordinates  the artifact to download
+     * @param repositories the POM-declared repositories to search; may be null or empty
+     * @return the downloaded POM file, or {@code null} if not found in any repository
+     */
+    public File downloadPom(JavaCoordinates coordinates, List<JavaRepository> repositories) {
+        // Build an effective repo list with Central guaranteed — same logic as the constructor.
+        List<JavaRepository> effectiveRepos = new ArrayList<>(repositories != null ? repositories : Collections.emptyList());
+        boolean centralMissing = effectiveRepos.stream()
+            .noneMatch(repo -> MAVEN_CENTRAL.getUrl().equalsIgnoreCase(repo.getUrl()));
+        if (centralMissing) {
+            logger.debug("Maven Central not in provided repository list. Adding it for POM download.");
+            effectiveRepos.add(MAVEN_CENTRAL);
+        }
+        return doDownloadPom(coordinates, effectiveRepos);
+    }
+
+    /** Core download implementation — uses the given {@code repos} list, not the instance field. */
+    private File doDownloadPom(JavaCoordinates coordinates, List<JavaRepository> repos) {
         DownloadContext ctx = new DownloadContext(coordinates, downloadDir);
         logger.info("Attempting to mavendownload POM for coordinates: {}:{}:{} into mavendownload dir: {}",
             ctx.groupId, ctx.artifactId, ctx.version, downloadDir.toAbsolutePath());
@@ -141,7 +183,7 @@ public class MavenDownloader {
 
         ensureParentDirectoriesExist(ctx.newDestination);
 
-        File result = tryDownloadFromRepositories(ctx);
+        File result = tryDownloadFromRepositories(ctx, repos);
         if (result != null) {
             return result;
         }
@@ -153,7 +195,7 @@ public class MavenDownloader {
             }
         }
 
-        logDownloadFailure(ctx);
+        logDownloadFailure(ctx, repos);
         return null;
     }
 
@@ -188,8 +230,8 @@ public class MavenDownloader {
         }
     }
 
-    private File tryDownloadFromRepositories(DownloadContext ctx) {
-        for (JavaRepository repository : remoteRepositories) {
+    private File tryDownloadFromRepositories(DownloadContext ctx, List<JavaRepository> repos) {
+        for (JavaRepository repository : repos) {
             if (!isRepositoryApplicable(repository, ctx.isSnapshot, ctx.version)) {
                 continue;
             }
@@ -387,8 +429,8 @@ public class MavenDownloader {
         return new EffectiveRepository(normalizeBaseUrl(repository.getUrl()), null, null, null, repository);
     }
 
-    private void logDownloadFailure(DownloadContext ctx) {
-        String triedRepos = remoteRepositories.stream()
+    private void logDownloadFailure(DownloadContext ctx, List<JavaRepository> repos) {
+        String triedRepos = repos.stream()
             .map(repo -> resolveEffectiveRepository(repo).describe())
             .collect(Collectors.joining(", "));
 

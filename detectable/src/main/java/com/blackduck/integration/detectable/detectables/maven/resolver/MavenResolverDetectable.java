@@ -35,9 +35,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ForkJoinPool;
 
 /**
  * Maven Resolver Detectable - Detects and resolves Maven project dependencies.
@@ -222,10 +224,12 @@ public class MavenResolverDetectable extends Detectable {
             logger.info("  Managed dependencies found: {}", mavenProject.getDependencyManagement().size());
 
             // PHASE 2: Resolve dependencies using Aether for both compile and test scopes
-            // Create the resolver with proxy and mirror configurations.
-            // Proxy configuration comes from the global blackduck.proxy.* settings.
-            // Mirror configuration comes from CLI flags or settings.xml (handled by DetectableOptionFactory).
+            // Create the resolver with proxy, mirror, and diagnostics configurations.
+            // NOTE: The same ProjectBuilder instance is passed into MavenModuleProcessingContext
+            // below, so its internal pomCache (parent POM chain) is shared across all modules —
+            // no module will re-download a parent POM that was already fetched for the root.
             MavenDependencyResolver dependencyResolver;
+            boolean diagnosticsEnabled = mavenResolverOptions != null && mavenResolverOptions.isDiagnosticsEnabled();
             if (mavenResolverOptions != null && (mavenResolverOptions.hasProxyConfiguration() || mavenResolverOptions.hasMirrorConfiguration())) {
                 if (mavenResolverOptions.hasProxyConfiguration()) {
                     logger.info("Creating Maven dependency resolver with proxy configuration");
@@ -236,10 +240,11 @@ public class MavenResolverDetectable extends Detectable {
                 }
                 dependencyResolver = new MavenDependencyResolver(
                     mavenResolverOptions.getProxyConfig(),
-                    mavenResolverOptions.getMirrorConfigurations()
+                    mavenResolverOptions.getMirrorConfigurations(),
+                    diagnosticsEnabled
                 );
             } else {
-                dependencyResolver = new MavenDependencyResolver();
+                dependencyResolver = new MavenDependencyResolver(null, Collections.emptyList(), diagnosticsEnabled);
             }
             Path localRepoPath = extractionEnvironment.getOutputDirectory().toPath().resolve(LOCAL_REPO_DIR_NAME);
 
@@ -253,26 +258,57 @@ public class MavenResolverDetectable extends Detectable {
             // Read test scope configuration from options (configurable via detect.maven.include.test.scope)
             boolean includeTestScope = mavenResolverOptions != null ? mavenResolverOptions.getIncludeTestScope() : true;
 
-            // Perform compile-phase dependency collection
-            CollectResult collectResultCompile = dependencyResolver.resolveDependencies(
-                pomFile, mavenProject, localRepoPath.toFile(), MAVEN_SCOPE_COMPILE, externalRepositories);
+            // Perform compile and test dependency collection concurrently.
+            // They are completely independent operations on immutable data and can safely run
+            // in parallel. The MavenProxyConfigurator uses ThreadLocal storage so concurrent
+            // calls do not interfere with each other's proxy save/restore cycle.
+            final MavenDependencyResolver resolverRef = dependencyResolver;
+            final List<String> externalReposRef = externalRepositories;
+            final Path localRepoRef = localRepoPath;
 
-            // Perform test-phase collection (only if enabled)
-            CollectResult collectResultTest = null;
-            if (includeTestScope) {
-                collectResultTest = dependencyResolver.resolveDependencies(
-                    pomFile, mavenProject, localRepoPath.toFile(), MAVEN_SCOPE_TEST, externalRepositories);
-            }
+            CompletableFuture<CollectResult> compileFuture = CompletableFuture.supplyAsync(() -> {
+                try {
+                    return resolverRef.resolveDependencies(
+                        pomFile, mavenProject, localRepoRef.toFile(), MAVEN_SCOPE_COMPILE, externalReposRef);
+                } catch (Exception e) {
+                    throw new RuntimeException("Compile-scope dependency collection failed: " + e.getMessage(), e);
+                }
+            });
 
-            // PHASE 3: Write dependency trees to files for human inspection and debugging
-            File dependencyTreeCompileFile = new File(extractionEnvironment.getOutputDirectory(),
+            CompletableFuture<CollectResult> testFuture = includeTestScope
+                ? CompletableFuture.supplyAsync(() -> {
+                    try {
+                        return resolverRef.resolveDependencies(
+                            pomFile, mavenProject, localRepoRef.toFile(), MAVEN_SCOPE_TEST, externalReposRef);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Test-scope dependency collection failed: " + e.getMessage(), e);
+                    }
+                })
+                : CompletableFuture.completedFuture(null);
+
+            CollectResult collectResultCompile = compileFuture.join();
+            CollectResult collectResultTest = testFuture.join();
+
+            // PHASE 3: Write root dependency trees asynchronously (#4 optimization).
+            // These are debug artifacts — fire-and-forget, collected and joined before extract() returns.
+            List<CompletableFuture<Void>> treeWriteFutures = new ArrayList<>();
+
+            final CollectResult finalCompileResult = collectResultCompile;
+            final File compileTreeFile = new File(extractionEnvironment.getOutputDirectory(),
                 DEPENDENCY_TREE_FILE_PREFIX + COMPILE_SCOPE_SUFFIX + TREE_FILE_EXTENSION);
-            treeWriter.writeDependencyTree(collectResultCompile, dependencyTreeCompileFile, MAVEN_SCOPE_COMPILE);
+            treeWriteFutures.add(CompletableFuture.runAsync(() -> {
+                try { treeWriter.writeDependencyTree(finalCompileResult, compileTreeFile, MAVEN_SCOPE_COMPILE); }
+                catch (Exception e) { logger.debug("Failed writing compile tree file: {}", e.getMessage()); }
+            }));
 
             if (includeTestScope && collectResultTest != null) {
-                File dependencyTreeTestFile = new File(extractionEnvironment.getOutputDirectory(),
+                final CollectResult finalTestResult = collectResultTest;
+                final File testTreeFile = new File(extractionEnvironment.getOutputDirectory(),
                     DEPENDENCY_TREE_FILE_PREFIX + TEST_SCOPE_SUFFIX + TREE_FILE_EXTENSION);
-                treeWriter.writeDependencyTree(collectResultTest, dependencyTreeTestFile, MAVEN_SCOPE_TEST);
+                treeWriteFutures.add(CompletableFuture.runAsync(() -> {
+                    try { treeWriter.writeDependencyTree(finalTestResult, testTreeFile, MAVEN_SCOPE_TEST); }
+                    catch (Exception e) { logger.debug("Failed writing test tree file: {}", e.getMessage()); }
+                }));
             }
 
             // PHASE 4: Transform Aether dependency graphs to Black Duck's internal DependencyGraph format
@@ -289,7 +325,8 @@ public class MavenResolverDetectable extends Detectable {
             }
 
             // PHASE 4.5: Shaded dependency detection
-            Map<String, DependencyGraph> shadedSubTreeCache = new HashMap<>();
+            // ConcurrentHashMap so the cache is safe if shaded scanner is later parallelized.
+            Map<String, DependencyGraph> shadedSubTreeCache = new ConcurrentHashMap<>();
             ShadedDependencyScanner shadedDependencyScanner = null;
             if (mavenResolverOptions != null && mavenResolverOptions.isIncludeShadedDependenciesEnabled()) {
                 logger.info("Shaded dependency detection is enabled. Initializing scanner...");
@@ -307,9 +344,9 @@ public class MavenResolverDetectable extends Detectable {
                 );
             }
 
-            // Create CodeLocations for the root project (both compile and test scopes)
-            // CodeLocation ties together the dependency graph, external ID, and source path
-            List<CodeLocation> codeLocations = new ArrayList<>();
+            // Create CodeLocations for the root project (both compile and test scopes).
+            // synchronizedList — safe for concurrent add() from module-processing threads.
+            List<CodeLocation> codeLocations = Collections.synchronizedList(new ArrayList<>());
             File rootSourcePath = pomFile.getParentFile();
 
             codeLocations.add(codeLocationFactory.createCodeLocation(
@@ -321,12 +358,19 @@ public class MavenResolverDetectable extends Detectable {
                     dependencyGraphTest, mavenProject, rootSourcePath));
             }
 
-            // PHASE 5: Process multi-module Maven projects recursively
-            // Each module gets its own code locations for compile and test scopes
+            // PHASE 5: Process multi-module Maven projects recursively in parallel.
+            // Each sibling module is submitted to a dedicated ForkJoinPool so the JVM's
+            // common pool is not exhausted. ForkJoinPool uses work-stealing, which prevents
+            // deadlock when nested-module futures are submitted from within a running future.
             if (mavenProject.getModules() != null && !mavenProject.getModules().isEmpty()) {
                 File rootDir = pomFile.getParentFile();
 
-                // Build processing context with all dependencies
+                int moduleThreads = mavenResolverOptions != null
+                    ? mavenResolverOptions.getModuleThreadCount()
+                    : Runtime.getRuntime().availableProcessors();
+                logger.info("Processing {} top-level module(s) with {} thread(s).",
+                    mavenProject.getModules().size(), moduleThreads);
+
                 MavenModuleProcessingContext context = new MavenModuleProcessingContext.Builder()
                     .projectBuilder(projectBuilder)
                     .dependencyResolver(dependencyResolver)
@@ -348,9 +392,23 @@ public class MavenResolverDetectable extends Detectable {
                     .downloadDir(downloadDir)
                     .build();
 
-                // Process all modules using the module processor
-                moduleProcessor.processModules(mavenProject.getModules(), rootDir, context);
+                // NOTE on pomCache race: two threads may concurrently build the same parent POM
+                // (e.g., a shared spring-boot-parent) if neither has cached it yet. The second
+                // result simply overwrites the first with an identical value — no correctness
+                // issue, just occasional redundant network work. Acceptable for this release.
+                ForkJoinPool moduleExecutor = new ForkJoinPool(moduleThreads);
+                try {
+                    moduleProcessor.processModules(mavenProject.getModules(), rootDir, context, moduleExecutor);
+                } finally {
+                    moduleExecutor.shutdown();
+                }
+
+                treeWriteFutures.addAll(context.getTreeWriteFutures());
             }
+
+            // Join all async tree-write futures before returning — guarantees debug files are
+            // flushed to disk even though they were written off the critical path.
+            CompletableFuture.allOf(treeWriteFutures.toArray(new CompletableFuture[0])).join();
 
             // PHASE 6: Return all collected code locations (root + all modules)
             String projectName = mavenProject.getCoordinates().getGroupId() + ":" + mavenProject.getCoordinates().getArtifactId();

@@ -14,11 +14,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -50,9 +50,26 @@ public class ProjectBuilder {
 
     private final PomParser pomParser;
     private final PropertiesResolverProvider propertiesResolverProvider;
-    private final Map<String, PartialMavenProject> pomCache = new HashMap<>();
+    /**
+     * Cache of already-built partial models, keyed by canonical POM file path.
+     *
+     * <p>Using {@link ConcurrentHashMap} so the cache is safe to read from multiple threads
+     * once parallel module processing is enabled. All writes go through
+     * {@link ModelMerger#finalizeEffectiveModel} which calls {@code put()} — a thread-safe
+     * operation on {@link ConcurrentHashMap}.
+     */
+    private final Map<String, PartialMavenProject> pomCache = new ConcurrentHashMap<>();
     private final Path downloadDir;
     private final List<MavenMirrorConfig> mirrorConfigs;
+
+    /**
+     * Single shared {@link MavenDownloader} instance for all parent-POM downloads within this
+     * {@link ProjectBuilder}'s lifetime. Repositories are supplied per-call via
+     * {@link MavenDownloader#downloadPom(JavaCoordinates, List)}, so the instance itself is
+     * stateless and safe to reuse across sequential (and, once thread-safety fixes are complete,
+     * concurrent) calls.
+     */
+    private final MavenDownloader pomDownloader;
 
     private final BomProcessor bomProcessor;
     private final ModelMerger modelMerger;
@@ -79,6 +96,9 @@ public class ProjectBuilder {
         this.propertiesResolverProvider = new PropertiesResolverProvider(null, System::getenv);
         this.downloadDir = downloadDir;
         this.mirrorConfigs = (mirrorConfigs != null) ? mirrorConfigs : Collections.emptyList();
+
+        // Single downloader shared across all parent-POM downloads — repos supplied per-call.
+        this.pomDownloader = new MavenDownloader(downloadDir, this.mirrorConfigs);
 
         this.bomProcessor = new BomProcessor(downloadDir, this, propertiesResolverProvider, this.mirrorConfigs);
         this.modelMerger = new ModelMerger();
@@ -164,8 +184,8 @@ public class ProjectBuilder {
         String pomFilePath,
         Set<String> identifiedParents
     ) throws Exception {
-        MavenDownloader mavenDownloader = new MavenDownloader(pomFileInfo.getRepositories(), downloadDir, mirrorConfigs);
-        File parentPomFile = mavenDownloader.downloadPom(parentCoords);
+        // Reuse the single shared downloader — supply repos for this specific POM per-call.
+        File parentPomFile = pomDownloader.downloadPom(parentCoords, pomFileInfo.getRepositories());
 
         if (parentPomFile == null) {
             logger.warn("Could not retrieve parent pom for file: \"{}\"", pomFilePath);
@@ -207,15 +227,21 @@ public class ProjectBuilder {
         dependencyConverter.resolveDependencyProperties(project);
 
         // 2. Process BOMs (including nested BOMs), which may add new properties and managed dependencies.
-        // The visitedBoms set tracks processed BOMs to prevent infinite cycles.
-        // Process any imported BOMs so their properties and dependencyManagement entries
-        // are merged into the partial model before the second property resolution pass.
+        int propsBeforeBoms = project.getProperties().size();
         Set<String> visitedBoms = new HashSet<>();
         project = bomProcessor.processBoms(pomFile, project, visitedBoms);
 
-        // 3. Second pass of property resolution to handle properties from imported BOMs
-        logger.info("Starting second pass of property resolution for '{}' after processing BOMs...", project.getCoordinates().getArtifactId());
-        dependencyConverter.resolveDependencyProperties(project);
+        // 3. Second pass of property resolution — only needed when BOM processing actually introduced
+        //    new properties. If the property count is unchanged, the first pass already resolved
+        //    everything and running it again is pure overhead.
+        if (project.getProperties().size() != propsBeforeBoms) {
+            logger.info("Starting second pass of property resolution for '{}' after processing BOMs ({} new properties added)...",
+                project.getCoordinates().getArtifactId(), project.getProperties().size() - propsBeforeBoms);
+            dependencyConverter.resolveDependencyProperties(project);
+        } else {
+            logger.debug("Skipping second property-resolution pass for '{}' — BOM processing added no new properties.",
+                project.getCoordinates().getArtifactId());
+        }
 
         logger.info("Preparing to complete MavenProject. Final properties for resolution in '{}': {}", project.getCoordinates().getArtifactId(), project.getProperties().size());
 //        project.getProperties().forEach((k, v) -> logger.info("  - Final Prop: {} = {}", k, v));

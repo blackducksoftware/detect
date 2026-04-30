@@ -34,12 +34,30 @@ public class CollectionStrategy {
     private final RepositorySystem repositorySystem;
 
     /**
-     * Constructs a CollectionStrategy.
+     * When {@code true}, per-repository diagnostic probes are run between Attempt 1 and Attempt 2.
+     * Each probe fires a full {@code collectDependencies()} call against a single repository in
+     * isolation. This is expensive — keep {@code false} in normal operation.
+     */
+    private final boolean diagnosticsEnabled;
+
+    /**
+     * Constructs a CollectionStrategy with diagnostics disabled (normal operation).
      *
      * @param repositorySystem The Aether repository system
      */
     public CollectionStrategy(RepositorySystem repositorySystem) {
+        this(repositorySystem, false);
+    }
+
+    /**
+     * Constructs a CollectionStrategy with explicit diagnostics control.
+     *
+     * @param repositorySystem   The Aether repository system
+     * @param diagnosticsEnabled {@code true} to run per-repo diagnostic probes on union failure
+     */
+    public CollectionStrategy(RepositorySystem repositorySystem, boolean diagnosticsEnabled) {
         this.repositorySystem = repositorySystem;
+        this.diagnosticsEnabled = diagnosticsEnabled;
     }
 
     /**
@@ -68,8 +86,13 @@ public class CollectionStrategy {
             return result;
         }
 
-        // Diagnostic probe: test declared repos individually (logging only, does not affect strategy)
-        runDiagnosticProbe(request, session, repositories.getDeclared());
+        // Diagnostic probe: test declared repos individually (logging only, does not affect strategy).
+        // Only runs when diagnostics are explicitly enabled — each probe is a full network traversal.
+        if (diagnosticsEnabled) {
+            runDiagnosticProbe(request, session, repositories.getDeclared());
+        } else {
+            logger.debug("Diagnostic probes skipped (diagnosticsEnabled=false). Enable via detect.maven.buildless.diagnostics.enabled=true to diagnose repository failures.");
+        }
 
         // Attempt 2: Declared repositories only
         result = attemptDeclaredCollection(request, session, repositories, pomFile);

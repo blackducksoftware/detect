@@ -6,10 +6,24 @@ import java.util.function.Function;
 
 /**
  * Enables the creation of PropertyResolver objects.
+ *
+ * <p><strong>Thread Safety:</strong> {@link #parentProperties} is stored in a
+ * {@link ThreadLocal} so that concurrent threads (e.g., parallel module processing) each
+ * maintain their own independent parent-property context without racing on a shared field.
+ * All other fields are read-only after construction and therefore thread-safe.
  */
 public class PropertiesResolverProvider {
     private Map<String, String> userJvmProps;
-    private Map<String, String> parentProperties;
+    /**
+     * Per-thread parent properties.
+     *
+     * <p>Before this change, {@code parentProperties} was a plain instance field. When two
+     * threads called {@link #setParentProperties} concurrently, one thread's write could be
+     * observed by the other, producing incorrect property resolution. With {@link ThreadLocal},
+     * each thread's parent context is fully isolated.
+     */
+    private final ThreadLocal<Map<String, String>> parentProperties =
+        ThreadLocal.withInitial(HashMap::new);
     private Map<String, String> jvmProps;
     private Function<String, String> envPropertiesProvider;
 
@@ -24,14 +38,17 @@ public class PropertiesResolverProvider {
         this.userJvmProps = userJvmProps != null ? new HashMap<>(userJvmProps) : new HashMap<>();
         this.jvmProps = getJavaCalcProperties();
         this.envPropertiesProvider = envPropertiesProvider;
-        this.parentProperties = new HashMap<>();
+        // parentProperties ThreadLocal is self-initializing — no explicit initialization needed.
     }
 
     /**
-     * Sets the parent properties for property resolution.
+     * Sets the parent properties for property resolution on the <em>current thread</em>.
+     *
+     * <p>Each thread maintains its own independent parent-property context so that concurrent
+     * module-processing threads do not interfere with each other's resolution.
      */
     public void setParentProperties(Map<String, String> parentProps) {
-        this.parentProperties = parentProps != null ? new HashMap<>(parentProps) : new HashMap<>();
+        parentProperties.set(parentProps != null ? new HashMap<>(parentProps) : new HashMap<>());
     }
 
     /**
@@ -44,6 +61,7 @@ public class PropertiesResolverProvider {
     public PropertyResolver newResolver(Map<String, String> pomProps, Map<String, String> projectStarProperties) {
         // Clone to avoid mutations
         Map<String, String> clonedPomProps = pomProps != null ? new HashMap<>(pomProps) : new HashMap<>();
+        Map<String, String> currentParentProps = parentProperties.get(); // thread-local read
 
         Map<String, String> resolvedProps = new HashMap<>();
 
@@ -57,7 +75,7 @@ public class PropertiesResolverProvider {
         }
 
         // 2. Parent properties (skip on pom props collision)
-        for (Map.Entry<String, String> entry : parentProperties.entrySet()) {
+        for (Map.Entry<String, String> entry : currentParentProps.entrySet()) {
             if (!clonedPomProps.containsKey(entry.getKey())) {
                 resolvedProps.put(entry.getKey(), entry.getValue());
             }
@@ -71,7 +89,7 @@ public class PropertiesResolverProvider {
             resolvedProps.putAll(projectStarProperties);
         }
 
-        return new PropertyResolver(resolvedProps, clonedPomProps, parentProperties, envPropertiesProvider);
+        return new PropertyResolver(resolvedProps, clonedPomProps, currentParentProps, envPropertiesProvider);
     }
 
     /**
@@ -98,6 +116,6 @@ public class PropertiesResolverProvider {
     }
 
     // Getters
-    public Map<String, String> getParentProperties() { return parentProperties; }
+    public Map<String, String> getParentProperties() { return parentProperties.get(); }
     public Map<String, String> getUserJvmProps() { return userJvmProps; }
 }

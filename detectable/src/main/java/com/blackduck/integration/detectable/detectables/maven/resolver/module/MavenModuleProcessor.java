@@ -10,6 +10,9 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 
 /**
  * Processor for handling Maven multi-module projects recursively.
@@ -37,23 +40,33 @@ public class MavenModuleProcessor {
     private static final String POM_XML_FILENAME = "pom.xml";
 
     /**
-     * Processes all modules declared in a Maven project.
+     * Processes all modules declared in a Maven project in parallel.
      *
-     * <p>This is the main entry point for module processing. It iterates through the list
-     * of modules and processes each one recursively.
+     * <p>Sibling modules at every level are submitted to {@code executor} concurrently.
+     * Nested module recursion stays within each future (depth-first per branch), so the
+     * module tree is traversed correctly while siblings run in parallel.
      *
-     * @param modules List of module identifiers from the parent POM's {@code <modules>} section
-     * @param parentDir The parent directory containing the modules
-     * @param context Processing context containing all dependencies and shared state
+     * <p>All thread-safety prerequisites must be satisfied before calling this with a
+     * multi-threaded executor (visitedModulePomPaths, codeLocations, pomCache, etc.).
+     *
+     * @param modules   sibling modules to process
+     * @param parentDir parent directory containing the modules
+     * @param context   shared processing context (all mutable state is thread-safe)
+     * @param executor  executor for parallel submission; use a single-thread executor to
+     *                  disable parallelism without changing logic
      */
-    public void processModules(List<String> modules, File parentDir, MavenModuleProcessingContext context) {
+    public void processModules(List<String> modules, File parentDir, MavenModuleProcessingContext context, Executor executor) {
         if (modules == null || modules.isEmpty()) {
             return;
         }
 
-        for (String module : modules) {
-            processModuleRecursive(module, parentDir, context);
-        }
+        List<CompletableFuture<Void>> futures = modules.stream()
+            .map(module -> CompletableFuture.runAsync(
+                () -> processModuleRecursive(module, parentDir, context, executor),
+                executor))
+            .collect(Collectors.toList());
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
 
     /**
@@ -74,7 +87,7 @@ public class MavenModuleProcessor {
      * @param parentDir The parent directory containing this module
      * @param context Processing context with all dependencies and shared state
      */
-    private void processModuleRecursive(String moduleEntry, File parentDir, MavenModuleProcessingContext context) {
+    private void processModuleRecursive(String moduleEntry, File parentDir, MavenModuleProcessingContext context, Executor executor) {
         try {
             // STEP 1: Early exit for null or empty module entries
             if (moduleEntry == null || moduleEntry.trim().isEmpty()) {
@@ -85,50 +98,57 @@ public class MavenModuleProcessor {
             // STEP 2: Resolve module path to its pom.xml file
             File modulePom = resolveModulePomFile(modulePathStr, parentDir);
             if (modulePom == null) {
-                return; // Warning already logged in resolveModulePomFile
+                return;
             }
 
             // STEP 3: Canonicalize and check for cycles
             File canonicalModulePom = canonicalizeFile(modulePom);
             String modulePomPathKey = getCanonicalPathSafe(canonicalModulePom);
 
-            if (context.getVisitedModulePomPaths().contains(modulePomPathKey)) {
+            // ConcurrentHashMap key-set: add() returns false if already present — atomic check-and-add.
+            if (!context.getVisitedModulePomPaths().add(modulePomPathKey)) {
                 logger.debug("Skipping already-visited module POM: {}", modulePomPathKey);
                 return;
             }
-            context.getVisitedModulePomPaths().add(modulePomPathKey);
 
             logger.info("Processing module POM: {}", canonicalModulePom.getAbsolutePath());
 
             // STEP 4: Build the effective Maven project model for this module
             MavenProject moduleProject = buildModuleProject(canonicalModulePom, modulePomPathKey, context);
             if (moduleProject == null) {
-                return; // Error already logged and error file written
+                return;
             }
 
-            // STEP 5: Resolve dependencies for both compile and test scopes
-            CollectResult moduleCollectCompile = resolveCompileDependencies(
-                canonicalModulePom, moduleProject, modulePomPathKey, context);
+            // STEP 5: Resolve compile and test scope dependencies concurrently.
+            CollectResult moduleCollectCompile;
+            CollectResult moduleCollectTest;
+            if (context.isIncludeTestScope()) {
+                CompletableFuture<CollectResult> compileFuture = CompletableFuture.supplyAsync(
+                    () -> resolveCompileDependencies(canonicalModulePom, moduleProject, modulePomPathKey, context), executor);
+                CompletableFuture<CollectResult> testFuture = CompletableFuture.supplyAsync(
+                    () -> resolveTestDependencies(canonicalModulePom, moduleProject, modulePomPathKey, context), executor);
+                moduleCollectCompile = compileFuture.join();
+                moduleCollectTest = testFuture.join();
+            } else {
+                moduleCollectCompile = resolveCompileDependencies(canonicalModulePom, moduleProject, modulePomPathKey, context);
+                moduleCollectTest = null;
+            }
+
             if (moduleCollectCompile == null) {
-                return; // Error already logged and error file written
+                return;
             }
 
-            CollectResult moduleCollectTest = resolveTestDependencies(
-                canonicalModulePom, moduleProject, modulePomPathKey, context);
-            // Test scope failure is not critical - continue processing
-
-            // STEP 6: Write dependency trees to files for debugging
+            // STEP 6: Write dependency trees to files for debugging (async)
             writeDependencyTreeFiles(moduleProject, moduleCollectCompile, moduleCollectTest, modulePomPathKey, context);
 
             // STEP 7: Transform graphs and create CodeLocations
             createCodeLocationsForModule(
                 moduleProject, moduleCollectCompile, moduleCollectTest, canonicalModulePom, context);
 
-            // STEP 8: Recursively process nested modules
-            processNestedModules(moduleProject, canonicalModulePom, context);
+            // STEP 8: Recursively process nested modules (siblings parallelized via the same executor)
+            processNestedModules(moduleProject, canonicalModulePom, context, executor);
 
         } catch (Exception e) {
-            // Catch-all for unexpected errors - log and continue processing other modules
             logger.warn("Failed processing module '{}' due to: {}", moduleEntry, e.getMessage());
         }
     }
@@ -313,23 +333,30 @@ public class MavenModuleProcessor {
         String modulePomPathKey,
         MavenModuleProcessingContext context
     ) {
+        // Write tree files asynchronously (#4 optimization) — they are debug artifacts and
+        // must not block the critical dependency-resolution path.
+        // Futures are collected in the context and joined by the caller before extract() returns.
         try {
             String gav = context.getCoordinateFormatter().formatGAV(moduleProject);
             String hash = Integer.toHexString(modulePomPathKey.hashCode());
 
-            // Write compile tree
             String compileFileName = context.getTreeWriter().buildDependencyTreeFileName("compile", gav, hash);
             File compileOut = new File(context.getOutputDir(), compileFileName);
-            context.getTreeWriter().writeDependencyTree(compileResult, compileOut, context.getCompileScope());
+            context.getTreeWriteFutures().add(CompletableFuture.runAsync(() -> {
+                try { context.getTreeWriter().writeDependencyTree(compileResult, compileOut, context.getCompileScope()); }
+                catch (Exception e) { logger.debug("Failed writing compile tree for '{}': {}", modulePomPathKey, e.getMessage()); }
+            }));
 
-            // Write test tree if available
             if (testResult != null) {
                 String testFileName = context.getTreeWriter().buildDependencyTreeFileName("test", gav, hash);
                 File testOut = new File(context.getOutputDir(), testFileName);
-                context.getTreeWriter().writeDependencyTree(testResult, testOut, context.getTestScope());
+                context.getTreeWriteFutures().add(CompletableFuture.runAsync(() -> {
+                    try { context.getTreeWriter().writeDependencyTree(testResult, testOut, context.getTestScope()); }
+                    catch (Exception e) { logger.debug("Failed writing test tree for '{}': {}", modulePomPathKey, e.getMessage()); }
+                }));
             }
         } catch (Exception e) {
-            logger.debug("Failed to write module dependency tree files for '{}': {}", modulePomPathKey, e.getMessage());
+            logger.debug("Failed to schedule module dependency tree writes for '{}': {}", modulePomPathKey, e.getMessage());
         }
     }
 
@@ -393,16 +420,15 @@ public class MavenModuleProcessor {
      * @param modulePom The parent module's POM file
      * @param context Processing context
      */
-    private void processNestedModules(MavenProject moduleProject, File modulePom, MavenModuleProcessingContext context) {
+    private void processNestedModules(MavenProject moduleProject, File modulePom, MavenModuleProcessingContext context, Executor executor) {
         List<String> nestedModules = moduleProject.getModules();
         if (nestedModules == null || nestedModules.isEmpty()) {
             return;
         }
 
         File childParentDir = modulePom.getParentFile();
-        for (String childModule : nestedModules) {
-            processModuleRecursive(childModule, childParentDir, context);
-        }
+        // Recurse — siblings at this nested level are also parallelized via the same executor.
+        processModules(nestedModules, childParentDir, context, executor);
     }
 }
 
