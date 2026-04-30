@@ -18,6 +18,11 @@
 	
 * **Deprecation of Java 8 support** - In alignment with EU Cyber Resilience Act (CRA) requirements and compliance timelines, Java 8 support will be deprecated in the anticipated 2026 Q3 Detect 12.0.0 release.
 
+## Version 11.4.1
+
+### Dependency Updates
+* Upgraded and released Nuget Inspector version 2.6.0
+
 ## Version 11.4.0
 
 ### New features
@@ -47,5 +52,4 @@
 * (IDETECT-4993) Fixed an issue where the Go Module Detector entered an infinite loop while scanning `go.mod` files containing circular dependencies.
 
 ### Dependency Updates
-* Upgraded and released Nuget Inspector version 2.6.0
 * Update tomlj library to version 1.1.1.
