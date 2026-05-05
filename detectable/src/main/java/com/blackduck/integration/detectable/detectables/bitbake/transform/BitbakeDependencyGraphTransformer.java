@@ -145,16 +145,28 @@ public class BitbakeDependencyGraphTransformer {
     }
 
     private String chooseRecipeLayer(String dependencyName, @Nullable String dependencyLayer, List<String> recipeLayerNames) {
+        // Validate: path-matched layer must exist in authoritative show-recipes list
+        if (dependencyLayer != null && recipeLayerNames.contains(dependencyLayer)) {
+            logger.trace("For dependency recipe {}: using layer {} parsed from task-depends.dot", dependencyName, dependencyLayer);
+            return dependencyLayer;
+        }
+
+        // Path-matched layer is null or invalid - fall back to authoritative source
         if (dependencyLayer == null) {
             logger.warn(
                 "Did not parse a layer for dependency {} from task-depends.dot; falling back to layer {} (first from show-recipes output)",
                 dependencyName,
                 recipeLayerNames.get(0)
             );
-            dependencyLayer = recipeLayerNames.get(0);
         } else {
-            logger.trace("For dependency recipe {}: using layer {} parsed from task-depends.dot", dependencyName, dependencyLayer);
+            logger.debug(
+                "Path-matched layer '{}' not valid for recipe '{}' (valid layers: {}); using '{}'",
+                dependencyLayer,
+                dependencyName,
+                recipeLayerNames,
+                recipeLayerNames.get(0)
+            );
         }
-        return dependencyLayer;
+        return recipeLayerNames.get(0);
     }
 }
