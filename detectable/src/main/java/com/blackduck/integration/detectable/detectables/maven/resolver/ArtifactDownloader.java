@@ -37,8 +37,12 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li>{@link RemoteRepositoryDownloader} - downloads from POM-declared repositories</li>
  *   <li>{@link FallbackRepositoryDownloader} - downloads from Maven Central (or mirror)</li>
  * </ul>
+ *
+ * <p><strong>Resource management:</strong> This class implements {@link AutoCloseable}.
+ * Always use it in a try-with-resources block (or call {@link #close()} explicitly) so
+ * the internal parallel download thread-pool is shut down after use.
  */
-public class ArtifactDownloader {
+public class ArtifactDownloader implements AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(ArtifactDownloader.class);
 
@@ -318,6 +322,17 @@ public class ArtifactDownloader {
 
     private String formatCoords(Artifact artifact) {
         return artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion();
+    }
+
+    /**
+     * Shuts down the internal parallel-download thread pool gracefully.
+     *
+     * <p>Must be called after all downloads are finished to avoid thread leaks.
+     * The easiest way is to use this class in a try-with-resources block.
+     */
+    @Override
+    public void close() {
+        parallelDownloadManager.shutdown();
     }
 }
 

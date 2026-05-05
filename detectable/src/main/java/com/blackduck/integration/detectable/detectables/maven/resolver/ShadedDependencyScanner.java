@@ -147,16 +147,17 @@ public class ShadedDependencyScanner {
             try {
                 // Step 3: Download JARs
                 Files.createDirectories(downloadDir);
-                ArtifactDownloader artifactDownloader = new ArtifactDownloader(
+                final Map<Artifact, Path> downloadedJars;
+                try (ArtifactDownloader artifactDownloader = new ArtifactDownloader(
                         options.getJarRepositoryPath(),
                         downloadDir,
                         repositories != null ? repositories : new ArrayList<>(),
                         options
-                );
-
-                logger.info("Starting artifact downloads for {} shaded candidates...", aetherDependencies.size());
-                Map<Artifact, Path> downloadedJars = artifactDownloader.downloadArtifacts(aetherDependencies);
-                logger.info("Downloaded {} JARs", downloadedJars.size());
+                )) {
+                    logger.info("Starting artifact downloads for {} shaded candidates...", aetherDependencies.size());
+                    downloadedJars = artifactDownloader.downloadArtifacts(aetherDependencies);
+                    logger.info("Downloaded {} JARs", downloadedJars.size());
+                }
 
                 if (downloadedJars.isEmpty()) {
                     logger.debug("No JARs downloaded, skipping shaded detection");
