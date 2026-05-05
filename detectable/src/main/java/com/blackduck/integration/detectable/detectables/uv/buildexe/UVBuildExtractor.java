@@ -79,19 +79,7 @@ public class UVBuildExtractor {
             logger.warn("Dependency groups {} appear in both included and excluded sets. They will be excluded.", conflictingGroups);
         }
 
-        if (!includedGroups.isEmpty()) {
-            boolean includeAll = includedGroups.stream().anyMatch(group -> group.equalsIgnoreCase(ALL_GROUPS_KEYWORD));
-            if (includeAll) {
-                arguments.add(ALL_GROUPS_FLAG);
-            } else {
-                for (String group : includedGroups) {
-                    if (!excludedGroups.contains(group)) {
-                        arguments.add(GROUP_FLAG);
-                        arguments.add(group);
-                    }
-                }
-            }
-        }
+        addIncludedGroupArguments(arguments, includedGroups, excludedGroups);
 
         for (String group : excludedGroups) {
             arguments.add(NO_GROUP_FLAG);
@@ -99,5 +87,22 @@ public class UVBuildExtractor {
         }
 
         return arguments;
+    }
+
+    private void addIncludedGroupArguments(List<String> arguments, Set<String> includedGroups, Set<String> excludedGroups) {
+        if (includedGroups.isEmpty()) return;
+
+        boolean includeAll = includedGroups.stream().anyMatch(group -> group.equalsIgnoreCase(ALL_GROUPS_KEYWORD));
+        if (includeAll) {
+            arguments.add(ALL_GROUPS_FLAG);
+            return;
+        }
+
+        includedGroups.stream()
+            .filter(group -> !excludedGroups.contains(group))
+            .forEach(group -> {
+                arguments.add(GROUP_FLAG);
+                arguments.add(group);
+            });
     }
 }
