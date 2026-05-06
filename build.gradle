@@ -186,7 +186,7 @@ dependencies {
     implementation 'com.blackducksoftware:method-analyzer-core:1.0.7'
     implementation "${locatorGroup}:${locatorModule}:2.4.2"
 
-    implementation 'org.apache.maven.shared:maven-invoker:3.0.0'
+    implementation 'org.apache.maven.shared:maven-invoker:3.3.0'
 
     // Below direct inclusions of corresponding transitive dependencies
     // were added to resolve CVE-2024-22259 appearing in 5.3.27 of springframework libraries.
@@ -229,7 +229,7 @@ dependencies {
         implementation('org.apache.james:apache-mime4j-core:0.8.10') {
             because 'previous version has a vulnerability'
         }
-        implementation('org.bouncycastle:bcutil-jdk18on:1.78') {
+        implementation('org.bouncycastle:bcutil-jdk18on:1.84') {
             because 'previous version has a vulnerability'
         }
         implementation('com.jayway.jsonpath:json-path:2.9.0') {

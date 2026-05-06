@@ -1,11 +1,17 @@
 package com.blackduck.integration.detect.workflow.report;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+
+import com.blackduck.integration.detect.configuration.DetectConfigurationFactory;
+import com.blackduck.integration.detect.configuration.DetectConfigurationFactoryTestUtils;
+import com.blackduck.integration.detect.configuration.DetectProperties;
+import com.blackduck.integration.detect.configuration.DetectPropertyConfiguration;
 import com.blackduck.integration.detect.tool.detector.DetectorTool;
 import com.blackduck.integration.detect.tool.detector.DetectorToolResult;
 import com.blackduck.integration.detect.tool.detector.report.DetectorDirectoryReport;
@@ -19,8 +25,11 @@ import static com.blackduck.integration.detect.workflow.componentlocationanalysi
 import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.QUACKPATCH_SUBDIRECTORY_NAME;
 import static org.junit.jupiter.api.Assertions.*;
 import com.blackduck.integration.detector.rule.DetectableDefinition;
+import com.google.gson.Gson;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.GradleInspectorDetectable;
 import com.blackduck.integration.common.util.finder.FileFinder;
+import com.blackduck.integration.configuration.config.PropertyConfiguration;
+import com.blackduck.integration.configuration.property.types.path.SimplePathResolver;
 import com.blackduck.integration.detectable.detectable.executable.resolver.GradleResolver;
 import com.blackduck.integration.detectable.detectable.inspector.GradleInspectorResolver;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.GradleInspectorExtractor;
@@ -69,11 +78,14 @@ class DetectorToolTest {
         reportsField.setAccessible(true);
         reportsField.set(toolResult, reports);
 
-        new DetectorTool(null, null, null, null, null, null, null)
-            .saveExtractedDetectorsAndTheirRelevantFilePaths(directoryManager, toolResult);
+       
+        DetectConfigurationFactory detectConfigurationFactory = DetectConfigurationFactoryTestUtils.factoryOf(Pair.of(DetectProperties.DETECT_QUACK_PATCH_OUTPUT, tempDir.toString()));
+
+        new DetectorTool(null, null, null, null, null, null, null, detectConfigurationFactory)
+            .saveExtractedDetectorsAndTheirRelevantFilePaths(toolResult);
 
         File outputFile = new File(
-            new File(directoryManager.getScanOutputDirectory(), QUACKPATCH_SUBDIRECTORY_NAME),
+            new File(detectConfigurationFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT), QUACKPATCH_SUBDIRECTORY_NAME),
             INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON
         );
         assertTrue(outputFile.exists());

@@ -18,7 +18,7 @@
 	
 * **Deprecation of Java 8 support** - In alignment with EU Cyber Resilience Act (CRA) requirements and compliance timelines, Java 8 support will be deprecated in the anticipated 2026 Q3 Detect 12.0.0 release.
 
-## Version 11.4.0
+## Version 11.5.0
 
 ### New features
 
@@ -34,8 +34,5 @@
 * (IDETECT‑4979) Updated the NuGet Inspector to prevent duplicate components from being reported which end up unversioned in the BOM.
 * (IDETECT‑5058) Improved the Poetry detector to eliminate errors encountered while parsing pyproject.toml.
 * (IDETECT‑5013) Fixed an issue in the signature scan fallback logic when SCA Scan Service (SCASS) is intentionally bypassed.
-* NuGet Solution Native Inspector now supports .slnx files.
 
 ### Dependency Updates
-* Upgraded and released Nuget Inspector version 2.6.0
-* Update tomlj library to version 1.1.1.
