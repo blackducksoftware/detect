@@ -2048,7 +2048,7 @@ public class DetectProperties {
                     .setInfo("uv Included Dependency Groups", DetectPropertyFromVersion.VERSION_11_4_0)
                     .setHelp(
                             "A comma-separated list of uv dependency groups to include in the scan.",
-                            "This property is currently supported only in the UV Build Detector (CLI mode). If left empty (the default), the detector scans only main dependencies and the dev group, maintaining backward compatibility. Set to 'ALL' to include all dependency groups and optional dependencies. Alternatively, specify group names as a comma-separated list (e.g., 'dev,test,docs') to include only those groups. The excluded property takes precedence over this property."
+                            "This property is only supported by UV Build Detector (CLI mode). If left empty (default), the Detector maintains backward compatibility by only scanning main dependencies and the dev group. Include all dependency groups and optional dependencies by setting the property to 'ALL'. Alternatively, specify group names as a comma-separated list (e.g., 'dev,test,docs') to include only those groups. The --detect.uv.dependency.groups.excluded property takes precedence over this property."
                     )
                     .setGroups(DetectGroup.UV, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
                     .setCategory(DetectCategory.Advanced)
