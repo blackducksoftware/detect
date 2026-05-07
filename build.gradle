@@ -18,8 +18,6 @@ buildscript {
     // CVE-2023-51074: json-path < 2.9.0 has a stack overflow in Criteria.parse(). Spring Boot 2.7.x BOM
     // pins json-path to 2.7.0; override to pick up the fix.
     ext['json-path.version'] = '2.9.0'
-    // json-path 2.9.0 requires json-smart 2.5.x. Also fixes CVE-2024-57699 (json-smart 2.5.0-2.5.1 stack exhaustion).
-    ext['json-smart.version'] = '2.5.2'
     apply from: 'https://raw.githubusercontent.com/blackducksoftware/integration-resources/master/gradle_common/buildscript-repositories.gradle', to: buildscript
 
     dependencies {
@@ -144,6 +142,9 @@ allprojects {
         // jackson-core is a transitive dep from jackson-dataformat-yaml. Pinned to pick up security fixes:
         // sonatype-2022-6438 (sync number length) and BDSA-2026-6606/GHSA-72hv-8253-57qq (async parser maxNumberLength bypass, fixed in 2.18.6+).
         implementation('com.fasterxml.jackson.core:jackson-core:2.18.7')
+        // CVE-2024-57699: json-smart 2.5.0-2.5.1 has stack exhaustion on crafted JSON. Declared here so
+        // all modules pick up 2.5.2 regardless of whether they apply Spring dependency management.
+        implementation('net.minidev:json-smart:2.5.2')
         implementation 'org.freemarker:freemarker:2.3.31'
         implementation 'org.apache.httpcomponents:httpclient-osgi:4.5.14'
 
