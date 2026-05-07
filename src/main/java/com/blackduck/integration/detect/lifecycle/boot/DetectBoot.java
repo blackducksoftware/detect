@@ -164,10 +164,12 @@ public class DetectBoot {
         Configuration freemarkerConfiguration = detectBootFactory.createFreemarkerConfiguration();
         DetectPropertyConfiguration detectConfiguration = new DetectPropertyConfiguration(propertyConfiguration, new SimplePathResolver());
         // If quack patch is enabled, we need to validate the output path before doing anything else since it could cause Detect to fail later on if it's not valid, and we want to fail as early as possible with a clear message about what the issue is.
-         Optional<DetectUserFriendlyException> quackPatchError = detectConfigurationBootManager.validateQuackPatchOutputPath(detectConfiguration);
-         if (quackPatchError.isPresent()) {
-             return Optional.of(DetectBootResult.exception(quackPatchError.get(), propertyConfiguration));
-         }
+        if (Boolean.TRUE.equals(detectConfiguration.getValue(DetectProperties.DETECT_QUACK_PATCH_ENABLED))) {
+             Optional<DetectUserFriendlyException> quackPatchError = detectConfigurationBootManager.validateQuackPatchOutputPath(detectConfiguration);
+             if (quackPatchError.isPresent()) {
+                 return Optional.of(DetectBootResult.exception(quackPatchError.get(), propertyConfiguration));
+             }
+        }
 
         DetectConfigurationFactory detectConfigurationFactory = new DetectConfigurationFactory(detectConfiguration, gson);
 
