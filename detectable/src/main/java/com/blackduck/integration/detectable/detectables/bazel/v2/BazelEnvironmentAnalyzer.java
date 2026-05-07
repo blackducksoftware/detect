@@ -40,7 +40,7 @@ public class BazelEnvironmentAnalyzer {
             // If the graph only contains the root module, Bzlmod is active but empty.
             // Look for typical empty signals like "<root> (@_)" or just a single line.
             if (isGraphEmpty(stdout)) {
-                logger.info("Bzlmod is enabled but graph is empty; falling back to WORKSPACE.");
+                logger.debug("Bzlmod is enabled but graph is empty; falling back to WORKSPACE.");
                 return Mode.WORKSPACE;
             }
             return Mode.BZLMOD;

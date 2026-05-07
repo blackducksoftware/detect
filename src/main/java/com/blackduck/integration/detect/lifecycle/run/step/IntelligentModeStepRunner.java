@@ -114,17 +114,19 @@ public class IntelligentModeStepRunner {
         Set<String> binaryTargets
     ) throws OperationException {
 
-        boolean hasAnythingToUploadOrScan = bdioResult.isNotEmpty()
-            || detectToolFilter.shouldInclude(DetectTool.SIGNATURE_SCAN)
-            || detectToolFilter.shouldInclude(DetectTool.BINARY_SCAN)
-            || detectToolFilter.shouldInclude(DetectTool.CONTAINER_SCAN)
-            || detectToolFilter.shouldInclude(DetectTool.IMPACT_ANALYSIS)
-            || detectToolFilter.shouldInclude(DetectTool.IAC_SCAN);
+//TODO: Short-circuit project/version creation when there is no data to upload and no scan tools are enabled. Planned for next major release.
 
-        if (!hasAnythingToUploadOrScan) {
-            logger.info("No scan results were produced and no other scan tools are enabled. Skipping Black Duck project and version creation.");
-            return;
-        }
+//        boolean hasAnythingToUploadOrScan = bdioResult.isNotEmpty()
+//            || detectToolFilter.shouldInclude(DetectTool.SIGNATURE_SCAN)
+//            || detectToolFilter.shouldInclude(DetectTool.BINARY_SCAN)
+//            || detectToolFilter.shouldInclude(DetectTool.CONTAINER_SCAN)
+//            || detectToolFilter.shouldInclude(DetectTool.IMPACT_ANALYSIS)
+//            || detectToolFilter.shouldInclude(DetectTool.IAC_SCAN);
+//
+//        if (!hasAnythingToUploadOrScan) {
+//            logger.info("No scan results were produced and no other scan tools are enabled. Skipping Black Duck project and version creation.");
+//            return;
+//        }
 
         ProjectVersionWrapper projectVersion = stepHelper.runAsGroup(
             "Create or Locate Project",
@@ -162,7 +164,8 @@ public class IntelligentModeStepRunner {
             );
             codeLocationAccumulator.addNonWaitableCodeLocations(signatureScannerCodeLocationResult.getWaitableCodeLocationData().getSuccessfulCodeLocationNames());
             codeLocationAccumulator.addNonWaitableCodeLocations(signatureScannerCodeLocationResult.getNonWaitableCodeLocationData());
-            codeLocationAccumulator.incrementCodeLocationCountForTool(DetectTool.SIGNATURE_SCAN, 1);
+            int scanPathCount = signatureScannerCodeLocationResult.getWaitableCodeLocationData().getSuccessfulCodeLocationNames().size();
+            codeLocationAccumulator.incrementCodeLocationCountForTool(DetectTool.SIGNATURE_SCAN, scanPathCount);
         });
 
         stepHelper.runToolIfIncluded(DetectTool.BINARY_SCAN, "Binary Scanner", () -> {           
