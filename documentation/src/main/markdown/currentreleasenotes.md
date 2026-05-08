@@ -22,7 +22,7 @@
 
 ### Resolved issues
 
-* (IDETECT-5136) - Validate the quack patch output directory only if the quack patch feature is enabled; otherwise, skip validation to avoid errors.
+* (IDETECT-5136) - Validate the `quack patch` output directory only if the Quack Patch feature is enabled; otherwise, skip validation to avoid errors.
 
 ## Version 11.4.1
 
