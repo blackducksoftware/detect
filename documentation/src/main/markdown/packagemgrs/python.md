@@ -147,3 +147,6 @@ UV Lock detector will parse uv.lock, requirements.txt, or both to find project d
 [UV Properties](../properties/detectors/uv.md) supports exclusion of all the dependency groups specified. Since uv has a concept of workspaces, they can be included and excluded using the properties provided.
 The workspace member provided in the property should be identical to the key name under tool.uv.sources since dependencies are created under the same key name in the tree and uv.lock file.
 For excluding dependency groups and workspaces, presence of uv.lock or uv executable is required.
+
+The `detect.uv.dependency.groups.included` property allows users to specify which UV dependency groups to scan. Supported values include a comma-separated list of group names (e.g., 'dev,test,docs'), 'ALL' for all groups, or empty for backward compatibility (main and dev groups only). This property is only supported by the UV Build Detector in CLI mode.
+
