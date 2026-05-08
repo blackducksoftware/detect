@@ -18,6 +18,9 @@
 	
 * **Deprecation of Java 8 support** - In alignment with EU Cyber Resilience Act (CRA) requirements and compliance timelines, Java 8 support will be deprecated in the anticipated 2026 Q3 Detect 12.0.0 release.
 
+## Version 11.4.2
+* (IDETECT-5136) - Validate the quack patch output directory only if the quack patch feature is enabled; otherwise, skip validation to avoid errors.
+
 ## Version 11.4.1
 
 ### Dependency Updates
