@@ -28,7 +28,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '11.5.0-SIGQA3-dterry.IDETECT-5080-core-detect-vulns'
+version = '11.5.0-SIGQA4-dterry.IDETECT-5080-core-detect-vulns'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
