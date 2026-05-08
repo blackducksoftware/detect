@@ -12,7 +12,9 @@ import org.slf4j.LoggerFactory;
 
 import com.blackduck.integration.configuration.config.PropertyConfiguration;
 import com.blackduck.integration.detect.configuration.DetectInfo;
+import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detect.workflow.DetectRunId;
+import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.QUACKPATCH_SUBDIRECTORY_NAME;
 import com.blackduck.integration.detect.workflow.event.EventSystem;
 import com.blackduck.integration.detect.workflow.file.DirectoryManager;
 
@@ -136,6 +138,12 @@ public class DiagnosticSystem {
     private boolean createZip() {
         List<File> directoriesToCompress = new ArrayList<>();
         directoriesToCompress.add(directoryManager.getRunHomeDirectory());
+        // If quack patch is enabled, then add quack patch output directory to the zip
+        if (propertyConfiguration.getValueOrDefault(DetectProperties.DETECT_QUACK_PATCH_ENABLED)) {
+            String quackPatchOutputDir = propertyConfiguration.getValueOrDefault(DetectProperties.DETECT_QUACK_PATCH_OUTPUT).trim() + File.separator + QUACKPATCH_SUBDIRECTORY_NAME;
+            logger.info("Adding quack patch output dir {} to the diagnostic zip.", quackPatchOutputDir);
+            directoriesToCompress.add(new File(quackPatchOutputDir));
+        }
 
         DiagnosticZipCreator zipper = new DiagnosticZipCreator();
         return zipper.createDiagnosticZip(detectRunId.getRunId(), directoryManager.getRunsOutputDirectory(), directoriesToCompress);
