@@ -11,14 +11,20 @@ buildscript {
         javaTargetCompatibility = 8
         javaSourceCompatibility = 8
     }
-    // logback 1.2.13 is the latest Java 8-compatible patch. logback 1.3.x uses SLF4J 2.x and breaks
-    // Spring Boot 2.7.x's LogbackLoggingSystem at runtime (exit code 100 in createAirGapZip).
-    // TODO: upgrade to logback 1.5.x + slf4j 2.x when moving to Spring Boot 3.x (requires Java 17).
-    ext['logback.version'] = '1.2.13'
-    // TODO: pin ext['slf4j.version'] = '2.x' alongside the logback 1.5.x upgrade above.
-    // Spring Boot 2.7.x manages SLF4J 1.7.36 automatically; no override needed here.
+    // CVE-2026-1225: logback-core up to 1.5.24 has an ACE in config file processing. Fix backported to
+    // 1.3.16 (the Java 8 compatible branch). Requires SLF4J 2.x as a companion upgrade.
+    // Spring Boot 2.7.8+ explicitly supports logback 1.3.x, so this is safe with Spring Boot 2.7.12.
+    // TODO(Java 11): switch to logback 1.4.x (Java 11 branch, same CVE fix).
+    // TODO(Java 17): after Spring Boot 3.x upgrade, move to logback 1.5.x.
+    ext['logback.version'] = '1.3.16'
+    ext['slf4j.version'] = '2.0.11'
     // Spring Boot 2.7.x pins json-path to 2.7.0; override to pick up security fixes.
     ext['json-path.version'] = '2.9.0'
+    // Spring Boot 2.7.12 BOM manages jackson-databind to 2.13.5. Without this override every Jackson
+    // module except the two we pin explicitly (core, dataformat-yaml) stays at 2.13.5, causing a
+    // version split that produces NoSuchMethodError at runtime (exit code 100 in createAirGapZip).
+    // This override moves the entire Jackson suite to a consistent version.
+    ext['jackson-bom.version'] = '2.21.3'
     apply from: 'https://raw.githubusercontent.com/blackducksoftware/integration-resources/master/gradle_common/buildscript-repositories.gradle', to: buildscript
 
     dependencies {
@@ -187,7 +193,7 @@ dependencies {
     implementation project(':detectable')
     implementation project(':detector')
 
-    implementation 'ch.qos.logback:logback-classic:1.2.13'
+    implementation 'ch.qos.logback:logback-classic'
 
     implementation 'com.blackducksoftware.bdio:bdio-protobuf:3.2.12'
     implementation "com.blackduck.integration:blackduck-common:${blackDuckCommonVersion}"
@@ -230,9 +236,6 @@ dependencies {
             because 'previous version has a vulnerability'
         }
         implementation('org.apache.cxf:cxf-rt-frontend-jaxrs:4.0.4') {
-            because 'previous version has a vulnerability'
-        }
-        implementation('ch.qos.logback:logback-core:1.2.13') {
             because 'previous version has a vulnerability'
         }
         implementation('org.apache.james:apache-mime4j-core:0.8.10') {
