@@ -235,6 +235,10 @@ dependencies {
         implementation('com.jayway.jsonpath:json-path:2.9.0') {
             because 'previous version has a vulnerability'
         }
+        // json-smart 2.5.0-2.5.1 reintroduced CVE-2023-1370 as CVE-2024-57699; stay on 2.4.x until 2.5.x is patched
+        implementation('net.minidev:json-smart:2.4.11') {
+            because 'CVE-2024-57699 affects 2.5.0-2.5.1'
+        }
     }
 
     // spring-boot-starter-test *can* provide these, but we choose to be more explicit about the dependencies we ACTUALLY use
