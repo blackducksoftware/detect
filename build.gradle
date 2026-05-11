@@ -12,7 +12,6 @@ buildscript {
         javaSourceCompatibility = 8
     }
     ext['logback.version'] = '1.2.13'
-    ext['json-path.version'] = '2.9.0'
     apply from: 'https://raw.githubusercontent.com/blackducksoftware/integration-resources/master/gradle_common/buildscript-repositories.gradle', to: buildscript
 
     dependencies {
@@ -22,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '11.5.0-SIGQA5-SNAPSHOT'
+version = '11.5.0-SIGQA4-dterry.update-vulnerabilities'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
@@ -205,6 +204,7 @@ dependencies {
 
     // autonomous
     implementation 'org.apache.tika:tika-core:2.9.0'
+    implementation 'org.apache.tika:tika-parsers-standard-package:2.9.0'
     implementation 'org.apache.logging.log4j:log4j-to-slf4j:2.23.1'
 
     constraints {
