@@ -3,6 +3,7 @@ package com.blackduck.integration.detect.workflow.blackduck.integratedmatching;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -13,18 +14,36 @@ import com.blackduck.integration.detect.workflow.blackduck.integratedmatching.mo
 
 public class ScanCountsPayloadCreator {
 
-    public ScanCountsPayload create(List<WaitableCodeLocationData> createdCodelocations, Map<DetectTool, Integer> additionalCounts) {
+    @NotNull
+    public ScanCountsPayload createPayloadFromCountsByTool(
+        List<WaitableCodeLocationData> createdCodelocations,
+        Map<DetectTool, Integer> additionalCounts,
+        Set<String> supportedScanTypes
+    ) {
         Map<DetectTool, Integer> countsByTool = collectCountsByTool(createdCodelocations, additionalCounts);
-        return createPayloadFromCountsByTool(countsByTool);
+        return createPayloadFromCountsByTool(countsByTool, supportedScanTypes);
     }
 
     @NotNull
-    private ScanCountsPayload createPayloadFromCountsByTool(final Map<DetectTool, Integer> countsByTool) {
-        int packageManagerScanCount = countsByTool.getOrDefault(DetectTool.DETECTOR, 0)
-            + countsByTool.getOrDefault(DetectTool.BAZEL, 0)
-            + countsByTool.getOrDefault(DetectTool.DOCKER, 0);
-        int signatureScanCount = countsByTool.getOrDefault(DetectTool.SIGNATURE_SCAN, 0);
-        int binaryScanCount = countsByTool.getOrDefault(DetectTool.BINARY_SCAN, 0);
+    private ScanCountsPayload createPayloadFromCountsByTool(final Map<DetectTool, Integer> countsByTool, Set<String> supportedScanTypes) {
+        // Filter counts based on supported scan types
+        int packageManagerScanCount = 0;
+        if (supportedScanTypes.contains("PACKAGE_MANAGER")) {
+            packageManagerScanCount = countsByTool.getOrDefault(DetectTool.DETECTOR, 0)
+                + countsByTool.getOrDefault(DetectTool.BAZEL, 0)
+                + countsByTool.getOrDefault(DetectTool.DOCKER, 0);
+        }
+
+        int signatureScanCount = 0;
+        if (supportedScanTypes.contains("SIGNATURE")) {
+            signatureScanCount = countsByTool.getOrDefault(DetectTool.SIGNATURE_SCAN, 0);
+        }
+
+        int binaryScanCount = 0;
+        if (supportedScanTypes.contains("BINARY")) {
+            binaryScanCount = countsByTool.getOrDefault(DetectTool.BINARY_SCAN, 0);
+        }
+
         ScanCounts scanCounts = new ScanCounts(packageManagerScanCount, signatureScanCount, binaryScanCount);
         return new ScanCountsPayload(scanCounts);
     }

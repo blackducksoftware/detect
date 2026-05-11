@@ -15,13 +15,13 @@
 	* na.store.scass.blackduck.com - 34.54.95.139
 	* eu.store.scass.blackduck.com - 34.54.213.11
 	* eu.scass.blackduck.com - 34.54.38.252
+	
+* **Deprecation of Java 8 support** - In alignment with EU Cyber Resilience Act (CRA) requirements and compliance timelines, Java 8 support will be deprecated in the anticipated 2026 Q3 Detect 12.0.0 release.
 
-## Version 11.4.0
+## Version 11.5.0
 
 ### New features
 
-* Support for the Conda Tree–based detector has been added. For more details, see [Conda Tree](packagemgrs/conda.md#conda-tree-detector).
-* Support for pnpm now extends to 10.32.1.
-* npm detectors now allow for aliases to be used when specifying dependencies in the package.json file.
-
 ### Resolved issues
+
+### Dependency Updates

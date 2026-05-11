@@ -26,12 +26,17 @@ import com.blackduck.integration.exception.IntegrationException;
 public class PipTest {
 
     private static final String[] PIP_VERSIONS_TO_TEST = new String[] { "24.2" };
+    private static final String[] PIP_PKG_RESOURCES_VERSIONS_TO_TEST = new String[] { "23.3.1" };
     public static String ARTIFACTORY_URL = System.getenv().get("SNPS_INTERNAL_ARTIFACTORY");
 
     private static final String PROJECT_NAME = "pip-docker-test-project";
 
     private static Stream<String> providePipVersionsToTest() {
         return Arrays.stream(PIP_VERSIONS_TO_TEST);
+    }
+
+    private static Stream<String> providePipPkgResourcesVersionsToTest() {
+        return Arrays.stream(PIP_PKG_RESOURCES_VERSIONS_TO_TEST);
     }
 
     @ParameterizedTest
@@ -75,6 +80,47 @@ public class PipTest {
         }
     }
 
+    @ParameterizedTest
+    @MethodSource("providePipPkgResourcesVersionsToTest")
+    public void pipInspectorPkgResourcesTest(String pipVersion) throws IntegrationException, IOException {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("pip-pkg-resources-test", "pip-pkg-resources-test:" + pipVersion)) {
+
+            Map<String, String> pipDockerfileArgs = new HashMap<>();
+            pipDockerfileArgs.put("PIP_VERSION", pipVersion);
+            pipDockerfileArgs.put("ARTIFACTORY_URL", ARTIFACTORY_URL);
+
+            BuildDockerImageProvider buildDockerImageProvider = BuildDockerImageProvider.forDockerfilResourceNamed("PipPkgResources.dockerfile");
+            buildDockerImageProvider.setBuildArgs(pipDockerfileArgs);
+            test.withImageProvider(buildDockerImageProvider);
+
+            // Set up blackduck connection and environment
+            String projectVersion = "pip-pkg-resources-test-project-" + pipVersion;
+            BlackDuckTestConnection blackDuckTestConnection = BlackDuckTestConnection.fromEnvironment();
+            BlackDuckAssertions blackduckAssertions = blackDuckTestConnection.projectVersionAssertions("pip-pkg-resources-test-project", projectVersion);
+            blackduckAssertions.emptyOnBlackDuck();
+
+            // Build command with BlackDuck config
+            DetectCommandBuilder commandBuilder = new DetectCommandBuilder().defaults().defaultDirectories(test);
+            commandBuilder.connectToBlackDuck(blackDuckTestConnection);
+            commandBuilder.projectNameVersion(blackduckAssertions);
+            commandBuilder.waitForResults();
+
+            // Set up Detect properties
+            commandBuilder.property(DetectProperties.DETECT_TOOLS, DetectTool.DETECTOR.toString());
+            commandBuilder.property(DetectProperties.DETECT_PIP_PATH, "/usr/local/bin/pip");
+            commandBuilder.property(DetectProperties.DETECT_PYTHON_PATH, "/usr/local/bin/python3");
+            commandBuilder.property(DetectProperties.DETECT_ACCURACY_REQUIRED, "NONE");
+            DockerAssertions dockerAssertions = test.run(commandBuilder);
+
+            // Detect specific assertions
+            dockerAssertions.successfulDetectorType(DetectorType.PIP.toString());
+            dockerAssertions.atLeastOneBdioFile();
+
+            // Blackduck specific assertions
+            validateComponentsForSamplePipPkgProject(blackduckAssertions);
+        }
+    }
+
     // If updating below components, make sure to refer the test project used by the corresponding dockerfile
     private void validateComponentsForSamplePipProject(BlackDuckAssertions blackduckAssertions) throws IntegrationException {
         blackduckAssertions.hasComponents("jinjapython");
@@ -82,6 +128,14 @@ public class PipTest {
         blackduckAssertions.checkComponentVersionExists("MarkupSafe", "2.1.5");
         blackduckAssertions.checkComponentVersionExists("Packaging", "24.1");
         blackduckAssertions.checkComponentVersionExists("pycparser", "2.22");
+    }
+
+    private void validateComponentsForSamplePipPkgProject(BlackDuckAssertions blackduckAssertions) throws IntegrationException {
+        blackduckAssertions.hasComponents("jinjapython");
+        blackduckAssertions.hasComponents("PyYAML");
+        blackduckAssertions.checkComponentVersionExists("MarkupSafe", "2.1.5");
+        blackduckAssertions.checkComponentVersionExists("Packaging", "23.2");
+        blackduckAssertions.checkComponentVersionExists("pycparser", "2.21");
     }
 
     @Test

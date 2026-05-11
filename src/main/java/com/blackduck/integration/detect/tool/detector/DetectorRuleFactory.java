@@ -26,6 +26,7 @@ import com.blackduck.integration.detectable.detectables.go.vendor.GoVendorDetect
 import com.blackduck.integration.detectable.detectables.go.vendr.GoVndrDetectable;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.GradleInspectorDetectable;
 import com.blackduck.integration.detectable.detectables.gradle.parsing.GradleProjectInspectorDetectable;
+import com.blackduck.integration.detectable.detectables.ivy.IvyCliDetectable;
 import com.blackduck.integration.detectable.detectables.ivy.IvyParseDetectable;
 import com.blackduck.integration.detectable.detectables.lerna.LernaDetectable;
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenPomDetectable;
@@ -184,9 +185,11 @@ public class DetectorRuleFactory {
         });
 
         rules.addDetector(DetectorType.IVY, detector -> {
+            detector.entryPoint(IvyCliDetectable.class)
+                .search().defaultLock();
             detector.entryPoint(IvyParseDetectable.class)
                 .search().defaultLock();
-        });
+        }).allEntryPointsFallbackToNext();
 
         rules.addDetector(DetectorType.HEX, detector -> {
             detector.entryPoint(RebarDetectable.class)

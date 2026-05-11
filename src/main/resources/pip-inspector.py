@@ -34,7 +34,7 @@ Usage: pip-inspector.py --projectname=<project_name> --requirements=<requirement
 from getopt import getopt, GetoptError
 from os import path
 import sys
-from re import split
+from re import split, match
 
 import pip
 pip_major_version = int(pip.__version__.split(".")[0])
@@ -93,6 +93,18 @@ def resolve_project_node(project_name):
     return project_dependency_node
 
 
+def normalize_package_name(package_name):
+    """Extract and normalize package name from a requirement string using regex.
+    Handles cases like 'package-name>=1.0', 'Package[extra]>=1.0', 'package (>=1.0)', etc.
+    Package names contain only: letters, digits, dots, hyphens, underscores per PEP 508."""
+    if package_name is None:
+        return None
+    name_match = match(r'^([a-zA-Z0-9._-]+)', package_name.strip())
+    if name_match:
+        return name_match.group(1)
+    return None
+
+
 def populate_dependency_tree(project_root_node, requirements_path):
     """Resolves the dependencies of the user-provided requirements.txt and appends them to the dependency tree"""
     try:
@@ -110,7 +122,9 @@ def populate_dependency_tree(project_root_node, requirements_path):
                 # re matches from left to right, so subsets (e.g. ===) should be before supersets (e.g. ==)
                 # See: https://docs.python.org/3/library/re.html
                 # --rotte NOV 2020
-                package_name = split('===|<=|!=|==|>=|~=|<|>', parsed_requirement.requirement)[0]
+                package_name = normalize_package_name(
+                    split('===|<=|!=|==|>=|~=|<|>', parsed_requirement.requirement)[0]
+                )
 
             dependency_node = recursively_resolve_dependencies(package_name, [])
 
@@ -118,7 +132,8 @@ def populate_dependency_tree(project_root_node, requirements_path):
                 project_root_node.children = project_root_node.children + [dependency_node]
             else:
                 print('--' + package_name)
-    except:
+    except Exception as e:
+        print(e)
         print('p?' + requirements_path)
 
 
@@ -145,6 +160,7 @@ if sys.version_info.major > 3 or sys.version_info.major == 3 and sys.version_inf
     #  * a test confirmed that this version of python is incompatible with PIP versions below 21.2,
     #    which was the most recent version in which PIP search_packages_info interface changed
     use_pip_internal_to_search_packages = True
+    print("[PIP_INSPECTOR] Using pip internal API (Python 3.12+)")
 
 if use_pip_internal_to_search_packages:
     from pip._internal.commands.show import search_packages_info
@@ -170,13 +186,15 @@ else:
     try:
         import importlib.metadata as metadata
         use_importlib_metadata = True
+        print("[PIP_INSPECTOR] Using importlib.metadata route")
     except ImportError:
         # Priority 2: Fall back to pkg_resources
         try:
             from pkg_resources import working_set, Requirement
             use_pkg_resources = True
+            print("[PIP_INSPECTOR] Using pkg_resources route")
         except ImportError:
-            pass
+            print("[PIP_INSPECTOR] WARNING: Neither importlib.metadata nor pkg_resources available")
 
     if use_importlib_metadata:
         def get_package_by_name(package_name):
@@ -184,12 +202,15 @@ else:
             if package_name is None:
                 return None, None
 
+            # Normalize the package name to handle different representations
+            normalized_name = normalize_package_name(package_name)
+
             package_info = None
             try:
-                package_info = metadata.distribution(package_name)
+                package_info = metadata.distribution(normalized_name)
             except:
-                # Try name variants
-                name_variants = (package_name, package_name.lower(), package_name.replace('-', '_'), package_name.replace('_', '-'), package_name.replace('.', '-'))
+                # Try name variants if the initial lookup fails
+                name_variants = (normalized_name, normalized_name.lower(), normalized_name.replace('-', '_'), normalized_name.replace('_', '-'), normalized_name.replace('.', '-'))
                 for name_variant in name_variants:
                     try:
                         package_info = metadata.distribution(name_variant)
@@ -204,9 +225,12 @@ else:
             requires = []
             if package_info.requires:
                 for requirement in package_info.requires:
-                    # Extract just the package name from the requirement string
-                    req_name = split('===|<=|!=|==|>=|~=|<|>', requirement)[0].strip()
+                    # Extract and normalize the package name from the requirement string
+                    req_name = normalize_package_name(requirement)
                     requires.append(req_name)
+
+            # Remove duplicates while preserving order
+            requires = list(dict.fromkeys(requires))
 
             return DependencyNode(package_info.metadata['Name'], package_info.metadata['Version']), requires
 

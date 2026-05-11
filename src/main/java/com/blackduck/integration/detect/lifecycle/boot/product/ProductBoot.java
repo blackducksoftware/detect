@@ -26,6 +26,8 @@ import com.blackduck.integration.detect.lifecycle.run.data.ProductRunData;
 import com.blackduck.integration.detect.util.filter.DetectToolFilter;
 import com.blackduck.integration.detect.workflow.blackduck.analytics.AnalyticsConfigurationService;
 import com.blackduck.integration.detect.workflow.blackduck.analytics.AnalyticsSetting;
+import com.blackduck.integration.detect.workflow.blackduck.settings.DetectPropertiesService;
+import com.blackduck.integration.detect.workflow.blackduck.settings.DetectPropertiesSetting;
 import com.blackduck.integration.detect.workflow.phonehome.PhoneHomeManager;
 import com.blackduck.integration.exception.IntegrationException;
 
@@ -33,6 +35,7 @@ public class ProductBoot {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final BlackDuckConnectivityChecker blackDuckConnectivityChecker;
     private final AnalyticsConfigurationService analyticsConfigurationService;
+    private final DetectPropertiesService detectPropertiesService;
     private final ProductBootFactory productBootFactory;
     private final ProductBootOptions productBootOptions;
     private final BlackDuckVersionChecker blackDuckVersionChecker;
@@ -40,12 +43,14 @@ public class ProductBoot {
     public ProductBoot(
         BlackDuckConnectivityChecker blackDuckConnectivityChecker,
         AnalyticsConfigurationService analyticsConfigurationService,
+        DetectPropertiesService detectPropertiesService,
         ProductBootFactory productBootFactory,
         ProductBootOptions productBootOptions,
         BlackDuckVersionChecker blackDuckVersionChecker
     ) {
         this.blackDuckConnectivityChecker = blackDuckConnectivityChecker;
         this.analyticsConfigurationService = analyticsConfigurationService;
+        this.detectPropertiesService = detectPropertiesService;
         this.productBootFactory = productBootFactory;
         this.productBootOptions = productBootOptions;
         this.blackDuckVersionChecker = blackDuckVersionChecker;
@@ -67,7 +72,8 @@ public class ProductBoot {
             productBootFactory,
             blackDuckConnectivityChecker,
             productBootOptions,
-            analyticsConfigurationService
+            analyticsConfigurationService,
+            detectPropertiesService
         );
 
         if (productBootOptions.isTestConnections()) {
@@ -85,7 +91,8 @@ public class ProductBoot {
         ProductBootFactory productBootFactory,
         BlackDuckConnectivityChecker blackDuckConnectivityChecker,
         ProductBootOptions productBootOptions,
-        AnalyticsConfigurationService analyticsConfigurationService
+        AnalyticsConfigurationService analyticsConfigurationService,
+        DetectPropertiesService detectPropertiesService
     ) throws DetectUserFriendlyException {
         if (!blackDuckDecision.shouldRun()) {
             return null;
@@ -110,9 +117,15 @@ public class ProductBoot {
             
             BlackDuckServicesFactory blackDuckServicesFactory = blackDuckConnectivityResult.getBlackDuckServicesFactory();
             setBlackDuckVersionLevel(blackDuckServicesFactory, blackDuckConnectivityResult);
-            boolean waitAtScanLevel = shouldWaitAtScanLevel(blackDuckConnectivityResult);
 
-            return createBlackDuckRunDataBasedOnPhoneHomeDecision(blackDuckDecision, blackDuckServicesFactory, blackDuckConnectivityResult, waitAtScanLevel);
+            // Fetch server detect properties settings
+            Optional<DetectPropertiesSetting> serverDetectProperties = fetchDetectPropertiesFromServer(
+                detectPropertiesService,
+                blackDuckServicesFactory.getApiDiscovery(),
+                blackDuckServicesFactory.getBlackDuckApiClient()
+            );
+
+            return createBlackDuckRunDataBasedOnPhoneHomeDecision(blackDuckDecision, blackDuckServicesFactory, blackDuckConnectivityResult, serverDetectProperties);
         } else {
             if (productBootOptions.isIgnoreConnectionFailures()) {
                 logger.info(String.format("Failed to connect to Black Duck SCA: %s", blackDuckConnectivityResult.getFailureReason()));
@@ -130,7 +143,12 @@ public class ProductBoot {
         }
     }
 
-    private BlackDuckRunData createBlackDuckRunDataBasedOnPhoneHomeDecision(BlackDuckDecision blackDuckDecision, BlackDuckServicesFactory blackDuckServicesFactory, BlackDuckConnectivityResult blackDuckConnectivityResult, boolean waitAtScanLevel) {
+    private BlackDuckRunData createBlackDuckRunDataBasedOnPhoneHomeDecision(
+        BlackDuckDecision blackDuckDecision,
+        BlackDuckServicesFactory blackDuckServicesFactory,
+        BlackDuckConnectivityResult blackDuckConnectivityResult,
+        Optional<DetectPropertiesSetting> serverDetectProperties
+    ) {
         if (shouldUsePhoneHome(analyticsConfigurationService, blackDuckServicesFactory.getApiDiscovery(), blackDuckServicesFactory.getBlackDuckApiClient())) {
             try {
                 PhoneHomeManager phoneHomeManager = productBootFactory.createPhoneHomeManager(blackDuckServicesFactory,
@@ -140,7 +158,7 @@ public class ProductBoot {
                     blackDuckServicesFactory,
                     phoneHomeManager,
                     blackDuckConnectivityResult,
-                    waitAtScanLevel
+                    serverDetectProperties
                 );
             } catch (IntegrationException e) {
                 logger.debug("Failed to fetch Analytics credentials. Skipping phone home. Exception: " + e.getMessage());
@@ -150,7 +168,24 @@ public class ProductBoot {
         } else {
             logger.debug("Skipping phone home due to Black Duck SCA global settings.");
         }
-        return BlackDuckRunData.onlineNoPhoneHome(blackDuckDecision.scanMode(), blackDuckServicesFactory, blackDuckConnectivityResult, waitAtScanLevel);
+        return BlackDuckRunData.onlineNoPhoneHome(blackDuckDecision.scanMode(), blackDuckServicesFactory, blackDuckConnectivityResult, serverDetectProperties);
+    }
+
+    private Optional<DetectPropertiesSetting> fetchDetectPropertiesFromServer(
+        DetectPropertiesService detectPropertiesService,
+        ApiDiscovery apiDiscovery,
+        BlackDuckApiClient blackDuckApiClient
+    ) {
+        try {
+            DetectPropertiesSetting settings = detectPropertiesService.fetchDetectProperties(apiDiscovery, blackDuckApiClient);
+            logger.debug("Successfully fetched detect properties from server: correlatedScanningEnabled={}, supportedScanTypes={}",
+                settings.isCorrelatedScanningEnabled(),
+                settings.getCorrelatedScanningScanTypes());
+            return Optional.of(settings);
+        } catch (IntegrationException | IOException e) {
+            logger.debug("Failed to fetch detect properties from server. Endpoint may not be available on this Black Duck instance: {}", e.getMessage());
+            return Optional.empty();
+        }
     }
 
     private void setBlackDuckVersionLevel(BlackDuckServicesFactory blackDuckServicesFactory,
@@ -171,19 +206,5 @@ public class ProductBoot {
             logger.trace("Failed to check analytics setting on Black Duck SCA. Likely this Black Duck instance does not support it.", e);
             return true; // Skip phone home will be applied at the library level.
         }
-    }
-    
-    private boolean shouldWaitAtScanLevel(BlackDuckConnectivityResult blackDuckConnectivityResult) {
-        BlackDuckVersionParser parser = new BlackDuckVersionParser();
-        Optional<BlackDuckVersion> blackDuckServerVersion = parser.parse(blackDuckConnectivityResult.getContactedServerVersion());
-        BlackDuckVersion minVersion = new BlackDuckVersion(2023, 1, 1);
-        
-        boolean waitAtScanLevel = false;
-        
-        if (blackDuckServerVersion.isPresent() && blackDuckServerVersion.get().isAtLeast(minVersion)) {
-            waitAtScanLevel = true;
-        }
-        
-        return waitAtScanLevel;
     }
 }
