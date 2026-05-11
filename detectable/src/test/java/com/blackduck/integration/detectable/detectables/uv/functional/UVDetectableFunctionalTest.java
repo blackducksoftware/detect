@@ -90,7 +90,7 @@ public class UVDetectableFunctionalTest extends DetectableFunctionalTest {
             }
         }
 
-        return detectableFactory.createUVBuildDetectable(detectableEnvironment, new UVResolverTest(), new UVDetectorOptions(Collections.emptyList(), Collections.emptyList(), Collections.emptyList()));
+        return detectableFactory.createUVBuildDetectable(detectableEnvironment, new UVResolverTest(), new UVDetectorOptions(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList()));
     }
 
     @Override
