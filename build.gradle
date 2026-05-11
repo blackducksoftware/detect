@@ -131,10 +131,10 @@ allprojects {
 
     dependencies {
         implementation "com.google.guava:guava:32.1.2-jre"
-        implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.0'
+        implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.21.3'
         implementation 'org.yaml:snakeyaml:2.0'
         // jackson-core is a transitive dep coming from jackson-dataformat-yaml, earlier versions have vulnerability sonatype-2022-6438
-        implementation('com.fasterxml.jackson.core:jackson-core:2.15.0')
+        implementation('com.fasterxml.jackson.core:jackson-core:2.21.3')
         implementation 'org.freemarker:freemarker:2.3.31'
         implementation 'org.apache.httpcomponents:httpclient-osgi:4.5.14'
 
