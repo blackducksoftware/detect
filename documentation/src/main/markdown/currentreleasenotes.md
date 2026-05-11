@@ -25,6 +25,8 @@
 * npm detectors now allow for aliases to be used when specifying dependencies in the package.json file.
 * Ivy CLI Detector, leveraging the `ivy:dependencytree` Ant task to extract direct and transitive dependencies for Ant + Ivy projects. For further information, see [Ivy (Ant) support](packagemgrs/ivy.md).
 
+* The `detect.uv.dependency.groups.included` property, supported for UV Build Detector in CLI mode, allows users to specify which UV dependency groups to scan. See [UV Package Manager](packagemgrs/python.md#uv-package-manager) for details.
+
 ### Resolved issues
 
 * (IDETECT-4980) When `detect.clone.project.version.latest` is set to true, an INFO-level log message will be written to identify the exact project version selected as the clone source.
