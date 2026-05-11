@@ -10,6 +10,7 @@ import com.blackduck.integration.blackduck.codelocation.signaturescanner.command
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.ReducedPersistence;
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.SnippetMatching;
 import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
+import com.blackduck.integration.detect.lifecycle.boot.decision.CorrelatedScanningDecision;
 
 public class BlackDuckSignatureScannerOptions {
     private final List<Path> signatureScannerPaths;
@@ -39,7 +40,7 @@ public class BlackDuckSignatureScannerOptions {
     private final Boolean followSymLinks;
     private final Boolean treatSkippedScansAsSuccess;
     private final Boolean isStateless;
-    private final Boolean correlatedScanningEnabled;
+    private final CorrelatedScanningDecision correlatedScanningDecision;
     private final RapidCompareMode bomCompareMode;
     private final Boolean csvArchive;
 
@@ -59,9 +60,9 @@ public class BlackDuckSignatureScannerOptions {
         Boolean copyrightSearch,
         Boolean followSymLinks,
         Boolean treatSkippedScansAsSuccess,
-        Boolean isStateless, 
+        Boolean isStateless,
         ReducedPersistence reducedPersistence,
-        Boolean correlatedScanningEnabled,
+        CorrelatedScanningDecision correlatedScanningDecision,
         RapidCompareMode bomCompareMode,
         Boolean csvArchive
     ) {
@@ -83,7 +84,7 @@ public class BlackDuckSignatureScannerOptions {
         this.treatSkippedScansAsSuccess = treatSkippedScansAsSuccess;
         this.isStateless = isStateless;
         this.reducedPersistence = reducedPersistence;
-        this.correlatedScanningEnabled = correlatedScanningEnabled;
+        this.correlatedScanningDecision = correlatedScanningDecision;
         this.bomCompareMode = bomCompareMode;
         this.csvArchive = csvArchive;
     }
@@ -156,8 +157,8 @@ public class BlackDuckSignatureScannerOptions {
         return Optional.ofNullable(reducedPersistence);
     }
 
-    public Boolean isCorrelatedScanningEnabled() {
-        return correlatedScanningEnabled;
+    public CorrelatedScanningDecision getCorrelatedScanningDecision() {
+        return correlatedScanningDecision;
     }
     
     public RapidCompareMode getBomCompareMode() {

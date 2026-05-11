@@ -39,7 +39,8 @@ public class DetectProtobufBdioHeaderUtil {
         NameVersion projectNameVersion,
         String projectGroupName,
         String codeLocationName,
-        Long fileSystemSizeInBytes
+        Long fileSystemSizeInBytes,
+        String correlationId
     ) {
         this.scanId = scanId;
         this.scanType = scanType;
@@ -52,7 +53,7 @@ public class DetectProtobufBdioHeaderUtil {
         this.sourceRepository = null;
         this.sourceBranch = null;
         this.projectGroupName = projectGroupName;
-        this.correlationId = null;
+        this.correlationId = correlationId != null ? UUID.fromString(correlationId) : null;
         this.matchConfidenceThreshold = 1L;
         this.baseDir = "/";
         this.withStringSearch = false;

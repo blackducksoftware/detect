@@ -96,7 +96,7 @@ public class IacScanStepRunner {
         try {
             File resultsFile = operationRunner.performIacScanScan(scanTarget, iacScanExe, count);
             String codeLocationName = operationRunner.createIacScanCodeLocationName(scanTarget, projectNameVersion);
-            String scanId = initiateScan(detectRunUuid, projectNameVersion, blackDuckRunData.getBlackDuckServicesFactory().createBdio2FileUploadService(), codeLocationName
+            String scanId = initiateIacScan(detectRunUuid, projectNameVersion, blackDuckRunData.getBlackDuckServicesFactory().createBdio2FileUploadService(), codeLocationName
             );
             operationRunner.uploadIacScanResults(blackDuckRunData, resultsFile, scanId);
             return IacScanReport.SUCCESS_ONLINE(scanTarget, codeLocationName);
@@ -121,7 +121,7 @@ public class IacScanStepRunner {
     //TODO- look into extracting scan initiation to another class
 
     //TODO- this should only be necessary if we didn't already upload BDIO during DETECTORS phase
-    private String initiateScan(
+    private String initiateIacScan(
         String detectRunUuid,
         NameVersion projectNameVersion, Bdio2FileUploadService bdio2FileUploadService, String codeLocationNameOverride
     )

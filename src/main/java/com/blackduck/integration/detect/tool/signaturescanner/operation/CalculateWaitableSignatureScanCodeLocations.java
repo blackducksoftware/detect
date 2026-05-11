@@ -5,7 +5,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.blackduck.integration.blackduck.service.model.NotificationTaskRange;
 import com.blackduck.integration.common.util.Bds;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
 import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerCodeLocationResult;
@@ -13,15 +12,15 @@ import com.blackduck.integration.detect.tool.signaturescanner.SignatureScannerRe
 import com.blackduck.integration.detect.workflow.blackduck.codelocation.WaitableCodeLocationData;
 
 public class CalculateWaitableSignatureScanCodeLocations {
-    public SignatureScannerCodeLocationResult calculateWaitableCodeLocations(NotificationTaskRange notificationTaskRange, List<SignatureScannerReport> reports) {
+    public SignatureScannerCodeLocationResult calculateWaitableCodeLocations(List<SignatureScannerReport> reports) {
 
-        WaitableCodeLocationData waitableCodeLocationData = calculateWaitable(notificationTaskRange, reports);
+        WaitableCodeLocationData waitableCodeLocationData = calculateWaitable(reports);
         Set<String> nonWaitableNames = calculateNonWaitable(reports);
 
         return new SignatureScannerCodeLocationResult(waitableCodeLocationData, nonWaitableNames);
     }
 
-    private WaitableCodeLocationData calculateWaitable(NotificationTaskRange notificationTaskRange, List<SignatureScannerReport> reports) {
+    private WaitableCodeLocationData calculateWaitable(List<SignatureScannerReport> reports) {
         List<SignatureScannerReport> waitableScans = Bds.of(reports)
             .filter(SignatureScannerReport::isSuccessful)
             .toList();
@@ -38,7 +37,7 @@ public class CalculateWaitableSignatureScanCodeLocations {
             .map(Optional::get)
             .collect(Collectors.toSet());
 
-        return new WaitableCodeLocationData(DetectTool.SIGNATURE_SCAN, totalExpected, allNames, notificationTaskRange);
+        return new WaitableCodeLocationData(DetectTool.SIGNATURE_SCAN, totalExpected, allNames);
     }
 
     private Set<String> calculateNonWaitable(List<SignatureScannerReport> reports) {

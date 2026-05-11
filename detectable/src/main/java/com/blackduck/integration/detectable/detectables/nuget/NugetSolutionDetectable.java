@@ -2,6 +2,7 @@ package com.blackduck.integration.detectable.detectables.nuget;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -24,7 +25,7 @@ import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 
 @DetectableInfo(name = "NuGet Solution Native Inspector", language = "C#", forge = "NuGet.org", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: a solution file with a .sln extension.")
 public class NugetSolutionDetectable extends Detectable {
-    private static final List<String> SUPPORTED_SOLUTION_PATTERNS = Collections.singletonList("*.sln");
+    private static final List<String> SUPPORTED_SOLUTION_PATTERNS = Collections.unmodifiableList(Arrays.asList("*.sln", "*.slnx"));
 
     private final FileFinder fileFinder;
     private final NugetInspectorResolver nugetInspectorResolver;

@@ -71,13 +71,16 @@ public class PreScassContainerScanStepRunner extends AbstractContainerScanStepRu
     }
 
     private UUID initiateScan() throws IOException, IntegrationException, OperationException {
+        String correlationId = operationRunner.getCorrelationIdForScanType(SCAN_TYPE);
+
         DetectProtobufBdioHeaderUtil detectProtobufBdioHeaderUtil = new DetectProtobufBdioHeaderUtil(
             UUID.randomUUID().toString(),
             SCAN_TYPE,
             projectNameVersion,
             projectGroupName,
             getCodeLocationName(),
-            containerImageSizeInBytes);
+            containerImageSizeInBytes,
+            correlationId);
         File bdioHeaderFile = detectProtobufBdioHeaderUtil.createProtobufBdioHeader(containerRunDirectory);
         String operationName = "Upload Container Scan BDIO Header to Initiate Scan";
         UUID scanId = operationRunner.uploadBdioHeaderToInitiateScan(blackDuckRunData, bdioHeaderFile, operationName);

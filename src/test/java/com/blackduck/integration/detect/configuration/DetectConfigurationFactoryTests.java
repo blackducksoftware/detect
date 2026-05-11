@@ -24,6 +24,7 @@ import com.blackduck.integration.detect.configuration.enumeration.DefaultSignatu
 import com.blackduck.integration.detect.configuration.enumeration.DefaultDetectorSearchExcludedDirectories;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
 import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
+import com.blackduck.integration.detect.lifecycle.boot.decision.CorrelatedScanningDecision;
 import com.blackduck.integration.detect.tool.signaturescanner.BlackDuckSignatureScannerOptions;
 import com.blackduck.integration.detect.workflow.blackduck.project.options.ProjectSyncOptions;
 import com.blackduck.integration.rest.credentials.Credentials;
@@ -93,8 +94,8 @@ public class DetectConfigurationFactoryTests {
         DetectConfigurationFactory factory = factoryOf(
                 Pair.of(DetectProperties.DETECT_TOOLS, DetectTool.SIGNATURE_SCAN.toString()),
                 Pair.of(DetectProperties.DETECT_BLACKDUCK_SCAN_MODE, BlackduckScanMode.STATELESS.toString()));
-        
-        BlackDuckSignatureScannerOptions blackDuckSignatureScannerOptions = factory.createBlackDuckSignatureScannerOptions();
+
+        BlackDuckSignatureScannerOptions blackDuckSignatureScannerOptions = factory.createBlackDuckSignatureScannerOptions(CorrelatedScanningDecision.defaultDisabled());
 
         Assertions.assertTrue(blackDuckSignatureScannerOptions.getIsStateless());
     }
@@ -103,8 +104,8 @@ public class DetectConfigurationFactoryTests {
     public void testNoPersistenceModeSpecified() {
         DetectConfigurationFactory factory = factoryOf(
                 Pair.of(DetectProperties.DETECT_BLACKDUCK_RAPID_COMPARE_MODE, RapidCompareMode.BOM_COMPARE_STRICT.toString()));
-        
-        BlackDuckSignatureScannerOptions blackDuckSignatureScannerOptions = factory.createBlackDuckSignatureScannerOptions();
+
+        BlackDuckSignatureScannerOptions blackDuckSignatureScannerOptions = factory.createBlackDuckSignatureScannerOptions(CorrelatedScanningDecision.defaultDisabled());
 
         Assertions.assertTrue(RapidCompareMode.BOM_COMPARE_STRICT.equals(blackDuckSignatureScannerOptions.getBomCompareMode()));
     }
