@@ -1,6 +1,7 @@
 package com.blackduck.integration.detectable.detectables.uv.unit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -56,13 +57,16 @@ class UVBuildExtractorTest {
         when(executableRunner.executeSuccessfully(any(Executable.class))).thenReturn(mockOutput);
     }
 
+    // ==================== Basic Arguments Tests ====================
+
     @Test
     void extractBuildsBasicArguments() throws Exception {
         UVBuildExtractor extractor = new UVBuildExtractor(executableRunner, tempDir, transformer);
         UVDetectorOptions options = new UVDetectorOptions(
-            Collections.emptyList(),
-            Collections.emptyList(),
-            Collections.emptyList()
+            Collections.emptyList(),  // includedGroups
+            Collections.emptyList(),  // excludedGroups
+            Collections.emptyList(),  // includedWorkspaceMembers
+            Collections.emptyList()   // excludedWorkspaceMembers
         );
 
         extractor.extract(uvExe, options, tomlParser);
@@ -75,11 +79,14 @@ class UVBuildExtractorTest {
         assertTrue(arguments.contains("--no-dedupe"));
     }
 
+    // ==================== Excluded Groups Tests ====================
+
     @Test
     void extractAddsNoGroupFlagsForExcludedGroups() throws Exception {
         UVBuildExtractor extractor = new UVBuildExtractor(executableRunner, tempDir, transformer);
         UVDetectorOptions options = new UVDetectorOptions(
-            Arrays.asList("dev", "test"),
+            Collections.emptyList(),        // includedGroups
+            Arrays.asList("dev", "test"),   // excludedGroups
             Collections.emptyList(),
             Collections.emptyList()
         );
@@ -108,6 +115,7 @@ class UVBuildExtractorTest {
         UVDetectorOptions options = new UVDetectorOptions(
             Collections.emptyList(),
             Collections.emptyList(),
+            Collections.emptyList(),
             Collections.emptyList()
         );
 
@@ -126,6 +134,7 @@ class UVBuildExtractorTest {
     void extractWithSingleExcludedGroup() throws Exception {
         UVBuildExtractor extractor = new UVBuildExtractor(executableRunner, tempDir, transformer);
         UVDetectorOptions options = new UVDetectorOptions(
+            Collections.emptyList(),
             Arrays.asList("dev"),
             Collections.emptyList(),
             Collections.emptyList()
@@ -141,5 +150,187 @@ class UVBuildExtractorTest {
         long noGroupCount = arguments.stream().filter(arg -> arg.equals("--no-group")).count();
         assertEquals(1, noGroupCount);
         assertTrue(arguments.contains("dev"));
+    }
+
+    // ==================== Included Groups Tests ====================
+
+    @Test
+    void extractAddsGroupFlagsForIncludedGroups() throws Exception {
+        UVBuildExtractor extractor = new UVBuildExtractor(executableRunner, tempDir, transformer);
+        UVDetectorOptions options = new UVDetectorOptions(
+            Arrays.asList("dev", "test"),   // includedGroups
+            Collections.emptyList(),        // excludedGroups
+            Collections.emptyList(),
+            Collections.emptyList()
+        );
+
+        extractor.extract(uvExe, options, tomlParser);
+
+        ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
+        verify(executableRunner).executeSuccessfully(captor.capture());
+
+        List<String> arguments = captor.getValue().getCommandWithArguments();
+        assertTrue(arguments.contains("tree"));
+        assertTrue(arguments.contains("--no-dedupe"));
+        assertTrue(arguments.contains("--group"));
+
+        int devIndex = arguments.indexOf("dev");
+        int testIndex = arguments.indexOf("test");
+        assertTrue(devIndex > 0, "dev group should be in arguments");
+        assertTrue(testIndex > 0, "test group should be in arguments");
+        assertEquals("--group", arguments.get(devIndex - 1));
+        assertEquals("--group", arguments.get(testIndex - 1));
+    }
+
+    @Test
+    void extractWithSingleIncludedGroup() throws Exception {
+        UVBuildExtractor extractor = new UVBuildExtractor(executableRunner, tempDir, transformer);
+        UVDetectorOptions options = new UVDetectorOptions(
+            Arrays.asList("docs"),
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Collections.emptyList()
+        );
+
+        extractor.extract(uvExe, options, tomlParser);
+
+        ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
+        verify(executableRunner).executeSuccessfully(captor.capture());
+
+        List<String> arguments = captor.getValue().getCommandWithArguments();
+
+        long groupCount = arguments.stream().filter(arg -> arg.equals("--group")).count();
+        assertEquals(1, groupCount);
+        assertTrue(arguments.contains("docs"));
+    }
+
+    @Test
+    void extractWithAllKeywordAddsAllGroupsFlag() throws Exception {
+        UVBuildExtractor extractor = new UVBuildExtractor(executableRunner, tempDir, transformer);
+        UVDetectorOptions options = new UVDetectorOptions(
+            Arrays.asList("all"),           // "all" keyword
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Collections.emptyList()
+        );
+
+        extractor.extract(uvExe, options, tomlParser);
+
+        ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
+        verify(executableRunner).executeSuccessfully(captor.capture());
+
+        List<String> arguments = captor.getValue().getCommandWithArguments();
+        assertTrue(arguments.contains("--all-groups"), "Should contain --all-groups flag when 'all' keyword is used");
+        assertFalse(arguments.contains("--group"), "Should not contain --group flag when using --all-groups");
+    }
+
+    @Test
+    void extractWithAllKeywordCaseInsensitive() throws Exception {
+        UVBuildExtractor extractor = new UVBuildExtractor(executableRunner, tempDir, transformer);
+        UVDetectorOptions options = new UVDetectorOptions(
+            Arrays.asList("ALL"),           // uppercase "ALL"
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Collections.emptyList()
+        );
+
+        extractor.extract(uvExe, options, tomlParser);
+
+        ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
+        verify(executableRunner).executeSuccessfully(captor.capture());
+
+        List<String> arguments = captor.getValue().getCommandWithArguments();
+        assertTrue(arguments.contains("--all-groups"), "Should handle 'ALL' keyword case-insensitively");
+    }
+
+    // ==================== Conflict Detection Tests ====================
+
+    @Test
+    void extractExcludesGroupWhenInBothIncludedAndExcluded() throws Exception {
+        UVBuildExtractor extractor = new UVBuildExtractor(executableRunner, tempDir, transformer);
+        UVDetectorOptions options = new UVDetectorOptions(
+            Arrays.asList("dev", "test"),   // includedGroups
+            Arrays.asList("dev"),           // excludedGroups - "dev" is in both!
+            Collections.emptyList(),
+            Collections.emptyList()
+        );
+
+        extractor.extract(uvExe, options, tomlParser);
+
+        ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
+        verify(executableRunner).executeSuccessfully(captor.capture());
+
+        List<String> arguments = captor.getValue().getCommandWithArguments();
+        
+        // "dev" should be excluded (--no-group dev) since excluded takes precedence
+        assertTrue(arguments.contains("--no-group"), "Excluded groups should have --no-group flag");
+        
+        // "test" should be included (--group test) since it's not in excluded
+        assertTrue(arguments.contains("--group"), "Non-conflicting included groups should have --group flag");
+        assertTrue(arguments.contains("test"), "test group should be included");
+        
+        // Find indices and verify correct flags
+        int noGroupDevIndex = -1;
+        int groupTestIndex = -1;
+        for (int i = 0; i < arguments.size() - 1; i++) {
+            if (arguments.get(i).equals("--no-group") && arguments.get(i + 1).equals("dev")) {
+                noGroupDevIndex = i;
+            }
+            if (arguments.get(i).equals("--group") && arguments.get(i + 1).equals("test")) {
+                groupTestIndex = i;
+            }
+        }
+        assertTrue(noGroupDevIndex >= 0, "dev should be excluded with --no-group");
+        assertTrue(groupTestIndex >= 0, "test should be included with --group");
+    }
+
+    @Test
+    void extractWithMultipleConflictingGroups() throws Exception {
+        UVBuildExtractor extractor = new UVBuildExtractor(executableRunner, tempDir, transformer);
+        UVDetectorOptions options = new UVDetectorOptions(
+            Arrays.asList("dev", "test", "docs"),   // includedGroups
+            Arrays.asList("dev", "test"),           // excludedGroups - both dev and test conflict
+            Collections.emptyList(),
+            Collections.emptyList()
+        );
+
+        extractor.extract(uvExe, options, tomlParser);
+
+        ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
+        verify(executableRunner).executeSuccessfully(captor.capture());
+
+        List<String> arguments = captor.getValue().getCommandWithArguments();
+        
+        // Only "docs" should be included with --group
+        long groupCount = arguments.stream().filter(arg -> arg.equals("--group")).count();
+        assertEquals(1, groupCount, "Only non-conflicting group should have --group flag");
+        
+        // "dev" and "test" should both be excluded
+        long noGroupCount = arguments.stream().filter(arg -> arg.equals("--no-group")).count();
+        assertEquals(2, noGroupCount, "Conflicting groups should have --no-group flags");
+    }
+
+    @Test
+    void extractWithEmptyIncludedGroupsAddsNoGroupFlags() throws Exception {
+        UVBuildExtractor extractor = new UVBuildExtractor(executableRunner, tempDir, transformer);
+        UVDetectorOptions options = new UVDetectorOptions(
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Collections.emptyList()
+        );
+
+        extractor.extract(uvExe, options, tomlParser);
+
+        ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
+        verify(executableRunner).executeSuccessfully(captor.capture());
+
+        List<String> arguments = captor.getValue().getCommandWithArguments();
+
+        long groupCount = arguments.stream().filter(arg -> arg.equals("--group")).count();
+        assertEquals(0, groupCount, "No --group flags should be added when includedGroups is empty");
+        
+        long allGroupsCount = arguments.stream().filter(arg -> arg.equals("--all-groups")).count();
+        assertEquals(0, allGroupsCount, "No --all-groups flag should be added when includedGroups is empty");
     }
 }
