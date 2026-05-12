@@ -1,0 +1,10 @@
+[project]
+name = "lib-utils"
+version = "0.3.0"
+dependencies = [
+    "click>=8.1.7",
+    "rich>=13.4.0",
+]
+
+[tool.uv]
+managed = true

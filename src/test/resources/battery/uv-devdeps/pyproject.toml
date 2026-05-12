@@ -1,0 +1,15 @@
+[project]
+name = "my-uv-devproject"
+version = "1.0.0"
+dependencies = [
+    "requests>=2.31.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "black>=23.7.0",
+]
+
+[tool.uv]
+managed = true

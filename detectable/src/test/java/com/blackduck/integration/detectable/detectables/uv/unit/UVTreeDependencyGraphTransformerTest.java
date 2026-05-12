@@ -335,6 +335,22 @@ class UVTreeDependencyGraphTransformerTest {
         assertTrue(hasDependency(requestsChildren, "urllib3", "2.0.4"));
     }
 
+    @Test
+    void transformTreeWithNoDependencies() {
+        List<String> treeOutput = Arrays.asList(
+            "empty-project v1.0.0"
+        );
+
+        UVTreeDependencyGraphTransformer transformer = new UVTreeDependencyGraphTransformer(externalIdFactory);
+        UVDetectorOptions options = createDefaultOptions();
+
+        List<CodeLocation> codeLocations = transformer.transform(treeOutput, options);
+
+        assertEquals(1, codeLocations.size());
+        DependencyGraph graph = codeLocations.get(0).getDependencyGraph();
+        assertEquals(0, graph.getRootDependencies().size());
+    }
+
     private UVDetectorOptions createDefaultOptions() {
         return new UVDetectorOptions(
             Collections.emptyList(),

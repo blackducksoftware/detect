@@ -1,0 +1,10 @@
+[project]
+name = "my-uv-project"
+version = "1.0.0"
+dependencies = [
+    "requests>=2.31.0",
+    "click>=8.1.7",
+]
+
+[tool.uv]
+managed = true

@@ -1,0 +1,7 @@
+my-uv-project v1.0.0
+├── requests v2.31.0
+│   ├── charset-normalizer v3.2.0
+│   ├── idna v3.4
+│   ├── urllib3 v2.0.4
+│   └── certifi v2023.7.22
+└── click v8.1.7

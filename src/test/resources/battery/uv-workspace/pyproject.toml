@@ -1,0 +1,13 @@
+[project]
+name = "main-app"
+version = "1.0.0"
+dependencies = [
+    "lib-core>=0.5.0",
+    "requests>=2.31.0",
+]
+
+[tool.uv]
+managed = true
+
+[tool.uv.workspace]
+members = [".", "lib-core", "lib-utils"]
