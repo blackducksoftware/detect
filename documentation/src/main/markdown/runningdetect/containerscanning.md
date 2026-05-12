@@ -16,7 +16,7 @@ Execute Container Scan by adding the following to a run of [bd_product_short]:
 
 ### General Requirements
  * Your [bd_product_short] server must have [bd_product_short] Secure Container (BDSC) licensed and enabled.
- * Must have Match as a Service (MaaS) and SCA Scan Service (SCASS), licensed, and enabled within the [bd_product_short] instance.
+ * Must have Match as a Service (MaaS) licensed, and enabled within the [bd_product_short] instance.
  * A unique project version must be provided, or the scan service will respond with an error.
  * Must be running [bd_product_short] 2023.10.0 or greater.
  * URL provided for a remote container image must use the HTTP(S) protocol.
