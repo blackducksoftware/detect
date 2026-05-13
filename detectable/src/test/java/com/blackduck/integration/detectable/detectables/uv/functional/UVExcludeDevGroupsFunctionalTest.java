@@ -80,10 +80,12 @@ public class UVExcludeDevGroupsFunctionalTest extends DetectableFunctionalTest {
         }
 
         // Configure to exclude the "dev" dependency group
+        // Note: includedDependencyGroups (first param) is only supported for UV Build Detector (CLI mode).
         UVDetectorOptions options = new UVDetectorOptions(
-            Arrays.asList("dev"),  // Excluded groups
-            Collections.emptyList(),  // Included workspace members
-            Collections.emptyList()   // Excluded workspace members
+            Collections.emptyList(),  // includedDependencyGroups
+            Arrays.asList("dev"),     // excludedDependencyGroups
+            Collections.emptyList(),  // includedWorkspaceMembers
+            Collections.emptyList()   // excludedWorkspaceMembers
         );
 
         return detectableFactory.createUVBuildDetectable(

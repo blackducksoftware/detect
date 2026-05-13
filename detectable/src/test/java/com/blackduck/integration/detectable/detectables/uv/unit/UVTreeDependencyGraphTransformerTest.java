@@ -233,7 +233,10 @@ class UVTreeDependencyGraphTransformerTest {
         );
 
         UVTreeDependencyGraphTransformer transformer = new UVTreeDependencyGraphTransformer(externalIdFactory);
+        // Note: includedDependencyGroups (first param) is only supported for UV Build Detector (CLI mode).
+        // Support for lockfile/tree transformer will be added later along with corresponding tests.
         UVDetectorOptions options = new UVDetectorOptions(
+            Collections.emptyList(),  // includedDependencyGroups - not yet supported for tree transformer
             Collections.emptyList(),
             Collections.emptyList(),
             Arrays.asList("lib-b")
@@ -261,7 +264,10 @@ class UVTreeDependencyGraphTransformerTest {
         );
 
         UVTreeDependencyGraphTransformer transformer = new UVTreeDependencyGraphTransformer(externalIdFactory);
+        // Note: includedDependencyGroups (first param) is only supported for UV Build Detector (CLI mode).
+        // Support for lockfile/tree transformer will be added later along with corresponding tests.
         UVDetectorOptions options = new UVDetectorOptions(
+            Collections.emptyList(),  // includedDependencyGroups - not yet supported for tree transformer
             Collections.emptyList(),
             Arrays.asList("main-app", "lib-a"),
             Collections.emptyList()
@@ -352,7 +358,10 @@ class UVTreeDependencyGraphTransformerTest {
     }
 
     private UVDetectorOptions createDefaultOptions() {
+        // Note: includedDependencyGroups (first param) is only supported for UV Build Detector (CLI mode).
+        // Support for lockfile/tree transformer will be added later along with corresponding tests.
         return new UVDetectorOptions(
+            Collections.emptyList(),  // includedDependencyGroups - not yet supported for tree transformer
             Collections.emptyList(),
             Collections.emptyList(),
             Collections.emptyList()

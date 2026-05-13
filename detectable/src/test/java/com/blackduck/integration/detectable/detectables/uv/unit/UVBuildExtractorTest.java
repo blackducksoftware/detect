@@ -243,6 +243,38 @@ class UVBuildExtractorTest {
         assertTrue(arguments.contains("--all-groups"), "Should handle 'ALL' keyword case-insensitively");
     }
 
+    @Test
+    void extractWithAllKeywordAndExclusions() throws Exception {
+        // When using "all" keyword to include all groups, but also excluding specific groups,
+        // both --all-groups and --no-group flags should be present
+        UVBuildExtractor extractor = new UVBuildExtractor(executableRunner, tempDir, transformer);
+        UVDetectorOptions options = new UVDetectorOptions(
+            Arrays.asList("all"),           // include all groups
+            Arrays.asList("dev", "test"),   // but exclude dev and test
+            Collections.emptyList(),
+            Collections.emptyList()
+        );
+
+        extractor.extract(uvExe, options, tomlParser);
+
+        ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
+        verify(executableRunner).executeSuccessfully(captor.capture());
+
+        List<String> arguments = captor.getValue().getCommandWithArguments();
+        
+        // Should have --all-groups flag
+        assertTrue(arguments.contains("--all-groups"), "Should contain --all-groups when 'all' keyword is used");
+        
+        // Should also have --no-group flags for excluded groups
+        assertTrue(arguments.contains("--no-group"), "Should have --no-group for excluded groups even with --all-groups");
+        
+        // Verify excluded groups are present
+        long noGroupCount = arguments.stream().filter(arg -> arg.equals("--no-group")).count();
+        assertEquals(2, noGroupCount, "Should have --no-group for each excluded group");
+        assertTrue(arguments.contains("dev"), "dev should be in arguments as excluded");
+        assertTrue(arguments.contains("test"), "test should be in arguments as excluded");
+    }
+
     // ==================== Conflict Detection Tests ====================
 
     @Test
