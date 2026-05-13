@@ -21,7 +21,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '11.5.0-SIGQA7-dterry.IDETECT-5080-update-vuln-libraries'
+version = '11.5.0-SIGQA8-dterry.IDETECT-5080-update-vuln-libraries-SNAPSHOT'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
