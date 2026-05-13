@@ -16,6 +16,7 @@ import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detector.base.DetectorType;
 
 @Tag("integration")
+@Tag("battery")
 public class MavenShadedDependenciesTest {
 
     private static final String PROJECT_NAME = "maven-shaded-dependency";
