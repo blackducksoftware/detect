@@ -12,6 +12,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,7 @@ import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import com.blackduck.integration.detectable.detectables.uv.buildexe.UVBuildExtractor;
 import com.blackduck.integration.detectable.detectables.uv.parse.UVTomlParser;
 import com.blackduck.integration.detectable.detectables.uv.transform.UVTreeDependencyGraphTransformer;
+import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.executable.Executable;
 import com.blackduck.integration.executable.ExecutableOutput;
 
@@ -46,6 +48,9 @@ class UVBuildExtractorTest {
         File tomlFile = new File(tempDir, "pyproject.toml");
         tomlFile.createNewFile();
         tomlParser = mock(UVTomlParser.class);
+        // Stub parseNameVersion() — without this Mockito returns null, causing a NullPointerException
+        // inside UVBuildExtractor.extract() and silently routing all tests through the exception path.
+        when(tomlParser.parseNameVersion()).thenReturn(Optional.empty());
 
         uvExe = ExecutableTarget.forFile(new File("/usr/bin/uv"));
 
@@ -69,7 +74,8 @@ class UVBuildExtractorTest {
             Collections.emptyList()   // excludedWorkspaceMembers
         );
 
-        extractor.extract(uvExe, options, tomlParser);
+        Extraction extraction = extractor.extract(uvExe, options, tomlParser);
+        assertExtractionSuccess(extraction);
 
         ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
         verify(executableRunner).executeSuccessfully(captor.capture());
@@ -91,7 +97,8 @@ class UVBuildExtractorTest {
             Collections.emptyList()
         );
 
-        extractor.extract(uvExe, options, tomlParser);
+        Extraction extraction = extractor.extract(uvExe, options, tomlParser);
+        assertExtractionSuccess(extraction);
 
         ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
         verify(executableRunner).executeSuccessfully(captor.capture());
@@ -119,7 +126,8 @@ class UVBuildExtractorTest {
             Collections.emptyList()
         );
 
-        extractor.extract(uvExe, options, tomlParser);
+        Extraction extraction = extractor.extract(uvExe, options, tomlParser);
+        assertExtractionSuccess(extraction);
 
         ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
         verify(executableRunner).executeSuccessfully(captor.capture());
@@ -140,7 +148,8 @@ class UVBuildExtractorTest {
             Collections.emptyList()
         );
 
-        extractor.extract(uvExe, options, tomlParser);
+        Extraction extraction = extractor.extract(uvExe, options, tomlParser);
+        assertExtractionSuccess(extraction);
 
         ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
         verify(executableRunner).executeSuccessfully(captor.capture());
@@ -164,7 +173,8 @@ class UVBuildExtractorTest {
             Collections.emptyList()
         );
 
-        extractor.extract(uvExe, options, tomlParser);
+        Extraction extraction = extractor.extract(uvExe, options, tomlParser);
+        assertExtractionSuccess(extraction);
 
         ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
         verify(executableRunner).executeSuccessfully(captor.capture());
@@ -192,7 +202,8 @@ class UVBuildExtractorTest {
             Collections.emptyList()
         );
 
-        extractor.extract(uvExe, options, tomlParser);
+        Extraction extraction = extractor.extract(uvExe, options, tomlParser);
+        assertExtractionSuccess(extraction);
 
         ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
         verify(executableRunner).executeSuccessfully(captor.capture());
@@ -214,7 +225,8 @@ class UVBuildExtractorTest {
             Collections.emptyList()
         );
 
-        extractor.extract(uvExe, options, tomlParser);
+        Extraction extraction = extractor.extract(uvExe, options, tomlParser);
+        assertExtractionSuccess(extraction);
 
         ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
         verify(executableRunner).executeSuccessfully(captor.capture());
@@ -234,7 +246,8 @@ class UVBuildExtractorTest {
             Collections.emptyList()
         );
 
-        extractor.extract(uvExe, options, tomlParser);
+        Extraction extraction = extractor.extract(uvExe, options, tomlParser);
+        assertExtractionSuccess(extraction);
 
         ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
         verify(executableRunner).executeSuccessfully(captor.capture());
@@ -255,19 +268,20 @@ class UVBuildExtractorTest {
             Collections.emptyList()
         );
 
-        extractor.extract(uvExe, options, tomlParser);
+        Extraction extraction = extractor.extract(uvExe, options, tomlParser);
+        assertExtractionSuccess(extraction);
 
         ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
         verify(executableRunner).executeSuccessfully(captor.capture());
 
         List<String> arguments = captor.getValue().getCommandWithArguments();
-        
+
         // Should have --all-groups flag
         assertTrue(arguments.contains("--all-groups"), "Should contain --all-groups when 'all' keyword is used");
-        
+
         // Should also have --no-group flags for excluded groups
         assertTrue(arguments.contains("--no-group"), "Should have --no-group for excluded groups even with --all-groups");
-        
+
         // Verify excluded groups are present
         long noGroupCount = arguments.stream().filter(arg -> arg.equals("--no-group")).count();
         assertEquals(2, noGroupCount, "Should have --no-group for each excluded group");
@@ -287,20 +301,21 @@ class UVBuildExtractorTest {
             Collections.emptyList()
         );
 
-        extractor.extract(uvExe, options, tomlParser);
+        Extraction extraction = extractor.extract(uvExe, options, tomlParser);
+        assertExtractionSuccess(extraction);
 
         ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
         verify(executableRunner).executeSuccessfully(captor.capture());
 
         List<String> arguments = captor.getValue().getCommandWithArguments();
-        
+
         // "dev" should be excluded (--no-group dev) since excluded takes precedence
         assertTrue(arguments.contains("--no-group"), "Excluded groups should have --no-group flag");
-        
+
         // "test" should be included (--group test) since it's not in excluded
         assertTrue(arguments.contains("--group"), "Non-conflicting included groups should have --group flag");
         assertTrue(arguments.contains("test"), "test group should be included");
-        
+
         // Find indices and verify correct flags
         int noGroupDevIndex = -1;
         int groupTestIndex = -1;
@@ -326,17 +341,18 @@ class UVBuildExtractorTest {
             Collections.emptyList()
         );
 
-        extractor.extract(uvExe, options, tomlParser);
+        Extraction extraction = extractor.extract(uvExe, options, tomlParser);
+        assertExtractionSuccess(extraction);
 
         ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
         verify(executableRunner).executeSuccessfully(captor.capture());
 
         List<String> arguments = captor.getValue().getCommandWithArguments();
-        
+
         // Only "docs" should be included with --group
         long groupCount = arguments.stream().filter(arg -> arg.equals("--group")).count();
         assertEquals(1, groupCount, "Only non-conflicting group should have --group flag");
-        
+
         // "dev" and "test" should both be excluded
         long noGroupCount = arguments.stream().filter(arg -> arg.equals("--no-group")).count();
         assertEquals(2, noGroupCount, "Conflicting groups should have --no-group flags");
@@ -352,7 +368,8 @@ class UVBuildExtractorTest {
             Collections.emptyList()
         );
 
-        extractor.extract(uvExe, options, tomlParser);
+        Extraction extraction = extractor.extract(uvExe, options, tomlParser);
+        assertExtractionSuccess(extraction);
 
         ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
         verify(executableRunner).executeSuccessfully(captor.capture());
@@ -361,8 +378,18 @@ class UVBuildExtractorTest {
 
         long groupCount = arguments.stream().filter(arg -> arg.equals("--group")).count();
         assertEquals(0, groupCount, "No --group flags should be added when includedGroups is empty");
-        
+
         long allGroupsCount = arguments.stream().filter(arg -> arg.equals("--all-groups")).count();
         assertEquals(0, allGroupsCount, "No --all-groups flag should be added when includedGroups is empty");
+    }
+
+    /**
+     * Asserts that the extraction completed on the success path.
+     * Without this check, a NullPointerException or other failure inside extract() would be silently
+     * swallowed by the catch block, causing all argument-verification assertions to still pass
+     * (via Mockito's verify) while the extractor never actually reached the success branch.
+     */
+    private void assertExtractionSuccess(Extraction extraction) {
+        assertTrue(extraction.isSuccess(), "Extraction should succeed but got: " + extraction.getError());
     }
 }

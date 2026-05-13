@@ -251,7 +251,7 @@ class UVTreeDependencyGraphTransformerTest {
     }
 
     @Test
-    void transformTreeIncludesOnlySpecificWorkspaceMemberDependency() {
+    void includedWorkspaceMembersFiltersDependenciesNotCodeLocations() {
         List<String> treeOutput = Arrays.asList(
             "main-app v1.0.0",
             "├── lib-a v1.0.0",
@@ -269,12 +269,15 @@ class UVTreeDependencyGraphTransformerTest {
         UVDetectorOptions options = new UVDetectorOptions(
             Collections.emptyList(),  // includedDependencyGroups - not yet supported for tree transformer
             Collections.emptyList(),
-            Arrays.asList("main-app", "lib-a"),
+            Arrays.asList("main-app", "lib-a"),  // Only include 2 workspace members
             Collections.emptyList()
         );
 
         List<CodeLocation> codeLocations = transformer.transform(treeOutput, options);
 
+        // All 3 workspace members (main-app, lib-a, lib-b) create code locations.
+        // The includedWorkspaceMembers setting only filters which members have their dependencies
+        // populated in the graph - excluded members still get code locations created (with empty/minimal graphs).
         assertEquals(3, codeLocations.size());
 
         DependencyGraph mainGraph = codeLocations.get(0).getDependencyGraph();
