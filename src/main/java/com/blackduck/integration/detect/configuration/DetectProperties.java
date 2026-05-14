@@ -1,7 +1,6 @@
 package com.blackduck.integration.detect.configuration;
 
 import java.lang.reflect.Field;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1148,7 +1147,7 @@ public class DetectProperties {
                     .build();
                         
     public static final StringProperty DETECT_QUACK_PATCH_OUTPUT =
-            StringProperty.newBuilder("detect.quack.patch.output", Paths.get("").toAbsolutePath().toString())
+            StringProperty.newBuilder("detect.quack.patch.output", "")
                     .setInfo("Quack Patch Output Directory", DetectPropertyFromVersion.VERSION_11_4_0)
                     .setHelp(
                             "Specifies the output directory for Quack Patch results.",

@@ -20,7 +20,6 @@ import com.blackduck.integration.configuration.help.PropertyConfigurationHelpCon
 import com.blackduck.integration.configuration.property.base.TypedProperty;
 import com.blackduck.integration.configuration.property.deprecation.DeprecatedValueUsage;
 import com.blackduck.integration.detect.configuration.DetectProperties;
-import com.blackduck.integration.detect.configuration.DetectPropertyConfiguration;
 import com.blackduck.integration.detect.configuration.DetectUserFriendlyException;
 import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
 import com.blackduck.integration.detect.workflow.event.EventSystem;
@@ -108,9 +107,7 @@ public class DetectConfigurationBootManager {
     }
 
     // Method to validate Quack Patch output path and return an Optional containing a DetectUserFriendlyException if the validation fails, or an empty Optional if it passes.
-    public Optional<DetectUserFriendlyException> validateQuackPatchOutputPath(DetectPropertyConfiguration detectConfiguration) {
-        String quackPatchOutput = detectConfiguration.getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT).trim();
-        
+    public Optional<DetectUserFriendlyException> validateQuackPatchOutputPath(String quackPatchOutput) {
         // Fail for empty string since that would cause issues later on when we try to write to it, and it's likely the user just forgot to set it if they enabled Quack Patch but left this blank.
         if (quackPatchOutput.isEmpty()) {
             return Optional.of(new DetectUserFriendlyException(

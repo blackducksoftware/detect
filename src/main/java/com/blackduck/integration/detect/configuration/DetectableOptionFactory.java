@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.blackduck.integration.detect.workflow.file.DirectoryManager;
 import org.jetbrains.annotations.Nullable;
 
 import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON;
@@ -356,7 +357,11 @@ public class DetectableOptionFactory {
         Path nugetArtifactsPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_ARTIFACTS_PATH);
         Path relevantDetectorsAndFilesInfoPath = null;
         if (detectConfiguration.getValue(DetectProperties.DETECT_QUACK_PATCH_ENABLED)) {
-            relevantDetectorsAndFilesInfoPath = Paths.get(detectConfiguration.getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT).trim())
+            String quackPatchOutputPath = detectConfiguration.getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT);
+            if (quackPatchOutputPath.isEmpty()) {
+                quackPatchOutputPath = DirectoryManager.getScanDirectoryName();
+            }
+            relevantDetectorsAndFilesInfoPath = Paths.get(quackPatchOutputPath)
                     .resolve(QUACKPATCH_SUBDIRECTORY_NAME)
                     .resolve(INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON);
         }

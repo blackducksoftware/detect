@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -58,13 +59,14 @@ import com.blackduck.integration.detect.util.finder.DetectExcludedDirectoryFilte
 import com.blackduck.integration.detect.workflow.bdio.BdioOptions;
 import com.blackduck.integration.detect.workflow.blackduck.BlackDuckPostOptions;
 import com.blackduck.integration.detect.workflow.blackduck.developer.RapidScanOptions;
-import com.blackduck.integration.detect.workflow.blackduck.settings.DetectPropertiesSetting;
 import com.blackduck.integration.detect.workflow.blackduck.project.customfields.CustomFieldDocument;
 import com.blackduck.integration.detect.workflow.blackduck.project.options.FindCloneOptions;
 import com.blackduck.integration.detect.workflow.blackduck.project.options.ParentProjectMapOptions;
 import com.blackduck.integration.detect.workflow.blackduck.project.options.ProjectGroupOptions;
 import com.blackduck.integration.detect.workflow.blackduck.project.options.ProjectSyncOptions;
 import com.blackduck.integration.detect.workflow.blackduck.project.options.ProjectVersionLicenseOptions;
+import com.blackduck.integration.detect.workflow.blackduck.settings.DetectPropertiesSetting;
+import com.blackduck.integration.detect.workflow.file.DirectoryManager;
 import com.blackduck.integration.detect.workflow.file.DirectoryOptions;
 import com.blackduck.integration.detect.workflow.phonehome.PhoneHomeOptions;
 import com.blackduck.integration.detect.workflow.project.ProjectNameVersionOptions;
@@ -679,4 +681,11 @@ public class DetectConfigurationFactory {
         return Optional.ofNullable(detectConfiguration.getNullableValue(DetectProperties.DETECT_CONTAINER_SCAN_FILE));
     }
 
+    public String getQuackPatchOutputDirectory(DirectoryManager directoryManager) {
+        String quackPatchOutput = detectConfiguration.getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT);
+        if (Objects.isNull(quackPatchOutput) || quackPatchOutput.isEmpty()) {
+            return directoryManager.getScanOutputDirectory().getAbsolutePath();
+        }
+        return quackPatchOutput.trim();
+    }
 }
