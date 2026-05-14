@@ -1,6 +1,12 @@
 <!-- Check the support matrix to determine supported, non-current major version releases -->
 # Release notes for previous [detect_product_short] versions
 
+## Version 11.4.2
+
+### Resolved issues
+
+* (IDETECT-5136) - Validate the `quack patch` output directory only if the Quack Patch feature is enabled; otherwise, skip validation to avoid errors.
+
 ## Version 11.4.1
 
 ### Dependency Updates
