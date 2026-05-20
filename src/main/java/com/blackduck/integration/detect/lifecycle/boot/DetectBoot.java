@@ -75,6 +75,7 @@ import com.blackduck.integration.rest.proxy.ProxyInfo;
 import com.google.gson.Gson;
 
 import freemarker.template.Configuration;
+import java.util.Set;
 
 public class DetectBoot {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -174,6 +175,14 @@ public class DetectBoot {
          }
 
         DetectConfigurationFactory detectConfigurationFactory = new DetectConfigurationFactory(detectConfiguration, gson);
+
+         // If quack patch is enabled, we need to validate the output path before doing anything else since it could cause Detect to fail later on if it's not valid, and we want to fail as early as possible with a clear message about what the issue is.
+        if (Boolean.TRUE.equals(detectConfigurationFactory.isQuackPatchEnabled())) {
+             Optional<DetectUserFriendlyException> quackPatchError = detectConfigurationBootManager.validateQuackPatchOutputPath(detectConfiguration);
+             if (quackPatchError.isPresent()) {
+                 return Optional.of(DetectBootResult.exception(quackPatchError.get(), propertyConfiguration));
+             }
+        }
 
         boolean autonomousScanEnabled = detectConfiguration.getValue(DetectProperties.DETECT_AUTONOMOUS_SCAN_ENABLED);
 
