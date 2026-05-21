@@ -869,11 +869,14 @@ public class OperationRunner {
         );
     }
 
-    public final File generateFullRapidJsonFile(List<Response> scanResults) throws OperationException {
+    // Accepts a pre-read content string rather than List<Response> because the caller
+    // (RapidModeStepRunner) must read and cache the response body upfront to reuse it
+    // for both the V6-to-V5 conversion and this QuackPatch file write.
+    public final File generateFullRapidJsonFile(String contentString) throws OperationException {
         return auditLog.namedPublic(
                 "Generate Rapid Full Json File",
                 "RapidScan",
-                () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFileFromString(scanResults.get(0).getContentString(), detectConfigurationFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT).trim())
+                () -> new RapidModeGenerateJsonOperation(htmlEscapeDisabledGson, directoryManager).generateJsonFileFromString(contentString, detectConfigurationFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT).trim())
         );
     }
 
