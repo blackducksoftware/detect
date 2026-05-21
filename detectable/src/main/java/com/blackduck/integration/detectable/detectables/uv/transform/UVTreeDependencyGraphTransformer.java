@@ -23,7 +23,7 @@ public class UVTreeDependencyGraphTransformer {
 
     private final ExternalIdFactory externalIdFactory;
     private static final Logger logger = LoggerFactory.getLogger(UVTreeDependencyGraphTransformer.class);
-    private final List<String> prefixStrings = Arrays.asList("├── ","│   ","└── ","    "); // common indentation strings for depenendency lines
+    private final List<String> prefixStrings = Arrays.asList("├── ","│   ","└── ","    "); // common indentation strings for dependency lines
     private int depth;
     private boolean isMemberExcluded = false; // check if workspace Member is excluded
     private int excludedMemberDependencyDepth; // depth at which member dependency was found

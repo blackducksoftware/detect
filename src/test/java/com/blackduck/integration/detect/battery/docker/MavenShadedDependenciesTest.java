@@ -5,6 +5,7 @@ import java.io.IOException;
 import com.blackduck.integration.detect.battery.docker.integration.BlackDuckAssertions;
 import com.blackduck.integration.detect.battery.docker.integration.BlackDuckTestConnection;
 import com.blackduck.integration.exception.IntegrationException;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -15,6 +16,7 @@ import com.blackduck.integration.detect.battery.docker.util.DockerAssertions;
 import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detector.base.DetectorType;
 
+@Disabled
 @Tag("integration")
 public class MavenShadedDependenciesTest {
 

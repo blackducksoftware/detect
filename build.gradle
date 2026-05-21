@@ -12,6 +12,7 @@ buildscript {
         javaSourceCompatibility = 8
     }
     ext['logback.version'] = '1.2.13'
+    ext['json-path.version'] = '2.10.0'
     apply from: 'https://raw.githubusercontent.com/blackducksoftware/integration-resources/master/gradle_common/buildscript-repositories.gradle', to: buildscript
 
     dependencies {
@@ -21,7 +22,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '11.5.0-SIGQA3-shanty.merge_11.4.z_to_main-SNAPSHOT'
+version = '11.5.0-SIGQA5-SNAPSHOT'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
@@ -131,10 +132,10 @@ allprojects {
 
     dependencies {
         implementation "com.google.guava:guava:32.1.2-jre"
-        implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.0'
+        implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.21.3'
         implementation 'org.yaml:snakeyaml:2.0'
         // jackson-core is a transitive dep coming from jackson-dataformat-yaml, earlier versions have vulnerability sonatype-2022-6438
-        implementation('com.fasterxml.jackson.core:jackson-core:2.15.0')
+        implementation('com.fasterxml.jackson.core:jackson-core:2.21.3')
         implementation 'org.freemarker:freemarker:2.3.31'
         implementation 'org.apache.httpcomponents:httpclient-osgi:4.5.14'
 
@@ -204,7 +205,6 @@ dependencies {
 
     // autonomous
     implementation 'org.apache.tika:tika-core:2.9.0'
-    implementation 'org.apache.tika:tika-parsers-standard-package:2.9.0'
     implementation 'org.apache.logging.log4j:log4j-to-slf4j:2.23.1'
 
     constraints {

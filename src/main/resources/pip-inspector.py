@@ -93,6 +93,18 @@ def resolve_project_node(project_name):
     return project_dependency_node
 
 
+def normalize_package_name(package_name):
+    """Extract and normalize package name from a requirement string using regex.
+    Handles cases like 'package-name>=1.0', 'Package[extra]>=1.0', 'package (>=1.0)', etc.
+    Package names contain only: letters, digits, dots, hyphens, underscores per PEP 508."""
+    if package_name is None:
+        return None
+    name_match = match(r'^([a-zA-Z0-9._-]+)', package_name.strip())
+    if name_match:
+        return name_match.group(1)
+    return None
+
+
 def populate_dependency_tree(project_root_node, requirements_path):
     """Resolves the dependencies of the user-provided requirements.txt and appends them to the dependency tree"""
     try:
@@ -110,7 +122,9 @@ def populate_dependency_tree(project_root_node, requirements_path):
                 # re matches from left to right, so subsets (e.g. ===) should be before supersets (e.g. ==)
                 # See: https://docs.python.org/3/library/re.html
                 # --rotte NOV 2020
-                package_name = split('===|<=|!=|==|>=|~=|<|>', parsed_requirement.requirement)[0]
+                package_name = normalize_package_name(
+                    split('===|<=|!=|==|>=|~=|<|>', parsed_requirement.requirement)[0]
+                )
 
             dependency_node = recursively_resolve_dependencies(package_name, [])
 
@@ -181,18 +195,6 @@ else:
             print("[PIP_INSPECTOR] Using pkg_resources route")
         except ImportError:
             print("[PIP_INSPECTOR] WARNING: Neither importlib.metadata nor pkg_resources available")
-
-    def normalize_package_name(package_name):
-        """Extract and normalize package name from a requirement string using regex.
-        Handles cases like 'package-name>=1.0', 'Package[extra]>=1.0', 'package (>=1.0)', etc.
-        Package names contain only: letters, digits, dots, hyphens, underscores per PEP 508."""
-        if package_name is None:
-            return None
-        # Extract just the package name (valid chars: a-z, A-Z, 0-9, -, _, .)
-        name_match = match(r'^([a-zA-Z0-9._-]+)', package_name.strip())
-        if name_match:
-            return name_match.group(1)
-        return None
 
     if use_importlib_metadata:
         def get_package_by_name(package_name):
