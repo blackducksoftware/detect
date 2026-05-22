@@ -22,7 +22,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '11.5.0-SIGQA4-dterry.update-vulnerabilities'
+version = '11.5.0-SIGQA5'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
