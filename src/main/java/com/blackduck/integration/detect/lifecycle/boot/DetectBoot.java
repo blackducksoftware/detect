@@ -211,7 +211,7 @@ public class DetectBoot {
         DetectableOptionFactory detectableOptionFactory;
         try {
             ProxyInfo detectableProxyInfo = detectConfigurationFactory.createBlackDuckProxyInfo();
-            detectableOptionFactory = new DetectableOptionFactory(detectConfiguration, diagnosticSystem, detectableProxyInfo);
+            detectableOptionFactory = new DetectableOptionFactory(detectConfiguration, detectConfigurationFactory, directoryManager, diagnosticSystem, detectableProxyInfo);
             hasImageOrTar = detectableOptionFactory.createDockerDetectableOptions().hasDockerImageOrTar();
             oneRequiresTheOther(
                 detectConfigurationFactory.createDetectTarget() == DetectTargetType.IMAGE,

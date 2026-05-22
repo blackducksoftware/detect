@@ -70,12 +70,16 @@ import com.blackduck.integration.rest.proxy.ProxyInfo;
 public class DetectableOptionFactory {
 
     private final DetectPropertyConfiguration detectConfiguration;
+    private final DetectConfigurationFactory detectConfigurationFactory;
+    private final DirectoryManager directoryManager;
     @Nullable
     private final DiagnosticSystem diagnosticSystem;
     private final ProxyInfo proxyInfo;
 
-    public DetectableOptionFactory(DetectPropertyConfiguration detectConfiguration, @Nullable DiagnosticSystem diagnosticSystem, ProxyInfo proxyInfo) {
+    public DetectableOptionFactory(DetectPropertyConfiguration detectConfiguration, DetectConfigurationFactory detectConfigurationFactory, DirectoryManager directoryManager, @Nullable DiagnosticSystem diagnosticSystem, ProxyInfo proxyInfo) {
         this.detectConfiguration = detectConfiguration;
+        this.detectConfigurationFactory = detectConfigurationFactory;
+        this.directoryManager = directoryManager;
         this.diagnosticSystem = diagnosticSystem;
         this.proxyInfo = proxyInfo;
     }
@@ -355,16 +359,9 @@ public class DetectableOptionFactory {
         Path nugetConfigPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_CONFIG_PATH);
         Set<NugetDependencyType> nugetExcludedDependencyTypes = detectConfiguration.getValue(DetectProperties.DETECT_NUGET_DEPENDENCY_TYPES_EXCLUDED).representedValueSet();
         Path nugetArtifactsPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_ARTIFACTS_PATH);
-        Path relevantDetectorsAndFilesInfoPath = null;
-        if (detectConfiguration.getValue(DetectProperties.DETECT_QUACK_PATCH_ENABLED)) {
-            String quackPatchOutputPath = detectConfiguration.getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT);
-            if (quackPatchOutputPath.isEmpty()) {
-                quackPatchOutputPath = DirectoryManager.getScanDirectoryName();
-            }
-            relevantDetectorsAndFilesInfoPath = Paths.get(quackPatchOutputPath)
-                    .resolve(QUACKPATCH_SUBDIRECTORY_NAME)
-                    .resolve(INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON);
-        }
+        Path relevantDetectorsAndFilesInfoPath = detectConfigurationFactory.isQuackPatchEnabled()
+            ? Paths.get(detectConfigurationFactory.getQuackPatchOutputDirectory(directoryManager), QUACKPATCH_SUBDIRECTORY_NAME, INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON)
+            : null;
         Path nugetInspectorPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_INSPECTOR_PATH);
         File nugetInspectorPathFile = null;
         if (nugetInspectorPath != null) {
