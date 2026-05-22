@@ -168,13 +168,8 @@ public class DetectBoot {
 
         Configuration freemarkerConfiguration = detectBootFactory.createFreemarkerConfiguration();
         DetectPropertyConfiguration detectConfiguration = new DetectPropertyConfiguration(propertyConfiguration, new SimplePathResolver());
-        // If quack patch is enabled, we need to validate the output path before doing anything else since it could cause Detect to fail later on if it's not valid, and we want to fail as early as possible with a clear message about what the issue is.
-         Optional<DetectUserFriendlyException> quackPatchError = detectConfigurationBootManager.validateQuackPatchOutputPath(detectConfiguration);
-         if (quackPatchError.isPresent()) {
-             return Optional.of(DetectBootResult.exception(quackPatchError.get(), propertyConfiguration));
-         }
-
         DetectConfigurationFactory detectConfigurationFactory = new DetectConfigurationFactory(detectConfiguration, gson);
+        DirectoryManager directoryManager = detectBootFactory.createDirectoryManager(detectConfigurationFactory);
 
          // If quack patch is enabled, we need to validate the output path before doing anything else since it could cause Detect to fail later on if it's not valid, and we want to fail as early as possible with a clear message about what the issue is.
         if (Boolean.TRUE.equals(detectConfigurationFactory.isQuackPatchEnabled())) {
@@ -185,8 +180,6 @@ public class DetectBoot {
         }
 
         boolean autonomousScanEnabled = detectConfiguration.getValue(DetectProperties.DETECT_AUTONOMOUS_SCAN_ENABLED);
-
-        DirectoryManager directoryManager = detectBootFactory.createDirectoryManager(detectConfigurationFactory);
 
         // TODO Scan settings model obtained below is to be used by the delta-checking operations
         AutonomousManager autonomousManager = new AutonomousManager(directoryManager, detectConfiguration, autonomousScanEnabled, maskedRawPropertyValues);
