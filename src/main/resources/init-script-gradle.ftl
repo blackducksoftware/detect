@@ -15,9 +15,8 @@ Set<String> projectPathIncludeFilter = convertStringToSet('${includedProjectPath
 Boolean rootOnly = Boolean.parseBoolean("${rootOnlyOption}")
 
 gradle.allprojects {
-    // add a new task to each project to start the process of getting the dependencies
+    // Trigger dependency gathering for each project
     task gatherDependencies(type: DefaultTask) {
-        // Store project name during configuration phase
         def projectName = project.name
         doLast {
             println "Gathering dependencies for " + projectName
@@ -25,7 +24,9 @@ gradle.allprojects {
     }
 
     afterEvaluate { currentProject ->
-        // Capture all needed project properties during configuration
+        // Capture project properties during configuration phase.
+        // Configuration enumeration is deferred to gradle.projectsEvaluated
+        // so that lazily-registered configs (AGP, KSP, etc.) are visible.
         def projectPath = currentProject.path
         def projectName = currentProject.name
         def isRootProject = isRoot(currentProject)
@@ -33,7 +34,6 @@ gradle.allprojects {
         def projectDir = currentProject.projectDir
         def projectDirPath = projectDir.canonicalPath
 
-        // Root project properties
         def rootProject = currentProject.gradle.rootProject
         def rootProjectName = rootProject.name
         def rootProjectPath = rootProject.path
@@ -42,81 +42,22 @@ gradle.allprojects {
         def rootProjectDir = rootProject.projectDir
         def rootProjectDirPath = rootProjectDir.canonicalPath
 
-        // Project metadata
         def projectGroup = currentProject.group.toString()
         def projectVersion = currentProject.version.toString()
         def projectParent = currentProject.parent ? currentProject.parent.toString() : "none"
 
-        // Prepare configuration names (handles single quotes issues )
-        def configurationNames = getFilteredConfigurationNames(currentProject,
-             '${excludedConfigurationNames?replace("\\", "\\\\")?replace("\'", "\\\'")}',
-             '${includedConfigurationNames?replace("\\", "\\\\")?replace("\'", "\\\'")}'
-         )
-
-        def selectedConfigs = []
-        configurationNames.each { name ->
-            try {
-                def config = currentProject.configurations.findByName(name)
-                if (config) {
-                    selectedConfigs.add(config)
-                }
-            } catch (Exception e) {
-                println "Could not process configuration: " + name
-                throw e
-            }
+        if (extractionDir == null) {
+            throw new IllegalStateException("GRADLEEXTRACTIONDIR system property is not set")
         }
 
-        // Check if the project should be included based on project-level filters
-        def projectMatchesFilters = (rootOnly && isRootProject) ||
-            (!rootOnly && shouldInclude(projectNameExcludeFilter, projectNameIncludeFilter, projectName) &&
-             shouldInclude(projectPathExcludeFilter, projectPathIncludeFilter, projectPath))
-
-        // Include if passes project filters and has selected configs or is phantom without build file.
-        def isPhantom = !currentProject.buildFile.exists()
-        def shouldIncludeProject = projectMatchesFilters && (!selectedConfigs.isEmpty() || isPhantom)
-
-        // Capture output file path during configuration
+        // Output file path is deterministic; file is created in projectsEvaluated if included.
         def projectFilePathConfig = computeProjectFilePath(projectPath, extractionDir, rootProject)
 
-        // Configure the dependencies task during configuration time
         def dependenciesTask = currentProject.tasks.getByName('dependencies')
-
-        // Always set configurations explicitly: null → Gradle reports everything; empty Set → reports nothing.
-        // Phantoms always get an empty Set — their configs maybe (e.g. detekt, ktlint) are injected by
-        // parent subprojects{} blocks, not real dependencies, and must never leak into scan results.
-        if (isPhantom) {
-            dependenciesTask.configurations = [] as Set
-        } else {
-            dependenciesTask.configurations = selectedConfigs as Set
-        }
-
-        // Set the output file at configuration time if possible
-        if (shouldIncludeProject) {
-            // Create output file directly during configuration
-            File projectFile = new File(projectFilePathConfig)
-            if (projectFile.exists()) {
-                projectFile.delete()
-            }
-            projectFile.createNewFile()
-
-            // Set the output file during configuration phase
-            try {
-                dependenciesTask.outputFile = projectFile
-                println "Set output file during configuration to " + projectFile.getAbsolutePath()
-            } catch (Exception e) {
-                println "Could not set outputFile property during configuration: " + e.message
-                e.printStackTrace()
-                throw e
-            }
-        }
 
         dependenciesTask.doFirst {
             try {
-                if (extractionDir == null) {
-                    throw new IllegalStateException("GRADLEEXTRACTIONDIR system property is not set")
-                }
-
-                // Create metadata file for root project
+                // Write root project metadata file
                 if (isRootProject) {
                     try {
                         File outputDirectory = new File(extractionDir)
@@ -148,10 +89,9 @@ gradle.allprojects {
 
         dependenciesTask.doLast {
             try {
-                if(shouldIncludeProject) {
-                    File projectFile = new File(projectFilePathConfig)
-
-                    // Add metadata at the end of the file
+                // Append project metadata if the output file exists (i.e. project was included)
+                File projectFile = new File(projectFilePathConfig)
+                if (projectFile.exists()) {
                     def metaDataPieces = []
                     metaDataPieces.add('')
                     metaDataPieces.add('DETECT META DATA START')
@@ -169,7 +109,6 @@ gradle.allprojects {
                     metaDataPieces.add('DETECT META DATA END')
                     metaDataPieces.add('')
 
-                    // Append to file
                     projectFile << metaDataPieces.join('\n')
                 }
             } catch (Exception e) {
@@ -179,9 +118,71 @@ gradle.allprojects {
             }
         }
 
-        // This forces the dependencies task to be run
+        // Force the dependencies task to run after gatherDependencies
         currentProject.gatherDependencies.finalizedBy(currentProject.tasks.getByName('dependencies'))
         currentProject.gatherDependencies
+    }
+}
+
+// Enumerate configurations and set up output files after all projects are fully evaluated.
+// This ensures lazily-registered configurations (AGP, KSP, ktlint, etc.) are visible.
+gradle.projectsEvaluated {
+    gradle.allprojects { currentProject ->
+        def dependenciesTask = currentProject.tasks.findByName('dependencies')
+        if (!dependenciesTask) return
+
+        def extractionDir = System.getProperty('GRADLEEXTRACTIONDIR')
+        def projectPath = currentProject.path
+        def rootProject = currentProject.gradle.rootProject
+        def projectName = currentProject.name
+        def isRootProject = isRoot(currentProject)
+        def isPhantom = !currentProject.buildFile.exists()
+
+        def projectMatchesFilters = (rootOnly && isRootProject) ||
+            (!rootOnly && shouldInclude(projectNameExcludeFilter, projectNameIncludeFilter, projectName) &&
+             shouldInclude(projectPathExcludeFilter, projectPathIncludeFilter, projectPath))
+
+        def configurationNames = getFilteredConfigurationNames(
+            currentProject,
+            '${excludedConfigurationNames?replace("\\", "\\\\")?replace("\'", "\\\'")}',
+            '${includedConfigurationNames?replace("\\", "\\\\")?replace("\'", "\\\'")}'
+        )
+
+        def selectedConfigs = []
+        configurationNames.each { name ->
+            try {
+                def config = currentProject.configurations.findByName(name)
+                if (config) selectedConfigs.add(config)
+            } catch (Exception e) {
+                println "Could not process configuration: " + name
+                throw e
+            }
+        }
+
+        def shouldIncludeProject = projectMatchesFilters && (!selectedConfigs.isEmpty() || isPhantom)
+
+        // Phantoms and excluded projects get an empty config set to avoid unnecessary resolution
+        if (isPhantom || !projectMatchesFilters) {
+            dependenciesTask.configurations = [] as Set
+        } else {
+            dependenciesTask.configurations = selectedConfigs as Set
+        }
+
+        // Create output file only for included projects; doLast uses existence as the inclusion signal
+        if (shouldIncludeProject) {
+            def projectFilePathConfig = computeProjectFilePath(projectPath, extractionDir, rootProject)
+            File projectFile = new File(projectFilePathConfig)
+            if (projectFile.exists()) projectFile.delete()
+            projectFile.createNewFile()
+            try {
+                dependenciesTask.outputFile = projectFile
+                println "Set output file during projectsEvaluated to " + projectFile.getAbsolutePath()
+            } catch (Exception e) {
+                println "Could not set outputFile property: " + e.message
+                e.printStackTrace()
+                throw e
+            }
+        }
     }
 }
 
@@ -190,8 +191,8 @@ gradle.allprojects {
 <#noparse>
 def isRoot(Project project) {
     try {
-        Project rootProject = project.gradle.rootProject;
-        return project.name.equals(rootProject.name)
+        // Only the root project has path ":"
+        return project.path == ":"
     } catch (Exception e) {
         println "ERROR in isRoot: " + e.message
         e.printStackTrace()
@@ -207,14 +208,13 @@ def computeProjectFilePath(String projectPath, String outputDirectoryPath, Proje
         String name = projectPath ?: ""
 
         int depthCount = name.split(':').length - 1
-        // The root project path is ":" which has one colon, but its depth should be 0.
+        // Root project path ":" has one colon but depth is 0
         if (projectPath == ":") {
             depthCount = 0
         }
         String depth = String.valueOf(depthCount)
 
         String finalName
-        // Aggressive sanitization for both root and subprojects
         if (projectPath == ":") {
             String rootProjectName = rootProject.getName().replaceAll("[^\\p{IsAlphabetic}\\p{Digit}]+", "_")
             finalName = "root_project_${rootProjectName}"
@@ -224,7 +224,6 @@ def computeProjectFilePath(String projectPath, String outputDirectoryPath, Proje
             finalName = "project_" + nameForFile
         }
 
-        // Ensure the final name does not end with an underscore before appending __depth
         if (finalName.endsWith("_")) {
             finalName = finalName.substring(0, finalName.length() - 1)
         }
@@ -237,7 +236,7 @@ def computeProjectFilePath(String projectPath, String outputDirectoryPath, Proje
     }
 }
 
-// Get only configuration names to avoid serialization issues
+// Returns filtered configuration names to avoid serialization issues with Configuration objects
 def getFilteredConfigurationNames(Project project, String excludedConfigurationNames, String includedConfigurationNames) {
     try {
         Set<String> configurationExcludeFilter = convertStringToSet(excludedConfigurationNames)
