@@ -15,8 +15,10 @@
 	* na.store.scass.blackduck.com - 34.54.95.139
 	* eu.store.scass.blackduck.com - 34.54.213.11
 	* eu.scass.blackduck.com - 34.54.38.252
+	
+* **Deprecation of Java 8 support** - In alignment with EU Cyber Resilience Act (CRA) requirements and compliance timelines, Java 8 support will be deprecated in the anticipated 2026 Q3 Detect 12.0.0 release.
 
-## Version 11.4.0
+## Version 11.5.0
 
 ### New features
 
@@ -24,7 +26,8 @@
 * Support for pnpm now extends to 10.32.1.
 * npm detectors now allow for aliases to be used when specifying dependencies in the package.json file.
 * Ivy CLI Detector, leveraging the `ivy:dependencytree` Ant task to extract direct and transitive dependencies for Ant + Ivy projects. For further information, see [Ivy (Ant) support](packagemgrs/ivy.md).
+* The `detect.uv.dependency.groups.included` property, supported for UV Build Detector in CLI mode, allows users to specify which UV dependency groups to scan. See [UV Package Manager](packagemgrs/python.md#uv-package-manager) for details.
 
 ### Resolved issues
 
-* (IDETECT-4980) When `detect.clone.project.version.latest` is set to true, an INFO-level log message will be written to identify the exact project version selected as the clone source.
+### Dependency Updates

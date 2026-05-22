@@ -231,7 +231,7 @@ public class CargoLockfileExtractor {
             .filter(pkg -> pkg.getName().isPresent() && pkg.getVersion().isPresent())
             .collect(Collectors.groupingBy(pkg -> new NameVersion(
                 pkg.getName().get(),
-                VersionUtils.stripBuildMetadata(pkg.getVersion().get())
+                VersionUtils.sanitizeVersion(pkg.getVersion().get())
             )));
     }
 
@@ -320,10 +320,10 @@ public class CargoLockfileExtractor {
         List<CargoLockPackageData> result = new ArrayList<>();
         for (CargoLockPackageData pkg : packages) {
             String name = pkg.getName().orElse(null);
-            String version = VersionUtils.stripBuildMetadata(pkg.getVersion().orElse(null));
+            String version = VersionUtils.sanitizeVersion(pkg.getVersion().orElse(null));
             for (NameVersion include : dependenciesToInclude) {
                 String includeName = include.getName();
-                String includeVersion = VersionUtils.stripBuildMetadata(include.getVersion());
+                String includeVersion = VersionUtils.sanitizeVersion(include.getVersion());
                 if (Objects.equals(name, includeName) && VersionUtils.versionMatches(includeVersion, version)) {
                     result.add(pkg);
                     break;
@@ -378,8 +378,8 @@ public class CargoLockfileExtractor {
         for (CargoLockPackageData pkg : possiblePackages) {
             String version = pkg.getVersion().orElse(null);
             if (version != null && VersionUtils.versionMatches(
-                VersionUtils.stripBuildMetadata(nv.getVersion()),
-                VersionUtils.stripBuildMetadata(version))) {
+                VersionUtils.sanitizeVersion(nv.getVersion()),
+                VersionUtils.sanitizeVersion(version))) {
                 return pkg;
             }
         }

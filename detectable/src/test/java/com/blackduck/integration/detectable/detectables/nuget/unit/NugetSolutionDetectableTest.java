@@ -30,6 +30,20 @@ public class NugetSolutionDetectableTest {
     }
 
     @Test
+    public void testApplicableForSolutionXML() {
+        NugetInspectorResolver nugetInspectorManager = null;
+        NugetInspectorExtractor nugetInspectorExtractor = null;
+        NugetInspectorOptions nugetInspectorOptions = null;
+
+        DetectableEnvironment environment = MockDetectableEnvironment.empty();
+        FileFinder fileFinder = MockFileFinder.withFileNamed("test.slnx");
+
+        NugetSolutionDetectable detectable = new NugetSolutionDetectable(environment, fileFinder, nugetInspectorManager, nugetInspectorExtractor, nugetInspectorOptions);
+
+        assertTrue(detectable.applicable().getPassed());
+    }
+
+    @Test
     public void notApplicableForPodfile() {
         NugetInspectorResolver nugetInspectorManager = null;
         NugetInspectorExtractor nugetInspectorExtractor = null;

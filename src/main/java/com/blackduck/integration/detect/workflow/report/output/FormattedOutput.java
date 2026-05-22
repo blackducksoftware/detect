@@ -51,5 +51,8 @@ public class FormattedOutput {
     @SerializedName("transitiveUpgradeGuidance")
     public List<FormattedResultOutput> transitiveGuidance;
 
+    @SerializedName("blackDuckServerProperties")
+    public Map<String, String> blackDuckServerProperties;
+
 }
 
