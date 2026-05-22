@@ -52,6 +52,7 @@ public enum DetectGroup implements Group {
     IVY("ivy", DETECTORS),
     LERNA("lerna", DETECTORS),
     MAVEN("maven", DETECTORS),
+    MESON("meson", DETECTORS),
     NPM("npm", DETECTORS),
     NUGET("nuget", DETECTORS),
     PACKAGIST("packagist", DETECTORS),

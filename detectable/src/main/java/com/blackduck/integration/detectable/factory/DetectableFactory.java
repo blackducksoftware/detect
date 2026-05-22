@@ -185,6 +185,10 @@ import com.blackduck.integration.detectable.detectables.maven.cli.MavenCodeLocat
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenPomDetectable;
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenPomWrapperDetectable;
 import com.blackduck.integration.detectable.detectables.maven.parsing.MavenProjectInspectorDetectable;
+import com.blackduck.integration.detectable.detectables.meson.MesonDetectable;
+import com.blackduck.integration.detectable.detectables.meson.MesonExtractor;
+import com.blackduck.integration.detectable.detectables.meson.parse.MesonDependencyFileParser;
+import com.blackduck.integration.detectable.detectables.meson.parse.MesonProjectFileParser;
 import com.blackduck.integration.detectable.detectables.npm.cli.NpmCliDetectable;
 import com.blackduck.integration.detectable.detectables.npm.cli.NpmCliExtractor;
 import com.blackduck.integration.detectable.detectables.npm.cli.NpmCliExtractorOptions;
@@ -416,6 +420,13 @@ public class DetectableFactory {
             clangDetectableOptions,
             clangPackageManagerRunner()
         );
+    }
+
+    public MesonDetectable createMesonDetectable(DetectableEnvironment environment) {
+        MesonProjectFileParser mesonProjectFileParser = new MesonProjectFileParser();
+        MesonDependencyFileParser mesonDependencyFileParser = new MesonDependencyFileParser(externalIdFactory);
+        MesonExtractor mesonExtractor = new MesonExtractor(mesonProjectFileParser, mesonDependencyFileParser, fileFinder, gson);
+        return new MesonDetectable(environment, fileFinder, mesonExtractor);
     }
 
     public ComposerLockDetectable createComposerDetectable(DetectableEnvironment environment, ComposerLockDetectableOptions composerLockDetectableOptions) {
