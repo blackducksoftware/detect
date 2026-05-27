@@ -82,6 +82,63 @@ public class BazelCommandExecutor {
     }
 
     /**
+     * Executes a Bazel {@code query} or {@code cquery} command, tolerating exit code 3.
+     *
+     * <p>Bazel exit code 3 is the documented "partial success with {@code --keep_going}" signal:
+     * some repository fetches failed during workspace loading, but the query itself completed
+     * and wrote valid dependency data to stdout. This is the expected outcome when a workspace
+     * contains cross-platform or stale repository declarations (e.g., Windows-only pip repos
+     * declared unconditionally on a Linux CI host).</p>
+     *
+     * <ul>
+     *   <li>Exit code 0 → clean success, return stdout</li>
+     *   <li>Exit code 3 + non-empty stdout → partial success, log warning, return stdout</li>
+     *   <li>Exit code 3 + empty stdout → return empty</li>
+     *   <li>Any other non-zero → throw {@link ExecutableFailedException}</li>
+     * </ul>
+     *
+     * @param args Bazel command arguments
+     * @return stdout content if non-empty, {@link Optional#empty()} otherwise
+     * @throws ExecutableFailedException if exit code is non-zero and not 3
+     */
+    public Optional<String> executeQueryToString(List<String> args) throws ExecutableFailedException {
+        ExecutableOutput result = executeWithoutThrowing(args);
+        int exitCode = result.getReturnCode();
+
+        if (exitCode == BAZEL_EXIT_CODE_PARTIAL_SUCCESS) {
+            String stdout = result.getStandardOutput();
+            if (!StringUtils.isBlank(stdout)) {
+                logger.warn(
+                    "Bazel query exited with code 3 (partial success with --keep_going). "
+                    + "Some repository fetches failed — dependency results may be incomplete. "
+                    + "Check Bazel stderr output above for details."
+                );
+                return Optional.of(stdout);
+            }
+            logger.debug("Bazel query exited with code 3 but produced no stdout; treating as empty result.");
+            return Optional.empty();
+        }
+
+        if (exitCode != 0) {
+            return executeToString(args);
+        }
+
+        String stderr = result.getErrorOutput();
+        if (stderr != null && stderr.contains("ERROR")) {
+            logger.warn("Bazel error: {}", stderr.trim());
+        }
+        String stdout = result.getStandardOutput();
+        if (StringUtils.isBlank(stdout)) {
+            logger.debug("bazel command produced no output");
+            return Optional.empty();
+        }
+        return Optional.of(stdout);
+    }
+
+    // Bazel's documented exit code for partial success with --keep_going
+    private static final int BAZEL_EXIT_CODE_PARTIAL_SUCCESS = 3;
+
+    /**
      * Executes a Bazel command without throwing on failure, allowing caller to inspect exit code and error output.
      * Used for probing commands where we need to distinguish different failure modes.
      * @param args Bazel command arguments
