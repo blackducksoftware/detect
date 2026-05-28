@@ -143,7 +143,7 @@ public class DiagnosticSystem {
             String quackPatchOutputDirPath = propertyConfiguration.getValueOrDefault(DetectProperties.DETECT_QUACK_PATCH_OUTPUT);
             // If quack patch output path is customized, then explicitly include it in the diagnostic zip. Otherwise, default behaviour will automatically pack it.
             if (!quackPatchOutputDirPath.isEmpty()) {
-                quackPatchOutputDirPath = quackPatchOutputDirPath + File.separator + QUACKPATCH_SUBDIRECTORY_NAME;
+                quackPatchOutputDirPath = quackPatchOutputDirPath.trim() + File.separator + QUACKPATCH_SUBDIRECTORY_NAME;
                 logger.info("Adding quack patch output dir {} to the diagnostic zip.", quackPatchOutputDirPath);
                 // Copy directory quackPatchOutputDirPath to directoryManager.getRunsOutputDirectory()
                 try {
