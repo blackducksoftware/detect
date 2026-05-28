@@ -149,8 +149,7 @@ public class DiagnosticSystem {
                 try {
                     FileUtils.copyDirectory(new File(quackPatchOutputDirPath), new File(directoryManager.getScanOutputDirectory().getAbsolutePath() + File.separator + QUACKPATCH_SUBDIRECTORY_NAME));
                 } catch (IOException e) {
-                    logger.error("Failed to copy quack patch output directory to runs directory. Error: {}", e.getMessage());
-                    return false;
+                    logger.warn("Failed to copy the quack patch output directory to the runs directory. Skipping the addition of quack patch output directory to diagnostics zip file. Error: {}.", e.getMessage());
                 }
             }
         }
