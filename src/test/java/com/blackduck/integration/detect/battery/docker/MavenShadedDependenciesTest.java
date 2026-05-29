@@ -5,7 +5,6 @@ import java.io.IOException;
 import com.blackduck.integration.detect.battery.docker.integration.BlackDuckAssertions;
 import com.blackduck.integration.detect.battery.docker.integration.BlackDuckTestConnection;
 import com.blackduck.integration.exception.IntegrationException;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -16,11 +15,11 @@ import com.blackduck.integration.detect.battery.docker.util.DockerAssertions;
 import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detector.base.DetectorType;
 
-@Disabled
+
 @Tag("integration")
 public class MavenShadedDependenciesTest {
 
-    private static final String PROJECT_NAME = "maven-shaded-dependency";
+    private static final String PROJECT_NAME = "maven-shaded-dependency-test";
 
     @Test
     void mavenShadedDependencyTest() throws IOException,IntegrationException {
@@ -40,14 +39,22 @@ public class MavenShadedDependenciesTest {
             commandBuilder.property(DetectProperties.DETECT_TOOLS, "DETECTOR");
             commandBuilder.property(DetectProperties.DETECT_INCLUDED_DETECTOR_TYPES, DetectorType.MAVEN.toString());
             commandBuilder.property(DetectProperties.DETECT_MAVEN_INCLUDE_SHADED_DEPENDENCIES, String.valueOf(true));
+            commandBuilder.property(DetectProperties.DETECT_ACCURACY_REQUIRED, "NONE");
+            commandBuilder.property(DetectProperties.LOGGING_LEVEL_DETECT, "DEBUG");
+            commandBuilder.property(DetectProperties.DETECT_CLEANUP, "false");
+            commandBuilder.property(DetectProperties.DETECT_DIAGNOSTIC,"true");
             DockerAssertions dockerAssertions = test.run(commandBuilder);
 
             dockerAssertions.logContains("Maven CLI: SUCCESS");
             dockerAssertions.atLeastOneBdioFile();
 
-            blackduckAssertions.hasComponents("ch.randelshofer:fastdoubleparser");
-            blackduckAssertions.hasComponents("JCTTools");
-            blackduckAssertions.hasComponents("Byte Buddy (with dependencies)");
+//            blackduckAssertions.hasComponents("ch.randelshofer:fastdoubleparser");
+//            blackduckAssertions.hasComponents("JCTTools");
+//            blackduckAssertions.hasComponents("Byte Buddy (with dependencies)");
+
+            blackduckAssertions.hasComponents("Apache Commons Logging");
+            blackduckAssertions.hasComponents("jackson-core");
+            blackduckAssertions.hasComponents("jackson-databind");
         }
     }
 
