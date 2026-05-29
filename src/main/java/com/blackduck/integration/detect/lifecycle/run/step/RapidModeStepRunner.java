@@ -175,7 +175,7 @@ public class RapidModeStepRunner {
         rapidBdbaStepRunner.downloadAndExtractBdio(directoryManager);
 
         UUID bdScanId = operationRunner.initiateStatelessBdbaScan(blackDuckRunData);
-        operationRunner.uploadBdioEntries(blackDuckRunData, bdScanId);
+        operationRunner.uploadBdioEntriesForRapidMode(blackDuckRunData, bdScanId);
 
         // add this scan to the URLs to wait for
         parsedUrls.add(new HttpUrl(blackDuckUrl + String.format(RAPID_SCAN_ENDPOINT + "/" + bdScanId.toString())));

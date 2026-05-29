@@ -15,8 +15,10 @@
 	* na.store.scass.blackduck.com - 34.54.95.139
 	* eu.store.scass.blackduck.com - 34.54.213.11
 	* eu.scass.blackduck.com - 34.54.38.252
+	
+* **Deprecation of Java 8 support** - In alignment with EU Cyber Resilience Act (CRA) requirements and compliance timelines, Java 8 support will be deprecated in the anticipated 2026 Q3 Detect 12.0.0 release.
 
-## Version 11.4.0
+## Version 11.5.0
 
 ### New features
 
@@ -27,4 +29,4 @@
 
 ### Resolved issues
 
-* (IDETECT-4980) When `detect.clone.project.version.latest` is set to true, an INFO-level log message will be written to identify the exact project version selected as the clone source.
+### Dependency Updates

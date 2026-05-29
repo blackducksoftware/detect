@@ -18,6 +18,6 @@ public class IntelligentPersistentUploadOperation extends BdioUploadOperation {
 
     @Override
     protected CodeLocationCreationData<UploadBatchOutput> executeUpload(UploadBatch uploadBatch) throws IntegrationException {
-        return intelligentPersistenceService.uploadBdio(uploadBatch, timeout, Application.START_TIME);
+        return intelligentPersistenceService.uploadBdioWithoutNotificationsQuery(uploadBatch, timeout, Application.START_TIME);
     }
 }

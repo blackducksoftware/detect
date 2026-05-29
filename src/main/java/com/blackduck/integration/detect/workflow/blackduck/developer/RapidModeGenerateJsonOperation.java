@@ -32,9 +32,9 @@ public class RapidModeGenerateJsonOperation { //TODO: extends Operation<File>
         this.directoryManager = directoryManager;
     }
 
-    public File generateJsonFileFromString(String jsonRapidFullResults) {
+    public File generateJsonFileFromString(String jsonRapidFullResults, String outputDir) {
         // Create the path to the subdirectory
-        File quackSubDir = new File(directoryManager.getScanOutputDirectory(), QUACKPATCH_SUBDIRECTORY_NAME);
+        File quackSubDir = new File(outputDir, QUACKPATCH_SUBDIRECTORY_NAME);
 
         try {
             if (!quackSubDir.exists()) {

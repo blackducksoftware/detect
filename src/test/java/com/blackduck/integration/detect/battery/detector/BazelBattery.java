@@ -19,6 +19,11 @@ class BazelBattery {
     private static final String BAZEL_HTTP_ARCHIVE_GITHUB_OUTPUT4_RESOURCE = "bazel-http-archive-query5.xout";
     private static final String EMPTY_OUTPUT_RESOURCE = "empty.xout";
 
+    // Simulates `bazel --version` returning 6.5.0 (< 7.1) so the mod graph fast path is not triggered.
+    // This keeps the BZLMOD battery test simple: version detection runs (BZLMOD gate) but the fast
+    // path is bypassed, leaving the existing 8 mock responses valid.
+    private static final String BAZEL_V2_BZLMOD_VERSION_RESOURCE = "bazel-version-pre71.xout";
+
     // BZLMOD V2 Graph Probing + HTTP Pipeline Test Resources
     private static final String BAZEL_V2_BZLMOD_PROBE_MAVEN_INSTALL_RESOURCE = "probe-maven-install.xout";
     private static final String BAZEL_V2_BZLMOD_PROBE_MAVEN_JAR_RESOURCE = "probe-maven-jar.xout";
@@ -134,6 +139,7 @@ class BazelBattery {
         test.property("detect.bazel.mode", "BZLMOD");
         test.executableFromResourceFiles(
             DetectProperties.DETECT_BAZEL_PATH,
+            BAZEL_V2_BZLMOD_VERSION_RESOURCE,             // bazel --version (BZLMOD gate) -> 6.5.0, fast path disabled
             // Graph Probing Phase (5 queries to determine which pipelines to run)
             BAZEL_V2_BZLMOD_PROBE_MAVEN_INSTALL_RESOURCE,  // Probe for maven_install -> empty
             BAZEL_V2_BZLMOD_PROBE_MAVEN_JAR_RESOURCE,      // Probe for maven_jar -> empty
