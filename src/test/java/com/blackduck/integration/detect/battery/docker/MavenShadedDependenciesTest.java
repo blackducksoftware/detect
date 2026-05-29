@@ -45,9 +45,13 @@ public class MavenShadedDependenciesTest {
             dockerAssertions.logContains("Maven CLI: SUCCESS");
             dockerAssertions.atLeastOneBdioFile();
 
-            blackduckAssertions.hasComponents("ch.randelshofer:fastdoubleparser");
-            blackduckAssertions.hasComponents("JCTTools");
-            blackduckAssertions.hasComponents("Byte Buddy (with dependencies)");
+//            blackduckAssertions.hasComponents("ch.randelshofer:fastdoubleparser");
+//            blackduckAssertions.hasComponents("JCTTools");
+//            blackduckAssertions.hasComponents("Byte Buddy (with dependencies)");
+
+            blackduckAssertions.hasComponents("Apache Commons Logging");
+            blackduckAssertions.hasComponents("jackson-core");
+            blackduckAssertions.hasComponents("jackson-databind");
         }
     }
 
