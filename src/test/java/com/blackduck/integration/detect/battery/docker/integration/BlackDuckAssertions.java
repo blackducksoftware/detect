@@ -108,11 +108,24 @@ public class BlackDuckAssertions {
 
     public void hasComponents(Set<String> componentNames) throws IntegrationException {
         List<ProjectVersionComponentVersionView> bomComponents = getBomComponents();
+
+        String allComponentNames = bomComponents.stream()
+            .map(ProjectVersionComponentVersionView::getComponentName)
+            .collect(Collectors.joining("', '", "['", "']"));
+
         componentNames.forEach(componentName -> {
             Optional<ProjectVersionComponentVersionView> blackDuckCommonComponent = bomComponents.stream()
                 .filter(ProjectVersionComponentView -> componentName.equals(ProjectVersionComponentView.getComponentName()))
                 .findFirst();
-            assertTrue(blackDuckCommonComponent.isPresent());
+            assertTrue(
+                blackDuckCommonComponent.isPresent(),
+                String.format(
+                    "Component '%s' NOT FOUND in BOM!%nBOM contains %d components: %s",
+                    componentName,
+                    bomComponents.size(),
+                    allComponentNames
+                )
+            );
         });
     }
 

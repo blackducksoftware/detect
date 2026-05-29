@@ -5,7 +5,7 @@ ENV SRC_DIR=/opt/project/src
 
 # Install git
 RUN apt-get update
-RUN apt-get install -y git
+RUN apt-get install -y git wget unzip
 
 # Set up the test project
 RUN mkdir -p ${SRC_DIR}

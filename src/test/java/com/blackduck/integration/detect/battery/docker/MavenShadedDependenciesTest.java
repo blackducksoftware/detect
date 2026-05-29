@@ -16,7 +16,7 @@ import com.blackduck.integration.detect.battery.docker.util.DockerAssertions;
 import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detector.base.DetectorType;
 
-@Disabled
+
 @Tag("integration")
 public class MavenShadedDependenciesTest {
 
