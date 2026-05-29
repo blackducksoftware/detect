@@ -94,7 +94,7 @@ public class BazelCommandExecutor {
      *   <li>Exit code 0 → clean success, return stdout</li>
      *   <li>Exit code 3 + non-empty stdout → partial success, log warning, return stdout</li>
      *   <li>Exit code 3 + empty stdout → return empty</li>
-     *   <li>Any other non-zero → throw {@link ExecutableFailedException}</li>
+     *   <li>Any other non-zero → throw {@link ExecutableFailedException} using the already-obtained result (no re-invocation)</li>
      * </ul>
      *
      * @param args Bazel command arguments
@@ -120,7 +120,10 @@ public class BazelCommandExecutor {
         }
 
         if (exitCode != 0) {
-            return executeToString(args);
+            throw new ExecutableFailedException(
+                ExecutableUtils.createFromTarget(workspaceDir, bazelExe, args),
+                result
+            );
         }
 
         String stderr = result.getErrorOutput();
