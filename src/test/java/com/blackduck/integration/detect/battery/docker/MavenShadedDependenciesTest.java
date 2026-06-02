@@ -22,7 +22,7 @@ import com.blackduck.integration.detector.base.DetectorType;
 public class MavenShadedDependenciesTest {
 
     private static final String PROJECT_NAME = "maven-shaded-dependency";
-    public static String ARTIFACTORY_URL = System.getenv().get("SNPS_INTERNAL_ARTIFACTORY");
+    public static final String ARTIFACTORY_URL = System.getenv().get("SNPS_INTERNAL_ARTIFACTORY");
 
     @Test
     void mavenShadedDependencyTest() throws IOException, IntegrationException {
