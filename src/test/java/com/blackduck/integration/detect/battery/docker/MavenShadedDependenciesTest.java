@@ -1,11 +1,12 @@
 package com.blackduck.integration.detect.battery.docker;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.blackduck.integration.detect.battery.docker.integration.BlackDuckAssertions;
 import com.blackduck.integration.detect.battery.docker.integration.BlackDuckTestConnection;
 import com.blackduck.integration.exception.IntegrationException;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -21,11 +22,16 @@ import com.blackduck.integration.detector.base.DetectorType;
 public class MavenShadedDependenciesTest {
 
     private static final String PROJECT_NAME = "maven-shaded-dependency";
+    public static String ARTIFACTORY_URL = System.getenv().get("SNPS_INTERNAL_ARTIFACTORY");
 
     @Test
     void mavenShadedDependencyTest() throws IOException,IntegrationException {
         try(DetectDockerTestRunner test = new DetectDockerTestRunner("detect-maven-shaded-dependency", "detect-maven:3.9.9")) {
-            test.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("MavenShadedDependencies.dockerfile"));
+             Map<String, String> artifactoryArgs = new HashMap<>();
+             artifactoryArgs.put("ARTIFACTORY_URL", ARTIFACTORY_URL);
+             BuildDockerImageProvider buildDockerImageProvider = BuildDockerImageProvider.forDockerfilResourceNamed("MavenShadedDependencies.dockerfile");
+             buildDockerImageProvider.setBuildArgs(artifactoryArgs);
+             test.withImageProvider(buildDockerImageProvider);
 
             String projectVersion = PROJECT_NAME + "-PI";
             BlackDuckTestConnection blackDuckTestConnection = BlackDuckTestConnection.fromEnvironment();
@@ -44,10 +50,6 @@ public class MavenShadedDependenciesTest {
 
             dockerAssertions.logContains("Maven CLI: SUCCESS");
             dockerAssertions.atLeastOneBdioFile();
-
-//            blackduckAssertions.hasComponents("ch.randelshofer:fastdoubleparser");
-//            blackduckAssertions.hasComponents("JCTTools");
-//            blackduckAssertions.hasComponents("Byte Buddy (with dependencies)");
 
             blackduckAssertions.hasComponents("Apache Commons Logging");
             blackduckAssertions.hasComponents("jackson-core");

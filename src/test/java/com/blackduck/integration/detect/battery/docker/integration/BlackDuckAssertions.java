@@ -109,6 +109,7 @@ public class BlackDuckAssertions {
     public void hasComponents(Set<String> componentNames) throws IntegrationException {
         List<ProjectVersionComponentVersionView> bomComponents = getBomComponents();
 
+        // Surfaces full BOM contents in assertion failure message for easier debugging
         String allComponentNames = bomComponents.stream()
             .map(ProjectVersionComponentVersionView::getComponentName)
             .collect(Collectors.joining("', '", "['", "']"));

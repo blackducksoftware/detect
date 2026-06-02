@@ -173,15 +173,6 @@ test {
     println "maxParallelForks has been set to ${maxParallelForks}"
 }
 
-// Make integration test output (stdout, stderr, logs) visible on the console
-tasks.matching { it.name == 'testIntegration' }.configureEach {
-    testLogging {
-        showStandardStreams = true
-        exceptionFormat = 'full'
-        events 'passed', 'failed', 'skipped', 'standard_out', 'standard_error'
-    }
-}
-
 dependencies {
     implementation project(':common')
     implementation project(':configuration')
