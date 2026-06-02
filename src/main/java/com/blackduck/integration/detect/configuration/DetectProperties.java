@@ -1151,7 +1151,7 @@ public class DetectProperties {
                     .setInfo("Quack Patch Output Directory", DetectPropertyFromVersion.VERSION_11_4_0)
                     .setHelp(
                             "Specifies the output directory for Quack Patch results.",
-                            "If not set, the Quack Patch results are placed in a 'quack-patch' subdirectory of the present working directory."
+                            "If not set, the Quack Patch results are placed in a 'quack-patch' subdirectory under scan output directory."
                     )
                     .setGroups(DetectGroup.QUACKPATCH)
                     .build();

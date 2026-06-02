@@ -107,25 +107,18 @@ public class DetectConfigurationBootManager {
     }
 
     // Method to validate Quack Patch output path and return an Optional containing a DetectUserFriendlyException if the validation fails, or an empty Optional if it passes.
-    public Optional<DetectUserFriendlyException> validateQuackPatchOutputPath(String quackPatchOutput) {
-        // Fail for empty string since that would cause issues later on when we try to write to it, and it's likely the user just forgot to set it if they enabled Quack Patch but left this blank.
-        if (quackPatchOutput.isEmpty()) {
-            return Optional.of(new DetectUserFriendlyException(
-                "Invalid value for Quack Patch output path: " + quackPatchOutput, 
-                ExitCodeType.FAILURE_CONFIGURATION
-            ));
-        }
+    public Optional<DetectUserFriendlyException> validateQuackPatchOutputPath(String quackPatchOutputPath) {
         // Validate the path exists and is a directory
-        Path path = Paths.get(quackPatchOutput);
+        Path path = Paths.get(quackPatchOutputPath);
         
         if (!Files.exists(path)) {
             // create the directory if it doesn't exist, since that would cause issues later on when we try to write to it, and it's likely the user just forgot to create it if they enabled Quack Patch and set a path that doesn't exist.
             try {
-                logger.debug("Creating quack patch output path: {}", quackPatchOutput);
+                logger.debug("Creating quack patch output path: {}", quackPatchOutputPath);
                 Files.createDirectories(path);
             } catch (Exception e) {
                 return Optional.of(new DetectUserFriendlyException(
-                    "Quack Patch output path does not exist and could not be created: " + quackPatchOutput, 
+                    "Quack Patch output path does not exist and could not be created: " + quackPatchOutputPath,
                     ExitCodeType.FAILURE_CONFIGURATION
                 ));
             }
@@ -133,14 +126,14 @@ public class DetectConfigurationBootManager {
         
         if (!Files.isDirectory(path)) {
             return Optional.of(new DetectUserFriendlyException(
-                "Quack Patch output path is not a directory: " + quackPatchOutput, 
+                "Quack Patch output path is not a directory: " + quackPatchOutputPath,
                 ExitCodeType.FAILURE_CONFIGURATION
             ));
         }
         
         if (!Files.isWritable(path)) {
             return Optional.of(new DetectUserFriendlyException(
-                "Quack Patch output path is not writable: " + quackPatchOutput, 
+                "Quack Patch output path is not writable: " + quackPatchOutputPath,
                 ExitCodeType.FAILURE_CONFIGURATION
             ));
         }

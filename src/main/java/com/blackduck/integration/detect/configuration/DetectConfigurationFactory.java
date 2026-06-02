@@ -2,6 +2,7 @@ package com.blackduck.integration.detect.configuration;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -235,14 +236,16 @@ public class DetectConfigurationFactory {
     }
 
     public boolean isQuackPatchPossible() {
-        boolean allQuackPatchPropertiesSet = Boolean.TRUE.equals(!detectConfiguration.getValue(DetectProperties.DETECT_LLM_NAME).isEmpty()
-                && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_ENDPOINT).isEmpty()
-                && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_KEY).isEmpty());
+        if (Boolean.TRUE.equals(isQuackPatchEnabled())) {
+            boolean allQuackPatchPropertiesSet = Boolean.TRUE.equals(!detectConfiguration.getValue(DetectProperties.DETECT_LLM_NAME).isEmpty()
+                    && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_ENDPOINT).isEmpty()
+                    && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_KEY).isEmpty());
 
-        if (Boolean.TRUE.equals(isQuackPatchEnabled()) && allQuackPatchPropertiesSet) {
-            return true;
+            if (allQuackPatchPropertiesSet) {
+                return true;
+            }
+            logger.info("Quack Patch cannot run because not all required properties are set. Please check your configuration.");
         }
-        logger.info("Quack Patch cannot run because not all required properties are set. Please check your configuration.");
         return false;
     }
 
@@ -686,6 +689,6 @@ public class DetectConfigurationFactory {
         if (Objects.isNull(quackPatchOutput) || quackPatchOutput.isEmpty()) {
             return directoryManager.getScanOutputDirectory().getAbsolutePath();
         }
-        return quackPatchOutput.trim();
+        return Paths.get(quackPatchOutput.trim()).toAbsolutePath().toString();
     }
 }
