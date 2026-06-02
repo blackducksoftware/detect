@@ -8,6 +8,7 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.EnumSet;
 import java.util.Enumeration;
@@ -70,7 +71,7 @@ public class DetectZipUtil { //TODO: Add method for extracting without the wrapp
                 } else {
                     Files.createDirectories(entryPath.getParent());
                     try (InputStream in = zipFile.getInputStream(entry)) {
-                        Files.copy(in, entryPath);
+                        Files.copy(in, entryPath, StandardCopyOption.REPLACE_EXISTING);
                     }
                     applyUnixPermissions(entryPath, entry.getUnixMode());
                 }

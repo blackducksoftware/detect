@@ -25,13 +25,14 @@ public class MavenShadedDependenciesTest {
     public static String ARTIFACTORY_URL = System.getenv().get("SNPS_INTERNAL_ARTIFACTORY");
 
     @Test
-    void mavenShadedDependencyTest() throws IOException,IntegrationException {
-        try(DetectDockerTestRunner test = new DetectDockerTestRunner("detect-maven-shaded-dependency", "detect-maven:3.9.9")) {
-             Map<String, String> artifactoryArgs = new HashMap<>();
-             artifactoryArgs.put("ARTIFACTORY_URL", ARTIFACTORY_URL);
-             BuildDockerImageProvider buildDockerImageProvider = BuildDockerImageProvider.forDockerfilResourceNamed("MavenShadedDependencies.dockerfile");
-             buildDockerImageProvider.setBuildArgs(artifactoryArgs);
-             test.withImageProvider(buildDockerImageProvider);
+    void mavenShadedDependencyTest() throws IOException, IntegrationException {
+        org.junit.jupiter.api.Assertions.assertNotNull(ARTIFACTORY_URL, "SNPS_INTERNAL_ARTIFACTORY environment variable must be set");
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("detect-maven-shaded-dependency", "detect-maven:3.9.9")) {
+            Map<String, String> artifactoryArgs = new HashMap<>();
+            artifactoryArgs.put("ARTIFACTORY_URL", ARTIFACTORY_URL);
+            BuildDockerImageProvider buildDockerImageProvider = BuildDockerImageProvider.forDockerfilResourceNamed("MavenShadedDependencies.dockerfile");
+            buildDockerImageProvider.setBuildArgs(artifactoryArgs);
+            test.withImageProvider(buildDockerImageProvider);
 
             String projectVersion = PROJECT_NAME + "-PI";
             BlackDuckTestConnection blackDuckTestConnection = BlackDuckTestConnection.fromEnvironment();
