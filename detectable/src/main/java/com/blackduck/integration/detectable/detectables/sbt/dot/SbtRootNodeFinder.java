@@ -7,6 +7,7 @@ import guru.nidi.graphviz.model.LinkSource;
 import guru.nidi.graphviz.model.MutableGraph;
 import guru.nidi.graphviz.model.MutableNode;
 import org.apache.commons.collections4.SetUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Set;
@@ -19,7 +20,7 @@ public class SbtRootNodeFinder {
         this.sbtDotGraphNodeParser = sbtDotGraphNodeParser;
     }
 
-    public Set<String> determineRootIDs(MutableGraph mutableGraph) throws DetectableException {
+    public Set<String> determineRootIDs(@NotNull Set<String> evictedIds, @NotNull MutableGraph mutableGraph) throws DetectableException {
         Set<String> nodeIdsUsedInDestination = mutableGraph.nodes().stream()
                 .map(MutableNode::links)
                 .flatMap(List::stream)
@@ -34,7 +35,10 @@ public class SbtRootNodeFinder {
         // Evicted nodes have an outgoing edge but no incoming edges, so they appear as root candidates.
         // Remove them — they are not real project roots but evicted nodes.
         // e.g. guava:27.0 -> guava:30.1 [label="Evicted By"]
-        Set<String> evictedIds = SbtEvictionNodeUtil.findEvictedNodeIds(mutableGraph);
         return SetUtils.difference(candidates, evictedIds);
+    }
+
+    public Set<String> determineRootIDs(@NotNull MutableGraph mutableGraph) throws DetectableException {
+        return determineRootIDs(SbtEvictionNodeUtil.findEvictedNodeIds(mutableGraph), mutableGraph);
     }
 }

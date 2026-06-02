@@ -13,10 +13,9 @@ public class SbtEvictionNodeUtil {
 
     public static Set<String> findEvictedNodeIds(MutableGraph mutableGraph) {
         Set<String> evictedIds = new HashSet<>();
-        mutableGraph.nodes().forEach(node -> {
-            node.attrs().forEach(attr -> addEvictedEntry(attr, node, evictedIds));
-            node.links().forEach(link -> link.attrs().forEach(attr -> addEvictedEntry(attr, node, evictedIds)));
-        });
+        mutableGraph.nodes().forEach(node ->
+            node.links().forEach(link ->
+                link.attrs().forEach(attr -> addEvictedEntry(attr, node, evictedIds))));
         return evictedIds;
     }
 

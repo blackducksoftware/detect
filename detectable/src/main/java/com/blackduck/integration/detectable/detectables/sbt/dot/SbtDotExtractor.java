@@ -1,15 +1,5 @@
 package com.blackduck.integration.detectable.detectables.sbt.dot;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-import java.util.Set;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import guru.nidi.graphviz.model.MutableGraph;
-import guru.nidi.graphviz.parse.Parser;
 import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.dependency.Dependency;
 import com.blackduck.integration.detectable.ExecutableTarget;
@@ -21,6 +11,15 @@ import com.blackduck.integration.detectable.detectable.executable.ExecutableFail
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.executable.Executable;
 import com.blackduck.integration.executable.ExecutableOutput;
+import guru.nidi.graphviz.model.MutableGraph;
+import guru.nidi.graphviz.parse.Parser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+import java.util.Set;
 
 public class SbtDotExtractor {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -57,10 +56,11 @@ public class SbtDotExtractor {
             Extraction.Builder extraction = new Extraction.Builder();
             for (File dotGraph : dotGraphs) {
                 MutableGraph mutableGraph = new Parser().read(dotGraph);
-                Set<String> rootIDs = sbtRootNodeFinder.determineRootIDs(mutableGraph);
+                Set<String> evictedIds = SbtEvictionNodeUtil.findEvictedNodeIds(mutableGraph);
+                Set<String> rootIDs = sbtRootNodeFinder.determineRootIDs(evictedIds, mutableGraph);
                 File projectFolder = dotGraph.getParentFile().getParentFile();//typically found in project-folder/target/<>.dot so .parent.parent == project folder
 
-                DependencyGraph graph = sbtGraphParserTransformer.transformDotToGraph(rootIDs, mutableGraph);
+                DependencyGraph graph = sbtGraphParserTransformer.transformDotToGraph(rootIDs, evictedIds, mutableGraph);
                 if (rootIDs.size() == 1) {
                     String projectId = rootIDs.stream().findFirst().get();
                     Dependency projectDependency = graphNodeParser.nodeToDependency(projectId);

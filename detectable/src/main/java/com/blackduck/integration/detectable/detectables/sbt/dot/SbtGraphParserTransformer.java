@@ -6,6 +6,7 @@ import com.blackduck.integration.bdio.model.dependency.Dependency;
 import guru.nidi.graphviz.model.Link;
 import guru.nidi.graphviz.model.MutableGraph;
 import guru.nidi.graphviz.model.MutableNode;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.List;
@@ -19,11 +20,10 @@ public class SbtGraphParserTransformer {
         this.sbtDotGraphNodeParser = sbtDotGraphNodeParser;
     }
 
-    public DependencyGraph transformDotToGraph(Set<String> projectIds, MutableGraph mutableGraph) {
+    public DependencyGraph transformDotToGraph(@NotNull Set<String> projectIds, @NotNull Set<String> evictedIds, @NotNull MutableGraph mutableGraph) {
         DependencyGraph graph = new BasicDependencyGraph();
         String projectNodeId = projectIds.stream().findFirst().orElseThrow(() -> new IllegalArgumentException("projectIds must not be empty"));
         boolean isOneRoot = projectIds.size() == 1;
-        Set<String> evictedIds = SbtEvictionNodeUtil.findEvictedNodeIds(mutableGraph);
 
         List<Link> links = mutableGraph.nodes().stream().map(MutableNode::links).flatMap(List::stream).collect(Collectors.toList());
         for (Link link : links) {
@@ -43,11 +43,8 @@ public class SbtGraphParserTransformer {
         return graph;
     }
 
-    // Used when the graph has exactly one project root.
-    // Edges from the project node become direct dependencies; all other non-evicted edges become transitive.
-    private void processSingleRootLink(DependencyGraph graph, String projectNodeId, String parentNode, String childNode,
-                                       Dependency parent, Dependency child, Set<String> evictedIds) {
-        processMultiRootLink(graph, Collections.singleton(projectNodeId), parentNode, childNode, parent, child, evictedIds);
+    public DependencyGraph transformDotToGraph(@NotNull Set<String> projectIds, @NotNull MutableGraph mutableGraph) {
+        return transformDotToGraph(projectIds, SbtEvictionNodeUtil.findEvictedNodeIds(mutableGraph), mutableGraph);
     }
 
     // Used when the graph has multiple root candidates.
@@ -68,6 +65,13 @@ public class SbtGraphParserTransformer {
                 graph.addChildWithParent(child, parent);
             }
         }
+    }
+
+    // Used when the graph has exactly one project root.
+    // Edges from the project node become direct dependencies; all other non-evicted edges become transitive.
+    private void processSingleRootLink(DependencyGraph graph, String projectNodeId, String parentNode, String childNode,
+                                       Dependency parent, Dependency child, Set<String> evictedIds) {
+        processMultiRootLink(graph, Collections.singleton(projectNodeId), parentNode, childNode, parent, child, evictedIds);
     }
 
     private String normalizeDependency(String dependency) {
