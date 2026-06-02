@@ -58,21 +58,9 @@ public abstract class AbstractBinaryScanStepRunner {
             binaryUpload = binaryScanOptions.getSingleTargetFilePath().get().toFile();
             operationRunner.updateBinaryUserTargets(binaryUpload);
         } else if (binaryScanOptions.getFileFilter().isPresent()) {
-            Optional<File> multipleUploadTarget = operationRunner.searchForBinaryTargets(
-                binaryScanOptions.getFileFilter().get(),
-                binaryScanOptions.getSearchDepth(),
-                binaryScanOptions.isFollowSymLinks()
-            );
+            Optional<File> multipleUploadTarget = searchForFilteredBinaryTarget(binaryScanOptions);
             if (multipleUploadTarget.isPresent()) {
                 binaryUpload = multipleUploadTarget.get();
-                List<File> multiTargets = operationRunner.getMultiBinaryTargets();
-                multiTargets.forEach(operationRunner::updateBinaryUserTargets);
-            } else {
-                String message = "Binary scanner did not find any files matching the configured patterns.";
-                if (binaryScanOptions.getSearchDepth() == 0) {
-                    message += " Consider using detect.binary.scan.search.depth if binary files exist in subdirectories.";
-                }
-                logger.warn(message);
             }
         } else if (dockerTargetData != null && dockerTargetData.getContainerFilesystem().isPresent()) {
             logger.info("Binary Scanner will upload docker container file system.");
@@ -95,6 +83,25 @@ public abstract class AbstractBinaryScanStepRunner {
         }
     }
     
+    private Optional<File> searchForFilteredBinaryTarget(BinaryScanOptions binaryScanOptions) throws OperationException {
+        Optional<File> target = operationRunner.searchForBinaryTargets(
+            binaryScanOptions.getFileFilter().get(),
+            binaryScanOptions.getSearchDepth(),
+            binaryScanOptions.isFollowSymLinks()
+        );
+        if (target.isPresent()) {
+            List<File> multiTargets = operationRunner.getMultiBinaryTargets();
+            multiTargets.forEach(operationRunner::updateBinaryUserTargets);
+            return target;
+        }
+        String message = "Binary scanner did not find any files matching the configured patterns.";
+        if (binaryScanOptions.getSearchDepth() == 0) {
+            message += " Consider using detect.binary.scan.search.depth if binary files exist in subdirectories.";
+        }
+        logger.warn(message);
+        return Optional.empty();
+    }
+
     public Optional<CodeLocationCreationData<BinaryScanBatchOutput>> getCodeLocations() {
         return codeLocations;
     }
