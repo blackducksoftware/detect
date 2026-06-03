@@ -56,7 +56,7 @@ public class SetupToolsExtractUtils {
         return false;
     }
 
-    public static SetupToolsParser resolveSetupToolsParser(TomlParseResult parsedToml, FileFinder fileFinder, DetectableEnvironment environment) throws IOException, DetectableException {
+    public static SetupToolsParser resolveSetupToolsParser(TomlParseResult parsedToml, FileFinder fileFinder, DetectableEnvironment environment) throws IOException, DetectableException{
         // Dependencies, if they exist at all, will be in one of three files.
         // Step 1: Check the pyproject.toml
         TomlArray tomlDependencies = parsedToml.getArray(TOML_DEPENDENCIES);
