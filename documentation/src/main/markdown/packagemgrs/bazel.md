@@ -43,6 +43,117 @@ As a result, the bazel tool's HTTP/BCR probing (which relies on `bazel mod show_
 Recommended action: Upgrade Bazel to 6.4+ (preferably 7.x or 8.x), where `bazel mod` is stable and Bzlmod is the default.
 </note>
 
+## Understanding Bazel Detection and Package Manager Detection
+
+A common expectation is that because a project is built with Bazel, the Bazel
+detector alone should provide a complete dependency inventory. However, Bazel
+and package managers operate at different layers of the software supply chain,
+and [detect_product_short] treats them separately.
+
+### Two detection layers
+
+**The Bazel detector** identifies Bazel-level dependencies: external repositories
+and modules that Bazel resolves during the build — `http_archive`, `git_repository`,
+`go_repository`, `maven_install`, and similar rules. For each discovered repository,
+it attempts to extract a URL and match it against the Black Duck Knowledge Base.
+
+**Package manager detectors** identify ecosystem-level dependencies by parsing
+manifest files: `pom.xml`, `package.json`, `requirements.txt`, `go.mod`,
+`Cargo.lock`, `Gemfile.lock`, `packages.config`, and others. These detectors
+operate on file content regardless of whether the project uses Bazel.
+
+### Why both are needed
+
+A Bazel external repository is an archive, a bundle of source code. That archive
+may itself contain package manager metadata for one or more ecosystems. The Bazel
+detector identifies the archive as a dependency. The package manager detectors
+identify what is inside it.
+
+```
+Your Bazel target
+ └── @protobuf//:lib          ← Bazel detector: matches via GitHub URL → KB entry
+      └── java/pom.xml        ← Maven detector: discovers protobuf's Java deps
+      └── python/setup.py     ← PIP detector: discovers protobuf's Python deps
+      └── js/package.json     ← NPM detector: discovers protobuf's JS deps
+
+ └── @internal_lib//:lib      ← Bazel detector: private URL, no KB match
+      └── requirements.txt    ← PIP detector: discovers Python deps inside the archive
+      └── go.mod              ← Go detector: discovers Go deps inside the archive
+```
+
+In this example, running only the Bazel detector surfaces one component
+(`protobuf`, matched via its public GitHub URL). Running both Bazel detection
+and package manager detection surfaces protobuf plus all its ecosystem-level
+transitive dependencies, and also surfaces the contents of `@internal_lib`
+that would otherwise be invisible.
+
+It is therefore expected that a Bazel-only scan identifies fewer components
+than a combined scan. This does not indicate missing Bazel dependencies. It
+reflects that package manager detectors are discovering additional ecosystem-
+specific components contained within Bazel-managed repositories.
+
+For the most complete dependency inventory, enable both:
+
+```sh
+bash <(curl -s -L https://detect.blackduck.com/detect11.sh) \
+  --detect.tools=BAZEL,DETECTOR \
+  --detect.bazel.target='//myproject:mytarget'
+```
+
+### Private repositories, custom macros, and bazel fetch
+
+The Bazel detector extracts URLs from standard repository rules (`http_archive`,
+`git_repository`, `go_repository`). Environments that use custom repository
+macros, private registry infrastructure, or other abstractions that do not
+surface standard URLs through Bazel metadata will see reduced coverage from the
+Bazel detector alone. The archives are fetched correctly by Bazel but their
+URLs are not extractable by [detect_product_short].
+
+In these environments, a `bazel fetch` workflow can provide additional coverage
+by materializing external repositories on disk and allowing package manager
+detectors to analyze their contents directly:
+
+```sh
+# Step 1: Fetch and extract all external dependencies for a target
+bazel --output_base=/your/scan/dir/target_name fetch //your:target
+
+# Step 2: Run Detect with DETECTOR against the extracted sources
+bash <(curl -s -L https://detect.blackduck.com/detect11.sh) \
+  --detect.tools=DETECTOR \
+  --detect.source.path=/your/scan/dir/target_name/external/ \
+  --detect.detector.search.depth=5 \
+  --detect.accuracy.required=NONE
+```
+
+This approach surfaces ecosystem-level dependencies (Python, Go, npm, Maven,
+NuGet, Ruby, and others) from within the extracted archives regardless of how
+they were fetched. Each extracted archive is scanned for manifest files at the
+configured search depth.
+
+<note type="note">
+`--detect.tools=DETECTOR` is used here, not `BAZEL`. The Bazel detector queries
+Bazel's dependency graph and cannot inspect inside extracted archives. DETECTOR
+runs ecosystem detectors directly against source files on disk.
+</note>
+
+<note type="note">
+`--detect.detector.search.depth` controls how many directory levels deep Detect
+searches for manifest files within each extracted archive. Set this value based
+on where manifests sit inside your archives. A value of 5 is a safe default for
+most archive structures.
+</note>
+
+For environments where per-target isolation is needed, use `--output_base` to
+scope the fetch to a directory of your choice:
+
+```sh
+# Each target gets its own output base; only that target's deps land there
+bazel --output_base=/scan/firmware_ecu fetch //firmware:ecu_target
+bazel --output_base=/scan/firmware_net fetch //firmware:net_target
+```
+
+---
+
 ## Usage
 
 **Tool invocation:**
