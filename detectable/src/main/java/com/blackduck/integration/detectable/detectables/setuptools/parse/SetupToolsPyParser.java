@@ -19,23 +19,22 @@ public class SetupToolsPyParser implements SetupToolsParser {
     private static final Pattern INSTALL_REQUIRES_PATTERN = Pattern.compile(".*\\binstall_requires\\s*=\\s*(.*)$");
     private static final Pattern QUOTED_DEPENDENCY_PATTERN = Pattern.compile("'([^'\\\\]*(?:\\\\.[^'\\\\]*)*)'|\"([^\"\\\\]*(?:\\\\.[^\"\\\\]*)*)\"");
     private TomlParseResult parsedToml;
-
     private List<String> dependencies;
-
+    
     public SetupToolsPyParser(TomlParseResult parsedToml) {
         this.parsedToml = parsedToml;
         this.dependencies = new ArrayList<>();
     }
-
+    
     @Override
     public SetupToolsParsedResult parse() throws IOException {
         // Use a name from the toml if we have it. Do not parse names and versions from the setup.py
         // as the project will not always have a string (it could have variables or method calls)
         String tomlProjectName = parsedToml.getString("project.name");
         String projectVersion = parsedToml.getString("project.version");
-
+        
         List<PythonDependency> parsedDirectDependencies = parseDirectDependencies();
-
+        
         return new SetupToolsParsedResult(tomlProjectName, projectVersion, parsedDirectDependencies);
     }
 
@@ -137,12 +136,12 @@ public class SetupToolsPyParser implements SetupToolsParser {
 
     private List<PythonDependency> parseDirectDependencies() {
         List<PythonDependency> results = new LinkedList<>();
-
+        
         PythonDependencyTransformer dependencyTransformer = new PythonDependencyTransformer();
 
         for (String dependencyLine : dependencies) {
             PythonDependency dependency = dependencyTransformer.transformLine(dependencyLine);
-
+            
             // If we have a ; in our requirements line then there is a condition on this dependency.
             // We want to know this so we don't consider it a failure later if we try to run pip show
             // on it and we don't find it.
@@ -154,7 +153,7 @@ public class SetupToolsPyParser implements SetupToolsParser {
                 results.add(dependency);
             }
         }
-
+        
         return results;
     }
 }
