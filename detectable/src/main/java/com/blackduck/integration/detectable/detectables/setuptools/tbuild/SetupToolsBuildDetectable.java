@@ -24,7 +24,6 @@ import com.blackduck.integration.detectable.detectable.result.DetectableResult;
 import com.blackduck.integration.detectable.detectable.result.ExceptionDetectableResult;
 import com.blackduck.integration.detectable.detectable.result.ExecutableNotFoundDetectableResult;
 import com.blackduck.integration.detectable.detectable.result.PassedDetectableResult;
-import com.blackduck.integration.detectable.detectable.result.SetupToolsNoDependenciesDetectableResult;
 import com.blackduck.integration.detectable.detectable.result.SetupToolsRequiresNotFoundDetectableResult;
 import com.blackduck.integration.detectable.detectables.setuptools.SetupToolsExtractUtils;
 import com.blackduck.integration.detectable.detectables.setuptools.SetupToolsExtractor;
@@ -89,13 +88,9 @@ public class SetupToolsBuildDetectable extends Detectable {
                 return new ExecutableNotFoundDetectableResult("pip");
             }
             
-            // Ensure dependencies/requirements are specified in a toml, cfg, or py file.
+            // Resolve the appropriate parser for dependencies (toml, cfg, or py file).
             setupToolsParser = SetupToolsExtractUtils.resolveSetupToolsParser(parsedToml, fileFinder, environment);
-            
-            if (setupToolsParser == null) {
-               return new SetupToolsNoDependenciesDetectableResult(); 
-            }
-            
+
             return new PassedDetectableResult();
         } catch (Exception e) {
             return new ExceptionDetectableResult(e);

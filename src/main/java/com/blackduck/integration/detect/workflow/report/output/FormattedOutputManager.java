@@ -49,6 +49,7 @@ public class FormattedOutputManager {
     private DetectorToolResult detectorToolResult = null;
     private NameVersion projectNameVersion = null;
     private SortedMap<String, String> rawMaskedPropertyValues = null;
+    private Map<String, String> blackDuckServerProperties = null;
 
     public FormattedOutputManager(EventSystem eventSystem) {
         eventSystem.registerListener(Event.DetectorsComplete, result -> detectorToolResult = result);
@@ -60,6 +61,7 @@ public class FormattedOutputManager {
         eventSystem.registerListener(Event.ProjectNameVersionChosen, nameVersion -> projectNameVersion = nameVersion);
         eventSystem.registerListener(Event.RawMaskedPropertyValuesCollected, keyValueMap -> rawMaskedPropertyValues = keyValueMap);
         eventSystem.registerListener(Event.DetectOperationsComplete, detectOperations::addAll);
+        eventSystem.registerListener(Event.BlackDuckServerPropertiesCollected, props -> blackDuckServerProperties = props);
     }
 
     public FormattedOutput createFormattedOutput(DetectInfo detectInfo, ExitCodeRequest exitCodeRequest, Optional<AutonomousManager> autonomousManagerOptional) {
@@ -113,6 +115,7 @@ public class FormattedOutputManager {
         unrecognizedPaths.keySet().forEach(key -> formattedOutput.unrecognizedPaths.put(key, unrecognizedPaths.get(key).stream().map(File::toString).collect(Collectors.toList())));
 
         formattedOutput.propertyValues = rawMaskedPropertyValues;
+        formattedOutput.blackDuckServerProperties = blackDuckServerProperties;
         if (autonomousManagerOptional.isPresent()) {
             AutonomousManager autonomousManager = autonomousManagerOptional.get();
             if (autonomousManager.getAutonomousScanEnabled()) {

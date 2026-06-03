@@ -2,7 +2,6 @@ package com.blackduck.integration.detectable.detectables.bitbake;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -16,7 +15,8 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.paypal.digraph.parser.GraphParser;
+import guru.nidi.graphviz.model.MutableGraph;
+import guru.nidi.graphviz.parse.Parser;
 import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.detectable.ExecutableTarget;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
@@ -200,8 +200,7 @@ public class BitbakeExtractor {
         if (logger.isTraceEnabled()) {
             logger.trace(FileUtils.readFileToString(taskDependsFile, Charset.defaultCharset()));
         }
-        InputStream dependsFileInputStream = FileUtils.openInputStream(taskDependsFile);
-        GraphParser graphParser = new GraphParser(dependsFileInputStream);
-        return bitbakeGraphTransformer.transform(graphParser, knownLayers);
+        MutableGraph mutableGraph = new Parser().read(taskDependsFile);
+        return bitbakeGraphTransformer.transform(mutableGraph, knownLayers);
     }
 }

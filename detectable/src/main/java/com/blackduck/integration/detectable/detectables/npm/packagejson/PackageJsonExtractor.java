@@ -12,7 +12,6 @@ import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import com.google.gson.Gson;
 import com.blackduck.integration.bdio.graph.BasicDependencyGraph;
 import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.Forge;
@@ -22,8 +21,10 @@ import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.detectable.detectable.util.SemVerComparator;
+import com.blackduck.integration.detectable.detectables.npm.NpmAliasParser;
 import com.blackduck.integration.detectable.detectables.npm.NpmDependencyType;
 import com.blackduck.integration.detectable.extraction.Extraction;
+import com.google.gson.Gson;
 
 public class PackageJsonExtractor {
     private final Gson gson;
@@ -81,6 +82,13 @@ public class PackageJsonExtractor {
     }
     
     private Dependency entryToDependency(String key, String value) {
+        // Handle npm aliases: "alias-name": "npm:actual-package@version"
+        String[] parsed = NpmAliasParser.parseNpmAlias(value);
+        if (parsed != null) {
+            key = parsed[0];
+            value = parsed[1];
+        }
+
         String version = extractLowestVersion(value);
         ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.NPMJS, key, version);
         return new Dependency(externalId);

@@ -16,15 +16,15 @@ Execute Container Scan by adding the following to a run of [bd_product_short]:
 
 ### General Requirements
  * Your [bd_product_short] server must have [bd_product_short] Secure Container (BDSC) licensed and enabled.
- * Must have Match as a Service (MaaS) licensed, and enabled within [bd_product_short].
+ * Must have Match as a Service (MaaS) licensed, and enabled within the [bd_product_short] instance.
  * A unique project version must be provided, or the scan service will respond with an error.
  * Must be running [bd_product_short] 2023.10.0 or greater.
  * URL provided for a remote container image must use the HTTP(S) protocol.
+ * Container scanning functions both with and without SCA Scan Service (SCASS). If SCASS is not enabled, the binary scanner container/pod needs to be deployed to the [bd_product_short] instance. 
  
 ### Limitations
  * Container scanning is limited to images of 100GB or less for hosted or local, on-prem services.
 	<note type="note">Additional hardware allocation might be required for the BDBA container when locally scanning large images.</note>
- * Container scanning is not supported when running [bd_product_short] with an on-prem KB. For additional information see [hosted versus on-prem KB functionality ](https://documentation.blackduck.com/bundle/bd-hub/page/General/hostedKbVsOnPremKb.html).
  
 ## Invocation
  * To invoke a container scan, which executes in "Intelligent" mode by default, the following must be provided at a minimum:
@@ -47,7 +47,7 @@ Container scan findings will appear in the [bd_product_short] user interface unl
 <figure>
     <img src="images/containerscan.png"
          alt="Container Scan Results">
-    <figcaption>Container Scan results in Black Duck displaying image layer findings.</figcaption>
+    <figcaption>Container Scan results in Black Duck SCA displaying image layer findings.</figcaption>
 </figure>
 
 ## Stateless mode results

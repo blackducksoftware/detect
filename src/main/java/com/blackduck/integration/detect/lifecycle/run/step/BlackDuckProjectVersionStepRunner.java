@@ -90,7 +90,7 @@ public class BlackDuckProjectVersionStepRunner {
 
     private CloneFindResult findClone(String projectName, BlackDuckRunData blackDuckRunData) throws OperationException {
         FindCloneOptions cloneOptions = operationRunner.calculateCloneOptions();
-        if (cloneOptions.getCloneLatestProjectVersion()) {
+        if (Boolean.TRUE.equals(cloneOptions.getCloneLatestProjectVersion())) {
             logger.debug("Cloning the most recent project version.");
             return operationRunner.findLatestProjectVersionCloneUrl(blackDuckRunData, projectName);
         } else if (StringUtils.isNotBlank(cloneOptions.getCloneVersionName())) {

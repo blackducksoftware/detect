@@ -39,7 +39,12 @@ public class SbtGraphParserTransformer {
                 if (projectNodeId.equals(parentNode)) {
                     graph.addDirectDependency(child);
                 } else {
-                    if (!evictedIds.contains(childNode)) {
+                    // Skip edges where either side is an evicted dependency.
+                    // For eviction edges like "guava:27.0" -> "guava:30.1" [label="Evicted By"],
+                    // parentNode is the evicted node (guava:27.0) which is in evictedIds.
+                    // The replacement (guava:30.1) is NOT in evictedIds, so legitimate edges
+                    // like "guice" -> "guava:30.1" are preserved.
+                    if (!evictedIds.contains(childNode) && !evictedIds.contains(parentNode)) {
                         graph.addChildWithParent(child, parent);
                     }
                 }
@@ -48,7 +53,10 @@ public class SbtGraphParserTransformer {
                     graph.addDirectDependency(parent);
                 }
 
-                graph.addChildWithParent(child, parent);
+                // Same eviction check for the multi-root case.
+                if (!evictedIds.contains(childNode) && !evictedIds.contains(parentNode)) {
+                    graph.addChildWithParent(child, parent);
+                }
             }
         }
 

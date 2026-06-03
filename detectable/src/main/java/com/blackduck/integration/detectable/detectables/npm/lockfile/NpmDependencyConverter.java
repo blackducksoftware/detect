@@ -19,6 +19,7 @@ import com.blackduck.integration.detectable.detectables.npm.lockfile.model.NpmDe
 import com.blackduck.integration.detectable.detectables.npm.lockfile.model.NpmProject;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.model.NpmRequires;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.model.PackageLock;
+import com.blackduck.integration.detectable.detectables.npm.NpmAliasParser;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.model.PackageLockDependency;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.model.PackageLockPackage;
 import com.blackduck.integration.detectable.detectables.npm.packagejson.CombinedPackageJson;
@@ -76,8 +77,12 @@ public class NpmDependencyConverter {
         }
 
         for (Map.Entry<String, PackageLockPackage> packageEntry : packages.entrySet()) {
-            String packageName = packageEntry.getKey();
+            String packageKey = packageEntry.getKey();
             PackageLockPackage packageLockDependency = packageEntry.getValue();
+
+            // For npm aliases, the 'name' field contains the actual package name, while the key contains the alias.
+            // For regular packages, the 'name' field is null, so we use the key.
+            String packageName = packageLockDependency.name != null ? packageLockDependency.name : packageKey;
 
             NpmDependency dependency = createNpmDependency(packageName, packageLockDependency.version, packageLockDependency.dev, packageLockDependency.peer, packageLockDependency.optional);
             dependency.setParent(parent);

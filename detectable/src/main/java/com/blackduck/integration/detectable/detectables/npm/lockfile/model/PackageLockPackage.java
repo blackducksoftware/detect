@@ -6,6 +6,9 @@ import java.util.Map;
 import com.google.gson.annotations.SerializedName;
 
 public class PackageLockPackage {
+    @SerializedName("name")
+    public String name;
+
     @SerializedName("version")
     public String version;
 

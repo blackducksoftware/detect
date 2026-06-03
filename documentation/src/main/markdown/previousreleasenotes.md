@@ -1,6 +1,72 @@
 <!-- Check the support matrix to determine supported, non-current major version releases -->
 # Release notes for previous [detect_product_short] versions
 
+## Version 11.4.2
+
+### Resolved issues
+
+* (IDETECT-5136) - Validate the `quack patch` output directory only if the Quack Patch feature is enabled; otherwise, skip validation to avoid errors.
+
+## Version 11.4.1
+
+### Dependency Updates
+* Upgraded and released Nuget Inspector version 2.6.0
+
+## Version 11.4.0
+
+### New features
+
+* Support for the Conda Tree–based detector has been added. For more details, see [Conda Tree](packagemgrs/conda.md#conda-tree-detector).
+* Support for pnpm now extends to 10.32.1.
+* NuGet Solution Native Inspector now supports .slnx files.
+* Added support for Bazel 9.
+* PIP Native Inspector now supports Setuptools version 82.0.0.
+* npm detectors now allow for aliases to be used when specifying dependencies in the package.json file.
+* Ivy CLI Detector, leveraging the `ivy:dependencytree` Ant task to extract direct and transitive dependencies for Ant + Ivy projects. For further information, see [Ivy (Ant) support](packagemgrs/ivy.md).
+* Introduced the `detect.quack.patch.output` property to control the Quack Patch output information path. If not set, the current working directory will be used as the default.
+* When [detect_product_short] is integrated with [bd_product_long] version 2026.4 or later, relevant [bd_product_short] server configuration details will be retrieved for use by [detect_product_short]. With this release of [detect_product_short], the [bd_product_short] server administrator can choose to set the detect.blackduck.correlated.scanning.enabled property, which will be retrieved and used if the user has not specified this property locally.
+    * In future releases the retrieval of additional [bd_product_short] server properties will be supported.
+
+### Changed features
+
+* The default output directory of the Quack Patch feature has been updated to use a `quack-patch` subdirectory of the present working directory.
+
+### Resolved issues
+
+* (IDETECT-5014) npm CLI detector now handles components that do not have a version specified, preventing those components from being silently dropped from results.
+* (IDETECT-4980) When `detect.clone.project.version.latest` is set to true, an INFO-level log message will be written to identify the exact project version selected as the clone source.
+* (IDETECT‑4979) Updated the NuGet Inspector to prevent duplicate components from being reported which end up unversioned in the BOM.
+* (IDETECT‑5058) Improved the Poetry detector to eliminate errors encountered while parsing pyproject.toml.
+* (IDETECT‑5013) Fixed an issue in the signature scan fallback logic when SCA Scan Service (SCASS) is intentionally bypassed.
+* (IDETECT-4993) Fixed an issue where the Go Module Detector entered an infinite loop while scanning `go.mod` files containing circular dependencies.
+
+### Dependency Updates
+* Update tomlj library to version 1.1.1.
+
+## Version 11.3.0
+
+### New features
+
+* The Bazel tool has been updated to support Bzlmod. It now supports both BZLMOD (MODULE.bazel) and WORKSPACE-based projects, performs automatic mode detection, and probes the dependency graph to determine which dependency sources are present. See [Bazel support](packagemgrs/bazel.md) for details.
+* With the addition of the `detect.cargo.included.features` and `detect.cargo.disable.default.features` properties, [detect_product_short] now supports Cargo features and the inclusion or exclusion of dependencies as options. See [Cargo](properties/detectors/cargo.md) for details.
+  <note type="note">This feature is supported for Cargo CLI Detector. Cargo Lockfile Detector will log a warning if these properties are provided.</note>
+* Add support for `environment.yaml` in [detect_product_short] Conda CLI Detector.
+* Component Location Analysis now supports locating dependency declarations that use version range operators for npm, Yarn, and PIP. See [Component Location Analysis](runningdetect/component-location-analysis.md) for details.
+
+### Changed features
+
+* The `detect.bazel.workspace.rules` property has been deprecated and will be removed in the next major release. It is replaced by `detect.bazel.dependency.sources`. If present in the configuration, the old property will be mapped to `detect.bazel.dependency.sources`. See [Bazel support](packagemgrs/bazel.md) for migration details.
+
+### Resolved issues
+
+* (IDETECT-4960) Added support for Cargo features and optional dependencies in Cargo CLI Detector, allowing precise control over which features are included in the SBOM through cargo tree command flags. See [Cargo](properties/detectors/cargo.md) for details.
+* (IDETECT-4847) Clarified that the value of `detect.container.scan.file.path` should be a local .tar file path or HTTP/HTTPS URL for a remote .tar file.
+* (IDETECT-4970) Fixed an issue where a `quack-patch` output directory was created despite the feature not being enabled.
+
+### Dependency Updates
+
+* Released and upgraded Component Locator version 2.4.2
+
 ## Version 11.2.1
 
 ### Dependency Updates

@@ -37,9 +37,12 @@ public class FindCloneByLatestOperation {
                     logger.warn("Could not find an existing project version to clone from. Ensure the project exists when using the latest clone flag.");
                     return CloneFindResult.empty();
                 } else {
-                    Optional<HttpUrl> url = projectVersionViews.stream()
-                        .max(Comparator.comparing(ProjectVersionView::getCreatedAt))
-                        .map(BlackDuckView::getHref);
+                    Optional<ProjectVersionView> latestVersion = projectVersionViews.stream()
+                        .max(Comparator.comparing(ProjectVersionView::getCreatedAt));
+                    latestVersion.ifPresent(version ->
+                        logger.info("Cloning from the latest project version: {}", version.getVersionName())
+                    );
+                    Optional<HttpUrl> url = latestVersion.map(BlackDuckView::getHref);
                     return new CloneFindResult(url.orElse(null));
                 }
             } else {
