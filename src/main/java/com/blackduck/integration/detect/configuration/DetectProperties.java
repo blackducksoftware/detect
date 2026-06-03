@@ -1154,6 +1154,7 @@ public class DetectProperties {
                             "If not set, the Quack Patch results are placed in a 'quack-patch' subdirectory under scan output directory."
                     )
                     .setGroups(DetectGroup.QUACKPATCH)
+                    .setDeprecated("This property is deprecated and will be renamed to 'detect.quack.patch.output.path' in Detect release 12.0.", new ProductMajorVersion(12))
                     .build();
 
     public static final StringProperty DETECT_LLM_API_KEY =
