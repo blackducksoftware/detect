@@ -43,7 +43,7 @@ As a result, the bazel tool's HTTP/BCR probing (which relies on `bazel mod show_
 Recommended action: Upgrade Bazel to 6.4+ (preferably 7.x or 8.x), where `bazel mod` is stable and Bzlmod is the default.
 </note>
 
-## Understanding Bazel Detection and Package Manager Detection
+## Combining Bazel Detection with Package Manager Detection for Additional Coverage
 
 A common misconception is that projects built with Bazel can be fully analyzed
 using only the Bazel detector to produce a complete dependency inventory. In
@@ -102,7 +102,8 @@ For a more complete dependency inventory, enable both:
 ```sh
 bash <(curl -s -L https://detect.blackduck.com/detect11.sh) \
   --detect.tools=BAZEL,DETECTOR \
-  --detect.bazel.target='//myproject:mytarget'
+  --detect.bazel.target='//myproject:mytarget' \
+  --detect.detector.search.depth=5
 ```
 
 ### Using Bazel Fetch for Additional Coverage
