@@ -27,6 +27,11 @@
 * npm detectors now allow for aliases to be used when specifying dependencies in the package.json file.
 * Ivy CLI Detector, leveraging the `ivy:dependencytree` Ant task to extract direct and transitive dependencies for Ant + Ivy projects. For further information, see [Ivy (Ant) support](packagemgrs/ivy.md).
 
+### Changes features
+
+* CentOS support in Detect Docker Inspector has been deprecated and will be removed in 12.0.0. For more details, please see [Docker Inspector Release Notes](releasenotes.md).
+  * imageinspector.service.port.centos has been deprecated and will be removed in 12.0.0.
+
 ### Resolved issues
 
 ### Dependency Updates
