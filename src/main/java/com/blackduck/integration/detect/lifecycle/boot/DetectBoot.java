@@ -5,28 +5,27 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 
-import com.blackduck.integration.configuration.config.MaskedRawValueResult;
-import com.blackduck.integration.configuration.property.base.TypedProperty;
-import com.blackduck.integration.configuration.property.types.enumallnone.list.AllEnumList;
-import com.blackduck.integration.configuration.property.types.path.PathValue;
-import com.blackduck.integration.detect.configuration.connection.BlackDuckConnectionDetails;
-import com.blackduck.integration.detect.configuration.help.yaml.HelpYamlWriter;
-import com.blackduck.integration.detect.workflow.status.DetectIssue;
-import com.blackduck.integration.detect.workflow.status.DetectIssueType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
+import com.blackduck.integration.configuration.config.MaskedRawValueResult;
+import com.blackduck.integration.configuration.property.base.TypedProperty;
 import com.blackduck.integration.configuration.config.PropertyConfiguration;
+import com.blackduck.integration.configuration.property.base.TypedProperty;
+import com.blackduck.integration.configuration.property.types.enumallnone.list.AllEnumList;
+import com.blackduck.integration.configuration.property.types.path.PathValue;
 import com.blackduck.integration.configuration.property.types.path.SimplePathResolver;
 import com.blackduck.integration.configuration.source.MapPropertySource;
 import com.blackduck.integration.configuration.source.PropertySource;
@@ -36,6 +35,7 @@ import com.blackduck.integration.detect.configuration.DetectPropertyConfiguratio
 import com.blackduck.integration.detect.configuration.DetectPropertyUtil;
 import com.blackduck.integration.detect.configuration.DetectUserFriendlyException;
 import com.blackduck.integration.detect.configuration.DetectableOptionFactory;
+import com.blackduck.integration.detect.configuration.connection.BlackDuckConnectionDetails;
 import com.blackduck.integration.detect.configuration.enumeration.BlackduckScanMode;
 import com.blackduck.integration.detect.configuration.enumeration.DetectGroup;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTargetType;
@@ -44,6 +44,7 @@ import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
 import com.blackduck.integration.detect.configuration.help.DetectArgumentState;
 import com.blackduck.integration.detect.configuration.help.json.HelpJsonManager;
 import com.blackduck.integration.detect.configuration.help.print.HelpPrinter;
+import com.blackduck.integration.detect.configuration.help.yaml.HelpYamlWriter;
 import com.blackduck.integration.detect.configuration.validation.DeprecationResult;
 import com.blackduck.integration.detect.configuration.validation.DetectConfigurationBootManager;
 import com.blackduck.integration.detect.interactive.InteractiveManager;
@@ -62,12 +63,16 @@ import com.blackduck.integration.detect.util.filter.DetectToolFilter;
 import com.blackduck.integration.detect.workflow.airgap.AirGapCreator;
 import com.blackduck.integration.detect.workflow.airgap.AirGapType;
 import com.blackduck.integration.detect.workflow.airgap.AirGapTypeDecider;
+import com.blackduck.integration.detect.workflow.blackduck.settings.DetectPropertiesSetting;
 import com.blackduck.integration.detect.workflow.diagnostic.DiagnosticDecision;
 import com.blackduck.integration.detect.workflow.diagnostic.DiagnosticSystem;
 import com.blackduck.integration.detect.workflow.event.Event;
 import com.blackduck.integration.detect.workflow.event.EventSystem;
 import com.blackduck.integration.detect.workflow.file.DirectoryManager;
+import com.blackduck.integration.detect.workflow.status.DetectIssue;
+import com.blackduck.integration.detect.workflow.status.DetectIssueType;
 import com.blackduck.integration.rest.proxy.ProxyInfo;
+import com.google.gson.Gson;
 
 import freemarker.template.Configuration;
 import java.util.Set;
@@ -131,6 +136,8 @@ public class DetectBoot {
         DEFAULT_PRINT_STREAM.println("Detect Version: " + detectVersion);
         DEFAULT_PRINT_STREAM.println();
 
+        warnIfJava8();
+
         if (detectArgumentState.isInteractive()) {
             InteractiveManager interactiveManager = detectBootFactory.createInteractiveManager(propertySources);
             MapPropertySource interactivePropertySource = interactiveManager.executeInteractiveMode();
@@ -161,12 +168,18 @@ public class DetectBoot {
 
         Configuration freemarkerConfiguration = detectBootFactory.createFreemarkerConfiguration();
         DetectPropertyConfiguration detectConfiguration = new DetectPropertyConfiguration(propertyConfiguration, new SimplePathResolver());
-
         DetectConfigurationFactory detectConfigurationFactory = new DetectConfigurationFactory(detectConfiguration, gson);
+        DirectoryManager directoryManager = detectBootFactory.createDirectoryManager(detectConfigurationFactory);
+
+         // If quack patch is enabled, we need to validate the output path before doing anything else since it could cause Detect to fail later on if it's not valid, and we want to fail as early as possible with a clear message about what the issue is.
+        if (Boolean.TRUE.equals(detectConfigurationFactory.isQuackPatchEnabled())) {
+             Optional<DetectUserFriendlyException> quackPatchError = detectConfigurationBootManager.validateQuackPatchOutputPath(detectConfiguration);
+             if (quackPatchError.isPresent()) {
+                 return Optional.of(DetectBootResult.exception(quackPatchError.get(), propertyConfiguration));
+             }
+        }
 
         boolean autonomousScanEnabled = detectConfiguration.getValue(DetectProperties.DETECT_AUTONOMOUS_SCAN_ENABLED);
-
-        DirectoryManager directoryManager = detectBootFactory.createDirectoryManager(detectConfigurationFactory);
 
         // TODO Scan settings model obtained below is to be used by the delta-checking operations
         AutonomousManager autonomousManager = new AutonomousManager(directoryManager, detectConfiguration, autonomousScanEnabled, maskedRawPropertyValues);
@@ -284,6 +297,26 @@ public class DetectBoot {
             );
 
         return Optional.of(DetectBootResult.run(bootSingletons, propertyConfiguration, productRunData, directoryManager, diagnosticSystem));
+    }
+
+    private void warnIfJava8() {
+        String javaSpecVersion = System.getProperty("java.specification.version");
+        if ("1.8".equals(javaSpecVersion)) {
+            logger.warn("");
+            logger.warn("--------------------------------------------------------------------------------");
+            logger.warn("  DEPRECATION NOTICE: Java 8 End of Support");
+            logger.warn("  In alignment with EU Cyber Resilience Act (CRA) requirements and compliance");
+            logger.warn("  timelines, Java 8 support will be deprecated in the anticipated 2026 Q3");
+            logger.warn("  Detect 12.0.0 release. Please upgrade to Java 11+ before upgrading to");
+            logger.warn("  Detect 12.0.0.");
+            logger.warn("--------------------------------------------------------------------------------");
+            logger.warn("");
+
+            DetectIssue.publish(eventSystem, DetectIssueType.DEPRECATION,
+                    "Java 8",
+                    "Java 8 support is deprecated and will be removed in the next major release of Detect.",
+                    "Please upgrade to Java 11 or higher.");
+        }
     }
 
     private Optional<DetectBootResult> generateAirGap(DetectConfigurationFactory detectConfigurationFactory,

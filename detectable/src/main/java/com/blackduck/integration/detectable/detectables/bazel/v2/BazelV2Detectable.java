@@ -192,7 +192,7 @@ public class BazelV2Detectable extends Detectable {
         File workspaceDir = environment.getDirectory();
         File moduleFile = new File(workspaceDir, "MODULE.bazel");
         if (!moduleFile.exists()) {
-            logger.info("No MODULE.bazel found at {}. Skipping 'bazel mod graph' to avoid file generation; assuming WORKSPACE mode.", workspaceDir.getAbsolutePath());
+            logger.debug("No MODULE.bazel found at {}. Skipping 'bazel mod graph' to avoid file generation; assuming WORKSPACE mode.", workspaceDir.getAbsolutePath());
             return BazelEnvironmentAnalyzer.Mode.WORKSPACE;
         }
 
@@ -208,7 +208,7 @@ public class BazelV2Detectable extends Detectable {
             );
         }
 
-        logger.info("Using Bazel mode from auto-detection: {}", mode);
+        logger.debug("Using Bazel mode from auto-detection: {}", mode);
         return mode;
     }
 

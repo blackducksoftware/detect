@@ -6,6 +6,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tomlj.Toml;
 import org.tomlj.TomlArray;
 import org.tomlj.TomlParseResult;
@@ -19,7 +21,9 @@ import com.blackduck.integration.detectable.detectables.setuptools.parse.SetupTo
 import com.blackduck.integration.detectable.detectables.setuptools.parse.SetupToolsTomlParser;
 
 public class SetupToolsExtractUtils {
-    
+
+    private static final Logger logger = LoggerFactory.getLogger(SetupToolsExtractUtils.class);
+
     private static final String BUILD_KEY = "build-system.requires";
     private static final String REQUIRED_KEY = "setuptools";
     private static final String TOML_DEPENDENCIES = "project.dependencies";
@@ -87,7 +91,8 @@ public class SetupToolsExtractUtils {
                 return cfgParser;
             }
         }
-        
-        return null;
+
+        logger.warn("No dependencies found in pyproject.toml, setup.cfg, or setup.py. An empty BOM will be generated.");
+        return new SetupToolsTomlParser(parsedToml);
     }
 }

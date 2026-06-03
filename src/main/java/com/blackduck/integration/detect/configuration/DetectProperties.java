@@ -1,12 +1,12 @@
 package com.blackduck.integration.detect.configuration;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
-
 import java.lang.reflect.Field;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -21,7 +21,6 @@ import com.blackduck.integration.blackduck.codelocation.signaturescanner.command
 import com.blackduck.integration.blackduck.codelocation.signaturescanner.command.SnippetMatching;
 import com.blackduck.integration.configuration.property.Properties;
 import com.blackduck.integration.configuration.property.Property;
-import com.blackduck.integration.configuration.util.ProductMajorVersion;
 import com.blackduck.integration.configuration.property.base.PassthroughProperty;
 import com.blackduck.integration.configuration.property.base.TypedProperty;
 import com.blackduck.integration.configuration.property.types.bool.BooleanProperty;
@@ -44,6 +43,7 @@ import com.blackduck.integration.configuration.property.types.string.CaseSensiti
 import com.blackduck.integration.configuration.property.types.string.NullableStringProperty;
 import com.blackduck.integration.configuration.property.types.string.StringListProperty;
 import com.blackduck.integration.configuration.property.types.string.StringProperty;
+import com.blackduck.integration.configuration.util.ProductMajorVersion;
 import com.blackduck.integration.detect.configuration.enumeration.BlackduckScanMode;
 import com.blackduck.integration.detect.configuration.enumeration.DetectCategory;
 import com.blackduck.integration.detect.configuration.enumeration.DetectGroup;
@@ -53,8 +53,8 @@ import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMo
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedIndividualFileMatchingMode;
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedReducedPersistanceMode;
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedSnippetMode;
-import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
 import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
+import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDependencyType;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
 import com.blackduck.integration.detectable.detectables.conan.cli.config.ConanDependencyType;
@@ -1146,6 +1146,16 @@ public class DetectProperties {
                             "Only supported for Rapid and Stateless Scan modes. detect.llm.api.key, detect.llm.api.endpoint, and detect.llm.name must also be set. See <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/runningdetect/quack%2Dpatch%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Quack Patch</xref> for further details.")
                     .setGroups(DetectGroup.QUACKPATCH)
                     .build();
+                        
+    public static final StringProperty DETECT_QUACK_PATCH_OUTPUT =
+            StringProperty.newBuilder("detect.quack.patch.output", Paths.get("").toAbsolutePath().toString())
+                    .setInfo("Quack Patch Output Directory", DetectPropertyFromVersion.VERSION_11_4_0)
+                    .setHelp(
+                            "Specifies the output directory for Quack Patch results.",
+                            "If not set, the Quack Patch results are placed in a 'quack-patch' subdirectory of the present working directory."
+                    )
+                    .setGroups(DetectGroup.QUACKPATCH)
+                    .build();
 
     public static final StringProperty DETECT_LLM_API_KEY =
             StringProperty.newBuilder("detect.llm.api.key", "")
@@ -2037,7 +2047,7 @@ public class DetectProperties {
                     .setInfo("uv dependency groups", DetectPropertyFromVersion.VERSION_10_5_0)
                     .setHelp(
                             createTypeFilterHelpText("UV dependency groups"),
-                            "When specified, a pyproject.toml file and uv executable are required, or pyproject.toml file and either uv.lock or requirements.txt file are required. Components and related dependencies that belong to excluded groups will not be in the BOM unless the component also belongs to a non-excluded group. For example, to recursively exclude all components under the `[dependency-groups]` section of `pyproject.toml`: `detect.uv.dependency.groups.excluded='dev,abc'`"
+                            "When specified, a pyproject.toml file and uv executable are required, or pyproject.toml file and either uv.lock or requirements.txt file are required. Components and related dependencies that belong to excluded groups will not be in the BOM unless the component also belongs to a non-excluded group. For example, to recursively exclude all components under the `[dependency-groups]` section of `pyproject.toml`: `detect.uv.dependency.groups.excluded='dev,abc'`. Note: In uv, `[project.optional-dependencies]` defines extras. Each extra (e.g., postgres, redis, mysql) is treated as its own dependency group. The group `optional` does not exist; therefore, specifying it in the `--detect.uv.dependency.groups.excluded` flag will have no impact."
                     )
                     .setGroups(DetectGroup.UV, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
                     .build();
