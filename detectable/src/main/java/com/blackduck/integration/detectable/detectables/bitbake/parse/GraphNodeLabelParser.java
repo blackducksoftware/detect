@@ -29,14 +29,26 @@ public class GraphNodeLabelParser {
         if (!recipeSpec.isPresent()) {
             return Optional.empty();
         }
+
+        // Find the deepest (rightmost) matching layer in the path
+        // This ensures we match the actual layer folder, not parent folders
+        // that happen to share a name with a known layer
+        String deepestMatch = null;
+        int deepestPosition = -1;
+
         for (String candidateLayerName : knownLayerNames) {
             String possibleLayerPathSubstring = LABEL_PATH_SEPARATOR + candidateLayerName + LABEL_PATH_SEPARATOR;
-            if (recipeSpec.get().contains(possibleLayerPathSubstring)) {
-                return Optional.of(candidateLayerName);
+            int position = recipeSpec.get().lastIndexOf(possibleLayerPathSubstring);
+            if (position > deepestPosition) {
+                deepestPosition = position;
+                deepestMatch = candidateLayerName;
             }
         }
-        logger.warn("Graph Node recipe '{}' does not correspond to any known layer ({})", label, knownLayerNames);
-        return Optional.empty();
+
+        if (deepestMatch == null) {
+            logger.warn("Graph Node recipe '{}' does not correspond to any known layer ({})", label, knownLayerNames);
+        }
+        return Optional.ofNullable(deepestMatch);
     }
 
     @NotNull
