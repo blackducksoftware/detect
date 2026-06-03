@@ -60,20 +60,20 @@ public class SetupToolsExtractUtils {
         // Dependencies, if they exist at all, will be in one of three files.
         // Step 1: Check the pyproject.toml
         TomlArray tomlDependencies = parsedToml.getArray(TOML_DEPENDENCIES);
-
+        
         if (tomlDependencies != null && !tomlDependencies.isEmpty()) {
             return new SetupToolsTomlParser(parsedToml);
         }
-
+        
         // Step 2: Check the setup.py
         Requirements fileResolver = new Requirements(fileFinder, environment);
         File pyFile = fileResolver.file(SETUP_PY);
-
+        
         if (pyFile != null) {
             SetupToolsPyParser pyParser = new SetupToolsPyParser(parsedToml);
 
             List<String> pyDependencies = pyParser.load(pyFile.toString());
-
+            
             if (pyDependencies != null && !pyDependencies.isEmpty()) {
                 return pyParser;
             }
