@@ -50,31 +50,30 @@ detector alone should provide a complete dependency inventory. However, Bazel
 and package managers operate at different layers of the software supply chain,
 and [detect_product_short] treats them separately.
 
-### Two detection layers
+### Bazel detection vs package manager detection
 
 **The Bazel detector** identifies Bazel-level dependencies: external repositories
-and modules that Bazel resolves during the build — `http_archive`, `git_repository`,
-`go_repository`, `maven_install`, and similar rules. For each discovered repository,
-it attempts to extract a URL and match it against the Black Duck Knowledge Base.
+and modules that Bazel resolves during the build, such as `http_archive`,
+`git_repository`, `go_repository`, `maven_install`, and similar rules. For each
+discovered repository, it attempts to extract a URL and match it against the
+Black Duck Knowledge Base.
 
 **Package manager detectors** identify ecosystem-level dependencies by parsing
 manifest files: `pom.xml`, `package.json`, `requirements.txt`, `go.mod`,
 `Cargo.lock`, `Gemfile.lock`, `packages.config`, and others. These detectors
 operate on file content regardless of whether the project uses Bazel.
 
-### Why both are needed
-
 A Bazel external repository is an archive, a bundle of source code. That archive
 may itself contain package manager metadata for one or more ecosystems. The Bazel
 detector identifies the archive as a dependency. The package manager detectors
-identify what is inside it.
+can identify supported manifest-based dependencies within it.
 
 ```
 Your Bazel target
  └── @protobuf//:lib          ← Bazel detector: matches via GitHub URL → KB entry
-      └── java/pom.xml        ← Maven detector: discovers protobuf's Java deps
-      └── python/setup.py     ← PIP detector: discovers protobuf's Python deps
-      └── js/package.json     ← NPM detector: discovers protobuf's JS deps
+      └── java/pom.xml        ← Maven detector: discovers Java deps from manifest
+      └── python/setup.py     ← PIP detector: discovers Python deps from manifest
+      └── js/package.json     ← NPM detector: discovers JS deps from manifest
 
  └── @internal_lib//:lib      ← Bazel detector: private URL, no KB match
       └── requirements.txt    ← PIP detector: discovers Python deps inside the archive
@@ -83,16 +82,18 @@ Your Bazel target
 
 In this example, running only the Bazel detector surfaces one component
 (`protobuf`, matched via its public GitHub URL). Running both Bazel detection
-and package manager detection surfaces protobuf plus all its ecosystem-level
-transitive dependencies, and also surfaces the contents of `@internal_lib`
-that would otherwise be invisible.
+and package manager detection surfaces protobuf plus additional ecosystem-level
+dependencies discovered from supported manifests inside that repository, and
+also surfaces content from `@internal_lib` that would otherwise be invisible.
 
 It is therefore expected that a Bazel-only scan identifies fewer components
 than a combined scan. This does not indicate missing Bazel dependencies. It
 reflects that package manager detectors are discovering additional ecosystem-
-specific components contained within Bazel-managed repositories.
+specific components contained within Bazel-managed repositories. Actual coverage
+depends on the ecosystems supported by [detect_product_short], the presence of
+manifest files inside the fetched archives, and the configured search depth.
 
-For the most complete dependency inventory, enable both:
+For a more complete dependency inventory, enable both:
 
 ```sh
 bash <(curl -s -L https://detect.blackduck.com/detect11.sh) \
@@ -100,7 +101,7 @@ bash <(curl -s -L https://detect.blackduck.com/detect11.sh) \
   --detect.bazel.target='//myproject:mytarget'
 ```
 
-### Private repositories, custom macros, and bazel fetch
+### Using bazel fetch for additional coverage
 
 The Bazel detector extracts URLs from standard repository rules (`http_archive`,
 `git_repository`, `go_repository`). Environments that use custom repository
@@ -125,15 +126,17 @@ bash <(curl -s -L https://detect.blackduck.com/detect11.sh) \
   --detect.accuracy.required=NONE
 ```
 
-This approach surfaces ecosystem-level dependencies (Python, Go, npm, Maven,
-NuGet, Ruby, and others) from within the extracted archives regardless of how
-they were fetched. Each extracted archive is scanned for manifest files at the
-configured search depth.
+This approach surfaces ecosystem-level dependencies from within the extracted
+archives for supported ecosystems where manifest files are present. Coverage
+is not guaranteed for all archives: repositories that contain no supported
+manifest files will not contribute results, and fetched sources can be large
+depending on the target's dependency graph.
 
 <note type="note">
-`--detect.tools=DETECTOR` is used here, not `BAZEL`. The Bazel detector queries
-Bazel's dependency graph and cannot inspect inside extracted archives. DETECTOR
-runs ecosystem detectors directly against source files on disk.
+`--detect.tools=DETECTOR` is used here, not `BAZEL`. The Bazel detector relies
+on Bazel metadata and graph information rather than scanning extracted source
+trees for manifest files. DETECTOR runs ecosystem detectors directly against
+source files on disk.
 </note>
 
 <note type="note">
@@ -141,6 +144,14 @@ runs ecosystem detectors directly against source files on disk.
 searches for manifest files within each extracted archive. Set this value based
 on where manifests sit inside your archives. A value of 5 is a safe default for
 most archive structures.
+</note>
+
+<note type="note">
+The `bazel fetch` workflow is a complementary strategy, not a replacement for
+standard Bazel detection. It is most useful when custom macros or private
+registries prevent URL extraction by the Bazel detector. For projects using
+standard `http_archive` rules with public URLs, running `--detect.tools=BAZEL,DETECTOR`
+directly is the simpler and recommended path.
 </note>
 
 For environments where per-target isolation is needed, use `--output_base` to
