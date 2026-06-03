@@ -1,7 +1,6 @@
 package com.blackduck.integration.detect.configuration;
 
 import java.lang.reflect.Field;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1148,13 +1147,14 @@ public class DetectProperties {
                     .build();
                         
     public static final StringProperty DETECT_QUACK_PATCH_OUTPUT =
-            StringProperty.newBuilder("detect.quack.patch.output", Paths.get("").toAbsolutePath().toString())
+            StringProperty.newBuilder("detect.quack.patch.output", "")
                     .setInfo("Quack Patch Output Directory", DetectPropertyFromVersion.VERSION_11_4_0)
                     .setHelp(
                             "Specifies the output directory for Quack Patch results.",
-                            "If not set, the Quack Patch results are placed in a 'quack-patch' subdirectory of the present working directory."
+                            "If not set, the Quack Patch results are placed in a 'quack-patch' subdirectory under scan output directory."
                     )
                     .setGroups(DetectGroup.QUACKPATCH)
+                    .setDeprecated("This property is deprecated and will be renamed to 'detect.quack.patch.output.path' in Detect release 12.0.", new ProductMajorVersion(12))
                     .build();
 
     public static final StringProperty DETECT_LLM_API_KEY =

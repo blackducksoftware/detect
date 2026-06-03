@@ -27,6 +27,13 @@
 * npm detectors now allow for aliases to be used when specifying dependencies in the package.json file.
 * Ivy CLI Detector, leveraging the `ivy:dependencytree` Ant task to extract direct and transitive dependencies for Ant + Ivy projects. For further information, see [Ivy (Ant) support](packagemgrs/ivy.md).
 
+### Changed features
+
+* The default output directory of the Quack Patch feature has been updated to use [detect_product_short] scan output directory. For more information, see [Quack Patch Documentation](runningdetect/quack-patch.md).
+
 ### Resolved issues
+
+* (IDETECT-5140) Changed the default output directory of the Quack Patch feature to use [detect_product_short] scan output directory instead of the current working directory.
+* (IDETECT-5121) Include Quack Patch output directory as part of diagnostic zip when the feature is enabled.
 
 ### Dependency Updates
