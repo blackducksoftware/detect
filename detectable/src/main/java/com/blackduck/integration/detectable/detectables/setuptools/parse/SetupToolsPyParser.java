@@ -18,7 +18,6 @@ import com.blackduck.integration.detectable.python.util.PythonDependencyTransfor
 public class SetupToolsPyParser implements SetupToolsParser {
     private static final Pattern INSTALL_REQUIRES_PATTERN = Pattern.compile(".*\\binstall_requires\\s*=\\s*(.*)$");
     private static final Pattern QUOTED_DEPENDENCY_PATTERN = Pattern.compile("'([^'\\\\]*(?:\\\\.[^'\\\\]*)*)'|\"([^\"\\\\]*(?:\\\\.[^\"\\\\]*)*)\"");
-
     private TomlParseResult parsedToml;
 
     private List<String> dependencies;
