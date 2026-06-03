@@ -41,7 +41,10 @@ public class IntermediateStepExecuteBazelOnEachLine implements IntermediateStep 
         }
         for (String inputItem : adjustedInput) {
             List<String> finalizedArgs = bazelVariableSubstitutor.substitute(bazelCommandArgs, inputItem);
-            Optional<String> cmdOutput = bazelCommandExecutor.executeToString(finalizedArgs);
+            // Use executeQueryToString to tolerate Bazel exit code 3 (partial success with --keep_going).
+            // Workspaces with cross-platform or stale repo declarations produce valid query output
+            // but exit with code 3. executeToString would throw here, discarding the valid results.
+            Optional<String> cmdOutput = bazelCommandExecutor.executeQueryToString(finalizedArgs);
             cmdOutput.ifPresent(results::add);
         }
         return results;

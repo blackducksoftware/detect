@@ -108,7 +108,10 @@ public class HttpFamilyProber {
                 .withOptions(queryOptions)
                 .build();
 
-        Optional<String> depsOut = bazel.executeToString(queryArgs);
+        // Use executeQueryToString instead of executeToString to tolerate Bazel exit code 3
+        // (partial success with --keep_going). Workspaces with cross-platform or stale repo
+        // declarations produce valid query output but exit with code 3 on Linux CI hosts.
+        Optional<String> depsOut = bazel.executeQueryToString(queryArgs);
         if (!depsOut.isPresent()) {
             return false;
         }
