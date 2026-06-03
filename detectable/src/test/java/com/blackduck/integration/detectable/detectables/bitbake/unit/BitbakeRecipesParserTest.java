@@ -35,4 +35,22 @@ public class BitbakeRecipesParserTest {
         assertEquals(4, results.getRecipesWithLayers().size());
         assertTrue(results.getRecipesWithLayers().containsKey("adcli"));
     }
+
+    @Test
+    void preservesRecipeWithEmptyLayerListWhenRecipeDetailsCannotBeParsed() {
+        List<String> malformedShowRecipesOutputLines = Arrays.asList(
+            "=== Available recipes: ===\n",
+            "broken-recipe:\n",
+            "  malformed-layer-line\n",
+            "valid-recipe:\n",
+            "  meta 1.0\n"
+        );
+
+        BitbakeRecipesParser parser = new BitbakeRecipesParser();
+        ShowRecipesResults results = parser.parseShowRecipes(malformedShowRecipesOutputLines);
+
+        assertTrue(results.getRecipesWithLayers().containsKey("broken-recipe"));
+        assertTrue(results.getRecipesWithLayers().get("broken-recipe").isEmpty());
+        assertEquals(Arrays.asList("meta"), results.getRecipesWithLayers().get("valid-recipe"));
+    }
 }
