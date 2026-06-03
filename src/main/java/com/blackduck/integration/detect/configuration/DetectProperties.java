@@ -808,7 +808,7 @@ public class DetectProperties {
                 "The Docker image name (repo:tag) to inspect.",
                 "For Detect to run Docker Inspector, either this property, detect.docker.tar, or detect.docker.image.id must be set. Docker Inspector finds packages installed by the Linux package manager in Linux-based images. detect.docker.image, detect.docker.tar, and detect.docker.image.id are three alternative ways to specify an image (you should only set one of these properties). When a value of this property is provided, Docker Inspector will use the Docker engine to pull the image."
             )
-            .setExample("centos:centos8")
+            .setExample("ubuntu:22.04")
             .setGroups(DetectGroup.DOCKER, DetectGroup.SOURCE_PATH)
             .build();
 
