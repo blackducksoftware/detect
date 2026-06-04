@@ -14,14 +14,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.blackduck.integration.configuration.config.MaskedRawValueResult;
-import com.blackduck.integration.configuration.property.base.TypedProperty;
 import com.blackduck.integration.configuration.config.PropertyConfiguration;
 import com.blackduck.integration.configuration.property.base.TypedProperty;
 import com.blackduck.integration.configuration.property.types.enumallnone.list.AllEnumList;
@@ -56,7 +53,6 @@ import com.blackduck.integration.detect.lifecycle.boot.decision.RunDecision;
 import com.blackduck.integration.detect.lifecycle.boot.product.ProductBoot;
 import com.blackduck.integration.detect.lifecycle.run.data.ProductRunData;
 import com.blackduck.integration.detect.lifecycle.run.singleton.BootSingletons;
-import com.blackduck.integration.detect.workflow.blackduck.settings.DetectPropertiesSetting;
 import com.blackduck.integration.detect.tool.cache.InstalledToolLocator;
 import com.blackduck.integration.detect.tool.cache.InstalledToolManager;
 import com.blackduck.integration.detect.util.filter.DetectToolFilter;
@@ -171,12 +167,12 @@ public class DetectBoot {
         DetectConfigurationFactory detectConfigurationFactory = new DetectConfigurationFactory(detectConfiguration, gson);
         DirectoryManager directoryManager = detectBootFactory.createDirectoryManager(detectConfigurationFactory);
 
-         // If quack patch is enabled, we need to validate the output path before doing anything else since it could cause Detect to fail later on if it's not valid, and we want to fail as early as possible with a clear message about what the issue is.
+        // If quack patch is enabled, we need to validate the output path before doing anything else since it could cause Detect to fail later on if it's not valid, and we want to fail as early as possible with a clear message about what the issue is.
         if (Boolean.TRUE.equals(detectConfigurationFactory.isQuackPatchEnabled())) {
-             Optional<DetectUserFriendlyException> quackPatchError = detectConfigurationBootManager.validateQuackPatchOutputPath(detectConfiguration);
-             if (quackPatchError.isPresent()) {
-                 return Optional.of(DetectBootResult.exception(quackPatchError.get(), propertyConfiguration));
-             }
+            Optional<DetectUserFriendlyException> quackPatchError = detectConfigurationBootManager.validateQuackPatchOutputPath(detectConfigurationFactory.getQuackPatchOutputDirectory(directoryManager));
+            if (quackPatchError.isPresent()) {
+                return Optional.of(DetectBootResult.exception(quackPatchError.get(), propertyConfiguration));
+            }
         }
 
         boolean autonomousScanEnabled = detectConfiguration.getValue(DetectProperties.DETECT_AUTONOMOUS_SCAN_ENABLED);
@@ -215,7 +211,7 @@ public class DetectBoot {
         DetectableOptionFactory detectableOptionFactory;
         try {
             ProxyInfo detectableProxyInfo = detectConfigurationFactory.createBlackDuckProxyInfo();
-            detectableOptionFactory = new DetectableOptionFactory(detectConfiguration, diagnosticSystem, detectableProxyInfo);
+            detectableOptionFactory = new DetectableOptionFactory(detectConfiguration, detectConfigurationFactory, directoryManager, diagnosticSystem, detectableProxyInfo);
             hasImageOrTar = detectableOptionFactory.createDockerDetectableOptions().hasDockerImageOrTar();
             oneRequiresTheOther(
                 detectConfigurationFactory.createDetectTarget() == DetectTargetType.IMAGE,

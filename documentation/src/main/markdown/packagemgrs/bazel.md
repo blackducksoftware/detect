@@ -43,6 +43,133 @@ As a result, the bazel tool's HTTP/BCR probing (which relies on `bazel mod show_
 Recommended action: Upgrade Bazel to 6.4+ (preferably 7.x or 8.x), where `bazel mod` is stable and Bzlmod is the default.
 </note>
 
+## Combining Bazel Detection with Package Manager Detection for Additional Coverage
+
+As a best practice, projects built with Bazel should not rely solely on the
+Bazel detector to produce a complete result. Bazel and package managers operate
+at different layers of the software supply chain, so [detect_product_short]
+evaluates them independently to ensure comprehensive coverage.
+
+### Bazel Detection vs Package Manager Detection
+
+**The Bazel detector** identifies Bazel-level dependencies: external repositories
+and modules that Bazel resolves during the build, such as `http_archive`,
+`git_repository`, `go_repository`, `maven_install`, and similar rules. For each
+discovered repository, it attempts to extract a URL and match it against the
+Black Duck Knowledge Base.
+
+**Package manager detectors** identify ecosystem-level dependencies by parsing
+manifest files: `pom.xml`, `package.json`, `requirements.txt`, `go.mod`,
+`Cargo.lock`, `Gemfile.lock`, `packages.config`, and others. These detectors
+operate on file content regardless of whether the project uses Bazel.
+
+A Bazel external repository represents an archived bundle of source code. This
+archive can include package manager metadata for one or more ecosystems. The
+Bazel detector identifies the archive itself as a dependency, while package
+manager detectors analyze its contents to identify any supported manifest-based
+dependencies contained within.
+
+```
+Your Bazel target
+ └── @protobuf//:lib          ← Bazel detector: matches via GitHub URL → KB entry
+      └── java/pom.xml        ← Maven detector: discovers Java deps from manifest
+      └── python/setup.py     ← PIP detector: discovers Python deps from manifest
+      └── js/package.json     ← NPM detector: discovers JS deps from manifest
+
+ └── @internal_lib//:lib      ← Bazel detector: private URL, no KB match
+      └── requirements.txt    ← PIP detector: discovers Python deps inside the archive
+      └── go.mod              ← Go detector: discovers Go deps inside the archive
+```
+
+In this example, running only the Bazel detector identifies a single component
+(`protobuf`), matched through its public GitHub repository. When both Bazel and
+package manager detectors are used, the analysis includes `protobuf` along with
+additional ecosystem-level dependencies discovered from supported manifests within
+the repository. This combined approach also reveals content from `@internal_lib`
+that would not be detected by the Bazel detector alone.
+
+It is therefore expected that a Bazel-only scan will identify fewer components
+than a combined scan. This difference does not indicate missing Bazel dependencies.
+Rather, it reflects the ability of package manager detectors to identify additional
+ecosystem-specific components within Bazel-managed repositories. The extent of
+coverage depends on the ecosystems supported by [detect_product_short], the
+presence of manifest files within retrieved archives, and the configured search
+depth.
+
+For a more complete dependency inventory, enable both:
+
+```sh
+bash <(curl -s -L https://detect.blackduck.com/detect11.sh) \
+  --detect.tools=BAZEL,DETECTOR \
+  --detect.bazel.target='//myproject:mytarget' \
+  --detect.detector.search.depth=5
+```
+
+### Using Bazel Fetch for Additional Coverage
+
+The Bazel detector extracts URLs from standard repository rules (`http_archive`,
+`git_repository`, `go_repository`). Environments that use custom repository
+macros, private registry infrastructure, or other abstractions that do not
+surface standard URLs through Bazel metadata will see reduced coverage from the
+Bazel detector alone. The archives are fetched correctly by Bazel but their
+URLs are not extractable by [detect_product_short].
+
+In these environments, a `bazel fetch` workflow can provide additional coverage
+by materializing external repositories on disk and allowing package manager
+detectors to analyze their contents directly:
+
+```sh
+# Step 1: Fetch and extract all external dependencies for a target
+bazel --output_base=/your/scan/dir/target_name fetch //your:target
+
+# Step 2: Run Detect with DETECTOR against the extracted sources
+bash <(curl -s -L https://detect.blackduck.com/detect11.sh) \
+  --detect.tools=DETECTOR \
+  --detect.source.path=/your/scan/dir/target_name/external/ \
+  --detect.detector.search.depth=5 \
+  --detect.accuracy.required=NONE
+```
+
+This approach enables the identification of ecosystem-level dependencies within
+extracted archives for supported ecosystems where manifest files are present.
+However, coverage is not guaranteed for all archives. Repositories that do not
+contain supported manifest files will not produce additional results, and the
+size of fetched sources may vary significantly depending on the target's
+dependency graph.
+
+<note type="note">
+`--detect.tools=DETECTOR` is used here, not `BAZEL`. The Bazel detector relies
+on Bazel metadata and graph information rather than scanning extracted source
+trees for manifest files. DETECTOR runs ecosystem detectors directly against
+source files on disk.
+</note>
+
+<note type="note">
+`--detect.detector.search.depth` controls how many directory levels deep
+[detect_product_short] searches for manifest files within each extracted archive.
+Set this value based on where manifests sit inside your archives. A value of 5
+is a safe default for most archive structures.
+</note>
+
+<note type="note">
+The `bazel fetch` workflow is a complementary strategy, not a replacement for
+standard Bazel detection. It is most useful when custom macros or private
+registries prevent URL extraction by the Bazel detector. For projects using
+standard `http_archive` rules with public URLs, running `--detect.tools=BAZEL,DETECTOR`
+directly is the simpler and recommended path.
+</note>
+
+For environments where per-target isolation is needed, use `--output_base` to
+scope the fetch to a directory of your choice:
+
+```sh
+# Each target gets its own output base; only that target's deps land there
+bazel --output_base=/scan/firmware_ecu fetch //firmware:ecu_target
+bazel --output_base=/scan/firmware_net fetch //firmware:net_target
+```
+
+---
+
 ## Usage
 
 **Tool invocation:**

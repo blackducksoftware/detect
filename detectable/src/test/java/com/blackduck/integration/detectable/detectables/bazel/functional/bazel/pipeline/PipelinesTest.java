@@ -309,7 +309,7 @@ class PipelinesTest {
     private List<Dependency> doTest(DependencySource dependencySource, List<String> expectedBazelCommandArgs, List<String> userProvidedCqueryAdditionalOptions, String input)
         throws IntegrationException, ExecutableFailedException {
         BazelCommandExecutor bazelCommandExecutor = Mockito.mock(BazelCommandExecutor.class);
-        Mockito.when(bazelCommandExecutor.executeToString(expectedBazelCommandArgs)).thenReturn(Optional.of(input));
+        Mockito.when(bazelCommandExecutor.executeQueryToString(expectedBazelCommandArgs)).thenReturn(Optional.of(input));
         BazelVariableSubstitutor bazelVariableSubstitutor = new BazelVariableSubstitutor("/:testTarget", userProvidedCqueryAdditionalOptions, Collections.emptyList());
 
         ExternalIdFactory externalIdFactory = new ExternalIdFactory();

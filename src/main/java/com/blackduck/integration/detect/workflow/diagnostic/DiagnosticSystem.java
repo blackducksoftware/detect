@@ -1,18 +1,22 @@
 package com.blackduck.integration.detect.workflow.diagnostic;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.blackduck.integration.configuration.config.PropertyConfiguration;
 import com.blackduck.integration.detect.configuration.DetectInfo;
+import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detect.workflow.DetectRunId;
+import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.QUACKPATCH_SUBDIRECTORY_NAME;
 import com.blackduck.integration.detect.workflow.event.EventSystem;
 import com.blackduck.integration.detect.workflow.file.DirectoryManager;
 
@@ -134,9 +138,23 @@ public class DiagnosticSystem {
     }
 
     private boolean createZip() {
+        // If quack patch is enabled, then add quack patch output directory to the zip
+        if (propertyConfiguration.getValueOrDefault(DetectProperties.DETECT_QUACK_PATCH_ENABLED)) {
+            String quackPatchOutputDirPath = propertyConfiguration.getValueOrDefault(DetectProperties.DETECT_QUACK_PATCH_OUTPUT);
+            // If quack patch output path is customized, then explicitly include it in the diagnostic zip. Otherwise, default behaviour will automatically pack it.
+            if (!quackPatchOutputDirPath.isEmpty()) {
+                quackPatchOutputDirPath = quackPatchOutputDirPath.trim() + File.separator + QUACKPATCH_SUBDIRECTORY_NAME;
+                logger.info("Adding quack patch output dir {} to the diagnostic zip.", quackPatchOutputDirPath);
+                // Copy directory quackPatchOutputDirPath to directoryManager.getRunsOutputDirectory()
+                try {
+                    FileUtils.copyDirectory(new File(quackPatchOutputDirPath), new File(directoryManager.getScanOutputDirectory().getAbsolutePath() + File.separator + QUACKPATCH_SUBDIRECTORY_NAME));
+                } catch (IOException e) {
+                    logger.warn("Failed to copy the quack patch output directory to the runs directory. Skipping the addition of quack patch output directory to diagnostics zip file. Error: {}.", e.getMessage());
+                }
+            }
+        }
         List<File> directoriesToCompress = new ArrayList<>();
         directoriesToCompress.add(directoryManager.getRunHomeDirectory());
-
         DiagnosticZipCreator zipper = new DiagnosticZipCreator();
         return zipper.createDiagnosticZip(detectRunId.getRunId(), directoryManager.getRunsOutputDirectory(), directoriesToCompress);
     }

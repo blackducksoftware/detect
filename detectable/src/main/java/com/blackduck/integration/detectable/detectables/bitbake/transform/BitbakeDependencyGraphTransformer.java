@@ -125,7 +125,9 @@ public class BitbakeDependencyGraphTransformer {
         ExternalId externalId = null;
         if (recipeLayerNames != null) {
             dependencyLayer = chooseRecipeLayer(dependencyName, dependencyLayer, recipeLayerNames);
-            externalId = ExternalId.FACTORY.createYoctoExternalId(dependencyLayer, dependencyName, dependencyVersion);
+            if (dependencyLayer != null) {
+                externalId = ExternalId.FACTORY.createYoctoExternalId(dependencyLayer, dependencyName, dependencyVersion);
+            }
         } else {
             logger.debug("Failed to find component '{}' in component layer map. [dependencyVersion: {}; dependencyLayer: {}", dependencyName, dependencyVersion, dependencyLayer);
             if (dependencyName.endsWith(NATIVE_SUFFIX)) {
@@ -144,17 +146,49 @@ public class BitbakeDependencyGraphTransformer {
         return Optional.ofNullable(externalId);
     }
 
+    @Nullable
     private String chooseRecipeLayer(String dependencyName, @Nullable String dependencyLayer, List<String> recipeLayerNames) {
+        // Validate: path-matched layer must exist in authoritative show-recipes list
+        if (dependencyLayer != null && recipeLayerNames.contains(dependencyLayer)) {
+            logger.trace("For dependency recipe {}: using layer {} parsed from task-depends.dot", dependencyName, dependencyLayer);
+            return dependencyLayer;
+        }
+
+        if (recipeLayerNames.isEmpty()) {
+            if (dependencyLayer != null) {
+                logger.warn(
+                    "No authoritative show-recipes layer was parsed for dependency {}; using layer '{}' from task-depends.dot instead",
+                    dependencyName,
+                    dependencyLayer
+                );
+                return dependencyLayer;
+            }
+
+            logger.warn(
+                "No authoritative show-recipes layer or task-depends.dot layer was available for dependency {}; skipping external ID creation",
+                dependencyName
+            );
+            return null;
+        }
+
+        String authoritativeLayer = recipeLayerNames.get(0);
+
+        // Path-matched layer is null or invalid - fall back to authoritative source
         if (dependencyLayer == null) {
             logger.warn(
                 "Did not parse a layer for dependency {} from task-depends.dot; falling back to layer {} (first from show-recipes output)",
                 dependencyName,
-                recipeLayerNames.get(0)
+                authoritativeLayer
             );
-            dependencyLayer = recipeLayerNames.get(0);
         } else {
-            logger.trace("For dependency recipe {}: using layer {} parsed from task-depends.dot", dependencyName, dependencyLayer);
+            logger.debug(
+                "Path-matched layer '{}' not valid for recipe '{}' (valid layers: {}); using '{}'",
+                dependencyLayer,
+                dependencyName,
+                recipeLayerNames,
+                authoritativeLayer
+            );
         }
-        return dependencyLayer;
+        return authoritativeLayer;
     }
 }
