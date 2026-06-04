@@ -8,8 +8,8 @@ buildscript {
         springBootVersion = gradle.ext.springBootVersion
         blackDuckCommonVersion = gradle.ext.blackDuckCommonVersion
         junitPlatformCustomTestTags = 'docker, battery'
-        javaTargetCompatibility = 8
-        javaSourceCompatibility = 8
+        javaTargetCompatibility = 11
+        javaSourceCompatibility = 11
     }
     ext['logback.version'] = '1.2.13'
     ext['json-path.version'] = '2.10.0'
