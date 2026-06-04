@@ -45,11 +45,10 @@ Recommended action: Upgrade Bazel to 6.4+ (preferably 7.x or 8.x), where `bazel 
 
 ## Combining Bazel Detection with Package Manager Detection for Additional Coverage
 
-A common misconception is that projects built with Bazel can be fully analyzed
-using only the Bazel detector to produce a complete dependency inventory. In
-practice, Bazel and package managers function at different layers of the software
-supply chain. As a result, [detect_product_short] evaluates them independently
-to ensure comprehensive dependency coverage.
+As a best practice, projects built with Bazel should not rely solely on the
+Bazel detector to produce a complete result. Bazel and package managers operate
+at different layers of the software supply chain, so [detect_product_short]
+evaluates them independently to ensure comprehensive coverage.
 
 ### Bazel Detection vs Package Manager Detection
 
