@@ -155,10 +155,7 @@ class UVLockParserTest {
         );
 
         UVLockParser parser = new UVLockParser(externalIdFactory);
-        // Note: includedDependencyGroups (first param) is only supported for UV Build Detector (CLI mode).
-        // Support for lockfile detector will be added later along with corresponding tests.
         UVDetectorOptions options = new UVDetectorOptions(
-            Collections.emptyList(),  // includedDependencyGroups - not yet supported for lockfile
             Arrays.asList("dev"),
             Collections.emptyList(),
             Collections.emptyList()
@@ -237,10 +234,7 @@ class UVLockParserTest {
         );
 
         UVLockParser parser = new UVLockParser(externalIdFactory);
-        // Note: includedDependencyGroups (first param) is only supported for UV Build Detector (CLI mode).
-        // Support for lockfile detector will be added later along with corresponding tests.
         UVDetectorOptions options = new UVDetectorOptions(
-            Collections.emptyList(),  // includedDependencyGroups - not yet supported for lockfile
             Arrays.asList("extras"),
             Collections.emptyList(),
             Collections.emptyList()
@@ -326,10 +320,7 @@ class UVLockParserTest {
         );
 
         UVLockParser parser = new UVLockParser(externalIdFactory);
-        // Note: includedDependencyGroups (first param) is only supported for UV Build Detector (CLI mode).
-        // Support for lockfile detector will be added later along with corresponding tests.
         UVDetectorOptions options = new UVDetectorOptions(
-            Collections.emptyList(),  // includedDependencyGroups - not yet supported for lockfile
             Collections.emptyList(),
             Collections.emptyList(),
             Arrays.asList("lib-b")
@@ -363,10 +354,7 @@ class UVLockParserTest {
         );
 
         UVLockParser parser = new UVLockParser(externalIdFactory);
-        // Note: includedDependencyGroups (first param) is only supported for UV Build Detector (CLI mode).
-        // Support for lockfile detector will be added later along with corresponding tests.
         UVDetectorOptions options = new UVDetectorOptions(
-            Collections.emptyList(),  // includedDependencyGroups - not yet supported for lockfile
             Collections.emptyList(),
             Arrays.asList("lib-a"),
             Collections.emptyList()
@@ -451,10 +439,7 @@ class UVLockParserTest {
     }
 
     private UVDetectorOptions createDefaultOptions() {
-        // Note: includedDependencyGroups (first param) is only supported for UV Build Detector (CLI mode).
-        // Support for lockfile detector will be added later along with corresponding tests.
         return new UVDetectorOptions(
-            Collections.emptyList(),  // includedDependencyGroups - not yet supported for lockfile
             Collections.emptyList(),
             Collections.emptyList(),
             Collections.emptyList()

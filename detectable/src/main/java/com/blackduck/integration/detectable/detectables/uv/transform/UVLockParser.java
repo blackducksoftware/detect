@@ -15,7 +15,6 @@ import org.tomlj.TomlArray;
 import org.tomlj.TomlParseResult;
 import org.tomlj.TomlTable;
 
-import java.io.File;
 import java.util.List;
 import java.util.Set;
 import java.util.ArrayList;
@@ -224,7 +223,7 @@ public class UVLockParser {
     //create a new code location for a new workspace member
     private void initializeProject(Dependency projectDependency) {
         dependencyGraph = new BasicDependencyGraph();
-        CodeLocation codeLocation = new CodeLocation(dependencyGraph, projectDependency.getExternalId(), new File(projectDependency.getName()));
+        CodeLocation codeLocation = new CodeLocation(dependencyGraph, projectDependency.getExternalId());
         codeLocations.add(codeLocation);
     }
     
