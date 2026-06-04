@@ -1,4 +1,4 @@
-FROM maven:3-openjdk-8-slim
+FROM maven:3-eclipse-temurin-11
 
 # Install git
 RUN apt-get update

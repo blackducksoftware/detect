@@ -1,4 +1,4 @@
-FROM maven:3-jdk-8-alpine
+FROM maven:3-eclipse-temurin-11-alpine
 
 ENV SRC_DIR=/opt/project/src
 

@@ -1,4 +1,4 @@
-FROM gradle:5.2.0-jdk8-slim
+FROM gradle:7.6-jdk11
 
 # Do not change SRC_DIR, value is expected by tests
 ENV SRC_DIR=/opt/project/src
