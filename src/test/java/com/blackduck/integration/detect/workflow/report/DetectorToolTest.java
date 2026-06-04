@@ -82,7 +82,7 @@ class DetectorToolTest {
         DetectConfigurationFactory detectConfigurationFactory = DetectConfigurationFactoryTestUtils.factoryOf(Pair.of(DetectProperties.DETECT_QUACK_PATCH_OUTPUT, tempDir.toString()));
 
         new DetectorTool(null, null, null, null, null, null, null, detectConfigurationFactory)
-            .saveExtractedDetectorsAndTheirRelevantFilePaths(toolResult);
+            .saveExtractedDetectorsAndTheirRelevantFilePaths(toolResult, directoryManager);
 
         File outputFile = new File(
             new File(detectConfigurationFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT), QUACKPATCH_SUBDIRECTORY_NAME),
