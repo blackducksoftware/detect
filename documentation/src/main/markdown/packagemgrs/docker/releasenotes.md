@@ -1,6 +1,6 @@
 # [docker_inspector_name] Release notes
 
-<note type="Deprecation Notice">Package-manager inspection support for CentOS based images has been deprecated in Detect 11.5.0 and will be removed entirely in 12.0.0. CentOS Linux has reached end of life upstream (CentOS Linux 8 in 2021; CentOS Linux 7 in 2024). Once an OS is EOL, it no longer receives regular security and maintenance updates, which reduces confidence in package-manager-based analysis and long-term compatibility. As with any other unsupported image, Docker Inspector will still provide Detect with targets for signature and binary scanning. </note>
+<note type="attention">Package manager inspection support for CentOS based images has been deprecated in Detect 11.5.0 and will be removed in 12.0.0. CentOS Linux has reached end of life upstream (CentOS Linux 8 in 2021; CentOS Linux 7 in 2024). Once an OS is EOL, it stops receiving regular security and maintenance updates, which inevitably lowers our confidence in any package manager based analysis.  As with any other unsupported image, Docker Inspector will still provide Detect with targets for signature and binary scanning. </note>
 
 ## Version 11.5.0
 

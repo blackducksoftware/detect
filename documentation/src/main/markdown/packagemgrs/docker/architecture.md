@@ -6,11 +6,9 @@ one for each of the supported Linux package manager database formats.
 The three image inspector services provide coverage of the three package manager database formats: DPKG, RPM, and APK.
 By default, [docker_inspector_name] submits its request to inspect the target image to the DPKG (Ubuntu) image inspector service. All services 
 redirect to the appropriate image inspector service if it cannot handle the request. For example,
-if the target image is an Alpine image, the Ubuntu inspector service, which cannot inspect an Alpine image, 
+if the target is an Alpine image, the Ubuntu inspector service, which cannot inspect an Alpine image, 
 redirects to the Alpine inspector
-service, which can inspect it. If you know
-that most of your images have either APK databases, you can improve performance by configuring
-[docker_inspector_name] to send requests to the Alpine (APK) image inspector service using
+service. If most of your images have APK databases, you can improve performance by configuring [docker_inspector_name] to route requests to the Alpine (APK) image inspector service using
 the [docker_inspector_name] property *imageinspector.service.distro.default*.
 
 In host mode (the default), [docker_inspector_name] automatically uses the Docker engine to pull as

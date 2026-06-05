@@ -1,6 +1,6 @@
 # Supported image formats
 
-<note type="Deprecation Notice">CentOS support has been deprecated in 11.5.0 and will be removed entirely in 12.0.0. For more details, please see [Docker Inspector Release Notes](releasenotes.md).</note>
+<note type="attention">CentOS support has been deprecated in 11.5.0 and will be removed entirely in 12.0.0. For more details, please see [Docker Inspector Release Notes](releasenotes.md).</note>
 
 Images passed to [detect_product_short] via the *detect.docker.image* property must either be pullable using the machine's docker engine (via the equivalent of a "docker pull" command) or already exist in the local docker cache. [detect_product_short] will save these to a file using the equivalent of a "docker save" command.
 
