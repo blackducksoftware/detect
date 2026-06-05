@@ -37,5 +37,9 @@
 
 * (IDETECT-5140) Changed the default output directory of the Quack Patch feature to use [detect_product_short] scan output directory instead of the current working directory.
 * (IDETECT-5121) Include Quack Patch output directory as part of diagnostic zip when the feature is enabled.
+* (IDETECT-5064) Fixed Gradle init script to explicitly set an empty configuration set for phantom projects (container modules without a build.gradle), preventing plugin-injected tools such as detekt and ktlint from appearing in the dependency report.
+* (IDETECT-5097) Fixed Gradle init script to enumerate configurations in `gradle.projectsEvaluated`, ensuring all afterEvaluate callbacks (including AGP's) have completed before configurations are processed.
+* (IDETECT-5163) Bazel detector now treats exit code 3 on query and cquery commands as a partial success, processing available output and surfacing a warning that dependency results may be incomplete.
+* (IDETECT-5053) Fixed pip inspector to correctly parse PEP 440 direct reference packages (name @ url) that were previously dropped from the dependency tree.
 
 ### Dependency Updates
