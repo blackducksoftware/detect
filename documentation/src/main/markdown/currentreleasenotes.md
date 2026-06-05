@@ -30,6 +30,8 @@
 ### Changed features
 
 * The default output directory of the Quack Patch feature has been updated to use [detect_product_short] scan output directory. For more information, see [Quack Patch Documentation](runningdetect/quack-patch.md).
+* CentOS support in Detect Docker Inspector has been deprecated and will be removed in 12.0.0. For more details, please see [Docker Inspector Release Notes](releasenotes.md).
+    * imageinspector.service.port.centos has been deprecated and will be removed in 12.0.0.
 
 ### Resolved issues
 
