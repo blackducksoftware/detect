@@ -43,9 +43,9 @@
 * (IDETECT-5097) Updated the Gradle init script to enumerate configurations within `gradle.projectsEvaluated`, ensuring that all `afterEvaluate` callbacks, including those from the Android Gradle Plugin (AGP), have completed before configuration processing begins.
 * (IDETECT-5163) Updated the Bazel detector to treat exit code `3` from `query` and `cquery` commands as a partial success. When encountered, the detector now processes any available output and issues a warning indicating that dependency results may be incomplete.
 * (IDETECT-5053) / (IDETECT-4988) Fixed pip inspector to correctly parse PEP 440 direct reference packages (`name @ url`), ensuring these packages are included in the dependency tree rather than being omitted.
-* (IDETECT-5078) Allow Detect to complete successfully when a Python Setuptools project has no dependencies.
+* (IDETECT-5078) Rather then fail, Detect will now complete scans and generate empty BOMs when a Python Setuptools project has no dependencies.
 * (IDETECT-5079) Allow Detect scans to finish with success even if no configured binary file patterns (e.g., .jar, .war, .zip) are found.
 * (IDETECT-5118) Fixed UV Lockfile Detector to respect excluded dependency groups for optional‑dependencies. Optional extras specified in exclusion flags are now correctly excluded alongside development dependencies.
-* (IDETECT-5126) Fixed BitBake layer misidentification bug. Updated layer parsing logic to select the deepest matching folder, validated against authoritative recipe‑to‑layer mapping (bitbake-layers show-recipes), with fallback to the first valid layer. Added ordered collection for consistent behavior and new tests for folder collisions and multi‑layer recipes.
+* (IDETECT‑5126) Fixed a BitBake layer misidentification issue caused by project folder names colliding with layer names. The detector now resolves layers deterministically, preferring the deepest valid match and falling back to the first valid layer when necessary.
 
 ### Dependency Updates
