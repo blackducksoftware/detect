@@ -34,6 +34,7 @@
     * imageinspector.service.port.centos has been deprecated and will be removed in 12.0.0.
 
 ### Resolved issues
+* (IDETECT-5069) Fixed Setuptools parsing for unsupported install_requires syntax in setup.py: Detect now fails fast and logs an error instead of silently misparsing, generating an incorrect BOM, and incorrectly reporting success.
 
 * (IDETECT-5140) Changed the default output directory of the Quack Patch feature to use [detect_product_short] scan output directory instead of the current working directory.
 * (IDETECT-5121) Include Quack Patch output directory as part of diagnostic zip when the feature is enabled.

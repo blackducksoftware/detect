@@ -9,15 +9,16 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.blackduck.integration.detectable.detectable.exception.DetectableException;
 import org.tomlj.TomlParseResult;
 
 import com.blackduck.integration.detectable.python.util.PythonDependency;
 import com.blackduck.integration.detectable.python.util.PythonDependencyTransformer;
 
 public class SetupToolsPyParser implements SetupToolsParser {
-    
+    private static final Pattern INSTALL_REQUIRES_PATTERN = Pattern.compile(".*\\binstall_requires\\s*=\\s*(.*)$");
+    private static final Pattern QUOTED_DEPENDENCY_PATTERN = Pattern.compile("'([^'\\\\]*(?:\\\\.[^'\\\\]*)*)'|\"([^\"\\\\]*(?:\\\\.[^\"\\\\]*)*)\"");
     private TomlParseResult parsedToml;
-    
     private List<String> dependencies;
     
     public SetupToolsPyParser(TomlParseResult parsedToml) {
@@ -36,70 +37,110 @@ public class SetupToolsPyParser implements SetupToolsParser {
         
         return new SetupToolsParsedResult(tomlProjectName, projectVersion, parsedDirectDependencies);
     }
-    
-    public List<String> load(String setupFile) throws IOException {
-        // The pattern "\\[?'(.*)'\\s*\\]?,?|\\[?\"(.*)\"\\s*\\]?,?" works as follows:
-        // - "\\[?'(.*)'\\s*\\]?,?" matches dependencies that start with an optional '[' followed by a mandatory single quote,
-        //   then any characters (the dependency name), ending with a single quote followed by optional whitespace and an optional ',' or ']'.
-        // - "\\[?\"(.*)\"\\s*\\]?,?" is similar to the first part but for dependencies enclosed in double quotes.
-        // Pattern for single quotes
-        Pattern patternSingleQuotes = Pattern.compile("\\[?'(.*)'\\s*\\]?,?");
 
-        // Pattern for double quotes
-        Pattern patternDoubleQuotes = Pattern.compile("\\[?\"(.*)\"\\s*\\]?,?");
+    public List<String> load(String setupFile) throws IOException, DetectableException {
+        dependencies.clear();
 
         try (BufferedReader reader = new BufferedReader(new FileReader(setupFile))) {
             String line;
-            boolean isInstallRequiresSection = false;
+            boolean foundInstallRequires = false;
+            boolean inList = false;
+            boolean listClosed = false;
 
             while ((line = reader.readLine()) != null) {
-                line = line.trim();                
-                
-                // If after removing all whitespace the line starts with install_requires=
-                // then we have found the section we are after.
-                if (line.replaceAll("\\s+","").startsWith("install_requires=")) {
-                    isInstallRequiresSection = true;
-                    continue;
-                }
-                if (isInstallRequiresSection) {
-                    // If the [ is on its own line skip it, it doesn't contain a dependency
-                    if (line.equals("[")) {
+                String trimmed = line.trim();
+
+                if (!foundInstallRequires) {
+                    String codePortion = stripComment(line);
+                    Matcher installRequiresMatcher = INSTALL_REQUIRES_PATTERN.matcher(codePortion);
+                    if (!installRequiresMatcher.matches()) {
                         continue;
                     }
-                    
-                    checkLineForDependency(line, patternSingleQuotes, patternDoubleQuotes);
-                    
-                    // If the line ends with ] or ], it means we have reached the end of the dependencies list.
-                    if (line.endsWith("]") || line.endsWith("],")) {
+
+                    foundInstallRequires = true;
+                    String afterEquals = installRequiresMatcher.group(1).trim();
+
+                    if (afterEquals.isEmpty()) {
+                        continue;
+                    }
+
+                    if (!afterEquals.startsWith("[")) {
+                        throw unsupportedInstallRequiresException();
+                    }
+
+                    inList = true;
+                    listClosed = parseListLine(afterEquals);
+                    if (listClosed) {
                         break;
                     }
+                    continue;
                 }
+
+                if (!inList) {
+                    if (trimmed.isEmpty()) {
+                        continue;
+                    }
+                    if (trimmed.startsWith("[")) {
+                        inList = true;
+                        listClosed = parseListLine(trimmed);
+                        if (listClosed) {
+                            break;
+                        }
+                        continue;
+                    }
+                    throw unsupportedInstallRequiresException();
+                }
+
+                listClosed = parseListLine(trimmed);
+                if (listClosed) {
+                    break;
+                }
+            }
+
+            if (foundInstallRequires && (!inList || !listClosed)) {
+                throw unsupportedInstallRequiresException();
             }
         }
 
         return dependencies;
     }
-    
-    private void checkLineForDependency(String line, Pattern patternSingleQuotes, Pattern patternDoubleQuotes) {
-        // Using the pattern for double quotes to match the dependencies in the current line.
-        Matcher matcherDoubleQuotes = patternDoubleQuotes.matcher(line);
-        if (matcherDoubleQuotes.find()) {
-            // Extracting the dependency from the matched group.
-            String dependency = matcherDoubleQuotes.group(1);
-            // Adding the dependency to the list.
+
+    private boolean parseListLine(String line) throws DetectableException {
+        int closingBracketIndex = line.indexOf(']');
+        String relevantPortion = closingBracketIndex >= 0 ? line.substring(0, closingBracketIndex + 1) : line;
+
+        Matcher quotedDependencyMatcher = QUOTED_DEPENDENCY_PATTERN.matcher(relevantPortion);
+        while (quotedDependencyMatcher.find()) {
+            String dependency = quotedDependencyMatcher.group(1) != null ? quotedDependencyMatcher.group(1) : quotedDependencyMatcher.group(2);
             dependencies.add(dependency);
-        } else {
-            // Fallback to use the pattern for single quotes to match the dependencies in the current
-            // line. We do this second as there are sometimes lines that use double quotes and then
-            // single quotes inside them to specify conditionals
-            Matcher matcherSingleQuotes = patternSingleQuotes.matcher(line);
-            if (matcherSingleQuotes.find()) {
-                // Extracting the dependency from the matched group.
-                String dependency = matcherSingleQuotes.group(1);
-                // Adding the dependency to the list.
-                dependencies.add(dependency);
-            }
         }
+
+        String residue = QUOTED_DEPENDENCY_PATTERN.matcher(relevantPortion).replaceAll("");
+        int commentIndex = residue.indexOf('#');
+        if (commentIndex >= 0) {
+            residue = residue.substring(0, commentIndex);
+        }
+        residue = residue.replace("[", "").replace("]", "").replace(",", "").trim();
+
+        if (!residue.isEmpty()) {
+            throw unsupportedInstallRequiresException();
+        }
+
+        return closingBracketIndex >= 0;
+    }
+
+    private String stripComment(String line) {
+        int commentIndex = line.indexOf('#');
+        if (commentIndex >= 0) {
+            return line.substring(0, commentIndex);
+        }
+        return line;
+    }
+
+    private DetectableException unsupportedInstallRequiresException() {
+        return new DetectableException(
+            "install_requires must be a literal Python list (e.g., install_requires=['dep1', 'dep2']). Variable references, function calls, and other programmatic constructions are not supported."
+        );
     }
 
     private List<PythonDependency> parseDirectDependencies() {
@@ -107,17 +148,16 @@ public class SetupToolsPyParser implements SetupToolsParser {
         
         PythonDependencyTransformer dependencyTransformer = new PythonDependencyTransformer();
 
-        for (String dependencyLine : dependencies) {            
+        for (String dependencyLine : dependencies) {
             PythonDependency dependency = dependencyTransformer.transformLine(dependencyLine);
             
             // If we have a ; in our requirements line then there is a condition on this dependency.
             // We want to know this so we don't consider it a failure later if we try to run pip show
             // on it and we don't find it.
-            if (dependencyLine.contains(";")) {
-                dependency.setConditional(true);
-            }
-
             if (dependency != null) {
+                if (dependencyLine.contains(";")) {
+                    dependency.setConditional(true);
+                }
                 results.add(dependency);
             }
         }

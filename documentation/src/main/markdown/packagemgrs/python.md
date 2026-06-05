@@ -33,7 +33,7 @@ Setuptools detectors attempt to run on your project if a pyproject.toml file con
 For setup.cfg and setup.py file parsing, the Setuptools detectors support direct mentioning of dependency files. For reference, see 
 [Dependency Management in Setuptools](https://setuptools.pypa.io/en/latest/userguide/dependency_management.html).
 
-<note type="tip">URL references, optional dependencies and `file: \<path to file\>` parameters found in setup.cfg are not supported. For setup.py files, programmatic population of the `install_requires` parameter is not supported.</note>
+<note type="tip">URL references, optional dependencies and `file: \<path to file\>` parameters found in setup.cfg are not supported. For setup.py files, Detect supports only literal `install_requires=[...]` lists with string literal entries. Programmatic population of the `install_requires` parameter (for example via variable references or function calls) is not supported.</note>
 
 <note type="note">The `--detect.pip.only.project.tree`, `--detect.pip.project.name`, and `--detect.pip.project.version.name` properties do not apply to the Setuptools detectors.</note>
 
