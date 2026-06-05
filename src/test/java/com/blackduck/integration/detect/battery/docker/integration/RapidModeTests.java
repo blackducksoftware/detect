@@ -18,7 +18,7 @@ import com.blackduck.integration.util.NameVersion;
 @Tag("integration")
 public class RapidModeTests {
     SharedDockerTestRunner anyProjectWithRapidResultsInBlackDuck(String testId, NameVersion projectNameVersion) throws IOException, IntegrationException {
-        try (DetectDockerTestRunner runner = new DetectDockerTestRunner(testId, "gradle-simple:1.0.0")) {
+        try (DetectDockerTestRunner runner = new DetectDockerTestRunner(testId, "gradle-simple:2.0.0")) {
             runner.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("SimpleGradle.dockerfile"));
 
             BlackDuckTestConnection blackDuckTestConnection = BlackDuckTestConnection.fromEnvironment();

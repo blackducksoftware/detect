@@ -24,7 +24,7 @@ public class OpamDetectorTests {
 
     @Test
     void opamLockFileDetectorTest() throws IOException, IntegrationException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("opam-lockfile-detector", "opam-lockfile-detector:1.0.0")) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("opam-lockfile-detector", "opam-lockfile-detector:2.0.0")) {
 
             Map<String, String> artifactoryArgs = new HashMap<>();
             artifactoryArgs.put("ARTIFACTORY_URL", ARTIFACTORY_URL);
@@ -63,7 +63,7 @@ public class OpamDetectorTests {
 
     @Test
     void opamShowDetectorTest() throws IOException, IntegrationException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("opam-show-detector", "opam-show-detector:1.0.0")) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("opam-show-detector", "opam-show-detector:2.0.0")) {
 
             Map<String, String> artifactoryArgs = new HashMap<>();
             artifactoryArgs.put("ARTIFACTORY_URL", ARTIFACTORY_URL);
@@ -101,7 +101,7 @@ public class OpamDetectorTests {
 
     @Test
     void opamTreeDetectorTest() throws IntegrationException, IOException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("opam-tree-detector", "opam-tree-detector:1.0.0")) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("opam-tree-detector", "opam-tree-detector:2.0.0")) {
 
             Map<String, String> artifactoryArgs = new HashMap<>();
             artifactoryArgs.put("ARTIFACTORY_URL", ARTIFACTORY_URL);

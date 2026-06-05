@@ -39,7 +39,7 @@ public class GoModTest {
     @ParameterizedTest
     @MethodSource("provideGoVersionsToTest")
     public void goModSpecificExecutableTest(String goVersion) throws IntegrationException, IOException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("go-mod-executables-test", "go-mod-executables-test:" + goVersion)) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("go-mod-executables-test", "go-mod-executables-test:" + goVersion + "-jdk11")) {
 
             Map<String, String> goModDockerfileArgs = new HashMap<>();
             goModDockerfileArgs.put("goVersion", goVersion);

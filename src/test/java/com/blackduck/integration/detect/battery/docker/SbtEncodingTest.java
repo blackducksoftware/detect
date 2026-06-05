@@ -25,7 +25,7 @@ public class SbtEncodingTest {
 
     @Test
     void sbtEncoding() throws IOException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("detect-sbt-encoding", "detect-sbt-encoding:1.0.3")) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("detect-sbt-encoding", "detect-sbt-encoding:1.0.4")) {
             test.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("SbtEncoding.dockerfile"));
 
             DetectCommandBuilder commandBuilder = DetectCommandBuilder.withOfflineDefaults().defaultDirectories(test);
@@ -40,7 +40,7 @@ public class SbtEncodingTest {
 
     @Test
     void sbtDetectorTest() throws IOException, IntegrationException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("detect-sbt-detector", "detect-sbt-detector:1.0.1")) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("detect-sbt-detector", "detect-sbt-detector:1.0.2")) {
             Map<String, String> artifactoryArgs = new HashMap<>();
             artifactoryArgs.put("ARTIFACTORY_URL", ARTIFACTORY_URL);
 

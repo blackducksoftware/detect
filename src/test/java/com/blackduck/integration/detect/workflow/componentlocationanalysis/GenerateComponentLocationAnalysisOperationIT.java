@@ -18,7 +18,7 @@ import com.blackduck.integration.detect.workflow.componentlocationanalysis.Gener
 public class GenerateComponentLocationAnalysisOperationIT {
     @Test
     void testOfflinePkgMngrScan_analysisEnabled() throws IOException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("component-location-analysis-test", "gradle-simple:1.0.0")) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("component-location-analysis-test", "gradle-simple:2.0.0")) {
             test.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("SimpleGradle.dockerfile"));
 
             DetectCommandBuilder commandBuilder = DetectCommandBuilder.withOfflineDefaults().defaultDirectories(test);
@@ -40,7 +40,7 @@ public class GenerateComponentLocationAnalysisOperationIT {
 
     @Test
     void testOnlineRapidPkgMngrScan_analysisEnabled() throws IOException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("component-location-analysis-test", "gradle-simple:1.0.0")) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("component-location-analysis-test", "gradle-simple:2.0.0")) {
             test.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("SimpleGradle.dockerfile"));
 
             BlackDuckTestConnection blackDuckTestConnection = BlackDuckTestConnection.fromEnvironment();
@@ -64,7 +64,7 @@ public class GenerateComponentLocationAnalysisOperationIT {
 
     @Test
     void testOfflinePkgMngrScan_analysisEnabled_affectsStatus() throws IOException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("component-location-analysis-test", "gradle-simple:1.0.0")) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("component-location-analysis-test", "gradle-simple:2.0.0")) {
             test.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("SimpleGradle.dockerfile"));
 
             DetectCommandBuilder commandBuilder = DetectCommandBuilder.withOfflineDefaults().defaultDirectories(test);
@@ -87,7 +87,7 @@ public class GenerateComponentLocationAnalysisOperationIT {
 
     @Test
     void testOnlineRapidPkgMngrScan_analysisEnabled_affectsStatus() throws IOException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("component-location-analysis-test", "gradle-simple:1.0.0")) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("component-location-analysis-test", "gradle-simple:2.0.0")) {
             test.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("SimpleGradle.dockerfile"));
 
             BlackDuckTestConnection blackDuckTestConnection = BlackDuckTestConnection.fromEnvironment();
