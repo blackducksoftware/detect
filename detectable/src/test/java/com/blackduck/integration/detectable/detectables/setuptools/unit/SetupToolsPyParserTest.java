@@ -89,6 +89,40 @@ public class SetupToolsPyParserTest {
     }
 
     @Test
+    public void testLoadIgnoresCommentedInstallRequiresText(@TempDir Path tempDir) throws IOException, DetectableException {
+        String pyContent = "from setuptools import setup\n"
+            + "# this is a comment install_requires=[\"requests>=1.0.0\"]\n"
+            + "setup(\n"
+            + "    install_requires=[\"numpy<2\"],\n"
+            + ")";
+        Path tempFile = createTempSetupPy(tempDir, pyContent);
+
+        TomlParseResult result = createSetuptoolsTomlResult();
+
+        SetupToolsPyParser pyParser = new SetupToolsPyParser(result);
+        List<String> dependencies = pyParser.load(tempFile.toString());
+
+        assertEquals(1, dependencies.size());
+        assertTrue(dependencies.contains("numpy<2"));
+        assertFalse(dependencies.contains("requests>=1.0.0"));
+    }
+
+    @Test
+    public void testLoadDoesNotParseInstallRequiresFromCommentOnlyLine(@TempDir Path tempDir) throws IOException, DetectableException {
+        String pyContent = "from setuptools import setup\n"
+            + "# install_requires=[\"requests>=1.0.0\"]\n"
+            + "setup(name=\"example\")";
+        Path tempFile = createTempSetupPy(tempDir, pyContent);
+
+        TomlParseResult result = createSetuptoolsTomlResult();
+
+        SetupToolsPyParser pyParser = new SetupToolsPyParser(result);
+        List<String> dependencies = pyParser.load(tempFile.toString());
+
+        assertTrue(dependencies.isEmpty());
+    }
+
+    @Test
     public void testParse(@TempDir Path tempDir) throws IOException, DetectableException {
         String pyContent = "from setuptools import setup\n\nsetup(\ninstall_requires=[\n'requests==2.31.0',\n],\n)";
         Path pyFile = createTempSetupPy(tempDir, pyContent);

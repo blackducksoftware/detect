@@ -51,7 +51,8 @@ public class SetupToolsPyParser implements SetupToolsParser {
                 String trimmed = line.trim();
 
                 if (!foundInstallRequires) {
-                    Matcher installRequiresMatcher = INSTALL_REQUIRES_PATTERN.matcher(trimmed);
+                    String codePortion = stripComment(line);
+                    Matcher installRequiresMatcher = INSTALL_REQUIRES_PATTERN.matcher(codePortion);
                     if (!installRequiresMatcher.matches()) {
                         continue;
                     }
@@ -126,6 +127,14 @@ public class SetupToolsPyParser implements SetupToolsParser {
         }
 
         return closingBracketIndex >= 0;
+    }
+
+    private String stripComment(String line) {
+        int commentIndex = line.indexOf('#');
+        if (commentIndex >= 0) {
+            return line.substring(0, commentIndex);
+        }
+        return line;
     }
 
     private DetectableException unsupportedInstallRequiresException() {
