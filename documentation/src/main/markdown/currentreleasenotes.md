@@ -37,9 +37,9 @@
 
 * (IDETECT-5140) Changed the default output directory of the Quack Patch feature to use [detect_product_short] scan output directory instead of the current working directory.
 * (IDETECT-5121) Include Quack Patch output directory as part of diagnostic zip when the feature is enabled.
-* (IDETECT-5064) Fixed Gradle init script to explicitly set an empty configuration set for phantom projects (container modules without a build.gradle), preventing plugin-injected tools such as detekt and ktlint from appearing in the dependency report.
-* (IDETECT-5097) Fixed Gradle init script to enumerate configurations in `gradle.projectsEvaluated`, ensuring all afterEvaluate callbacks (including AGP's) have completed before configurations are processed.
-* (IDETECT-5163) Bazel detector now treats exit code 3 on query and cquery commands as a partial success, processing available output and surfacing a warning that dependency results may be incomplete.
-* (IDETECT-5053) Fixed pip inspector to correctly parse PEP 440 direct reference packages (name @ url) that were previously dropped from the dependency tree.
+* (IDETECT-5064) Updated the Gradle init script to explicitly assign an empty configuration set to phantom projects (container modules lacking a build.gradle file). This change prevents tools injected by plugins such as Detekt and Ktlint from being included in the dependency report.
+* (IDETECT-5097) Updated the Gradle init script to enumerate configurations within gradle.projectsEvaluated, ensuring that all afterEvaluate callbacks, including those from the Android Gradle Plugin (AGP), have completed before configuration processing begins.
+* (IDETECT-5163) Updated the Bazel detector to treat exit code 3 from query and cquery commands as a partial success. When encountered, the detector now processes any available output and issues a warning indicating that dependency results may be incomplete.
+* (IDETECT-5053) Fixed pip inspector to correctly parse PEP 440 direct reference packages (name @ url), ensuring these packages are included in the dependency tree rather than being omitted.
 
 ### Dependency Updates
