@@ -32,6 +32,7 @@
 * The default output directory of the Quack Patch feature has been updated to use [detect_product_short] scan output directory. For more information, see [Quack Patch Documentation](runningdetect/quack-patch.md).
 * CentOS support in Detect Docker Inspector has been deprecated and will be removed in 12.0.0. For more details, please see [Docker Inspector Release Notes](releasenotes.md).
     * imageinspector.service.port.centos has been deprecated and will be removed in 12.0.0.
+* (IDETECT-5144) Clarified documentation for `--detect.uv.dependency.groups.excluded`. Since optional is not a dependency group in uv but a section defining extras, exclusions must reference the extra name directly (e.g., postgres, redis). Supplying optional has no effect.
 
 ### Resolved issues
 * (IDETECT-5069) Fixed Setuptools parsing for unsupported install_requires syntax in setup.py: Detect now fails fast and logs an error instead of silently misparsing, generating an incorrect BOM, and incorrectly reporting success.
@@ -43,4 +44,10 @@
 * (IDETECT-5163) Updated the Bazel detector to treat exit code `3` from `query` and `cquery` commands as a partial success. When encountered, the detector now processes any available output and issues a warning indicating that dependency results may be incomplete.
 * (IDETECT-5053) Fixed pip inspector to correctly parse PEP 440 direct reference packages (`name @ url`), ensuring these packages are included in the dependency tree rather than being omitted.
 
+* (IDETECT-5078) Allow Detect to complete successfully when a Python Setuptools project has no dependencies.
+* (IDETECT-5079) Allow Detect scans to finish with success even if no configured binary file patterns (e.g., .jar, .war, .zip) are found.
+* (IDETECT-5118) Fixed UV Lockfile Detector to respect excluded dependency groups for optional‑dependencies. Optional extras specified in exclusion flags are now correctly excluded alongside development dependencies.
+* (IDETECT-5148) Stabilized the Maven shaded‑dependencies integration test by switching its Docker build from cloning an external GitHub repo to fetching a prebuilt test project from internal Artifactory, ensuring consistent availability of shaded components.
+* (IDETECT-5128) Improved UV Detector test coverage.
+* (IDETECT-5126) Fixed BitBake layer misidentification bug. Updated layer parsing logic to select the deepest matching folder, validated against authoritative recipe‑to‑layer mapping (bitbake-layers show-recipes), with fallback to the first valid layer. Added ordered collection for consistent behavior and new tests for folder collisions and multi‑layer recipes.
 ### Dependency Updates
