@@ -71,6 +71,26 @@ public class SbtRootNodeFinderTest {
     }
 
     @Test
+    public void evictedNodeExcludedFromRootCandidates() throws DetectableException, IOException {
+        // guava:27.0 has an outgoing eviction edge but no incoming edges, so without filtering
+        // it appears as a root candidate. The second SetUtils.difference must remove it.
+        String evictionEdge = "    \"com.google.guava:guava:27.0-jre\" -> \"com.google.guava:guava:30.1-jre\" [label=\"Evicted By\"]\n";
+        MutableGraph mutableGraph = createMutableGraph(
+            node("default", "myproject", "1.0") +
+            node("com.google.guava", "guava", "27.0-jre") +
+            node("com.google.guava", "guava", "30.1-jre") +
+            evictionEdge +
+            edge("default", "myproject", "1.0", "com.google.guava", "guava", "30.1-jre")
+        );
+        SbtRootNodeFinder projectMatcher = new SbtRootNodeFinder(new SbtDotGraphNodeParser(new ExternalIdFactory()));
+        Set<String> rootIds = projectMatcher.determineRootIDs(mutableGraph);
+        Assertions.assertEquals(1, rootIds.size(), "Only the project node should be a root candidate");
+        Assertions.assertTrue(rootIds.contains("default:myproject:1.0"));
+        Assertions.assertFalse(rootIds.contains("com.google.guava:guava:27.0-jre"),
+            "Evicted node should not be a root candidate");
+    }
+
+    @Test
     public void multipleFoundWithEdge() throws DetectableException, IOException {
         MutableGraph mutableGraph = createMutableGraph(node("one-org", "one-name", "one-version") +
             node("one-org", "one-name", "two-version") +
