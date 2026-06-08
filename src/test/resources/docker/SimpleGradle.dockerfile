@@ -15,6 +15,4 @@ RUN mkdir -p ${SRC_DIR}
 
 RUN git clone --depth 1 https://github.com/jabedhasan21/java-hello-world-with-gradle ${SRC_DIR}
 
-RUN cd ${SRC_DIR} \
-   && gradle wrapper --gradle-version 7.6 \
-   && ./gradlew build
+RUN cd ${SRC_DIR} && gradle build
