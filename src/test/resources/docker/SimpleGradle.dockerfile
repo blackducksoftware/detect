@@ -12,4 +12,4 @@ RUN cd ${SRC_DIR} && gradle init \
   --test-framework junit \
   --package my.project \
   --project-name my-project \
-  && sed -i '/guava/d' ${SRC_DIR}/app/build.gradle
+  && sed -i "s/com.google.guava:guava:31.1-jre/joda-time:joda-time:2.2/" ${SRC_DIR}/app/build.gradle

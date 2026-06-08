@@ -94,7 +94,7 @@ public class OpamDetectorTests {
             dockerAssertions.atLeastOneBdioFile();
 
             blackduckAssertions.checkComponentVersionExists("menhirCST", "20260209");
-            blackduckAssertions.checkComponentVersionExists("flexdll", "0.43");
+            blackduckAssertions.checkComponentVersionExists("flexdll", "0.44");
             blackduckAssertions.checkComponentVersionExists("ptime", "1.2.0");
         }
     }
