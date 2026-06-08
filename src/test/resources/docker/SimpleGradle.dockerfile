@@ -11,4 +11,5 @@ RUN cd ${SRC_DIR} && gradle init \
   --dsl groovy \
   --test-framework junit \
   --package my.project \
-  --project-name my-project
+  --project-name my-project \
+  && sed -i '/guava/d' ${SRC_DIR}/app/build.gradle

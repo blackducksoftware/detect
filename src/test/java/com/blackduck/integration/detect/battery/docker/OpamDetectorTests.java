@@ -93,7 +93,7 @@ public class OpamDetectorTests {
             dockerAssertions.logContains("Opam CLI: SUCCESS");
             dockerAssertions.atLeastOneBdioFile();
 
-            blackduckAssertions.checkComponentVersionExists("menhirCST", "20240715");
+            blackduckAssertions.checkComponentVersionExists("menhirCST", "20260209");
             blackduckAssertions.checkComponentVersionExists("flexdll", "0.43");
             blackduckAssertions.checkComponentVersionExists("ptime", "1.2.0");
         }
@@ -132,7 +132,7 @@ public class OpamDetectorTests {
             dockerAssertions.atLeastOneBdioFile();
 
             blackduckAssertions.checkComponentVersionExists("mirage-time", "3.0.0");
-            blackduckAssertions.checkComponentVersionExists("yojson", "2.2.2");
+            blackduckAssertions.checkComponentVersionExists("yojson", "3.0.0");
             blackduckAssertions.checkComponentVersionExists("emile", "1.1");
             blackduckAssertions.checkComponentVersionExists("rresult","0.7.0");
         }
