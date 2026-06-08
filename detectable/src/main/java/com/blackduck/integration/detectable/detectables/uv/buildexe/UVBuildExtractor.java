@@ -21,6 +21,12 @@ import java.util.Optional;
 
 public class UVBuildExtractor {
 
+    private static final String TREE_COMMAND = "tree";
+    private static final String NO_DEDUPE_FLAG = "--no-dedupe";
+    private static final String ALL_EXTRAS_FLAG = "--all-extras";
+    private static final String ALL_GROUPS_FLAG = "--all-groups";
+    private static final String NO_GROUP_FLAG = "--no-group";
+
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final DetectableExecutableRunner executableRunner;
     private final File sourceDirectory;
@@ -36,12 +42,14 @@ public class UVBuildExtractor {
     public Extraction extract(ExecutableTarget uvExe, UVDetectorOptions uvDetectorOptions, UVTomlParser uvTomlParser) throws ExecutableRunnerException {
         try {
             List<String> arguments = new ArrayList<>();
-            arguments.add("tree");
-            arguments.add("--no-dedupe");
+            arguments.add(TREE_COMMAND);
+            arguments.add(NO_DEDUPE_FLAG);
+            arguments.add(ALL_EXTRAS_FLAG);
+            arguments.add(ALL_GROUPS_FLAG);
 
             if(!uvDetectorOptions.getExcludedDependencyGroups().isEmpty()) {
                 for(String group : uvDetectorOptions.getExcludedDependencyGroups()) {
-                    arguments.add("--no-group");
+                    arguments.add(NO_GROUP_FLAG);
                     arguments.add(group);
                 }
             }

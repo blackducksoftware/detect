@@ -81,6 +81,8 @@ class UVBuildExtractorTest {
         List<String> arguments = captor.getValue().getCommandWithArguments();
         assertTrue(arguments.contains("tree"));
         assertTrue(arguments.contains("--no-dedupe"));
+        assertTrue(arguments.contains("--all-extras"));
+        assertTrue(arguments.contains("--all-groups"));
     }
 
     // ==================== Excluded Groups Tests ====================
@@ -103,6 +105,8 @@ class UVBuildExtractorTest {
         List<String> arguments = captor.getValue().getCommandWithArguments();
         assertTrue(arguments.contains("tree"));
         assertTrue(arguments.contains("--no-dedupe"));
+        assertTrue(arguments.contains("--all-extras"));
+        assertTrue(arguments.contains("--all-groups"));
         assertTrue(arguments.contains("--no-group"));
 
         int devIndex = arguments.indexOf("dev");
@@ -130,6 +134,8 @@ class UVBuildExtractorTest {
 
         List<String> arguments = captor.getValue().getCommandWithArguments();
 
+        assertTrue(arguments.contains("--all-extras"));
+        assertTrue(arguments.contains("--all-groups"));
         long noGroupCount = arguments.stream().filter(arg -> arg.equals("--no-group")).count();
         assertEquals(0, noGroupCount);
     }
@@ -151,6 +157,8 @@ class UVBuildExtractorTest {
 
         List<String> arguments = captor.getValue().getCommandWithArguments();
 
+        assertTrue(arguments.contains("--all-extras"));
+        assertTrue(arguments.contains("--all-groups"));
         long noGroupCount = arguments.stream().filter(arg -> arg.equals("--no-group")).count();
         assertEquals(1, noGroupCount);
         assertTrue(arguments.contains("dev"));
