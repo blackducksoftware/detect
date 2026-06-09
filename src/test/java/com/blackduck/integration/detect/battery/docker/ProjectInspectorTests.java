@@ -54,7 +54,7 @@ public class ProjectInspectorTests {
 
     @Test
     void mavenProjectInspectorNotRunIfCliSucceeds() throws IOException, InterruptedException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("detect-maven-project-inspector-legacy", "maven-simple:2.0.1")) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("detect-maven-project-inspector-legacy", "maven-simple:2.0.2")) {
             test.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("SimpleMaven.dockerfile"));
 
             DetectCommandBuilder commandBuilder = DetectCommandBuilder.withOfflineDefaults().defaultDirectories(test);
@@ -72,7 +72,7 @@ public class ProjectInspectorTests {
 
     @Test
     void mavenProjectInspectorRunIfCliFails() throws IOException, InterruptedException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("detect-maven-project-inspector", "maven-simple:2.0.1")) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("detect-maven-project-inspector", "maven-simple:2.0.2")) {
             test.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("SimpleMaven.dockerfile"));
 
             DetectCommandBuilder commandBuilder = DetectCommandBuilder.withOfflineDefaults().defaultDirectories(test);
