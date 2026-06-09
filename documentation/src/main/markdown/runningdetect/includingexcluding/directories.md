@@ -45,7 +45,7 @@ When specifying path patterns:
 | Value               | Excluded at default exclusion depth                                                | Not Excluded                                                                                 |
 |---------------------|------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
 | `foo/bar`           | `/projectRoot/foo/bar` `/projectRoot/dir/foo/bar`                                  | `/projectRoot/bar` `/projectRoot/dir/foo` `/projectRoot/foobar` `/projectRoot/directory/bar` |
-| `**/foo/bar/`       | `/projectRoot/foo/bar` `/projectRoot/dir/foo/bar` `/projectRoot/directory/foo/bar` | `/projectRoot/foobar` `/projectRoot/bar` `/projectRoot/directory/bar`                        |
+| `**/foo/bar/`       | `/projectRoot/foo/bar` `/projectRoot/dir/foo/bar` | `/projectRoot/foobar` `/projectRoot/bar` `/projectRoot/directory/bar`                        |
 | `/projectRoot/d*/*` | `/projectRoot/dir/foo` `/projectRoot/dir/foo/bar` `/projectRoot/directory/bar`     | `/projectRoot/foobar` `/projectRoot/bar` `/projectRoot/foo/bar`                              |
 
 [detect_product_short] uses FileSystem::getPatchMatcher and its glob syntax implementation to exclude path patterns. See [Oracle FileSystem::getPatchMatcher](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/nio/file/FileSystem.html#getPathMatcher(java.lang.String)) for more info.
