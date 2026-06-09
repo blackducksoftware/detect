@@ -13,4 +13,4 @@ RUN cd /opt/project \
 RUN mv /opt/project/maven-hello-world/my-app /opt/project/src
 
 RUN cd /opt/project/src \
-   && mvn compile
+   && mvn compile -Dmaven.compiler.compilerArgument=-proc:none

@@ -25,7 +25,7 @@ public class SbtEncodingTest {
 
     @Test
     void sbtEncoding() throws IOException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("detect-sbt-encoding", "detect-sbt-encoding:1.0.4")) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("detect-sbt-encoding", "detect-sbt-encoding:1.0.5")) {
             test.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("SbtEncoding.dockerfile"));
 
             DetectCommandBuilder commandBuilder = DetectCommandBuilder.withOfflineDefaults().defaultDirectories(test);

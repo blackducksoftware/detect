@@ -18,7 +18,8 @@ ENV PATH="/home/app/sbt/bin:${PATH}"
 # Set up the test project
 RUN mkdir -p ${SRC_DIR}
 
-RUN git clone --depth 1 https://github.com/aiyanbo/sbt-simple-project.git ${SRC_DIR}
+RUN git clone --depth 1 https://github.com/aiyanbo/sbt-simple-project.git ${SRC_DIR} \
+    && sed -i 's/2\.12\.7/2.12.19/' ${SRC_DIR}/project/Dependencies.scala
 
 RUN cd ${SRC_DIR} \
    && sbt compile
