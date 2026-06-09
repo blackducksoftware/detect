@@ -10,6 +10,7 @@ import org.apache.commons.collections4.SetUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -20,7 +21,7 @@ public class SbtRootNodeFinder {
         this.sbtDotGraphNodeParser = sbtDotGraphNodeParser;
     }
 
-    public Set<String> determineRootIDs(@NotNull Set<String> evictedIds, @NotNull MutableGraph mutableGraph) throws DetectableException {
+    public Set<String> determineRootIDs(@NotNull Map<String, String> evictions, @NotNull MutableGraph mutableGraph) throws DetectableException {
         Set<String> nodeIdsUsedInDestination = mutableGraph.nodes().stream()
                 .map(MutableNode::links)
                 .flatMap(List::stream)
@@ -35,10 +36,10 @@ public class SbtRootNodeFinder {
         // Evicted nodes have an outgoing edge but no incoming edges, so they appear as root candidates.
         // Remove them — they are not real project roots but evicted nodes.
         // e.g. guava:27.0 -> guava:30.1 [label="Evicted By"]
-        return SetUtils.difference(candidates, evictedIds);
+        return SetUtils.difference(candidates, evictions.keySet());
     }
 
     public Set<String> determineRootIDs(@NotNull MutableGraph mutableGraph) throws DetectableException {
-        return determineRootIDs(SbtEvictionNodeUtil.findEvictedNodeIds(mutableGraph), mutableGraph);
+        return determineRootIDs(SbtEvictionNodeUtil.findEvictions(mutableGraph), mutableGraph);
     }
 }

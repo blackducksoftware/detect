@@ -84,14 +84,16 @@ public class SbtGraphParserTransformerTest {
     }
 
     @Test
-    public void evictionDemoGraphExcludesEvictedAndPreservesDirectDependency() throws IOException {
-        // !isOneRoot path: SbtRootNodeFinder returns multiple rootIds for this graph because orphan
-        // nodes (transitive deps declared as DOT nodes but with no edges) are also never a link
-        // destination, so they land in the root candidate set alongside the real project node.
-        // This test simulates that by passing all those node IDs as projectIds, forcing isOneRoot=false.
+    public void evictionDemoGraphExcludesEvictedAndPreservesTransitiveDependencies() throws IOException {
+        // !isOneRoot path: SbtRootNodeFinder returns multiple rootIds because orphan nodes
+        // (declared in the DOT but never a link destination) land in the root candidate set
+        // alongside the real project node.
+        //
+        // In multi-root mode the project node itself IS registered as a direct dependency
+        // (it acts as a sub-project component), and its declared deps become transitive under it.
         //
         // Full sbt-eviction-demo graph: guava 27.0-jre evicted by 30.1-jre, with orphan nodes.
-        // Expected: guava 27.0-jre excluded, guice 5.1.0 is a direct dep, project node itself is not a dep.
+        // Expected: guava 27.0-jre excluded; sbt-eviction-demo is a direct dep; guice is reachable.
         String dot = "digraph \"dependency-graph\" {\n"
             + "    graph[rankdir=\"LR\"]\n"
             + "    edge [arrowtail=\"none\"]\n"
@@ -116,9 +118,6 @@ public class SbtGraphParserTransformerTest {
             + "}";
 
         MutableGraph mutableGraph = parseDot(dot);
-        // Mirrors what SbtRootNodeFinder returns for this graph after eviction filtering:
-        // all nodes that are never a link destination, minus evicted nodes.
-        // The orphan nodes (jsr305, failureaccess, etc.) are never destinations, so they're included.
         Set<String> projectIds = new HashSet<>(Arrays.asList(
             "default:sbt-eviction-demo:1.0",
             "com.google.code.findbugs:jsr305:3.0.2",
@@ -135,27 +134,27 @@ public class SbtGraphParserTransformerTest {
         Assertions.assertFalse(graph.hasDependency(evictedId),
             "Evicted guava 27.0-jre should not exist anywhere in the dependency graph");
 
-        // guice 5.1.0 is directly declared by the root project and must be a direct dependency.
-        // In the !isOneRoot path the old code called addDirectDependency(parent) which added the
-        // project node itself as a dep and left guice transitive — this assertion catches that regression.
-        ExternalId guiceId = externalIdFactory.createMavenExternalId("com.google.inject", "guice", "5.1.0");
-        boolean guiceIsDirectDep = graph.getRootDependencies().stream()
-            .anyMatch(dep -> dep.getExternalId().equals(guiceId));
-        Assertions.assertTrue(guiceIsDirectDep,
-            "com.google.inject:guice:5.1.0 should be a direct dependency of the root project");
-
-        // The project node itself must not appear as a dependency.
+        // In multi-root mode, sbt-eviction-demo is a root candidate with outgoing edges,
+        // so it is registered as a direct dependency (sub-project component semantics).
         ExternalId projectId = externalIdFactory.createMavenExternalId("default", "sbt-eviction-demo", "1.0");
-        Assertions.assertFalse(graph.hasDependency(projectId),
-            "The project node itself should not be added as a dependency");
+        boolean projectIsDirectDep = graph.getRootDependencies().stream()
+            .anyMatch(dep -> dep.getExternalId().equals(projectId));
+        Assertions.assertTrue(projectIsDirectDep,
+            "sbt-eviction-demo should be a direct dependency in multi-root mode");
+
+        // guice is reachable as a transitive dep under sbt-eviction-demo.
+        ExternalId guiceId = externalIdFactory.createMavenExternalId("com.google.inject", "guice", "5.1.0");
+        Assertions.assertTrue(graph.hasDependency(guiceId),
+            "com.google.inject:guice:5.1.0 should be reachable in the dependency graph");
     }
 
     @Test
     public void multiRootDirectAndTransitiveDependenciesAreClassifiedCorrectly() throws IOException {
         // !isOneRoot path: two projectIds (project + orphan node) force isOneRoot=false.
-        // Verifies:
-        //   - project->dep edge: child is added as a direct dependency (if branch)
-        //   - dep->dep edge: child is added as transitive under its parent (else-if branch)
+        // In multi-root mode, each root candidate with outgoing edges registers itself as a
+        // direct dependency (sub-project semantics). Its declared deps become transitive under it.
+        //   - myproject->guice edge: myproject (root candidate) is direct dep, guice is child of myproject
+        //   - guice->guava edge: guava is transitive under guice
         String dot = "digraph \"dependency-graph\" {\n"
             + "    graph[rankdir=\"LR\"]\n"
             + "    \"default:myproject:1.0\"[shape=box style=\"\"]\n"
@@ -170,11 +169,21 @@ public class SbtGraphParserTransformerTest {
         Set<String> projectIds = new HashSet<>(Arrays.asList("default:myproject:1.0", "some:orphan:1.0"));
         DependencyGraph graph = transformer.transformDotToGraph(projectIds, mutableGraph);
 
+        // myproject is a root candidate with an outgoing edge, so it becomes a direct dep.
+        ExternalId myprojectId = externalIdFactory.createMavenExternalId("default", "myproject", "1.0");
+        boolean myprojectIsDirectDep = graph.getRootDependencies().stream()
+            .anyMatch(dep -> dep.getExternalId().equals(myprojectId));
+        Assertions.assertTrue(myprojectIsDirectDep,
+            "myproject (root candidate) should be a direct dependency");
+
+        // guice is reachable as a transitive dep under myproject, not a direct dep.
         ExternalId guiceId = externalIdFactory.createMavenExternalId("com.google.inject", "guice", "5.1.0");
+        Assertions.assertTrue(graph.hasDependency(guiceId),
+            "guice should be reachable in the graph");
         boolean guiceIsDirectDep = graph.getRootDependencies().stream()
             .anyMatch(dep -> dep.getExternalId().equals(guiceId));
-        Assertions.assertTrue(guiceIsDirectDep,
-            "guice should be a direct dependency (project root -> guice edge)");
+        Assertions.assertFalse(guiceIsDirectDep,
+            "guice should not be a direct dep (it is transitive under myproject)");
 
         ExternalId guavaId = externalIdFactory.createMavenExternalId("com.google.guava", "guava", "30.1-jre");
         Assertions.assertTrue(graph.hasDependency(guavaId),
@@ -214,5 +223,53 @@ public class SbtGraphParserTransformerTest {
         Dependency rootDep = graph.getRootDependencies().iterator().next();
         Assertions.assertEquals("lib", rootDep.getName());
         Assertions.assertEquals("2.0", rootDep.getVersion());
+    }
+
+    @Test
+    public void evictedChildTransitiveDepsArePreservedViaWinner() throws IOException {
+        // Regression test for: when a parent points to an evicted node (A -> evicted),
+        // and the evicted node's winner (B) carries its own transitive deps (B -> C -> D),
+        // those transitive deps must appear in the graph under the winner.
+        //
+        // Mirrors the okhttp repro:
+        //   okhttp -> kotlin-stdlib-jdk8:1.8.21 (evicted by 1.9.10)
+        //   kotlin-stdlib-jdk8:1.9.10 -> kotlin-stdlib:1.9.10
+        //   kotlin-stdlib:1.9.10 -> annotations:13.0
+        String dot = "digraph \"dependency-graph\" {\n"
+            + "    \"default:myproject:1.0\"[shape=box style=\"\"]\n"
+            + "    \"com.example:okhttp:4.0\"[shape=box style=\"\"]\n"
+            + "    \"org.example:lib:1.0\"[shape=box style=\"dashed\"]\n"
+            + "    \"org.example:lib:2.0\"[shape=box style=\"\"]\n"
+            + "    \"org.example:transitive:1.0\"[shape=box style=\"\"]\n"
+            + "    \"org.example:leaf:1.0\"[shape=box style=\"\"]\n"
+            + "    \"default:myproject:1.0\" -> \"com.example:okhttp:4.0\"\n"
+            + "    \"com.example:okhttp:4.0\" -> \"org.example:lib:1.0\"\n"
+            + "    \"org.example:lib:1.0\" -> \"org.example:lib:2.0\" [label=\"Evicted By\" style=\"dashed\"]\n"
+            + "    \"org.example:lib:2.0\" -> \"org.example:transitive:1.0\"\n"
+            + "    \"org.example:transitive:1.0\" -> \"org.example:leaf:1.0\"\n"
+            + "}";
+
+        MutableGraph mutableGraph = parseDot(dot);
+        Set<String> projectIds = Collections.singleton("default:myproject:1.0");
+        DependencyGraph graph = transformer.transformDotToGraph(projectIds, mutableGraph);
+
+        // Evicted lib 1.0 must not appear.
+        ExternalId evictedId = externalIdFactory.createMavenExternalId("org.example", "lib", "1.0");
+        Assertions.assertFalse(graph.hasDependency(evictedId), "Evicted lib:1.0 must not be in the graph");
+
+        // okhttp is a direct dep.
+        ExternalId okhttpId = externalIdFactory.createMavenExternalId("com.example", "okhttp", "4.0");
+        boolean okhttpIsDirect = graph.getRootDependencies().stream().anyMatch(d -> d.getExternalId().equals(okhttpId));
+        Assertions.assertTrue(okhttpIsDirect, "okhttp should be a direct dependency");
+
+        // Winner lib:2.0 and its transitive deps must be reachable.
+        ExternalId winnerId = externalIdFactory.createMavenExternalId("org.example", "lib", "2.0");
+        Assertions.assertTrue(graph.hasDependency(winnerId), "Winner lib:2.0 must be in the graph");
+
+        ExternalId transitiveId = externalIdFactory.createMavenExternalId("org.example", "transitive", "1.0");
+        Assertions.assertTrue(graph.hasDependency(transitiveId), "Transitive dep of winner must be in the graph");
+
+        ExternalId leafId = externalIdFactory.createMavenExternalId("org.example", "leaf", "1.0");
+        Assertions.assertTrue(graph.hasDependency(leafId), "Leaf dep (transitive of winner) must be in the graph");
     }
 }

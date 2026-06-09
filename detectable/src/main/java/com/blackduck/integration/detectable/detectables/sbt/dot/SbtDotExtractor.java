@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class SbtDotExtractor {
@@ -56,11 +57,11 @@ public class SbtDotExtractor {
             Extraction.Builder extraction = new Extraction.Builder();
             for (File dotGraph : dotGraphs) {
                 MutableGraph mutableGraph = new Parser().read(dotGraph);
-                Set<String> evictedIds = SbtEvictionNodeUtil.findEvictedNodeIds(mutableGraph);
-                Set<String> rootIDs = sbtRootNodeFinder.determineRootIDs(evictedIds, mutableGraph);
+                Map<String, String> evictions = SbtEvictionNodeUtil.findEvictions(mutableGraph);
+                Set<String> rootIDs = sbtRootNodeFinder.determineRootIDs(evictions, mutableGraph);
                 File projectFolder = dotGraph.getParentFile().getParentFile();//typically found in project-folder/target/<>.dot so .parent.parent == project folder
 
-                DependencyGraph graph = sbtGraphParserTransformer.transformDotToGraph(rootIDs, evictedIds, mutableGraph);
+                DependencyGraph graph = sbtGraphParserTransformer.transformDotToGraph(rootIDs, evictions, mutableGraph);
                 if (rootIDs.size() == 1) {
                     String projectId = rootIDs.stream().findFirst().get();
                     Dependency projectDependency = graphNodeParser.nodeToDependency(projectId);
@@ -80,4 +81,5 @@ public class SbtDotExtractor {
             return new Extraction.Builder().exception(e).build();
         }
     }
+
 }

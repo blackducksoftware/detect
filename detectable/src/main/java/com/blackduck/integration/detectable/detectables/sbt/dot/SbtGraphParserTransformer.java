@@ -8,8 +8,8 @@ import guru.nidi.graphviz.model.MutableGraph;
 import guru.nidi.graphviz.model.MutableNode;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -20,7 +20,7 @@ public class SbtGraphParserTransformer {
         this.sbtDotGraphNodeParser = sbtDotGraphNodeParser;
     }
 
-    public DependencyGraph transformDotToGraph(@NotNull Set<String> projectIds, @NotNull Set<String> evictedIds, @NotNull MutableGraph mutableGraph) {
+    public DependencyGraph transformDotToGraph(@NotNull Set<String> projectIds, @NotNull Map<String, String> evictions, @NotNull MutableGraph mutableGraph) {
         DependencyGraph graph = new BasicDependencyGraph();
         String projectNodeId = projectIds.stream().findFirst().orElseThrow(() -> new IllegalArgumentException("projectIds must not be empty"));
         boolean isOneRoot = projectIds.size() == 1;
@@ -30,13 +30,19 @@ public class SbtGraphParserTransformer {
             String parentNode = normalizeDependency(link.asLinkTarget().name().toString());
             String childNode = normalizeDependency(link.asLinkSource().name().toString());
 
-            Dependency parent = sbtDotGraphNodeParser.nodeToDependency(parentNode);
-            Dependency child = sbtDotGraphNodeParser.nodeToDependency(childNode);
+            // Skip the edge if the evicted node is the source/parent of the edge.
+            if (evictions.containsKey(parentNode)) continue;
 
-            if(isOneRoot) {
-                processSingleRootLink(graph, projectNodeId, parentNode, childNode, parent, child, evictedIds);
+            // If child is evicted, substitute with the replacement.
+            if (evictions.containsKey(childNode)) {
+                childNode = evictions.get(childNode);
+                if (childNode == null) continue;
+            }
+
+            if (isOneRoot) {
+                processSingleRootLink(graph, projectNodeId, parentNode, childNode);
             } else {
-                processMultiRootLink(graph, projectIds, parentNode, childNode, parent, child, evictedIds);
+                processMultiRootLink(graph, projectIds, parentNode, childNode);
             }
         }
 
@@ -44,38 +50,42 @@ public class SbtGraphParserTransformer {
     }
 
     public DependencyGraph transformDotToGraph(@NotNull Set<String> projectIds, @NotNull MutableGraph mutableGraph) {
-        return transformDotToGraph(projectIds, SbtEvictionNodeUtil.findEvictedNodeIds(mutableGraph), mutableGraph);
+        return transformDotToGraph(projectIds, SbtEvictionNodeUtil.findEvictions(mutableGraph), mutableGraph);
     }
 
     // Used when the graph has multiple root candidates.
-    // Edges from any project root node become direct dependencies; all other non-evicted edges become transitive.
-    private void processMultiRootLink(DependencyGraph graph, Set<String> projectIds, String parentNode, String childNode,
-                                      Dependency parent, Dependency child, Set<String> evictedIds) {
-        if (!evictedIds.contains(childNode)) {
-            if (projectIds.contains(parentNode)) {
-                // e.g. "default:myproject:1.0" -> "com.google.inject:guice:5.1.0"
-                // parentNode is a project root, so child (guice) is a direct dependency.
-                // We add child — not parent — because parentNode is the project itself, not a real dependency.
-                graph.addDirectDependency(child);
-            } else if (!evictedIds.contains(parentNode)) {
-                // e.g. "com.google.inject:guice:5.1.0" -> "com.google.guava:guava:30.1-jre"
-                // Skip if either side is evicted:
-                //   parentNode evicted: "com.google.guava:guava:27.0-jre" -> "com.google.guava:guava:30.1-jre" [label="Evicted By"]
-                //   childNode evicted:  "com.google.inject:guice:5.1.0"   -> "com.google.guava:guava:27.0-jre"
-                graph.addChildWithParent(child, parent);
-            }
+    // Each root candidate is itself a sub-project component, so when a root node has outgoing
+    // edges it is registered as a direct dependency and its children become transitive under it.
+    private void processMultiRootLink(DependencyGraph graph, Set<String> projectIds, String parentNode, String childNode) {
+        Dependency parent = sbtDotGraphNodeParser.nodeToDependency(parentNode);
+        Dependency child = sbtDotGraphNodeParser.nodeToDependency(childNode);
+
+        // If parent is a root candidate (sub-project module), register it as a direct dependency.
+        if (projectIds.contains(parentNode)) {
+            graph.addDirectDependency(parent);
         }
+
+        // Always add the parent→child relationship so transitive deps are preserved.
+        graph.addChildWithParent(child, parent);
     }
 
     // Used when the graph has exactly one project root.
     // Edges from the project node become direct dependencies; all other non-evicted edges become transitive.
-    private void processSingleRootLink(DependencyGraph graph, String projectNodeId, String parentNode, String childNode,
-                                       Dependency parent, Dependency child, Set<String> evictedIds) {
-        processMultiRootLink(graph, Collections.singleton(projectNodeId), parentNode, childNode, parent, child, evictedIds);
+    private void processSingleRootLink(DependencyGraph graph, String projectNodeId, String parentNode, String childNode) {
+        Dependency parent = sbtDotGraphNodeParser.nodeToDependency(parentNode);
+        Dependency child = sbtDotGraphNodeParser.nodeToDependency(childNode);
+
+        if (projectNodeId.contains(parentNode)) {
+            // e.g. "default:myproject:1.0" -> "com.google.inject:guice:5.1.0"
+            // parentNode is the project root, so child is a direct dependency.
+            graph.addDirectDependency(child);
+        } else {
+            graph.addChildWithParent(child, parent);
+        }
     }
 
     private String normalizeDependency(String dependency) {
-        if(dependency.startsWith("--")) {
+        if (dependency.startsWith("--")) {
             return dependency.substring(2);
         }
         return dependency;
