@@ -33,6 +33,10 @@ public class SetupToolsTomlParser implements SetupToolsParser {
 
         TomlArray dependencies = tomlParseResult.getArray("project.dependencies");
 
+        if (dependencies == null || dependencies.isEmpty()) {
+            return results;
+        }
+
         for (int i = 0; i < dependencies.size(); i++) {
             String dependencyLine = dependencies.getString(i);
             

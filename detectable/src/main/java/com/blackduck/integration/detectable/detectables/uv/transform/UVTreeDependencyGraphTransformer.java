@@ -11,7 +11,6 @@ import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.List;
 import java.util.Arrays;
 import java.util.Deque;
@@ -131,7 +130,7 @@ public class UVTreeDependencyGraphTransformer {
         ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.PYPI ,projectName, projectVersion);
         Dependency projectDependency = new Dependency(projectName, projectVersion, externalId);
         dependencyGraph = new BasicDependencyGraph();
-        CodeLocation codeLocation = new CodeLocation(dependencyGraph, projectDependency.getExternalId(), new File(projectDependency.getName()));
+        CodeLocation codeLocation = new CodeLocation(dependencyGraph, projectDependency.getExternalId());
         codeLocations.add(codeLocation);
     }
 

@@ -23,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import com.blackduck.integration.blackduck.bdio2.model.GitInfo;
 import com.blackduck.integration.common.util.finder.FileFinder;
 import com.blackduck.integration.detect.configuration.DetectConfigurationFactory;
-import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detect.configuration.ExcludeIncludeEnumFilter;
 import com.blackduck.integration.detect.configuration.enumeration.ExitCodeType;
 import com.blackduck.integration.detect.lifecycle.shutdown.ExitCodePublisher;
@@ -96,10 +95,10 @@ public class DetectorTool {
         this.detectConfigurationFactory = detectConfigurationFactory;
     }
 
-    public void saveExtractedDetectorsAndTheirRelevantFilePaths(DetectorToolResult toolResult) throws IOException {
+    public void saveExtractedDetectorsAndTheirRelevantFilePaths(DetectorToolResult toolResult, DirectoryManager directoryManager) throws IOException {
         // Create map of extracted detectors and their relevant files
         Map<String, List<String>> detectorsAndFiles = new HashMap<>();
-        Path quackDir = Paths.get(detectConfigurationFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT).trim(), QUACKPATCH_SUBDIRECTORY_NAME);
+        Path quackDir = Paths.get(detectConfigurationFactory.getQuackPatchOutputDirectory(directoryManager), QUACKPATCH_SUBDIRECTORY_NAME);
         ObjectMapper mapper = new ObjectMapper();
         Path jsonFile = quackDir.resolve(INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON);
 

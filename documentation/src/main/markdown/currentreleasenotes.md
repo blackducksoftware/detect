@@ -18,34 +18,34 @@
 	
 * **Deprecation of Java 8 support** - In alignment with EU Cyber Resilience Act (CRA) requirements and compliance timelines, Java 8 support will be deprecated in the anticipated 2026 Q3 Detect 12.0.0 release.
 
-## Version 11.4.0
+## Version 11.5.0
 
 ### New features
 
 * Support for the Conda Tree–based detector has been added. For more details, see [Conda Tree](packagemgrs/conda.md#conda-tree-detector).
 * Support for pnpm now extends to 10.32.1.
-* NuGet Solution Native Inspector now supports .slnx files.
-* Added support for Bazel 9.
-* PIP Native Inspector now supports Setuptools version 82.0.0.
 * npm detectors now allow for aliases to be used when specifying dependencies in the package.json file.
 * Ivy CLI Detector, leveraging the `ivy:dependencytree` Ant task to extract direct and transitive dependencies for Ant + Ivy projects. For further information, see [Ivy (Ant) support](packagemgrs/ivy.md).
-* Introduced the `detect.quack.patch.output` property to control the Quack Patch output information path. If not set, the current working directory will be used as the default.
-* When [detect_product_short] is integrated with [bd_product_long] version 2026.4 or later, relevant [bd_product_short] server configuration details will be retrieved for use by [detect_product_short]. With this release of [detect_product_short], the [bd_product_short] server administrator can choose to set the detect.blackduck.correlated.scanning.enabled property, which will be retrieved and used if the user has not specified this property locally.
-  * In future releases the retrieval of additional [bd_product_short] server properties will be supported.
 
 ### Changed features
 
-* The default output directory of the Quack Patch feature has been updated to use a `quack-patch` subdirectory of the present working directory.
+* The default output directory of the Quack Patch feature has been updated to use [detect_product_short] scan output directory. For more information, see [Quack Patch Documentation](runningdetect/quack-patch.md).
+* CentOS support in Detect Docker Inspector has been deprecated and will be removed in 12.0.0. For more details, please see [Docker Inspector Release Notes](releasenotes.md).
+    * imageinspector.service.port.centos has been deprecated and will be removed in 12.0.0.
+* (IDETECT-5144) Clarified documentation for `--detect.uv.dependency.groups.excluded`. Since optional is not a dependency group in uv but a section defining extras, exclusions must reference the extra name directly (e.g., postgres, redis). Supplying optional has no effect.
 
 ### Resolved issues
+* (IDETECT-5069) Fixed Setuptools parsing for unsupported install_requires syntax in setup.py: Detect now fails fast and logs an error instead of silently misparsing, generating an incorrect BOM, and incorrectly reporting success.
 
-* (IDETECT-5014) npm CLI detector now handles components that do not have a version specified, preventing those components from being silently dropped from results.
-* (IDETECT-4980) When `detect.clone.project.version.latest` is set to true, an INFO-level log message will be written to identify the exact project version selected as the clone source.
-* (IDETECT‑4979) Updated the NuGet Inspector to prevent duplicate components from being reported which end up unversioned in the BOM.
-* (IDETECT‑5058) Improved the Poetry detector to eliminate errors encountered while parsing pyproject.toml.
-* (IDETECT‑5013) Fixed an issue in the signature scan fallback logic when SCA Scan Service (SCASS) is intentionally bypassed.
-* (IDETECT-4993) Fixed an issue where the Go Module Detector entered an infinite loop while scanning `go.mod` files containing circular dependencies.
+* (IDETECT-5140) Changed the default output directory of the Quack Patch feature to use [detect_product_short] scan output directory instead of the current working directory.
+* (IDETECT-5121) Include Quack Patch output directory as part of diagnostic zip when the feature is enabled.
+* (IDETECT-5064) Updated the Gradle init script to explicitly assign an empty configuration set to phantom projects (container modules lacking a `build.gradle` file). This change prevents tools injected by plugins such as Detekt and Ktlint from being included in the dependency report.
+* (IDETECT-5097) Updated the Gradle init script to enumerate configurations within `gradle.projectsEvaluated`, ensuring that all `afterEvaluate` callbacks, including those from the Android Gradle Plugin (AGP), have completed before configuration processing begins.
+* (IDETECT-5163) Updated the Bazel detector to treat exit code `3` from `query` and `cquery` commands as a partial success. When encountered, the detector now processes any available output and issues a warning indicating that dependency results may be incomplete.
+* (IDETECT-5053) / (IDETECT-4988) Fixed pip inspector to correctly parse PEP 440 direct reference packages (`name @ url`), ensuring these packages are included in the dependency tree rather than being omitted.
+* (IDETECT-5078) Rather then fail, Detect will now complete scans and generate empty BOMs when a Python Setuptools project has no dependencies.
+* (IDETECT-5079) Allow Detect scans to finish with success even if no configured binary file patterns (e.g., .jar, .war, .zip) are found.
+* (IDETECT-5118) Fixed UV Lockfile Detector to respect excluded dependency groups for optional‑dependencies. Optional extras specified in exclusion flags are now correctly excluded alongside development dependencies.
+* (IDETECT‑5126) Fixed a BitBake layer misidentification issue caused by project folder names colliding with layer names. The detector now resolves layers deterministically, preferring the deepest valid match and falling back to the first valid layer when necessary.
 
 ### Dependency Updates
-* Upgraded and released Nuget Inspector version 2.6.0
-* Update tomlj library to version 1.1.1.

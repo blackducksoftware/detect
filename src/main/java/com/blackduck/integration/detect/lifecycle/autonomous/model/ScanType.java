@@ -1,7 +1,5 @@
 package com.blackduck.integration.detect.lifecycle.autonomous.model;
 
-import com.drew.lang.annotations.NotNull;
-
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -32,7 +30,7 @@ public class ScanType implements Comparable<ScanType> {
     private SortedSet<String> scanTargets = new TreeSet<>();
 
     @Override
-    public int compareTo(@NotNull ScanType o) {
+    public int compareTo(ScanType o) {
         return scanTypeName.compareTo(o.scanTypeName);
     }
 

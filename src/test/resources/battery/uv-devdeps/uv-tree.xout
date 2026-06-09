@@ -1,0 +1,9 @@
+my-uv-devproject v1.0.0
+├── requests v2.31.0
+│   ├── charset-normalizer v3.2.0
+│   └── urllib3 v2.0.4
+├── pytest v7.4.0 (group: dev)
+│   ├── pluggy v1.2.0
+│   └── iniconfig v2.0.0
+└── black v23.7.0 (group: dev)
+    └── click v8.1.7

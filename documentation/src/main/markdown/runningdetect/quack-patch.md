@@ -32,7 +32,7 @@ Quack Patch assists developers in automatically generating code patches for pack
 * Set the LLM Gateway URL with the detect.llm.api.endpoint property: `--detect.llm.api.endpoint=https://your-llm-gateway.com`.
 * Set the LLM Gateway API key with the detect.llm.api.key property: `--detect.llm.api.key=your-llm-api-key`.
 * Set the LLM model with the detect.llm.name property: `--detect.llm.name=gpt-4`.
-* (Optional) Set the `detect.quack.patch.output` property to specify a custom directory for generated patches. The default is the `quack-patch` folder in the current working directory.
+* (Optional) Set the `detect.quack.patch.output` property to specify a custom directory for generated patches. If the directory doesn't exist, [detect_product_short] tries to create it and fails if unable to create the output directory. The default is the `quack-patch` folder located within the scan output directory.
 
 ## Example Usage
 
@@ -64,17 +64,20 @@ java -jar detect.jar --blackduck.url=https://your-blackduck-url.com \
 
 ## Output
 
-Output patches appear in the `quack-patch` folder inside the current working directory or a custom output directory if set via the `detect.quack.patch.output` property. For example, `<current-working-directory>/quack-patch/`.
+Output patches appear in the quack-patch folder inside the scan output directory or a custom output directory if set via the `detect.quack.patch.output` property.
+
+For example, `runs/<timestamped-directory>/scan/quack-patch/`.
 
 ```
-/<project-root>
-├── quack-patch
-    ├── 3grh7-build.gradle.modified                     # Modified build.gradle file with overrides
-    ├── 3grh7-build.gradle.patch                        # Patch file containing the changes
-    ├── 3grh7-transitive-upgrade-guidance.txt           # Extracted component upgrade guidance
-    ├── invokedDetectorsAndTheirRelevantFiles.json      # List of invoked package managers and associated source files
-    ├── rapidFullResults.json                           # Full rapid scan results
-    └── summary.json                                    # Summary of the patches generated through Quack Patch
+/runs/2026-01-22-15-40-43-082
+├── scan
+│   └── quack-patch
+│       ├── 3grh7-build.gradle.modified                     # Modified build.gradle file with overrides
+│       ├── 3grh7-build.gradle.patch                        # Patch file containing the changes
+│       ├── 3grh7-transitive-upgrade-guidance.txt           # Extracted component upgrade guidance
+│       ├── invokedDetectorsAndTheirRelevantFiles.json      # List of invoked package managers and associated source files
+│       ├── rapidFullResults.json                           # Full rapid scan results
+│       └── summary.json                                    # Summary of the patches generated through Quack Patch
 ```
 
 ## Steps to apply the patch

@@ -158,10 +158,10 @@ public class BazelV2Detectable extends Detectable {
         if (mode == BazelEnvironmentAnalyzer.Mode.BZLMOD) {
             bazelVersion = new BazelVersionChecker(bazelCmd).detectVersion().orElse(null);
             if (bazelVersion != null) {
-                logger.debug("Bazel version detected: {}. Features requiring 7.1+ are {}.",
+                logger.info("Bazel version detected: {}. Features requiring 7.1+ are {}.",
                     bazelVersion, bazelVersion.isAtLeast(7, 1) ? "ENABLED" : "DISABLED");
             } else {
-                logger.debug("Bazel version could not be detected; 7.1+ optimizations will be disabled.");
+                logger.info("Bazel version could not be detected; 7.1+ optimizations will be disabled.");
             }
         }
 

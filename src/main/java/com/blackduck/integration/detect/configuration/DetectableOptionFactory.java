@@ -7,22 +7,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation;
 import com.blackduck.integration.detect.workflow.file.DirectoryManager;
-import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
-import com.blackduck.integration.detectable.detectables.cargo.CargoDetectableOptions;
-import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
-import com.blackduck.integration.detectable.detectables.nuget.NugetDependencyType;
-import com.blackduck.integration.detectable.detectables.rush.RushOptions;
-import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import org.jetbrains.annotations.Nullable;
 
+import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON;
+import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.QUACKPATCH_SUBDIRECTORY_NAME;
 import com.blackduck.integration.detect.workflow.diagnostic.DiagnosticSystem;
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.detectable.detectables.bazel.BazelDetectableOptions;
 import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
+import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDependencyType;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectableOptions;
+import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
+import com.blackduck.integration.detectable.detectables.cargo.CargoDetectableOptions;
 import com.blackduck.integration.detectable.detectables.clang.ClangDetectableOptions;
 import com.blackduck.integration.detectable.detectables.conan.cli.config.ConanCliOptions;
 import com.blackduck.integration.detectable.detectables.conan.cli.config.ConanDependencyType;
@@ -44,6 +42,7 @@ import com.blackduck.integration.detectable.detectables.npm.NpmDependencyType;
 import com.blackduck.integration.detectable.detectables.npm.cli.NpmCliExtractorOptions;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.NpmLockfileOptions;
 import com.blackduck.integration.detectable.detectables.npm.packagejson.NpmPackageJsonParseDetectableOptions;
+import com.blackduck.integration.detectable.detectables.nuget.NugetDependencyType;
 import com.blackduck.integration.detectable.detectables.nuget.NugetInspectorOptions;
 import com.blackduck.integration.detectable.detectables.packagist.ComposerLockDetectableOptions;
 import com.blackduck.integration.detectable.detectables.packagist.PackagistDependencyType;
@@ -51,33 +50,36 @@ import com.blackduck.integration.detectable.detectables.pear.PearCliDetectableOp
 import com.blackduck.integration.detectable.detectables.pear.PearDependencyType;
 import com.blackduck.integration.detectable.detectables.pip.inspector.PipInspectorDetectableOptions;
 import com.blackduck.integration.detectable.detectables.pip.parser.RequirementsFileDetectableOptions;
-import com.blackduck.integration.detectable.detectables.pipenv.tbuild.PipenvDetectableOptions;
 import com.blackduck.integration.detectable.detectables.pipenv.parse.PipenvDependencyType;
 import com.blackduck.integration.detectable.detectables.pipenv.parse.PipfileLockDetectableOptions;
+import com.blackduck.integration.detectable.detectables.pipenv.tbuild.PipenvDetectableOptions;
 import com.blackduck.integration.detectable.detectables.pnpm.lockfile.PnpmLockOptions;
 import com.blackduck.integration.detectable.detectables.pnpm.lockfile.model.PnpmDependencyType;
 import com.blackduck.integration.detectable.detectables.poetry.PoetryOptions;
 import com.blackduck.integration.detectable.detectables.projectinspector.ProjectInspectorOptions;
 import com.blackduck.integration.detectable.detectables.rubygems.GemspecDependencyType;
 import com.blackduck.integration.detectable.detectables.rubygems.gemspec.GemspecParseDetectableOptions;
+import com.blackduck.integration.detectable.detectables.rush.RushOptions;
 import com.blackduck.integration.detectable.detectables.sbt.SbtDetectableOptions;
+import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import com.blackduck.integration.detectable.detectables.yarn.YarnDependencyType;
 import com.blackduck.integration.detectable.detectables.yarn.YarnLockOptions;
 import com.blackduck.integration.log.LogLevel;
 import com.blackduck.integration.rest.proxy.ProxyInfo;
 
-import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON;
-import static com.blackduck.integration.detect.workflow.componentlocationanalysis.GenerateComponentLocationAnalysisOperation.QUACKPATCH_SUBDIRECTORY_NAME;
-
 public class DetectableOptionFactory {
 
     private final DetectPropertyConfiguration detectConfiguration;
+    private final DetectConfigurationFactory detectConfigurationFactory;
+    private final DirectoryManager directoryManager;
     @Nullable
     private final DiagnosticSystem diagnosticSystem;
     private final ProxyInfo proxyInfo;
 
-    public DetectableOptionFactory(DetectPropertyConfiguration detectConfiguration, @Nullable DiagnosticSystem diagnosticSystem, ProxyInfo proxyInfo) {
+    public DetectableOptionFactory(DetectPropertyConfiguration detectConfiguration, DetectConfigurationFactory detectConfigurationFactory, DirectoryManager directoryManager, @Nullable DiagnosticSystem diagnosticSystem, ProxyInfo proxyInfo) {
         this.detectConfiguration = detectConfiguration;
+        this.detectConfigurationFactory = detectConfigurationFactory;
+        this.directoryManager = directoryManager;
         this.diagnosticSystem = diagnosticSystem;
         this.proxyInfo = proxyInfo;
     }
@@ -357,12 +359,9 @@ public class DetectableOptionFactory {
         Path nugetConfigPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_CONFIG_PATH);
         Set<NugetDependencyType> nugetExcludedDependencyTypes = detectConfiguration.getValue(DetectProperties.DETECT_NUGET_DEPENDENCY_TYPES_EXCLUDED).representedValueSet();
         Path nugetArtifactsPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_ARTIFACTS_PATH);
-        Path relevantDetectorsAndFilesInfoPath = null;
-        if (detectConfiguration.getValue(DetectProperties.DETECT_QUACK_PATCH_ENABLED)) {
-            relevantDetectorsAndFilesInfoPath = Paths.get(DirectoryManager.getScanDirectoryName())
-                    .resolve(QUACKPATCH_SUBDIRECTORY_NAME)
-                    .resolve(INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON);
-        }
+        Path relevantDetectorsAndFilesInfoPath = detectConfigurationFactory.isQuackPatchEnabled()
+            ? Paths.get(detectConfigurationFactory.getQuackPatchOutputDirectory(directoryManager), QUACKPATCH_SUBDIRECTORY_NAME, INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON)
+            : null;
         Path nugetInspectorPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_INSPECTOR_PATH);
         File nugetInspectorPathFile = null;
         if (nugetInspectorPath != null) {

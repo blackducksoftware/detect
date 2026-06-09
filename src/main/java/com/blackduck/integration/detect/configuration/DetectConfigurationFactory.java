@@ -2,10 +2,12 @@ package com.blackduck.integration.detect.configuration;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -65,6 +67,8 @@ import com.blackduck.integration.detect.workflow.blackduck.project.options.Paren
 import com.blackduck.integration.detect.workflow.blackduck.project.options.ProjectGroupOptions;
 import com.blackduck.integration.detect.workflow.blackduck.project.options.ProjectSyncOptions;
 import com.blackduck.integration.detect.workflow.blackduck.project.options.ProjectVersionLicenseOptions;
+import com.blackduck.integration.detect.workflow.blackduck.settings.DetectPropertiesSetting;
+import com.blackduck.integration.detect.workflow.file.DirectoryManager;
 import com.blackduck.integration.detect.workflow.file.DirectoryOptions;
 import com.blackduck.integration.detect.workflow.phonehome.PhoneHomeOptions;
 import com.blackduck.integration.detect.workflow.project.ProjectNameVersionOptions;
@@ -233,14 +237,16 @@ public class DetectConfigurationFactory {
     }
 
     public boolean isQuackPatchPossible() {
-        boolean allQuackPatchPropertiesSet = Boolean.TRUE.equals(!detectConfiguration.getValue(DetectProperties.DETECT_LLM_NAME).isEmpty()
-                && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_ENDPOINT).isEmpty()
-                && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_KEY).isEmpty());
+        if (Boolean.TRUE.equals(isQuackPatchEnabled())) {
+            boolean allQuackPatchPropertiesSet = Boolean.TRUE.equals(!detectConfiguration.getValue(DetectProperties.DETECT_LLM_NAME).isEmpty()
+                    && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_ENDPOINT).isEmpty()
+                    && !detectConfiguration.getValue(DetectProperties.DETECT_LLM_API_KEY).isEmpty());
 
-        if (Boolean.TRUE.equals(isQuackPatchEnabled()) && allQuackPatchPropertiesSet) {
-            return true;
+            if (allQuackPatchPropertiesSet) {
+                return true;
+            }
+            logger.info("Quack Patch cannot run because not all required properties are set. Please check your configuration.");
         }
-        logger.info("Quack Patch cannot run because not all required properties are set. Please check your configuration.");
         return false;
     }
 
@@ -679,4 +685,11 @@ public class DetectConfigurationFactory {
         return Optional.ofNullable(detectConfiguration.getNullableValue(DetectProperties.DETECT_CONTAINER_SCAN_FILE));
     }
 
+    public String getQuackPatchOutputDirectory(DirectoryManager directoryManager) {
+        String quackPatchOutput = detectConfiguration.getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT);
+        if (Objects.isNull(quackPatchOutput) || quackPatchOutput.isEmpty()) {
+            return directoryManager.getScanOutputDirectory().getAbsolutePath();
+        }
+        return Paths.get(quackPatchOutput.trim()).toAbsolutePath().toString();
+    }
 }

@@ -50,7 +50,7 @@ public class BazelEnvironmentAnalyzer {
             // was successfully emitted to stdout. Check stdout before concluding WORKSPACE.
             String stdout = output.getStandardOutput().trim();
             if (!isGraphEmpty(stdout)) {
-                logger.debug("'bazel mod graph' returned exit code {} but stdout contains a valid module graph; treating as BZLMOD.",
+                logger.info("'bazel mod graph' returned exit code {} but stdout contains a valid module graph; treating as BZLMOD.",
                     output.getReturnCode());
                 return Mode.BZLMOD;
             }

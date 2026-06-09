@@ -108,11 +108,29 @@ public class BlackDuckAssertions {
 
     public void hasComponents(Set<String> componentNames) throws IntegrationException {
         List<ProjectVersionComponentVersionView> bomComponents = getBomComponents();
+
+
         componentNames.forEach(componentName -> {
             Optional<ProjectVersionComponentVersionView> blackDuckCommonComponent = bomComponents.stream()
                 .filter(ProjectVersionComponentView -> componentName.equals(ProjectVersionComponentView.getComponentName()))
                 .findFirst();
-            assertTrue(blackDuckCommonComponent.isPresent());
+            // Message supplier is only evaluated on failure, avoiding the cost of
+            // building the full component name string on every successful assertion.
+            assertTrue(
+                blackDuckCommonComponent.isPresent(),
+                () -> {
+                    // Surfaces full BOM contents in assertion failure message for easier debugging
+                    String allComponentNames = bomComponents.stream()
+                        .map(ProjectVersionComponentVersionView::getComponentName)
+                        .collect(Collectors.joining("', '", "['", "']"));
+                    return String.format(
+                        "Component '%s' NOT FOUND in BOM!%nBOM contains %d components: %s",
+                        componentName,
+                        bomComponents.size(),
+                        allComponentNames
+                    );
+                }
+            );
         });
     }
 

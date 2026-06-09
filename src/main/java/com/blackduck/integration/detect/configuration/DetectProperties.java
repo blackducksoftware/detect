@@ -1,7 +1,6 @@
 package com.blackduck.integration.detect.configuration;
 
 import java.lang.reflect.Field;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -808,7 +807,7 @@ public class DetectProperties {
                 "The Docker image name (repo:tag) to inspect.",
                 "For Detect to run Docker Inspector, either this property, detect.docker.tar, or detect.docker.image.id must be set. Docker Inspector finds packages installed by the Linux package manager in Linux-based images. detect.docker.image, detect.docker.tar, and detect.docker.image.id are three alternative ways to specify an image (you should only set one of these properties). When a value of this property is provided, Docker Inspector will use the Docker engine to pull the image."
             )
-            .setExample("centos:centos8")
+            .setExample("ubuntu:22.04")
             .setGroups(DetectGroup.DOCKER, DetectGroup.SOURCE_PATH)
             .build();
 
@@ -1148,13 +1147,14 @@ public class DetectProperties {
                     .build();
                         
     public static final StringProperty DETECT_QUACK_PATCH_OUTPUT =
-            StringProperty.newBuilder("detect.quack.patch.output", Paths.get("").toAbsolutePath().toString())
+            StringProperty.newBuilder("detect.quack.patch.output", "")
                     .setInfo("Quack Patch Output Directory", DetectPropertyFromVersion.VERSION_11_4_0)
                     .setHelp(
                             "Specifies the output directory for Quack Patch results.",
-                            "If not set, the Quack Patch results are placed in a 'quack-patch' subdirectory of the present working directory."
+                            "If not set, the Quack Patch results are placed in a 'quack-patch' subdirectory under scan output directory."
                     )
                     .setGroups(DetectGroup.QUACKPATCH)
+                    .setDeprecated("This property is deprecated and will be renamed to 'detect.quack.patch.output.path' in Detect release 12.0.", new ProductMajorVersion(12))
                     .build();
 
     public static final StringProperty DETECT_LLM_API_KEY =
@@ -2047,7 +2047,7 @@ public class DetectProperties {
                     .setInfo("uv dependency groups", DetectPropertyFromVersion.VERSION_10_5_0)
                     .setHelp(
                             createTypeFilterHelpText("UV dependency groups"),
-                            "When specified, a pyproject.toml file and uv executable are required, or pyproject.toml file and either uv.lock or requirements.txt file are required. Components and related dependencies that belong to excluded groups will not be in the BOM unless the component also belongs to a non-excluded group. For example, to recursively exclude all components under the `[dependency-groups]` section of `pyproject.toml`: `detect.uv.dependency.groups.excluded='dev,abc'`"
+                            "When specified, a pyproject.toml file and uv executable are required, or pyproject.toml file and either uv.lock or requirements.txt file are required. Components and related dependencies that belong to excluded groups will not be in the BOM unless the component also belongs to a non-excluded group. For example, to recursively exclude all components under the `[dependency-groups]` section of `pyproject.toml`: `detect.uv.dependency.groups.excluded='dev,abc'`. Note: In uv, `[project.optional-dependencies]` defines extras. Each extra (e.g., postgres, redis, mysql) is treated as its own dependency group. The group `optional` does not exist; therefore, specifying it in the `--detect.uv.dependency.groups.excluded` flag will have no impact."
                     )
                     .setGroups(DetectGroup.UV, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
                     .build();

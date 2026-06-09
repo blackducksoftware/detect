@@ -1,6 +1,8 @@
 package com.blackduck.integration.detect.battery.docker;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.blackduck.integration.detect.battery.docker.integration.BlackDuckAssertions;
 import com.blackduck.integration.detect.battery.docker.integration.BlackDuckTestConnection;
@@ -15,15 +17,22 @@ import com.blackduck.integration.detect.battery.docker.util.DockerAssertions;
 import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detector.base.DetectorType;
 
+
 @Tag("integration")
 public class MavenShadedDependenciesTest {
 
     private static final String PROJECT_NAME = "maven-shaded-dependency";
+    public static final String ARTIFACTORY_URL = System.getenv().get("SNPS_INTERNAL_ARTIFACTORY");
 
     @Test
-    void mavenShadedDependencyTest() throws IOException,IntegrationException {
-        try(DetectDockerTestRunner test = new DetectDockerTestRunner("detect-maven-shaded-dependency", "detect-maven:3.9.9")) {
-            test.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("MavenShadedDependencies.dockerfile"));
+    void mavenShadedDependencyTest() throws IOException, IntegrationException {
+        org.junit.jupiter.api.Assertions.assertNotNull(ARTIFACTORY_URL, "SNPS_INTERNAL_ARTIFACTORY environment variable must be set");
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("detect-maven-shaded-dependency", "detect-maven:3.9.9")) {
+            Map<String, String> artifactoryArgs = new HashMap<>();
+            artifactoryArgs.put("ARTIFACTORY_URL", ARTIFACTORY_URL);
+            BuildDockerImageProvider buildDockerImageProvider = BuildDockerImageProvider.forDockerfilResourceNamed("MavenShadedDependencies.dockerfile");
+            buildDockerImageProvider.setBuildArgs(artifactoryArgs);
+            test.withImageProvider(buildDockerImageProvider);
 
             String projectVersion = PROJECT_NAME + "-PI";
             BlackDuckTestConnection blackDuckTestConnection = BlackDuckTestConnection.fromEnvironment();
@@ -43,9 +52,9 @@ public class MavenShadedDependenciesTest {
             dockerAssertions.logContains("Maven CLI: SUCCESS");
             dockerAssertions.atLeastOneBdioFile();
 
-            blackduckAssertions.hasComponents("ch.randelshofer:fastdoubleparser");
-            blackduckAssertions.hasComponents("JCTTools");
-            blackduckAssertions.hasComponents("Byte Buddy (with dependencies)");
+            blackduckAssertions.hasComponents("Apache Commons Logging");
+            blackduckAssertions.hasComponents("jackson-core");
+            blackduckAssertions.hasComponents("jackson-databind");
         }
     }
 

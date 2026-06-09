@@ -202,7 +202,7 @@ The following script illustrates how this is done in a Docker environment:
 
 To keep the example simple, this script only starts the Alpine image inspector service.
 In general, you must start two more services: the Ubuntu image inspector service
-for inspecting images built from dpkg-based Linux distros, and the CentOS image inspector service
+for inspecting images built from dpkg-based Linux distros, and the CentOS image inspector service (deprecated)
 for inspecting images built from rpm-based Linux distributions. It doesn't matter which service receives
 the request; any service redirects if necessary.
 

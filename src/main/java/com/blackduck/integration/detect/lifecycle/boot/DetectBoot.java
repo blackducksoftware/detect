@@ -71,6 +71,7 @@ import com.blackduck.integration.rest.proxy.ProxyInfo;
 import com.google.gson.Gson;
 
 import freemarker.template.Configuration;
+import java.util.Set;
 
 public class DetectBoot {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -163,17 +164,18 @@ public class DetectBoot {
 
         Configuration freemarkerConfiguration = detectBootFactory.createFreemarkerConfiguration();
         DetectPropertyConfiguration detectConfiguration = new DetectPropertyConfiguration(propertyConfiguration, new SimplePathResolver());
-        // If quack patch is enabled, we need to validate the output path before doing anything else since it could cause Detect to fail later on if it's not valid, and we want to fail as early as possible with a clear message about what the issue is.
-         Optional<DetectUserFriendlyException> quackPatchError = detectConfigurationBootManager.validateQuackPatchOutputPath(detectConfiguration);
-         if (quackPatchError.isPresent()) {
-             return Optional.of(DetectBootResult.exception(quackPatchError.get(), propertyConfiguration));
-         }
-
         DetectConfigurationFactory detectConfigurationFactory = new DetectConfigurationFactory(detectConfiguration, gson);
+        DirectoryManager directoryManager = detectBootFactory.createDirectoryManager(detectConfigurationFactory);
+
+        // If quack patch is enabled, we need to validate the output path before doing anything else since it could cause Detect to fail later on if it's not valid, and we want to fail as early as possible with a clear message about what the issue is.
+        if (Boolean.TRUE.equals(detectConfigurationFactory.isQuackPatchEnabled())) {
+            Optional<DetectUserFriendlyException> quackPatchError = detectConfigurationBootManager.validateQuackPatchOutputPath(detectConfigurationFactory.getQuackPatchOutputDirectory(directoryManager));
+            if (quackPatchError.isPresent()) {
+                return Optional.of(DetectBootResult.exception(quackPatchError.get(), propertyConfiguration));
+            }
+        }
 
         boolean autonomousScanEnabled = detectConfiguration.getValue(DetectProperties.DETECT_AUTONOMOUS_SCAN_ENABLED);
-
-        DirectoryManager directoryManager = detectBootFactory.createDirectoryManager(detectConfigurationFactory);
 
         // TODO Scan settings model obtained below is to be used by the delta-checking operations
         AutonomousManager autonomousManager = new AutonomousManager(directoryManager, detectConfiguration, autonomousScanEnabled, maskedRawPropertyValues);
@@ -209,7 +211,7 @@ public class DetectBoot {
         DetectableOptionFactory detectableOptionFactory;
         try {
             ProxyInfo detectableProxyInfo = detectConfigurationFactory.createBlackDuckProxyInfo();
-            detectableOptionFactory = new DetectableOptionFactory(detectConfiguration, diagnosticSystem, detectableProxyInfo);
+            detectableOptionFactory = new DetectableOptionFactory(detectConfiguration, detectConfigurationFactory, directoryManager, diagnosticSystem, detectableProxyInfo);
             hasImageOrTar = detectableOptionFactory.createDockerDetectableOptions().hasDockerImageOrTar();
             oneRequiresTheOther(
                 detectConfigurationFactory.createDetectTarget() == DetectTargetType.IMAGE,
