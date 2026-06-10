@@ -25,8 +25,7 @@
 * The default output directory of the Quack Patch feature has been updated to use [detect_product_short] scan output directory. For more information, see [Quack Patch Documentation](runningdetect/quack-patch.md).
 * CentOS support in Detect Docker Inspector has been deprecated and will be removed in 12.0.0. For more details, please see [Docker Inspector Release Notes](packagemgrs/docker/releasenotes.md).
     * imageinspector.service.port.centos has been deprecated and will be removed in 12.0.0.
-* Clarified documentation for `--detect.uv.dependency.groups.excluded`. Since optional is not a dependency group in uv but a section defining extras, exclusions must reference the extra name directly (e.g., postgres, redis). Supplying optional has no effect.
-
+* Clarified documentation for `--detect.uv.dependency.groups.excluded`. Optional is not a dependency group in uv but a section defining extras, therefor supplying `optional` as a value has no effect and exclusions must reference the extra name directly (e.g., postgres, redis).
 ### Resolved issues
 * (IDETECT-5125) Fixed failure during Python scans when the `requirements.txt` file contains Python extras syntax using square brackets, e.g.: `kopf[dev]>=1.3`
 * (IDETECT-5090) Fixed PIP Native Inspector failure to parse `requirements.txt` lines that contain [PEP 508 environment markers](https://peps.python.org/pep-0508/).
