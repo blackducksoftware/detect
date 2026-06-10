@@ -36,7 +36,25 @@ public class SbtRootNodeFinder {
         // Evicted nodes have an outgoing edge but no incoming edges, so they appear as root candidates.
         // Remove them — they are not real project roots but evicted nodes.
         // e.g. guava:27.0 -> guava:30.1 [label="Evicted By"]
-        return SetUtils.difference(candidates, evictions.keySet());
+        Set<String> nonEvictedCandidates = SetUtils.difference(candidates, evictions.keySet());
+
+        // Orphan nodes (no outgoing edges) appear as spurious root candidates when SBT's dependencyDot
+        // omits edges from the eviction winner to its transitive deps. This only happens in graphs that
+        // have eviction edges — in multi-project builds, sibling modules appear as orphan nodes too,
+        // but those ARE legitimate root candidates. Applying the orphan filter to graphs without
+        // eviction edges would incorrectly collapse multi-project DOT files to single-root mode.
+        if (!evictions.isEmpty()) {
+            Set<String> nodesWithOutgoingEdges = mutableGraph.nodes().stream()
+                    .filter(node -> !node.links().isEmpty())
+                    .map(MutableNode::name)
+                    .map(Label::value)
+                    .collect(Collectors.toSet());
+            Set<String> nonOrphanCandidates = SetUtils.intersection(nonEvictedCandidates, nodesWithOutgoingEdges);
+            if (!nonOrphanCandidates.isEmpty()) {
+                return nonOrphanCandidates;
+            }
+        }
+        return nonEvictedCandidates;
     }
 
     public Set<String> determineRootIDs(@NotNull MutableGraph mutableGraph) throws DetectableException {

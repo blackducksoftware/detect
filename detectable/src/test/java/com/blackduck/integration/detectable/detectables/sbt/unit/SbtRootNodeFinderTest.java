@@ -92,15 +92,41 @@ public class SbtRootNodeFinderTest {
 
     @Test
     public void multipleFoundWithEdge() throws DetectableException, IOException {
+        // one-version has an outgoing edge to three-version; two-version has no edges (orphan).
+        // No eviction edges are present, so the orphan filter does NOT apply — two-version is a
+        // legitimate root candidate (sibling sub-project semantics in multi-project SBT builds).
         MutableGraph mutableGraph = createMutableGraph(node("one-org", "one-name", "one-version") +
             node("one-org", "one-name", "two-version") +
-            node("one-org", "one-name", "three-version") + //should not be reported
+            node("one-org", "one-name", "three-version") + //should not be reported (has incoming edge)
             edge("one-org", "one-name", "one-version", "one-org", "one-name", "three-version"));
         SbtRootNodeFinder projectMatcher = new SbtRootNodeFinder(new SbtDotGraphNodeParser(new ExternalIdFactory()));
         Set<String> projectId = projectMatcher.determineRootIDs(mutableGraph);
         Assertions.assertEquals(2, projectId.size());
         Assertions.assertTrue(projectId.contains("one-org:one-name:one-version"));
-        Assertions.assertTrue(projectId.contains("one-org:one-name:two-version"));
+        Assertions.assertTrue(projectId.contains("one-org:one-name:two-version"),
+            "Orphan node with no eviction context should remain a root candidate (sibling sub-project)");
+    }
+
+    @Test
+    public void evictionOrphanExcludedWhenEvictionsPresent() throws DetectableException, IOException {
+        // jsr305 has no edges — SBT omitted the edge from guava:30.1 to jsr305 because guava:27.0
+        // (which declared jsr305 as a dep) was evicted. The orphan filter applies because eviction
+        // edges are present, and jsr305 is correctly excluded as a spurious root candidate.
+        String evictionEdge = "    \"com.google.guava:guava:27.0-jre\" -> \"com.google.guava:guava:30.1-jre\" [label=\"Evicted By\"]\n";
+        MutableGraph mutableGraph = createMutableGraph(
+            node("default", "myproject", "1.0") +
+            node("com.google.guava", "guava", "27.0-jre") +
+            node("com.google.guava", "guava", "30.1-jre") +
+            node("com.google.code.findbugs", "jsr305", "3.0.2") +
+            evictionEdge +
+            edge("default", "myproject", "1.0", "com.google.guava", "guava", "30.1-jre")
+        );
+        SbtRootNodeFinder projectMatcher = new SbtRootNodeFinder(new SbtDotGraphNodeParser(new ExternalIdFactory()));
+        Set<String> rootIds = projectMatcher.determineRootIDs(mutableGraph);
+        Assertions.assertEquals(1, rootIds.size(), "Only the project node should be a root candidate");
+        Assertions.assertTrue(rootIds.contains("default:myproject:1.0"));
+        Assertions.assertFalse(rootIds.contains("com.google.code.findbugs:jsr305:3.0.2"),
+            "Eviction-induced orphan transitive dep should be excluded when evictions are present");
     }
 
 }
