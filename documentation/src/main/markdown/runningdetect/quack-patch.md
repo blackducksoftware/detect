@@ -32,7 +32,7 @@ Quack Patch assists developers in automatically generating code patches for pack
 * Set the LLM Gateway URL with the detect.llm.api.endpoint property: `--detect.llm.api.endpoint=https://your-llm-gateway.com`.
 * Set the LLM Gateway API key with the detect.llm.api.key property: `--detect.llm.api.key=your-llm-api-key`.
 * Set the LLM model with the detect.llm.name property: `--detect.llm.name=gpt-4`.
-* (Optional) Set the `detect.quack.patch.output` property to specify a custom directory for generated patches. If the directory doesn't exist, [detect_product_short] tries to create it and fails if unable to create the output directory. The default is the `quack-patch` folder located within the scan output directory.
+* (Optional) Set the `detect.quack.patch.output` property to specify a custom directory for generated patches. If the directory doesn't exist, [detect_product_short] tries to create it and fails if unable to create the output directory. The default is the `quack-patch` folder located within the scan output directory. If you specify a same custom path across multiple runs, patch files from previous runs may remain in the directory. Use `summary.json` to identify the patch files from the latest run.
 
 ## Example Usage
 
