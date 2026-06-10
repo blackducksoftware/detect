@@ -26,9 +26,25 @@
 # pydevd_pycharm.settrace('<Host IP Address>', port=5002, stdoutToServer=True, stderrToServer=True)
 
 """
-A script that inspects the pip cache to determine the hierarchy of dependencies
+A script that inspects the pip cache to determine the hierarchy of dependencies.
+
+This script is invoked by Black Duck Detect as a subprocess inside the target Python
+environment. It reads what is already installed and prints a dependency tree to stdout.
+Detect parses that tree for SCA analysis.
+
+IMPORTANT: This script does NOT install packages. It only reads what is already
+installed. Run 'pip install' before invoking this script.
 
 Usage: pip-inspector.py --projectname=<project_name> --requirements=<requirements_path>
+
+Output format:
+  - Dependency tree: indented plain text, 4 spaces per level
+  - Sentinel prefixes parsed by Detect's Java side:
+      n?==v?       root project package not found in environment
+      --<name>     package not found in environment
+      r?<path>     requirements file does not exist
+      p?<path>     requirements file could not be parsed
+      [PIP_INSPECTOR] ...  informational log, ignored by Detect
 """
 
 from getopt import getopt, GetoptError
@@ -36,6 +52,17 @@ from os import path
 import sys
 from re import split, match
 
+# ---------------------------------------------------------------------------
+# pip version-aware imports
+#
+# pip reorganized its internal package structure across major versions.
+# We import parse_requirements and PipSession from the correct location
+# depending on which pip version is installed.
+#
+#   pip >= 20  ->  network.session replaced download
+#   pip 10-19  ->  pip._internal restructure, download still present
+#   pip < 10   ->  flat structure under pip (not pip._internal)
+# ---------------------------------------------------------------------------
 import pip
 pip_major_version = int(pip.__version__.split(".")[0])
 if pip_major_version >= 20:
@@ -94,9 +121,26 @@ def resolve_project_node(project_name):
 
 
 def normalize_package_name(package_name):
-    """Extract and normalize package name from a requirement string using regex.
-    Handles cases like 'package-name>=1.0', 'Package[extra]>=1.0', 'package (>=1.0)', etc.
-    Package names contain only: letters, digits, dots, hyphens, underscores per PEP 508."""
+    """Extract just the package name from a raw requirement string.
+
+    A raw requirement string from pip can look like any of these:
+      'requests>=2.0'                         version specifier
+      'kopf[dev]>=1.37.3'                     extras with version
+      'requests @ git+https://...'            PEP 508 direct URL reference
+      'boto3 ; extra == "aws"'                conditional extras marker
+      'colorama ; platform_system == "Windows"'  environment marker
+
+    In all cases we only want the package name at the start. Valid package name
+    characters are letters, digits, dots, hyphens, underscores (PEP 508).
+    The regex stops at the first character outside that set (space, [, @, ;, >, < etc.)
+    leaving us with just the clean name.
+
+    Examples:
+      'requests>=2.0'                      -> 'requests'
+      'kopf[dev]>=1.37.3'                  -> 'kopf'
+      'requests @ git+https://...'         -> 'requests'
+      'boto3 ; extra == "aws"'             -> 'boto3'
+    """
     if package_name is None:
         return None
     name_match = match(r'^([a-zA-Z0-9._-]+)', package_name.strip())
@@ -106,22 +150,40 @@ def normalize_package_name(package_name):
 
 
 def populate_dependency_tree(project_root_node, requirements_path):
-    """Resolves the dependencies of the user-provided requirements.txt and appends them to the dependency tree"""
+    """Reads requirements.txt and adds each package as a child of the root node.
+
+    Extracting the package name from a requirements.txt entry:
+
+    Modern pip (>= 20.1) returns a ParsedRequirement object from parse_requirements().
+    This object has a .requirement attribute (the raw string from the file) but does
+    NOT have a .req attribute. So hasattr(..., 'req') is always False on modern pip
+    and we always fall through to the split fallback.
+
+    Older pip (< 20.1) returned an InstallRequirement which had a .req attribute
+    with a .name property. That path is kept for backwards compatibility.
+
+    The split fallback splits the raw string on version comparators to isolate the
+    package name, then normalize_package_name() cleans it further. This handles:
+      - Standard pins:        'flask==3.0.0'           -> split on == -> 'flask'
+      - Version ranges:       'requests>=2.0'          -> split on >= -> 'requests'
+      - Extras with version:  'kopf[dev]>=1.37.3'      -> split on >= -> 'kopf[dev]'
+                                                           normalize  -> 'kopf'
+      - PEP 508 URL refs:     'requests @ git+https://'-> no comparator match
+                                                           normalize  -> 'requests'
+    """
     try:
         parsed_requirements = parse_requirements(requirements_path, session=PipSession())
         for parsed_requirement in parsed_requirements:
             package_name = None
 
-            # In 20.1 of pip, the requirements object changed
+            # Path 1: old pip (< 20.1) — InstallRequirement has .req.name directly
             if hasattr(parsed_requirement, 'req'):
                 package_name = parsed_requirement.req.name
+
+            # Path 2: modern pip fallback — split on version comparators then normalize.
+            # Comparators ordered longest-first to avoid partial matches (e.g. === before ==).
+            # See: https://www.python.org/dev/peps/pep-0508/#grammar
             if package_name is None:
-                # Comparators from: https://www.python.org/dev/peps/pep-0508/#grammar
-                # (Last updated November 2020)
-                #
-                # re matches from left to right, so subsets (e.g. ===) should be before supersets (e.g. ==)
-                # See: https://docs.python.org/3/library/re.html
-                # --rotte NOV 2020
                 package_name = normalize_package_name(
                     split('===|<=|!=|==|>=|~=|<|>', parsed_requirement.requirement)[0]
                 )
@@ -138,7 +200,18 @@ def populate_dependency_tree(project_root_node, requirements_path):
 
 
 def recursively_resolve_dependencies(package_name, history):
-    """Forms a DependencyNode by recursively resolving its dependencies. Tracks history for cyclic dependencies."""
+    """Builds a DependencyNode tree by recursively resolving transitive dependencies.
+
+    For each package:
+      1. Look it up in the installed environment via get_package_by_name()
+      2. get_package_by_name() returns the node (name + version) and a list of
+         its direct dependency names (already normalized, ready for lookup)
+      3. Recurse into each dependency to build their subtrees
+
+    The history list tracks packages already visited in the current traversal.
+    If a package appears again (cycle or diamond dependency), it is added as a
+    leaf node without re-expanding its children. This prevents infinite loops.
+    """
     dependency_node, child_names = get_package_by_name(package_name)
 
     if dependency_node is None:
@@ -153,119 +226,155 @@ def recursively_resolve_dependencies(package_name, history):
 
     return dependency_node
 
-use_pip_internal_to_search_packages = False
-if sys.version_info.major > 3 or sys.version_info.major == 3 and sys.version_info.minor >= 12:
-    # Python version 3.12 is used as a cutoff for the following reasons:
-    #  * it is the version in which pkg_resources is no longer included by default
-    #  * a test confirmed that this version of python is incompatible with PIP versions below 21.2,
-    #    which was the most recent version in which PIP search_packages_info interface changed
-    use_pip_internal_to_search_packages = True
-    print("[PIP_INSPECTOR] Using pip internal API (Python 3.12+)")
 
-if use_pip_internal_to_search_packages:
-    from pip._internal.commands.show import search_packages_info
+# ---------------------------------------------------------------------------
+# get_package_by_name — two implementations, one chosen at startup
+#
+# The right implementation is selected once at module load time based on
+# which libraries are available. Only one definition ends up active.
+#
+# WHY TWO IMPLEMENTATIONS:
+#
+#   Python 3.8+  ->  Flow 1: importlib.metadata (standard library)
+#                    Available since Python 3.8, present on all modern Python
+#                    versions including 3.12+. Reads package metadata directly
+#                    from .dist-info directories on disk.
+#                    dist.requires returns ALL Requires-Dist entries including
+#                    extras markers ('; extra == "dev"'), giving us the full
+#                    transitive dependency picture.
+#
+#   Python < 3.8  ->  Flow 2: pkg_resources (legacy fallback)
+#                    importlib.metadata not available. Uses setuptools'
+#                    pkg_resources.working_set. Only returns unconditional
+#                    dependencies (environment markers evaluated at call time,
+#                    extras-only dependencies not included unless activated).
+#
+# BOTH FLOWS follow the same contract:
+#   Input:  package_name (str) — may be a raw string with version/extras/markers,
+#           normalize_package_name() is applied internally before any lookup.
+#   Output: (DependencyNode, list_of_child_names)
+#           child names are already normalized clean package names, ready for
+#           the next recursion. None is returned if the package is not found.
+# ---------------------------------------------------------------------------
 
+use_importlib_metadata = False
+use_pkg_resources = False
+
+# Priority 1: importlib.metadata — standard library since Python 3.8, covers all modern versions
+try:
+    import importlib.metadata as metadata
+    use_importlib_metadata = True
+    print("[PIP_INSPECTOR] Using importlib.metadata route")
+except ImportError:
+    # Priority 2: pkg_resources — legacy fallback for Python < 3.8
+    try:
+        from pkg_resources import working_set, Requirement
+        use_pkg_resources = True
+        print("[PIP_INSPECTOR] Using pkg_resources route")
+    except ImportError:
+        print("[PIP_INSPECTOR] WARNING: Neither importlib.metadata nor pkg_resources available")
+
+if use_importlib_metadata:
+    # ---------------------------------------------------------------------------
+    # Flow 1: importlib.metadata (Python 3.8+, including 3.12+)
+    #
+    # Reads installed package metadata directly from .dist-info directories.
+    # dist.requires returns ALL Requires-Dist entries including extras markers
+    # such as '; extra == "dev"'. normalize_package_name() strips the markers
+    # so only the package name is passed to the next lookup.
+    #
+    # Name variants are tried (lowercase, hyphens vs underscores) because
+    # package names are stored inconsistently across environments.
+    # ---------------------------------------------------------------------------
     def get_package_by_name(package_name):
-        """Looks up a package from the pip cache using internal pip API.
-        This should not be used when PIP is older than 21.2 since the internal API was slightly different then.
-        """
         if package_name is None:
             return None, None
 
-        package_info = next(search_packages_info([package_name.strip()]), None)
+        # Normalize incoming name — may contain version specifiers, extras, or
+        # URL syntax (e.g. 'requests @ git+https://...') from the requirements
+        # file or from a parent package's Requires-Dist list.
+        normalized_name = normalize_package_name(package_name)
+
+        package_info = None
+        try:
+            package_info = metadata.distribution(normalized_name)
+        except:
+            # Try common name variants — pip normalizes hyphens/underscores/dots
+            # inconsistently, so the stored name may differ from what was requested
+            name_variants = (normalized_name, normalized_name.lower(), normalized_name.replace('-', '_'), normalized_name.replace('_', '-'), normalized_name.replace('.', '-'))
+            for name_variant in name_variants:
+                try:
+                    package_info = metadata.distribution(name_variant)
+                    break
+                except metadata.PackageNotFoundError:
+                    continue
 
         if package_info is None:
             return None, None
 
-        return DependencyNode(package_info.name, package_info.version), package_info.requires
-else:
-    use_importlib_metadata = False
-    use_pkg_resources = False
+        # Normalize each child requirement string to a plain package name.
+        # Entries that are not installed will return None from the next lookup
+        # and are silently skipped by recursively_resolve_dependencies.
+        requires = []
+        if package_info.requires:
+            for requirement in package_info.requires:
+                req_name = normalize_package_name(requirement)
+                requires.append(req_name)
 
-    # Priority 1: Try importlib.metadata (modern standard, Python 3.8+)
-    try:
-        import importlib.metadata as metadata
-        use_importlib_metadata = True
-        print("[PIP_INSPECTOR] Using importlib.metadata route")
-    except ImportError:
-        # Priority 2: Fall back to pkg_resources
+        # Remove duplicates while preserving order
+        requires = list(dict.fromkeys(requires))
+
+        return DependencyNode(package_info.metadata['Name'], package_info.metadata['Version']), requires
+
+elif use_pkg_resources:
+    # ---------------------------------------------------------------------------
+    # Flow 2: pkg_resources (Python < 3.8, legacy fallback)
+    #
+    # Uses setuptools' WorkingSet which is built at import time by scanning
+    # all installed .dist-info and .egg-info directories.
+    #
+    # NOTE: package.requires() evaluates environment markers at call time,
+    # meaning only dependencies applicable to the current platform/Python
+    # version are returned. Extras-only dependencies are NOT included unless
+    # the extras were explicitly activated. This differs from Flow 1 which
+    # returns all Requires-Dist entries unconditionally.
+    # ---------------------------------------------------------------------------
+    def get_package_by_name(package_name):
+        if package_name is None:
+            return None, None
+
+        package = None
+
+        package_dict = working_set.by_key
         try:
-            from pkg_resources import working_set, Requirement
-            use_pkg_resources = True
-            print("[PIP_INSPECTOR] Using pkg_resources route")
-        except ImportError:
-            print("[PIP_INSPECTOR] WARNING: Neither importlib.metadata nor pkg_resources available")
+            # Requirement.parse normalizes the name to a lookup key
+            package = package_dict[Requirement.parse(package_name).key]
+        except:
+            # Try common name variants if the normalized key lookup fails
+            name_variants = (package_name, package_name.lower(), package_name.replace('-', '_'), package_name.replace('_', '-'), package_name.replace('.', '-'))
+            for name_variant in name_variants:
+                if name_variant in package_dict:
+                    package = package_dict[name_variant]
+                    break
 
-    if use_importlib_metadata:
-        def get_package_by_name(package_name):
-            """Looks up a package from the pip cache using importlib.metadata"""
-            if package_name is None:
-                return None, None
+        if package is None:
+            return None, None
 
-            # Normalize the package name to handle different representations
-            normalized_name = normalize_package_name(package_name)
-
-            package_info = None
-            try:
-                package_info = metadata.distribution(normalized_name)
-            except:
-                # Try name variants if the initial lookup fails
-                name_variants = (normalized_name, normalized_name.lower(), normalized_name.replace('-', '_'), normalized_name.replace('_', '-'), normalized_name.replace('.', '-'))
-                for name_variant in name_variants:
-                    try:
-                        package_info = metadata.distribution(name_variant)
-                        break
-                    except metadata.PackageNotFoundError:
-                        continue
-
-            if package_info is None:
-                return None, None
-
-            # Parse requires list: entries are strings like "package-name>=1.0"
-            requires = []
-            if package_info.requires:
-                for requirement in package_info.requires:
-                    # Extract and normalize the package name from the requirement string
-                    req_name = normalize_package_name(requirement)
-                    requires.append(req_name)
-
-            # Remove duplicates while preserving order
-            requires = list(dict.fromkeys(requires))
-
-            return DependencyNode(package_info.metadata['Name'], package_info.metadata['Version']), requires
-
-    elif use_pkg_resources:
-        def get_package_by_name(package_name):
-            """Looks up a package from the pip cache using pkg_resources"""
-            if package_name is None:
-                return None, None
-
-            package = None
-
-            package_dict = working_set.by_key
-            try:
-                package = package_dict[Requirement.parse(package_name).key]
-            except:
-                name_variants = (package_name, package_name.lower(), package_name.replace('-', '_'), package_name.replace('_', '-'), package_name.replace('.', '-'))
-                for name_variant in name_variants:
-                    if name_variant in package_dict:
-                        package = package_dict[name_variant]
-                        break
-
-            if package is None:
-                return None, None
-            return DependencyNode(package.project_name, package.version), [requirement.key for requirement in package.requires()]
+        # package.requires() returns Requirement objects with environment
+        # markers already evaluated — .key gives the normalized package name
+        return DependencyNode(package.project_name, package.version), [requirement.key for requirement in package.requires()]
 
 
 class DependencyNode(object):
-    """Represents a python dependency in a tree graph with a name, version, and array of children DependencyNodes"""
+    """A node in the dependency tree, holding a package name, version, and its children."""
     def __init__(self, name, version):
         self.name = name
         self.version = version
         self.children = []
 
     def render(self, layer=1):
-        """Recursively builds a dependency tree string to be printed to the commandline"""
+        """Recursively builds the indented dependency tree string printed to stdout.
+        Each child level is indented by 4 spaces. Detect parses this output."""
         result = self.name + "==" + self.version
         for child in self.children:
             result += "\n" + (" " * 4 * layer)
