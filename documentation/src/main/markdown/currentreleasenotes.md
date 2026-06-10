@@ -47,5 +47,6 @@
 * (IDETECT-5079) Allow Detect scans to finish with success even if no configured binary file patterns (e.g., .jar, .war, .zip) are found.
 * (IDETECT-5118) Fixed UV Lockfile Detector to respect excluded dependency groups for optional‑dependencies. Optional extras specified in exclusion flags are now correctly excluded alongside development dependencies.
 * (IDETECT‑5126) Fixed a BitBake layer misidentification issue caused by project folder names colliding with layer names. The detector now resolves layers deterministically, preferring the deepest valid match and falling back to the first valid layer when necessary.
+* (IDETECT-5071) Fixed handling of evicted dependencies in the SBT detector. Versions evicted by sbt's conflict resolution no longer appear in the BOM, and dependencies that requested an evicted version are now reported with the version that replaced it.
 
 ### Dependency Updates

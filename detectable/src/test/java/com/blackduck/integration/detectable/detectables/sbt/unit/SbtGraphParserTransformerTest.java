@@ -1,11 +1,12 @@
 package com.blackduck.integration.detectable.detectables.sbt.unit;
 
 import com.blackduck.integration.bdio.graph.DependencyGraph;
-import com.blackduck.integration.bdio.model.dependency.Dependency;
-import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
+import com.blackduck.integration.detectable.detectable.exception.DetectableException;
 import com.blackduck.integration.detectable.detectables.sbt.dot.SbtDotGraphNodeParser;
 import com.blackduck.integration.detectable.detectables.sbt.dot.SbtGraphParserTransformer;
+import com.blackduck.integration.detectable.detectables.sbt.dot.SbtRootNodeFinder;
+import com.blackduck.integration.detectable.util.graph.MavenGraphAssert;
 import guru.nidi.graphviz.model.MutableGraph;
 import guru.nidi.graphviz.parse.Parser;
 import org.junit.jupiter.api.Assertions;
@@ -21,255 +22,358 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Tests for {@link SbtGraphParserTransformer}, focusing on SBT dependency eviction handling.
- * <p>
- * SBT represents eviction in DOT graphs with an edge like:
- *   "com.google.guava:guava:27.0-jre" -> "com.google.guava:guava:30.1-jre" [label="Evicted By"]
- * meaning guava 27.0 was evicted in favor of 30.1.
- * <p>
- * The evicted node (27.0) should be excluded from the dependency graph entirely,
- * while the replacement (30.1) and all other legitimate edges must be preserved.
+ * The dot graphs in these tests mirror the exact output of sbt's dependencyDot task (sbt-dependency-graph plugin,
+ * built into sbt 1.4+ via addDependencyTreePlugin). Eviction facts about that output:
+ * - An evicted module keeps its node, marked only by style ("stroke-dasharray: 5,5" before sbt 1.9.1, "dashed" after).
+ * - The renderer adds a synthetic edge "evictedVersion" -> "winningVersion" [label="Evicted By"], which is not a dependency.
+ * - Parents point at the version they requested (the evicted node); the parent -> winner edge is removed by the renderer,
+ *   so the winner may only be reachable through the "Evicted By" edge.
+ * - Under Coursier (sbt 1.3+ default), a directly-declared dependency that loses resolution becomes a dangling evicted
+ *   node with no incoming edges, while the project points straight at the winner.
  */
 public class SbtGraphParserTransformerTest {
+    private static final String PROJECT = "com.example:project_2.13:1.0.0";
 
-    private final ExternalIdFactory externalIdFactory = new ExternalIdFactory();
-    private final SbtDotGraphNodeParser nodeParser = new SbtDotGraphNodeParser(externalIdFactory);
-    private final SbtGraphParserTransformer transformer = new SbtGraphParserTransformer(nodeParser);
-
-    private MutableGraph parseDot(String dotContent) throws IOException {
-        InputStream stream = new ByteArrayInputStream(dotContent.getBytes(StandardCharsets.UTF_8));
+    private MutableGraph createMutableGraph(String actualGraph) throws IOException {
+        String simpleGraph = "digraph \"dependency-graph\" {\n"
+            + "    graph[rankdir=\"LR\"]\n"
+            + "    edge [\n"
+            + "        arrowtail=\"none\"\n"
+            + "    ]\n"
+            + actualGraph + "\n"
+            + "\n"
+            + "}";
+        InputStream stream = new ByteArrayInputStream(simpleGraph.getBytes(StandardCharsets.UTF_8));
         return new Parser().read(stream);
     }
 
-    @Test
-    public void evictedDependencyIsExcludedFromEntireGraph() throws IOException {
-        // isOneRoot=true path: single projectId forces the isOneRoot branch.
-        // The eviction check in the else-branch ("guava:27.0 -> guava:30.1 [Evicted By]") must
-        // prevent the evicted node from being introduced as a graph parent via addChildWithParent.
-        // DOT graph with guava 27.0 evicted by 30.1.
-        // Edges: eviction marker (27.0 -> 30.1), guice -> 30.1, project -> 30.1, project -> guice.
-        // Expected: guava 27.0 excluded, guava 30.1 and guice preserved.
-        String dot = "digraph \"dependency-graph\" {\n"
-            + "    graph[rankdir=\"LR\"]\n"
-            + "    edge [arrowtail=\"none\"]\n"
-            + "    \"com.google.guava:guava:27.0-jre\"[shape=box label=<com.google.guava<BR/><B>guava</B><BR/>27.0-jre> style=\"dashed\" penwidth=\"3\"]\n"
-            + "    \"com.google.guava:guava:30.1-jre\"[shape=box label=<com.google.guava<BR/><B>guava</B><BR/>30.1-jre> style=\"\"]\n"
-            + "    \"com.google.inject:guice:5.1.0\"[shape=box label=<com.google.inject<BR/><B>guice</B><BR/>5.1.0> style=\"\"]\n"
-            + "    \"default:myproject:1.0\"[shape=box label=<default<BR/><B>myproject</B><BR/>1.0> style=\"\"]\n"
-            + "    \"com.google.guava:guava:27.0-jre\" -> \"com.google.guava:guava:30.1-jre\" [label=\"Evicted By\" style=\"dashed\"]\n"
-            + "    \"com.google.inject:guice:5.1.0\" -> \"com.google.guava:guava:30.1-jre\"\n"
-            + "    \"default:myproject:1.0\" -> \"com.google.guava:guava:30.1-jre\"\n"
-            + "    \"default:myproject:1.0\" -> \"com.google.inject:guice:5.1.0\"\n"
-            + "}";
+    private String node(String gav) {
+        String[] pieces = gav.split(":", 3);
+        return "    \"" + gav + "\"[label=<" + pieces[0] + "<BR/><B>" + pieces[1] + "</B><BR/>" + pieces[2] + "> style=\"\"]\n";
+    }
 
-        MutableGraph mutableGraph = parseDot(dot);
-        Set<String> projectIds = Collections.singleton("default:myproject:1.0");
+    private String evictedNode(String gav) {
+        String[] pieces = gav.split(":", 3);
+        return "    \"" + gav + "\"[label=<" + pieces[0] + "<BR/><B>" + pieces[1] + "</B><BR/>" + pieces[2] + "> style=\"stroke-dasharray: 5,5\"]\n";
+    }
+
+    private String edge(String fromGav, String toGav) {
+        return "    \"" + fromGav + "\" -> \"" + toGav + "\"\n";
+    }
+
+    private String evictedByEdge(String fromGav, String toGav) {
+        return "    \"" + fromGav + "\" -> \"" + toGav + "\" [label=\"Evicted By\" style=\"stroke-dasharray: 5,5\"]\n";
+    }
+
+    // sbt 1.9.1+ writes nodes with shape/penwidth/color attributes and uses the "dashed" style for evictions.
+    private String sbt191Node(String gav, boolean evicted) {
+        String[] pieces = gav.split(":", 3);
+        String style = evicted ? "dashed" : "";
+        String penwidth = evicted ? "3" : "5";
+        return "    \"" + gav + "\"[shape=box label=<" + pieces[0] + "<BR/><B>" + pieces[1] + "</B><BR/>" + pieces[2] + "> style=\"" + style + "\" penwidth=\""
+            + penwidth + "\" color=\"#8A0B16\"]\n";
+    }
+
+    private String sbt191EvictedByEdge(String fromGav, String toGav) {
+        return "    \"" + fromGav + "\" -> \"" + toGav + "\" [label=\"Evicted By\" style=\"dashed\"]\n";
+    }
+
+    private MavenGraphAssert transform(Set<String> projectIds, String... graphLines) throws IOException {
+        MutableGraph mutableGraph = createMutableGraph(String.join("", graphLines));
+        SbtGraphParserTransformer transformer = new SbtGraphParserTransformer(new SbtDotGraphNodeParser(new ExternalIdFactory()));
         DependencyGraph graph = transformer.transformDotToGraph(projectIds, mutableGraph);
+        return new MavenGraphAssert(graph);
+    }
 
-        // The evicted guava 27.0 must NOT appear anywhere in the graph.
-        ExternalId evictedId = externalIdFactory.createMavenExternalId("com.google.guava", "guava", "27.0-jre");
-        Assertions.assertFalse(graph.hasDependency(evictedId),
-            "Evicted guava 27.0-jre should not exist anywhere in the dependency graph");
-
-        // The replacement (guava 30.1) must still be present — it is NOT in evictedIds,
-        // so edges like "project -> guava:30.1" and "guice -> guava:30.1" are preserved.
-        ExternalId replacementId = externalIdFactory.createMavenExternalId("com.google.guava", "guava", "30.1-jre");
-        Assertions.assertTrue(graph.hasDependency(replacementId),
-            "Replacement guava 30.1-jre should exist in the dependency graph");
-
-        // guice is unrelated to the eviction and must remain in the graph.
-        ExternalId guiceId = externalIdFactory.createMavenExternalId("com.google.inject", "guice", "5.1.0");
-        Assertions.assertTrue(graph.hasDependency(guiceId),
-            "guice 5.1.0 should exist in the dependency graph");
+    private MavenGraphAssert transformSingleRoot(String... graphLines) throws IOException {
+        return transform(Collections.singleton(PROJECT), graphLines);
     }
 
     @Test
-    public void evictionDemoGraphExcludesEvictedAndPreservesDirectDependencies() throws IOException {
-        // isOneRoot=true path: SbtRootNodeFinder's orphan filter returns only sbt-eviction-demo:1.0
-        // because the orphan nodes (jsr305, failureaccess, etc.) have no outgoing edges — SBT's
-        // dependencyDot omits edges from the eviction winner (guava:30.1) to its transitive deps.
-        //
-        // In single-root mode, sbt-eviction-demo's declared deps become direct dependencies,
-        // matching `sbt dependencyTree` output.
-        String dot = "digraph \"dependency-graph\" {\n"
-            + "    graph[rankdir=\"LR\"]\n"
-            + "    edge [arrowtail=\"none\"]\n"
-            + "    \"aopalliance:aopalliance:1.0\"[shape=box label=<aopalliance<BR/><B>aopalliance</B><BR/>1.0> style=\"\"]\n"
-            + "    \"com.google.code.findbugs:jsr305:3.0.2\"[shape=box label=<com.google.code.findbugs<BR/><B>jsr305</B><BR/>3.0.2> style=\"\"]\n"
-            + "    \"com.google.errorprone:error_prone_annotations:2.3.4\"[shape=box label=<com.google.errorprone<BR/><B>error_prone_annotations</B><BR/>2.3.4> style=\"\"]\n"
-            + "    \"com.google.guava:failureaccess:1.0.1\"[shape=box label=<com.google.guava<BR/><B>failureaccess</B><BR/>1.0.1> style=\"\"]\n"
-            + "    \"com.google.guava:guava:27.0-jre\"[shape=box label=<com.google.guava<BR/><B>guava</B><BR/>27.0-jre> style=\"dashed\"]\n"
-            + "    \"com.google.guava:guava:30.1-jre\"[shape=box label=<com.google.guava<BR/><B>guava</B><BR/>30.1-jre> style=\"\"]\n"
-            + "    \"com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava\"[shape=box label=<com.google.guava<BR/><B>listenablefuture</B><BR/>9999.0-empty-to-avoid-conflict-with-guava> style=\"\"]\n"
-            + "    \"com.google.inject:guice:5.1.0\"[shape=box label=<com.google.inject<BR/><B>guice</B><BR/>5.1.0> style=\"\"]\n"
-            + "    \"com.google.j2objc:j2objc-annotations:1.3\"[shape=box label=<com.google.j2objc<BR/><B>j2objc-annotations</B><BR/>1.3> style=\"\"]\n"
-            + "    \"default:sbt-eviction-demo:1.0\"[shape=box label=<default<BR/><B>sbt-eviction-demo</B><BR/>1.0> style=\"\"]\n"
-            + "    \"javax.inject:javax.inject:1\"[shape=box label=<javax.inject<BR/><B>javax.inject</B><BR/>1> style=\"\"]\n"
-            + "    \"org.checkerframework:checker-qual:3.5.0\"[shape=box label=<org.checkerframework<BR/><B>checker-qual</B><BR/>3.5.0> style=\"\"]\n"
-            + "    \"com.google.guava:guava:27.0-jre\" -> \"com.google.guava:guava:30.1-jre\" [label=\"Evicted By\" style=\"dashed\"]\n"
-            + "    \"com.google.inject:guice:5.1.0\" -> \"aopalliance:aopalliance:1.0\"\n"
-            + "    \"com.google.inject:guice:5.1.0\" -> \"com.google.guava:guava:30.1-jre\"\n"
-            + "    \"com.google.inject:guice:5.1.0\" -> \"javax.inject:javax.inject:1\"\n"
-            + "    \"default:sbt-eviction-demo:1.0\" -> \"com.google.guava:guava:30.1-jre\"\n"
-            + "    \"default:sbt-eviction-demo:1.0\" -> \"com.google.inject:guice:5.1.0\"\n"
-            + "}";
-
-        MutableGraph mutableGraph = parseDot(dot);
-        // SbtRootNodeFinder's orphan filter leaves only the one non-orphan candidate.
-        Set<String> projectIds = Collections.singleton("default:sbt-eviction-demo:1.0");
-        DependencyGraph graph = transformer.transformDotToGraph(projectIds, mutableGraph);
-
-        // guava 27.0-jre was evicted and must not appear in the dependency graph.
-        ExternalId evictedId = externalIdFactory.createMavenExternalId("com.google.guava", "guava", "27.0-jre");
-        Assertions.assertFalse(graph.hasDependency(evictedId),
-            "Evicted guava 27.0-jre should not exist anywhere in the dependency graph");
-
-        // guava 30.1-jre is a direct dependency of sbt-eviction-demo (single-root mode).
-        ExternalId guavaId = externalIdFactory.createMavenExternalId("com.google.guava", "guava", "30.1-jre");
-        boolean guavaIsDirectDep = graph.getRootDependencies().stream()
-            .anyMatch(dep -> dep.getExternalId().equals(guavaId));
-        Assertions.assertTrue(guavaIsDirectDep,
-            "guava:30.1-jre should be a direct dependency (matches sbt dependencyTree output)");
-
-        // guice is also a direct dependency of sbt-eviction-demo.
-        ExternalId guiceId = externalIdFactory.createMavenExternalId("com.google.inject", "guice", "5.1.0");
-        boolean guiceIsDirectDep = graph.getRootDependencies().stream()
-            .anyMatch(dep -> dep.getExternalId().equals(guiceId));
-        Assertions.assertTrue(guiceIsDirectDep,
-            "guice:5.1.0 should be a direct dependency (matches sbt dependencyTree output)");
-
-        // aopalliance is transitive under guice, not a direct dep.
-        ExternalId aopallianceId = externalIdFactory.createMavenExternalId("aopalliance", "aopalliance", "1.0");
-        Assertions.assertTrue(graph.hasDependency(aopallianceId),
-            "aopalliance should be reachable as a transitive dep under guice");
-        boolean aopallianceIsDirectDep = graph.getRootDependencies().stream()
-            .anyMatch(dep -> dep.getExternalId().equals(aopallianceId));
-        Assertions.assertFalse(aopallianceIsDirectDep,
-            "aopalliance should not be a direct dep (it is transitive under guice)");
+    public void graphWithoutEvictionsIsUnchanged() throws IOException {
+        MavenGraphAssert graphAssert = transformSingleRoot(
+            node(PROJECT),
+            node("com.typesafe:config:1.4.0"),
+            node("org.slf4j:slf4j-api:1.7.32"),
+            edge(PROJECT, "com.typesafe:config:1.4.0"),
+            edge("com.typesafe:config:1.4.0", "org.slf4j:slf4j-api:1.7.32")
+        );
+        graphAssert.hasRootSize(1);
+        graphAssert.hasRootDependency("com.typesafe:config:1.4.0");
+        graphAssert.hasParentChildRelationship(
+            graphAssert.hasDependency("com.typesafe:config:1.4.0"),
+            graphAssert.hasDependency("org.slf4j:slf4j-api:1.7.32")
+        );
     }
 
     @Test
-    public void multiRootDirectAndTransitiveDependenciesAreClassifiedCorrectly() throws IOException {
-        // !isOneRoot path: two projectIds (project + orphan node) force isOneRoot=false.
-        // In multi-root mode, each root candidate with outgoing edges registers itself as a
-        // direct dependency (sub-project semantics). Its declared deps become transitive under it.
-        //   - myproject->guice edge: myproject (root candidate) is direct dep, guice is child of myproject
-        //   - guice->guava edge: guava is transitive under guice
-        String dot = "digraph \"dependency-graph\" {\n"
-            + "    graph[rankdir=\"LR\"]\n"
-            + "    \"default:myproject:1.0\"[shape=box style=\"\"]\n"
-            + "    \"some:orphan:1.0\"[shape=box style=\"\"]\n"
-            + "    \"com.google.inject:guice:5.1.0\"[shape=box style=\"\"]\n"
-            + "    \"com.google.guava:guava:30.1-jre\"[shape=box style=\"\"]\n"
-            + "    \"default:myproject:1.0\" -> \"com.google.inject:guice:5.1.0\"\n"
-            + "    \"com.google.inject:guice:5.1.0\" -> \"com.google.guava:guava:30.1-jre\"\n"
-            + "}";
-
-        MutableGraph mutableGraph = parseDot(dot);
-        Set<String> projectIds = new HashSet<>(Arrays.asList("default:myproject:1.0", "some:orphan:1.0"));
-        DependencyGraph graph = transformer.transformDotToGraph(projectIds, mutableGraph);
-
-        // myproject is a root candidate with an outgoing edge, so it becomes a direct dep.
-        ExternalId myprojectId = externalIdFactory.createMavenExternalId("default", "myproject", "1.0");
-        boolean myprojectIsDirectDep = graph.getRootDependencies().stream()
-            .anyMatch(dep -> dep.getExternalId().equals(myprojectId));
-        Assertions.assertTrue(myprojectIsDirectDep,
-            "myproject (root candidate) should be a direct dependency");
-
-        // guice is reachable as a transitive dep under myproject, not a direct dep.
-        ExternalId guiceId = externalIdFactory.createMavenExternalId("com.google.inject", "guice", "5.1.0");
-        Assertions.assertTrue(graph.hasDependency(guiceId),
-            "guice should be reachable in the graph");
-        boolean guiceIsDirectDep = graph.getRootDependencies().stream()
-            .anyMatch(dep -> dep.getExternalId().equals(guiceId));
-        Assertions.assertFalse(guiceIsDirectDep,
-            "guice should not be a direct dep (it is transitive under myproject)");
-
-        ExternalId guavaId = externalIdFactory.createMavenExternalId("com.google.guava", "guava", "30.1-jre");
-        Assertions.assertTrue(graph.hasDependency(guavaId),
-            "guava should be present in the graph as a transitive dep");
-        boolean guavaIsDirectDep = graph.getRootDependencies().stream()
-            .anyMatch(dep -> dep.getExternalId().equals(guavaId));
-        Assertions.assertFalse(guavaIsDirectDep,
-            "guava should not be a direct dependency (it is transitive under guice)");
+    public void evictedDirectDependencyReplacedByWinner() throws IOException {
+        // Ivy resolution: the project declared slf4j-api 1.7.25 but 1.7.32 won; the project's edge points at the evicted version.
+        MavenGraphAssert graphAssert = transformSingleRoot(
+            node(PROJECT),
+            evictedNode("org.slf4j:slf4j-api:1.7.25"),
+            node("org.slf4j:slf4j-api:1.7.32"),
+            edge(PROJECT, "org.slf4j:slf4j-api:1.7.25"),
+            evictedByEdge("org.slf4j:slf4j-api:1.7.25", "org.slf4j:slf4j-api:1.7.32")
+        );
+        graphAssert.hasNoDependency("org.slf4j:slf4j-api:1.7.25");
+        graphAssert.hasRootDependency("org.slf4j:slf4j-api:1.7.32");
+        graphAssert.hasRootSize(1);
     }
 
     @Test
-    public void evictedDependencyNotAddedAsDirectDependency() throws IOException {
-        // Verifies eviction works even when the evicted node's only edge is the eviction marker.
-        // DOT graph: lib 1.0 evicted by lib 2.0, project depends on lib 2.0.
-        // Expected: lib 1.0 excluded, lib 2.0 is the sole direct dependency.
-        String dot = "digraph \"dependency-graph\" {\n"
-            + "    graph[rankdir=\"LR\"]\n"
-            + "    edge [arrowtail=\"none\"]\n"
-            + "    \"org.example:lib:1.0\"[shape=box label=<org.example<BR/><B>lib</B><BR/>1.0> style=\"dashed\"]\n"
-            + "    \"org.example:lib:2.0\"[shape=box label=<org.example<BR/><B>lib</B><BR/>2.0> style=\"\"]\n"
-            + "    \"default:myproject:1.0\"[shape=box label=<default<BR/><B>myproject</B><BR/>1.0> style=\"\"]\n"
-            + "    \"org.example:lib:1.0\" -> \"org.example:lib:2.0\" [label=\"Evicted By\" style=\"dashed\"]\n"
-            + "    \"default:myproject:1.0\" -> \"org.example:lib:2.0\"\n"
-            + "}";
-
-        MutableGraph mutableGraph = parseDot(dot);
-        Set<String> projectIds = Collections.singleton("default:myproject:1.0");
-        DependencyGraph graph = transformer.transformDotToGraph(projectIds, mutableGraph);
-
-        // The evicted lib 1.0 must not appear anywhere (not as root, not as transitive).
-        ExternalId evictedId = externalIdFactory.createMavenExternalId("org.example", "lib", "1.0");
-        Assertions.assertFalse(graph.hasDependency(evictedId),
-            "Evicted lib 1.0 should not exist anywhere in the dependency graph");
-
-        // Only the replacement lib 2.0 should remain as a direct dependency.
-        Assertions.assertEquals(1, graph.getRootDependencies().size());
-        Dependency rootDep = graph.getRootDependencies().iterator().next();
-        Assertions.assertEquals("lib", rootDep.getName());
-        Assertions.assertEquals("2.0", rootDep.getVersion());
+    public void evictedTransitiveDependencyReplacedByWinner() throws IOException {
+        // fansi requested sourcecode 0.2.1, which was evicted by 0.2.3; fansi must end up depending on 0.2.3.
+        MavenGraphAssert graphAssert = transformSingleRoot(
+            node(PROJECT),
+            node("com.lihaoyi:fansi_2.13:0.2.9"),
+            evictedNode("com.lihaoyi:sourcecode_2.13:0.2.1"),
+            node("com.lihaoyi:sourcecode_2.13:0.2.3"),
+            edge(PROJECT, "com.lihaoyi:fansi_2.13:0.2.9"),
+            edge("com.lihaoyi:fansi_2.13:0.2.9", "com.lihaoyi:sourcecode_2.13:0.2.1"),
+            evictedByEdge("com.lihaoyi:sourcecode_2.13:0.2.1", "com.lihaoyi:sourcecode_2.13:0.2.3")
+        );
+        graphAssert.hasNoDependency("com.lihaoyi:sourcecode_2.13:0.2.1");
+        graphAssert.hasParentChildRelationship(
+            graphAssert.hasDependency("com.lihaoyi:fansi_2.13:0.2.9"),
+            graphAssert.hasDependency("com.lihaoyi:sourcecode_2.13:0.2.3")
+        );
     }
 
     @Test
-    public void evictedChildTransitiveDepsArePreservedViaWinner() throws IOException {
-        // Regression test for: when a parent points to an evicted node (A -> evicted),
-        // and the evicted node's winner (B) carries its own transitive deps (B -> C -> D),
-        // those transitive deps must appear in the graph under the winner.
-        //
-        // Mirrors the okhttp repro:
-        //   okhttp -> kotlin-stdlib-jdk8:1.8.21 (evicted by 1.9.10)
-        //   kotlin-stdlib-jdk8:1.9.10 -> kotlin-stdlib:1.9.10
-        //   kotlin-stdlib:1.9.10 -> annotations:13.0
-        String dot = "digraph \"dependency-graph\" {\n"
-            + "    \"default:myproject:1.0\"[shape=box style=\"\"]\n"
-            + "    \"com.example:okhttp:4.0\"[shape=box style=\"\"]\n"
-            + "    \"org.example:lib:1.0\"[shape=box style=\"dashed\"]\n"
-            + "    \"org.example:lib:2.0\"[shape=box style=\"\"]\n"
-            + "    \"org.example:transitive:1.0\"[shape=box style=\"\"]\n"
-            + "    \"org.example:leaf:1.0\"[shape=box style=\"\"]\n"
-            + "    \"default:myproject:1.0\" -> \"com.example:okhttp:4.0\"\n"
-            + "    \"com.example:okhttp:4.0\" -> \"org.example:lib:1.0\"\n"
-            + "    \"org.example:lib:1.0\" -> \"org.example:lib:2.0\" [label=\"Evicted By\" style=\"dashed\"]\n"
-            + "    \"org.example:lib:2.0\" -> \"org.example:transitive:1.0\"\n"
-            + "    \"org.example:transitive:1.0\" -> \"org.example:leaf:1.0\"\n"
-            + "}";
+    public void evictedByEdgeIsNotTreatedAsDependencyEdge() throws IOException {
+        // Coursier (sbt 1.3+ default): a directly-declared loser dangles with no incoming edges while the project
+        // points straight at the winner. The "Evicted By" edge must not re-introduce the evicted node into the graph.
+        MavenGraphAssert graphAssert = transformSingleRoot(
+            node(PROJECT),
+            evictedNode("org.slf4j:slf4j-api:1.7.25"),
+            node("org.slf4j:slf4j-api:1.7.32"),
+            edge(PROJECT, "org.slf4j:slf4j-api:1.7.32"),
+            evictedByEdge("org.slf4j:slf4j-api:1.7.25", "org.slf4j:slf4j-api:1.7.32")
+        );
+        graphAssert.hasNoDependency("org.slf4j:slf4j-api:1.7.25");
+        graphAssert.hasRootDependency("org.slf4j:slf4j-api:1.7.32");
+        graphAssert.hasRootSize(1);
+    }
 
-        MutableGraph mutableGraph = parseDot(dot);
-        Set<String> projectIds = Collections.singleton("default:myproject:1.0");
-        DependencyGraph graph = transformer.transformDotToGraph(projectIds, mutableGraph);
+    @Test
+    public void multipleVersionsEvictedBySameWinner() throws IOException {
+        // Mirrors the scalafmt battery fixture: 0.2.1 and 0.1.7 both evicted by 0.2.3, each via several callers.
+        MavenGraphAssert graphAssert = transformSingleRoot(
+            node(PROJECT),
+            node("com.lihaoyi:fansi_2.13:0.2.9"),
+            node("org.scalameta:fastparse_2.13:1.0.1"),
+            node("org.scalameta:common_2.13:4.4.10"),
+            evictedNode("com.lihaoyi:sourcecode_2.13:0.2.1"),
+            evictedNode("com.lihaoyi:sourcecode_2.13:0.1.7"),
+            node("com.lihaoyi:sourcecode_2.13:0.2.3"),
+            edge(PROJECT, "com.lihaoyi:fansi_2.13:0.2.9"),
+            edge(PROJECT, "org.scalameta:fastparse_2.13:1.0.1"),
+            edge(PROJECT, "org.scalameta:common_2.13:4.4.10"),
+            edge("com.lihaoyi:fansi_2.13:0.2.9", "com.lihaoyi:sourcecode_2.13:0.2.1"),
+            edge("org.scalameta:fastparse_2.13:1.0.1", "com.lihaoyi:sourcecode_2.13:0.1.7"),
+            edge("org.scalameta:common_2.13:4.4.10", "com.lihaoyi:sourcecode_2.13:0.2.3"),
+            evictedByEdge("com.lihaoyi:sourcecode_2.13:0.2.1", "com.lihaoyi:sourcecode_2.13:0.2.3"),
+            evictedByEdge("com.lihaoyi:sourcecode_2.13:0.1.7", "com.lihaoyi:sourcecode_2.13:0.2.3")
+        );
+        graphAssert.hasNoDependency("com.lihaoyi:sourcecode_2.13:0.2.1");
+        graphAssert.hasNoDependency("com.lihaoyi:sourcecode_2.13:0.1.7");
+        graphAssert.hasParentChildRelationship(
+            graphAssert.hasDependency("com.lihaoyi:fansi_2.13:0.2.9"),
+            graphAssert.hasDependency("com.lihaoyi:sourcecode_2.13:0.2.3")
+        );
+        graphAssert.hasParentChildRelationship(
+            graphAssert.hasDependency("org.scalameta:fastparse_2.13:1.0.1"),
+            graphAssert.hasDependency("com.lihaoyi:sourcecode_2.13:0.2.3")
+        );
+        graphAssert.hasParentChildRelationship(
+            graphAssert.hasDependency("org.scalameta:common_2.13:4.4.10"),
+            graphAssert.hasDependency("com.lihaoyi:sourcecode_2.13:0.2.3")
+        );
+    }
 
-        // Evicted lib 1.0 must not appear.
-        ExternalId evictedId = externalIdFactory.createMavenExternalId("org.example", "lib", "1.0");
-        Assertions.assertFalse(graph.hasDependency(evictedId), "Evicted lib:1.0 must not be in the graph");
+    @Test
+    public void evictionToLowerVersionIsHonored() throws IOException {
+        // Ivy force() / strict conflict managers can evict to an OLDER version; "evicted by" is not always an upgrade.
+        MavenGraphAssert graphAssert = transformSingleRoot(
+            node(PROJECT),
+            node("ch.qos.logback:logback-classic:1.2.11"),
+            evictedNode("org.slf4j:slf4j-api:1.7.32"),
+            node("org.slf4j:slf4j-api:1.7.25"),
+            edge(PROJECT, "ch.qos.logback:logback-classic:1.2.11"),
+            edge(PROJECT, "org.slf4j:slf4j-api:1.7.25"),
+            edge("ch.qos.logback:logback-classic:1.2.11", "org.slf4j:slf4j-api:1.7.32"),
+            evictedByEdge("org.slf4j:slf4j-api:1.7.32", "org.slf4j:slf4j-api:1.7.25")
+        );
+        graphAssert.hasNoDependency("org.slf4j:slf4j-api:1.7.32");
+        graphAssert.hasRootDependency("org.slf4j:slf4j-api:1.7.25");
+        graphAssert.hasParentChildRelationship(
+            graphAssert.hasDependency("ch.qos.logback:logback-classic:1.2.11"),
+            graphAssert.hasDependency("org.slf4j:slf4j-api:1.7.25")
+        );
+    }
 
-        // okhttp is a direct dep.
-        ExternalId okhttpId = externalIdFactory.createMavenExternalId("com.example", "okhttp", "4.0");
-        boolean okhttpIsDirect = graph.getRootDependencies().stream().anyMatch(d -> d.getExternalId().equals(okhttpId));
-        Assertions.assertTrue(okhttpIsDirect, "okhttp should be a direct dependency");
+    @Test
+    public void evictedNodeWithRangeVersionIsExcluded() throws IOException {
+        // Coursier keeps the raw requested range in the evicted node id, and the range node's caller edge can come
+        // from an id that has no node declaration anywhere in the file.
+        MavenGraphAssert graphAssert = transformSingleRoot(
+            node(PROJECT),
+            evictedNode("org.slf4j:slf4j-api:[1.7.20,1.7.30)"),
+            node("org.slf4j:slf4j-api:1.7.32"),
+            edge(PROJECT, "org.slf4j:slf4j-api:1.7.32"),
+            edge("org.slf4j:slf4j-api:1.7.29", "org.slf4j:slf4j-api:[1.7.20,1.7.30)"),
+            evictedByEdge("org.slf4j:slf4j-api:[1.7.20,1.7.30)", "org.slf4j:slf4j-api:1.7.32")
+        );
+        graphAssert.hasNoDependency("org.slf4j:slf4j-api:[1.7.20,1.7.30)");
+        graphAssert.hasRootDependency("org.slf4j:slf4j-api:1.7.32");
+    }
 
-        // Winner lib:2.0 and its transitive deps must be reachable.
-        ExternalId winnerId = externalIdFactory.createMavenExternalId("org.example", "lib", "2.0");
-        Assertions.assertTrue(graph.hasDependency(winnerId), "Winner lib:2.0 must be in the graph");
+    @Test
+    public void evictedNodeStaleOutgoingEdgesAreDropped() throws IOException {
+        // Defensive: if an evicted node still has ordinary outgoing edges (seen in older plugin output), that subtree
+        // belongs to the discarded version and must not be attached through the evicted node.
+        MavenGraphAssert graphAssert = transformSingleRoot(
+            node(PROJECT),
+            node("com.lihaoyi:fansi_2.13:0.2.9"),
+            evictedNode("com.lihaoyi:sourcecode_2.13:0.2.1"),
+            node("com.lihaoyi:sourcecode_2.13:0.2.3"),
+            node("org.example:stale-child:9.9.9"),
+            edge(PROJECT, "com.lihaoyi:fansi_2.13:0.2.9"),
+            edge("com.lihaoyi:fansi_2.13:0.2.9", "com.lihaoyi:sourcecode_2.13:0.2.1"),
+            edge("com.lihaoyi:sourcecode_2.13:0.2.1", "org.example:stale-child:9.9.9"),
+            evictedByEdge("com.lihaoyi:sourcecode_2.13:0.2.1", "com.lihaoyi:sourcecode_2.13:0.2.3")
+        );
+        graphAssert.hasNoDependency("com.lihaoyi:sourcecode_2.13:0.2.1");
+        graphAssert.hasNoDependency("org.example:stale-child:9.9.9");
+        graphAssert.hasParentChildRelationship(
+            graphAssert.hasDependency("com.lihaoyi:fansi_2.13:0.2.9"),
+            graphAssert.hasDependency("com.lihaoyi:sourcecode_2.13:0.2.3")
+        );
+    }
 
-        ExternalId transitiveId = externalIdFactory.createMavenExternalId("org.example", "transitive", "1.0");
-        Assertions.assertTrue(graph.hasDependency(transitiveId), "Transitive dep of winner must be in the graph");
+    @Test
+    public void duplicatedNodesAndEdgesAreHandled() throws IOException {
+        // Real dependencyDot files repeat node declarations, dependency edges and "Evicted By" edges.
+        MavenGraphAssert graphAssert = transformSingleRoot(
+            node(PROJECT),
+            node("com.lihaoyi:fansi_2.13:0.2.9"),
+            evictedNode("com.lihaoyi:sourcecode_2.13:0.2.1"),
+            evictedNode("com.lihaoyi:sourcecode_2.13:0.2.1"),
+            node("com.lihaoyi:sourcecode_2.13:0.2.3"),
+            edge(PROJECT, "com.lihaoyi:fansi_2.13:0.2.9"),
+            edge("com.lihaoyi:fansi_2.13:0.2.9", "com.lihaoyi:sourcecode_2.13:0.2.1"),
+            edge("com.lihaoyi:fansi_2.13:0.2.9", "com.lihaoyi:sourcecode_2.13:0.2.1"),
+            evictedByEdge("com.lihaoyi:sourcecode_2.13:0.2.1", "com.lihaoyi:sourcecode_2.13:0.2.3"),
+            evictedByEdge("com.lihaoyi:sourcecode_2.13:0.2.1", "com.lihaoyi:sourcecode_2.13:0.2.3")
+        );
+        graphAssert.hasNoDependency("com.lihaoyi:sourcecode_2.13:0.2.1");
+        graphAssert.hasRelationshipCount(graphAssert.hasDependency("com.lihaoyi:fansi_2.13:0.2.9"), 1);
+        graphAssert.hasParentChildRelationship(
+            graphAssert.hasDependency("com.lihaoyi:fansi_2.13:0.2.9"),
+            graphAssert.hasDependency("com.lihaoyi:sourcecode_2.13:0.2.3")
+        );
+    }
 
-        ExternalId leafId = externalIdFactory.createMavenExternalId("org.example", "leaf", "1.0");
-        Assertions.assertTrue(graph.hasDependency(leafId), "Leaf dep (transitive of winner) must be in the graph");
+    @Test
+    public void dependencyWithEvictedInItsNameIsKept() throws IOException {
+        // Eviction must be detected from the "Evicted By" edge, not from the substring "evicted" in node labels.
+        MavenGraphAssert graphAssert = transformSingleRoot(
+            node(PROJECT),
+            node("com.lihaoyi:fansi_2.13:0.2.9"),
+            node("com.foo:evicted-cache:1.0.0"),
+            edge(PROJECT, "com.lihaoyi:fansi_2.13:0.2.9"),
+            edge("com.lihaoyi:fansi_2.13:0.2.9", "com.foo:evicted-cache:1.0.0")
+        );
+        graphAssert.hasParentChildRelationship(
+            graphAssert.hasDependency("com.lihaoyi:fansi_2.13:0.2.9"),
+            graphAssert.hasDependency("com.foo:evicted-cache:1.0.0")
+        );
+    }
+
+    @Test
+    public void evictionParsedFromSbt191Format() throws IOException {
+        // sbt 1.9.1+ node/edge attribute format: shape=box, penwidth, color, and the "dashed" eviction style.
+        MavenGraphAssert graphAssert = transformSingleRoot(
+            sbt191Node(PROJECT, false),
+            sbt191Node("org.slf4j:slf4j-api:1.7.25", true),
+            sbt191Node("org.slf4j:slf4j-api:1.7.32", false),
+            edge(PROJECT, "org.slf4j:slf4j-api:1.7.25"),
+            sbt191EvictedByEdge("org.slf4j:slf4j-api:1.7.25", "org.slf4j:slf4j-api:1.7.32")
+        );
+        graphAssert.hasNoDependency("org.slf4j:slf4j-api:1.7.25");
+        graphAssert.hasRootDependency("org.slf4j:slf4j-api:1.7.32");
+    }
+
+    @Test
+    public void coursierDirectEvictionKeepsDeclaredDependenciesDirect() throws IOException, DetectableException {
+        // Mirrors the dot sbt 1.11 (Coursier) writes when a directly-declared guava 27.0-jre is evicted by guice's
+        // guava 30.1-jre: the winner's own transitive dependencies are declared as stranded nodes without any edges,
+        // the evicted node dangles, and the project must still be recognized as the single root so that guava and
+        // guice stay direct dependencies, exactly as sbt dependencyTree reports them.
+        String project = "default:sbt-eviction-demo:1.0";
+        MutableGraph mutableGraph = createMutableGraph(String.join("",
+            sbt191Node("aopalliance:aopalliance:1.0", false),
+            sbt191Node("com.google.code.findbugs:jsr305:3.0.2", false),
+            sbt191Node("com.google.errorprone:error_prone_annotations:2.3.4", false),
+            sbt191Node("com.google.guava:failureaccess:1.0.1", false),
+            sbt191Node("com.google.guava:guava:27.0-jre", true),
+            sbt191Node("com.google.guava:guava:30.1-jre", false),
+            sbt191Node("com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava", false),
+            sbt191Node("com.google.inject:guice:5.1.0", false),
+            sbt191Node("com.google.j2objc:j2objc-annotations:1.3", false),
+            sbt191Node(project, false),
+            sbt191Node("javax.inject:javax.inject:1", false),
+            sbt191Node("org.checkerframework:checker-qual:3.5.0", false),
+            sbt191EvictedByEdge("com.google.guava:guava:27.0-jre", "com.google.guava:guava:30.1-jre"),
+            edge("com.google.inject:guice:5.1.0", "aopalliance:aopalliance:1.0"),
+            edge("com.google.inject:guice:5.1.0", "com.google.guava:guava:30.1-jre"),
+            edge("com.google.inject:guice:5.1.0", "javax.inject:javax.inject:1"),
+            edge(project, "com.google.guava:guava:30.1-jre"),
+            edge(project, "com.google.inject:guice:5.1.0")
+        ));
+        SbtDotGraphNodeParser nodeParser = new SbtDotGraphNodeParser(new ExternalIdFactory());
+        Set<String> rootIds = new SbtRootNodeFinder(nodeParser).determineRootIDs(mutableGraph);
+        Assertions.assertEquals(Collections.singleton(project), rootIds);
+
+        DependencyGraph graph = new SbtGraphParserTransformer(nodeParser).transformDotToGraph(rootIds, mutableGraph);
+        MavenGraphAssert graphAssert = new MavenGraphAssert(graph);
+        graphAssert.hasRootSize(2);
+        graphAssert.hasRootDependency("com.google.guava:guava:30.1-jre");
+        graphAssert.hasRootDependency("com.google.inject:guice:5.1.0");
+        graphAssert.hasNoDependency("com.google.guava:guava:27.0-jre");
+        graphAssert.hasNoDependency("com.google.code.findbugs:jsr305:3.0.2");
+        graphAssert.hasParentChildRelationship(
+            graphAssert.hasDependency("com.google.inject:guice:5.1.0"),
+            graphAssert.hasDependency("com.google.guava:guava:30.1-jre")
+        );
+    }
+
+    @Test
+    public void multiRootGraphExcludesEvictedNodes() throws IOException {
+        // When the project node cannot be determined, all roots become direct dependencies, but evicted nodes must
+        // still be replaced by their winners.
+        String rootOne = "com.example:api_2.13:1.0.0";
+        String rootTwo = "com.example:util_2.13:1.0.0";
+        Set<String> projectIds = new HashSet<>(Arrays.asList(rootOne, rootTwo));
+        MavenGraphAssert graphAssert = transform(
+            projectIds,
+            node(rootOne),
+            node(rootTwo),
+            evictedNode("org.slf4j:slf4j-api:1.7.25"),
+            node("org.slf4j:slf4j-api:1.7.32"),
+            edge(rootOne, "org.slf4j:slf4j-api:1.7.25"),
+            edge(rootTwo, "org.slf4j:slf4j-api:1.7.32"),
+            evictedByEdge("org.slf4j:slf4j-api:1.7.25", "org.slf4j:slf4j-api:1.7.32")
+        );
+        graphAssert.hasNoDependency("org.slf4j:slf4j-api:1.7.25");
+        graphAssert.hasParentChildRelationship(
+            graphAssert.hasDependency(rootOne),
+            graphAssert.hasDependency("org.slf4j:slf4j-api:1.7.32")
+        );
+        graphAssert.hasParentChildRelationship(
+            graphAssert.hasDependency(rootTwo),
+            graphAssert.hasDependency("org.slf4j:slf4j-api:1.7.32")
+        );
     }
 }
