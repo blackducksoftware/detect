@@ -106,20 +106,18 @@ public class SetupToolsPyParser implements SetupToolsParser {
     }
 
     private boolean parseListLine(String line) throws DetectableException {
-        int closingBracketIndex = line.indexOf(']');
-        String relevantPortion = closingBracketIndex >= 0 ? line.substring(0, closingBracketIndex + 1) : line;
-
-        Matcher quotedDependencyMatcher = QUOTED_DEPENDENCY_PATTERN.matcher(relevantPortion);
+        Matcher quotedDependencyMatcher = QUOTED_DEPENDENCY_PATTERN.matcher(line);
         while (quotedDependencyMatcher.find()) {
             String dependency = quotedDependencyMatcher.group(1) != null ? quotedDependencyMatcher.group(1) : quotedDependencyMatcher.group(2);
             dependencies.add(dependency);
         }
 
-        String residue = QUOTED_DEPENDENCY_PATTERN.matcher(relevantPortion).replaceAll("");
+        String residue = QUOTED_DEPENDENCY_PATTERN.matcher(line).replaceAll("");
         int commentIndex = residue.indexOf('#');
         if (commentIndex >= 0) {
             residue = residue.substring(0, commentIndex);
         }
+        int closingBracketIndex = residue.indexOf(']');
         residue = residue.replace("[", "").replace("]", "").replace(",", "").trim();
 
         if (!residue.isEmpty()) {
