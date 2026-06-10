@@ -386,9 +386,10 @@ public class DetectableOptionFactory {
 
     public UVDetectorOptions createUVDetectorOptions() {
         List<String> excludedDependencyGroups = detectConfiguration.getValue(DetectProperties.DETECT_UV_DEPENDENCY_GROUPS_EXCLUDED);
+        List<String> onlyDependencyGroups = detectConfiguration.getValue(DetectProperties.DETECT_UV_DEPENDENCY_GROUPS_ONLY);
         List<String> includedWorkSpaceMembers = detectConfiguration.getValue(DetectProperties.DETECT_UV_INCLUDED_WORKSPACE_MEMBERS);
         List<String> excludeWorkSpaceMembers = detectConfiguration.getValue(DetectProperties.DETECT_UV_EXCLUDED_WORKSPACE_MEMBERS);
 
-        return new UVDetectorOptions(excludedDependencyGroups, includedWorkSpaceMembers, excludeWorkSpaceMembers);
+        return new UVDetectorOptions(excludedDependencyGroups, onlyDependencyGroups, includedWorkSpaceMembers, excludeWorkSpaceMembers);
     }
 }

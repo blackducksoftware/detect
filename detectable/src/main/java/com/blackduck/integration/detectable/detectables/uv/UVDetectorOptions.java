@@ -9,18 +9,25 @@ import java.util.stream.Collectors;
 public class UVDetectorOptions {
     private final Set<String> excludedDependencyGroups;
 
+    private final Set<String> onlyDependencyGroups;
+
     private final Set<String> includedWorkspaceMembers;
 
     private final Set<String> excludedWorkspaceMembers;
 
-    public UVDetectorOptions(List<String> excludedDependencyGroups, List<String> includedWorkspaceMembers, List<String> excludedWorkspaceMembers) {
+    public UVDetectorOptions(List<String> excludedDependencyGroups, List<String> onlyDependencyGroups, List<String> includedWorkspaceMembers, List<String> excludedWorkspaceMembers) {
         this.excludedDependencyGroups = new HashSet<>(excludedDependencyGroups);
+        this.onlyDependencyGroups = new HashSet<>(onlyDependencyGroups);
         this.includedWorkspaceMembers = new HashSet<>(includedWorkspaceMembers);
         this.excludedWorkspaceMembers = new HashSet<>(excludedWorkspaceMembers);
     }
 
     public Set<String> getExcludedDependencyGroups() {
         return excludedDependencyGroups.stream().map(String::toLowerCase).collect(Collectors.toSet());
+    }
+
+    public Set<String> getOnlyDependencyGroups() {
+        return onlyDependencyGroups.stream().map(String::toLowerCase).collect(Collectors.toSet());
     }
 
     public Set<String> getIncludedWorkspaceMembers() {
