@@ -21,8 +21,8 @@ RUN mkdir -p ${SRC_DIR}
 RUN git clone --depth 1 https://github.com/aiyanbo/sbt-simple-project.git ${SRC_DIR} \
     && sed -i 's/2\.12\.7/2.12.19/' ${SRC_DIR}/project/Dependencies.scala \
     && sed -i 's/sbt\.version=.*/sbt.version=1.5.2/' ${SRC_DIR}/project/build.properties \
-    && sed -i '/sbt-dependency-graph/d' ${SRC_DIR}/project/plugins.sbt \
-    && echo 'enablePlugins(sbt.plugins.DependencyTreePlugin)' >> ${SRC_DIR}/build.sbt
+    && echo '' > ${SRC_DIR}/project/plugins.sbt \
+    && sed -i '/enablePlugins(PackPlugin)/d' ${SRC_DIR}/build.sbt
 
 RUN cd ${SRC_DIR} \
    && sbt compile
