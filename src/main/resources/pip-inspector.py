@@ -188,6 +188,12 @@ def populate_dependency_tree(project_root_node, requirements_path):
                     split('===|<=|!=|==|>=|~=|<|>', parsed_requirement.requirement)[0]
                 )
 
+            # normalize_package_name() returns None for non-package entries such as
+            # include directives (-r other.txt) or index options (-i https://...).
+            # parse_requirements() skips blank lines and comments but passes these through.
+            if package_name is None:
+                continue
+
             dependency_node = recursively_resolve_dependencies(package_name, [])
 
             if dependency_node is not None:
@@ -272,7 +278,13 @@ except ImportError:
         use_pkg_resources = True
         print("[PIP_INSPECTOR] Using pkg_resources route")
     except ImportError:
-        print("[PIP_INSPECTOR] WARNING: Neither importlib.metadata nor pkg_resources available")
+        print("[PIP_INSPECTOR] WARNING: Neither importlib.metadata nor pkg_resources is available. Dependencies cannot be resolved and will be missing from the output.")
+
+if not use_importlib_metadata and not use_pkg_resources:
+    # Neither library is available — define a no-op fallback so the script
+    # degrades gracefully instead of raising NameError on the first lookup.
+    def get_package_by_name(package_name):
+        return None, None
 
 if use_importlib_metadata:
     # ---------------------------------------------------------------------------
@@ -294,11 +306,13 @@ if use_importlib_metadata:
         # URL syntax (e.g. 'requests @ git+https://...') from the requirements
         # file or from a parent package's Requires-Dist list.
         normalized_name = normalize_package_name(package_name)
+        if normalized_name is None:
+            return None, None
 
         package_info = None
         try:
             package_info = metadata.distribution(normalized_name)
-        except:
+        except metadata.PackageNotFoundError:
             # Try common name variants — pip normalizes hyphens/underscores/dots
             # inconsistently, so the stored name may differ from what was requested
             name_variants = (normalized_name, normalized_name.lower(), normalized_name.replace('-', '_'), normalized_name.replace('_', '-'), normalized_name.replace('.', '-'))
