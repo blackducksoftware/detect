@@ -6,10 +6,10 @@ import com.blackduck.integration.bdio.model.dependency.Dependency;
 import guru.nidi.graphviz.model.Link;
 import guru.nidi.graphviz.model.MutableGraph;
 import guru.nidi.graphviz.model.MutableNode;
-import org.jetbrains.annotations.NotNull;
 
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -20,64 +20,48 @@ public class SbtGraphParserTransformer {
         this.sbtDotGraphNodeParser = sbtDotGraphNodeParser;
     }
 
-    public DependencyGraph transformDotToGraph(@NotNull Set<String> projectIds, @NotNull Set<String> evictedIds, @NotNull MutableGraph mutableGraph) {
+    public DependencyGraph transformDotToGraph(Set<String> projectIds, MutableGraph mutableGraph) {
         DependencyGraph graph = new BasicDependencyGraph();
-        String projectNodeId = projectIds.stream().findFirst().orElseThrow(() -> new IllegalArgumentException("projectIds must not be empty"));
+        String projectNodeId = projectIds.stream().findFirst().orElse(null);
         boolean isOneRoot = projectIds.size() == 1;
+        Map<String, String> evictedToWinner = SbtDotEvictionParser.parseEvictedToWinner(mutableGraph);
 
         List<Link> links = mutableGraph.nodes().stream().map(MutableNode::links).flatMap(List::stream).collect(Collectors.toList());
         for (Link link : links) {
-            String parentNode = normalizeDependency(link.asLinkTarget().name().toString());
-            String childNode = normalizeDependency(link.asLinkSource().name().toString());
+            if (SbtDotEvictionParser.isEvictedByLink(link)) {
+                continue; // links an evicted version to its replacement, not a parent to a child
+            }
+            String parentNode = SbtDotEvictionParser.normalizeNodeId(link.asLinkTarget().name().toString());
+            if (evictedToWinner.containsKey(parentNode)) {
+                continue; // resolution discarded the evicted version along with its subtree
+            }
+            String childNode = resolveEviction(SbtDotEvictionParser.normalizeNodeId(link.asLinkSource().name().toString()), evictedToWinner);
 
             Dependency parent = sbtDotGraphNodeParser.nodeToDependency(parentNode);
             Dependency child = sbtDotGraphNodeParser.nodeToDependency(childNode);
 
-            if(isOneRoot) {
-                processSingleRootLink(graph, projectNodeId, parentNode, childNode, parent, child, evictedIds);
+            if (isOneRoot) {
+                if (parentNode.equals(projectNodeId)) {
+                    graph.addDirectDependency(child);
+                } else {
+                    graph.addChildWithParent(child, parent);
+                }
             } else {
-                processMultiRootLink(graph, projectIds, parentNode, childNode, parent, child, evictedIds);
+                if (projectIds.contains(parentNode)) {
+                    graph.addDirectDependency(parent);
+                }
+                graph.addChildWithParent(child, parent);
             }
         }
 
         return graph;
     }
 
-    public DependencyGraph transformDotToGraph(@NotNull Set<String> projectIds, @NotNull MutableGraph mutableGraph) {
-        return transformDotToGraph(projectIds, SbtEvictionNodeUtil.findEvictedNodeIds(mutableGraph), mutableGraph);
-    }
-
-    // Used when the graph has multiple root candidates.
-    // Edges from any project root node become direct dependencies; all other non-evicted edges become transitive.
-    private void processMultiRootLink(DependencyGraph graph, Set<String> projectIds, String parentNode, String childNode,
-                                      Dependency parent, Dependency child, Set<String> evictedIds) {
-        if (!evictedIds.contains(childNode)) {
-            if (projectIds.contains(parentNode)) {
-                // e.g. "default:myproject:1.0" -> "com.google.inject:guice:5.1.0"
-                // parentNode is a project root, so child (guice) is a direct dependency.
-                // We add child — not parent — because parentNode is the project itself, not a real dependency.
-                graph.addDirectDependency(child);
-            } else if (!evictedIds.contains(parentNode)) {
-                // e.g. "com.google.inject:guice:5.1.0" -> "com.google.guava:guava:30.1-jre"
-                // Skip if either side is evicted:
-                //   parentNode evicted: "com.google.guava:guava:27.0-jre" -> "com.google.guava:guava:30.1-jre" [label="Evicted By"]
-                //   childNode evicted:  "com.google.inject:guice:5.1.0"   -> "com.google.guava:guava:27.0-jre"
-                graph.addChildWithParent(child, parent);
-            }
+    private String resolveEviction(String nodeId, Map<String, String> evictedToWinner) {
+        Set<String> seen = new HashSet<>();
+        while (evictedToWinner.containsKey(nodeId) && seen.add(nodeId)) {
+            nodeId = evictedToWinner.get(nodeId);
         }
-    }
-
-    // Used when the graph has exactly one project root.
-    // Edges from the project node become direct dependencies; all other non-evicted edges become transitive.
-    private void processSingleRootLink(DependencyGraph graph, String projectNodeId, String parentNode, String childNode,
-                                       Dependency parent, Dependency child, Set<String> evictedIds) {
-        processMultiRootLink(graph, Collections.singleton(projectNodeId), parentNode, childNode, parent, child, evictedIds);
-    }
-
-    private String normalizeDependency(String dependency) {
-        if(dependency.startsWith("--")) {
-            return dependency.substring(2);
-        }
-        return dependency;
+        return nodeId;
     }
 }
