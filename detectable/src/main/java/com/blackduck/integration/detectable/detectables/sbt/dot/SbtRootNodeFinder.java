@@ -34,13 +34,14 @@ public class SbtRootNodeFinder {
         // An evicted version of a directly-declared dependency has no incoming edges (sbt with Coursier), so it would
         // otherwise be mistaken for a root.
         Set<String> evictedIds = SbtDotEvictionParser.parseEvictedToWinner(mutableGraph).keySet();
-        rootIds.removeAll(evictedIds);
 
         // Only consider dependency edges when evictions are actually present; otherwise
         // all edge-less root candidates are real sub-projects and belong in the multi-root warning.
         if (evictedIds.isEmpty()) {
             return rootIds;
         }
+
+        rootIds.removeAll(evictedIds);
 
         // With evictions, prefer roots that have at least one real dependency edge over stranded nodes
         // and phantom callers; fall back to all candidates for dependency-free projects.
