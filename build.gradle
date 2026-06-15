@@ -22,7 +22,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '11.5.0-SIGQA19-SNAPSHOT'
+version = '11.5.0-SIGQA19-zhengf.IDETECT-5071-sbt-evictions-fix'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
