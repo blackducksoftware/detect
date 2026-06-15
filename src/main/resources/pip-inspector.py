@@ -29,8 +29,8 @@
 A script that inspects the pip cache to determine the hierarchy of dependencies.
 
 This script is invoked by Black Duck Detect as a subprocess inside the target Python
-environment. It reads what is already installed and prints a dependency tree to stdout.
-Detect parses that tree for SCA analysis.
+environment. Installed dependencies are read and a dependency tree is printed to stdout
+which Detect parses for Black Duck SCA analysis.
 
 IMPORTANT: This script does NOT install packages. It only reads what is already
 installed. Run 'pip install' before invoking this script.
