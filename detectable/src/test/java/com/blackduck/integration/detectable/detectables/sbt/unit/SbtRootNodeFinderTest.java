@@ -140,4 +140,27 @@ public class SbtRootNodeFinderTest {
         Assertions.assertEquals("project-org:project-name:project-version", projectId.stream().findFirst().get());
     }
 
+    @Test
+    public void disconnectedWorkspaceSubProjectsReturnedAsRootsWhenNoEvictions() throws DetectableException, IOException {
+        // sbt includes all workspace sub-projects in every dot file. Sub-projects with no compile
+        // dependencies in the current scope appear as isolated nodes (no outgoing edges). Without evictions
+        // these isolated nodes are legitimate projects, not Coursier stranded nodes — all root candidates
+        // must be returned so the caller can emit the appropriate multi-root warning.
+        // Regression: the nodesWithDependencyEdges filter must NOT be applied when evictedIds is empty.
+        MutableGraph mutableGraph = createMutableGraph(
+            node("services", "service1_2.12", "0.1.0-SNAPSHOT") +
+            node("api", "api1_2.12", "0.1.0-SNAPSHOT") +
+            node("api", "api2_2.12", "0.1.0-SNAPSHOT") +   // isolated — no edges
+            node("services", "service2_2.12", "0.1.0-SNAPSHOT") + // isolated — no edges
+            edge("services", "service1_2.12", "0.1.0-SNAPSHOT", "api", "api1_2.12", "0.1.0-SNAPSHOT")
+        );
+        SbtRootNodeFinder projectMatcher = new SbtRootNodeFinder(new SbtDotGraphNodeParser(new ExternalIdFactory()));
+        Set<String> rootIds = projectMatcher.determineRootIDs(mutableGraph);
+        // service1, api2, service2 are all root candidates (api1 is a dependency of service1)
+        Assertions.assertEquals(3, rootIds.size());
+        Assertions.assertTrue(rootIds.contains("services:service1_2.12:0.1.0-SNAPSHOT"));
+        Assertions.assertTrue(rootIds.contains("api:api2_2.12:0.1.0-SNAPSHOT"));
+        Assertions.assertTrue(rootIds.contains("services:service2_2.12:0.1.0-SNAPSHOT"));
+    }
+
 }
