@@ -22,7 +22,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '11.5.0-SIGQA20-SNAPSHOT'
+version = '11.5.0-SIGQA20-zhengf.IDETECT-5196-regression-warn'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
