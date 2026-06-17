@@ -4,9 +4,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -29,6 +32,8 @@ import com.blackduck.integration.util.NameVersion;
  */
 public class PnpmLockYamlParserInitial {
 
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
     private final EnumListFilter<PnpmDependencyType> dependencyFilter;
     private final List<String> excludedDirectories;
     private final List<String> includedDirectories;
@@ -42,7 +47,13 @@ public class PnpmLockYamlParserInitial {
     public List<CodeLocation> parse(File pnpmLockYamlFile, @Nullable NameVersion projectNameVersion, PnpmLinkedPackageResolver linkedPackageResolver)
         throws IOException, IntegrationException {
         PnpmLockYamlBase pnpmLockYaml = parseYamlFile(pnpmLockYamlFile);
-        
+
+        if (pnpmLockYaml == null) {
+            logger.warn("The pnpm-lock.yaml file '{}' is empty and contains no parsable content. No dependencies will be extracted.",
+                pnpmLockYamlFile.getAbsolutePath());
+            return Collections.emptyList();
+        }
+
         if (pnpmLockYaml instanceof PnpmLockYaml) {
             PnpmYamlTransformer pnpmYamlTransformer = new PnpmYamlTransformer(dependencyFilter, pnpmLockYaml.lockfileVersion);
             PnpmLockYamlParser pnpmYamlParser = new PnpmLockYamlParser(pnpmYamlTransformer);
