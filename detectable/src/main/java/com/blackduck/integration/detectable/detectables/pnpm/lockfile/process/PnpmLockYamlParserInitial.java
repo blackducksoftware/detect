@@ -55,6 +55,11 @@ public class PnpmLockYamlParserInitial {
         }
 
         if (pnpmLockYaml instanceof PnpmLockYaml) {
+            if (pnpmLockYaml.lockfileVersion == null) {
+                throw new IntegrationException(
+                    "The pnpm-lock.yaml file does not contain a 'lockfileVersion' field. "
+                    + "This is required for parsing. Please regenerate the lock file by running 'pnpm install'.");
+            }
             PnpmYamlTransformer pnpmYamlTransformer = new PnpmYamlTransformer(dependencyFilter, pnpmLockYaml.lockfileVersion);
             PnpmLockYamlParser pnpmYamlParser = new PnpmLockYamlParser(pnpmYamlTransformer);
             return pnpmYamlParser.parse(pnpmLockYamlFile.getParentFile(), (PnpmLockYaml) pnpmLockYaml, linkedPackageResolver, projectNameVersion, excludedDirectories, includedDirectories);

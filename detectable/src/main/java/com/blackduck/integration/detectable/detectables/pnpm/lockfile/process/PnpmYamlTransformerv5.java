@@ -72,7 +72,8 @@ public class PnpmYamlTransformerv5 {
         @Nullable String reportingProjectPackagePath
     ) throws IntegrationException {
         if (packageMap == null) {
-            logger.warn("The 'packages' section is absent from the pnpm-lock.yaml file. No resolved dependencies are present. The scan will continue with an empty dependency graph.");
+            logger.debug("No packages available to build dependency graph for workspace '{}'. Skipping graph construction.",
+                reportingProjectPackagePath != null ? reportingProjectPackagePath : "root");
             return;
         }
         for (Map.Entry<String, PnpmPackageInfov5> packageEntry : packageMap.entrySet()) {
