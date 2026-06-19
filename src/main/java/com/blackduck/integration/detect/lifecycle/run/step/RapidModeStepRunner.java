@@ -140,6 +140,8 @@ public class RapidModeStepRunner {
         List<String> fullResultContents = extractContentStrings(rapidFullResults);
         List<DeveloperScansScanView> rapidResults = convertContentsToScanViews(fullResultContents);
 
+//        List<DeveloperScansScanView> rapidResultsOld = operationRunner.waitForRapidResults(blackDuckRunData, parsedUrls, mode);
+
         if (operationRunner.shouldAttemptQuackPatchFullResults()) {
             logger.info("Quack Patch is enabled, using full Rapid scan results.");
             if (fullResultContents.isEmpty()) {
@@ -261,6 +263,13 @@ public class RapidModeStepRunner {
     // Gson deserializes each item by field name — fields present in both V5 and V6 map correctly,
     // V6-only fields (matchTypes, allVulnerabilities, etc.) are silently ignored, and V5-only
     // fields (originId, policyStatuses) are left null since they do not exist in the V6 schema.
+    //
+    // Items without violating policies are filtered out here to match V5 volume in downstream
+    // outputs: V5 was server-filtered to policy-violating components only, while V6 also returns
+    // vulnerable-but-not-policy-violating components. Without this filter, generateRapidJsonFile,
+    // generateComponentLocationAnalysisIfEnabled, and logRapidReport would all see a larger
+    // component set than they did under V5. QuackPatch is unaffected because it consumes the
+    // unfiltered raw page string (fullResultContents.get(0)) before this conversion runs.
     private List<DeveloperScansScanView> convertContentsToScanViews(List<String> contents) {
         List<DeveloperScansScanView> scanViews = new ArrayList<>();
         for (String content : contents) {
@@ -268,7 +277,10 @@ public class RapidModeStepRunner {
             JsonArray items = page.getAsJsonArray("items");
             if (items != null) {
                 for (JsonElement item : items) {
-                    scanViews.add(gson.fromJson(item, DeveloperScansScanView.class));
+                    DeveloperScansScanView view = gson.fromJson(item, DeveloperScansScanView.class);
+                    if (view.getViolatingPolicies() != null && !view.getViolatingPolicies().isEmpty()) {
+                        scanViews.add(view);
+                    }
                 }
             }
         }
