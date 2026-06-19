@@ -45,7 +45,7 @@ public class PnpmLockYamlParserInitial {
     }
 
     public List<CodeLocation> parse(File pnpmLockYamlFile, @Nullable NameVersion projectNameVersion, PnpmLinkedPackageResolver linkedPackageResolver)
-        throws IOException, IntegrationException {
+        throws IOException, IntegrationException, ConstructorException {
         PnpmLockYamlBase pnpmLockYaml = parseYamlFile(pnpmLockYamlFile);
 
         if (pnpmLockYaml == null) {
@@ -86,15 +86,36 @@ public class PnpmLockYamlParserInitial {
         representer.getPropertyUtils().setSkipMissingProperties(true);
 
         LoaderOptions loaderOptions = new LoaderOptions();
+
         try {
-            // Try to read the lockfile into the current Yaml classes. It's more common and 
-            // should hopefully work more of the time.
+            // Try to read the lockfile into the v6/v9 Yaml classes first (more common).
+            logger.debug("Parsing through v6/v9 format");
             Yaml yaml = new Yaml(new Constructor(PnpmLockYaml.class, loaderOptions), representer);
-            return yaml.load(new FileReader(pnpmLockYamlFile));
+            PnpmLockYamlBase result = yaml.load(new FileReader(pnpmLockYamlFile));
+
+            // If we got a valid result with a v6+ lockfileVersion, use it.
+            if (result != null && isV6OrNewer(result.lockfileVersion)) {
+                return result;
+            }
         } catch (ConstructorException e) {
-            // If the reading fails try to read a v5 Yaml. 
-            Yaml yaml = new Yaml(new Constructor(PnpmLockYamlv5.class, loaderOptions), representer);
-            return yaml.load(new FileReader(pnpmLockYamlFile));
+            // Fall through to try v5 parsing
         }
+
+        // Either: lockfileVersion was null, indicated v5, or a ConstructorException was thrown.
+        // Re-parse as v5.
+        logger.debug("Parsing through v5 format");
+        Yaml yaml = new Yaml(new Constructor(PnpmLockYamlv5.class, loaderOptions), representer);
+        return yaml.load(new FileReader(pnpmLockYamlFile));
+    }
+
+    /**
+     * Returns true if the lockfileVersion string represents a v6 or newer pnpm lockfile.
+     * Returns false if the version is v5 or older, or null.
+     */
+    private boolean isV6OrNewer(@Nullable String lockfileVersion) {
+        if (lockfileVersion == null) {
+            return false;
+        }
+        return Double.parseDouble(lockfileVersion) >= 6.0;
     }
 }
