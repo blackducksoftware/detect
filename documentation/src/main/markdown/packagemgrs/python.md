@@ -134,7 +134,7 @@ UV has two detectors:
 
 UV CLI will run if the uv executable is found along with a pyproject.toml file. It will run uv tree commands to find dependencies for the project. By default, the UV CLI detector includes main dependencies, all dependency groups, and all optional extras. Use the `detect.uv.dependency.groups.excluded` property to exclude specific dependency groups from the scan.
 
-To scan only specific dependency groups and skip regular dependencies and optional extras, use the `detect.uv.dependency.groups.only` property. When set, Detect will include only the named dependency groups defined in the project's pyproject.toml. You can list multiple groups (for example: `detect.uv.dependency.groups.only='dev,lint'`). This property applies only to groups under the `[dependency-groups]` section; it does not affect extras or optional dependencies. If both this property and `detect.uv.dependency.groups.excluded` are configured, the exclusion setting takes precedence for overlapping groups, and Detect will log a warning.
+To scan only specific dependency groups and skip regular dependencies and optional extras, use the `detect.uv.dependency.groups.only` property. When set, Detect will include only the named dependency groups defined in the project's pyproject.toml. You can list multiple groups (for example: `detect.uv.dependency.groups.only='dev,lint'`). This property applies only to groups under the `[dependency-groups]` section; extras defined under `[project.optional-dependencies]` are not included when this option is used. If both this property and `detect.uv.dependency.groups.excluded` are configured, the exclusion setting takes precedence for overlapping groups, and Detect will log a warning.
 
 ### UV Lock detector
 
