@@ -132,7 +132,9 @@ UV has two detectors:
 
 ### UV CLI detector
 
-UV CLI will run if the uv executable is found along with a pyproject.toml file. It will run uv tree commands to find dependencies for the project.
+UV CLI will run if the uv executable is found along with a pyproject.toml file. It will run uv tree commands to find dependencies for the project. By default, the UV CLI detector includes main dependencies, all dependency groups, and all optional extras. Use the `detect.uv.dependency.groups.excluded` property to exclude specific dependency groups from the scan.
+
+To restrict scanning to specific dependency groups while excluding standard dependencies and optional extras, use the `detect.uv.dependency.groups.only` property. When this property is set, Detect limits analysis to the explicitly listed dependency groups defined in the project's pyproject.toml. You can specify multiple groups as a comma-separated list (for example: `detect.uv.dependency.groups.only='dev,lint'`). This configuration applies exclusively to groups defined under the `[dependency-groups]` section; dependencies declared as extras under `[project.optional-dependencies]` are not included when this property is enabled. If both `detect.uv.dependency.groups.only` and `detect.uv.dependency.groups.excluded` are configured, the exclusion setting takes precedence for any overlapping groups, and Detect will log a warning to indicate the conflict.
 
 ### UV Lock detector
 
@@ -144,6 +146,6 @@ UV Lock detector will parse uv.lock, requirements.txt, or both to find project d
 
 ### Dependency and Workspace Inclusions/Exclusions
 
-[UV Properties](../properties/detectors/uv.md) supports exclusion of all the dependency groups specified. Since uv has a concept of workspaces, they can be included and excluded using the properties provided.
+[UV Properties](../properties/detectors/uv.md) supports exclusion of dependency groups. By default, the UV detector includes main dependencies, all dependency groups, and all optional extras. Use the `detect.uv.dependency.groups.excluded` property to exclude specific dependency groups from the scan. Since uv has a concept of workspaces, they can be included and excluded using the properties provided.
 The workspace member provided in the property should be identical to the key name under tool.uv.sources since dependencies are created under the same key name in the tree and uv.lock file.
 For excluding dependency groups and workspaces, presence of uv.lock or uv executable is required.
