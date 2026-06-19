@@ -1,6 +1,7 @@
 package com.blackduck.integration.detectable.detectables.uv;
 
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -20,6 +21,13 @@ public class UVDetectorOptions {
         this.onlyDependencyGroups = new HashSet<>(onlyDependencyGroups);
         this.includedWorkspaceMembers = new HashSet<>(includedWorkspaceMembers);
         this.excludedWorkspaceMembers = new HashSet<>(excludedWorkspaceMembers);
+    }
+
+    /**
+     * Backward-compatible constructor that defaults to an empty onlyDependencyGroups list.
+     */
+    public UVDetectorOptions(List<String> excludedDependencyGroups, List<String> includedWorkspaceMembers, List<String> excludedWorkspaceMembers) {
+        this(excludedDependencyGroups, Collections.emptyList(), includedWorkspaceMembers, excludedWorkspaceMembers);
     }
 
     public Set<String> getExcludedDependencyGroups() {

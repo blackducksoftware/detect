@@ -164,6 +164,128 @@ class UVBuildExtractorTest {
         assertTrue(arguments.contains("dev"));
     }
 
+    // ==================== Only Groups Tests ====================
+
+    @Test
+    void extractAddsOnlyGroupFlagsAndSkipsAllExtrasAllGroups() throws Exception {
+        UVBuildExtractor extractor = new UVBuildExtractor(executableRunner, tempDir, transformer);
+        UVDetectorOptions options = new UVDetectorOptions(
+            Collections.emptyList(),           // excludedGroups
+            Arrays.asList("dev", "lint"),       // onlyGroups
+            Collections.emptyList(),
+            Collections.emptyList()
+        );
+
+        Extraction extraction = extractor.extract(uvExe, options, tomlParser);
+        assertExtractionSuccess(extraction);
+
+        ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
+        verify(executableRunner).executeSuccessfully(captor.capture());
+
+        List<String> arguments = captor.getValue().getCommandWithArguments();
+        assertTrue(arguments.contains("tree"));
+        assertTrue(arguments.contains("--no-dedupe"));
+
+        // --all-extras and --all-groups should NOT be present when onlyGroups is set
+        assertTrue(!arguments.contains("--all-extras"), "Expected --all-extras to be absent when onlyGroups is set");
+        assertTrue(!arguments.contains("--all-groups"), "Expected --all-groups to be absent when onlyGroups is set");
+
+        // --only-group flags should be present for each group
+        long onlyGroupCount = arguments.stream().filter(arg -> arg.equals("--only-group")).count();
+        assertEquals(2, onlyGroupCount);
+        assertTrue(arguments.contains("dev"));
+        assertTrue(arguments.contains("lint"));
+
+        // Each group should be preceded by --only-group
+        int devIndex = arguments.indexOf("dev");
+        int lintIndex = arguments.indexOf("lint");
+        assertTrue(devIndex > 0);
+        assertTrue(lintIndex > 0);
+        assertEquals("--only-group", arguments.get(devIndex - 1));
+        assertEquals("--only-group", arguments.get(lintIndex - 1));
+    }
+
+    @Test
+    void extractWithSingleOnlyGroup() throws Exception {
+        UVBuildExtractor extractor = new UVBuildExtractor(executableRunner, tempDir, transformer);
+        UVDetectorOptions options = new UVDetectorOptions(
+            Collections.emptyList(),
+            Arrays.asList("dev"),
+            Collections.emptyList(),
+            Collections.emptyList()
+        );
+
+        Extraction extraction = extractor.extract(uvExe, options, tomlParser);
+        assertExtractionSuccess(extraction);
+
+        ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
+        verify(executableRunner).executeSuccessfully(captor.capture());
+
+        List<String> arguments = captor.getValue().getCommandWithArguments();
+
+        assertTrue(!arguments.contains("--all-extras"));
+        assertTrue(!arguments.contains("--all-groups"));
+        long onlyGroupCount = arguments.stream().filter(arg -> arg.equals("--only-group")).count();
+        assertEquals(1, onlyGroupCount);
+        assertTrue(arguments.contains("dev"));
+    }
+
+    // ==================== Conflict Handling Tests ====================
+
+    @Test
+    void extractExclusionTakesPrecedenceOverOnlyGroup() throws Exception {
+        UVBuildExtractor extractor = new UVBuildExtractor(executableRunner, tempDir, transformer);
+        // "dev" is in both only and excluded — exclusion should take precedence
+        UVDetectorOptions options = new UVDetectorOptions(
+            Arrays.asList("dev"),              // excludedGroups
+            Arrays.asList("dev", "lint"),       // onlyGroups
+            Collections.emptyList(),
+            Collections.emptyList()
+        );
+
+        Extraction extraction = extractor.extract(uvExe, options, tomlParser);
+        assertExtractionSuccess(extraction);
+
+        ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
+        verify(executableRunner).executeSuccessfully(captor.capture());
+
+        List<String> arguments = captor.getValue().getCommandWithArguments();
+
+        // --all-extras and --all-groups should NOT be present (onlyGroups path)
+        assertTrue(!arguments.contains("--all-extras"));
+        assertTrue(!arguments.contains("--all-groups"));
+
+        // "dev" should be excluded — only "lint" should remain as --only-group
+        long onlyGroupCount = arguments.stream().filter(arg -> arg.equals("--only-group")).count();
+        assertEquals(1, onlyGroupCount, "Only 'lint' should remain after 'dev' is excluded");
+        assertTrue(arguments.contains("lint"));
+        assertTrue(!arguments.contains("dev"), "'dev' should be excluded from --only-group flags");
+    }
+
+    @Test
+    void extractAllOnlyGroupsExcludedResultsInNoOnlyGroupFlags() throws Exception {
+        UVBuildExtractor extractor = new UVBuildExtractor(executableRunner, tempDir, transformer);
+        // All only-groups are also excluded
+        UVDetectorOptions options = new UVDetectorOptions(
+            Arrays.asList("dev", "lint"),       // excludedGroups
+            Arrays.asList("dev", "lint"),       // onlyGroups
+            Collections.emptyList(),
+            Collections.emptyList()
+        );
+
+        Extraction extraction = extractor.extract(uvExe, options, tomlParser);
+        assertExtractionSuccess(extraction);
+
+        ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
+        verify(executableRunner).executeSuccessfully(captor.capture());
+
+        List<String> arguments = captor.getValue().getCommandWithArguments();
+
+        // No --only-group flags since all were excluded
+        long onlyGroupCount = arguments.stream().filter(arg -> arg.equals("--only-group")).count();
+        assertEquals(0, onlyGroupCount, "No --only-group flags should remain when all are excluded");
+    }
+
 
     /**
      * Asserts that the extraction completed on the success path.
