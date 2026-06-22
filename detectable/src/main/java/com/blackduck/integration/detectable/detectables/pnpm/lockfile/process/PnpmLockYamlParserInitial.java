@@ -1,9 +1,10 @@
 package com.blackduck.integration.detectable.detectables.pnpm.lockfile.process;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.jetbrains.annotations.Nullable;
@@ -62,9 +63,9 @@ public class PnpmLockYamlParserInitial {
      * 
      * @param pnpmLockYamlFile the File path to the pnpm-lock.yaml file
      * @return a memory representation of the lock file.
-     * @throws FileNotFoundException
+     * @throws IOException if the file cannot be read or closed
      */
-    private PnpmLockYamlBase parseYamlFile(File pnpmLockYamlFile) throws FileNotFoundException {
+    private PnpmLockYamlBase parseYamlFile(File pnpmLockYamlFile) throws IOException {
         DumperOptions dumperOptions = new DumperOptions();
         Representer representer = new Representer(dumperOptions);
         representer.getPropertyUtils().setSkipMissingProperties(true);
@@ -74,11 +75,15 @@ public class PnpmLockYamlParserInitial {
             // Try to read the lockfile into the current Yaml classes. It's more common and 
             // should hopefully work more of the time.
             Yaml yaml = new Yaml(new Constructor(PnpmLockYaml.class, loaderOptions), representer);
-            return yaml.load(new FileReader(pnpmLockYamlFile));
+            try (InputStreamReader reader = new InputStreamReader(new FileInputStream(pnpmLockYamlFile), StandardCharsets.UTF_8)) {
+                return yaml.load(reader);
+            }
         } catch (ConstructorException e) {
             // If the reading fails try to read a v5 Yaml. 
             Yaml yaml = new Yaml(new Constructor(PnpmLockYamlv5.class, loaderOptions), representer);
-            return yaml.load(new FileReader(pnpmLockYamlFile));
+            try (InputStreamReader reader = new InputStreamReader(new FileInputStream(pnpmLockYamlFile), StandardCharsets.UTF_8)) {
+                return yaml.load(reader);
+            }
         }
     }
 }
