@@ -45,7 +45,7 @@ public class PnpmLockYamlParserInitial {
     }
 
     public List<CodeLocation> parse(File pnpmLockYamlFile, @Nullable NameVersion projectNameVersion, PnpmLinkedPackageResolver linkedPackageResolver)
-        throws IOException, IntegrationException, ConstructorException {
+        throws IOException, IntegrationException {
         PnpmLockYamlBase pnpmLockYaml = parseYamlFile(pnpmLockYamlFile);
 
         if (pnpmLockYaml == null) {
