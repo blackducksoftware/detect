@@ -116,6 +116,11 @@ public class PnpmLockYamlParserInitial {
         if (lockfileVersion == null) {
             return false;
         }
-        return Double.parseDouble(lockfileVersion) >= 6.0;
+        try {
+            return Double.parseDouble(lockfileVersion) >= 6.0;
+        } catch (NumberFormatException e) {
+            logger.debug("Unable to parse lockfileVersion '{}'; treating as v5/unknown.", lockfileVersion);
+            return false;
+        }
     }
 }
