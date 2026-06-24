@@ -1362,6 +1362,30 @@ public class DetectProperties {
             .setGroups(DetectGroup.NPM, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
 
+    public static final CaseSensitiveStringListProperty DETECT_NPM_EXCLUDED_WORKSPACES =
+        CaseSensitiveStringListProperty.newBuilder("detect.npm.excluded.workspaces")
+            .setInfo("NPM Exclude Workspaces", DetectPropertyFromVersion.VERSION_12_0_0)
+            .setHelp(
+                "A comma-separated list of npm workspace package names to exclude.",
+                "By default, Detect includes all workspaces. Workspaces are identified by the 'name' field in the workspace's package.json. This property accepts filename globbing-style wildcards. For more information, refer to the <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/configuring/propertywildcards%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Property wildcard support page.</xref>"
+            )
+            .setGroups(DetectGroup.NPM, DetectGroup.SOURCE_SCAN)
+            .setCategory(DetectCategory.Advanced)
+            .setExample("@myorg/test-harness,@myorg/internal-*")
+            .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_NPM_INCLUDED_WORKSPACES =
+        CaseSensitiveStringListProperty.newBuilder("detect.npm.included.workspaces")
+            .setInfo("NPM Include Workspaces", DetectPropertyFromVersion.VERSION_12_0_0)
+            .setHelp(
+                "A comma-separated list of npm workspace package names to include.",
+                "By default, Detect includes all workspaces. If workspaces are excluded or included, Detect will include any workspace included by this property that is not excluded. Exclusion rules always win. This property accepts filename globbing-style wildcards. For more information, refer to the <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/configuring/propertywildcards%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Property wildcard support page.</xref>"
+            )
+            .setGroups(DetectGroup.NPM, DetectGroup.SOURCE_SCAN)
+            .setCategory(DetectCategory.Advanced)
+            .setExample("@myorg/frontend,@myorg/api")
+            .build();
+
     public static final NullablePathProperty DETECT_NPM_PATH =
         NullablePathProperty.newBuilder("detect.npm.path")
             .setInfo("NPM Executable", DetectPropertyFromVersion.VERSION_3_0_0)

@@ -67,17 +67,18 @@ public class CombinedPackageJsonExtractor {
                 // Don't try to read a file that doesn't exist.
                 if (!Files.exists(workspaceJsonPath)) {
                     continue;
-                } else {
-                    addRelativeWorkspace(combinedPackageJson, projectRoot, convertedWorkspace);
                 }
-                
-                String workspaceJsonString 
-                    = FileUtils.readFileToString(new File(workspaceJsonPath.toString()), StandardCharsets.UTF_8);
-                
+
+                String workspaceJsonString =
+                    FileUtils.readFileToString(new File(workspaceJsonPath.toString()), StandardCharsets.UTF_8);
+
                 PackageJson workspacePackageJson = Optional.ofNullable(workspaceJsonString)
                         .map(content -> gson.fromJson(content, PackageJson.class))
                         .orElse(null);
-                
+
+                String workspacePackageName = workspacePackageJson != null ? workspacePackageJson.name : null;
+                addRelativeWorkspace(combinedPackageJson, projectRoot, convertedWorkspace, workspacePackageName);
+
                 if (workspacePackageJson != null) {
                     combinedPackageJson.getDependencies().putAll(workspacePackageJson.dependencies);
                     combinedPackageJson.getDevDependencies().putAll(workspacePackageJson.devDependencies);
@@ -100,7 +101,7 @@ public class CombinedPackageJsonExtractor {
      *                            replaced
      */
     private void addRelativeWorkspace(CombinedPackageJson combinedPackageJson, String projectRoot,
-            String convertedWorkspace) {
+            String convertedWorkspace, String workspacePackageName) {
         int rootIndex = convertedWorkspace.indexOf(projectRoot);
         if (rootIndex != -1) {
             int packageStartIndex = rootIndex + projectRoot.length();
@@ -109,6 +110,9 @@ public class CombinedPackageJsonExtractor {
                 // the package-lock.json file.
                 String relativeWorkspace = convertedWorkspace.substring(packageStartIndex).replace("\\", "/");
                 combinedPackageJson.getRelativeWorkspaces().add(relativeWorkspace);
+                if (workspacePackageName != null) {
+                    combinedPackageJson.getWorkspaceNameToPath().put(workspacePackageName, relativeWorkspace);
+                }
             }
         }
     }

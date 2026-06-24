@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
@@ -22,6 +23,7 @@ import com.blackduck.integration.detectable.detectables.npm.lockfile.model.Packa
 import com.blackduck.integration.detectable.detectables.npm.lockfile.result.NpmPackagerResult;
 import com.blackduck.integration.detectable.detectables.npm.packagejson.CombinedPackageJson;
 import com.blackduck.integration.detectable.detectables.npm.packagejson.CombinedPackageJsonExtractor;
+import com.blackduck.integration.util.ExcludedIncludedWildcardFilter;
 import com.blackduck.integration.util.NameVersion;
 
 public class NpmLockfilePackager {
@@ -29,12 +31,21 @@ public class NpmLockfilePackager {
     private final ExternalIdFactory externalIdFactory;
     private final NpmLockFileProjectIdTransformer projectIdTransformer;
     private final NpmLockfileGraphTransformer graphTransformer;
+    @Nullable private final ExcludedIncludedWildcardFilter workspaceFilter;
 
     public NpmLockfilePackager(Gson gson, ExternalIdFactory externalIdFactory, NpmLockFileProjectIdTransformer projectIdTransformer, NpmLockfileGraphTransformer graphTransformer) {
+        this(gson, externalIdFactory, projectIdTransformer, graphTransformer, null);
+    }
+
+    public NpmLockfilePackager(Gson gson, ExternalIdFactory externalIdFactory,
+            NpmLockFileProjectIdTransformer projectIdTransformer,
+            NpmLockfileGraphTransformer graphTransformer,
+            @Nullable ExcludedIncludedWildcardFilter workspaceFilter) {
         this.gson = gson;
         this.externalIdFactory = externalIdFactory;
         this.projectIdTransformer = projectIdTransformer;
         this.graphTransformer = graphTransformer;
+        this.workspaceFilter = workspaceFilter;
     }
 
     public NpmPackagerResult parseAndTransform(@Nullable String rootJsonPath, @Nullable String packageJsonText, String lockFileText) throws IOException {
@@ -68,10 +79,25 @@ public class NpmLockfilePackager {
             : new HashMap<>();
 
         DependencyGraph dependencyGraph = graphTransformer.transform(packageLock, project, externalDependencies,
-                combinedPackageJson == null ? null : combinedPackageJson.getRelativeWorkspaces(), aliasMapping);
+                getFilteredWorkspaces(combinedPackageJson), aliasMapping);
         ExternalId projectId = projectIdTransformer.transform(combinedPackageJson, packageLock);
         CodeLocation codeLocation = new CodeLocation(dependencyGraph, projectId);
         return new NpmPackagerResult(projectId.getName(), projectId.getVersion(), codeLocation);
+    }
+
+    private List<String> getFilteredWorkspaces(@Nullable CombinedPackageJson combinedPackageJson) {
+        if (combinedPackageJson == null) {
+            return null;
+        }
+        List<String> workspaces = combinedPackageJson.getRelativeWorkspaces();
+        if (workspaceFilter == null || workspaces.isEmpty()) {
+            return workspaces;
+        }
+        Map<String, String> pathToName = new HashMap<>();
+        combinedPackageJson.getWorkspaceNameToPath().forEach((name, path) -> pathToName.put(path, name));
+        return workspaces.stream()
+            .filter(path -> workspaceFilter.shouldInclude(pathToName.getOrDefault(path, path)))
+            .collect(Collectors.toList());
     }
 
     public String removePathInfoFromPackageName(String lockFileText) {

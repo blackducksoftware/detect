@@ -246,12 +246,16 @@ public class DetectableOptionFactory {
     public NpmCliExtractorOptions createNpmCliExtractorOptions() {
         EnumListFilter<NpmDependencyType> npmDependencyTypeFilter = createNpmDependencyTypeFilter();
         String npmArguments = detectConfiguration.getNullableValue(DetectProperties.DETECT_NPM_ARGUMENTS);
-        return new NpmCliExtractorOptions(npmDependencyTypeFilter, npmArguments);
+        List<String> excludedWorkspaceNames = detectConfiguration.getValue(DetectProperties.DETECT_NPM_EXCLUDED_WORKSPACES);
+        List<String> includedWorkspaceNames = detectConfiguration.getValue(DetectProperties.DETECT_NPM_INCLUDED_WORKSPACES);
+        return new NpmCliExtractorOptions(npmDependencyTypeFilter, npmArguments, excludedWorkspaceNames, includedWorkspaceNames);
     }
 
     public NpmLockfileOptions createNpmLockfileOptions() {
         EnumListFilter<NpmDependencyType> npmDependencyTypeFilter = createNpmDependencyTypeFilter();
-        return new NpmLockfileOptions(npmDependencyTypeFilter);
+        List<String> excludedWorkspaceNames = detectConfiguration.getValue(DetectProperties.DETECT_NPM_EXCLUDED_WORKSPACES);
+        List<String> includedWorkspaceNames = detectConfiguration.getValue(DetectProperties.DETECT_NPM_INCLUDED_WORKSPACES);
+        return new NpmLockfileOptions(npmDependencyTypeFilter, excludedWorkspaceNames, includedWorkspaceNames);
     }
 
     public NpmPackageJsonParseDetectableOptions createNpmPackageJsonParseDetectableOptions() {

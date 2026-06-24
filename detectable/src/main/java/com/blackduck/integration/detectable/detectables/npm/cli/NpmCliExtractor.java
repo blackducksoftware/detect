@@ -26,6 +26,7 @@ import com.blackduck.integration.detectable.detectables.npm.packagejson.model.Pa
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.util.ToolVersionLogger;
 import com.blackduck.integration.executable.ExecutableOutput;
+import com.blackduck.integration.util.ExcludedIncludedWildcardFilter;
 
 public class NpmCliExtractor {
     public static final String OUTPUT_FILE = "detect_npm_proj_dependencies.json";
@@ -36,12 +37,20 @@ public class NpmCliExtractor {
     private final NpmCliParser npmCliParser;
     private final Gson gson;
     private final ToolVersionLogger toolVersionLogger;
+    @Nullable private final ExcludedIncludedWildcardFilter workspaceFilter;
 
     public NpmCliExtractor(DetectableExecutableRunner executableRunner, NpmCliParser npmCliParser, Gson gson, ToolVersionLogger toolVersionLogger) {
+        this(executableRunner, npmCliParser, gson, toolVersionLogger, null);
+    }
+
+    public NpmCliExtractor(DetectableExecutableRunner executableRunner, NpmCliParser npmCliParser,
+            Gson gson, ToolVersionLogger toolVersionLogger,
+            @Nullable ExcludedIncludedWildcardFilter workspaceFilter) {
         this.executableRunner = executableRunner;
         this.npmCliParser = npmCliParser;
         this.gson = gson;
         this.toolVersionLogger = toolVersionLogger;
+        this.workspaceFilter = workspaceFilter;
     }
 
     public Extraction extract(File directory, ExecutableTarget npmExe, @Nullable String npmArguments, File packageJsonFile) {
@@ -77,7 +86,7 @@ public class NpmCliExtractor {
         } else if (StringUtils.isNotBlank(standardOutput)) {
             logger.debug("Parsing npm ls file.");
             logger.debug(standardOutput);
-            NpmPackagerResult result = npmCliParser.generateCodeLocation(standardOutput, combinedPackageJson);
+            NpmPackagerResult result = npmCliParser.generateCodeLocation(standardOutput, combinedPackageJson, workspaceFilter);
             String projectName = result.getProjectName() != null ? result.getProjectName() : combinedPackageJson.getName();
             String projectVersion = result.getProjectVersion() != null ? result.getProjectVersion() : combinedPackageJson.getVersion();
             return new Extraction.Builder().success(result.getCodeLocation()).projectName(projectName).projectVersion(projectVersion).build();

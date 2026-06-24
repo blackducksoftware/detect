@@ -1,13 +1,17 @@
 package com.blackduck.integration.detectable.detectables.npm.packagejson.unit;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
+import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -15,6 +19,8 @@ import com.google.gson.Gson;
 import com.blackduck.integration.detectable.detectables.npm.packagejson.CombinedPackageJson;
 import com.blackduck.integration.detectable.detectables.npm.packagejson.CombinedPackageJsonExtractor;
 import com.blackduck.integration.detectable.util.FunctionalTestFiles;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CombinedPackageJsonExtractorTest {
     @Test
@@ -57,6 +63,26 @@ public class CombinedPackageJsonExtractorTest {
                 combinedPackageJsonExtractor.constructCombinedPackageJson(rootPackageJson, packageJsonText);
         
         validateDiscoveredWorkspaceInformation(combinedPackageJson);     
+    }
+
+    @Test
+    public void testWorkspaceNameToPathMapIsPopulated() throws IOException {
+        // Use the existing dev-exclusion-workspace-test fixture.
+        // Its root package.json has "workspaces": ["packages/*", "packages/*/*"]
+        // and packages/w1/package.json has "name": "w1".
+        File rootDir = FunctionalTestFiles.asFile("/npm/dev-exclusion-workspace-test");
+        File rootPackageJson = new File(rootDir, "package.json");
+        String rootPackageJsonText = FileUtils.readFileToString(rootPackageJson, StandardCharsets.UTF_8);
+
+        CombinedPackageJsonExtractor extractor = new CombinedPackageJsonExtractor(new Gson());
+        CombinedPackageJson result = extractor.constructCombinedPackageJson(
+            rootPackageJson.getAbsolutePath(), rootPackageJsonText);
+
+        assertNotNull(result);
+        Map<String, String> nameToPath = result.getWorkspaceNameToPath();
+        assertFalse(nameToPath.isEmpty(), "workspaceNameToPath should not be empty");
+        assertEquals("packages/w1", nameToPath.get("w1"),
+            "Package name 'w1' should map to relative path 'packages/w1'");
     }
 
     private void validateDiscoveredWorkspaceInformation(CombinedPackageJson combinedPackageJson) {

@@ -9,6 +9,7 @@ import java.util.Set;
 
 import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +25,7 @@ import com.blackduck.integration.detectable.detectables.npm.NpmAliasParser;
 import com.blackduck.integration.detectable.detectables.npm.NpmDependencyType;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.result.NpmPackagerResult;
 import com.blackduck.integration.detectable.detectables.npm.packagejson.CombinedPackageJson;
+import com.blackduck.integration.util.ExcludedIncludedWildcardFilter;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -45,41 +47,45 @@ public class NpmCliParser {
     }
 
     public NpmPackagerResult generateCodeLocation(String npmLsOutput, CombinedPackageJson combinedPackageJson) {
+        return generateCodeLocation(npmLsOutput, combinedPackageJson, null);
+    }
+
+    public NpmPackagerResult generateCodeLocation(String npmLsOutput, CombinedPackageJson combinedPackageJson,
+            @Nullable ExcludedIncludedWildcardFilter workspaceFilter) {
         if (StringUtils.isBlank(npmLsOutput)) {
             logger.error("Ran into an issue creating and writing to file");
             return null;
         }
 
         logger.debug("Generating results from npm ls -json");
-        return convertNpmJsonFileToCodeLocation(npmLsOutput, combinedPackageJson);
+        return convertNpmJsonFileToCodeLocation(npmLsOutput, combinedPackageJson, workspaceFilter);
     }
 
     public NpmPackagerResult convertNpmJsonFileToCodeLocation(String npmLsOutput, CombinedPackageJson combinedPackageJson) {
+        return convertNpmJsonFileToCodeLocation(npmLsOutput, combinedPackageJson, null);
+    }
+
+    public NpmPackagerResult convertNpmJsonFileToCodeLocation(String npmLsOutput, CombinedPackageJson combinedPackageJson,
+            @Nullable ExcludedIncludedWildcardFilter workspaceFilter) {
         JsonObject npmJson = JsonParser.parseString(npmLsOutput).getAsJsonObject();
         DependencyGraph graph = new BasicDependencyGraph();
 
         JsonElement projectNameElement = npmJson.getAsJsonPrimitive(JSON_NAME);
         JsonElement projectVersionElement = npmJson.getAsJsonPrimitive(JSON_VERSION);
-        String projectName = null;
-        String projectVersion = null;
-        if (projectNameElement != null) {
-            projectName = projectNameElement.getAsString();
-        }
-        if (projectVersionElement != null) {
-            projectVersion = projectVersionElement.getAsString();
-        }
+        String projectName = projectNameElement != null ? projectNameElement.getAsString() : null;
+        String projectVersion = projectVersionElement != null ? projectVersionElement.getAsString() : null;
 
         // Build alias mapping once from package.json
         Map<String, String> aliasMapping = buildAliasMapping(combinedPackageJson);
 
-        populateChildren(graph, null, npmJson.getAsJsonObject(JSON_DEPENDENCIES), true, combinedPackageJson, aliasMapping);
+        populateChildren(graph, null, npmJson.getAsJsonObject(JSON_DEPENDENCIES), true,
+            combinedPackageJson, aliasMapping, workspaceFilter);
 
         ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.NPMJS, projectName, projectVersion);
 
         CodeLocation codeLocation = new CodeLocation(graph, externalId);
 
         return new NpmPackagerResult(projectName, projectVersion, codeLocation);
-
     }
 
     /**
@@ -99,7 +105,9 @@ public class NpmCliParser {
         );
     }
 
-    private void populateChildren(DependencyGraph graph, Dependency parentDependency, JsonObject parentNodeChildren, boolean isRootDependency, CombinedPackageJson combinedPackageJson, Map<String, String> aliasMapping) {
+    private void populateChildren(DependencyGraph graph, Dependency parentDependency, JsonObject parentNodeChildren,
+            boolean isRootDependency, CombinedPackageJson combinedPackageJson, Map<String, String> aliasMapping,
+            @Nullable ExcludedIncludedWildcardFilter workspaceFilter) {
         if (parentNodeChildren == null) {
             return;
         }
@@ -113,15 +121,16 @@ public class NpmCliParser {
                     // Transitives can be both application and dev/peer/optional dependency graphs, but Detect shouldn't be walking a dev, peer, or optional dependency tree unless it passed the filter already.
                     return true;
                 }
-                boolean excludingBecauseDev = (npmDependencyTypeFilter.shouldExclude(NpmDependencyType.DEV, combinedPackageJson.getDevDependencies()) && combinedPackageJson.getDevDependencies().containsKey(
-                    elementEntry.getKey()));
+                boolean excludingBecauseDev = (npmDependencyTypeFilter.shouldExclude(NpmDependencyType.DEV, combinedPackageJson.getDevDependencies())
+                    && combinedPackageJson.getDevDependencies().containsKey(elementEntry.getKey()));
                 boolean excludingBecausePeer = (npmDependencyTypeFilter.shouldExclude(NpmDependencyType.PEER, combinedPackageJson.getPeerDependencies())
                     && combinedPackageJson.getPeerDependencies().containsKey(elementEntry.getKey()));
                 boolean excludingBecauseOptional = (npmDependencyTypeFilter.shouldExclude(NpmDependencyType.OPTIONAL, combinedPackageJson.getOptionalDependencies())
                     && combinedPackageJson.getOptionalDependencies().containsKey(elementEntry.getKey()));
                 return !excludingBecauseDev && !excludingBecausePeer && !excludingBecauseOptional;
             })
-            .forEach(elementEntry -> processChild(elementEntry, graph, parentDependency, isRootDependency, combinedPackageJson, aliasMapping));
+            .forEach(elementEntry -> processChild(elementEntry, graph, parentDependency, isRootDependency,
+                combinedPackageJson, aliasMapping, workspaceFilter));
     }
 
     private void processChild(
@@ -130,7 +139,8 @@ public class NpmCliParser {
         Dependency parentDependency,
         boolean isRootDependency,
         CombinedPackageJson combinedPackageJson,
-        Map<String, String> aliasMapping
+        Map<String, String> aliasMapping,
+        @Nullable ExcludedIncludedWildcardFilter workspaceFilter
     ) {
         JsonObject element = elementEntry.getValue().getAsJsonObject();
         String name = elementEntry.getKey();
@@ -150,29 +160,50 @@ public class NpmCliParser {
             }
             ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.NPMJS, actualName, version);
             Dependency child = new Dependency(actualName, version, externalId);
-            
-            // Any workspace dependency is considered a direct dependency
+
+            // Any workspace dependency is considered a direct dependency (unless filtered out)
             boolean directWorkspaceDependency = false;
             String possibleWorkspaceDependency = Optional.ofNullable(element.getAsJsonPrimitive("resolved"))
-                    .filter(JsonPrimitive::isString)
-                    .map(JsonPrimitive::getAsString)
-                    .orElse(null);
-            
+                .filter(JsonPrimitive::isString)
+                .map(JsonPrimitive::getAsString)
+                .orElse(null);
+
+            // Whether this workspace was detected but explicitly excluded by the filter
+            boolean workspaceExcludedByFilter = false;
+
             if (combinedPackageJson.getRelativeWorkspaces() != null && possibleWorkspaceDependency != null) {
-                // workspaces under the root resolve as file../<path to workspace> 
+                // workspaces under the root resolve as file../<path to workspace>
                 // remove that and see if any absolute workspace paths have this subpath
-                String convertedPossibleWorkspaceDependency =
-                        possibleWorkspaceDependency.replace("file:../", "");
-                
-                directWorkspaceDependency = 
-                        combinedPackageJson.getRelativeWorkspaces().stream().anyMatch(workspace -> workspace.equals(convertedPossibleWorkspaceDependency));
+                String convertedPath = possibleWorkspaceDependency.replace("file:../", "");
+                boolean isWorkspace = combinedPackageJson.getRelativeWorkspaces().stream()
+                    .anyMatch(workspace -> workspace.equals(convertedPath));
+
+                if (isWorkspace) {
+                    if (workspaceFilter != null) {
+                        // Resolve path to package name for filter check; fall back to path if no mapping
+                        String packageName = combinedPackageJson.getWorkspaceNameToPath().entrySet().stream()
+                            .filter(e -> e.getValue().equals(convertedPath))
+                            .map(Map.Entry::getKey)
+                            .findFirst()
+                            .orElse(convertedPath);
+                        directWorkspaceDependency = workspaceFilter.shouldInclude(packageName);
+                        workspaceExcludedByFilter = !directWorkspaceDependency;
+                    } else {
+                        directWorkspaceDependency = true;
+                    }
+                }
             }
 
-            populateChildren(graph, child, children, directWorkspaceDependency, combinedPackageJson, aliasMapping);
+            // When a workspace is excluded by the filter, do not traverse its children —
+            // treat it as a leaf (regular dependency with no transitive graph)
+            if (!workspaceExcludedByFilter) {
+                populateChildren(graph, child, children, directWorkspaceDependency,
+                    combinedPackageJson, aliasMapping, workspaceFilter);
+            }
 
-            if (isRootDependency || directWorkspaceDependency) {
+            if ((isRootDependency && !workspaceExcludedByFilter) || directWorkspaceDependency) {
                 graph.addChildToRoot(child);
-            } else {
+            } else if (!workspaceExcludedByFilter) {
                 graph.addParentWithChild(parentDependency, child);
             }
         } else {

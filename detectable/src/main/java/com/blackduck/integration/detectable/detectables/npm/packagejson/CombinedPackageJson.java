@@ -1,7 +1,9 @@
 package com.blackduck.integration.detectable.detectables.npm.packagejson;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
@@ -11,6 +13,7 @@ public class CombinedPackageJson {
     private String name;
     private String version;
     private List<String> relativeWorkspaces = new ArrayList<>();
+    private Map<String, String> workspaceNameToPath = new HashMap<>();
     
     private MultiValuedMap<String, String> dependencies;
     private MultiValuedMap<String, String> devDependencies;
@@ -40,8 +43,12 @@ public class CombinedPackageJson {
         return optionalDependencies;
     }
     
-    public List<String> getRelativeWorkspaces() {        
+    public List<String> getRelativeWorkspaces() {
         return relativeWorkspaces;
+    }
+
+    public Map<String, String> getWorkspaceNameToPath() {
+        return workspaceNameToPath;
     }
 
     public String getName() {

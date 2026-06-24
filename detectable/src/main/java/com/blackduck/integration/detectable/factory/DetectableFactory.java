@@ -307,6 +307,7 @@ import com.blackduck.integration.detectable.detectables.opam.lockfile.OpamLockFi
 import com.blackduck.integration.detectable.detectables.opam.lockfile.OpamLockFileExtractor;
 import com.blackduck.integration.detectable.detectables.opam.transform.OpamGraphTransformer;
 import com.blackduck.integration.detectable.util.ToolVersionLogger;
+import com.blackduck.integration.util.ExcludedIncludedWildcardFilter;
 
 /*
  Entry point for creating detectables using most
@@ -574,7 +575,11 @@ public class DetectableFactory {
 
     public NpmCliDetectable createNpmCliDetectable(DetectableEnvironment environment, NpmResolver npmResolver, NpmCliExtractorOptions npmCliExtractorOptions) {
         NpmCliParser npmCliParser = new NpmCliParser(externalIdFactory, npmCliExtractorOptions.getDependencyTypeFilter());
-        NpmCliExtractor npmCliExtractor = new NpmCliExtractor(executableRunner, npmCliParser, gson, toolVersionLogger);
+        ExcludedIncludedWildcardFilter workspaceFilter =
+            ExcludedIncludedWildcardFilter.fromCollections(
+                npmCliExtractorOptions.getExcludedWorkspaceNames(),
+                npmCliExtractorOptions.getIncludedWorkspaceNames());
+        NpmCliExtractor npmCliExtractor = new NpmCliExtractor(executableRunner, npmCliParser, gson, toolVersionLogger, workspaceFilter);
         return new NpmCliDetectable(environment, fileFinder, npmResolver, npmCliExtractor, npmCliExtractorOptions);
     }
 
@@ -1027,7 +1032,11 @@ public class DetectableFactory {
 
     private NpmLockfilePackager npmLockfilePackager(NpmLockfileOptions npmLockfileOptions) {
         NpmLockfileGraphTransformer npmLockfileGraphTransformer = new NpmLockfileGraphTransformer(npmLockfileOptions.getNpmDependencyTypeFilter());
-        return new NpmLockfilePackager(gson, externalIdFactory, npmLockFileProjectIdTransformer(), npmLockfileGraphTransformer);
+        ExcludedIncludedWildcardFilter workspaceFilter =
+            ExcludedIncludedWildcardFilter.fromCollections(
+                npmLockfileOptions.getExcludedWorkspaceNames(),
+                npmLockfileOptions.getIncludedWorkspaceNames());
+        return new NpmLockfilePackager(gson, externalIdFactory, npmLockFileProjectIdTransformer(), npmLockfileGraphTransformer, workspaceFilter);
     }
 
     private NpmLockFileProjectIdTransformer npmLockFileProjectIdTransformer() {
