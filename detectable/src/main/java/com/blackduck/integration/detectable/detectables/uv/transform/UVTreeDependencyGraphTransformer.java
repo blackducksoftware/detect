@@ -11,7 +11,6 @@ import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.List;
 import java.util.Arrays;
 import java.util.Deque;
@@ -23,7 +22,7 @@ public class UVTreeDependencyGraphTransformer {
 
     private final ExternalIdFactory externalIdFactory;
     private static final Logger logger = LoggerFactory.getLogger(UVTreeDependencyGraphTransformer.class);
-    private final List<String> prefixStrings = Arrays.asList("├── ","│   ","└── ","    "); // common indentation strings for dependency lines
+    private final List<String> prefixStrings = Arrays.asList("├── ","│   ","└── ","    "); // common indentation strings for depenendency lines
     private int depth;
     private boolean isMemberExcluded = false; // check if workspace Member is excluded
     private int excludedMemberDependencyDepth; // depth at which member dependency was found
@@ -131,7 +130,7 @@ public class UVTreeDependencyGraphTransformer {
         ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.PYPI ,projectName, projectVersion);
         Dependency projectDependency = new Dependency(projectName, projectVersion, externalId);
         dependencyGraph = new BasicDependencyGraph();
-        CodeLocation codeLocation = new CodeLocation(dependencyGraph, projectDependency.getExternalId(), new File(projectDependency.getName()));
+        CodeLocation codeLocation = new CodeLocation(dependencyGraph, projectDependency.getExternalId());
         codeLocations.add(codeLocation);
     }
 

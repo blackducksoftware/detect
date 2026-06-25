@@ -1,0 +1,11 @@
+main-app v1.0.0
+├── lib-core v0.5.0
+│   └── pydantic v2.0.0
+├── requests v2.31.0
+lib-core v0.5.0
+├── pydantic v2.0.0
+    └── typing-extensions v4.7.0
+lib-utils v0.3.0
+├── click v8.1.7
+└── rich v13.4.0
+    └── pygments v2.15.0

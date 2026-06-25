@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import com.blackduck.integration.detectable.detectable.exception.DetectableException;
 import org.junit.jupiter.api.Test;
 import org.tomlj.TomlParseResult;
 
@@ -54,7 +55,7 @@ public class SetupToolsExtractUtilsTest {
     }
     
     @Test
-    public void testFindDependenciesFileForPyProjectToml() throws IOException {
+    public void testFindDependenciesFileForPyProjectToml() throws IOException, DetectableException {
         String tomlContent = "[project]\ndependencies = [\"requests\"]";
         Path tempFile = Files.createTempFile(PYPROJECT, TOML);
         Files.write(tempFile, tomlContent.getBytes());
@@ -75,7 +76,7 @@ public class SetupToolsExtractUtilsTest {
     }
     
     @Test
-    public void testFindDependenciesFileForSetupCfg() throws IOException {
+    public void testFindDependenciesFileForSetupCfg() throws IOException, DetectableException {
         String tomlContent = BUILD_SYSTEM_REQUIRES_SETUPTOOLS;
         Path tempFileToml = Files.createTempFile(PYPROJECT, TOML);
         Files.write(tempFileToml, tomlContent.getBytes());
@@ -100,7 +101,7 @@ public class SetupToolsExtractUtilsTest {
     }
     
     @Test
-    public void testFindDependenciesFileForSetupPy() throws IOException {
+    public void testFindDependenciesFileForSetupPy() throws IOException, DetectableException {
         String tomlContent = BUILD_SYSTEM_REQUIRES_SETUPTOOLS;
         Path tempFileToml = Files.createTempFile(PYPROJECT, TOML);
         Files.write(tempFileToml, tomlContent.getBytes());

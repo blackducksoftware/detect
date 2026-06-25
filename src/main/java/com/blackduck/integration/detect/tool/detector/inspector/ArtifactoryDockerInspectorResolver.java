@@ -77,6 +77,7 @@ public class ArtifactoryDockerInspectorResolver implements DockerInspectorResolv
         Optional<File> airGapDockerFolder = airGapInspectorPaths.getDockerInspectorAirGapFile();
         // TODO: Handle null better.
         Optional<Path> providedJarPath = dockerDetectableOptions.getDockerInspectorPath();
+        logger.warn("WARNING: Support for CentOS based Docker images are deprecated as of version 11.5.0 and support will be removed in 12.0.0.");
 
         if (providedJarPath.isPresent()) {
             logger.info("Docker tool will attempt to use the provided docker inspector.");

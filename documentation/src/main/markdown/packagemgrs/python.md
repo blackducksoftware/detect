@@ -33,7 +33,7 @@ Setuptools detectors attempt to run on your project if a pyproject.toml file con
 For setup.cfg and setup.py file parsing, the Setuptools detectors support direct mentioning of dependency files. For reference, see 
 [Dependency Management in Setuptools](https://setuptools.pypa.io/en/latest/userguide/dependency_management.html).
 
-<note type="tip">URL references, optional dependencies and `file: \<path to file\>` parameters found in setup.cfg are not supported. For setup.py files, programmatic population of the `install_requires` parameter is not supported.</note>
+<note type="tip">URL references, optional dependencies and `file: \<path to file\>` parameters found in setup.cfg are not supported. For setup.py files, Detect supports only literal `install_requires=[...]` lists with string literal entries. Programmatic population of the `install_requires` parameter (for example via variable references or function calls) is not supported.</note>
 
 <note type="note">The `--detect.pip.only.project.tree`, `--detect.pip.project.name`, and `--detect.pip.project.version.name` properties do not apply to the Setuptools detectors.</note>
 
@@ -147,6 +147,3 @@ UV Lock detector will parse uv.lock, requirements.txt, or both to find project d
 [UV Properties](../properties/detectors/uv.md) supports exclusion of all the dependency groups specified. Since uv has a concept of workspaces, they can be included and excluded using the properties provided.
 The workspace member provided in the property should be identical to the key name under tool.uv.sources since dependencies are created under the same key name in the tree and uv.lock file.
 For excluding dependency groups and workspaces, presence of uv.lock or uv executable is required.
-
-The `detect.uv.dependency.groups.included` property allows users to specify which UV dependency groups to scan. Supported values include a comma-separated list of group names (e.g., 'dev,test,docs'), 'ALL' for all groups, or empty for backward compatibility (main and dev groups only). This property is only supported by the UV Build Detector in CLI mode.
-

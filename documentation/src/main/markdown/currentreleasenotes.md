@@ -18,16 +18,8 @@
 	
 * **Deprecation of Java 8 support** - In alignment with EU Cyber Resilience Act (CRA) requirements and compliance timelines, Java 8 support will be deprecated in the anticipated 2026 Q3 Detect 12.0.0 release.
 
-## Version 11.5.0
+## Version 12.0.0
 
 ### New features
 
-* Support for the Conda Tree–based detector has been added. For more details, see [Conda Tree](packagemgrs/conda.md#conda-tree-detector).
-* Support for pnpm now extends to 10.32.1.
-* npm detectors now allow for aliases to be used when specifying dependencies in the package.json file.
-* Ivy CLI Detector, leveraging the `ivy:dependencytree` Ant task to extract direct and transitive dependencies for Ant + Ivy projects. For further information, see [Ivy (Ant) support](packagemgrs/ivy.md).
-* The `detect.uv.dependency.groups.included` property, supported for UV Build Detector in CLI mode, allows users to specify which UV dependency groups to scan. See [UV Package Manager](packagemgrs/python.md#uv-package-manager) for details.
-
-### Resolved issues
-
-### Dependency Updates
+* Support for npm has been extended to 11.13.0 and Node.js 24.17.0.
