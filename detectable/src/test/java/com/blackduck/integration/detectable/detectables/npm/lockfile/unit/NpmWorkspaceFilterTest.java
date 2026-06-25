@@ -40,7 +40,7 @@ public class NpmWorkspaceFilterTest {
     public void excludedWorkspaceIsNotTreatedAsWorkspace() throws IOException {
         NpmLockfileOptions options = new NpmLockfileOptions(
             EnumListFilter.excludeNone(),
-            Arrays.asList("my-ui"),   // exclude my-ui by package name
+            Arrays.asList("packages/ui"),   // exclude by relative path
             Collections.emptyList()
         );
         NpmPackagerResult result = buildResult(options);
@@ -67,7 +67,7 @@ public class NpmWorkspaceFilterTest {
         NpmLockfileOptions options = new NpmLockfileOptions(
             EnumListFilter.excludeNone(),
             Collections.emptyList(),
-            Arrays.asList("my-api")   // only include my-api
+            Arrays.asList("packages/api")   // only include by relative path
         );
         NpmPackagerResult result = buildResult(options);
         DependencyGraph graph = result.getCodeLocation().getDependencyGraph();

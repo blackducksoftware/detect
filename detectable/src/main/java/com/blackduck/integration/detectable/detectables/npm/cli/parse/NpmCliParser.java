@@ -180,13 +180,7 @@ public class NpmCliParser {
 
                 if (isWorkspace) {
                     if (workspaceFilter != null) {
-                        // Resolve path to package name for filter check; fall back to path if no mapping
-                        String packageName = combinedPackageJson.getWorkspaceNameToPath().entrySet().stream()
-                            .filter(e -> e.getValue().equals(convertedPath))
-                            .map(Map.Entry::getKey)
-                            .findFirst()
-                            .orElse(convertedPath);
-                        directWorkspaceDependency = workspaceFilter.shouldInclude(packageName);
+                        directWorkspaceDependency = workspaceFilter.shouldInclude(convertedPath);
                         workspaceExcludedByFilter = !directWorkspaceDependency;
                     } else {
                         directWorkspaceDependency = true;

@@ -208,17 +208,15 @@ class NpmCliParserTest {
         CombinedPackageJson combinedPackageJson = new CombinedPackageJson();
         combinedPackageJson.setName("my-project");
         combinedPackageJson.setVersion("1.0.0");
-        // relativeWorkspaces contains the path; workspaceNameToPath maps name -> path
         combinedPackageJson.getRelativeWorkspaces().add("packages/ui");
-        combinedPackageJson.getWorkspaceNameToPath().put("my-ui", "packages/ui");
 
         EnumListFilter<NpmDependencyType> depFilter = EnumListFilter.excludeNone();
         NpmCliParser parser = new NpmCliParser(externalIdFactory, depFilter);
 
-        // Exclude "my-ui" by package name
+        // Exclude by relative path
         ExcludedIncludedWildcardFilter workspaceFilter =
             ExcludedIncludedWildcardFilter.fromCollections(
-                Collections.singletonList("my-ui"),
+                Collections.singletonList("packages/ui"),
                 Collections.emptyList());
 
         NpmPackagerResult result = parser.generateCodeLocation(npmLsOutput, combinedPackageJson, workspaceFilter);

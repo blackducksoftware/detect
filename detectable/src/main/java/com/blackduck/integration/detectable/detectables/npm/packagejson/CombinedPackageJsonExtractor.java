@@ -76,8 +76,7 @@ public class CombinedPackageJsonExtractor {
                         .map(content -> gson.fromJson(content, PackageJson.class))
                         .orElse(null);
 
-                String workspacePackageName = workspacePackageJson != null ? workspacePackageJson.name : null;
-                addRelativeWorkspace(combinedPackageJson, projectRoot, convertedWorkspace, workspacePackageName);
+                addRelativeWorkspace(combinedPackageJson, projectRoot, convertedWorkspace);
 
                 if (workspacePackageJson != null) {
                     combinedPackageJson.getDependencies().putAll(workspacePackageJson.dependencies);
@@ -101,7 +100,7 @@ public class CombinedPackageJsonExtractor {
      *                            replaced
      */
     private void addRelativeWorkspace(CombinedPackageJson combinedPackageJson, String projectRoot,
-            String convertedWorkspace, String workspacePackageName) {
+            String convertedWorkspace) {
         int rootIndex = convertedWorkspace.indexOf(projectRoot);
         if (rootIndex != -1) {
             int packageStartIndex = rootIndex + projectRoot.length();
@@ -110,9 +109,6 @@ public class CombinedPackageJsonExtractor {
                 // the package-lock.json file.
                 String relativeWorkspace = convertedWorkspace.substring(packageStartIndex).replace("\\", "/");
                 combinedPackageJson.getRelativeWorkspaces().add(relativeWorkspace);
-                if (workspacePackageName != null) {
-                    combinedPackageJson.getWorkspaceNameToPath().put(workspacePackageName, relativeWorkspace);
-                }
             }
         }
     }

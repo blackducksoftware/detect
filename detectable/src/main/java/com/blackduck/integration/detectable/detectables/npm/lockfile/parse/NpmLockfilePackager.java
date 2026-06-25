@@ -93,10 +93,8 @@ public class NpmLockfilePackager {
         if (workspaceFilter == null || workspaces.isEmpty()) {
             return workspaces;
         }
-        Map<String, String> pathToName = new HashMap<>();
-        combinedPackageJson.getWorkspaceNameToPath().forEach((name, path) -> pathToName.put(path, name));
         return workspaces.stream()
-            .filter(path -> workspaceFilter.shouldInclude(pathToName.getOrDefault(path, path)))
+            .filter(path -> workspaceFilter.shouldInclude(path))
             .collect(Collectors.toList());
     }
 
