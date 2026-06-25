@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<controlFile>
+	<resources>
+		<resource>
+			<filePath>detect.ditamap</filePath>
+			<originId>bd_detect-latest</originId>
+			<clusterId>bd_detect</clusterId>
+			<metas>
+				<meta key="Product">
+					<value>detect</value>
+				</meta>
+				<meta key="Version">
+					<value>latest</value>
+				</meta>
+				<meta key="Access">
+					<value>access_all</value>
+				</meta>
+			</metas>
+		</resource>
+	</resources>
+</controlFile>

@@ -4,12 +4,6 @@
 	<title>Black Duck Detect User Guide</title>
 	<topicmeta>
 		<shortdesc>Black Duck Detect</shortdesc>
-		<prodinfo>
-			<prodname>Black Duck Detect</prodname>
-			<vrmlist>
-				<vrm version="11.4.1"/>
-			</vrmlist>
-		</prodinfo>
 	</topicmeta>
 	<topicref href="introduction.md" format="markdown"/>
 	<topicgroup>
