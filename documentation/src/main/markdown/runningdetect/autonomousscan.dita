@@ -106,13 +106,13 @@
                         are not available or related parameters not set.)</p>
                     <ul>
                         <li>
-                            <p><xref href="https://documentation.blackduck.com/bundle/bd-hub/page/BinaryAnalysis/Overview.html" format="html" scope="external">Binary scan</xref>: Will run if
+                            <p><xref href="https://docs.blackduck.com/r/blackduck/latest/black-duck-documentation/black-duck-binary-analysis.html" format="html" scope="external">Binary scan</xref>: Will run if
                                 one or more binary files exist in the scan directory and <keyword keyref="bd_product_short"/> configuration is
                                 completed.</p>
                         </li>
                         <li>
                             <p>Signature scan: Will run against source files if scan cli is
-                                available. If <xref href="https://documentation.blackduck.com/bundle/bd-hub/page/ComponentDiscovery/DownloadAndInstall.html" format="html" scope="external">scan cli</xref> is not locally
+                                available. If <xref href="https://docs.blackduck.com/r/blackduck/latest/black-duck-documentation/downloading-and-installing-the-signature-scanner-cli.html" format="html" scope="external">scan cli</xref> is not locally
                                 available, it will need to be downloaded from <keyword keyref="bd_product_short"/>.</p>
                         </li>
                     </ul>
