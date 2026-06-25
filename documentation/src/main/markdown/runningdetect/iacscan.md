@@ -4,7 +4,7 @@ IaC ("Infrastructure as Code") Scan is a type of scanning supported by [detect_p
 
 To configure IaC Scan, see [IaC Scan properties](../properties/configuration/iac-scan.md#iac-scan-arguments).
 
-See the [blackduck_product_name] documentation for futher details on <a href="https://documentation.blackduck.com/bundle/bd-hub/page/InternalProjectVersions/infrastructureAsCode.html" target="_blank">Infrastructure as Code scanning.</a>
+See the [blackduck_product_name] documentation for futher details on <a href="https://docs.blackduck.com/r/blackduck/latest/black-duck-documentation/infrastructure-as-code.html" target="_blank">Infrastructure as Code scanning.</a>
 
 ## Known Issues
 
