@@ -6,7 +6,7 @@
 
 ## Overview
 
-On Linux, Mac, and Windows 10 Enterprise, [detect_product_short] can invoke [docker_inspector_name] to inspect Linux Docker images to discover packages installed by the Linux package manager.
+On Linux, Mac, and Windows, [detect_product_short] can invoke [docker_inspector_name] to inspect Linux Docker images to discover packages installed by the Linux package manager.
 For simple use cases, add ```--detect.docker.image={repo}:{tag}```, ```--detect.docker.tar={path to an image archive}```, or
 ```--detect.docker.image.id={image id}```,
 to the [detect_product_short] command line.
