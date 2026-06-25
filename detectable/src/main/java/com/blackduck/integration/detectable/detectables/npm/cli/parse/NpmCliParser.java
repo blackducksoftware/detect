@@ -172,9 +172,9 @@ public class NpmCliParser {
             boolean workspaceExcludedByFilter = false;
 
             if (combinedPackageJson.getRelativeWorkspaces() != null && possibleWorkspaceDependency != null) {
-                // workspaces under the root resolve as file../<path to workspace>
-                // remove that and see if any absolute workspace paths have this subpath
-                String convertedPath = possibleWorkspaceDependency.replace("file:../", "");
+                // Strip "file:" prefix and any leading "../" or "./" segments; the remaining
+                // path is relative to the project root, matching entries in relativeWorkspaces.
+                String convertedPath = possibleWorkspaceDependency.replaceFirst("^file:(\\.\\./|\\./)*", "");
                 boolean isWorkspace = combinedPackageJson.getRelativeWorkspaces().stream()
                     .anyMatch(workspace -> workspace.equals(convertedPath));
 
