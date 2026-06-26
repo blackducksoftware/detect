@@ -110,7 +110,7 @@ public class DetectProperties {
             .setInfo("Bypass Proxy Hosts", DetectPropertyFromVersion.VERSION_4_2_0)
             .setHelp(
                 "A comma separated list of regular expression host patterns that should not use the proxy.",
-                "This property accepts Java regular expressions. For further information refer to <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/configuring/javaregex%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Java regular expression support page.</xref>"
+                "This property accepts Java regular expressions. For further information refer to <xref href=\"https://docs%2Eblackduck%2Ecom/r/detect/latest/black-duck-detect/java-regular-expression-support%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Java regular expression support page.</xref>"
             )
             .setGroups(DetectGroup.PROXY, DetectGroup.BLACKDUCK, DetectGroup.DEFAULT)
             .setCategory(DetectCategory.Advanced)
