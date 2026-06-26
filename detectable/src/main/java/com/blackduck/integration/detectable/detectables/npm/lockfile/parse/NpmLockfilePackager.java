@@ -54,7 +54,7 @@ public class NpmLockfilePackager {
 
     public NpmPackagerResult parseAndTransform(@Nullable String rootJsonPath, @Nullable String packageJsonText, String lockFileText, List<NameVersion> externalDependencies) throws IOException {
         CombinedPackageJsonExtractor extractor = new CombinedPackageJsonExtractor(gson);
-        CombinedPackageJson combinedPackageJson = extractor.constructCombinedPackageJson(rootJsonPath, packageJsonText);
+        CombinedPackageJson combinedPackageJson = extractor.constructCombinedPackageJson(rootJsonPath, packageJsonText, workspaceFilter);
 
         lockFileText = removePathInfoFromPackageName(lockFileText);
 

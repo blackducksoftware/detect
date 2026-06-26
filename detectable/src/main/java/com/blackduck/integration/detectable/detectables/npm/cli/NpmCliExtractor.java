@@ -100,7 +100,7 @@ public class NpmCliExtractor {
         String packageJsonText = FileUtils.readFileToString(packageJson, StandardCharsets.UTF_8);
         
         CombinedPackageJsonExtractor extractor = new CombinedPackageJsonExtractor(gson);
-        CombinedPackageJson combinedPackageJson = extractor.constructCombinedPackageJson(packageJson.getPath(), packageJsonText);
+        CombinedPackageJson combinedPackageJson = extractor.constructCombinedPackageJson(packageJson.getPath(), packageJsonText, workspaceFilter);
 
         return combinedPackageJson;
     }
