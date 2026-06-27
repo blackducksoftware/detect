@@ -537,7 +537,7 @@ public class DetectProperties {
             )
             .setInfo("Snippet Matching", DetectPropertyFromVersion.VERSION_5_5_0)
             .setHelp(
-                "Use this value to enable the various snippet scanning modes. For a full explanation, refer to <xref href=\"https://docs%2Eblackduck%2Ecom/r/blackduck/latest/black%2Dduck%2Ddocumentation/how%2Dto%2Drun%2Da%2Dcomponent%2Dscan%2Dwith%2Dthe%2Dsignature%2Dscanner%2Dcommand%2Dline%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Running a component scan using the Signature Scanner command line.</xref> Corresponding Signature Scanner CLI Arguments: --snippet-matching, --snippet-matching-only."
+                "Use this value to enable the various snippet scanning modes. For a full explanation, refer to <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/bd%2Dhub/page/ComponentDiscovery/CommandLine%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Running a component scan using the Signature Scanner command line.</xref> Corresponding Signature Scanner CLI Arguments: --snippet-matching, --snippet-matching-only."
 				)
             .setGroups(DetectGroup.SIGNATURE_SCANNER, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
             .build();
@@ -551,7 +551,7 @@ public class DetectProperties {
                 )
                 .setInfo("Reduced Persistence", DetectPropertyFromVersion.VERSION_8_3_0)
                 .setHelp(
-                    "Use this value to control how unmatched files from signature scans are stored. For a full explanation, refer to <xref href=\"https://docs%2Eblackduck%2Ecom/r/blackduck/latest/black%2duck%2documentation/about%2reduced%2persistence%2signature%2scanning%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">about reduced persistence signature scanning.</xref>"
+                    "Use this value to control how unmatched files from signature scans are stored. For a full explanation, refer to <xref href=\"https://docs%2Eblackduck%2Ecom/r/blackduck/latest/black%2Dduck%2Ddocumentation/how%2Dto%2Drun%2Da%2Dcomponent%2Dscan%2Dwith%2Dthe%2Dsignature%2Dscanner%2Dcommand%2Dline%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">about reduced persistence signature scanning.</xref>"
 				)
                 .setGroups(DetectGroup.SIGNATURE_SCANNER, DetectGroup.GLOBAL)
                 .build();
