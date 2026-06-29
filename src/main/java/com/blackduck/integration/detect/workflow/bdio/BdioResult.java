@@ -12,16 +12,18 @@ public class BdioResult {
     private final List<UploadTarget> uploadTargets;
     private final DetectCodeLocationNamesResult codeLocationNamesResult;
     private final Set<DetectorType> applicableDetectorTypes;
+    private final boolean hasComponents;
 
     public static BdioResult none() {
         DetectCodeLocationNamesResult emptyNamesResult = new DetectCodeLocationNamesResult(Collections.emptyMap());
-        return new BdioResult(Collections.emptyList(), emptyNamesResult, Collections.emptySet());
+        return new BdioResult(Collections.emptyList(), emptyNamesResult, Collections.emptySet(), false);
     }
 
-    public BdioResult(List<UploadTarget> uploadTargets, DetectCodeLocationNamesResult codeLocationNamesResult, Set<DetectorType> applicableDetectorTypes) {
+    public BdioResult(List<UploadTarget> uploadTargets, DetectCodeLocationNamesResult codeLocationNamesResult, Set<DetectorType> applicableDetectorTypes, boolean hasComponents) {
         this.uploadTargets = uploadTargets;
         this.codeLocationNamesResult = codeLocationNamesResult;
         this.applicableDetectorTypes = applicableDetectorTypes;
+        this.hasComponents = hasComponents;
     }
 
     public List<UploadTarget> getUploadTargets() {
@@ -34,6 +36,10 @@ public class BdioResult {
 
     public boolean isNotEmpty() {
         return !uploadTargets.isEmpty();
+    }
+
+    public boolean hasComponents() {
+        return hasComponents;
     }
 
     public Set<DetectorType> getApplicableDetectorTypes() {
