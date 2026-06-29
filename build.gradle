@@ -136,6 +136,10 @@ allprojects {
         implementation 'org.yaml:snakeyaml:2.0'
         // jackson-core is a transitive dep coming from jackson-dataformat-yaml, earlier versions have vulnerability sonatype-2022-6438
         implementation('com.fasterxml.jackson.core:jackson-core:2.21.3')
+        // jackson-databind and jackson-annotations are pinned by Spring Boot 2.7 BOM to 2.13.5;
+        // override to fix vulnerabilities and keep all jackson artifacts in sync
+        implementation('com.fasterxml.jackson.core:jackson-databind:2.21.3')
+        implementation('com.fasterxml.jackson.core:jackson-annotations:2.21')
         implementation 'org.freemarker:freemarker:2.3.31'
         implementation 'org.apache.httpcomponents:httpclient-osgi:4.5.14'
 
