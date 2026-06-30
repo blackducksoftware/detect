@@ -124,22 +124,13 @@ public class DiagnosticSystem {
             logger.error("Failed to create diagnostic zip. Cleanup will not occur.", e);
         }
 
-        if (!zipCreated) {
+        String detectDiagnosticOutputPath = propertyConfiguration.getValueOrDefault(DetectProperties.DETECT_DIAGNOSTIC_ARCHIVE_PATH).trim();
+        // If detect.diagnostic.archive.path is specified and is not empty, then copy diagnostic zip to that path.
+        if (zipCreated && !detectDiagnosticOutputPath.isEmpty()) {
+            copyDiagnosticArchiveToCustomPath("detect-run-" + detectRunId.getRunId() + ".zip", detectDiagnosticOutputPath);
+        } else {
             logger.error("Diagnostic mode failed to create zip. Cleanup will not occur.");
         }
-        // If detect.diagnostic.archive.path is specified and is not empty, then copy diagnostic zip to that path.
-        String detectDiagnosticOutputPath = propertyConfiguration.getValueOrDefault(DetectProperties.DETECT_DIAGNOSTIC_ARCHIVE_PATH);
-        if (!detectDiagnosticOutputPath.isEmpty()) {
-            File diagnosticZipFile = new File(directoryManager.getRunsOutputDirectory(), detectRunId.getRunId() + ".zip");
-            File destinationFile = new File(detectDiagnosticOutputPath + "detect-run-" + detectRunId.getRunId() + ".zip");
-            try {
-                FileUtils.copyFile(diagnosticZipFile, destinationFile);
-                logger.info("Diagnostic zip file copied to {}.", destinationFile.getAbsolutePath());
-            } catch (IOException e) {
-                logger.error("Failed to copy diagnostic zip file to {}. Error: {}", destinationFile.getAbsolutePath(), e.getMessage());
-            }
-        }
-
         logger.info("Diagnostic mode has completed.");
     }
 
@@ -169,5 +160,17 @@ public class DiagnosticSystem {
         directoriesToCompress.add(directoryManager.getRunHomeDirectory());
         DiagnosticZipCreator zipper = new DiagnosticZipCreator();
         return zipper.createDiagnosticZip(detectRunId.getRunId(), directoryManager.getRunsOutputDirectory(), directoriesToCompress);
+    }
+
+    public void copyDiagnosticArchiveToCustomPath(String diagnosticArchiveName, String detectDiagnosticOutputPath) {
+        try {
+            File diagnosticZipFile = new File(directoryManager.getRunsOutputDirectory(), diagnosticArchiveName);
+            FileUtils.forceMkdir(new File(detectDiagnosticOutputPath));
+            File destinationFile = new File(detectDiagnosticOutputPath + File.separator + diagnosticArchiveName);
+            FileUtils.copyFile(diagnosticZipFile, destinationFile);
+            logger.info("Diagnostic zip file copied to {}.", destinationFile.getAbsolutePath());
+        } catch (IOException e) {
+            logger.error("Failed to copy diagnostic zip file to a custom path at {}. Error: {}", detectDiagnosticOutputPath, e.getMessage());
+        }
     }
 }
