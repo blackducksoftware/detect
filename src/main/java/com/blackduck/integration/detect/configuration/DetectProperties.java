@@ -1722,6 +1722,16 @@ public class DetectProperties {
             .setCategory(DetectCategory.Advanced)
             .build();
 
+    public static final BooleanProperty DETECT_PROJECT_VERSION_CREATE_WHEN_NO_COMPONENTS =
+        BooleanProperty.newBuilder("detect.project.version.create.when.no.components", true)
+            .setInfo("Create Project Version When No Components Found", DetectPropertyFromVersion.VERSION_12_0_0)
+            .setHelp(
+                "If set to false, Detect will not create a project version on Black Duck when no components are found and no other scan tools are active.",
+                "By default (true), a project version is always created on Black Duck upon a successful scan, even if no components were detected. Set to false to suppress project version creation when the scan produces no components and no scan tools such as signature scan, binary scan, or container scan are enabled."
+            )
+            .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
+            .build();
+
     public static final NullableStringProperty DETECT_PROJECT_NAME =
         NullableStringProperty.newBuilder("detect.project.name")
             .setInfo("Project Name", DetectPropertyFromVersion.VERSION_3_0_0)
