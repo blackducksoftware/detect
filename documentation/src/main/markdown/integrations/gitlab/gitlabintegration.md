@@ -46,7 +46,7 @@ The recommended way of configuring [detect_product_short] from a GitLab pipeline
 	test:
 		stage: test
 		script:
-			- bash <(curl -s -L https://detect.blackduck.com/detect9.sh) --blackduck.url="${BLACKDUCK\_URL}" --blackduck.api.token="${BLACKDUCK\_TOKEN}" --blackduck.trust.cert=true --<any other flags>
+			- bash <(curl -s -L https://detect.blackduck.com/detect12.sh) --blackduck.url="${BLACKDUCK\_URL}" --blackduck.api.token="${BLACKDUCK\_TOKEN}" --blackduck.trust.cert=true --<any other flags>
     ```
 
 5. Configure [detect_product_short] as a script build step so GitLab can enforce build changes influenced by [detect_product_short]. For example, checking for policy, failing builds according to policy, and others.
@@ -88,7 +88,7 @@ For improved security, it is recommended to use a revocable API token, as descri
 	test:
 		stage: test
 		script:
-			- bash <(curl -s -L <https://detect.blackduck.com/detect9.sh>) --blackduck.url="${BLACKDUCK\_URL}" --blackduck.hub.username="${BLACKDUCK\_USERNAME}" --blackduck.hub.password="${BLACKDUCK\_PASSWORD}" --blackduck.trust.cert=true --<any other flags>
+			- bash <(curl -s -L <https://detect.blackduck.com/detect12.sh>) --blackduck.url="${BLACKDUCK\_URL}" --blackduck.hub.username="${BLACKDUCK\_USERNAME}" --blackduck.hub.password="${BLACKDUCK\_PASSWORD}" --blackduck.trust.cert=true --<any other flags>
     ```
 
 5. Configure [detect_product_short] as a script build step so GitLab can enforce build changes influenced by [detect_product_short]. For example, checking for policy, failing builds according to policy, and others.

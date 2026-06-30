@@ -3,7 +3,7 @@
 The following is a list of requirements for the [detect_product_long] in Azure DevOps integration.
 
 * [bd_product_long] server.
-  For the supported versions of [bd_product_short], refer to [Black Duck Release Compatibility](https://documentation.blackduck.com/bundle/blackduck-compatibility/page/topics/Black-Duck-Release-Compatibility.html).
+  For the supported versions of [bd_product_short], refer to [Black Duck Release Compatibility](https://docs.blackduck.com/r/blackduck/black-duck-compatibility-reference/black-duck-sca-release-compatibility.html).
 * [bd_product_short] API token to use with Azure.
 * Azure DevOps Services or Azure DevOps Server 17 or later
 * Java.
