@@ -767,7 +767,16 @@ public class DetectProperties {
                 "When enabled, diagnostic mode collects files valuable for troubleshooting (logs, BDIO file, extraction files, reports, etc.), writes them to a zip file, and logs the path to the zip file.",
                 "See the following for more <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/troubleshooting/diagnosticmode%2Ehtml\" scope=\"external\" format=\"html\" target=\"_blank\">Diagnostic Mode information.</xref>")
             .setGroups(DetectGroup.DEBUG, DetectGroup.GLOBAL)
-            .build(); 
+            .build();
+
+    public static final StringProperty DETECT_DIAGNOSTIC_ARCHIVE_PATH =
+        StringProperty.newBuilder("detect.diagnostic.archive.path", null)
+            .setInfo("Diagnostic Archive Output Path", DetectPropertyFromVersion.VERSION_12_0_0)
+            .setHelp(
+                "The path to the zip file that will be created when diagnostic mode is enabled.",
+                "See the following for more <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/troubleshooting/diagnosticmode%2Ehtml\" scope=\"external\" format=\"html\" target=\"_blank\">Diagnostic Mode information.</xref>")
+            .setGroups(DetectGroup.DEBUG, DetectGroup.GLOBAL)
+            .build();
 
     public static final BooleanProperty DETECT_IGNORE_CONNECTION_FAILURES =
         BooleanProperty.newBuilder("detect.ignore.connection.failures", false)
