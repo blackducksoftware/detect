@@ -602,7 +602,11 @@ public class DetectableFactory {
     }
 
     public NpmPackageJsonParseDetectable createNpmPackageJsonParseDetectable(DetectableEnvironment environment, NpmPackageJsonParseDetectableOptions npmPackageJsonOptions) {
-        PackageJsonExtractor packageJsonExtractor = new PackageJsonExtractor(gson, externalIdFactory, npmPackageJsonOptions.getNpmDependencyTypeFilter());
+        ExcludedIncludedWildcardFilter workspaceFilter = buildNpmWorkspaceFilter(
+                npmPackageJsonOptions.isIgnoreAllWorkspaces(),
+                npmPackageJsonOptions.getExcludedWorkspaceNames(),
+                npmPackageJsonOptions.getIncludedWorkspaceNames());
+        PackageJsonExtractor packageJsonExtractor = new PackageJsonExtractor(gson, externalIdFactory, npmPackageJsonOptions.getNpmDependencyTypeFilter(), workspaceFilter);
         return new NpmPackageJsonParseDetectable(environment, fileFinder, packageJsonExtractor);
     }
 

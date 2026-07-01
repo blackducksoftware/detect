@@ -262,7 +262,10 @@ public class DetectableOptionFactory {
 
     public NpmPackageJsonParseDetectableOptions createNpmPackageJsonParseDetectableOptions() {
         EnumListFilter<NpmDependencyType> npmDependencyTypeFilter = createNpmDependencyTypeFilter();
-        return new NpmPackageJsonParseDetectableOptions(npmDependencyTypeFilter);
+        List<String> excludedWorkspaceNames = detectConfiguration.getValue(DetectProperties.DETECT_NPM_EXCLUDED_WORKSPACES);
+        List<String> includedWorkspaceNames = detectConfiguration.getValue(DetectProperties.DETECT_NPM_INCLUDED_WORKSPACES);
+        boolean ignoreAllWorkspaces = detectConfiguration.getValue(DetectProperties.DETECT_NPM_IGNORE_ALL_WORKSPACES_MODE);
+        return new NpmPackageJsonParseDetectableOptions(npmDependencyTypeFilter, excludedWorkspaceNames, includedWorkspaceNames, ignoreAllWorkspaces);
     }
 
     private EnumListFilter<NpmDependencyType> createNpmDependencyTypeFilter() {
