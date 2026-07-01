@@ -75,7 +75,13 @@ public class CombinedPackageJsonExtractor {
                     continue;
                 }
 
-                // Skip excluded workspaces before merging their deps into the combined package.json.
+                // Always register the workspace path so downstream code (CLI parser, lockfile packager)
+                // can identify workspace packages — even ones that will be excluded. Without this,
+                // the CLI parser can't set workspaceExcludedByFilter and the package slips through as
+                // a regular root dependency.
+                addRelativeWorkspace(combinedPackageJson, projectRoot, convertedWorkspace);
+
+                // Skip merging deps from excluded workspaces into the combined package.json.
                 // This prevents excluded workspace deps from appearing as declared root dependencies.
                 String relativePath = getRelativePath(projectRoot, convertedWorkspace);
                 if (workspaceFilter != null && relativePath != null && !workspaceFilter.shouldInclude(relativePath)) {
@@ -88,8 +94,6 @@ public class CombinedPackageJsonExtractor {
                 PackageJson workspacePackageJson = Optional.ofNullable(workspaceJsonString)
                         .map(content -> gson.fromJson(content, PackageJson.class))
                         .orElse(null);
-
-                addRelativeWorkspace(combinedPackageJson, projectRoot, convertedWorkspace);
 
                 if (workspacePackageJson != null) {
                     combinedPackageJson.getDependencies().putAll(workspacePackageJson.dependencies);
