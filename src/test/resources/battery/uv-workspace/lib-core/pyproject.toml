@@ -1,0 +1,9 @@
+[project]
+name = "lib-core"
+version = "0.5.0"
+dependencies = [
+    "pydantic>=2.0.0",
+]
+
+[tool.uv]
+managed = true

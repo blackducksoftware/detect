@@ -6,7 +6,7 @@
 
 ## Overview
 
-On Linux, Mac, and Windows 10 Enterprise, [detect_product_short] can invoke [docker_inspector_name] to inspect Linux Docker images to discover packages installed by the Linux package manager.
+On Linux, Mac, and Windows, [detect_product_short] can invoke [docker_inspector_name] to inspect Linux Docker images to discover packages installed by the Linux package manager.
 For simple use cases, add ```--detect.docker.image={repo}:{tag}```, ```--detect.docker.tar={path to an image archive}```, or
 ```--detect.docker.image.id={image id}```,
 to the [detect_product_short] command line.
@@ -55,7 +55,7 @@ or an image that contains no operating system), [docker_inspector_name]
 will return to [detect_product_short] a BDIO file with zero components
 along with the signature and binary scan targets.
 Components may be discovered for these images
-during the signature and/or binary scanning perfomed by
+during the signature and/or binary scanning performed by
 [detect_product_short].
 
 ## Modes of operation
@@ -125,7 +125,6 @@ To invoke [docker_inspector_name], pass a docker image to
 
 * detect.docker.image
 * detect.docker.image.id
-* detect.docker.image
 * detect.docker.tar
 
 ## Advanced usage (using passthrough properties)

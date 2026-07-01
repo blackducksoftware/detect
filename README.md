@@ -32,9 +32,9 @@ For AirGap, please use our [Repo](https://repo.blackduck.com/bds-integrations-re
 
 ## Documentation
 
-The latest quickstart documentation is [here](https://documentation.blackduck.com/bundle/detect/page/gettingstarted/quickstart.html).
+The latest quickstart documentation is [here](https://docs.blackduck.com/r/detect/latest/black-duck-detect/detect-quickstart-guide.html).
 
-The latest full documentation is [here](https://documentation.blackduck.com/bundle/detect/page/introduction.html).
+The latest full documentation is [here](https://docs.blackduck.com/r/detect/latest/black-duck-detect/introduction-to-black-duck-detect.html).
 
 ## Getting help
 

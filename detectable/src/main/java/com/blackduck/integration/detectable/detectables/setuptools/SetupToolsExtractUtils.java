@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import com.blackduck.integration.detectable.detectable.exception.DetectableException;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +56,7 @@ public class SetupToolsExtractUtils {
         return false;
     }
 
-    public static SetupToolsParser resolveSetupToolsParser(TomlParseResult parsedToml, FileFinder fileFinder, DetectableEnvironment environment) throws IOException {
+    public static SetupToolsParser resolveSetupToolsParser(TomlParseResult parsedToml, FileFinder fileFinder, DetectableEnvironment environment) throws IOException, DetectableException{
         // Dependencies, if they exist at all, will be in one of three files.
         // Step 1: Check the pyproject.toml
         TomlArray tomlDependencies = parsedToml.getArray(TOML_DEPENDENCIES);
