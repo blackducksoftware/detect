@@ -248,14 +248,16 @@ public class DetectableOptionFactory {
         String npmArguments = detectConfiguration.getNullableValue(DetectProperties.DETECT_NPM_ARGUMENTS);
         List<String> excludedWorkspaceNames = detectConfiguration.getValue(DetectProperties.DETECT_NPM_EXCLUDED_WORKSPACES);
         List<String> includedWorkspaceNames = detectConfiguration.getValue(DetectProperties.DETECT_NPM_INCLUDED_WORKSPACES);
-        return new NpmCliExtractorOptions(npmDependencyTypeFilter, npmArguments, excludedWorkspaceNames, includedWorkspaceNames);
+        boolean ignoreAllWorkspaces = detectConfiguration.getValue(DetectProperties.DETECT_NPM_IGNORE_ALL_WORKSPACES_MODE);
+        return new NpmCliExtractorOptions(npmDependencyTypeFilter, npmArguments, excludedWorkspaceNames, includedWorkspaceNames, ignoreAllWorkspaces);
     }
 
     public NpmLockfileOptions createNpmLockfileOptions() {
         EnumListFilter<NpmDependencyType> npmDependencyTypeFilter = createNpmDependencyTypeFilter();
         List<String> excludedWorkspaceNames = detectConfiguration.getValue(DetectProperties.DETECT_NPM_EXCLUDED_WORKSPACES);
         List<String> includedWorkspaceNames = detectConfiguration.getValue(DetectProperties.DETECT_NPM_INCLUDED_WORKSPACES);
-        return new NpmLockfileOptions(npmDependencyTypeFilter, excludedWorkspaceNames, includedWorkspaceNames);
+        boolean ignoreAllWorkspaces = detectConfiguration.getValue(DetectProperties.DETECT_NPM_IGNORE_ALL_WORKSPACES_MODE);
+        return new NpmLockfileOptions(npmDependencyTypeFilter, excludedWorkspaceNames, includedWorkspaceNames, ignoreAllWorkspaces);
     }
 
     public NpmPackageJsonParseDetectableOptions createNpmPackageJsonParseDetectableOptions() {

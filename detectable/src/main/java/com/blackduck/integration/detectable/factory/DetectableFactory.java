@@ -1,6 +1,8 @@
 package com.blackduck.integration.detectable.factory;
 
 import java.io.File;
+import java.util.Collections;
+import java.util.List;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
@@ -575,8 +577,8 @@ public class DetectableFactory {
 
     public NpmCliDetectable createNpmCliDetectable(DetectableEnvironment environment, NpmResolver npmResolver, NpmCliExtractorOptions npmCliExtractorOptions) {
         NpmCliParser npmCliParser = new NpmCliParser(externalIdFactory, npmCliExtractorOptions.getDependencyTypeFilter());
-        ExcludedIncludedWildcardFilter workspaceFilter =
-            ExcludedIncludedWildcardFilter.fromCollections(
+        ExcludedIncludedWildcardFilter workspaceFilter = buildNpmWorkspaceFilter(
+                npmCliExtractorOptions.isIgnoreAllWorkspaces(),
                 npmCliExtractorOptions.getExcludedWorkspaceNames(),
                 npmCliExtractorOptions.getIncludedWorkspaceNames());
         NpmCliExtractor npmCliExtractor = new NpmCliExtractor(executableRunner, npmCliParser, gson, toolVersionLogger, workspaceFilter);
@@ -1032,11 +1034,18 @@ public class DetectableFactory {
 
     private NpmLockfilePackager npmLockfilePackager(NpmLockfileOptions npmLockfileOptions) {
         NpmLockfileGraphTransformer npmLockfileGraphTransformer = new NpmLockfileGraphTransformer(npmLockfileOptions.getNpmDependencyTypeFilter());
-        ExcludedIncludedWildcardFilter workspaceFilter =
-            ExcludedIncludedWildcardFilter.fromCollections(
+        ExcludedIncludedWildcardFilter workspaceFilter = buildNpmWorkspaceFilter(
+                npmLockfileOptions.isIgnoreAllWorkspaces(),
                 npmLockfileOptions.getExcludedWorkspaceNames(),
                 npmLockfileOptions.getIncludedWorkspaceNames());
         return new NpmLockfilePackager(gson, externalIdFactory, npmLockFileProjectIdTransformer(), npmLockfileGraphTransformer, workspaceFilter);
+    }
+
+    private ExcludedIncludedWildcardFilter buildNpmWorkspaceFilter(boolean ignoreAllWorkspaces, List<String> excluded, List<String> included) {
+        if (ignoreAllWorkspaces) {
+            return ExcludedIncludedWildcardFilter.fromCollections(Collections.singletonList("*"), Collections.emptyList());
+        }
+        return ExcludedIncludedWildcardFilter.fromCollections(excluded, included);
     }
 
     private NpmLockFileProjectIdTransformer npmLockFileProjectIdTransformer() {

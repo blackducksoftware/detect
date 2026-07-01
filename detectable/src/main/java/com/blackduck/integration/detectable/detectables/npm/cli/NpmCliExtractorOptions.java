@@ -12,21 +12,31 @@ public class NpmCliExtractorOptions {
     private final String npmArguments;
     private final List<String> excludedWorkspaceNames;
     private final List<String> includedWorkspaceNames;
+    private final boolean ignoreAllWorkspaces;
 
     public NpmCliExtractorOptions(EnumListFilter<NpmDependencyType> npmDependencyTypeFilter,
             String npmArguments) {
         this(npmDependencyTypeFilter, npmArguments,
-            Collections.emptyList(), Collections.emptyList());
+            Collections.emptyList(), Collections.emptyList(), false);
     }
 
     public NpmCliExtractorOptions(EnumListFilter<NpmDependencyType> npmDependencyTypeFilter,
             String npmArguments,
             List<String> excludedWorkspaceNames,
             List<String> includedWorkspaceNames) {
+        this(npmDependencyTypeFilter, npmArguments, excludedWorkspaceNames, includedWorkspaceNames, false);
+    }
+
+    public NpmCliExtractorOptions(EnumListFilter<NpmDependencyType> npmDependencyTypeFilter,
+            String npmArguments,
+            List<String> excludedWorkspaceNames,
+            List<String> includedWorkspaceNames,
+            boolean ignoreAllWorkspaces) {
         this.npmDependencyTypeFilter = npmDependencyTypeFilter;
         this.npmArguments = npmArguments;
         this.excludedWorkspaceNames = excludedWorkspaceNames;
         this.includedWorkspaceNames = includedWorkspaceNames;
+        this.ignoreAllWorkspaces = ignoreAllWorkspaces;
     }
 
     public EnumListFilter<NpmDependencyType> getDependencyTypeFilter() {
@@ -43,5 +53,9 @@ public class NpmCliExtractorOptions {
 
     public List<String> getIncludedWorkspaceNames() {
         return includedWorkspaceNames;
+    }
+
+    public boolean isIgnoreAllWorkspaces() {
+        return ignoreAllWorkspaces;
     }
 }

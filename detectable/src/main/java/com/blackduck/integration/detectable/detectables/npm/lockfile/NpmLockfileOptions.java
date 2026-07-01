@@ -10,18 +10,28 @@ public class NpmLockfileOptions {
     private final EnumListFilter<NpmDependencyType> npmDependencyTypeFilter;
     private final List<String> excludedWorkspaceNames;
     private final List<String> includedWorkspaceNames;
+    private final boolean ignoreAllWorkspaces;
 
     public NpmLockfileOptions(EnumListFilter<NpmDependencyType> npmDependencyTypeFilter) {
-        this(npmDependencyTypeFilter, java.util.Collections.emptyList(), java.util.Collections.emptyList());
+        this(npmDependencyTypeFilter, java.util.Collections.emptyList(), java.util.Collections.emptyList(), false);
     }
 
     public NpmLockfileOptions(
             EnumListFilter<NpmDependencyType> npmDependencyTypeFilter,
             List<String> excludedWorkspaceNames,
             List<String> includedWorkspaceNames) {
+        this(npmDependencyTypeFilter, excludedWorkspaceNames, includedWorkspaceNames, false);
+    }
+
+    public NpmLockfileOptions(
+            EnumListFilter<NpmDependencyType> npmDependencyTypeFilter,
+            List<String> excludedWorkspaceNames,
+            List<String> includedWorkspaceNames,
+            boolean ignoreAllWorkspaces) {
         this.npmDependencyTypeFilter = npmDependencyTypeFilter;
         this.excludedWorkspaceNames = excludedWorkspaceNames;
         this.includedWorkspaceNames = includedWorkspaceNames;
+        this.ignoreAllWorkspaces = ignoreAllWorkspaces;
     }
 
     public EnumListFilter<NpmDependencyType> getNpmDependencyTypeFilter() {
@@ -34,5 +44,9 @@ public class NpmLockfileOptions {
 
     public List<String> getIncludedWorkspaceNames() {
         return includedWorkspaceNames;
+    }
+
+    public boolean isIgnoreAllWorkspaces() {
+        return ignoreAllWorkspaces;
     }
 }

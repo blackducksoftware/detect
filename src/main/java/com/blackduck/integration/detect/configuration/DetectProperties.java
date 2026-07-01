@@ -1386,6 +1386,13 @@ public class DetectProperties {
             .setExample("packages/frontend,packages/api")
             .build();
 
+    public static final BooleanProperty DETECT_NPM_IGNORE_ALL_WORKSPACES_MODE =
+        BooleanProperty.newBuilder("detect.npm.ignore.all.workspaces", false)
+            .setInfo("Ignore All Workspaces", DetectPropertyFromVersion.VERSION_12_0_0)
+            .setHelp("All workspaces are ignored by the NPM detector for increased performance and precision to scan a massive codebase.")
+            .setGroups(DetectGroup.NPM, DetectGroup.SOURCE_SCAN)
+            .build();
+
     public static final NullablePathProperty DETECT_NPM_PATH =
         NullablePathProperty.newBuilder("detect.npm.path")
             .setInfo("NPM Executable", DetectPropertyFromVersion.VERSION_3_0_0)
