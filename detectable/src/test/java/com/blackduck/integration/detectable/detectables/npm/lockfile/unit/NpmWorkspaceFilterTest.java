@@ -85,16 +85,39 @@ public class NpmWorkspaceFilterTest {
         assertFalse(lodashAtRoot, "lodash should NOT be a root dependency when only my-api workspace is included");
     }
 
+    @Test
+    public void ignoreAllWorkspacesExcludesAllWorkspaceDeps() throws IOException {
+        NpmLockfileOptions options = new NpmLockfileOptions(
+            EnumListFilter.excludeNone(),
+            Collections.emptyList(),
+            Collections.emptyList(),
+            true
+        );
+        NpmPackagerResult result = buildResult(options);
+        DependencyGraph graph = result.getCodeLocation().getDependencyGraph();
+        ExternalId expressId = new ExternalIdFactory().createNameVersionExternalId(Forge.NPMJS, "express", "4.18.0");
+        ExternalId lodashId = new ExternalIdFactory().createNameVersionExternalId(Forge.NPMJS, "lodash", "4.17.21");
+
+        boolean expressAtRoot = graph.getRootDependencies().stream()
+            .map(Dependency::getExternalId)
+            .anyMatch(expressId::equals);
+        boolean lodashAtRoot = graph.getRootDependencies().stream()
+            .map(Dependency::getExternalId)
+            .anyMatch(lodashId::equals);
+
+        assertTrue(expressAtRoot, "express should be a root dependency (declared in root package.json)");
+        assertFalse(lodashAtRoot, "lodash should NOT be a root dependency when all workspaces are ignored");
+    }
+
     private NpmPackagerResult buildResult(NpmLockfileOptions options) throws IOException {
         String rootJsonPath = FunctionalTestFiles.resolvePath(FIXTURE_PATH);
         Gson gson = new Gson();
         ExternalIdFactory externalIdFactory = new ExternalIdFactory();
         NpmLockfileGraphTransformer transformer =
             new NpmLockfileGraphTransformer(options.getNpmDependencyTypeFilter());
-        ExcludedIncludedWildcardFilter workspaceFilter =
-            ExcludedIncludedWildcardFilter.fromCollections(
-                options.getExcludedWorkspaceNames(),
-                options.getIncludedWorkspaceNames());
+        ExcludedIncludedWildcardFilter workspaceFilter = options.isIgnoreAllWorkspaces()
+            ? ExcludedIncludedWildcardFilter.fromCollections(Collections.singletonList("*"), Collections.emptyList())
+            : ExcludedIncludedWildcardFilter.fromCollections(options.getExcludedWorkspaceNames(), options.getIncludedWorkspaceNames());
         NpmLockfilePackager packager =
             new NpmLockfilePackager(gson, externalIdFactory,
                 new NpmLockFileProjectIdTransformer(gson, externalIdFactory), transformer, workspaceFilter);
