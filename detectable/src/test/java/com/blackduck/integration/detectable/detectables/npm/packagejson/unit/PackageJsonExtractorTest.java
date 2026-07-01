@@ -1,6 +1,13 @@
 package com.blackduck.integration.detectable.detectables.npm.packagejson.unit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -9,6 +16,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.Forge;
+import com.blackduck.integration.bdio.model.dependency.Dependency;
 import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.annotations.UnitTest;
@@ -18,7 +26,9 @@ import com.blackduck.integration.detectable.detectables.npm.NpmDependencyType;
 import com.blackduck.integration.detectable.detectables.npm.packagejson.CombinedPackageJson;
 import com.blackduck.integration.detectable.detectables.npm.packagejson.PackageJsonExtractor;
 import com.blackduck.integration.detectable.extraction.Extraction;
+import com.blackduck.integration.detectable.util.FunctionalTestFiles;
 import com.blackduck.integration.detectable.util.graph.GraphAssert;
+import com.blackduck.integration.util.ExcludedIncludedWildcardFilter;
 
 @UnitTest
 class PackageJsonExtractorTest {
@@ -36,10 +46,77 @@ class PackageJsonExtractorTest {
         testDevDep2 = externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "nameDev2", "versionDev2");
     }
 
+    // Workspace filtering tests use the workspace-filter-test fixture:
+    //   root package.json: { "dependencies": { "express": "4.18.0" }, "workspaces": ["packages/api", "packages/ui"] }
+    //   packages/api/package.json: { "dependencies": { "express": "4.18.0" } }
+    //   packages/ui/package.json:  { "dependencies": { "lodash": "4.17.21" } }
+
+    @Test
+    void excludedWorkspaceDepDoesNotAppearInOutput() throws IOException {
+        ExcludedIncludedWildcardFilter filter = ExcludedIncludedWildcardFilter.fromCollections(
+                Arrays.asList("packages/ui"), Collections.emptyList());
+        PackageJsonExtractor extractor = createExtractorWithFilter(filter);
+        DependencyGraph graph = extractFromFixture(extractor);
+
+        ExternalIdFactory factory = new ExternalIdFactory();
+        ExternalId expressId = factory.createNameVersionExternalId(Forge.NPMJS, "express", "4.18.0");
+        ExternalId lodashId  = factory.createNameVersionExternalId(Forge.NPMJS, "lodash",  "4.17.21");
+
+        assertTrue(graph.getRootDependencies().stream().map(Dependency::getExternalId).anyMatch(expressId::equals),
+                "express should appear (declared in root package.json)");
+        assertFalse(graph.getRootDependencies().stream().map(Dependency::getExternalId).anyMatch(lodashId::equals),
+                "lodash should NOT appear when packages/ui is excluded");
+    }
+
+    @Test
+    void includedWorkspaceOnlyMergesThatWorkspacesDeps() throws IOException {
+        ExcludedIncludedWildcardFilter filter = ExcludedIncludedWildcardFilter.fromCollections(
+                Collections.emptyList(), Arrays.asList("packages/api"));
+        PackageJsonExtractor extractor = createExtractorWithFilter(filter);
+        DependencyGraph graph = extractFromFixture(extractor);
+
+        ExternalIdFactory factory = new ExternalIdFactory();
+        ExternalId expressId = factory.createNameVersionExternalId(Forge.NPMJS, "express", "4.18.0");
+        ExternalId lodashId  = factory.createNameVersionExternalId(Forge.NPMJS, "lodash",  "4.17.21");
+
+        assertTrue(graph.getRootDependencies().stream().map(Dependency::getExternalId).anyMatch(expressId::equals),
+                "express should appear (declared in root package.json and packages/api)");
+        assertFalse(graph.getRootDependencies().stream().map(Dependency::getExternalId).anyMatch(lodashId::equals),
+                "lodash should NOT appear when only packages/api is included");
+    }
+
+    @Test
+    void ignoreAllWorkspacesExcludesAllWorkspaceDeps() throws IOException {
+        ExcludedIncludedWildcardFilter filter = ExcludedIncludedWildcardFilter.fromCollections(
+                Collections.singletonList("*"), Collections.emptyList());
+        PackageJsonExtractor extractor = createExtractorWithFilter(filter);
+        DependencyGraph graph = extractFromFixture(extractor);
+
+        ExternalIdFactory factory = new ExternalIdFactory();
+        ExternalId expressId = factory.createNameVersionExternalId(Forge.NPMJS, "express", "4.18.0");
+        ExternalId lodashId  = factory.createNameVersionExternalId(Forge.NPMJS, "lodash",  "4.17.21");
+
+        assertTrue(graph.getRootDependencies().stream().map(Dependency::getExternalId).anyMatch(expressId::equals),
+                "express should appear (declared in root package.json)");
+        assertFalse(graph.getRootDependencies().stream().map(Dependency::getExternalId).anyMatch(lodashId::equals),
+                "lodash should NOT appear when all workspaces are ignored");
+    }
+
+    private DependencyGraph extractFromFixture(PackageJsonExtractor extractor) throws IOException {
+        File packageJsonFile = FunctionalTestFiles.asFile("/npm/workspace-filter-test/package.json");
+        Extraction extraction = extractor.extract(packageJsonFile);
+        return extraction.getCodeLocations().get(0).getDependencyGraph();
+    }
+
     private PackageJsonExtractor createExtractor(NpmDependencyType... excludedTypes) {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         EnumListFilter<NpmDependencyType> npmDependencyTypeFilter = EnumListFilter.fromExcluded(excludedTypes);
         return new PackageJsonExtractor(gson, new ExternalIdFactory(), npmDependencyTypeFilter);
+    }
+
+    private PackageJsonExtractor createExtractorWithFilter(ExcludedIncludedWildcardFilter workspaceFilter) {
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        return new PackageJsonExtractor(gson, new ExternalIdFactory(), EnumListFilter.excludeNone(), workspaceFilter);
     }
 
     @Test
