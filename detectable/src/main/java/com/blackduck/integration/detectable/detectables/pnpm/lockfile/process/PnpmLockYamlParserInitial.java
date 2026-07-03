@@ -116,7 +116,7 @@ public class PnpmLockYamlParserInitial {
      *
      * @param pnpmLockYamlFile the File path to the pnpm-lock.yaml file
      * @return a memory representation of the lock file, or null if the file is empty
-     * @throws FileNotFoundException if the file does not exist
+     * @throws IOException if the file cannot be read
      */
     private PnpmLockYamlBase parseYamlFile(File pnpmLockYamlFile) throws IOException {
         DumperOptions dumperOptions = new DumperOptions();
@@ -129,16 +129,10 @@ public class PnpmLockYamlParserInitial {
             // Step 1: Try to read the lockfile into the v6/v9 Yaml classes first (more common).
             logger.debug("Attempting to parse '{}' as v6/v9 format.", pnpmLockYamlFile.getName());
             Yaml yaml = new Yaml(new Constructor(PnpmLockYaml.class, loaderOptions), representer);
+            PnpmLockYamlBase result;
             try (InputStreamReader reader = new InputStreamReader(new FileInputStream(pnpmLockYamlFile), StandardCharsets.UTF_8)) {
-                return yaml.load(reader);
+                result = yaml.load(reader);
             }
-        } catch (ConstructorException e) {
-            // If the reading fails try to read a v5 Yaml. 
-            Yaml yaml = new Yaml(new Constructor(PnpmLockYamlv5.class, loaderOptions), representer);
-            try (InputStreamReader reader = new InputStreamReader(new FileInputStream(pnpmLockYamlFile), StandardCharsets.UTF_8)) {
-                return yaml.load(reader);
-            }
-            PnpmLockYamlBase result = yaml.load(new FileReader(pnpmLockYamlFile));
 
             if (result == null) {
                 // Step 1a: File was empty or contained only comments — SnakeYAML returns null.
@@ -166,7 +160,9 @@ public class PnpmLockYamlParserInitial {
         // Step 2: Re-parse as v5.
         logger.debug("Attempting to parse '{}' as v5 format.", pnpmLockYamlFile.getName());
         Yaml yaml = new Yaml(new Constructor(PnpmLockYamlv5.class, loaderOptions), representer);
-        return yaml.load(new FileReader(pnpmLockYamlFile));
+        try (InputStreamReader reader = new InputStreamReader(new FileInputStream(pnpmLockYamlFile), StandardCharsets.UTF_8)) {
+            return yaml.load(reader);
+        }
     }
 
     /**
