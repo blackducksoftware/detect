@@ -84,6 +84,10 @@ public class PnpmLockYamlParser {
             }
             
             PnpmProjectPackage projectPackage = projectPackageInfo.getValue();
+            if (projectPackage == null) {
+                logger.warn("Importer '{}' has no content (null). Treating as empty (no dependencies).", projectKey);
+                projectPackage = new PnpmProjectPackage();
+            }
             NameVersion extractedNameVersion = extractProjectInfo(projectPackageInfo, linkedPackageResolver,
                     projectNameVersion);
 
