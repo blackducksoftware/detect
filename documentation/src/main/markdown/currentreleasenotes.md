@@ -18,29 +18,8 @@
 	
 * **Deprecation of Java 8 support** - In alignment with EU Cyber Resilience Act (CRA) requirements and compliance timelines, Java 8 support will be deprecated in the anticipated 2026 Q3 Detect 12.0.0 release.
 
-## Version 11.5.0
+## Version 12.0.0
 
 ### New features
 
-* Support for the Conda Tree–based detector has been added. For more details, see [Conda Tree](packagemgrs/conda.md#conda-tree-detector).
-* Support for pnpm now extends to 10.32.1.
-* npm detectors now allow for aliases to be used when specifying dependencies in the package.json file.
-* Ivy CLI Detector, leveraging the `ivy:dependencytree` Ant task to extract direct and transitive dependencies for Ant + Ivy projects. For further information, see [Ivy (Ant) support](packagemgrs/ivy.md).
-
-### Changed features
-
-* The default output directory of the Quack Patch feature has been updated to use [detect_product_short] scan output directory. For more information, see [Quack Patch Documentation](runningdetect/quack-patch.md).
-* CentOS support in Detect Docker Inspector has been deprecated and will be removed in 12.0.0. For more details, please see [Docker Inspector Release Notes](releasenotes.md).
-    * imageinspector.service.port.centos has been deprecated and will be removed in 12.0.0.
-
-### Resolved issues
-* (IDETECT-5069) Fixed Setuptools parsing for unsupported install_requires syntax in setup.py: Detect now fails fast and logs an error instead of silently misparsing, generating an incorrect BOM, and incorrectly reporting success.
-
-* (IDETECT-5140) Changed the default output directory of the Quack Patch feature to use [detect_product_short] scan output directory instead of the current working directory.
-* (IDETECT-5121) Include Quack Patch output directory as part of diagnostic zip when the feature is enabled.
-* (IDETECT-5064) Updated the Gradle init script to explicitly assign an empty configuration set to phantom projects (container modules lacking a `build.gradle` file). This change prevents tools injected by plugins such as Detekt and Ktlint from being included in the dependency report.
-* (IDETECT-5097) Updated the Gradle init script to enumerate configurations within `gradle.projectsEvaluated`, ensuring that all `afterEvaluate` callbacks, including those from the Android Gradle Plugin (AGP), have completed before configuration processing begins.
-* (IDETECT-5163) Updated the Bazel detector to treat exit code `3` from `query` and `cquery` commands as a partial success. When encountered, the detector now processes any available output and issues a warning indicating that dependency results may be incomplete.
-* (IDETECT-5053) Fixed pip inspector to correctly parse PEP 440 direct reference packages (`name @ url`), ensuring these packages are included in the dependency tree rather than being omitted.
-
-### Dependency Updates
+* Support for npm has been extended to 11.13.0 and Node.js 24.17.0.

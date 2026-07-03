@@ -17,7 +17,7 @@ import com.blackduck.integration.detectable.python.util.PythonDependencyTransfor
 
 public class SetupToolsPyParser implements SetupToolsParser {
     private static final Pattern INSTALL_REQUIRES_PATTERN = Pattern.compile(".*\\binstall_requires\\s*=\\s*(.*)$");
-    private static final Pattern QUOTED_DEPENDENCY_PATTERN = Pattern.compile("'([^'\\\\]*(?:\\\\.[^'\\\\]*)*)'|\"([^\"\\\\]*(?:\\\\.[^\"\\\\]*)*)\"");
+    private static final Pattern QUOTED_DEPENDENCY_PATTERN = Pattern.compile("'([^']*)'|\"([^\"]*)\"");
     private TomlParseResult parsedToml;
     private List<String> dependencies;
     
@@ -47,53 +47,23 @@ public class SetupToolsPyParser implements SetupToolsParser {
             boolean inList = false;
             boolean listClosed = false;
 
-            while ((line = reader.readLine()) != null) {
+            while (!listClosed && (line = reader.readLine()) != null) {
                 String trimmed = line.trim();
 
                 if (!foundInstallRequires) {
-                    String codePortion = stripComment(line);
-                    Matcher installRequiresMatcher = INSTALL_REQUIRES_PATTERN.matcher(codePortion);
-                    if (!installRequiresMatcher.matches()) {
-                        continue;
-                    }
-
-                    foundInstallRequires = true;
-                    String afterEquals = installRequiresMatcher.group(1).trim();
-
-                    if (afterEquals.isEmpty()) {
-                        continue;
-                    }
-
-                    if (!afterEquals.startsWith("[")) {
-                        throw unsupportedInstallRequiresException();
-                    }
-
-                    inList = true;
-                    listClosed = parseListLine(afterEquals);
-                    if (listClosed) {
-                        break;
-                    }
-                    continue;
-                }
-
-                if (!inList) {
-                    if (trimmed.isEmpty()) {
-                        continue;
-                    }
-                    if (trimmed.startsWith("[")) {
+                    ParsedInstallRequires parsed = findInstallRequires(line);
+                    if (parsed != null && parsed.afterEquals != null) {
+                        foundInstallRequires = true;
                         inList = true;
-                        listClosed = parseListLine(trimmed);
-                        if (listClosed) {
-                            break;
-                        }
-                        continue;
+                        listClosed = parseListLine(parsed.afterEquals);
+                    } else if (parsed != null) {
+                        foundInstallRequires = true;
                     }
-                    throw unsupportedInstallRequiresException();
-                }
-
-                listClosed = parseListLine(trimmed);
-                if (listClosed) {
-                    break;
+                } else if (!inList) {
+                    inList = !trimmed.isEmpty();
+                    listClosed = inList && beginList(trimmed);
+                } else {
+                    listClosed = parseListLine(trimmed);
                 }
             }
 
@@ -105,24 +75,70 @@ public class SetupToolsPyParser implements SetupToolsParser {
         return dependencies;
     }
 
-    private boolean parseListLine(String line) throws DetectableException {
-        int closingBracketIndex = line.indexOf(']');
-        String relevantPortion = closingBracketIndex >= 0 ? line.substring(0, closingBracketIndex + 1) : line;
+    /**
+     * Attempts to find install_requires on the given line.
+     * Returns null if not found. Returns a result with afterEquals=null if the value
+     * continues on the next line. Throws if the value is not a literal list.
+     */
+    private ParsedInstallRequires findInstallRequires(String line) throws DetectableException {
+        String codePortion = stripComment(line);
+        Matcher matcher = INSTALL_REQUIRES_PATTERN.matcher(codePortion);
+        if (!matcher.matches()) {
+            return null;
+        }
 
-        Matcher quotedDependencyMatcher = QUOTED_DEPENDENCY_PATTERN.matcher(relevantPortion);
+        String afterEquals = matcher.group(1).trim();
+        if (afterEquals.isEmpty()) {
+            return new ParsedInstallRequires(null);
+        }
+        if (!afterEquals.startsWith("[")) {
+            throw unsupportedInstallRequiresException();
+        }
+        return new ParsedInstallRequires(afterEquals);
+    }
+
+    /**
+     * Handles lines after install_requires was found but before the list opening '[' is seen.
+     * Returns true if the list was fully closed on this line.
+     */
+    private boolean beginList(String trimmedLine) throws DetectableException {
+        if (trimmedLine.isEmpty()) {
+            return false;
+        }
+        if (!trimmedLine.startsWith("[")) {
+            throw unsupportedInstallRequiresException();
+        }
+        return parseListLine(trimmedLine);
+    }
+
+    private static class ParsedInstallRequires {
+        final String afterEquals;
+
+        ParsedInstallRequires(String afterEquals) {
+            this.afterEquals = afterEquals;
+        }
+    }
+
+    private boolean parseListLine(String line) throws DetectableException {
+        Matcher quotedDependencyMatcher = QUOTED_DEPENDENCY_PATTERN.matcher(line);
         while (quotedDependencyMatcher.find()) {
             String dependency = quotedDependencyMatcher.group(1) != null ? quotedDependencyMatcher.group(1) : quotedDependencyMatcher.group(2);
             dependencies.add(dependency);
         }
 
-        String residue = QUOTED_DEPENDENCY_PATTERN.matcher(relevantPortion).replaceAll("");
+        String residue = QUOTED_DEPENDENCY_PATTERN.matcher(line).replaceAll("");
         int commentIndex = residue.indexOf('#');
         if (commentIndex >= 0) {
             residue = residue.substring(0, commentIndex);
         }
-        residue = residue.replace("[", "").replace("]", "").replace(",", "").trim();
+        int closingBracketIndex = residue.indexOf(']');
 
-        if (!residue.isEmpty()) {
+        // Only validate content before the closing bracket. Anything after ']'
+        // (e.g. the ')' from 'setup(...)') is surrounding Python code we should ignore.
+        String toValidate = closingBracketIndex >= 0 ? residue.substring(0, closingBracketIndex) : residue;
+        toValidate = toValidate.replace("[", "").replace(",", "").trim();
+
+        if (!toValidate.isEmpty()) {
             throw unsupportedInstallRequiresException();
         }
 

@@ -7,8 +7,8 @@ import guru.nidi.graphviz.model.LinkSource;
 import guru.nidi.graphviz.model.MutableGraph;
 import guru.nidi.graphviz.model.MutableNode;
 import org.apache.commons.collections4.SetUtils;
-import org.jetbrains.annotations.NotNull;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -20,7 +20,7 @@ public class SbtRootNodeFinder {
         this.sbtDotGraphNodeParser = sbtDotGraphNodeParser;
     }
 
-    public Set<String> determineRootIDs(@NotNull Set<String> evictedIds, @NotNull MutableGraph mutableGraph) throws DetectableException {
+    public Set<String> determineRootIDs(MutableGraph mutableGraph) throws DetectableException {
         Set<String> nodeIdsUsedInDestination = mutableGraph.nodes().stream()
                 .map(MutableNode::links)
                 .flatMap(List::stream)
@@ -30,15 +30,38 @@ public class SbtRootNodeFinder {
                 .collect(Collectors.toSet());
 
         Set<String> allNodeIds = mutableGraph.nodes().stream().map(MutableNode::name).map(Label::value).collect(Collectors.toSet());
+        Set<String> rootIds = new HashSet<>(SetUtils.difference(allNodeIds, nodeIdsUsedInDestination));
+        // An evicted version of a directly-declared dependency has no incoming edges (sbt with Coursier), so it would
+        // otherwise be mistaken for a root.
+        Set<String> evictedIds = SbtDotEvictionParser.parseEvictedToWinner(mutableGraph).keySet();
 
-        Set<String> candidates = SetUtils.difference(allNodeIds, nodeIdsUsedInDestination);
-        // Evicted nodes have an outgoing edge but no incoming edges, so they appear as root candidates.
-        // Remove them — they are not real project roots but evicted nodes.
-        // e.g. guava:27.0 -> guava:30.1 [label="Evicted By"]
-        return SetUtils.difference(candidates, evictedIds);
+        // Only consider dependency edges when evictions are actually present; otherwise
+        // all edge-less root candidates are real sub-projects and belong in the multi-root warning.
+        if (evictedIds.isEmpty()) {
+            return rootIds;
+        }
+
+        rootIds.removeAll(evictedIds);
+
+        // With evictions, prefer roots that have at least one real dependency edge over stranded nodes
+        // and phantom callers; fall back to all candidates for dependency-free projects.
+        Set<String> nodesWithDependencyEdges = nodesWithDependencyEdges(mutableGraph, evictedIds);
+        Set<String> rootIdsWithDependencies = rootIds.stream()
+            .filter(nodesWithDependencyEdges::contains)
+            .collect(Collectors.toSet());
+        return rootIdsWithDependencies.isEmpty() ? rootIds : rootIdsWithDependencies;
     }
 
-    public Set<String> determineRootIDs(@NotNull MutableGraph mutableGraph) throws DetectableException {
-        return determineRootIDs(SbtEvictionNodeUtil.findEvictedNodeIds(mutableGraph), mutableGraph);
+    private Set<String> nodesWithDependencyEdges(MutableGraph mutableGraph, Set<String> evictedIds) {
+        return mutableGraph.nodes().stream()
+            .filter(node -> node.links().stream().anyMatch(link -> isDependencyEdge(link, evictedIds)))
+            .map(MutableNode::name)
+            .map(Label::value)
+            .collect(Collectors.toSet());
+    }
+
+    private boolean isDependencyEdge(Link link, Set<String> evictedIds) {
+        return !SbtDotEvictionParser.isEvictedByLink(link)
+            && !evictedIds.contains(SbtDotEvictionParser.normalizeNodeId(link.asLinkSource().name().toString()));
     }
 }
