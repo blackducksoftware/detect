@@ -47,9 +47,6 @@ public class PnpmLockYamlParserv5 {
         @Nullable NameVersion projectNameVersion,
         PnpmLinkedPackageResolver linkedPackageResolver
     ) throws IntegrationException {
-        if (pnpmLockYaml.packages == null) {
-            logger.warn("The pnpm-lock.yaml file has no 'packages' section. No resolved dependencies are present. The scan will continue with an empty dependency graph.");
-        }
         CodeLocation codeLocation = pnpmTransformer.generateCodeLocation(sourcePath, pnpmLockYaml, projectNameVersion, linkedPackageResolver);
         return Collections.singletonList(codeLocation);
     }
@@ -62,13 +59,6 @@ public class PnpmLockYamlParserv5 {
     ) throws IntegrationException {
         if (MapUtils.isEmpty(pnpmLockYaml.importers)) {
             return Collections.emptyList();
-        }
-
-        if (pnpmLockYaml.packages == null) {
-            logger.warn("The pnpm-lock.yaml file contains {} importer(s) {} but has no 'packages' section. "
-                + "No resolved dependencies are available. All workspaces will have empty dependency graphs.",
-                pnpmLockYaml.importers.size(),
-                pnpmLockYaml.importers.keySet());
         }
 
         List<CodeLocation> codeLocations = new LinkedList<>();
