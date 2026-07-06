@@ -10,6 +10,8 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.Predicate;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import com.blackduck.integration.detectable.detectables.pnpm.lockfile.model.PnpmLockYaml;
@@ -19,6 +21,8 @@ import com.blackduck.integration.util.ExcludedIncludedWildcardFilter;
 import com.blackduck.integration.util.NameVersion;
 
 public class PnpmLockYamlParser {
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
     private static final Predicate<String> isNodeRoot = "."::equals;
 
     private PnpmYamlTransformer pnpmTransformer;
@@ -41,6 +45,9 @@ public class PnpmLockYamlParser {
     private List<CodeLocation> createCodeLocationsFromRoot(File sourcePath, PnpmLockYaml pnpmLockYaml,
             @Nullable NameVersion projectNameVersion, PnpmLinkedPackageResolver linkedPackageResolver)
             throws IntegrationException {
+        if (pnpmLockYaml.packages == null) {
+            logger.warn("The pnpm-lock.yaml file has no 'packages' section. No resolved dependencies are present. The scan will continue with an empty dependency graph.");
+        }
         CodeLocation codeLocation = pnpmTransformer.generateCodeLocation(sourcePath, pnpmLockYaml, projectNameVersion,
                 linkedPackageResolver);
         return Collections.singletonList(codeLocation);
@@ -52,7 +59,14 @@ public class PnpmLockYamlParser {
         if (MapUtils.isEmpty(pnpmLockYaml.importers)) {
             return Collections.emptyList();
         }
-        
+
+        if (pnpmLockYaml.packages == null) {
+            logger.warn("The pnpm-lock.yaml file contains {} importer(s) {} but has no 'packages' section. "
+                + "No resolved dependencies are available. All workspaces will have empty dependency graphs.",
+                pnpmLockYaml.importers.size(),
+                pnpmLockYaml.importers.keySet());
+        }
+
         ExcludedIncludedWildcardFilter workspacesFilter;
         if (excludedDirectories.isEmpty() && includedDirectories.isEmpty()) {
             workspacesFilter = null; // Include all
@@ -70,6 +84,10 @@ public class PnpmLockYamlParser {
             }
             
             PnpmProjectPackage projectPackage = projectPackageInfo.getValue();
+            if (projectPackage == null) {
+                logger.warn("Importer '{}' has no content (null). Treating as empty (no dependencies).", projectKey);
+                projectPackage = new PnpmProjectPackage();
+            }
             NameVersion extractedNameVersion = extractProjectInfo(projectPackageInfo, linkedPackageResolver,
                     projectNameVersion);
 
