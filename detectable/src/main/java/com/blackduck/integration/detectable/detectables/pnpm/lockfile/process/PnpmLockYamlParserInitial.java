@@ -105,10 +105,8 @@ public class PnpmLockYamlParserInitial {
      *   <li>Attempt to parse as {@link PnpmLockYaml} (v6/v9). Uses {@code loadAll()} to
      *       support pnpm 11's multi-document YAML format (two sections separated by {@code ---}).
      *       For single-document lockfiles (pre-v11), {@code loadAll()} returns a single element
-     *       and behaviour is identical to the previous {@code load()} call. Four outcomes:
+     *       and behaviour is identical to the previous {@code load()} call. Three outcomes:
      *       <ul>
-     *         <li><b>Empty file</b> → {@code selectLockfileDocument()} returns null
-     *             → return null immediately (caller handles the empty case).</li>
      *         <li><b>Success with v6+ version</b> → return the result immediately.</li>
      *         <li><b>Success but version indicates v5</b> (or is null) → fall through
      *             to re-parse as v5. This happens because {@code setSkipMissingProperties(true)}
@@ -194,13 +192,13 @@ public class PnpmLockYamlParserInitial {
      * @return the document containing dependency information, or {@code null} if no documents exist
      */
     private PnpmLockYamlBase selectLockfileDocument(Iterable<Object> documents) {
-        PnpmLockYamlBase fallbackDocument = null;
+        PnpmLockYamlBase firstNonNull = null;
 
         for (Object doc : documents) {
             if (doc instanceof PnpmLockYamlBase) {
                 PnpmLockYamlBase candidate = (PnpmLockYamlBase) doc;
-                if (fallbackDocument == null) {
-                    fallbackDocument = candidate;
+                if (firstNonNull == null) {
+                    firstNonNull = candidate;
                 }
                 if (candidate.lockfileVersion != null) {
                     // This document contains lockfileVersion — it holds the actual dependency data.
@@ -211,10 +209,10 @@ public class PnpmLockYamlParserInitial {
             // Skip null documents and non-PnpmLockYamlBase objects (e.g. metadata-only sections).
         }
 
-        if (fallbackDocument != null) {
+        if (firstNonNull != null) {
             logger.debug("No YAML document contained a lockfileVersion field. Using the first non-null document.");
         }
-        return fallbackDocument;
+        return firstNonNull;
     }
 
     /**
