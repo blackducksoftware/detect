@@ -26,6 +26,6 @@
 * Introduced a property named `detect.diagnostic.archive.path`, which enables the specification of a custom path for the diagnostic archive.
 
 ### Dependency Updates
-* Update antlr library to version 4.13.2.
-* Update jackson libraries to version 2.22.0.
+* Update ANTLR library to version 4.13.2.
+* Update Jackson libraries to version 2.22.0.
 * Update Java minimum version to 11.
