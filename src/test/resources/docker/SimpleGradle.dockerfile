@@ -1,19 +1,16 @@
-FROM gradle:5.2.0-jdk8-slim
+FROM gradle:7.6-jdk11
 
 # Do not change SRC_DIR, value is expected by tests
 ENV SRC_DIR=/opt/project/src
 ENV JAVA_TOOL_OPTIONS="-Dhttps.protocols=TLSv1.2"
 
-USER root
-
-# Install git
-RUN apt-get update
-RUN apt-get install -y git
-
-# Set up the test project
 RUN mkdir -p ${SRC_DIR}
 
-RUN git clone --depth 1 https://github.com/jabedhasan21/java-hello-world-with-gradle ${SRC_DIR}
-
-RUN cd ${SRC_DIR} \
-   && ./gradlew build
+RUN cd ${SRC_DIR} && gradle init \
+  --type java-application \
+  --dsl groovy \
+  --test-framework junit \
+  --package my.project \
+  --project-name my-project \
+  && sed -i "s/com.google.guava:guava:[0-9.]*-jre/joda-time:joda-time:2.2/" ${SRC_DIR}/app/build.gradle \
+  && touch ${SRC_DIR}/build.gradle

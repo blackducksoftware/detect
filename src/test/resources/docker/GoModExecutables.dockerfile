@@ -1,4 +1,4 @@
-FROM openjdk:8-jdk-slim
+FROM eclipse-temurin:11-jdk-jammy
 
 # Default value of "goVersion" below is overridden by value passed as argument when building the image
 ARG goVersion=1.16.6
