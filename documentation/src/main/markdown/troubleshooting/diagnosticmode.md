@@ -29,4 +29,7 @@ After running [detect_product_short] in diagnostic mode, log messages similar to
 2019-03-29 09:32:03 INFO  [main] --- Diagnostic mode has completed.
 ```
 
+By default, the diagnostic zip is created in the runs output directory. You can specify a custom path for the diagnostic archive using the `detect.diagnostic.archive.path` property.
+
+
 To conserve disk space, be sure to disable diagnostic mode once it is no longer needed.
