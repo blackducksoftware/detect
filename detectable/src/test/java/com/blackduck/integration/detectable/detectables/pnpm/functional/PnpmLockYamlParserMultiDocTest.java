@@ -1,4 +1,4 @@
-package com.blackduck.integration.detectable.detectables.pnpm.unit;
+package com.blackduck.integration.detectable.detectables.pnpm.functional;
 
 import java.io.File;
 import java.io.IOException;
