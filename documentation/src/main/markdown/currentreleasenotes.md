@@ -23,4 +23,4 @@
 ### New features
 
 * Support for npm has been extended to 11.13.0 and Node.js 24.17.0.
-* Added property `detect.project.version.create.when.no.components` (default: `true`). When set to `false`, Detect will not create a project version on Black Duck if no components are found and no other scan tools are active.
+* Introduced the property `detect.project.version.create.when.no.components` (default: true). When configured to false, [detect_product_short] will refrain from creating a project version in [bd_product_long] in cases where no components are identified and no other scan tools are active.
