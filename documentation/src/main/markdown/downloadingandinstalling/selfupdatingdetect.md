@@ -7,7 +7,6 @@
 The Self Update feature will call the `/api/tools/detect` API end point to check for the existence of a specified [detect_product_short] version in [bd_product_short] under the **Admin > System Settings > [detect_product_short] > [detect_product_short] Version** drop-down. If a version that is eligible for upgrade or downgrade has been specified, the request to download that version of the [detect_product_short] .jar will execute and the current run of [detect_product_short] will invoke it for the requested scan. 
 
 [detect_product_short] will download the required version from the repository when the service is hosted, or from a custom URL as configured in [bd_product_short], when internally hosted. To support self-update via internal hosting, the [detect_product_short] binary must be in a location accessible via https to all executing [detect_product_short] instances.   
-Centralized [detect_product_short] Version Management feature support in [bd_product_short] is available from [bd_product_short] version 2023.4.0 onwards.
 
 <!-- Variables do not resolve when in a note format hence the hardcoding below -->
 <note type="information">
@@ -28,9 +27,7 @@ If the [detect_product_short] URL of the [detect_product_short] .jar file to dow
 
 If the [bd_product_short] “Internally Hosted” option has been selected and a [detect_product_short] download location has not been provided, the feature will not be enabled.
 
-For further [bd_product_short] configuration information, refer to the documentation provided under the topic:
-<xref href="DetectLocation.dita" scope="peer"> Hosting location for [detect_product_short].
-<data name="facets" value="pubname=bd-hub"/>
+For further [bd_product_short] configuration information, refer to the documentation provided under the topic: [Hosting location for Detect](https://docs.blackduck.com/r/blackduck/latest/black-duck-documentation/hosting-location-for-black-duck-detect.html).
 
 ## [detect_product_short] log examples for self update
 
