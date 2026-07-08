@@ -31,14 +31,14 @@ See [Quoting and escaping shell script arguments](../../scripts/script-escaping-
 
 ````
 export DETECT_LATEST_RELEASE_VERSION={Detect version}
-bash <(curl -s -L https://detect.blackduck.com/detect11.sh)
+bash <(curl -s -L https://detect.blackduck.com/detect12.sh)
 ````
 
-For example, to run [detect_product_short] version 9.10.0:
+For example, to run [detect_product_short] version 10.5.0:
 
 ````
-export DETECT_LATEST_RELEASE_VERSION=9.10.0
-bash <(curl -s -L https://detect.blackduck.com/detect9.sh)
+export DETECT_LATEST_RELEASE_VERSION=10.5.0
+bash <(curl -s -L https://detect.blackduck.com/detect10.sh)
 ````
 
 ## Running the script on Windows
@@ -80,7 +80,7 @@ powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://d
 
 To download and run the latest version of [detect_product_short] in a single command from PowerShell:
 ````
-[Net.ServicePointManager]::SecurityProtocol = 'tls12'; $Env:DETECT_EXIT_CODE_PASSTHRU=1; irm https://detect.blackduck.com/detect11.ps1?$(Get-Random) | iex; detect
+[Net.ServicePointManager]::SecurityProtocol = 'tls12'; $Env:DETECT_EXIT_CODE_PASSTHRU=1; irm https://detect.blackduck.com/detect12.ps1?$(Get-Random) | iex; detect
 ````
 
 _Note that when running the above command, the PowerShell session is not exited. See [here](../../scripts/script-escaping-special-characters.md) for more information on the difference between the two commands._

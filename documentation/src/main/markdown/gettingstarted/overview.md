@@ -4,5 +4,5 @@ Before you start using [detect_product_short], it is recommended that you become
 
 For a quick tutorial see: [Introduction to Scanning](https://community.blackduck.com/s/article/Black-Duck-Introduction-to-Scanning).
 
-<note type="note">[detect_product_short] documentation is incremental in nature with new functionality and changes indentified in the [Release notes](../currentreleasenotes.md) and [Properties](../properties/all-properties.md). However, documentation is also available for previous [detect_product_short] versions by navigating to the documentation portal [linked here](https://documentation.blackduck.com/bundle) and clicking on the **Archived** button.</note>
+<note type="note">[detect_product_short] documentation is incremental in nature with new functionality and changes indentified in the [Release notes](../currentreleasenotes.md) and [Properties](../properties/all-properties.md). However, documentation is also available for previous [detect_product_short] versions by navigating to the documentation portal [linked here](https://docs.blackduck.com) and selecting one of the hosted document versions from the drop-down when viewing [detect_product_short] documentation.</note>
 

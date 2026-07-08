@@ -49,7 +49,7 @@ Enable this feature by adding [--detect.blackduck.scan.mode=STATELESS](../proper
 
 Unlike persistent scans, no data is stored on [bd_product_short] and all scans are done transiently. These scans are primarily intended to be fast, although they can take some time as communication with [bd_product_short] is a requirement as it is reliant on [bd_product_short] policies.
 
-[detect_product_short] intentionally fails with FAILURE_POLICY_VIOLATION if any component violates [bd_product_short] polices with a CRITICAL or BLOCKER severity. See the [bd_product_short] documentation on <a href="https://documentation.blackduck.com/bundle/bd-hub/page/Policies/Overview.html" target="_blank">Policy Managment</a>
+[detect_product_short] intentionally fails with FAILURE_POLICY_VIOLATION if any component violates [bd_product_short] polices with a CRITICAL or BLOCKER severity. See the [bd_product_short] documentation on <a href="https://docs.blackduck.com/r/blackduck/latest/black-duck-documentation/managing-policies.html" target="_blank">Policy Managment</a>
  for a list of policy conditions that are supported by Stateless Scan. 
 
 The results are saved to a json file named `name_version_BlackDuck_DeveloperMode_Result.json` in the Scan Output directory, where name and version are the project's name and version.
@@ -86,7 +86,7 @@ The results of a Stateless Scan are also printed in the logs:
 2021-07-20 13:25:18 EDT INFO  [main] --- 		Components with Policy Violation Warnings:
 2021-07-20 13:25:18 EDT INFO  [main] --- 			Acorn 5.5.3 (npmjs:acorn/5.5.3)
 ```
-For [detect_product_short] version 8.7.0 and later, with [bd_product_short] 2023.1.2, Rapid Scan output reports upgrade guidance for transitive dependencies with known vulnerabilities. The output gives information as to the direct dependency upgrade options and the transitive dependencies affected. This output is given in the results section which appears near the end of the [detect_product_short] run and appears as follows:
+Rapid Scan output reports upgrade guidance for transitive dependencies with known vulnerabilities. The output gives information as to the direct dependency upgrade options and the transitive dependencies affected. This output is given in the results section which appears near the end of the [detect_product_short] run and appears as follows:
 ```
 2023-03-09 13:01:56 EST INFO  [main] --- ===== Transitive Guidance =====
 2023-03-09 13:01:56 EST INFO  [main] --- 
@@ -106,11 +106,10 @@ For [detect_product_short] version 8.7.0 and later, with [bd_product_short] 2023
 ```
 
 For further remediation and transitive dependency upgrade guidance, please consult the documentation provided by [bd_product_short] under the topic:
-<xref href="RiskGuidance.dita" scope="peer">Getting remediation guidance for components with security vulnerabilities.
-<data name="facets" value="pubname=bd-hub"/>
+<a href="https://docs.blackduck.com/r/blackduck/latest/black-duck-documentation/getting-remediation-guidance-for-components-with-security-vulnerabilities.html" target="_blank">Getting remediation guidance for components with security vulnerabilities</a>
 
 ## Stateless Scan Compare Mode
 
 You can configure Package Manager, Signature, and Container Stateless Scans to return only the difference in identified policy violations between the current scan and previous Persistent Scans, using the same scan configuration. To return only the difference in policy violations, configure `detect.blackduck.rapid.compare.mode` to `BOM_COMPARE` or `BOM_COMPARE_STRICT`.
 
-BOM compare mode settings determine which policies are considered and how they behave when violations are present. See the [bd_product_short] documentation for futher details <a href="https://documentation.blackduck.com/bundle/bd-hub/page/ComponentDiscovery/BestPracticesScanning/RapidScanOverview.html" target="_blank">on BOM comparison.</a>
+BOM compare mode settings determine which policies are considered and how they behave when violations are present. See the [bd_product_short] documentation for futher details <a href="https://docs.blackduck.com/r/blackduck/latest/black-duck-documentation/rapid-scan-overview.html" target="_blank">on BOM comparison.</a>
