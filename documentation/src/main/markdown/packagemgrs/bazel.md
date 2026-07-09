@@ -328,7 +328,7 @@ This dual approach ensures that the Bazel tool works seamlessly for both modern 
 
 ### Processing for BCR modules (BZLMOD mode, Bazel 7.1+)
 
-When [detect_product_short] detects BZLMOD mode on Bazel 7.1 or later, it runs a dedicated BCR extraction path before the standard pipelines. The http_archive pipeline is skipped in this mode since BCR-managed archives are already covered here.
+When [detect_product_short] detects BZLMOD mode on Bazel 7.1 or later, it runs a dedicated BCR extraction path before the standard pipelines. The http_archive pipeline still runs afterward, but any dep already classified by the BCR extractor is deduplicated by ExternalId — this preserves the direct/transitive edges the BCR extractor built and avoids promoting transitive BCR deps to direct. Custom http_archive rules absent from `MODULE.bazel` (private repos, non-BCR archives) are unaffected and still added to the BOM flat.
 
 **Step 1 — Discover the full module dependency tree:**
 ```sh

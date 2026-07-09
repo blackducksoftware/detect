@@ -54,17 +54,11 @@ public class BzlmodBcrExtractor {
     // Prefix used in GitHub archive URLs to indicate a tag ref (e.g., refs/tags/v1.2.3)
     private static final String REFS_TAGS_PREFIX = "refs/tags/";
     // Separator between individual repo blocks in batched show_repo output.
-    // Canonical form (@@name+) is used — see resolveModules() for why.
+    // Each block starts with "## @@<name><suffix>:" regardless of the suffix character.
     private static final String REPO_BLOCK_SEPARATOR = "## @@";
-    // Suffix appended to a module name to form its Bazel canonical repo name (e.g., "protobuf+")
-    private static final String CANONICAL_SUFFIX = "+";
 
-    // Constants for target-scoped query (same logic as the HTTP_ARCHIVE pipeline in Pipelines.java)
+    // Pattern for the target-scoped library query (same as the HTTP_ARCHIVE pipeline)
     private static final String LIBRARY_RULE_PATTERN = ".*library";
-    // Strips one or more leading @ signs from a label (handles both @apparent and @@canonical forms)
-    private static final String STRIP_LEADING_ATS_REGEX = "^@+";
-    // Strips the //path:target suffix to leave only the repo name
-    private static final String STRIP_REPO_PATH_REGEX = "//.*";
     // Repo name prefixes that are Bazel toolchain / internal repos — excluded from BCR scope check.
     // Mirrors the exclusion list in HttpFamilyProber and Pipelines.java.
     private static final Set<String> EXCLUDED_REPO_PREFIXES = new HashSet<>(Arrays.asList(
@@ -129,11 +123,18 @@ public class BzlmodBcrExtractor {
         logger.info("BZLMOD BCR: module graph has {} direct dep(s) and {} total unique module(s)",
             tree.directModuleKeys.size(), allKeys.size());
 
-        // Step 1b — narrow the mod graph to only modules the target actually fetches.
+        // Step 1b — load the repo mapping once.
+        // BzlmodRepoMappingResolver handles two label-format problems in one shot:
+        //   (a) canonical suffix instability: "+" pre-7.5, "~" in 7.5+ — detected from mapping values
+        //   (b) repo_name aliases: @com_google_protobuf → protobuf via the forward map
+        // If the command fails the resolver degrades gracefully (see BzlmodRepoMappingResolver).
+        BzlmodRepoMappingResolver resolver = BzlmodRepoMappingResolver.load(bazelCmd);
+
+        // Step 1c — narrow the mod graph to only modules the target actually fetches.
         // This keeps the BCR path consistent with all other Bazel pipelines which are target-scoped
         // via 'bazel query deps(//target)'. We reuse the same library query the HTTP_ARCHIVE pipeline
         // runs, so Bazel serves it from its analysis cache at no extra cost.
-        Set<String> targetModuleNames = getTargetScopedModuleNames();
+        Set<String> targetModuleNames = getTargetScopedModuleNames(resolver);
         if (!targetModuleNames.isEmpty()) {
             Set<String> filtered = new LinkedHashSet<>();
             for (String key : allKeys) {
@@ -150,7 +151,7 @@ public class BzlmodBcrExtractor {
         }
 
         // Step 2 — map each module key to a Dependency via show_repo
-        Map<String, Dependency> moduleKeyToDep = resolveModules(allKeys);
+        Map<String, Dependency> moduleKeyToDep = resolveModules(allKeys, resolver);
         logger.info("BZLMOD BCR extraction: {} module(s) resolved, {} skipped (see WARN above for details)",
             moduleKeyToDep.size(), allKeys.size() - moduleKeyToDep.size());
 
@@ -181,21 +182,23 @@ public class BzlmodBcrExtractor {
      * {@code local_path_override} with a non-standard canonical name), it is skipped with a
      * WARN. The HTTP_ARCHIVE pipeline may still capture it via {@code bazel query}.
      */
-    private Map<String, Dependency> resolveModules(Set<String> moduleKeys) {
-        // Build @@<name>+ canonical args and the reverse mapping key → arg for post-processing
+    private Map<String, Dependency> resolveModules(Set<String> moduleKeys, BzlmodRepoMappingResolver resolver) {
+        // Build canonical @@<name><suffix> args using the resolver.
+        // canonicalRepoArg() uses the reverse map for known direct deps and falls back to
+        // appending the detected suffix for pure transitives absent from the root mapping.
+        // The canonical form is required (not apparent @name) so that pure transitive deps
+        // resolve without a repo-mapping lookup — see BzlmodBcrExtractor javadoc for details.
         List<String> repoArgs = new ArrayList<>();
         Map<String, String> moduleKeyToRepoArg = new LinkedHashMap<>();
         for (String moduleKey : moduleKeys) {
-            String name = BzlmodGraphJsonParser.extractName(moduleKey);
-            // @@name+ is the canonical form: bypasses root module's repo mapping restriction,
-            // allowing pure transitives to be resolved just like direct deps.
-            String repoArg = "@@" + name + CANONICAL_SUFFIX;
+            String name    = BzlmodGraphJsonParser.extractName(moduleKey);
+            String repoArg = resolver.canonicalRepoArg(name); // e.g. "@@protobuf~"
             repoArgs.add(repoArg);
             moduleKeyToRepoArg.put(moduleKey, repoArg);
         }
 
         // Attempt a single batched show_repo call (Bazel 7.1+ supports it; we are always 7.1+ here)
-        Map<String, String> showRepoByKey = tryBatchedShowRepo(moduleKeys, repoArgs);
+        Map<String, String> showRepoByKey = tryBatchedShowRepo(moduleKeys, repoArgs, resolver);
         if (showRepoByKey.isEmpty()) {
             logger.info("BZLMOD BCR: batched show_repo returned no results; falling back to per-module calls");
             showRepoByKey = runPerModuleShowRepo(moduleKeys, moduleKeyToRepoArg);
@@ -228,14 +231,16 @@ public class BzlmodBcrExtractor {
     }
 
     /**
-     * Attempts a single batched {@code bazel mod show_repo @@name1+ @@name2+ ...} and maps the
-     * split output blocks back to module keys via the {@code ## @@name+:} header in each block.
+     * Attempts a single batched {@code bazel mod show_repo @@name~ @@name2~ ...} and maps the
+     * split output blocks back to module keys via the {@code ## @@name<suffix>:} header in each block.
      * Returns an empty map if the batch fails, returns no stdout, or cannot be split.
      *
-     * <p>The canonical {@code @@name+} form is used so that pure transitive modules resolve
+     * <p>The canonical {@code @@name<suffix>} form is used so that pure transitive modules resolve
      * without a repo-mapping lookup. See {@link #resolveModules} for the full explanation.
+     * The actual suffix character ("+" or "~") is detected dynamically by the resolver.
      */
-    private Map<String, String> tryBatchedShowRepo(Set<String> moduleKeys, List<String> repoArgs) {
+    private Map<String, String> tryBatchedShowRepo(Set<String> moduleKeys, List<String> repoArgs,
+                                                    BzlmodRepoMappingResolver resolver) {
         if (repoArgs.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -246,21 +251,23 @@ public class BzlmodBcrExtractor {
                 return Collections.emptyMap();
             }
 
-            // Each repo block starts with "## @@<name>+:" — split on that boundary
+            // Each repo block starts with "## @@<name><suffix>:" — split on that boundary.
+            // The suffix character varies by Bazel version ("+" pre-7.5, "~" on 7.5+);
+            // we strip it via the resolver rather than hardcoding.
             String[] parts = output.get().split("(?=" + REPO_BLOCK_SEPARATOR + ")");
             Map<String, String> blockByRepoName = new LinkedHashMap<>();
             for (String part : parts) {
                 String trimmed = part.trim();
                 if (!trimmed.isEmpty() && trimmed.startsWith(REPO_BLOCK_SEPARATOR)) {
-                    // Header is "## @@<name>+:" — extract the module name between "@@" and "+:"
+                    // Header is "## @@<name><suffix>:" — extract the token between "@@" and ":"
                     int colonIdx = trimmed.indexOf(':');
                     if (colonIdx > REPO_BLOCK_SEPARATOR.length()) {
-                        // e.g. "## @@protobuf+:" → rawName = "protobuf+"
+                        // e.g. "## @@protobuf~:" → rawName = "protobuf~"
                         String rawName = trimmed.substring(REPO_BLOCK_SEPARATOR.length(), colonIdx);
-                        // Strip the trailing canonical "+" suffix to get the plain module name
-                        String moduleName = rawName.endsWith(CANONICAL_SUFFIX)
-                            ? rawName.substring(0, rawName.length() - CANONICAL_SUFFIX.length())
-                            : rawName;
+                        // Strip the canonical suffix using the resolver (version-aware, not hardcoded)
+                        String moduleName = resolver.stripCanonicalSuffix(rawName);
+                        logger.debug("BZLMOD BCR: batched show_repo block header: rawName='{}' → moduleName='{}'",
+                            rawName, moduleName);
                         blockByRepoName.put(moduleName, trimmed);
                     }
                 }
@@ -406,17 +413,17 @@ public class BzlmodBcrExtractor {
      * <p>Returns an empty set when the query fails or produces no results — callers fall back
      * to the full project-scoped mod graph with a WARN log.
      *
-     * <p>Label formats handled:
+     * <p>Label resolution is delegated to {@link BzlmodRepoMappingResolver#resolveLabel}, which handles:
      * <ul>
-     *   <li>{@code @@name+//...} (canonical BCR) → strip {@code @@} and trailing {@code +} → module name</li>
-     *   <li>{@code @apparentname//...} (apparent, no {@code repo_name} override) → strip {@code @} → module name</li>
-     *   <li>{@code @@module++ext+subrepo//...} (module extension sub-repo) → skipped (contains {@code ++})</li>
+     *   <li>{@code @@name~//...} or {@code @@name+//...} (canonical BCR) → strip suffix → module name</li>
+     *   <li>{@code @alias//...} (apparent name, e.g. from {@code repo_name} override) → map lookup → module name</li>
+     *   <li>{@code @@module++ext+subrepo//...} (module extension sub-repo) → skipped (empty Optional)</li>
      * </ul>
      *
      * <p>The same query is run by the HTTP_ARCHIVE pipeline, so Bazel's analysis cache serves it
      * without a full re-evaluation — effectively zero extra cost.
      */
-    private Set<String> getTargetScopedModuleNames() {
+    private Set<String> getTargetScopedModuleNames(BzlmodRepoMappingResolver resolver) {
         logger.info("BZLMOD BCR: querying target-scoped repos via 'bazel query kind(.*library, deps({}))'", bazelTarget);
         List<String> queryArgs = BazelQueryBuilder.query()
             .kind(LIBRARY_RULE_PATTERN, BazelQueryBuilder.deps(bazelTarget))
@@ -441,24 +448,13 @@ public class BzlmodBcrExtractor {
             if (!label.startsWith("@")) {
                 continue;
             }
-            // Strip leading @ or @@ and the //path:target suffix to get the bare repo name
-            String name = label.replaceFirst(STRIP_LEADING_ATS_REGEX, "").replaceFirst(STRIP_REPO_PATH_REGEX, "");
-            if (name.isEmpty()) {
+            // Delegate all label-format complexity to the resolver:
+            // suffix detection (+ vs ~), repo_name alias resolution, ++ sub-repo exclusion.
+            Optional<String> moduleName = resolver.resolveLabel(label);
+            if (!moduleName.isPresent() || isExcludedModuleName(moduleName.get())) {
                 continue;
             }
-            // Module extension sub-repos use @@ with ++ in the canonical name (e.g., rules_jvm_external++maven+guava).
-            // These don't appear as module keys in bazel mod graph — skip them.
-            if (name.contains("++")) {
-                continue;
-            }
-            // Strip trailing + to convert canonical BCR form to module name (e.g., "protobuf+" → "protobuf")
-            if (name.endsWith(CANONICAL_SUFFIX)) {
-                name = name.substring(0, name.length() - 1);
-            }
-            if (name.isEmpty() || isExcludedModuleName(name)) {
-                continue;
-            }
-            moduleNames.add(name);
+            moduleNames.add(moduleName.get());
         }
 
         logger.info("BZLMOD BCR: target-scoped filter set has {} candidate module name(s)", moduleNames.size());
