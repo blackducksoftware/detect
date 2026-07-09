@@ -65,10 +65,6 @@ public class GenerateDocsTask extends DefaultTask {
         FileUtils.deleteDirectory(outputDir);
         troubleshootingDir.mkdirs();
 
-        // Metadata that Zoomin needs
-        FileUtils.copyFileToDirectory(new File(docsProjectDir, "custom.properties"), outputDir);
-        FileUtils.copyFileToDirectory(new File(docsProjectDir, "classification.xml"), outputDir);
-
         File templatesDir = new File(docsSrcMainResourcesDir, "templates");
         TemplateProvider templateProvider = new TemplateProvider(templatesDir, docsProject.getVersion().toString());
 
@@ -80,8 +76,7 @@ public class GenerateDocsTask extends DefaultTask {
         FileUtils.copyDirectory(sourceMarkdownDir, outputDir);
         createMarkdownFromFreemarker(templateProvider, troubleshootingDir, "exit-codes", new ExitCodePage(helpJson.getExitCodes()));
         createMarkdownFromFreemarker(templateProvider, runningDir, "status-file", new DetectorStatusCodes(helpJson.getDetectorStatusCodes()));
-       // Commenting out in 9.4 to manually create detectors table
-	   // handleDetectors(templateProvider, outputDir, helpJson);
+
         handleProperties(templateProvider, outputDir, helpJson);
         createFromFreemarker(templateProvider, "downloadlocations.ftl", new File(installDir, "downloadlocations.md"));
     }
@@ -101,33 +96,6 @@ public class GenerateDocsTask extends DefaultTask {
             template.process(data, writer);
         }
     }
-	// Commenting out in 9.4 to manually create detectors table
-    /* private void handleDetectors(TemplateProvider templateProvider, File baseOutputDir, HelpJsonData helpJson) throws IOException, TemplateException {
-        File outputDir = new File(baseOutputDir, "components");
-        List<DetectorType> detectorTypes = new ArrayList<>();
-        helpJson.getDetectors().stream()
-            .sorted(Comparator.comparing(HelpJsonDetectorRule::getDetectorType))
-            .forEach(detectorRule -> {
-                List<DetectorEntryPoint> entryPointsForRule = new ArrayList<>();
-                detectorRule.getEntryPoints().forEach(entry -> {
-                    List<Detectable> detectables = entry.getDetectables().stream()
-                        .map(detectable -> new Detectable(
-                            detectable.getDetectableName(),
-                            detectable.getDetectableLanguage(),
-                            detectable.getDetectableForge(),
-                            detectable.getDetectableRequirementsMarkdown(),
-                            detectable.getDetectableAccuracy()
-                        ))
-                        .collect(Collectors.toList());
-                    DetectorEntryPoint entryPoint = new DetectorEntryPoint(entry.getName(), detectables);
-                    entryPointsForRule.add(entryPoint);
-                });
-                DetectorType detectorType = new DetectorType(detectorRule.getDetectorType(), entryPointsForRule);
-                detectorTypes.add(detectorType);
-            });
-
-        createMarkdownFromFreemarker(templateProvider, outputDir, "detectors", new DetectorCascadePage(detectorTypes));
-    } */
 	
     private String encodePropertyLocation(String propertyName) {
         if (!propertyName.equals(propertyName.trim())) {

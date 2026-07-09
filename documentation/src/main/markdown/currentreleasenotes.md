@@ -2,11 +2,9 @@
 
 **Notices**
 
-[company_name] [solution_name] has been renamed [detect_product_long] with page links, documentation, and other URLs updated accordingly. Update any [detect_product_short] documentation, or other bookmarks you may have. See the [Domain Change FAQ](https://community.blackduck.com/s/article/Black-Duck-Domain-Change-FAQ).
 * Please make use of repo.blackduck.com and detect.blackduck.com for code downloads.
 	* [detect_product_short] script downloads should only be accessed via detect.blackduck.com.
 	* [detect_product_short] 10.0.0 and later will only work when using repo.blackduck.com.
-	* If you are using [detect_product_short] 8 or 9 it is essential to update to 8.11.2 or 9.10.1 respectively.
 
 * [bd_product_long] [SCA Scan Service (SCASS)](https://community.blackduck.com/s/question/0D5Uh00000O2ZSYKA3/black-duck-sca-new-ip-address-requirements-for-2025) requires customers add or update IP addresses configured in their network firewalls or allow lists. This action is required to successfully route scan data to the service for processing.
 
@@ -22,14 +20,14 @@
 
 ### New features
 
-* Support for npm has been extended to 11.13.0 and Node.js 24.17.0.
-
 * Introduced a property named `detect.diagnostic.archive.path`, which enables the specification of a custom path for the diagnostic archive.
 * Support for the following package managers have been extended:
   * RubyGems: 4.0.15
   * Gradle: 9.6.1
   * Maven: 3.9.16
   * Pnpm: 11.8.0
+  * NPM: 11.13.0
+  * Node.js: 24.17.0
 
 ### Dependency Updates
 * Update ANTLR library to version 4.13.2.

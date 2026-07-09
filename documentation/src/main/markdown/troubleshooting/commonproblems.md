@@ -1,6 +1,6 @@
 # Common [detect_product_short] complications
 
-- Problems may occur due to incompatible [detect_product_long] / [bd_product_long] versions. Consult the [Compatibility Matrix](https://documentation.blackduck.com/bundle/blackduck-compatibility/page/topics/Black-Duck-Release-Compatibility.html) to verify your combination. Attempting to reproduce the problem using the latest version of [bd_product_short] with the latest version of [bd_product_short] might also assist in determining if the issue has been resolved.
+- Problems may occur due to incompatible [detect_product_long] / [bd_product_long] versions. Consult the [Compatibility Matrix](https://docs.blackduck.com/r/blackduck/black-duck-compatibility-reference/black-duck-sca-release-compatibility.html) to verify your combination. Attempting to reproduce the problem using the latest version of [bd_product_short] with the latest version of [bd_product_short] might also assist in determining if the issue has been resolved.
 - Remember to consider the possibility that the [bd_product_short] user lacks the necessary permissions (to create the project, update the BOM, receive notifications, etc.) in [bd_product_short]. For more information, see [Black Duck user role requirements](../gettingstarted/usersandroles.md).
 - Confirm that the [bd_product_short] server (registration key) has the required capabilities enabled (binary upload, snippet scanning, etc.).
 

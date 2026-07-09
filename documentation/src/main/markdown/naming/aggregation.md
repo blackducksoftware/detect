@@ -1,6 +1,6 @@
 # BDIO aggregation
 
-Starting with version 8.0.0, [detect_product_short] aggregates all package manager results into a single BDIO file / codelocation.
+[detect_product_short] aggregates all package manager results into a single BDIO file / codelocation.
 
 All dependency graphs produced by any of the following, executed during the [detect_product_short] run, will be aggregated:
 
@@ -8,9 +8,7 @@ All dependency graphs produced by any of the following, executed during the [det
 * Docker Inspector
 * Bazel
 
-This BDIO takes advantage of
-functionality added to [bd_product_short] in version 2021.8.0
-enabling [bd_product_short] to preserve both source information (indicating, for example, from which
+This BDIO takes advantage of [bd_product_short] functionality that enables [bd_product_short] to preserve both source information (indicating, for example, from which
 subproject a dependency originated) and match type information (direct vs. transitive dependencies).
 
 [detect_product_short] now operates in a way that is similar to [detect_product_short] 7
