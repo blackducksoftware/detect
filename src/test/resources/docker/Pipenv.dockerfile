@@ -15,7 +15,7 @@ ENV JAVA_TOOL_OPTIONS="-Dhttps.protocols=TLSv1.2"
 RUN apt-get update -y
 RUN apt-get install -y git bash wget unzip
 RUN apt-get install -y python3 python3-pip
-RUN pip install --upgrade "pipenv==${PIPENV_VERSION_VAL}"
+RUN pip install --verbose --upgrade "pipenv==${PIPENV_VERSION_VAL}"
 
 # Set up test project
 RUN mkdir -p ${SRC_DIR}

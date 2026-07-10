@@ -16,7 +16,7 @@ RUN apt-get update -y
 RUN apt-get install -y git bash wget unzip
 RUN apt-get install -y python3 python3-pip
 RUN python3 -m pip install -U "pip==${PIP_VERSION}"
-RUN pip install --upgrade "uv==${UV_VERSION}"
+RUN pip install --verbose --upgrade "uv==${UV_VERSION}"
 RUN pip install --upgrade "setuptools==${SETUPTOOLS_VERSION}"
 
 # Set up test project
