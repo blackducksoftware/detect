@@ -3,7 +3,7 @@ FROM eclipse-temurin:8-jdk-jammy
 ARG ARTIFACTORY_URL
 ENV PIP_INDEX_URL="${ARTIFACTORY_URL}/artifactory/api/pypi/pypi-virtual/simple/"
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
-ARG PIP_VERSION="25.2"
+ARG PIP_VERSION="24.2"
 
 # Do not change SRC_DIR, value is expected by tests
 ENV SRC_DIR=/opt/project/src
