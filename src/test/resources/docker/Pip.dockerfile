@@ -1,7 +1,9 @@
-FROM openjdk:8-jdk-slim
+FROM eclipse-temurin:8-jdk
 
 ARG ARTIFACTORY_URL
-ARG PIP_VERSION="24.1.2"
+ENV PIP_INDEX_URL="${ARTIFACTORY_URL}/artifactory/api/pypi/pypi-virtual/simple/"
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+ARG PIP_VERSION="25.2"
 
 # Do not change SRC_DIR, value is expected by tests
 ENV SRC_DIR=/opt/project/src
@@ -12,7 +14,7 @@ ENV JAVA_TOOL_OPTIONS="-Dhttps.protocols=TLSv1.2"
 RUN apt-get update -y
 RUN apt-get install -y git bash wget unzip
 RUN apt-get install -y python3 python3-pip
-RUN pip install --upgrade "pip==${PIP_VERSION}"
+RUN pip install --ignore-installed "pip==${PIP_VERSION}"
 
 # Set up test project
 RUN mkdir -p ${SRC_DIR}

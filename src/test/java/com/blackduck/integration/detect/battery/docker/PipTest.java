@@ -24,10 +24,10 @@ import com.blackduck.integration.detector.base.DetectorType;
 import com.blackduck.integration.exception.IntegrationException;
 
 @Tag("integration")
-@Disabled("Disabled: Dockerfiles pull from public PyPI registry — re-enable after migrating to internal artifact proxy")
+//@Disabled("Disabled: Dockerfiles pull from public PyPI registry — re-enable after migrating to internal artifact proxy")
 public class PipTest {
 
-    private static final String[] PIP_VERSIONS_TO_TEST = new String[] { "24.2" };
+    private static final String[] PIP_VERSIONS_TO_TEST = new String[] { "25.2" };
     private static final String[] PIP_PKG_RESOURCES_VERSIONS_TO_TEST = new String[] { "23.3.1" };
     public static String ARTIFACTORY_URL = System.getenv().get("SNPS_INTERNAL_ARTIFACTORY");
 
