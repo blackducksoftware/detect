@@ -9,7 +9,6 @@ import java.util.Set;
 
 import org.apache.commons.collections4.MultiValuedMap;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +50,7 @@ public class NpmCliParser {
     }
 
     public NpmPackagerResult generateCodeLocation(String npmLsOutput, CombinedPackageJson combinedPackageJson,
-            @Nullable ExcludedIncludedWildcardFilter workspaceFilter) {
+            ExcludedIncludedWildcardFilter workspaceFilter) {
         if (StringUtils.isBlank(npmLsOutput)) {
             logger.error("Ran into an issue creating and writing to file");
             return null;
@@ -66,7 +65,7 @@ public class NpmCliParser {
     }
 
     public NpmPackagerResult convertNpmJsonFileToCodeLocation(String npmLsOutput, CombinedPackageJson combinedPackageJson,
-            @Nullable ExcludedIncludedWildcardFilter workspaceFilter) {
+            ExcludedIncludedWildcardFilter workspaceFilter) {
         JsonObject npmJson = JsonParser.parseString(npmLsOutput).getAsJsonObject();
         DependencyGraph graph = new BasicDependencyGraph();
 
@@ -107,7 +106,7 @@ public class NpmCliParser {
 
     private void populateChildren(DependencyGraph graph, Dependency parentDependency, JsonObject parentNodeChildren,
             boolean isRootDependency, CombinedPackageJson combinedPackageJson, Map<String, String> aliasMapping,
-            @Nullable ExcludedIncludedWildcardFilter workspaceFilter) {
+            ExcludedIncludedWildcardFilter workspaceFilter) {
         if (parentNodeChildren == null) {
             return;
         }
@@ -140,7 +139,7 @@ public class NpmCliParser {
         boolean isRootDependency,
         CombinedPackageJson combinedPackageJson,
         Map<String, String> aliasMapping,
-        @Nullable ExcludedIncludedWildcardFilter workspaceFilter
+        ExcludedIncludedWildcardFilter workspaceFilter
     ) {
         JsonObject element = elementEntry.getValue().getAsJsonObject();
         String name = elementEntry.getKey();
