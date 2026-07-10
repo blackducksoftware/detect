@@ -23,7 +23,7 @@ import com.blackduck.integration.detector.base.DetectorType;
 import com.blackduck.integration.exception.IntegrationException;
 
 @Tag("integration")
-@Disabled("Disabled: Dockerfile pulls from public PyPI registry — re-enable after migrating to internal artifact proxy")
+//@Disabled("Disabled: Dockerfile pulls from public PyPI registry — re-enable after migrating to internal artifact proxy")
 public class PipenvTest {
 
     private static final String[] PIPENV_VERSIONS_TO_TEST = new String[] { "2024.0.1" };
