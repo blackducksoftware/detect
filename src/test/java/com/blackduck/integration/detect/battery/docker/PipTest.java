@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -24,7 +23,6 @@ import com.blackduck.integration.detector.base.DetectorType;
 import com.blackduck.integration.exception.IntegrationException;
 
 @Tag("integration")
-//@Disabled("Disabled: Dockerfiles pull from public PyPI registry — re-enable after migrating to internal artifact proxy")
 public class PipTest {
 
     private static final String[] PIP_VERSIONS_TO_TEST = new String[] { "24.2" };

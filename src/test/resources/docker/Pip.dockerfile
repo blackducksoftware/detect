@@ -22,4 +22,4 @@ RUN wget ${ARTIFACTORY_URL}/artifactory/detect-generic-qa-local/pip-test-project
 RUN unzip pip-test-project.zip -d /opt/project/src
 RUN mv pip-test-project/* .
 RUN rm -r pip-test-project pip-test-project.zip
-RUN pip install --verbose -r requirements.txt
+RUN pip install -r requirements.txt
