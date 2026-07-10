@@ -12,7 +12,7 @@ ENV JAVA_TOOL_OPTIONS="-Dhttps.protocols=TLSv1.2"
 
 # Set up test environment
 RUN apt-get update -y
-RUN apt-get install -y git bash wget unzip
+RUN apt-get install -y git bash wget unzip build-essential python3-dev
 RUN apt-get install -y python3 python3-pip
 RUN pip install --ignore-installed "pip==${PIP_VERSION}"
 
