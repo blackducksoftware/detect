@@ -33,3 +33,4 @@
 * Update ANTLR library to version 4.13.2.
 * Update Jackson libraries to version 2.22.0.
 * Update Java minimum version to 11.
+* Update Tika library to version 3.2.2.
