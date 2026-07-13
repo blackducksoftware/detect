@@ -218,7 +218,7 @@ public class BzlmodRepoMappingResolver {
         );
     }
 
-    private static BzlmodRepoMappingResolver parse(String json) {
+    static BzlmodRepoMappingResolver parse(String json) {
         try {
             JsonElement element = JsonParser.parseString(json);
             if (!element.isJsonObject()) {

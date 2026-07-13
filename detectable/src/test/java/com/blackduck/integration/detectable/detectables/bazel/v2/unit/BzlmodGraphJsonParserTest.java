@@ -2,11 +2,13 @@ package com.blackduck.integration.detectable.detectables.bazel.v2.unit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.List;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
 import com.blackduck.integration.detectable.detectables.bazel.v2.BzlmodGraphJsonParser;
+import com.blackduck.integration.detectable.detectables.bazel.v2.ModuleGraph;
 
 public class BzlmodGraphJsonParserTest {
 
@@ -127,4 +129,105 @@ public class BzlmodGraphJsonParserTest {
     public void extractVersion_atSignAtEnd_returnsNull() {
         assertNull(BzlmodGraphJsonParser.extractVersion("protobuf@"));
     }
+
+    // --- parseModuleGraph ---
+
+    @Test
+    public void parseModuleGraph_typicalGraph_correctDirectKeysAndEdges() {
+        // 2 direct deps, 1 transitive: protobuf → abseil-cpp; rules_java is a leaf
+        String json = "{\n"
+                + "  \"key\": \"<root>\",\n"
+                + "  \"dependencies\": [\n"
+                + "    {\n"
+                + "      \"key\": \"protobuf@29.3\",\n"
+                + "      \"dependencies\": [\n"
+                + "        { \"key\": \"abseil-cpp@20240722.0\", \"dependencies\": [] }\n"
+                + "      ]\n"
+                + "    },\n"
+                + "    { \"key\": \"rules_java@8.6.4\", \"dependencies\": [] }\n"
+                + "  ]\n"
+                + "}";
+
+        ModuleGraph graph = parser.parseModuleGraph(json);
+
+        assertEquals(2, graph.directModuleKeys.size());
+        assertTrue(graph.directModuleKeys.contains("protobuf@29.3"));
+        assertTrue(graph.directModuleKeys.contains("rules_java@8.6.4"));
+
+        // Only protobuf has children; rules_java is a leaf and absent from the map
+        assertEquals(1, graph.childrenByModuleKey.size());
+        List<String> protobufChildren = graph.childrenByModuleKey.get("protobuf@29.3");
+        assertNotNull(protobufChildren);
+        assertEquals(1, protobufChildren.size());
+        assertEquals("abseil-cpp@20240722.0", protobufChildren.get(0));
+
+        // getAllModuleKeys returns the full union
+        Set<String> all = graph.getAllModuleKeys();
+        assertEquals(3, all.size());
+        assertTrue(all.contains("protobuf@29.3"));
+        assertTrue(all.contains("rules_java@8.6.4"));
+        assertTrue(all.contains("abseil-cpp@20240722.0"));
+    }
+
+    @Test
+    public void parseModuleGraph_diamondDep_childDeduplicatedPerParent() {
+        // shared@3.0 listed twice under moduleA (diamond sub-tree repeat) and once under moduleB.
+        // Each parent's child list must contain shared@3.0 exactly once.
+        String json = "{\n"
+                + "  \"key\": \"<root>\",\n"
+                + "  \"dependencies\": [\n"
+                + "    {\n"
+                + "      \"key\": \"moduleA@1.0\",\n"
+                + "      \"dependencies\": [\n"
+                + "        { \"key\": \"shared@3.0\", \"dependencies\": [] },\n"
+                + "        { \"key\": \"shared@3.0\", \"dependencies\": [] }\n"
+                + "      ]\n"
+                + "    },\n"
+                + "    {\n"
+                + "      \"key\": \"moduleB@2.0\",\n"
+                + "      \"dependencies\": [\n"
+                + "        { \"key\": \"shared@3.0\", \"dependencies\": [] }\n"
+                + "      ]\n"
+                + "    }\n"
+                + "  ]\n"
+                + "}";
+
+        ModuleGraph graph = parser.parseModuleGraph(json);
+
+        assertEquals(2, graph.directModuleKeys.size());
+
+        List<String> aChildren = graph.childrenByModuleKey.get("moduleA@1.0");
+        assertNotNull(aChildren);
+        assertEquals(1, aChildren.size(), "shared@3.0 must appear exactly once under moduleA even though the JSON tree repeats it");
+        assertEquals("shared@3.0", aChildren.get(0));
+
+        List<String> bChildren = graph.childrenByModuleKey.get("moduleB@2.0");
+        assertNotNull(bChildren);
+        assertEquals(1, bChildren.size());
+        assertEquals("shared@3.0", bChildren.get(0));
+    }
+
+    @Test
+    public void parseModuleGraph_rootOnly_emptyGraph() {
+        String json = "{ \"key\": \"<root>\", \"dependencies\": [] }";
+        ModuleGraph graph = parser.parseModuleGraph(json);
+        assertTrue(graph.directModuleKeys.isEmpty());
+        assertTrue(graph.childrenByModuleKey.isEmpty());
+        assertTrue(graph.getAllModuleKeys().isEmpty());
+    }
+
+    @Test
+    public void parseModuleGraph_nullInput_emptyGraph() {
+        ModuleGraph graph = parser.parseModuleGraph(null);
+        assertTrue(graph.directModuleKeys.isEmpty());
+        assertTrue(graph.childrenByModuleKey.isEmpty());
+    }
+
+    @Test
+    public void parseModuleGraph_malformedJson_emptyGraph() {
+        ModuleGraph graph = parser.parseModuleGraph("{ this is not valid json }");
+        assertTrue(graph.directModuleKeys.isEmpty());
+        assertTrue(graph.childrenByModuleKey.isEmpty());
+    }
 }
+
