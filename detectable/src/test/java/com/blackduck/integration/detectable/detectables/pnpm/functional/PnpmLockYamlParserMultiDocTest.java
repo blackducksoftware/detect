@@ -127,5 +127,42 @@ public class PnpmLockYamlParserMultiDocTest {
         Assertions.assertTrue(utilsDeps.contains("ms"), "packages/utils should depend on ms. Found: " + utilsDeps);
     }
 
+    /**
+     * Regression test for the fallback path in selectLockfileDocument().
+     *
+     * Uses a single-document v5-style lockfile that has real dependency content
+     * but NO lockfileVersion field — simulating older pnpm lockfiles where
+     * lockfileVersion was not mandatory.
+     *
+     * Flow:
+     *   1. loadAll() yields one document with lockfileVersion == null.
+     *   2. selectLockfileDocument() finds no document with lockfileVersion
+     *      → takes the fallback path → returns firstNonNull (the single doc).
+     *   3. isV6OrNewer(null) == false → falls through to v5 re-parse.
+     *   4. v5 parser reads the real importers + packages and returns a code location.
+     *   5. Assertions verify specific named deps are present in the graph.
+     *
+     * If the fallback were broken (returned null instead of firstNonNull),
+     * parse() would return an empty list and the dependency assertions below would fail.
+     */
+    @Test
+    public void testSelectLockfileDocumentFallback_noLockfileVersionPresent() throws IOException, IntegrationException {
+        List<CodeLocation> codeLocations = parseLockFile("/pnpm/v5-no-lockfileversion/pnpm-lock.yaml");
+
+        Assertions.assertNotNull(codeLocations, "Parser must not return null when fallback path is used");
+        Assertions.assertEquals(1, codeLocations.size(),
+            "Should produce 1 code location for the root importer");
+
+        DependencyGraph graph = codeLocations.get(0).getDependencyGraph();
+        Set<String> rootDepNames = graph.getRootDependencies().stream()
+            .map(Dependency::getName)
+            .collect(Collectors.toSet());
+
+        Assertions.assertTrue(rootDepNames.contains("ms"),
+            "Root dependencies should include ms (direct dep). Found: " + rootDepNames);
+        Assertions.assertTrue(rootDepNames.contains("chalk"),
+            "Root dependencies should include chalk (dev dep). Found: " + rootDepNames);
+    }
+
 }
 
