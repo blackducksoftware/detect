@@ -192,12 +192,40 @@ public class BzlmodRepoMappingResolver {
 
     /**
      * Strips the detected canonical suffix from {@code rawName}.
-     * Used when parsing {@code ## @@name~:} block headers in batched show_repo output.
+     * Used when parsing {@code ## @@name<suffix>:} block headers in batched show_repo output.
+     *
+     * <p>When the mapping is available, only the detected suffix is stripped (precise).
+     * When unavailable, a regex strips any known suffix ({@code +} or {@code ~}) as a
+     * best-effort fallback — consistent with how {@link #resolveLabel} degrades.
      *
      * <p>Example: {@code "protobuf~"} → {@code "protobuf"}
      */
     public String stripCanonicalSuffix(String rawName) {
-        return stripSuffix(rawName, detectedSuffix);
+        if (available) {
+            return stripSuffix(rawName, detectedSuffix);
+        }
+        return rawName.replaceAll(KNOWN_SUFFIXES_REGEX, "");
+    }
+
+    /**
+     * Returns the canonical repo arg(s) to pass to {@code bazel mod show_repo} for the given
+     * module name. When the mapping is available, returns a single precisely-formed arg
+     * (e.g. {@code @@protobuf~}). When unavailable, returns both known suffix forms to try
+     * in order ({@code ~} first, then {@code +}), since the suffix cannot be detected without
+     * the mapping. Callers should try each candidate and use the first that returns output.
+     *
+     * <p>All suffix knowledge is kept in this class; callers need not reference specific
+     * suffix characters.
+     */
+    public List<String> candidateRepoArgs(String moduleName) {
+        if (available) {
+            return Collections.singletonList(canonicalRepoArg(moduleName));
+        }
+        // Unavailable: try both known suffixes in order — same knowledge as KNOWN_SUFFIXES_REGEX
+        return Arrays.asList(
+            CANONICAL_PREFIX + moduleName + "~",
+            CANONICAL_PREFIX + moduleName + "+"
+        );
     }
 
     /** Returns whether the mapping was successfully loaded (for diagnostic logging). */

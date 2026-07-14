@@ -2,6 +2,7 @@ package com.blackduck.integration.detectable.detectables.bazel.v2;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
@@ -176,6 +177,53 @@ public class BzlmodRepoMappingResolverTest {
         // "++" check happens before suffix stripping — must still be excluded
         BzlmodRepoMappingResolver resolver = unavailableResolver();
         assertEquals(Optional.empty(), resolver.resolveLabel("@@rules_jvm_external++maven+guava//java:lib"));
+    }
+
+    // -------------------------------------------------------------------------
+    // stripCanonicalSuffix — unavailable resolver uses regex fallback
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void stripCanonicalSuffix_available_stripsDetectedSuffix() {
+        // Available resolver with ~ suffix: "protobuf~" → "protobuf"
+        BzlmodRepoMappingResolver resolver = tildeResolver();
+        assertEquals("protobuf", resolver.stripCanonicalSuffix("protobuf~"));
+    }
+
+    @Test
+    public void stripCanonicalSuffix_unavailable_tilde_usesRegexFallback() {
+        // Unavailable resolver defaults detectedSuffix to "+", but regex fallback handles "~" too
+        BzlmodRepoMappingResolver resolver = unavailableResolver();
+        assertEquals("protobuf", resolver.stripCanonicalSuffix("protobuf~"));
+    }
+
+    @Test
+    public void stripCanonicalSuffix_unavailable_plus_usesRegexFallback() {
+        BzlmodRepoMappingResolver resolver = unavailableResolver();
+        assertEquals("grpc", resolver.stripCanonicalSuffix("grpc+"));
+    }
+
+    // -------------------------------------------------------------------------
+    // candidateRepoArgs
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void candidateRepoArgs_available_returnsSingleCanonicalArg() {
+        // Available resolver: single precise arg using detected suffix
+        BzlmodRepoMappingResolver resolver = tildeResolver();
+        List<String> candidates = resolver.candidateRepoArgs("abseil-cpp");
+        assertEquals(1, candidates.size());
+        assertEquals("@@abseil-cpp~", candidates.get(0));
+    }
+
+    @Test
+    public void candidateRepoArgs_unavailable_returnsBothSuffixForms() {
+        // Unavailable resolver: both ~ and + forms returned to try in order
+        BzlmodRepoMappingResolver resolver = unavailableResolver();
+        List<String> candidates = resolver.candidateRepoArgs("protobuf");
+        assertEquals(2, candidates.size());
+        assertEquals("@@protobuf~", candidates.get(0)); // ~ tried first (Bazel 7.5+ default)
+        assertEquals("@@protobuf+", candidates.get(1)); // + tried as fallback (pre-7.5)
     }
 }
 

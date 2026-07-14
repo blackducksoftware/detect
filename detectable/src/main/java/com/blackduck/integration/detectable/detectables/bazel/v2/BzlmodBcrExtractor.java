@@ -165,15 +165,15 @@ public class BzlmodBcrExtractor {
 
     /**
      * Resolves each module key to a {@link Dependency} by calling
-     * {@code bazel mod show_repo @@<name>+} and parsing the GitHub URL from the output.
+     * {@code bazel mod show_repo @@<name><suffix>} and parsing the GitHub URL from the output.
      *
-     * <p>We use the <em>canonical</em> repo name form {@code @@<name>+} rather than the
+     * <p>We use the <em>canonical</em> repo name form {@code @@<name><suffix>} rather than the
      * apparent name {@code @<name>}. The distinction matters for pure transitive deps:
      * <ul>
      *   <li>{@code @protobuf} — apparent name, looked up in the <em>root module's</em> repo
      *       mapping. Only works for modules explicitly declared in the root's {@code MODULE.bazel}.
      *       Pure transitives are absent from the root's mapping → "unused modules" error.</li>
-     *   <li>{@code @@protobuf+} — canonical name, a globally unique identifier that Bazel
+     *   <li>{@code @@protobuf<suffix>} — canonical name, a globally unique identifier that Bazel
      *       resolves directly without any repo-mapping lookup. Works for every BCR module in
      *       the graph, including pure transitives that the root never declared.</li>
      * </ul>
@@ -183,25 +183,23 @@ public class BzlmodBcrExtractor {
      * WARN. The HTTP_ARCHIVE pipeline may still capture it via {@code bazel query}.
      */
     private Map<String, Dependency> resolveModules(Set<String> moduleKeys, BzlmodRepoMappingResolver resolver) {
-        // Build canonical @@<name><suffix> args using the resolver.
+        // Build canonical @@<name><suffix> args for the batched show_repo call.
         // canonicalRepoArg() uses the reverse map for known direct deps and falls back to
         // appending the detected suffix for pure transitives absent from the root mapping.
         // The canonical form is required (not apparent @name) so that pure transitive deps
         // resolve without a repo-mapping lookup — see BzlmodBcrExtractor javadoc for details.
         List<String> repoArgs = new ArrayList<>();
-        Map<String, String> moduleKeyToRepoArg = new LinkedHashMap<>();
         for (String moduleKey : moduleKeys) {
             String name    = BzlmodGraphJsonParser.extractName(moduleKey);
             String repoArg = resolver.canonicalRepoArg(name); // e.g. "@@protobuf~"
             repoArgs.add(repoArg);
-            moduleKeyToRepoArg.put(moduleKey, repoArg);
         }
 
         // Attempt a single batched show_repo call (Bazel 7.1+ supports it; we are always 7.1+ here)
         Map<String, String> showRepoByKey = tryBatchedShowRepo(moduleKeys, repoArgs, resolver);
         if (showRepoByKey.isEmpty()) {
             logger.info("BZLMOD BCR: batched show_repo returned no results; falling back to per-module calls");
-            showRepoByKey = runPerModuleShowRepo(moduleKeys, moduleKeyToRepoArg);
+            showRepoByKey = runPerModuleShowRepo(moduleKeys, resolver);
         } else {
             logger.debug("BZLMOD BCR: batched show_repo resolved {} of {} module(s)", showRepoByKey.size(), moduleKeys.size());
         }
@@ -290,18 +288,29 @@ public class BzlmodBcrExtractor {
     }
 
     /**
-     * Runs {@code bazel mod show_repo @@<name>+} individually for each module key.
+     * Runs {@code bazel mod show_repo @@<name><suffix>} individually for each module key.
      * Used as a fallback when the batched call fails or returns no results.
+     *
+     * <p>When the resolver is available, a single canonical arg is tried. When unavailable
+     * (e.g. {@code dump_repo_mapping} failed), both known suffix forms ({@code ~} and
+     * {@code +}) are tried in order so that the correct suffix is found regardless of the
+     * Bazel version, without hardcoding any specific suffix in this class.
      */
-    private Map<String, String> runPerModuleShowRepo(Set<String> moduleKeys, Map<String, String> moduleKeyToRepoArg) {
+    private Map<String, String> runPerModuleShowRepo(Set<String> moduleKeys, BzlmodRepoMappingResolver resolver) {
         Map<String, String> result = new LinkedHashMap<>();
         for (String moduleKey : moduleKeys) {
-            String repoArg = moduleKeyToRepoArg.get(moduleKey);
-            List<String> showRepoArgs = BazelQueryBuilder.mod().showRepoRaw(repoArg).build();
-            Optional<String> output = bazelCmd.executeModCommandToString(showRepoArgs);
-            if (output.isPresent() && !output.get().trim().isEmpty()) {
-                result.put(moduleKey, output.get());
-            } else {
+            String name = BzlmodGraphJsonParser.extractName(moduleKey);
+            boolean resolved = false;
+            for (String candidate : resolver.candidateRepoArgs(name)) {
+                List<String> showRepoArgs = BazelQueryBuilder.mod().showRepoRaw(candidate).build();
+                Optional<String> output = bazelCmd.executeModCommandToString(showRepoArgs);
+                if (output.isPresent() && !output.get().trim().isEmpty()) {
+                    result.put(moduleKey, output.get());
+                    resolved = true;
+                    break;
+                }
+            }
+            if (!resolved) {
                 logger.debug("BZLMOD BCR: per-module show_repo produced no output for '{}'", moduleKey);
             }
         }
