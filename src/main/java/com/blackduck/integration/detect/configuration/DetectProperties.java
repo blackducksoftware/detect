@@ -2071,6 +2071,17 @@ public class DetectProperties {
                     .setGroups(DetectGroup.UV, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
                     .build();
 
+    public static final CaseSensitiveStringListProperty DETECT_UV_DEPENDENCY_GROUPS_ONLY =
+            CaseSensitiveStringListProperty.newBuilder("detect.uv.dependency.groups.only")
+                    .setInfo("uv Only Dependency Groups", DetectPropertyFromVersion.VERSION_12_0_0)
+                    .setHelp(
+                            "A comma-separated list of uv dependency groups to exclusively scan.",
+                            "When set, Detect will include only the named dependency groups defined in a project's pyproject.toml. Regular dependencies and optional extras are skipped. You can list multiple groups (for example: detect.uv.dependency.groups.only='dev,lint'). This property is only supported for projects that use pyproject.toml (dependency groups are not available in setup.py or setup.cfg). If both this property and detect.uv.dependency.groups.excluded are configured, the exclusion setting takes precedence for overlapping groups, and Detect will log a warning."
+                    )
+                    .setGroups(DetectGroup.UV, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
+
     public static final CaseSensitiveStringListProperty DETECT_UV_EXCLUDED_WORKSPACE_MEMBERS =
             CaseSensitiveStringListProperty.newBuilder("detect.uv.excluded.workspace.members")
                     .setInfo("uv Exclude Workspace Members", DetectPropertyFromVersion.VERSION_10_5_0)
