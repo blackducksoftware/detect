@@ -2,9 +2,7 @@
 
 Any user can download [detect_product_short] and run a scan, however you must configure a user/API token in [bd_product_short] for the [detect_product_short] scan to be analyzed by [bd_product_short].  
  
-For more information on creating a [bd_product_short] user token, please consult the documentation provided by [bd_product_short] under the topic:
-<xref href="MyAccessTokens.dita" scope="peer"> Managing user access tokens.
-<data name="facets" value="pubname=bd-hub"/></xref>   
+For more information on creating a [bd_product_short] user token, please consult the documentation provided by [bd_product_short] under the topic: [Managing user access tokens](https://docs.blackduck.com/r/blackduck/latest/black-duck-documentation/managing-user-access-tokens.html).
    
    
 **The following user roles are required for the user that you create in [bd_product_short]**     

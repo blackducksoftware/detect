@@ -2,11 +2,9 @@
 
 **Notices**
 
-[company_name] [solution_name] has been renamed [detect_product_long] with page links, documentation, and other URLs updated accordingly. Update any [detect_product_short] documentation, or other bookmarks you may have. See the [Domain Change FAQ](https://community.blackduck.com/s/article/Black-Duck-Domain-Change-FAQ).
 * Please make use of repo.blackduck.com and detect.blackduck.com for code downloads.
 	* [detect_product_short] script downloads should only be accessed via detect.blackduck.com.
 	* [detect_product_short] 10.0.0 and later will only work when using repo.blackduck.com.
-	* If you are using [detect_product_short] 8 or 9 it is essential to update to 8.11.2 or 9.10.1 respectively.
 
 * [bd_product_long] [SCA Scan Service (SCASS)](https://community.blackduck.com/s/question/0D5Uh00000O2ZSYKA3/black-duck-sca-new-ip-address-requirements-for-2025) requires customers add or update IP addresses configured in their network firewalls or allow lists. This action is required to successfully route scan data to the service for processing.
 
@@ -44,7 +42,21 @@
 * (IDETECT-5118) Fixed UV Lockfile Detector to respect excluded dependency groups for optional‑dependencies. Optional extras specified in exclusion flags are now correctly excluded alongside development dependencies.
 * (IDETECT‑5126) Fixed a BitBake layer misidentification issue caused by project folder names colliding with layer names. The detector now resolves layers deterministically, preferring the deepest valid match and falling back to the first valid layer when necessary.
 * (IDETECT-5071) Fixed an issue with Simple Build Tool (sbt) evictions being included in the BOM. Dependencies that requested an evicted version are now reported with the version that replaced it.
+## Version 12.0.0
+
+### New features
+
+* Introduced the property `detect.project.version.create.when.no.components` (default: true). When configured to false, [detect_product_short] will refrain from creating a project version in [bd_product_long] in cases where no components are identified and no other scan tools are active.
+* Introduced a property named `detect.diagnostic.archive.path`, which enables the specification of a custom path for the diagnostic archive.
+* Support for the following package managers have been extended:
+  * RubyGems: 4.0.15
+  * Gradle: 9.6.1
+  * Maven: 3.9.16
+  * NPM: 11.13.0
+  * Node.js: 24.17.0
 
 ### Dependency Updates
-
-* Updated Project Inspector to version 2026.6.0 ensuring continued security compliance.
+* Update ANTLR library to version 4.13.2.
+* Update Jackson libraries to version 2.22.0.
+* Update Java minimum version to 11.
+* Update Tika library to version 3.2.2.

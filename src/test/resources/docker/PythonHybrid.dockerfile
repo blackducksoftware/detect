@@ -1,4 +1,4 @@
-FROM openjdk:8-jdk
+FROM eclipse-temurin:11-jdk-jammy
 
 ARG ARTIFACTORY_URL
 ARG UV_VERSION="0.8.15"

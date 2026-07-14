@@ -1,4 +1,4 @@
-FROM openjdk:8-jdk-slim
+FROM eclipse-temurin:11-jdk-jammy
 
 ARG ARTIFACTORY_URL
 ARG PIP_VERSION="24.2"

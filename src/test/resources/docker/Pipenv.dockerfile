@@ -1,4 +1,4 @@
-FROM openjdk:8-jdk-slim
+FROM eclipse-temurin:11-jdk-jammy
 
 # Note: Intentionally using the argument name as PIPENV_VERSION_VAL instead of PIPENV_VERSION as the latter
 # conflicts with the `click` Python package's options and causes `pipenv install` to result in an error.
