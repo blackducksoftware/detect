@@ -66,7 +66,7 @@ public class UVExcludeDevGroupsFunctionalTest extends DetectableFunctionalTest {
                 "        └── typing-extensions v4.9.0");
 
         // Note: with --no-group dev, pytest and mypy are excluded from output
-        addExecutableOutput(uvTreeDependencyOutput, new File("uv").getAbsolutePath(), "tree", "--no-dedupe", "--all-extras", "--all-groups", "--no-group", "dev");
+        addExecutableOutput(uvTreeDependencyOutput, new File("uv").getAbsolutePath(), "tree", "--no-dedupe", "--all-groups", "--no-group", "dev");
     }
 
     @NotNull

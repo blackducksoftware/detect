@@ -81,7 +81,6 @@ class UVBuildExtractorTest {
         List<String> arguments = captor.getValue().getCommandWithArguments();
         assertTrue(arguments.contains("tree"));
         assertTrue(arguments.contains("--no-dedupe"));
-        assertTrue(arguments.contains("--all-extras"));
         assertTrue(arguments.contains("--all-groups"));
     }
 
@@ -105,7 +104,6 @@ class UVBuildExtractorTest {
         List<String> arguments = captor.getValue().getCommandWithArguments();
         assertTrue(arguments.contains("tree"));
         assertTrue(arguments.contains("--no-dedupe"));
-        assertTrue(arguments.contains("--all-extras"));
         assertTrue(arguments.contains("--all-groups"));
         assertTrue(arguments.contains("--no-group"));
 
@@ -134,7 +132,6 @@ class UVBuildExtractorTest {
 
         List<String> arguments = captor.getValue().getCommandWithArguments();
 
-        assertTrue(arguments.contains("--all-extras"));
         assertTrue(arguments.contains("--all-groups"));
         long noGroupCount = arguments.stream().filter(arg -> arg.equals("--no-group")).count();
         assertEquals(0, noGroupCount);
@@ -157,7 +154,6 @@ class UVBuildExtractorTest {
 
         List<String> arguments = captor.getValue().getCommandWithArguments();
 
-        assertTrue(arguments.contains("--all-extras"));
         assertTrue(arguments.contains("--all-groups"));
         long noGroupCount = arguments.stream().filter(arg -> arg.equals("--no-group")).count();
         assertEquals(1, noGroupCount);
@@ -186,8 +182,7 @@ class UVBuildExtractorTest {
         assertTrue(arguments.contains("tree"));
         assertTrue(arguments.contains("--no-dedupe"));
 
-        // --all-extras and --all-groups should NOT be present when onlyGroups is set
-        assertTrue(!arguments.contains("--all-extras"), "Expected --all-extras to be absent when onlyGroups is set");
+        // --all-groups should NOT be present when onlyGroups is set
         assertTrue(!arguments.contains("--all-groups"), "Expected --all-groups to be absent when onlyGroups is set");
 
         // --only-group flags should be present for each group
@@ -223,7 +218,6 @@ class UVBuildExtractorTest {
 
         List<String> arguments = captor.getValue().getCommandWithArguments();
 
-        assertTrue(!arguments.contains("--all-extras"));
         assertTrue(!arguments.contains("--all-groups"));
         long onlyGroupCount = arguments.stream().filter(arg -> arg.equals("--only-group")).count();
         assertEquals(1, onlyGroupCount);
@@ -251,8 +245,7 @@ class UVBuildExtractorTest {
 
         List<String> arguments = captor.getValue().getCommandWithArguments();
 
-        // --all-extras and --all-groups should NOT be present (onlyGroups path)
-        assertTrue(!arguments.contains("--all-extras"));
+        // --all-groups should NOT be present (onlyGroups path)
         assertTrue(!arguments.contains("--all-groups"));
 
         // "dev" should be excluded — only "lint" should remain as --only-group

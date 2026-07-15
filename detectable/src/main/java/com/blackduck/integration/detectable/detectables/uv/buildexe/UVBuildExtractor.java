@@ -25,7 +25,6 @@ public class UVBuildExtractor {
 
     private static final String TREE_COMMAND = "tree";
     private static final String NO_DEDUPE_FLAG = "--no-dedupe";
-    private static final String ALL_EXTRAS_FLAG = "--all-extras";
     private static final String ALL_GROUPS_FLAG = "--all-groups";
     private static final String NO_GROUP_FLAG = "--no-group";
     private static final String ONLY_GROUP_FLAG = "--only-group";
@@ -102,7 +101,6 @@ public class UVBuildExtractor {
     }
 
     private void addDefaultGroupArguments(List<String> arguments, Set<String> excludedGroups) {
-        arguments.add(ALL_EXTRAS_FLAG);
         arguments.add(ALL_GROUPS_FLAG);
 
         for (String group : excludedGroups) {
