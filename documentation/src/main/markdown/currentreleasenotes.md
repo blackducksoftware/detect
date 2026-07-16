@@ -21,6 +21,7 @@
 ### New features
 
 * Introduced a property named `detect.diagnostic.archive.path`, which enables the specification of a custom path for the diagnostic archive.
+* Renamed `detect.quack.patch.output` property to `detect.quack.patch.output.path` for improved clarity.
 * Support for the following package managers have been extended:
   * RubyGems: 4.0.15
   * Gradle: 9.6.1
