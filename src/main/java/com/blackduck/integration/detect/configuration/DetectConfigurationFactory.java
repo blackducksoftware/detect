@@ -685,7 +685,7 @@ public class DetectConfigurationFactory {
     }
 
     public String getQuackPatchOutputDirectory(DirectoryManager directoryManager) {
-        String quackPatchOutput = detectConfiguration.getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT);
+        String quackPatchOutput = detectConfiguration.getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT_PATH);
         if (Objects.isNull(quackPatchOutput) || quackPatchOutput.isEmpty()) {
             return directoryManager.getScanOutputDirectory().getAbsolutePath();
         }
