@@ -192,13 +192,13 @@ public class PnpmLockYamlParserInitial {
      * @return the document containing dependency information, or {@code null} if no documents exist
      */
     private PnpmLockYamlBase selectLockfileDocument(Iterable<Object> documents) {
-        PnpmLockYamlBase firstNonNull = null;
+        PnpmLockYamlBase fallbackDocument = null;
 
         for (Object doc : documents) {
             if (doc instanceof PnpmLockYamlBase) {
                 PnpmLockYamlBase candidate = (PnpmLockYamlBase) doc;
-                if (firstNonNull == null) {
-                    firstNonNull = candidate;
+                if (fallbackDocument == null) {
+                    fallbackDocument = candidate;
                 }
                 if (candidate.lockfileVersion != null) {
                     // This document contains lockfileVersion — it holds the actual dependency data.
@@ -209,10 +209,10 @@ public class PnpmLockYamlParserInitial {
             // Skip null documents and non-PnpmLockYamlBase objects (e.g. metadata-only sections).
         }
 
-        if (firstNonNull != null) {
+        if (fallbackDocument != null) {
             logger.debug("No YAML document contained a lockfileVersion field. Using the first non-null document.");
         }
-        return firstNonNull;
+        return fallbackDocument;
     }
 
     /**
