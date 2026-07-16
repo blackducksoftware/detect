@@ -105,8 +105,10 @@ public class PnpmLockYamlParserInitial {
      *   <li>Attempt to parse as {@link PnpmLockYaml} (v6/v9). Uses {@code loadAll()} to
      *       support pnpm 11's multi-document YAML format (two sections separated by {@code ---}).
      *       For single-document lockfiles (pre-v11), {@code loadAll()} returns a single element
-     *       and behaviour is identical to the previous {@code load()} call. Three outcomes:
+     *       and behaviour is identical to the previous {@code load()} call. Four outcomes:
      *       <ul>
+     *         <li><b>Empty file</b> → {@code selectLockfileDocument()} returns null
+     *             → return null immediately (caller handles the empty case).</li>
      *         <li><b>Success with v6+ version</b> → return the result immediately.</li>
      *         <li><b>Success but version indicates v5</b> (or is null) → fall through
      *             to re-parse as v5. This happens because {@code setSkipMissingProperties(true)}
