@@ -773,7 +773,7 @@ public class DetectProperties {
         StringProperty.newBuilder("detect.diagnostic.archive.path", "")
             .setInfo("Diagnostic Archive Output Path", DetectPropertyFromVersion.VERSION_12_0_0)
             .setHelp(
-                "Custom output path for diagnostic archive. A file named detect-run-<runId>.zip will be created under the specified path.",
+                "Custom output path for diagnostic archive. A file named detect-run-<runId>.zip will be created under the specified path. An original copy of the diagnostics archive remains in the runs directory as a backup.",
                 "See the following for more <xref href=\"https://docs.blackduck.com/r/detect/latest/black%2Dduck%2Ddetect/detect%2Ddiagnostic%2Dmode%2Ehtml%5C\" scope=\"external\" format=\"html\" target=\"_blank\">Diagnostic Mode information.</xref>")
             .setGroups(DetectGroup.DEBUG, DetectGroup.GLOBAL)
             .build();
@@ -1155,15 +1155,14 @@ public class DetectProperties {
                     .setGroups(DetectGroup.QUACKPATCH)
                     .build();
                         
-    public static final StringProperty DETECT_QUACK_PATCH_OUTPUT =
-            StringProperty.newBuilder("detect.quack.patch.output", "")
+    public static final StringProperty DETECT_QUACK_PATCH_OUTPUT_PATH =
+            StringProperty.newBuilder("detect.quack.patch.output.path", "")
                     .setInfo("Quack Patch Output Directory", DetectPropertyFromVersion.VERSION_11_4_0)
                     .setHelp(
                             "Specifies the output directory for Quack Patch results.",
                             "If not set, the Quack Patch results are placed in a 'quack-patch' subdirectory under scan output directory."
                     )
                     .setGroups(DetectGroup.QUACKPATCH)
-                    .setDeprecated("This property is deprecated and will be renamed to 'detect.quack.patch.output.path' in Detect release 12.0.", new ProductMajorVersion(12))
                     .build();
 
     public static final StringProperty DETECT_LLM_API_KEY =

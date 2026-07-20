@@ -48,6 +48,7 @@
 
 * Introduced the property `detect.project.version.create.when.no.components` (default: true). When configured to false, [detect_product_short] will refrain from creating a project version in [bd_product_long] in cases where no components are identified and no other scan tools are active.
 * Introduced a property named `detect.diagnostic.archive.path`, which enables the specification of a custom path for the diagnostic archive.
+* Renamed `detect.quack.patch.output` property to `detect.quack.patch.output.path` for improved clarity.
 * Support for the following package managers have been extended:
   * RubyGems: 4.0.15
   * Gradle: 9.6.1
