@@ -1730,6 +1730,16 @@ public class DetectProperties {
             .setCategory(DetectCategory.Advanced)
             .build();
 
+    public static final BooleanProperty DETECT_PROJECT_VERSION_CREATE_WHEN_NO_COMPONENTS =
+        BooleanProperty.newBuilder("detect.project.version.create.when.no.components", true)
+            .setInfo("Create Project Version When No Components Found", DetectPropertyFromVersion.VERSION_12_0_0)
+            .setHelp(
+                "If set to false, Detect will not create a project version on Black Duck when no components are found and no other scan tools are active.",
+                "By default (true), a project version is always created on Black Duck upon a successful scan, even if no components were detected. Set to false to suppress project version creation when the scan produces no components and no scan tools such as signature scan, binary scan, or container scan are enabled."
+            )
+            .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
+            .build();
+
     public static final NullableStringProperty DETECT_PROJECT_NAME =
         NullableStringProperty.newBuilder("detect.project.name")
             .setInfo("Project Name", DetectPropertyFromVersion.VERSION_3_0_0)
@@ -2058,6 +2068,17 @@ public class DetectProperties {
                             "When specified, a pyproject.toml file and uv executable are required, or pyproject.toml file and either uv.lock or requirements.txt file are required. Components and related dependencies that belong to excluded groups will not be in the BOM unless the component also belongs to a non-excluded group. For example, to recursively exclude all components under the `[dependency-groups]` section of `pyproject.toml`: `detect.uv.dependency.groups.excluded='dev,abc'`. Note: In uv, `[project.optional-dependencies]` defines extras. Each extra (e.g., postgres, redis, mysql) is treated as its own dependency group. The group `optional` does not exist; therefore, specifying it in the `--detect.uv.dependency.groups.excluded` flag will have no impact."
                     )
                     .setGroups(DetectGroup.UV, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
+                    .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_UV_DEPENDENCY_GROUPS_ONLY =
+            CaseSensitiveStringListProperty.newBuilder("detect.uv.dependency.groups.only")
+                    .setInfo("uv Only Dependency Groups", DetectPropertyFromVersion.VERSION_12_0_0)
+                    .setHelp(
+                            "A comma-separated list of uv dependency groups to exclusively scan.",
+                            "When set, Detect will include only the named dependency groups defined in a project's pyproject.toml. Regular dependencies and optional extras are skipped. You can list multiple groups (for example: detect.uv.dependency.groups.only='dev,lint'). This property is only supported for projects that use pyproject.toml (dependency groups are not available in setup.py or setup.cfg). If both this property and detect.uv.dependency.groups.excluded are configured, the exclusion setting takes precedence for overlapping groups, and Detect will log a warning."
+                    )
+                    .setGroups(DetectGroup.UV, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
+                    .setCategory(DetectCategory.Advanced)
                     .build();
 
     public static final CaseSensitiveStringListProperty DETECT_UV_EXCLUDED_WORKSPACE_MEMBERS =

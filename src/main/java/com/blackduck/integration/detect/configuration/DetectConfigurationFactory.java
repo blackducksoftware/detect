@@ -684,6 +684,10 @@ public class DetectConfigurationFactory {
         return Optional.ofNullable(detectConfiguration.getNullableValue(DetectProperties.DETECT_CONTAINER_SCAN_FILE));
     }
 
+    public boolean shouldCreateProjectVersionWhenNoComponents() {
+        return detectConfiguration.getValue(DetectProperties.DETECT_PROJECT_VERSION_CREATE_WHEN_NO_COMPONENTS);
+    }
+
     public String getQuackPatchOutputDirectory(DirectoryManager directoryManager) {
         String quackPatchOutput = detectConfiguration.getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT_PATH);
         if (Objects.isNull(quackPatchOutput) || quackPatchOutput.isEmpty()) {
