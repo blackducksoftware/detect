@@ -1,0 +1,52 @@
+configDependencies:
+  '@pnpm/pacquet': 0.3.0
+
+packageManagerDependencies:
+  pnpm: '>=11.0.0'
+
+---
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
+    devDependencies:
+      typescript:
+        specifier: ^5.4.0
+        version: 5.4.5
+
+  packages/utils:
+    dependencies:
+      ms:
+        specifier: ^2.1.3
+        version: 2.1.3
+
+packages:
+
+  lodash@4.17.21:
+    resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
+
+  ms@2.1.3:
+    resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsFVVw6Cs1AVOBIfI2+XNBTw9Hi1IFlA7HndqZl2ZABpA==}
+
+  typescript@5.4.5:
+    resolution: {integrity: sha512-vcI4UpRgg81oIRUFwR0WSIHKt11nJ7SAVlYNIu+QpqeyXP+gpQJy/Z4+F0aGxSE4MqwjyXvW/TzgkLAx2AGHwQ==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
+snapshots:
+
+  lodash@4.17.21: {}
+
+  ms@2.1.3: {}
+
+  typescript@5.4.5: {}
+

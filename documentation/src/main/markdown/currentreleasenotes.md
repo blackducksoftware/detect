@@ -53,6 +53,7 @@
   * RubyGems: 4.0.15
   * Gradle: 9.6.1
   * Maven: 3.9.16
+  * Pnpm: 11.8.0
   * NPM: 11.13.0
   * Node.js: 24.17.0
 
