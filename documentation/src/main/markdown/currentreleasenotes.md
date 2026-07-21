@@ -18,6 +18,14 @@
 	
 * **Deprecation of Java 8 support** - In alignment with EU Cyber Resilience Act (CRA) requirements and compliance timelines, Java 8 support will be deprecated in the anticipated 2026 Q3 Detect 12.0.0 release.
 
+## Version 11.5.1
+
+### Resolved issues
+* (IDETECT-5207) Fixed an IndexOutOfBoundsException in component location analysis that was due to space characters within a version string.
+
+### Dependency Updates
+* Updated Component Locator Library to version 2.4.3.
+
 ## Version 11.5.0
 
 ### Changed features
@@ -26,6 +34,7 @@
 * CentOS support in Detect Docker Inspector has been deprecated and will be removed in 12.0.0. For more details, please see [Docker Inspector Release Notes](packagemgrs/docker/releasenotes.md).
     * imageinspector.service.port.centos has been deprecated and will be removed in 12.0.0.
 * Clarified documentation for `--detect.uv.dependency.groups.excluded`. Optional is not a dependency group in uv but a section defining extras, therefor supplying `optional` as a value has no effect and exclusions must reference the extra name directly (e.g., postgres, redis).
+
 ### Resolved issues
 * (IDETECT-5125) Fixed failure during Python scans when the `requirements.txt` file contains Python extras syntax using square brackets, e.g.: `kopf[dev]>=1.3`
 * (IDETECT-5090) Fixed PIP Native Inspector failure to parse `requirements.txt` lines that contain [PEP 508 environment markers](https://peps.python.org/pep-0508/).
@@ -43,7 +52,6 @@
 * (IDETECT-5118) Fixed UV Lockfile Detector to respect excluded dependency groups for optional‑dependencies. Optional extras specified in exclusion flags are now correctly excluded alongside development dependencies.
 * (IDETECT‑5126) Fixed a BitBake layer misidentification issue caused by project folder names colliding with layer names. The detector now resolves layers deterministically, preferring the deepest valid match and falling back to the first valid layer when necessary.
 * (IDETECT-5071) Fixed an issue with Simple Build Tool (sbt) evictions being included in the BOM. Dependencies that requested an evicted version are now reported with the version that replaced it.
-* (IDETECT-5207) Fixed an IndexOutOfBoundsException in component location analysis that was due to space characters within a version string.
-### Dependency Updates
 
+### Dependency Updates
 * Updated Project Inspector to version 2026.6.0 ensuring continued security compliance.
