@@ -36,7 +36,7 @@ public class SetuptoolsTest {
     @ParameterizedTest
     @MethodSource("provideSetuptoolsVersionsToTest")
     public void setuptoolsExecutableTest(String setuptoolsVersion) throws IntegrationException, IOException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("setuptools-docker-test   ", "setuptools-docker-test:" + setuptoolsVersion)) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("setuptools-docker-test", "setuptools-docker-test:" + setuptoolsVersion + "-j11")) {
 
             Map<String, String> setuptoolsDockerfileArgs = new HashMap<>();
             setuptoolsDockerfileArgs.put("ARTIFACTORY_URL", ARTIFACTORY_URL);

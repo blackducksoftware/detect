@@ -42,7 +42,7 @@ public class PipTest {
     @ParameterizedTest
     @MethodSource("providePipVersionsToTest")
     public void pipExecutableTest(String pipVersion) throws IntegrationException, IOException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("pip-docker-test", "pip-docker-test:" + pipVersion)) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("pip-docker-test", "pip-docker-test:" + pipVersion + "-j11")) {
 
             Map<String, String> pipDockerfileArgs = new HashMap<>();
             pipDockerfileArgs.put("PIP_VERSION", pipVersion);
@@ -140,7 +140,7 @@ public class PipTest {
 
     @Test
     public void pythonHybridTest() throws IntegrationException, IOException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("python-hybrid-test", "python-hybrid-test:1.0.0" )) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("python-hybrid-test", "python-hybrid-test:1.0.0-j11")) {
 
             Map<String, String> dockerfileArgs = new HashMap<>();
             dockerfileArgs.put("ARTIFACTORY_URL", ARTIFACTORY_URL);
