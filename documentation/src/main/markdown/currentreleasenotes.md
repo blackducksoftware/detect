@@ -22,6 +22,7 @@
 
 ### New features
 
+* The Bazel detector now classifies Bazel Central Registry (BCR) dependencies as direct or transitive when running in Bzlmod mode on Bazel 7.1 or later.
 * Support for npm has been extended to 11.13.0 and Node.js 24.17.0.
 * Introduced a property named `detect.diagnostic.archive.path`, which enables the specification of a custom path for the diagnostic archive.
 * Support for the following package managers have been extended:
