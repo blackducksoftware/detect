@@ -331,7 +331,7 @@ After BCR extraction completes, the http_archive discovery pipeline still runs t
 
 Without this deduplication step, dependencies discovered later through http_archive analysis could be incorrectly reclassified as direct dependencies, resulting in the loss of the dependency hierarchy derived from the Bzlmod module graph.
 
-Custom http_archive definitions, private repositories, and non-BCR source archives absent from `MODULE.bazel` are not affected by this process. These dependencies continue to be discovered through the standard repository-rule analysis and are added to the BOM as flat dependency entries.
+Custom http_archive definitions, private repositories, and non-BCR source archives absent from `MODULE.bazel` are not part of the BCR classification step. These dependencies are processed by the standard repository-rule analysis pipeline. However, that pipeline can only extract dependencies whose URLs match known GitHub release patterns. Private repositories, custom repository macros, and non-standard registry URLs will produce a WARN-level log entry and will be excluded from the BOM. See [Using Bazel Fetch for Additional Coverage](#using-bazel-fetch-for-additional-coverage) for a workaround in these environments.
 
 **Step 1 — Discover the full module dependency tree:**
 ```sh
