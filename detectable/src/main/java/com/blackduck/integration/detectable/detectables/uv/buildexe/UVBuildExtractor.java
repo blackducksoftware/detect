@@ -1,5 +1,9 @@
 package com.blackduck.integration.detectable.detectables.uv.buildexe;
 
+import com.blackduck.integration.bdio.graph.BasicDependencyGraph;
+import com.blackduck.integration.bdio.graph.DependencyGraph;
+import com.blackduck.integration.bdio.model.Forge;
+import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.detectable.ExecutableTarget;
 import com.blackduck.integration.detectable.ExecutableUtils;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
@@ -42,9 +46,27 @@ public class UVBuildExtractor {
 
     public Extraction extract(ExecutableTarget uvExe, UVDetectorOptions uvDetectorOptions, UVTomlParser uvTomlParser) throws ExecutableRunnerException {
         try {
-            List<String> arguments = buildTreeCommandArguments(uvDetectorOptions);
+            Optional<List<String>> arguments = buildTreeCommandArguments(uvDetectorOptions);
 
-            ExecutableOutput executableOutput = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(sourceDirectory, uvExe, arguments));
+            // If no valid groups remain after exclusion, return an empty BOM (a CodeLocation with zero dependencies)
+            // rather than running "uv tree --no-dedupe" which would incorrectly return ALL dependencies.
+            if (!arguments.isPresent()) {
+                logger.warn(
+                        "All dependency groups specified in 'detect.uv.dependency.groups.only' are also present in "
+                        + "'detect.uv.dependency.groups.excluded'. No dependency groups remain to scan. Returning an empty BOM."
+                );
+                DependencyGraph emptyGraph = new BasicDependencyGraph();
+                Optional<NameVersion> projectNameVersion = uvTomlParser.parseNameVersion();
+                CodeLocation emptyCodeLocation = projectNameVersion
+                        .map(nv -> new CodeLocation(emptyGraph, ExternalId.FACTORY.createNameVersionExternalId(Forge.PYPI, nv.getName(), nv.getVersion())))
+                        .orElse(new CodeLocation(emptyGraph));
+                return new Extraction.Builder()
+                        .success(emptyCodeLocation)
+                        .nameVersionIfPresent(projectNameVersion)
+                        .build();
+            }
+
+            ExecutableOutput executableOutput = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(sourceDirectory, uvExe, arguments.get()));
             List<String> uvTreeOutput = executableOutput.getStandardOutputAsList();
 
             List<CodeLocation> codeLocations = uvTreeDependencyGraphTransformer.transform(uvTreeOutput, uvDetectorOptions);
@@ -60,7 +82,7 @@ public class UVBuildExtractor {
         }
     }
 
-    private List<String> buildTreeCommandArguments(UVDetectorOptions uvDetectorOptions) {
+    private Optional<List<String>> buildTreeCommandArguments(UVDetectorOptions uvDetectorOptions) {
         List<String> arguments = new ArrayList<>();
         arguments.add(TREE_COMMAND);
         arguments.add(NO_DEDUPE_FLAG);
@@ -69,15 +91,20 @@ public class UVBuildExtractor {
         Set<String> excludedGroups = uvDetectorOptions.getExcludedDependencyGroups();
 
         if (!onlyGroups.isEmpty()) {
-            addOnlyGroupArguments(arguments, onlyGroups, excludedGroups);
+            boolean hasEffectiveGroups = addOnlyGroupArguments(arguments, onlyGroups, excludedGroups);
+            if (!hasEffectiveGroups) {
+                return Optional.empty();
+            }
         } else {
             addDefaultGroupArguments(arguments, excludedGroups);
         }
 
-        return arguments;
+        return Optional.of(arguments);
     }
 
-    private void addOnlyGroupArguments(List<String> arguments, Set<String> onlyGroups, Set<String> excludedGroups) {
+    // Computes effectiveOnlyGroups = onlyGroups minus excludedGroups.
+    // Returns false if no groups remain (signals caller to produce an empty BOM).
+    private boolean addOnlyGroupArguments(List<String> arguments, Set<String> onlyGroups, Set<String> excludedGroups) {
         Set<String> conflictingGroups = onlyGroups.stream()
                 .filter(excludedGroups::contains)
                 .collect(Collectors.toSet());
@@ -94,10 +121,16 @@ public class UVBuildExtractor {
                 .filter(group -> !excludedGroups.contains(group))
                 .collect(Collectors.toSet());
 
+        if (effectiveOnlyGroups.isEmpty()) {
+            return false;
+        }
+
         for (String group : effectiveOnlyGroups) {
             arguments.add(ONLY_GROUP_FLAG);
             arguments.add(group);
         }
+
+        return true;
     }
 
     private void addDefaultGroupArguments(List<String> arguments, Set<String> excludedGroups) {
