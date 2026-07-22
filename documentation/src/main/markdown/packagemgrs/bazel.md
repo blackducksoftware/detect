@@ -45,18 +45,25 @@ Recommended action: Upgrade Bazel to 6.4+ (preferably 7.x or 8.x), where `bazel 
 
 ## BCR Modules and Dependency Classification
 
-Bazel external dependencies fall into three categories that differ in how much structural information Bazel records about them.
+Bazel supports several mechanisms for consuming external dependencies, which differ in the amount of dependency metadata and relationship information available to [detect_product_short] and affects how [detect_product_short] can classify dependencies as direct or transitive.
 
-**http_archive / git_repository / go_repository (WORKSPACE rules)**
-Raw source-archive fetches. There is no parent-child relationship — every dependency must be manually declared in the WORKSPACE file, so the list is always flat with no transitive structure to reconstruct. [detect_product_short] discovers these dependencies but reports them all as direct.
+**WORKSPACE-Based http_archive, git_repository, and go_repository**
 
-**maven_install (rules_jvm_external)**
-Maven coordinates managed through rules_jvm_external. The resolution tree exists inside rules_jvm_external's own lockfile machinery but is not surfaced through Bazel's module graph API. [detect_product_short] reads coordinates from the Bazel build graph and reports them flat.
+External source code is fetched directly into the build environment. These rules provide no dependency relationship metadata beyond the declarations present in the WORKSPACE file. All dependencies must be explicitly declared by the project as Bazel does not maintain a dependency graph for these repository types. The resulting dependency list is inherently flat, with no parent-child relationships available for analysis or reconstruction. As a result, [detect_product_short] can identify these dependencies but reports all of them as direct dependencies.
 
-**BCR modules (bazel_dep in MODULE.bazel)**
-The only category where Bazel owns and records the full dependency tree. Each module published to the [Bazel Central Registry (BCR)](https://registry.bazel.build/) carries its own `MODULE.bazel` that declares only its own direct dependencies — the same model npm, Maven, and Cargo use. Bazel resolves the full transitive graph by reading each module's `MODULE.bazel` recursively and exposes the result via `bazel mod graph --output json` (Bazel 7.1+), which includes explicit parent-child edges. [detect_product_short] uses these edges to produce a classified BOM where direct and transitive dependencies are correctly distinguished.
+**Maven Dependencies via rules_jvm_external**
 
-For BZLMOD projects on Bazel 7.1+, [detect_product_short] calls `bazel mod graph` first to capture the tree structure, then `bazel mod show_repo` per module to resolve source URLs. maven_install and http_archive results are added to the same BOM but remain flat, since no tree is available for those types.
+Projects that use `maven_install` from `rules_jvm_external` rely on Maven's dependency resolution model. The complete dependency graph exists internally within the resolver and its lockfile infrastructure, however that information is not exposed through Bazel's module graph APIs.
+
+[detect_product_short] can extract Maven coordinates from the Bazel build configuration, but it cannot accurately determine dependency ancestry. Dependencies obtained through `maven_install` are therefore reported as a flat list rather than a hierarchical dependency tree.
+
+**Bazel Central Registry (BCR) Modules (bazel_dep in MODULE.bazel)**
+
+Dependencies declared with `bazel_dep` in `MODULE.bazel` provide the most complete dependency metadata available within Bazel. Modules published to the [Bazel Central Registry (BCR)](https://registry.bazel.build/) include their own `MODULE.bazel` that declares their own direct dependencies, following the same dependency management model used by Maven, npm, and Cargo. Beginning with Bazel 7.1, Bazel resolves the full transitive graph by reading each module's `MODULE.bazel` recursively and exposes the result via `bazel mod graph --output json`, which includes explicit parent-child relationships between modules. [detect_product_short] consumes this data to accurately classify dependencies as either direct or transitive when generating a Bill of Materials (BOM).
+
+For Bzlmod-based projects running Bazel 7.1 or later, [detect_product_short] first executes `bazel mod graph` to obtain the complete module dependency hierarchy. [detect_product_short] then invokes `bazel mod show_repo` for each module to resolve repository source locations and associated metadata.
+
+Dependencies discovered via `maven_install` and `http_archive` are incorporated into the same BOM, however, because these dependency types do not expose equivalent graph information through Bazel, they are reported as flat dependency sets.
 
 ## Combining Bazel Detection with Package Manager Detection for Additional Coverage
 
@@ -316,9 +323,15 @@ Projects with ≤150 external repositories are fully probed to precisely detect 
 
 This dual approach ensures that the Bazel tool works seamlessly for both modern bzlmod-based and traditional WORKSPACE-based Bazel projects, always probing the graph to decide which pipeline to run.
 
-### Processing for BCR modules (BZLMOD mode, Bazel 7.1+)
+### Processing for BCR modules (Bzlmod mode on Bazel 7.1 or later)
 
-When [detect_product_short] scans with BZLMOD mode on Bazel 7.1 or later, it runs a dedicated BCR extraction path before the standard pipelines. The http_archive pipeline still runs afterward, but any dep already classified by the BCR extractor is deduplicated by ExternalId — this preserves the direct/transitive edges the BCR extractor built and avoids promoting transitive BCR deps to direct. Custom http_archive rules absent from `MODULE.bazel` (private repos, non-BCR archives) are unaffected and still added to the BOM flat.
+When [detect_product_short] runs in Bzlmod mode on Bazel 7.1 or later, it performs a dedicated Bazel Central Registry (BCR) dependency extraction step before executing the standard dependency discovery pipelines.
+
+After BCR extraction completes, the http_archive discovery pipeline still runs to identify additional external dependencies. However, any dependency that was already identified and classified through the BCR module graph is deduplicated using its ExternalId. This ensures that the dependency relationships established by the BCR extractor are preserved, including the distinction between direct and transitive dependencies.
+
+Without this deduplication step, dependencies discovered later through http_archive analysis could be incorrectly reclassified as direct dependencies, resulting in the loss of the dependency hierarchy derived from the Bzlmod module graph.
+
+Custom http_archive definitions, private repositories, and non-BCR source archives absent from `MODULE.bazel` are not affected by this process. These dependencies continue to be discovered through the standard repository-rule analysis and are added to the BOM as flat dependency entries.
 
 **Step 1 — Discover the full module dependency tree:**
 ```sh
@@ -337,9 +350,9 @@ $ bazel mod show_repo @module_name
 [detect_product_short] parses the `show_repo` output for GitHub URLs using the same extraction logic as the standard http_archive BZLMOD pipeline.
 
 **Step 3 — Build the classified BOM:**
-Modules declared via `bazel_dep` appear as direct dependencies. Their transitive deps appear nested under their respective parents rather than at the root. The BOM correctly reflects which components your project explicitly chose versus which came along transitively.
+Modules declared via `bazel_dep` appear as direct dependencies. Their transitive dependencies appear nested under their respective parents rather than at the root. The BOM correctly reflects which components your project explicitly chose versus which came along transitively.
 
-Modules for which no GitHub URL can be extracted (private repos, custom non-BCR rules) are logged at WARN and excluded from the BOM. The warning includes the raw URL(s) found so you can investigate what was missed.
+A WARN-level log entry is written for modules where no GitHub URL can be extracted (private repos, custom non-BCR rules), and excluded from the BOM. To assist in investigating what was missed, the warning includes the raw URL(s) found.
 
 ## Examples
 
