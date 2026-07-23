@@ -23,7 +23,7 @@ import com.blackduck.integration.exception.IntegrationException;
 
 @Tag("integration")
 public class SetuptoolsTest {
-    private static final String[] SETUPTOOLS_VERSIONS_TO_TEST = new String[] { "80.9.0" };
+    private static final String[] SETUPTOOLS_VERSIONS_TO_TEST = new String[] { "74.0.0" };
     private static final String PIP_VERSION = "24.2";
     public static String ARTIFACTORY_URL = System.getenv().get("SNPS_INTERNAL_ARTIFACTORY");
 
@@ -36,7 +36,7 @@ public class SetuptoolsTest {
     @ParameterizedTest
     @MethodSource("provideSetuptoolsVersionsToTest")
     public void setuptoolsExecutableTest(String setuptoolsVersion) throws IntegrationException, IOException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("setuptools-docker-test", "setuptools-docker-test:" + setuptoolsVersion + "-j11")) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("setuptools-docker-test", "setuptools-docker-test:" + setuptoolsVersion + "-jdk11")) {
 
             Map<String, String> setuptoolsDockerfileArgs = new HashMap<>();
             setuptoolsDockerfileArgs.put("ARTIFACTORY_URL", ARTIFACTORY_URL);

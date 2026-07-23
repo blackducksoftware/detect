@@ -24,7 +24,7 @@ import com.blackduck.integration.exception.IntegrationException;
 @Tag("integration")
 public class PipenvTest {
 
-    private static final String[] PIPENV_VERSIONS_TO_TEST = new String[] { "2026.5.2" };
+    private static final String[] PIPENV_VERSIONS_TO_TEST = new String[] { "2024.0.1" };
     public static String ARTIFACTORY_URL = System.getenv().get("SNPS_INTERNAL_ARTIFACTORY");
 
     private static final String PROJECT_NAME = "pipenv-docker-test-project";
@@ -36,7 +36,7 @@ public class PipenvTest {
     @ParameterizedTest
     @MethodSource("providePipenvVersionsToTest")
     public void pipenvExecutableTest(String pipenvVersion) throws IntegrationException, IOException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("pipenv-docker-test", "pipenv-docker-test:" + pipenvVersion + "-j11")) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("pipenv-docker-test", "pipenv-docker-test:" + pipenvVersion + "-jdk11")) {
 
             Map<String, String> pipenvDockerfileArgs = new HashMap<>();
             pipenvDockerfileArgs.put("PIPENV_VERSION_VAL", pipenvVersion);
