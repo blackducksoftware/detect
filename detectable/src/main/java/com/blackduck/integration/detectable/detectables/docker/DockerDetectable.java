@@ -83,6 +83,7 @@ public class DockerDetectable extends Detectable {
         if (dockerInspectorInfo == null) {
             return new InspectorNotFoundDetectableResult("docker");
         } else {
+            logger.warn("WARNING: Docker Inspector has been deprecated and will be removed in 13.0.0 release.");
             passedResultBuilder.foundInspector(dockerInspectorInfo.getDockerInspectorJar());
         }
         return passedResultBuilder.build();
