@@ -1,0 +1,3 @@
+module(name = "example", version = "1.0")
+
+bazel_dep(name = "protobuf", version = "31.0")
