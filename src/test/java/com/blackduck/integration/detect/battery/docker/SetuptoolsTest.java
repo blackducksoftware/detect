@@ -23,7 +23,7 @@ import com.blackduck.integration.exception.IntegrationException;
 
 @Tag("integration")
 public class SetuptoolsTest {
-    private static final String[] SETUPTOOLS_VERSIONS_TO_TEST = new String[] { "74.0.0" };
+    private static final String[] SETUPTOOLS_VERSIONS_TO_TEST = new String[] { "80.9.0" };
     private static final String PIP_VERSION = "24.2";
     public static String ARTIFACTORY_URL = System.getenv().get("SNPS_INTERNAL_ARTIFACTORY");
 
