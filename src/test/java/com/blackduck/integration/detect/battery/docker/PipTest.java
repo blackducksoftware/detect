@@ -42,7 +42,7 @@ public class PipTest {
     @ParameterizedTest
     @MethodSource("providePipVersionsToTest")
     public void pipExecutableTest(String pipVersion) throws IntegrationException, IOException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("pip-docker-test", "pip-docker-test:" + pipVersion + "-j11")) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("pip-docker-test", "pip-docker-test:" + pipVersion + "-j11-apt")) {
 
             Map<String, String> pipDockerfileArgs = new HashMap<>();
             pipDockerfileArgs.put("PIP_VERSION", pipVersion);
