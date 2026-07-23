@@ -1673,6 +1673,10 @@ public class OperationRunner {
         );
     }
 
+    public boolean shouldCreateProjectVersionWhenNoComponents() {
+        return detectConfigurationFactory.shouldCreateProjectVersionWhenNoComponents();
+    }
+
     public FindCloneOptions calculateCloneOptions() {
         return detectConfigurationFactory.createCloneFindOptions();
     }
