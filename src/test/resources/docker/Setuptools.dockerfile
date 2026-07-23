@@ -24,4 +24,4 @@ RUN wget ${ARTIFACTORY_URL}/artifactory/detect-generic-qa-local/setuptools-test-
 RUN unzip setuptools-test-project.zip -d /opt/project/src
 RUN mv setuptools-test-project/* .
 RUN rm -r setuptools-test-project setuptools-test-project.zip
-RUN /bin/sh -c "pip install ."
+RUN /bin/sh -c "pip install --no-build-isolation ."
