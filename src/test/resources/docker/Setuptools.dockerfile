@@ -14,7 +14,7 @@ ENV JAVA_TOOL_OPTIONS="-Dhttps.protocols=TLSv1.2"
 RUN apt-get update -y
 RUN apt-get install -y git bash wget unzip
 RUN apt-get install -y python3 python3-pip
-RUN pip install --upgrade "pip==${PIP_VERSION}"
+RUN ln -s /usr/bin/pip3 /usr/local/bin/pip
 RUN pip install --upgrade "setuptools==${SETUPTOOLS_VERSION}"
 
 # Set up test project
@@ -24,4 +24,4 @@ RUN wget ${ARTIFACTORY_URL}/artifactory/detect-generic-qa-local/setuptools-test-
 RUN unzip setuptools-test-project.zip -d /opt/project/src
 RUN mv setuptools-test-project/* .
 RUN rm -r setuptools-test-project setuptools-test-project.zip
-RUN /bin/sh -c "pip install ."
+RUN /bin/sh -c "pip install --no-build-isolation ."

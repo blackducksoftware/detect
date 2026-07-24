@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -22,6 +23,7 @@ import com.blackduck.integration.detector.base.DetectorType;
 import com.blackduck.integration.exception.IntegrationException;
 
 @Tag("integration")
+//@Disabled("Disabled: Dockerfile pulls from public PyPI registry — re-enable after migrating to internal artifact proxy")
 public class SetuptoolsTest {
     private static final String[] SETUPTOOLS_VERSIONS_TO_TEST = new String[] { "74.0.0" };
     private static final String PIP_VERSION = "24.2";
@@ -36,7 +38,7 @@ public class SetuptoolsTest {
     @ParameterizedTest
     @MethodSource("provideSetuptoolsVersionsToTest")
     public void setuptoolsExecutableTest(String setuptoolsVersion) throws IntegrationException, IOException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("setuptools-docker-test   ", "setuptools-docker-test:" + setuptoolsVersion)) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("setuptools-docker-test", "setuptools-docker-test:" + setuptoolsVersion + "-jdk11v2")) {
 
             Map<String, String> setuptoolsDockerfileArgs = new HashMap<>();
             setuptoolsDockerfileArgs.put("ARTIFACTORY_URL", ARTIFACTORY_URL);
