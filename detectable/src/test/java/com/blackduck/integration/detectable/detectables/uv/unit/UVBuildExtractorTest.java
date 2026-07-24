@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -256,7 +257,7 @@ class UVBuildExtractorTest {
     }
 
     @Test
-    void extractAllOnlyGroupsExcludedResultsInNoOnlyGroupFlags() throws Exception {
+    void extractAllOnlyGroupsExcludedResultsInEmptyBom() throws Exception {
         UVBuildExtractor extractor = new UVBuildExtractor(executableRunner, tempDir, transformer);
         // All only-groups are also excluded
         UVDetectorOptions options = new UVDetectorOptions(
@@ -269,14 +270,13 @@ class UVBuildExtractorTest {
         Extraction extraction = extractor.extract(uvExe, options, tomlParser);
         assertExtractionSuccess(extraction);
 
-        ArgumentCaptor<Executable> captor = ArgumentCaptor.forClass(Executable.class);
-        verify(executableRunner).executeSuccessfully(captor.capture());
+        // uv tree should never be executed since all groups are excluded
+        verify(executableRunner, never()).executeSuccessfully(any(Executable.class));
 
-        List<String> arguments = captor.getValue().getCommandWithArguments();
-
-        // No --only-group flags since all were excluded
-        long onlyGroupCount = arguments.stream().filter(arg -> arg.equals("--only-group")).count();
-        assertEquals(0, onlyGroupCount, "No --only-group flags should remain when all are excluded");
+        // BOM should exist but contain zero dependencies
+        assertEquals(1, extraction.getCodeLocations().size(), "Expected one code location for empty BOM");
+        assertEquals(0, extraction.getCodeLocations().get(0).getDependencyGraph().getRootDependencies().size(),
+                "Expected zero dependencies when all only-groups are excluded");
     }
 
 
