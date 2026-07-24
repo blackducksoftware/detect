@@ -246,17 +246,26 @@ public class DetectableOptionFactory {
     public NpmCliExtractorOptions createNpmCliExtractorOptions() {
         EnumListFilter<NpmDependencyType> npmDependencyTypeFilter = createNpmDependencyTypeFilter();
         String npmArguments = detectConfiguration.getNullableValue(DetectProperties.DETECT_NPM_ARGUMENTS);
-        return new NpmCliExtractorOptions(npmDependencyTypeFilter, npmArguments);
+        List<String> excludedWorkspaceNames = detectConfiguration.getValue(DetectProperties.DETECT_NPM_EXCLUDED_WORKSPACES);
+        List<String> includedWorkspaceNames = detectConfiguration.getValue(DetectProperties.DETECT_NPM_INCLUDED_WORKSPACES);
+        boolean ignoreAllWorkspaces = detectConfiguration.getValue(DetectProperties.DETECT_NPM_IGNORE_ALL_WORKSPACES_MODE);
+        return new NpmCliExtractorOptions(npmDependencyTypeFilter, npmArguments, excludedWorkspaceNames, includedWorkspaceNames, ignoreAllWorkspaces);
     }
 
     public NpmLockfileOptions createNpmLockfileOptions() {
         EnumListFilter<NpmDependencyType> npmDependencyTypeFilter = createNpmDependencyTypeFilter();
-        return new NpmLockfileOptions(npmDependencyTypeFilter);
+        List<String> excludedWorkspaceNames = detectConfiguration.getValue(DetectProperties.DETECT_NPM_EXCLUDED_WORKSPACES);
+        List<String> includedWorkspaceNames = detectConfiguration.getValue(DetectProperties.DETECT_NPM_INCLUDED_WORKSPACES);
+        boolean ignoreAllWorkspaces = detectConfiguration.getValue(DetectProperties.DETECT_NPM_IGNORE_ALL_WORKSPACES_MODE);
+        return new NpmLockfileOptions(npmDependencyTypeFilter, excludedWorkspaceNames, includedWorkspaceNames, ignoreAllWorkspaces);
     }
 
     public NpmPackageJsonParseDetectableOptions createNpmPackageJsonParseDetectableOptions() {
         EnumListFilter<NpmDependencyType> npmDependencyTypeFilter = createNpmDependencyTypeFilter();
-        return new NpmPackageJsonParseDetectableOptions(npmDependencyTypeFilter);
+        List<String> excludedWorkspaceNames = detectConfiguration.getValue(DetectProperties.DETECT_NPM_EXCLUDED_WORKSPACES);
+        List<String> includedWorkspaceNames = detectConfiguration.getValue(DetectProperties.DETECT_NPM_INCLUDED_WORKSPACES);
+        boolean ignoreAllWorkspaces = detectConfiguration.getValue(DetectProperties.DETECT_NPM_IGNORE_ALL_WORKSPACES_MODE);
+        return new NpmPackageJsonParseDetectableOptions(npmDependencyTypeFilter, excludedWorkspaceNames, includedWorkspaceNames, ignoreAllWorkspaces);
     }
 
     private EnumListFilter<NpmDependencyType> createNpmDependencyTypeFilter() {

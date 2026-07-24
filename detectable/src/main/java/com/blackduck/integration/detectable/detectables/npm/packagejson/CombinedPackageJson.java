@@ -11,7 +11,7 @@ public class CombinedPackageJson {
     private String name;
     private String version;
     private List<String> relativeWorkspaces = new ArrayList<>();
-    
+
     private MultiValuedMap<String, String> dependencies;
     private MultiValuedMap<String, String> devDependencies;
     private MultiValuedMap<String, String> peerDependencies;
@@ -40,7 +40,7 @@ public class CombinedPackageJson {
         return optionalDependencies;
     }
     
-    public List<String> getRelativeWorkspaces() {        
+    public List<String> getRelativeWorkspaces() {
         return relativeWorkspaces;
     }
 

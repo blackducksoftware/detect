@@ -19,22 +19,33 @@ import com.blackduck.integration.bdio.model.dependency.Dependency;
 import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
+import org.jetbrains.annotations.Nullable;
+
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.detectable.detectable.util.SemVerComparator;
 import com.blackduck.integration.detectable.detectables.npm.NpmAliasParser;
 import com.blackduck.integration.detectable.detectables.npm.NpmDependencyType;
 import com.blackduck.integration.detectable.extraction.Extraction;
+import com.blackduck.integration.util.ExcludedIncludedWildcardFilter;
 import com.google.gson.Gson;
 
 public class PackageJsonExtractor {
     private final Gson gson;
     private final ExternalIdFactory externalIdFactory;
     private final EnumListFilter<NpmDependencyType> npmDependencyTypeFilter;
+    @Nullable private final ExcludedIncludedWildcardFilter workspaceFilter;
 
     public PackageJsonExtractor(Gson gson, ExternalIdFactory externalIdFactory, EnumListFilter<NpmDependencyType> npmDependencyTypeFilter) {
+        this(gson, externalIdFactory, npmDependencyTypeFilter, null);
+    }
+
+    public PackageJsonExtractor(Gson gson, ExternalIdFactory externalIdFactory,
+            EnumListFilter<NpmDependencyType> npmDependencyTypeFilter,
+            @Nullable ExcludedIncludedWildcardFilter workspaceFilter) {
         this.gson = gson;
         this.externalIdFactory = externalIdFactory;
         this.npmDependencyTypeFilter = npmDependencyTypeFilter;
+        this.workspaceFilter = workspaceFilter;
     }
 
     public Extraction extract(File packageJsonFile) throws IOException {
@@ -46,7 +57,7 @@ public class PackageJsonExtractor {
         }
 
         CombinedPackageJsonExtractor extractor = new CombinedPackageJsonExtractor(gson);
-        CombinedPackageJson combinedPackageJson = extractor.constructCombinedPackageJson(packagePath, packageText);
+        CombinedPackageJson combinedPackageJson = extractor.constructCombinedPackageJson(packagePath, packageText, workspaceFilter);
 
         return extract(combinedPackageJson);
     }
