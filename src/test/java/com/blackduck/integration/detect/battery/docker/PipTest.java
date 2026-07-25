@@ -140,7 +140,7 @@ public class PipTest {
 
     @Test
     public void pythonHybridTest() throws IntegrationException, IOException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("python-hybrid-test", "python-hybrid-test:1.0.0-jdk11")) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("python-hybrid-test", "python-hybrid-test:1.0.1-jdk11")) {
 
             Map<String, String> dockerfileArgs = new HashMap<>();
             dockerfileArgs.put("ARTIFACTORY_URL", ARTIFACTORY_URL);
