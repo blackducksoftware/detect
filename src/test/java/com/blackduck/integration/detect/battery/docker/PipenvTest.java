@@ -36,7 +36,7 @@ public class PipenvTest {
     @ParameterizedTest
     @MethodSource("providePipenvVersionsToTest")
     public void pipenvExecutableTest(String pipenvVersion) throws IntegrationException, IOException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("pipenv-docker-test", "pipenv-docker-test:" + pipenvVersion)) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("pipenv-docker-test", "pipenv-docker-test:" + pipenvVersion + "-jdk11")) {
 
             Map<String, String> pipenvDockerfileArgs = new HashMap<>();
             pipenvDockerfileArgs.put("PIPENV_VERSION_VAL", pipenvVersion);
