@@ -79,13 +79,13 @@ class DetectorToolTest {
         reportsField.set(toolResult, reports);
 
        
-        DetectConfigurationFactory detectConfigurationFactory = DetectConfigurationFactoryTestUtils.factoryOf(Pair.of(DetectProperties.DETECT_QUACK_PATCH_OUTPUT, tempDir.toString()));
+        DetectConfigurationFactory detectConfigurationFactory = DetectConfigurationFactoryTestUtils.factoryOf(Pair.of(DetectProperties.DETECT_QUACK_PATCH_OUTPUT_PATH, tempDir.toString()));
 
         new DetectorTool(null, null, null, null, null, null, null, detectConfigurationFactory)
             .saveExtractedDetectorsAndTheirRelevantFilePaths(toolResult, directoryManager);
 
         File outputFile = new File(
-            new File(detectConfigurationFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT), QUACKPATCH_SUBDIRECTORY_NAME),
+            new File(detectConfigurationFactory.getDetectPropertyConfiguration().getValue(DetectProperties.DETECT_QUACK_PATCH_OUTPUT_PATH), QUACKPATCH_SUBDIRECTORY_NAME),
             INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON
         );
         assertTrue(outputFile.exists());

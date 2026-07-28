@@ -18,7 +18,7 @@ import com.blackduck.integration.util.NameVersion;
 public class RiskReportTests {
     // create any bom for a risk report
     SharedDockerTestRunner anyProjectWithRiskReportResultsInBlackDuck(String testId, NameVersion projectNameVersion) throws IOException, IntegrationException {
-        try (DetectDockerTestRunner runner = new DetectDockerTestRunner(testId, "gradle-simple:1.0.0")) {
+        try (DetectDockerTestRunner runner = new DetectDockerTestRunner(testId, "gradle-simple:3.0.0")) {
             runner.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("SimpleGradle.dockerfile"));
 
             BlackDuckTestConnection blackDuckTestConnection = BlackDuckTestConnection.fromEnvironment();

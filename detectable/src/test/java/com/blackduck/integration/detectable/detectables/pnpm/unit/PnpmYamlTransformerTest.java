@@ -1,7 +1,6 @@
 package com.blackduck.integration.detectable.detectables.pnpm.unit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
@@ -76,14 +75,15 @@ public class PnpmYamlTransformerTest {
     }
 
     @Test
-    public void testThrowExceptionOnNullPackagesSection() {
+    public void testEmptyGraphOnNullPackagesSection() throws IntegrationException {
         PnpmLockYamlv5 pnpmLockYaml = createPnpmLockYaml();
         PnpmYamlTransformerv5 transformer = createTransformer();
         pnpmLockYaml.packages = null;
-        assertThrows(
-            IntegrationException.class,
-            () -> transformer.generateCodeLocation(pnpmLockYamlFile, pnpmLockYaml, projectNameVersion, linkedPackageResolver)
-        );
+        CodeLocation codeLocation = transformer.generateCodeLocation(pnpmLockYamlFile, pnpmLockYaml, projectNameVersion, linkedPackageResolver);
+
+        assertTrue(codeLocation.getExternalId().isPresent(), "Expected the code location to produce an ExternalId even with null packages.");
+        DependencyGraph dependencyGraph = codeLocation.getDependencyGraph();
+        assertEquals(0, dependencyGraph.getRootDependencies().size(), "Expected an empty dependency graph when packages section is null.");
     }
 
     @Test

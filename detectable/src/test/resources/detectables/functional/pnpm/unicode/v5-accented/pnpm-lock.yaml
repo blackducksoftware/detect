@@ -1,0 +1,25 @@
+# Lockfile mit Ünïcödé Zeichën — Ñoño, résumé, naïveté
+lockfileVersion: 5.3
+
+importers:
+
+  .:
+    specifiers:
+      react: ^17.0.2
+    devDependencies:
+      '@babel/code-frame': 7.10.4
+
+# Ελληνικά σχόλια — Greek comments
+packages:
+
+  /@babel/code-frame/7.10.4:
+    resolution: {integrity: sha512-vG6SvB6oYEhvgisZNFRmRCUkLz11c7rp+tbNTynGqc6mS1d5ATd/sGyV6W0KZZnXRKMTzZDRgQT3Ou9jhpAfUg==}
+    dependencies:
+      '@babel/highlight': 7.14.5
+    dev: true
+
+  /@babel/highlight/7.14.5:
+    resolution: {integrity: sha512-qf9u2WFWVV0MppaL877j2dBtQIDgmidgjGk5VIMw3OadXvYaXn66U1BFlH2t4+t3i+8PhedppRv+i40ABzd+gg==}
+    engines: {node: '>=6.9.0'}
+    dev: true
+

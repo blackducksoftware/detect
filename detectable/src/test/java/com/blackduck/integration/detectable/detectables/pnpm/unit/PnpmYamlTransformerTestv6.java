@@ -77,14 +77,15 @@ public class PnpmYamlTransformerTestv6 {
     }
 
     @Test
-    public void testThrowExceptionOnNullPackagesSection() {
+    public void testEmptyGraphOnNullPackagesSection() throws IntegrationException {
         PnpmLockYaml pnpmLockYaml = createPnpmLockYaml();
         PnpmYamlTransformer transformer = createTransformer();
         pnpmLockYaml.packages = null;
-        assertThrows(
-            IntegrationException.class,
-            () -> transformer.generateCodeLocation(pnpmLockYamlFile, pnpmLockYaml, projectNameVersion, linkedPackageResolver)
-        );
+        CodeLocation codeLocation = transformer.generateCodeLocation(pnpmLockYamlFile, pnpmLockYaml, projectNameVersion, linkedPackageResolver);
+
+        assertTrue(codeLocation.getExternalId().isPresent(), "Expected the code location to produce an ExternalId even with null packages.");
+        DependencyGraph dependencyGraph = codeLocation.getDependencyGraph();
+        assertEquals(0, dependencyGraph.getRootDependencies().size(), "Expected an empty dependency graph when packages section is null.");
     }
 
     @Test

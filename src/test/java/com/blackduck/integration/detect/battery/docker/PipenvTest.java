@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -23,7 +22,6 @@ import com.blackduck.integration.detector.base.DetectorType;
 import com.blackduck.integration.exception.IntegrationException;
 
 @Tag("integration")
-@Disabled("Disabled: Dockerfile pulls from public PyPI registry — re-enable after migrating to internal artifact proxy")
 public class PipenvTest {
 
     private static final String[] PIPENV_VERSIONS_TO_TEST = new String[] { "2024.0.1" };
@@ -38,7 +36,7 @@ public class PipenvTest {
     @ParameterizedTest
     @MethodSource("providePipenvVersionsToTest")
     public void pipenvExecutableTest(String pipenvVersion) throws IntegrationException, IOException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("pipenv-docker-test", "pipenv-docker-test:" + pipenvVersion)) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("pipenv-docker-test", "pipenv-docker-test:" + pipenvVersion + "-jdk11")) {
 
             Map<String, String> pipenvDockerfileArgs = new HashMap<>();
             pipenvDockerfileArgs.put("PIPENV_VERSION_VAL", pipenvVersion);

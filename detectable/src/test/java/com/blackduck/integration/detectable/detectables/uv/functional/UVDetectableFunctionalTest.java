@@ -77,7 +77,7 @@ public class UVDetectableFunctionalTest extends DetectableFunctionalTest {
                 "│   │   │   │   │   ├── aiohttp v3.12.15 (*)\n" +
                 "│   │   │   │   │   ├── cryptography v44.0.3 (*)");
 
-        addExecutableOutput(uvTreeDependencyOutput, new File("uv").getAbsolutePath(), "tree", "--no-dedupe");
+        addExecutableOutput(uvTreeDependencyOutput, new File("uv").getAbsolutePath(), "tree", "--no-dedupe", "--all-groups");
     }
 
     @NotNull

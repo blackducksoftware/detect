@@ -300,7 +300,7 @@ Expected behavior for Bazel versions before 6.0: the tool assumes WORKSPACE mode
 #### Debug Mode
 For detailed logging to diagnose issues:
 ```sh
-bash <(curl -s -L https://detect.blackduck.com/detect11.sh) \
+bash <(curl -s -L https://detect.blackduck.com/detect12.sh) \
   --logging.level.detect=DEBUG \
   --detect.bazel.target='//your:target'
 ```

@@ -1,4 +1,4 @@
-FROM maven:3-openjdk-8-slim
+FROM maven:3-eclipse-temurin-11
 
 # Install git
 RUN apt-get update
@@ -13,4 +13,4 @@ RUN cd /opt/project \
 RUN mv /opt/project/maven-hello-world/my-app /opt/project/src
 
 RUN cd /opt/project/src \
-   && mvn compile
+   && mvn dependency:resolve

@@ -83,7 +83,7 @@ The results are also printed in the logs:
 2021-07-20 13:25:18 EDT INFO  [main] --- 		Components with Policy Violation Warnings:
 2021-07-20 13:25:18 EDT INFO  [main] --- 			Acorn 5.5.3 (npmjs:acorn/5.5.3)
 ```
-For [detect_product_short] version 8.7.0 and later, with [bd_product_short] 2023.1.2, Rapid Scan output now reports upgrade guidance for transitive dependencies with known vulnerabilities. The output gives information as to the direct dependency upgrade options and the transitive dependencies affected. This output is given in the results section which appears near the end of the [detect_product_short] run and appears as follows:
+Rapid Scan output reports upgrade guidance for transitive dependencies with known vulnerabilities. The output gives information as to the direct dependency upgrade options and the transitive dependencies affected. This output is given in the results section which appears near the end of the [detect_product_short] run and appears as follows:
 ```
 2023-03-09 13:01:56 EST INFO  [main] --- ===== Transitive Guidance =====
 2023-03-09 13:01:56 EST INFO  [main] --- 
@@ -111,8 +111,8 @@ You can configure Rapid Scan to return only the difference in policy violations 
 
 To return only the difference in policy violations, configure `detect.blackduck.rapid.compare.mode` to `BOM_COMPARE` or `BOM_COMPARE_STRICT`.
 
-BOM_COMPARE: Will evaluate policy rules based on the type of [policy rule modes](https://documentation.blackduck.com/bundle/bd-hub/page/Policies/CreatePolicy.html) configured. When the policy rule is set to (`RAPID` and `FULL`) it will behave like `BOM_COMPARE_STRICT` but if the policy rule is only (`RAPID`) it will evaluate the result of the Rapid Scan against the policy, ignoring results in the BOM.
+BOM_COMPARE: Will evaluate policy rules based on the type of [policy rule modes](https://docs.blackduck.com/r/blackduck/latest/black-duck-documentation/managing-policies.html) configured. When the policy rule is set to (`RAPID` and `FULL`) it will behave like `BOM_COMPARE_STRICT` but if the policy rule is only (`RAPID`) it will evaluate the result of the Rapid Scan against the policy, ignoring results in the BOM.
 
 BOM_COMPARE_STRICT: Will only evaluate policy rules that are (`RAPID` and `FULL`). Policy violations are compared to the existing project version BOM. If the policy violation was already known and visible in the BOM (active or overridden) it is not part of the rapid scan positive result, it will still be part of the full result following existing restrictions.
 
-BOM compare mode settings determine which policies are considered and how they behave when violations are present. See the [bd_product_short] documentation for futher details on<a href="https://documentation.blackduck.com/bundle/bd-hub/page/ComponentDiscovery/RapidScanning.html" target="_blank"> Rapid Scanning.</a>
+BOM compare mode settings determine which policies are considered and how they behave when violations are present. See the [bd_product_short] documentation for futher details on<a href="https://docs.blackduck.com/r/blackduck/latest/black-duck-documentation/rapid-scan-overview.html" target="_blank"> Rapid Scanning.</a>

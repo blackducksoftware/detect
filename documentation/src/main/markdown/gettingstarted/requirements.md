@@ -41,7 +41,7 @@
 
 * Licensed installation of the current version of [bd_product_short] with access credentials.
 Visit the [Black Duck release page](https://github.com/blackducksoftware/hub/releases) to determine the current version of [bd_product_short].
-* For information regarding compatible versions of [bd_product_short], consult the [bd_product_short] [Release Compatibility page](https://documentation.blackduck.com/bundle/blackduck-compatibility/page/topics/Black-Duck-Release-Compatibility.html)
+* For information regarding compatible versions of [bd_product_short], consult the [bd_product_short] [Release Compatibility page](https://docs.blackduck.com/r/blackduck/black-duck-compatibility-reference/black-duck-sca-release-compatibility.html)
 * The [bd_product_short] notifications module must be enabled.
 * A [bd_product_short] user with the [required roles](usersandroles.md).
 * On Alpine Linux you will also need to override the Java installation used by the [blackduck_signature_scanner_name] as
@@ -66,5 +66,4 @@ The risk report requires that the following fonts are installed:
 
 ## Supported [detect_product_short] versions and Service duration
 
-For information about support and service durations for [detect_product_short] versions, consult the
-<xref href="Support-and-Service-Schedule.dita" scope="peer"> Support and Service Schedule.<data name="facets" value="pubname=blackduck-compatibility"/>
+For information about support and service durations for [detect_product_short] versions, consult the [Support and Service Schedule](https://docs.blackduck.com/r/blackduck/black-duck-compatibility-reference/product-maintenance-support-and-service-schedule.html).

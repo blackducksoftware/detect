@@ -253,4 +253,22 @@ public class DetectConfigurationFactoryTests {
 
         Assertions.assertFalse(projectSyncOptions.isDeepLicenseEnabled());
     }
+
+    //#region createWhenNoComponents
+    @Test
+    public void createProjectVersionWhenNoComponentsDefaultsToTrue() {
+        DetectConfigurationFactory factory = factoryOf();
+
+        Assertions.assertTrue(factory.shouldCreateProjectVersionWhenNoComponents());
+    }
+
+    @Test
+    public void createProjectVersionWhenNoComponentsCanBeSetToFalse() {
+        DetectConfigurationFactory factory = factoryOf(
+            Pair.of(DetectProperties.DETECT_PROJECT_VERSION_CREATE_WHEN_NO_COMPONENTS, "false")
+        );
+
+        Assertions.assertFalse(factory.shouldCreateProjectVersionWhenNoComponents());
+    }
+    //#endregion
 }

@@ -23,9 +23,9 @@ Find available images via [Docker public image registry](https://hub.docker.com/
 Example pull commmands:
 ```
 #hub.docker.com
-docker pull blackducksoftware/detect:10.4.0
+docker pull blackducksoftware/detect:12.0.0
 #repo.blackduck.com
-docker pull repo.blackduck.com/containers/blackducksoftware/detect:10.4.0
+docker pull repo.blackduck.com/containers/blackducksoftware/detect:12.0.0
 ```
 Find the source, Dockerfiles [here](https://github.com/blackducksoftware/detect-docker).
 
@@ -61,11 +61,13 @@ The format of "iac" image names is: `blackducksoftware/detect:[detect_version]-i
 
 `docker run -it --rm -v [/path/to/source]:/source -v [/path/to/outputDir]:/output blackducksoftware/detect:[detect_image_tag] [detect_arguments]`
 
-`docker run -it --rm -v /home/my/gradle/project:/source -v /home/for/detect/output/files:/output blackducksoftware/detect:10.0.0 --blackduck.url=https://my.blackduck.url --blackduck.api.token=MyT0kEn`
+`docker run -it --rm -v /home/my/gradle/project:/source -v /home/for/detect/output/files:/output blackducksoftware/detect:12.0.0 --blackduck.url=https://my.blackduck.url --blackduck.api.token=MyT0kEn`
 
-`docker run -it --rm -v /home/my/maven/project:/source -v /home/for/detect/output/files:/output blackducksoftware/detect:9 --blackduck.url=https://my.blackduck.url --blackduck.api.token=MyT0kEn`
+`docker run -it --rm -v /home/my/gradle/project:/source -v /home/for/detect/output/files:/output blackducksoftware/detect:11.0.0 --blackduck.url=https://my.blackduck.url --blackduck.api.token=MyT0kEn`
 
-`docker run -it --rm -v /home/my/project:/source -v /home/for/detect/output/files:/output blackducksoftware/detect:9.7.0 --blackduck.url=https://my.blackduck.url --blackduck.api.token=MyT0kEn --detect.accuracy.required=NONE`
+`docker run -it --rm -v /home/my/maven/project:/source -v /home/for/detect/output/files:/output blackducksoftware/detect:10 --blackduck.url=https://my.blackduck.url --blackduck.api.token=MyT0kEn`
 
-`docker run -it --rm -v /home/my/project:/source -v /home/for/detect/output/files:/output blackducksoftware/detect:9.6.0 --blackduck.url=https://my.blackduck.url --blackduck.api.token=MyT0kEn --detect.tools=SIGNATURE_SCAN,BINARY_SCAN`
+`docker run -it --rm -v /home/my/project:/source -v /home/for/detect/output/files:/output blackducksoftware/detect:10.7.0 --blackduck.url=https://my.blackduck.url --blackduck.api.token=MyT0kEn --detect.accuracy.required=NONE`
+
+`docker run -it --rm -v /home/my/project:/source -v /home/for/detect/output/files:/output blackducksoftware/detect:10.6.0 --blackduck.url=https://my.blackduck.url --blackduck.api.token=MyT0kEn --detect.tools=SIGNATURE_SCAN,BINARY_SCAN`
 

@@ -1,0 +1,28 @@
+# 🚀 pnpm lockfile with emoji characters in comments
+# This file tests UTF-8 handling: 🎉✅❌🔥💡
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+# 📦 root project dependencies
+importers:
+
+  .:
+    dependencies:
+      express:
+        specifier: ^4.18.2
+        version: 4.19.2
+
+packages:
+
+  express@4.19.2:
+    resolution: {integrity: sha512-5T6nhjsT+EOMzuck8JjBHARTHfMht0POzlA60WV2pMD3gyXw2LZnZ+UGORIhRhO2+ke4V9GnMEYTw9ay5wSfIQ==}
+    engines: {node: '>= 0.10.0'}
+
+# 🔧 snapshots section
+snapshots:
+
+  express@4.19.2: {}
+

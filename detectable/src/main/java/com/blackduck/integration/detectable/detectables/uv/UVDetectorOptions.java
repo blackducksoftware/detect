@@ -1,6 +1,7 @@
 package com.blackduck.integration.detectable.detectables.uv;
 
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -9,18 +10,32 @@ import java.util.stream.Collectors;
 public class UVDetectorOptions {
     private final Set<String> excludedDependencyGroups;
 
+    private final Set<String> onlyDependencyGroups;
+
     private final Set<String> includedWorkspaceMembers;
 
     private final Set<String> excludedWorkspaceMembers;
 
-    public UVDetectorOptions(List<String> excludedDependencyGroups, List<String> includedWorkspaceMembers, List<String> excludedWorkspaceMembers) {
+    public UVDetectorOptions(List<String> excludedDependencyGroups, List<String> onlyDependencyGroups, List<String> includedWorkspaceMembers, List<String> excludedWorkspaceMembers) {
         this.excludedDependencyGroups = new HashSet<>(excludedDependencyGroups);
+        this.onlyDependencyGroups = new HashSet<>(onlyDependencyGroups);
         this.includedWorkspaceMembers = new HashSet<>(includedWorkspaceMembers);
         this.excludedWorkspaceMembers = new HashSet<>(excludedWorkspaceMembers);
     }
 
+    /**
+     * Backward-compatible constructor that defaults to an empty onlyDependencyGroups list.
+     */
+    public UVDetectorOptions(List<String> excludedDependencyGroups, List<String> includedWorkspaceMembers, List<String> excludedWorkspaceMembers) {
+        this(excludedDependencyGroups, Collections.emptyList(), includedWorkspaceMembers, excludedWorkspaceMembers);
+    }
+
     public Set<String> getExcludedDependencyGroups() {
         return excludedDependencyGroups.stream().map(String::toLowerCase).collect(Collectors.toSet());
+    }
+
+    public Set<String> getOnlyDependencyGroups() {
+        return onlyDependencyGroups.stream().map(String::toLowerCase).collect(Collectors.toSet());
     }
 
     public Set<String> getIncludedWorkspaceMembers() {

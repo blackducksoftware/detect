@@ -26,7 +26,7 @@ public class GradleNativeInspectorTests {
     
     @Test
     void gradleInspector_7_6() throws IOException, InterruptedException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("detect-gradle-native-inspector", "gradle-simple:1.0.0")) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("detect-gradle-native-inspector", "gradle-simple:3.0.0")) {
             test.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("SimpleGradle_7_6.dockerfile"));
 
             DetectCommandBuilder commandBuilder = DetectCommandBuilder.withOfflineDefaults().defaultDirectories(test);

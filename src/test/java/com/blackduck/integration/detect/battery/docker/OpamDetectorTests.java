@@ -24,7 +24,7 @@ public class OpamDetectorTests {
 
     @Test
     void opamLockFileDetectorTest() throws IOException, IntegrationException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("opam-lockfile-detector", "opam-lockfile-detector:1.0.0")) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("opam-lockfile-detector", "opam-lockfile-detector:2.0.0")) {
 
             Map<String, String> artifactoryArgs = new HashMap<>();
             artifactoryArgs.put("ARTIFACTORY_URL", ARTIFACTORY_URL);
@@ -63,7 +63,7 @@ public class OpamDetectorTests {
 
     @Test
     void opamShowDetectorTest() throws IOException, IntegrationException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("opam-show-detector", "opam-show-detector:1.0.0")) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("opam-show-detector", "opam-show-detector:2.0.0")) {
 
             Map<String, String> artifactoryArgs = new HashMap<>();
             artifactoryArgs.put("ARTIFACTORY_URL", ARTIFACTORY_URL);
@@ -93,15 +93,15 @@ public class OpamDetectorTests {
             dockerAssertions.logContains("Opam CLI: SUCCESS");
             dockerAssertions.atLeastOneBdioFile();
 
-            blackduckAssertions.checkComponentVersionExists("menhirCST", "20240715");
-            blackduckAssertions.checkComponentVersionExists("flexdll", "0.43");
+            blackduckAssertions.checkComponentVersionExists("menhirCST", "20260209");
+            blackduckAssertions.checkComponentVersionExists("flexdll", "0.44");
             blackduckAssertions.checkComponentVersionExists("ptime", "1.2.0");
         }
     }
 
     @Test
     void opamTreeDetectorTest() throws IntegrationException, IOException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("opam-tree-detector", "opam-tree-detector:1.0.0")) {
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("opam-tree-detector", "opam-tree-detector:2.0.0")) {
 
             Map<String, String> artifactoryArgs = new HashMap<>();
             artifactoryArgs.put("ARTIFACTORY_URL", ARTIFACTORY_URL);
@@ -132,7 +132,7 @@ public class OpamDetectorTests {
             dockerAssertions.atLeastOneBdioFile();
 
             blackduckAssertions.checkComponentVersionExists("mirage-time", "3.0.0");
-            blackduckAssertions.checkComponentVersionExists("yojson", "2.2.2");
+            blackduckAssertions.checkComponentVersionExists("yojson", "3.0.0");
             blackduckAssertions.checkComponentVersionExists("emile", "1.1");
             blackduckAssertions.checkComponentVersionExists("rresult","0.7.0");
         }

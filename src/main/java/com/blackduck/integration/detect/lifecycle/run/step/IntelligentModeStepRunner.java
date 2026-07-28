@@ -114,19 +114,19 @@ public class IntelligentModeStepRunner {
         Set<String> binaryTargets
     ) throws OperationException {
 
-//TODO: Short-circuit project/version creation when there is no data to upload and no scan tools are enabled. Planned for next major release.
+        if (!operationRunner.shouldCreateProjectVersionWhenNoComponents()) {
+            boolean hasAnythingToUploadOrScan = bdioResult.hasComponents()
+                || detectToolFilter.shouldInclude(DetectTool.SIGNATURE_SCAN)
+                || detectToolFilter.shouldInclude(DetectTool.BINARY_SCAN)
+                || detectToolFilter.shouldInclude(DetectTool.CONTAINER_SCAN)
+                || detectToolFilter.shouldInclude(DetectTool.IMPACT_ANALYSIS)
+                || detectToolFilter.shouldInclude(DetectTool.IAC_SCAN);
 
-//        boolean hasAnythingToUploadOrScan = bdioResult.isNotEmpty()
-//            || detectToolFilter.shouldInclude(DetectTool.SIGNATURE_SCAN)
-//            || detectToolFilter.shouldInclude(DetectTool.BINARY_SCAN)
-//            || detectToolFilter.shouldInclude(DetectTool.CONTAINER_SCAN)
-//            || detectToolFilter.shouldInclude(DetectTool.IMPACT_ANALYSIS)
-//            || detectToolFilter.shouldInclude(DetectTool.IAC_SCAN);
-//
-//        if (!hasAnythingToUploadOrScan) {
-//            logger.info("No scan results were produced and no other scan tools are enabled. Skipping Black Duck project and version creation.");
-//            return;
-//        }
+            if (!hasAnythingToUploadOrScan) {
+                logger.info("No components found and no scan tools are active. Skipping project version creation (detect.project.version.create.when.no.components=false).");
+                return;
+            }
+        }
 
         ProjectVersionWrapper projectVersion = stepHelper.runAsGroup(
             "Create or Locate Project",

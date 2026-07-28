@@ -24,6 +24,18 @@ class BazelBattery {
     // path is bypassed, leaving the existing 8 mock responses valid.
     private static final String BAZEL_V2_BZLMOD_VERSION_RESOURCE = "bazel-version-pre71.xout";
 
+    // BCR extraction test resources (Bazel 7.1+, BZLMOD mode, BCR path active)
+    // Simulates `bazel --version` returning 7.1.0 to trigger the BCR extraction path.
+    private static final String BAZEL_V2_BCR_VERSION_RESOURCE = "bazel-version-71.xout";
+    // bazel mod graph --output json: protobuf@31.0 (direct) -> abseil-cpp@20240722.0 (transitive)
+    private static final String BAZEL_V2_BCR_MOD_GRAPH_RESOURCE = "bcr-mod-graph.xout";
+    // bazel mod dump_repo_mapping "": detects suffix "~", builds apparent->canonical map
+    private static final String BAZEL_V2_BCR_DUMP_MAPPING_RESOURCE = "bcr-dump-repo-mapping.xout";
+    // bazel query kind(.*library, deps(target)): labels used for target-scope filter and HTTP pipeline
+    private static final String BAZEL_V2_BCR_TARGET_QUERY_RESOURCE = "bcr-target-scope-query.xout";
+    // bazel mod show_repo @@protobuf~ @@abseil-cpp~: batched response for both BCR and HTTP pipelines
+    private static final String BAZEL_V2_BCR_SHOW_REPO_BATCH_RESOURCE = "bcr-show-repo-batch.xout";
+
     // BZLMOD V2 Graph Probing + HTTP Pipeline Test Resources
     private static final String BAZEL_V2_BZLMOD_PROBE_MAVEN_INSTALL_RESOURCE = "probe-maven-install.xout";
     private static final String BAZEL_V2_BZLMOD_PROBE_MAVEN_JAR_RESOURCE = "probe-maven-jar.xout";
@@ -126,6 +138,47 @@ class BazelBattery {
         );
         test.sourceDirectoryNamed("bazel-http-archive-github");
         test.sourceFileNamed("WORKSPACE");
+        test.expectBdioResources();
+        test.run();
+    }
+
+    /**
+     * Verifies the BCR extraction path that is active in BZLMOD mode on Bazel 7.1+.
+     *
+     * Command sequence (7 xout slots):
+     *   1. bazel --version                                       → 7.1.0 (gates BCR path)
+     *   2. bazel mod graph --output json                         → module tree (BCR step 1)
+     *   3. bazel mod dump_repo_mapping ""                        → repo mapping (BCR step 2)
+     *   4. bazel query kind(.*library, deps(target))             → target-scope filter (BCR step 3)
+     *   5. bazel mod show_repo @@protobuf~ @@abseil-cpp~         → batched show_repo (BCR step 4)
+     *   6. bazel query kind(.*library, deps(target))             → HTTP_ARCHIVE pipeline initial query
+     *   7. bazel mod show_repo @@protobuf~ @@abseil-cpp~         → HTTP batched show_repo (both suppressed by ExternalId filter)
+     *
+     * Expected BOM:
+     *   - protocolbuffers/protobuf @ v31.0 as direct dep (root child)
+     *   - abseil/abseil-cpp @ 20240722.0 as transitive dep under protobuf
+     *
+     * Note: run `./gradlew updateBattery` to generate bdio/battery.bdio before running this test.
+     */
+    @Test
+    void bazelV2BzlmodBcrExtraction() {
+        DetectorBatteryTestRunner test = new DetectorBatteryTestRunner("bazel-v2-bzlmod-bcr-extraction", "bazel/v2-bzlmod-bcr-extraction");
+        test.withToolsValue("BAZEL");
+        test.property("detect.bazel.target", "//src/main:example");
+        test.property("detect.bazel.mode", "BZLMOD");
+        test.property("detect.bazel.dependency.sources", "HTTP_ARCHIVE");
+        test.executableFromResourceFiles(
+            DetectProperties.DETECT_BAZEL_PATH,
+            BAZEL_V2_BCR_VERSION_RESOURCE,          // 1: bazel --version -> 7.1.0 (BCR path gate)
+            BAZEL_V2_BCR_MOD_GRAPH_RESOURCE,         // 2: BCR mod graph (module tree)
+            BAZEL_V2_BCR_DUMP_MAPPING_RESOURCE,      // 3: BCR dump_repo_mapping (suffix detection + alias map)
+            BAZEL_V2_BCR_TARGET_QUERY_RESOURCE,      // 4: BCR target-scope filter query
+            BAZEL_V2_BCR_SHOW_REPO_BATCH_RESOURCE,   // 5: BCR batched show_repo -> GitHub URLs -> Dependency objects
+            BAZEL_V2_BCR_TARGET_QUERY_RESOURCE,      // 6: HTTP_ARCHIVE pipeline initial query (same labels as #4)
+            BAZEL_V2_BCR_SHOW_REPO_BATCH_RESOURCE    // 7: HTTP batched show_repo (ExternalId filter suppresses all 2 results)
+        );
+        test.sourceDirectoryNamed("bazel-v2-bzlmod-bcr-extraction");
+        test.sourceFileNamed("MODULE.bazel");
         test.expectBdioResources();
         test.run();
     }

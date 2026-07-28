@@ -11,7 +11,7 @@ java -jar {path to .jar file}
 For example:
 
 ````
-curl -O https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/detect/11.3.0/detect-11.3.0.jar
+curl -O https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/detect/12.0.0/detect-12.0.0.jar
 java -jar detect-11.3.0.jar
 ````
 

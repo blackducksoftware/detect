@@ -19,7 +19,6 @@ import com.blackduck.integration.bdio.model.Forge;
 import com.blackduck.integration.bdio.model.dependency.Dependency;
 import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
-import com.blackduck.integration.detectable.detectable.exception.DetectableException;
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.detectable.detectables.pnpm.lockfile.model.PnpmDependencyInfo;
 import com.blackduck.integration.detectable.detectables.pnpm.lockfile.model.PnpmDependencyType;
@@ -80,7 +79,9 @@ public class PnpmYamlTransformer {
         @Nullable Map<String, PnpmPackageInfo> snapshots
     ) throws IntegrationException {
         if (packageMap == null) {
-            throw new DetectableException("Could not parse 'packages' section of the pnpm-lock.yaml file.");
+            logger.debug("No packages available to build dependency graph for workspace '{}'. Skipping graph construction.",
+                reportingProjectPackagePath != null ? reportingProjectPackagePath : "root");
+            return;
         }
         for (Map.Entry<String, PnpmPackageInfo> packageEntry : packageMap.entrySet()) {
             String packageId = packageEntry.getKey();
