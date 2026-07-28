@@ -54,6 +54,11 @@
   * Maven: 3.9.16
   * NPM: 11.13.0
   * Node.js: 24.17.0
+  * pip: 26.1.2
+  * Pipenv: 2026.6.2
+  * Setuptools: 83.0.0
+  * uv: 0.11.29
+  * Poetry: 2.4.1
 
 ### Dependency Updates
 * Update ANTLR library to version 4.13.2.
