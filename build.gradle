@@ -22,7 +22,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '12.0.0-SIGQA4-dterry.IDETECT-5076-npm-workspace-filtering-review'
+version = '12.0.0-SIGQA5-dterry.IDETECT-5076-npm-workspace-filtering-review-SNAPSHOT'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
