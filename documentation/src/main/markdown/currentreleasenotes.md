@@ -24,7 +24,7 @@
 * (IDETECT-5207) Fixed an IndexOutOfBoundsException in component location analysis that was due to space characters within a version string.
 
 ### Dependency Updates
-* Updated Component Locator Library to version 2.4.3.
+* Updated Component Locator Library to version 2.4.4
 
 ## Version 11.5.0
 
