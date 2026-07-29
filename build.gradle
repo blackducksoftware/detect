@@ -241,6 +241,9 @@ dependencies {
         implementation('com.jayway.jsonpath:json-path:2.9.0') {
             because 'previous version has a vulnerability'
         }
+        implementation('com.squareup.okio:okio:3.6.0') {
+            because 'previous version has a vulnerability with no direct parent upgrade available'
+        }
     }
 
     // spring-boot-starter-test *can* provide these, but we choose to be more explicit about the dependencies we ACTUALLY use
