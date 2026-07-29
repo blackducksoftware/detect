@@ -115,7 +115,6 @@ public class NpmWorkspaceFilterTest {
         FunctionalTestFiles.asString("/npm/workspace-filter-test/no-root-deps-package-lock.json");
 
     // Root package.json that declares workspaces but no direct dependencies of its own.
-    // Mirrors the structure of a real project like ui-workspace.
     private static final String NO_ROOT_DEPS_PACKAGE_JSON =
         "{\n" +
         "  \"name\": \"my-project\",\n" +

@@ -76,8 +76,7 @@ public class NpmLockfileGraphTransformer {
         //   Because the workspace-filter strips those packages from combinedPackageJson before
         //   NpmProject is built, every declared-dep list ends up empty even though a valid
         //   package.json existed. Falling through to the "add all" fallback in this case causes
-        //   every lock-file entry (lodash, chalk, nanoid, …) to be promoted to the root —
-        //   exactly the bug observed in projects like ui-workspace.
+        //   every lock-file entry to be promoted to the root.
         //
         // The fix: use the explicit-declaration path whenever a package.json is present
         // (workspaces != null), even if every declared list is empty. That correctly produces
