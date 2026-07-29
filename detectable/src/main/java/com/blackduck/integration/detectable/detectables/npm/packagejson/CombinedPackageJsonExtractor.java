@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.blackduck.integration.detectable.util.JsonSanitizer;
+import com.blackduck.integration.util.ExcludedIncludedWildcardFilter;
 import com.google.gson.Gson;
 import org.apache.commons.io.FileUtils;
 
@@ -28,56 +29,72 @@ public class CombinedPackageJsonExtractor {
      * Merge the root package.json with any potential workspace package.json files.
      */
     public CombinedPackageJson constructCombinedPackageJson(String rootJsonPath, String packageJsonText) throws IOException {
+        return constructCombinedPackageJson(rootJsonPath, packageJsonText, null);
+    }
+
+    public CombinedPackageJson constructCombinedPackageJson(String rootJsonPath, String packageJsonText,
+            ExcludedIncludedWildcardFilter workspaceFilter) throws IOException {
         if (packageJsonText == null) {
             return null;
         }
-        
+
         PackageJson packageJson = Optional.ofNullable(JsonSanitizer.sanitize(packageJsonText))
             .map(content -> gson.fromJson(content, PackageJson.class))
             .orElse(null);
-        
+
         if (packageJson == null) {
             return null;
         }
-        
+
         CombinedPackageJson combinedPackageJson = new CombinedPackageJson();
-        
+
         // Take fields that will be related to BD projects from the root project.json
         combinedPackageJson.setName(packageJson.name);
         combinedPackageJson.setVersion(packageJson.version);
-        
+
         // Add dependencies from the root of the project
         combinedPackageJson.getDependencies().putAll(packageJson.dependencies);
         combinedPackageJson.getDevDependencies().putAll(packageJson.devDependencies);
         combinedPackageJson.getPeerDependencies().putAll(packageJson.peerDependencies);
         combinedPackageJson.getOptionalDependencies().putAll(packageJson.optionalDependencies);
-        
+
         if (packageJson.workspaces != null && rootJsonPath != null) {
             // If there are workspaces there are additional package.json's we need to parse
             String projectRoot = rootJsonPath.substring(0, rootJsonPath.lastIndexOf(File.separator) + 1);
-            
-            List<String> convertedWorkspaces = 
+
+            List<String> convertedWorkspaces =
                     convertWorkspaceWildcards(projectRoot, packageJson.workspaces);
-            
+
             for(String convertedWorkspace : convertedWorkspaces) {
                 Path workspaceJsonPath =
                         Paths.get(convertedWorkspace + "/package.json").normalize();
-                
+
                 // We are looking for a package.json but they aren't always where we expect them.
                 // Don't try to read a file that doesn't exist.
                 if (!Files.exists(workspaceJsonPath)) {
                     continue;
-                } else {
-                    addRelativeWorkspace(combinedPackageJson, projectRoot, convertedWorkspace);
                 }
-                
-                String workspaceJsonString 
-                    = FileUtils.readFileToString(new File(workspaceJsonPath.toString()), StandardCharsets.UTF_8);
-                
+
+                // Always register the workspace path so downstream code (CLI parser, lockfile packager)
+                // can identify workspace packages — even ones that will be excluded. Without this,
+                // the CLI parser can't set workspaceExcludedByFilter and the package slips through as
+                // a regular root dependency.
+                addRelativeWorkspace(combinedPackageJson, projectRoot, convertedWorkspace);
+
+                // Skip merging deps from excluded workspaces into the combined package.json.
+                // This prevents excluded workspace deps from appearing as declared root dependencies.
+                String relativePath = getRelativePath(projectRoot, convertedWorkspace);
+                if (workspaceFilter != null && relativePath != null && !workspaceFilter.shouldInclude(relativePath)) {
+                    continue;
+                }
+
+                String workspaceJsonString =
+                    FileUtils.readFileToString(new File(workspaceJsonPath.toString()), StandardCharsets.UTF_8);
+
                 PackageJson workspacePackageJson = Optional.ofNullable(workspaceJsonString)
                         .map(content -> gson.fromJson(content, PackageJson.class))
                         .orElse(null);
-                
+
                 if (workspacePackageJson != null) {
                     combinedPackageJson.getDependencies().putAll(workspacePackageJson.dependencies);
                     combinedPackageJson.getDevDependencies().putAll(workspacePackageJson.devDependencies);
@@ -86,7 +103,7 @@ public class CombinedPackageJsonExtractor {
                 }
             }
         }
-        
+
         return combinedPackageJson;
     }
 
@@ -101,16 +118,23 @@ public class CombinedPackageJsonExtractor {
      */
     private void addRelativeWorkspace(CombinedPackageJson combinedPackageJson, String projectRoot,
             String convertedWorkspace) {
+        String relativePath = getRelativePath(projectRoot, convertedWorkspace);
+        if (relativePath != null) {
+            combinedPackageJson.getRelativeWorkspaces().add(relativePath);
+        }
+    }
+
+    private String getRelativePath(String projectRoot, String convertedWorkspace) {
         int rootIndex = convertedWorkspace.indexOf(projectRoot);
         if (rootIndex != -1) {
             int packageStartIndex = rootIndex + projectRoot.length();
             if (packageStartIndex < convertedWorkspace.length()) {
                 // Replace any \'s with /'s, so we can properly compare workspace names with what is in
                 // the package-lock.json file.
-                String relativeWorkspace = convertedWorkspace.substring(packageStartIndex).replace("\\", "/");
-                combinedPackageJson.getRelativeWorkspaces().add(relativeWorkspace);
+                return convertedWorkspace.substring(packageStartIndex).replace("\\", "/");
             }
         }
+        return null;
     }
 
     /**

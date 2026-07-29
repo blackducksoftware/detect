@@ -1,6 +1,8 @@
 package com.blackduck.integration.detectable.factory;
 
 import java.io.File;
+import java.util.Collections;
+import java.util.List;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
@@ -307,6 +309,7 @@ import com.blackduck.integration.detectable.detectables.opam.lockfile.OpamLockFi
 import com.blackduck.integration.detectable.detectables.opam.lockfile.OpamLockFileExtractor;
 import com.blackduck.integration.detectable.detectables.opam.transform.OpamGraphTransformer;
 import com.blackduck.integration.detectable.util.ToolVersionLogger;
+import com.blackduck.integration.util.ExcludedIncludedWildcardFilter;
 
 /*
  Entry point for creating detectables using most
@@ -574,7 +577,11 @@ public class DetectableFactory {
 
     public NpmCliDetectable createNpmCliDetectable(DetectableEnvironment environment, NpmResolver npmResolver, NpmCliExtractorOptions npmCliExtractorOptions) {
         NpmCliParser npmCliParser = new NpmCliParser(externalIdFactory, npmCliExtractorOptions.getDependencyTypeFilter());
-        NpmCliExtractor npmCliExtractor = new NpmCliExtractor(executableRunner, npmCliParser, gson, toolVersionLogger);
+        ExcludedIncludedWildcardFilter workspaceFilter = buildNpmWorkspaceFilter(
+                npmCliExtractorOptions.isIgnoreAllWorkspaces(),
+                npmCliExtractorOptions.getExcludedWorkspaceNames(),
+                npmCliExtractorOptions.getIncludedWorkspaceNames());
+        NpmCliExtractor npmCliExtractor = new NpmCliExtractor(executableRunner, npmCliParser, gson, toolVersionLogger, workspaceFilter);
         return new NpmCliDetectable(environment, fileFinder, npmResolver, npmCliExtractor, npmCliExtractorOptions);
     }
 
@@ -595,7 +602,11 @@ public class DetectableFactory {
     }
 
     public NpmPackageJsonParseDetectable createNpmPackageJsonParseDetectable(DetectableEnvironment environment, NpmPackageJsonParseDetectableOptions npmPackageJsonOptions) {
-        PackageJsonExtractor packageJsonExtractor = new PackageJsonExtractor(gson, externalIdFactory, npmPackageJsonOptions.getNpmDependencyTypeFilter());
+        ExcludedIncludedWildcardFilter workspaceFilter = buildNpmWorkspaceFilter(
+                npmPackageJsonOptions.isIgnoreAllWorkspaces(),
+                npmPackageJsonOptions.getExcludedWorkspaceNames(),
+                npmPackageJsonOptions.getIncludedWorkspaceNames());
+        PackageJsonExtractor packageJsonExtractor = new PackageJsonExtractor(gson, externalIdFactory, npmPackageJsonOptions.getNpmDependencyTypeFilter(), workspaceFilter);
         return new NpmPackageJsonParseDetectable(environment, fileFinder, packageJsonExtractor);
     }
 
@@ -1027,7 +1038,18 @@ public class DetectableFactory {
 
     private NpmLockfilePackager npmLockfilePackager(NpmLockfileOptions npmLockfileOptions) {
         NpmLockfileGraphTransformer npmLockfileGraphTransformer = new NpmLockfileGraphTransformer(npmLockfileOptions.getNpmDependencyTypeFilter());
-        return new NpmLockfilePackager(gson, externalIdFactory, npmLockFileProjectIdTransformer(), npmLockfileGraphTransformer);
+        ExcludedIncludedWildcardFilter workspaceFilter = buildNpmWorkspaceFilter(
+                npmLockfileOptions.isIgnoreAllWorkspaces(),
+                npmLockfileOptions.getExcludedWorkspaceNames(),
+                npmLockfileOptions.getIncludedWorkspaceNames());
+        return new NpmLockfilePackager(gson, externalIdFactory, npmLockFileProjectIdTransformer(), npmLockfileGraphTransformer, workspaceFilter);
+    }
+
+    private ExcludedIncludedWildcardFilter buildNpmWorkspaceFilter(boolean ignoreAllWorkspaces, List<String> excluded, List<String> included) {
+        if (ignoreAllWorkspaces) {
+            return ExcludedIncludedWildcardFilter.fromCollections(Collections.singletonList("*"), Collections.emptyList());
+        }
+        return ExcludedIncludedWildcardFilter.fromCollections(excluded, included);
     }
 
     private NpmLockFileProjectIdTransformer npmLockFileProjectIdTransformer() {
