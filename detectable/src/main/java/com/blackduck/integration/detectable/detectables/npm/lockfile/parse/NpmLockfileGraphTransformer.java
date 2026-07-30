@@ -24,7 +24,11 @@ public class NpmLockfileGraphTransformer {
     private final EnumListFilter<NpmDependencyType> npmDependencyTypeFilter;
 
     public NpmLockfileGraphTransformer(EnumListFilter<NpmDependencyType> npmDependencyTypeFilter) {
-        this.npmDependencyTypeFilter = npmDependencyTypeFilter;
+        // Treat null as "include all types" so callers that only care about workspace handling
+        // can pass null without risking NPEs when shouldInclude/shouldExclude are called.
+        this.npmDependencyTypeFilter = npmDependencyTypeFilter != null
+            ? npmDependencyTypeFilter
+            : EnumListFilter.excludeNone();
     }
 
     public DependencyGraph transform(PackageLock packageLock, NpmProject project, List<NameVersion> externalDependencies, List<String> workspaces, Map<String, String> aliasMapping) {
@@ -39,7 +43,7 @@ public class NpmLockfileGraphTransformer {
             createGraphFromResolvedDependencies(project, externalDependencies, workspaces, dependencyGraph, aliasMapping);
 
             //Then we will add relationships between the project (root) and the graph
-            addRootDependencies(project, dependencyGraph, externalDependencies, aliasMapping);
+            addRootDependencies(project, dependencyGraph, externalDependencies, workspaces, aliasMapping);
 
             logger.debug(String.format("Found %d root dependencies.", dependencyGraph.getRootDependencies().size()));
         } else {
@@ -55,11 +59,30 @@ public class NpmLockfileGraphTransformer {
         }
     }
 
-    private void addRootDependencies(NpmProject project, DependencyGraph dependencyGraph, List<NameVersion> externalDependencies, Map<String, String> aliasMapping) {
+    private void addRootDependencies(NpmProject project, DependencyGraph dependencyGraph, List<NameVersion> externalDependencies, List<String> workspaces, Map<String, String> aliasMapping) {
         boolean atLeastOneRequired = !project.getDeclaredDependencies().isEmpty()
             || !project.getDeclaredDevDependencies().isEmpty()
             || !project.getDeclaredPeerDependencies().isEmpty();
-        if (atLeastOneRequired) {
+
+        // Two cases must be distinguished here:
+        //
+        // Case 1 — No package.json was provided (workspaces == null):
+        //   We have only a lock file with no package.json to tell us which entries are "declared".
+        //   The previous fallback (add all resolved entries to root) is the correct behaviour here.
+        //
+        // Case 2 — A package.json WAS provided (workspaces != null), but the declared-dep lists
+        //   are all empty. This happens when the root package.json has no direct dependencies of
+        //   its own AND all workspace packages were excluded by detect.npm.excluded.workspaces.
+        //   Because the workspace-filter strips those packages from combinedPackageJson before
+        //   NpmProject is built, every declared-dep list ends up empty even though a valid
+        //   package.json existed. Falling through to the "add all" fallback in this case causes
+        //   every lock-file entry to be promoted to the root.
+        //
+        // The fix: use the explicit-declaration path whenever a package.json is present
+        // (workspaces != null), even if every declared list is empty. That correctly produces
+        // zero root dependencies when the root declares nothing and all workspaces are filtered.
+        // The "add all" fallback is preserved only for the true no-package.json case.
+        if (atLeastOneRequired || workspaces != null) {
             addRootDependencies(project.getResolvedDependencies(), project.getDeclaredDependencies(), dependencyGraph, externalDependencies, aliasMapping);
             if (npmDependencyTypeFilter.shouldInclude(NpmDependencyType.DEV)) {
                 addRootDependencies(project.getResolvedDependencies(), project.getDeclaredDevDependencies(), dependencyGraph, externalDependencies, aliasMapping);
@@ -71,6 +94,7 @@ public class NpmLockfileGraphTransformer {
                 addRootDependencies(project.getResolvedDependencies(), project.getDeclaredOptionalDependencies(), dependencyGraph, externalDependencies, aliasMapping);
             }
         } else {
+            // No package.json provided — fall back to treating all resolved lock-file entries as root deps.
             project.getResolvedDependencies()
                 .stream()
                 .filter(this::shouldIncludeDependency)
