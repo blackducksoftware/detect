@@ -52,7 +52,7 @@ For direct access to the binaries or source code see [download locations](../dow
 
 An inspector is self-contained and requires no installation. Each executable is platform dependent and the correct inspector is downloaded by [detect_product_short] at runtime.
 
-NuGet Solution Native Inspector runs if one or more solution (.sln or .slnx) files are found and derives packages (dependencies) via analysis of solution files. Central Package Management is supported to include any package versions and global package references mentioned under `Directory.Packages.props` files indicated in a solution file for each project under said solution. Any package references and versions in the solution's `Directory.Build.props` will be included for each project under the solution. TODO overall reowrd these two sentences to be more clear and concise.
+When one or more solution files (.sln or .slnx) are present, NuGet Solution Native Inspector analyzes the solution to identify package dependencies. For each project in the solution, it incorporates package versions and global package references from `Directory.Packages.props` files referenced through Central Package Management, along with package references and versions defined in the solution's `Directory.Build.props` file.
 
 <note type="tip">When running the NuGet Solution Native Inspector the `--detect.detector.search.depth=` value is ignored if a solution file is found that contains project references that include subdirectories at levels lower than the specified search depth.
 </note>
