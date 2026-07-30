@@ -15,6 +15,7 @@
 	* eu.scass.blackduck.com - 34.54.38.252
 	
 * **Deprecation of Java 8 support** - Support for Java 8 has been removed in compliance with EU Cyber Resilience Act (CRA) requirements.
+* **Deprecation of Java 11 support** - In alignment with EU Cyber Resilience Act (CRA) requirements and compliance timelines, Java 11 support will be deprecated in the [detect_product_short] 13.0.0 release.
 * **Deprecation of Docker Inspector** - Docker Inspector has been deprecated and will be removed in 13.0.0 release.
 
 ## Version 12.0.0
