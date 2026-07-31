@@ -1,6 +1,15 @@
 <!-- Check the support matrix to determine supported, non-current major version releases -->
 # Release notes for previous [detect_product_short] versions
 
+## Version 11.5.1
+
+### Resolved issues
+* (IDETECT-5207) Fixed an IndexOutOfBoundsException in component location analysis that was due to space characters within a version string.
+* (IDETECT-5247) Fixed a regression in the Gradle init script where phantom subprojects (modules without a `build.gradle` file) with dependencies declared in the root `build.gradle` were incorrectly assigned an empty configuration set, resulting in 0 components being detected.
+
+### Dependency Updates
+* Updated Component Locator Library to version 2.4.4
+
 ## Version 11.5.0
 
 ### Changed features
