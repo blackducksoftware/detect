@@ -161,8 +161,16 @@ gradle.projectsEvaluated {
 
         def shouldIncludeProject = projectMatchesFilters && (!selectedConfigs.isEmpty() || isPhantom)
 
-        // Phantoms and excluded projects get an empty config set to avoid unnecessary resolution
-        if (isPhantom || !projectMatchesFilters) {
+        // Always explicitly set configurations to prevent the null-means-all-configs Gradle fallback.
+        // - Excluded projects: [] as Set (don't scan them)
+        // - Any project where the configuration filter matched nothing: [] as Set
+        //   This handles phantom container projects that inherit tool plugin configs (e.g. detekt,
+        //   ktlint) via subprojects{} but have no matching runtime configs. Without this, null
+        //   would be left on the task, causing Gradle to dump ALL configurations into the report.
+        // - Any project (phantom or real) where the filter DID match configs: use those configs.
+        //   Phantom subprojects can have real dependencies declared via subprojects{} or
+        //   project(':name'){} blocks in the root build file — these must not be wiped.
+        if (!projectMatchesFilters || selectedConfigs.isEmpty()) {
             dependenciesTask.configurations = [] as Set
         } else {
             dependenciesTask.configurations = selectedConfigs as Set
