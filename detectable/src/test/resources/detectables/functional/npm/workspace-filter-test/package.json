@@ -1,0 +1,11 @@
+{
+  "name": "my-project",
+  "version": "1.0.0",
+  "workspaces": [
+    "packages/api",
+    "packages/ui"
+  ],
+  "dependencies": {
+    "express": "4.18.0"
+  }
+}

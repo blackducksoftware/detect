@@ -773,7 +773,7 @@ public class DetectProperties {
         StringProperty.newBuilder("detect.diagnostic.archive.path", "")
             .setInfo("Diagnostic Archive Output Path", DetectPropertyFromVersion.VERSION_12_0_0)
             .setHelp(
-                "Custom output path for diagnostic archive. A file named detect-run-<runId>.zip will be created under the specified path.",
+                "Custom output path for diagnostic archive. A file named detect-run-<runId>.zip will be created under the specified path. An original copy of the diagnostics archive remains in the runs directory as a backup.",
                 "See the following for more <xref href=\"https://docs.blackduck.com/r/detect/latest/black%2Dduck%2Ddetect/detect%2Ddiagnostic%2Dmode%2Ehtml%5C\" scope=\"external\" format=\"html\" target=\"_blank\">Diagnostic Mode information.</xref>")
             .setGroups(DetectGroup.DEBUG, DetectGroup.GLOBAL)
             .build();
@@ -1155,15 +1155,14 @@ public class DetectProperties {
                     .setGroups(DetectGroup.QUACKPATCH)
                     .build();
                         
-    public static final StringProperty DETECT_QUACK_PATCH_OUTPUT =
-            StringProperty.newBuilder("detect.quack.patch.output", "")
+    public static final StringProperty DETECT_QUACK_PATCH_OUTPUT_PATH =
+            StringProperty.newBuilder("detect.quack.patch.output.path", "")
                     .setInfo("Quack Patch Output Directory", DetectPropertyFromVersion.VERSION_11_4_0)
                     .setHelp(
                             "Specifies the output directory for Quack Patch results.",
                             "If not set, the Quack Patch results are placed in a 'quack-patch' subdirectory under scan output directory."
                     )
                     .setGroups(DetectGroup.QUACKPATCH)
-                    .setDeprecated("This property is deprecated and will be renamed to 'detect.quack.patch.output.path' in Detect release 12.0.", new ProductMajorVersion(12))
                     .build();
 
     public static final StringProperty DETECT_LLM_API_KEY =
@@ -1369,6 +1368,37 @@ public class DetectProperties {
             .setHelp(createTypeFilterHelpText("Npm dependency types"))
             .setExample(String.format("%s,%s", NpmDependencyType.DEV.name(), NpmDependencyType.PEER.name()))
             .setGroups(DetectGroup.NPM, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
+            .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_NPM_EXCLUDED_WORKSPACES =
+        CaseSensitiveStringListProperty.newBuilder("detect.npm.excluded.workspaces")
+            .setInfo("NPM Exclude Workspaces", DetectPropertyFromVersion.VERSION_12_0_0)
+            .setHelp(
+                "A comma-separated list of npm workspace relative paths to exclude.",
+                "By default, Detect includes all workspaces. Workspaces are identified by their path relative to the project root (e.g. packages/react-components). This property accepts filename globbing-style wildcards. For more information, refer to the <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/configuring/propertywildcards%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Property wildcard support page.</xref>"
+            )
+            .setGroups(DetectGroup.NPM, DetectGroup.SOURCE_SCAN)
+            .setCategory(DetectCategory.Advanced)
+            .setExample("packages/test-harness,packages/internal-*")
+            .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_NPM_INCLUDED_WORKSPACES =
+        CaseSensitiveStringListProperty.newBuilder("detect.npm.included.workspaces")
+            .setInfo("NPM Include Workspaces", DetectPropertyFromVersion.VERSION_12_0_0)
+            .setHelp(
+                "A comma-separated list of npm workspace relative paths to include.",
+                "By default, Detect includes all workspaces. If workspaces are excluded or included, Detect will include any workspace included by this property that is not excluded. Exclusion rules always win. Workspaces are identified by their path relative to the project root (e.g. packages/react-components). This property accepts filename globbing-style wildcards. For more information, refer to the <xref href=\"https://documentation%2Eblackduck%2Ecom/bundle/detect/page/configuring/propertywildcards%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Property wildcard support page.</xref>"
+            )
+            .setGroups(DetectGroup.NPM, DetectGroup.SOURCE_SCAN)
+            .setCategory(DetectCategory.Advanced)
+            .setExample("packages/frontend,packages/api")
+            .build();
+
+    public static final BooleanProperty DETECT_NPM_IGNORE_ALL_WORKSPACES_MODE =
+        BooleanProperty.newBuilder("detect.npm.ignore.all.workspaces", false)
+            .setInfo("Ignore All Workspaces", DetectPropertyFromVersion.VERSION_12_0_0)
+            .setHelp("All workspaces are ignored by the NPM detector for increased performance and precision to scan a massive codebase.")
+            .setGroups(DetectGroup.NPM, DetectGroup.SOURCE_SCAN)
             .build();
 
     public static final NullablePathProperty DETECT_NPM_PATH =

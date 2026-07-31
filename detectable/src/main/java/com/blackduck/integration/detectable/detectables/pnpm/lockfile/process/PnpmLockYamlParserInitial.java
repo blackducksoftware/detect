@@ -102,8 +102,13 @@ public class PnpmLockYamlParserInitial {
      *
      * <p>Strategy — try v6/v9 first, fall back to v5:
      * <ol>
-     *   <li>Attempt to parse as {@link PnpmLockYaml} (v6/v9). Three outcomes:
+     *   <li>Attempt to parse as {@link PnpmLockYaml} (v6/v9). Uses {@code loadAll()} to
+     *       support pnpm 11's multi-document YAML format (two sections separated by {@code ---}).
+     *       For single-document lockfiles (pre-v11), {@code loadAll()} returns a single element
+     *       and behaviour is identical to the previous {@code load()} call. Four outcomes:
      *       <ul>
+     *         <li><b>Empty file</b> → {@code selectLockfileDocument()} returns null
+     *             → return null immediately (caller handles the empty case).</li>
      *         <li><b>Success with v6+ version</b> → return the result immediately.</li>
      *         <li><b>Success but version indicates v5</b> (or is null) → fall through
      *             to re-parse as v5. This happens because {@code setSkipMissingProperties(true)}
@@ -127,11 +132,13 @@ public class PnpmLockYamlParserInitial {
 
         try {
             // Step 1: Try to read the lockfile into the v6/v9 Yaml classes first (more common).
+            // Uses loadAll() to handle pnpm 11 multi-document YAML files. For single-document
+            // lockfiles (v5, v6, v9), loadAll() yields exactly one document — no behaviour change.
             logger.debug("Attempting to parse '{}' as v6/v9 format.", pnpmLockYamlFile.getName());
             Yaml yaml = new Yaml(new Constructor(PnpmLockYaml.class, loaderOptions), representer);
             PnpmLockYamlBase result;
             try (InputStreamReader reader = new InputStreamReader(new FileInputStream(pnpmLockYamlFile), StandardCharsets.UTF_8)) {
-                result = yaml.load(reader);
+                result = selectLockfileDocument(yaml.loadAll(reader));
             }
 
             if (result == null) {
@@ -163,6 +170,51 @@ public class PnpmLockYamlParserInitial {
         try (InputStreamReader reader = new InputStreamReader(new FileInputStream(pnpmLockYamlFile), StandardCharsets.UTF_8)) {
             return yaml.load(reader);
         }
+    }
+
+    /**
+     * Selects the correct lockfile document from a potentially multi-document YAML stream.
+     *
+     * <p>pnpm 11 introduced a two-section multi-document YAML layout separated by {@code ---}:
+     * <ul>
+     *   <li><b>Document 1</b>: environment metadata ({@code configDependencies},
+     *       {@code packageManagerDependencies}) — no dependency graph.</li>
+     *   <li><b>Document 2</b>: the actual lockfile ({@code lockfileVersion}, {@code importers},
+     *       {@code packages}, {@code snapshots}) — the real dependency data.</li>
+     * </ul>
+     *
+     * <p>For pre-v11 lockfiles that contain only a single YAML document, {@code loadAll()}
+     * yields exactly one element and this method returns it directly — no behaviour change.
+     *
+     * <p>Selection strategy: iterate all documents and return the first one that has a
+     * non-null {@code lockfileVersion} (the hallmark of the dependency document). If none
+     * match, return the first non-null document (backward compatibility for edge cases).
+     *
+     * @param documents the iterable of parsed YAML documents from {@code loadAll()}
+     * @return the document containing dependency information, or {@code null} if no documents exist
+     */
+    private PnpmLockYamlBase selectLockfileDocument(Iterable<Object> documents) {
+        PnpmLockYamlBase fallbackDocument = null;
+
+        for (Object doc : documents) {
+            if (doc instanceof PnpmLockYamlBase) {
+                PnpmLockYamlBase candidate = (PnpmLockYamlBase) doc;
+                if (fallbackDocument == null) {
+                    fallbackDocument = candidate;
+                }
+                if (candidate.lockfileVersion != null) {
+                    // This document contains lockfileVersion — it holds the actual dependency data.
+                    logger.debug("Selected YAML document with lockfileVersion '{}'.", candidate.lockfileVersion);
+                    return candidate;
+                }
+            }
+            // Skip null documents and non-PnpmLockYamlBase objects (e.g. metadata-only sections).
+        }
+
+        if (fallbackDocument != null) {
+            logger.debug("No YAML document contained a lockfileVersion field. Using the first non-null document.");
+        }
+        return fallbackDocument;
     }
 
     /**

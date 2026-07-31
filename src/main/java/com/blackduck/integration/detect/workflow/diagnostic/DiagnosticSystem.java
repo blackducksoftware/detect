@@ -2,6 +2,7 @@ package com.blackduck.integration.detect.workflow.diagnostic;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -128,7 +129,9 @@ public class DiagnosticSystem {
         // If detect.diagnostic.archive.path is specified and is not empty, then copy diagnostic zip to that path.
         if (zipCreated && !detectDiagnosticOutputPath.isEmpty()) {
             copyDiagnosticArchiveToCustomPath("detect-run-" + detectRunId.getRunId() + ".zip", detectDiagnosticOutputPath);
-        } else {
+        }
+
+        if (!zipCreated) {
             logger.error("Diagnostic mode failed to create zip. Cleanup will not occur.");
         }
         logger.info("Diagnostic mode has completed.");
@@ -143,7 +146,7 @@ public class DiagnosticSystem {
     private boolean createZip() {
         // If quack patch is enabled, then add quack patch output directory to the zip
         if (propertyConfiguration.getValueOrDefault(DetectProperties.DETECT_QUACK_PATCH_ENABLED)) {
-            String quackPatchOutputDirPath = propertyConfiguration.getValueOrDefault(DetectProperties.DETECT_QUACK_PATCH_OUTPUT);
+            String quackPatchOutputDirPath = propertyConfiguration.getValueOrDefault(DetectProperties.DETECT_QUACK_PATCH_OUTPUT_PATH);
             // If quack patch output path is customized, then explicitly include it in the diagnostic zip. Otherwise, default behaviour will automatically pack it.
             if (!quackPatchOutputDirPath.isEmpty()) {
                 quackPatchOutputDirPath = quackPatchOutputDirPath.trim() + File.separator + QUACKPATCH_SUBDIRECTORY_NAME;
@@ -169,8 +172,10 @@ public class DiagnosticSystem {
             File destinationFile = new File(detectDiagnosticOutputPath + File.separator + diagnosticArchiveName);
             FileUtils.copyFile(diagnosticZipFile, destinationFile);
             logger.info("Diagnostic zip file copied to {}.", destinationFile.getAbsolutePath());
+        } catch (AccessDeniedException e) {
+            logger.error("Access denied when trying to copy diagnostic zip file to a custom path at {}. Error: {}. Please check the directory permissions.", detectDiagnosticOutputPath, e.getMessage());
         } catch (IOException e) {
-            logger.error("Failed to copy diagnostic zip file to a custom path at {}. Error: {}", detectDiagnosticOutputPath, e.getMessage());
+            logger.error("Failed to copy diagnostic zip file to a custom path at {}. Error: {}. Please check the directory permissions.", detectDiagnosticOutputPath, e.getMessage());
         }
     }
 }

@@ -1,0 +1,14 @@
+{
+  "key": "<root>",
+  "dependencies": [
+    {
+      "key": "protobuf@31.0",
+      "dependencies": [
+        {
+          "key": "abseil-cpp@20240722.0",
+          "dependencies": []
+        }
+      ]
+    }
+  ]
+}

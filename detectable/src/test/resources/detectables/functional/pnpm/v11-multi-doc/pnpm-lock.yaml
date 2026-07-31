@@ -1,0 +1,45 @@
+configDependencies:
+  '@pnpm/pacquet': 0.3.0
+
+packageManagerDependencies:
+  pnpm: '>=11.0.0'
+
+---
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      express:
+        specifier: ^4.18.2
+        version: 4.19.2
+
+packages:
+
+  accepts@1.3.8:
+    resolution: {integrity: sha512-PYAthTa2m2VKxuvSD3DPC/Gy+U+sOA1LAuT8mkmRuvw+NACSaeXEQ+NHcVF7rONl6qcaxV3Uuemwawk+7+SJLw==}
+    engines: {node: '>= 0.6'}
+
+  array-flatten@1.1.1:
+    resolution: {integrity: sha512-PCVAQswWemu6UdxsDFFX/+gVeYqKAod3D3UVm91jHwynguOwAvYPhx8nNlM++NqRcK6CxxpUafjmhIdKiHibqg==}
+
+  express@4.19.2:
+    resolution: {integrity: sha512-5T6nhjsT+EOMzuck8JjBHARTHfMht/JMT8WT0KDFQ3EUl08A2HagcIhSSja9BgWd9iOPYZAh2jMnPSV3zXmg==}
+    engines: {node: '>= 0.10.0'}
+
+snapshots:
+
+  accepts@1.3.8: {}
+
+  array-flatten@1.1.1: {}
+
+  express@4.19.2:
+    dependencies:
+      accepts: 1.3.8
+      array-flatten: 1.1.1
+
