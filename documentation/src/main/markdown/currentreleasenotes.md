@@ -37,7 +37,7 @@
 
 ### Changed features
 * Added `detect.uv.dependency.groups.only` property for the UV CLI detector. To restrict scanning to specific dependency groups while excluding standard dependencies and optional extras, use this property. When set, Detect limits analysis to the explicitly listed dependency groups defined in the project's pyproject.toml. Multiple groups can be specified as a comma-separated list (e.g., `detect.uv.dependency.groups.only='dev,lint'`). This applies exclusively to groups under the `[dependency-groups]` section; extras under `[project.optional-dependencies]` are not included. If both this property and `detect.uv.dependency.groups.excluded` are configured, the exclusion setting takes precedence for any overlapping groups and Detect will log a warning.
-* (IDETECT-5134) Enabled UTF-8 encoding when reading the pnpm-lock.yaml file. Emojis and non-ASCII characters can now be parsed.
+* (IDETECT-5134) Enabled UTF-8 encoding when reading the pnpm-lock.yaml file allowing emojis and non-ASCII characters to be parsed.
 * (IDETECT-5146) pnpm scans now complete when the pnpm-lock.yaml has no dependencies.
 
 
