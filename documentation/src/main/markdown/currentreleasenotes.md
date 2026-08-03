@@ -34,6 +34,11 @@
   * NPM: 11.13.0
   * Node.js: 24.17.0
   * Go: 1.26.5
+  * pip: 26.1.2
+  * Pipenv: 2026.6.2
+  * Setuptools: 83.0.0
+  * uv: 0.11.29
+  * Poetry: 2.4.1
 
 ### Changed features
 * Added `detect.uv.dependency.groups.only` property for the UV CLI detector. To restrict scanning to specific dependency groups while excluding standard dependencies and optional extras, use this property. When set, Detect limits analysis to the explicitly listed dependency groups defined in the project's pyproject.toml. Multiple groups can be specified as a comma-separated list (e.g., `detect.uv.dependency.groups.only='dev,lint'`). This applies exclusively to groups under the `[dependency-groups]` section; extras under `[project.optional-dependencies]` are not included. If both this property and `detect.uv.dependency.groups.excluded` are configured, the exclusion setting takes precedence for any overlapping groups and Detect will log a warning.
