@@ -85,6 +85,47 @@ public class BzlmodRepoMappingResolver {
     private static final String SUFFIX_TILDE = "~";
     private static final String SUFFIX_PLUS  = "+";
 
+    // -------------------------------------------------------------------------
+    // Inner types
+    // -------------------------------------------------------------------------
+
+    /**
+     * The six resolution cases for {@link #candidateRepoArgs}, classified by map state and
+     * what is known about the module's canonical suffix.
+     *
+     * <p><b>Why some modules are "pure transitive" (not in the map):</b><br>
+     * {@code bazel mod dump_repo_mapping ""} only returns entries for modules the root project
+     * <em>directly declares</em> via {@code bazel_dep(...)} in its {@code MODULE.bazel}.
+     * Transitive dependencies (deps of deps) are never present in this output — this is a
+     * structural limitation of the command, not an error.
+     * <br>
+     * For these pure transitives, we infer the correct suffix from the direct-dep entries in the
+     * map. This is safe because the suffix character ({@code ~} vs {@code +}) is determined by
+     * the Bazel version, not per-module — all repos in a single Bazel invocation use the same
+     * suffix convention.
+     *
+     * <pre>
+     * MAP_UNAVAILABLE                   — dump_repo_mapping failed entirely
+     * IN_MAP_SUFFIXED                   — module in map with a well-formed suffixed canonical (e.g. "protobuf~")
+     * IN_MAP_NO_SUFFIX_EVIDENCE_KNOWN   — module in map, no-suffix value, but other entries confirmed suffix
+     * IN_MAP_NO_SUFFIX_EVIDENCE_UNKNOWN — module in map, no-suffix value, entire map has no suffix evidence
+     * PURE_TRANSITIVE_SUFFIX_KNOWN      — transitive dep (not in map by design); suffix confirmed from direct-dep entries
+     * PURE_TRANSITIVE_SUFFIX_UNKNOWN    — transitive dep (not in map by design); no suffix evidence in any direct-dep entry
+     * </pre>
+     */
+    private enum RepoResolutionCase {
+        MAP_UNAVAILABLE,
+        IN_MAP_SUFFIXED,
+        IN_MAP_NO_SUFFIX_EVIDENCE_KNOWN,
+        IN_MAP_NO_SUFFIX_EVIDENCE_UNKNOWN,
+        PURE_TRANSITIVE_SUFFIX_KNOWN,
+        PURE_TRANSITIVE_SUFFIX_UNKNOWN
+    }
+
+    // -------------------------------------------------------------------------
+    // Instance fields
+    // -------------------------------------------------------------------------
+
     // apparent_name → canonical_with_or_without_suffix  (e.g. "com_google_protobuf" → "protobuf~")
     // On Bazel 7.4 some entries may have no suffix (e.g. "bazel_skylib" → "bazel_skylib") even
     // though the module actually needs one — this is a Bazel 7.4 dump_repo_mapping inconsistency.
@@ -293,13 +334,13 @@ public class BzlmodRepoMappingResolver {
      *   2. @@bazel_skylib~       — try with detected suffix
      *   3. @@bazel_skylib+       — try with the other known suffix
      *
-     * Pure transitive, not in map, suffix positively detected:
-     *   1. @@googletest~   — canonical with detected suffix (primary)
+     * Pure transitive dep (not in map — dump_repo_mapping only covers root-declared deps), suffix confirmed:
+     *   1. @@googletest~   — canonical with confirmed suffix (primary)
      *   2. googletest      — bare name fallback (handles Bazel 7.x NPE)
      *
-     * Pure transitive, not in map, no suffix evidence (canonicalSuffix is just a default guess):
-     *   1. @@name~         — try ~ first (more common on modern Bazel 7.5+)
-     *   2. @@name+         — try + (pre-7.5)
+     * Pure transitive dep (not in map — dump_repo_mapping only covers root-declared deps), no suffix evidence:
+     *   1. @@name~         — try tilde first (more common on modern Bazel 7.5+)
+     *   2. @@name+         — try plus (pre-7.5)
      *   3. name            — bare name final fallback
      *
      * Mapping unavailable (dump_repo_mapping failed entirely):
@@ -317,55 +358,93 @@ public class BzlmodRepoMappingResolver {
     public List<String> candidateRepoArgs(String moduleName) {
         String otherSuffix = SUFFIX_TILDE.equals(canonicalSuffix) ? SUFFIX_PLUS : SUFFIX_TILDE;
 
-        if (!available) {
-            // Mapping failed entirely — no suffix evidence, try both then bare name
-            return Arrays.asList(
-                CANONICAL_PREFIX + moduleName + SUFFIX_TILDE,
-                CANONICAL_PREFIX + moduleName + SUFFIX_PLUS,
-                moduleName
-            );
-        }
+        switch (classify(moduleName)) {
+            case MAP_UNAVAILABLE:
+            case PURE_TRANSITIVE_SUFFIX_UNKNOWN:
+                // No suffix evidence at all — try both suffix forms then bare name
+                return suffixFormsThenBareName(moduleName);
 
+            case IN_MAP_SUFFIXED:
+                // Exact canonical from map; bare name as safety net for Bazel 7.x NPE
+                return Arrays.asList(CANONICAL_PREFIX + moduleNameToCanonical.get(moduleName), moduleName);
+
+            case IN_MAP_NO_SUFFIX_EVIDENCE_KNOWN:
+                // Bazel 7.4 inconsistency — bare name first, then suffix forms in detected order
+                return Arrays.asList(
+                    moduleName,
+                    CANONICAL_PREFIX + moduleName + canonicalSuffix,
+                    CANONICAL_PREFIX + moduleName + otherSuffix
+                );
+
+            case IN_MAP_NO_SUFFIX_EVIDENCE_UNKNOWN:
+                // Bazel 7.4 inconsistency, no suffix evidence — bare name first, then tilde-first order
+                return bareNameThenSuffixForms(moduleName);
+
+            case PURE_TRANSITIVE_SUFFIX_KNOWN:
+                // Canonical form with confirmed suffix; bare name as safety net for Bazel 7.x NPE
+                return Arrays.asList(CANONICAL_PREFIX + moduleName + canonicalSuffix, moduleName);
+
+            default:
+                return suffixFormsThenBareName(moduleName);
+        }
+    }
+
+    /**
+     * Classifies a module name into one of the {@link RepoResolutionCase} values that drive
+     * {@link #candidateRepoArgs}. Encapsulates all boolean state checks ({@code available},
+     * map membership, suffix presence, {@code hasSuffixEvidence}) in one place so that
+     * {@code candidateRepoArgs} is a pure switch.
+     *
+     * <p>A module that is absent from {@code moduleNameToCanonical} is a <em>pure transitive</em>
+     * dependency — one not directly declared by the root. This is expected: {@code dump_repo_mapping ""}
+     * only covers root-declared deps. For these modules we infer the suffix from direct-dep entries,
+     * which is valid because all repos in a Bazel invocation share the same suffix convention.
+     */
+    private RepoResolutionCase classify(String moduleName) {
+        if (!available) {
+            return RepoResolutionCase.MAP_UNAVAILABLE;
+        }
         if (moduleNameToCanonical.containsKey(moduleName)) {
             String canonical = moduleNameToCanonical.get(moduleName);
             if (hasSuffix(canonical)) {
-                // Map has a good suffixed canonical value — use it first, bare name as safety net
-                // for Bazel 7.x NPE that can crash on the canonical form for some modules.
-                return Arrays.asList(
-                    CANONICAL_PREFIX + canonical,  // e.g. "@@protobuf~"
-                    moduleName                     // e.g. "protobuf" — fallback for Bazel 7.x NPE
-                );
-            } else {
-                // Bazel 7.4: map value has no suffix. "@@bazel_skylib" would fail.
-                // Start with bare name (safe), then try both suffix forms.
-                // When hasSuffixEvidence is true, use the detected ordering; otherwise always try ~ first
-                // (consistent with the no-evidence branches elsewhere — ~ is more common on Bazel 7.5+).
-                String first  = hasSuffixEvidence ? canonicalSuffix : SUFFIX_TILDE;
-                String second = hasSuffixEvidence ? otherSuffix    : SUFFIX_PLUS;
-                return Arrays.asList(
-                    moduleName,                          // e.g. "bazel_skylib" — safe apparent path first
-                    CANONICAL_PREFIX + moduleName + first,   // e.g. "@@bazel_skylib~"
-                    CANONICAL_PREFIX + moduleName + second   // e.g. "@@bazel_skylib+"
-                );
+                return RepoResolutionCase.IN_MAP_SUFFIXED;
             }
+            return hasSuffixEvidence
+                ? RepoResolutionCase.IN_MAP_NO_SUFFIX_EVIDENCE_KNOWN
+                : RepoResolutionCase.IN_MAP_NO_SUFFIX_EVIDENCE_UNKNOWN;
         }
+        // Module not in map — this is a pure transitive dep, absent by design (see class Javadoc).
+        // Use suffix evidence gathered from direct-dep entries to infer the right suffix form.
+        return hasSuffixEvidence
+            ? RepoResolutionCase.PURE_TRANSITIVE_SUFFIX_KNOWN
+            : RepoResolutionCase.PURE_TRANSITIVE_SUFFIX_UNKNOWN;
+    }
 
-        // Pure transitive — not in root's dump_repo_mapping
-        if (hasSuffixEvidence) {
-            // We have positive evidence of the suffix — use canonical first, bare name as safety net
-            return Arrays.asList(
-                CANONICAL_PREFIX + moduleName + canonicalSuffix,  // e.g. "@@googletest~"
-                moduleName                                         // e.g. "googletest" — fallback for NPE
-            );
-        } else {
-            // No suffix evidence in the mapping — canonicalSuffix is just a default guess.
-            // Try both known suffix forms then bare name rather than guessing one.
-            return Arrays.asList(
-                CANONICAL_PREFIX + moduleName + SUFFIX_TILDE,
-                CANONICAL_PREFIX + moduleName + SUFFIX_PLUS,
-                moduleName
-            );
-        }
+
+    /**
+     * No-evidence fallback candidate list: try tilde form first (more common on Bazel 7.5+),
+     * then plus form, then bare name as universal last resort.
+     * Used when there is no positive evidence for which suffix the project uses.
+     */
+    private List<String> suffixFormsThenBareName(String moduleName) {
+        return Arrays.asList(
+            CANONICAL_PREFIX + moduleName + SUFFIX_TILDE,
+            CANONICAL_PREFIX + moduleName + SUFFIX_PLUS,
+            moduleName
+        );
+    }
+
+    /**
+     * Bazel 7.4 no-suffix inconsistency candidate list: bare name first (safe apparent path,
+     * avoids the "no such repo" error from {@code @@name} with no suffix), then both suffix forms.
+     * Used when the mapping value for a module has no suffix character.
+     */
+    private List<String> bareNameThenSuffixForms(String moduleName) {
+        return Arrays.asList(
+            moduleName,
+            CANONICAL_PREFIX + moduleName + SUFFIX_TILDE,
+            CANONICAL_PREFIX + moduleName + SUFFIX_PLUS
+        );
     }
 
     /** Returns whether the mapping was successfully loaded (for diagnostic logging). */
