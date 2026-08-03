@@ -79,6 +79,11 @@ public class BzlmodRepoMappingResolver {
     private static final String LABEL_PATH_SEPARATOR = "//";
     // Regex that strips any known canonical suffix when the mapping is unavailable
     private static final String KNOWN_SUFFIXES_REGEX = "[+~]$";
+    // The two canonical suffix characters used by Bazel across versions:
+    //   SUFFIX_TILDE (~) — introduced in Bazel 7.5+
+    //   SUFFIX_PLUS  (+) — used in Bazel 7.x (pre-7.5) and some 8.x builds
+    private static final String SUFFIX_TILDE = "~";
+    private static final String SUFFIX_PLUS  = "+";
 
     // apparent_name → canonical_with_or_without_suffix  (e.g. "com_google_protobuf" → "protobuf~")
     // On Bazel 7.4 some entries may have no suffix (e.g. "bazel_skylib" → "bazel_skylib") even
@@ -310,13 +315,13 @@ public class BzlmodRepoMappingResolver {
      * are always in the map with a suffixed canonical value and are handled by the first candidate.
      */
     public List<String> candidateRepoArgs(String moduleName) {
-        String otherSuffix = "~".equals(detectedSuffix) ? "+" : "~";
+        String otherSuffix = SUFFIX_TILDE.equals(detectedSuffix) ? SUFFIX_PLUS : SUFFIX_TILDE;
 
         if (!available) {
             // Mapping failed entirely — no suffix evidence, try both then bare name
             return Arrays.asList(
-                CANONICAL_PREFIX + moduleName + "~",
-                CANONICAL_PREFIX + moduleName + "+",
+                CANONICAL_PREFIX + moduleName + SUFFIX_TILDE,
+                CANONICAL_PREFIX + moduleName + SUFFIX_PLUS,
                 moduleName
             );
         }
@@ -352,8 +357,8 @@ public class BzlmodRepoMappingResolver {
             // No suffix evidence in the mapping — detectedSuffix is just a default guess.
             // Try both known suffix forms then bare name rather than guessing one.
             return Arrays.asList(
-                CANONICAL_PREFIX + moduleName + "~",
-                CANONICAL_PREFIX + moduleName + "+",
+                CANONICAL_PREFIX + moduleName + SUFFIX_TILDE,
+                CANONICAL_PREFIX + moduleName + SUFFIX_PLUS,
                 moduleName
             );
         }
@@ -372,9 +377,9 @@ public class BzlmodRepoMappingResolver {
         return new BzlmodRepoMappingResolver(
             Collections.<String, String>emptyMap(),
             Collections.<String, String>emptyMap(),
-            "+",   // default to "+" as a safe fallback
-            false, // mapping not available
-            false  // no suffix detected
+            SUFFIX_PLUS, // default to "+" as a safe fallback
+            false,       // mapping not available
+            false        // no suffix detected
         );
     }
 
@@ -405,11 +410,11 @@ public class BzlmodRepoMappingResolver {
             // suffixDetected = true only when we have actual evidence — not just the hardcoded default.
             // This distinction matters in candidateRepoArgs(): when no suffix evidence exists, we try
             // both forms rather than guessing, covering projects where the entire mapping has no-suffix values.
-            String detectedSuffix = "+"; // safe default if no evidence is found
+            String detectedSuffix = SUFFIX_PLUS; // safe default if no evidence is found
             boolean suffixDetected = false;
             for (String canonical : apparentToCanonical.values()) {
-                if (canonical.endsWith("~")) { detectedSuffix = "~"; suffixDetected = true; break; }
-                if (canonical.endsWith("+")) { detectedSuffix = "+"; suffixDetected = true; break; }
+                if (canonical.endsWith(SUFFIX_TILDE)) { detectedSuffix = SUFFIX_TILDE; suffixDetected = true; break; }
+                if (canonical.endsWith(SUFFIX_PLUS))  { detectedSuffix = SUFFIX_PLUS;  suffixDetected = true; break; }
             }
             logger.info("BZLMOD BCR: repo mapping loaded ({} entries), detected canonical suffix: '{}' (evidence found: {})",
                 apparentToCanonical.size(), detectedSuffix, suffixDetected);
@@ -436,7 +441,7 @@ public class BzlmodRepoMappingResolver {
      * Used to distinguish well-formed canonical values from Bazel 7.4 no-suffix anomalies.
      */
     private static boolean hasSuffix(String canonical) {
-        return canonical.endsWith("~") || canonical.endsWith("+");
+        return canonical.endsWith(SUFFIX_TILDE) || canonical.endsWith(SUFFIX_PLUS);
     }
 
     /**
