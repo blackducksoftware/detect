@@ -177,8 +177,10 @@ public class BzlmodBcrExtractor {
 
         // Step 2 — map each module key to a Dependency via show_repo
         Map<String, Dependency> moduleKeyToDep = resolveModules(keysForResolution, resolver);
-        logger.info("BZLMOD BCR extraction: {} module(s) resolved, {} skipped (see WARN above for details)",
-            moduleKeyToDep.size(), keysForResolution.size() - moduleKeyToDep.size());
+        int excludedCount   = allKeys.size() - keysForResolution.size();
+        int unresolvedCount = keysForResolution.size() - moduleKeyToDep.size();
+        logger.info("BZLMOD BCR extraction: {} module(s) resolved, {} unresolved (show_repo failed — see WARN above), {} excluded (infrastructure modules)",
+            moduleKeyToDep.size(), unresolvedCount, excludedCount);
 
         // Step 3 — build the graph preserving the direct/transitive tree structure
         return buildGraph(tree, moduleKeyToDep);

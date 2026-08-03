@@ -54,7 +54,7 @@ import java.util.Optional;
  * map of {@code apparent_name → canonical_name_with_or_without_suffix} for the root module.
  * From that map we:
  * <ol>
- *   <li>Detect whether a suffix was actually observed in the mapping values ({@code suffixDetected}).</li>
+ *   <li>Detect whether a suffix was actually observed in the mapping values ({@code hasSuffixEvidence}).</li>
  *   <li>Build a forward map ({@code apparent_name → canonical}) for {@code repo_name} alias resolution.</li>
  *   <li>Build a reverse map ({@code module_name → canonical}) for constructing {@code show_repo} args.</li>
  *   <li>Expose {@link #candidateRepoArgs} which returns an ordered list of argument forms to try,
@@ -93,25 +93,25 @@ public class BzlmodRepoMappingResolver {
     // derived by stripping the detected suffix from every value in apparentToCanonical
     private final Map<String, String> moduleNameToCanonical;
     // the suffix character detected from mapping values (e.g. "~" for Bazel 7.5+, "+" for older)
-    private final String detectedSuffix;
+    private final String canonicalSuffix;
     // true only when at least one mapping value was observed to end with a known suffix character.
     // Distinct from 'available' — the mapping can load successfully but contain no suffixed values
     // (e.g. Bazel 7.4 projects where all direct deps happen to have no-suffix canonical names).
     // When false, candidateRepoArgs() tries both suffix forms rather than guessing one.
-    private final boolean suffixDetected;
+    private final boolean hasSuffixEvidence;
     // false if dump_repo_mapping failed; resolver degrades gracefully
     private final boolean available;
 
     private BzlmodRepoMappingResolver(Map<String, String> apparentToCanonical,
                                        Map<String, String> moduleNameToCanonical,
-                                       String detectedSuffix,
+                                       String canonicalSuffix,
                                        boolean available,
-                                       boolean suffixDetected) {
+                                       boolean hasSuffixEvidence) {
         this.apparentToCanonical  = apparentToCanonical;
         this.moduleNameToCanonical = moduleNameToCanonical;
-        this.detectedSuffix        = detectedSuffix;
+        this.canonicalSuffix        = canonicalSuffix;
         this.available             = available;
-        this.suffixDetected        = suffixDetected;
+        this.hasSuffixEvidence        = hasSuffixEvidence;
     }
 
     // -------------------------------------------------------------------------
@@ -219,7 +219,7 @@ public class BzlmodRepoMappingResolver {
      *   <li>Module is in the reverse map <em>but</em> the map value has no suffix (Bazel 7.4
      *       {@code dump_repo_mapping} inconsistency): returns the bare module name (e.g. {@code bazel_skylib})
      *       rather than {@code @@bazel_skylib}, which would fail with "no such repo".</li>
-     *   <li>Module is NOT in the map (pure transitive dep): returns {@code @@name<detectedSuffix>},
+     *   <li>Module is NOT in the map (pure transitive dep): returns {@code @@name<canonicalSuffix>},
      *       constructed by appending the suffix detected from other mapping values.</li>
      * </ul>
      *
@@ -246,7 +246,7 @@ public class BzlmodRepoMappingResolver {
         }
         // Pure transitive dep not in root mapping — construct canonical form using the detected suffix.
         // Falls back to bare name in candidateRepoArgs() if this form triggers a Bazel crash.
-        return CANONICAL_PREFIX + moduleName + detectedSuffix;
+        return CANONICAL_PREFIX + moduleName + canonicalSuffix;
     }
 
     /**
@@ -261,7 +261,7 @@ public class BzlmodRepoMappingResolver {
      */
     public String stripCanonicalSuffix(String rawName) {
         if (available) {
-            return stripSuffix(rawName, detectedSuffix);
+            return stripSuffix(rawName, canonicalSuffix);
         }
         return rawName.replaceAll(KNOWN_SUFFIXES_REGEX, "");
     }
@@ -278,7 +278,7 @@ public class BzlmodRepoMappingResolver {
      *   <li><b>Bazel 7.4 dump_repo_mapping inconsistency</b>: the mapping reports no-suffix values
      *       for some BCR modules that actually need the suffix. {@code @@name} fails; bare name and
      *       {@code @@name~} both work.</li>
-     *   <li><b>No suffix evidence</b>: all mapping values have no suffix, so {@code detectedSuffix}
+     *   <li><b>No suffix evidence</b>: all mapping values have no suffix, so {@code canonicalSuffix}
      *       is the hardcoded default {@code "+"}. Both suffix forms are tried rather than guessing.</li>
      * </ol>
      *
@@ -297,7 +297,7 @@ public class BzlmodRepoMappingResolver {
      *   1. @@googletest~   — canonical with detected suffix (primary)
      *   2. googletest      — bare name fallback (handles Bazel 7.x NPE)
      *
-     * Pure transitive, not in map, no suffix evidence (detectedSuffix is just a default guess):
+     * Pure transitive, not in map, no suffix evidence (canonicalSuffix is just a default guess):
      *   1. @@name~         — try ~ first (more common on modern Bazel 7.5+)
      *   2. @@name+         — try + (pre-7.5)
      *   3. name            — bare name final fallback
@@ -315,7 +315,7 @@ public class BzlmodRepoMappingResolver {
      * are always in the map with a suffixed canonical value and are handled by the first candidate.
      */
     public List<String> candidateRepoArgs(String moduleName) {
-        String otherSuffix = SUFFIX_TILDE.equals(detectedSuffix) ? SUFFIX_PLUS : SUFFIX_TILDE;
+        String otherSuffix = SUFFIX_TILDE.equals(canonicalSuffix) ? SUFFIX_PLUS : SUFFIX_TILDE;
 
         if (!available) {
             // Mapping failed entirely — no suffix evidence, try both then bare name
@@ -338,23 +338,27 @@ public class BzlmodRepoMappingResolver {
             } else {
                 // Bazel 7.4: map value has no suffix. "@@bazel_skylib" would fail.
                 // Start with bare name (safe), then try both suffix forms.
+                // When hasSuffixEvidence is true, use the detected ordering; otherwise always try ~ first
+                // (consistent with the no-evidence branches elsewhere — ~ is more common on Bazel 7.5+).
+                String first  = hasSuffixEvidence ? canonicalSuffix : SUFFIX_TILDE;
+                String second = hasSuffixEvidence ? otherSuffix    : SUFFIX_PLUS;
                 return Arrays.asList(
-                    moduleName,                                       // e.g. "bazel_skylib"
-                    CANONICAL_PREFIX + moduleName + detectedSuffix,   // e.g. "@@bazel_skylib~"
-                    CANONICAL_PREFIX + moduleName + otherSuffix       // e.g. "@@bazel_skylib+"
+                    moduleName,                          // e.g. "bazel_skylib" — safe apparent path first
+                    CANONICAL_PREFIX + moduleName + first,   // e.g. "@@bazel_skylib~"
+                    CANONICAL_PREFIX + moduleName + second   // e.g. "@@bazel_skylib+"
                 );
             }
         }
 
         // Pure transitive — not in root's dump_repo_mapping
-        if (suffixDetected) {
+        if (hasSuffixEvidence) {
             // We have positive evidence of the suffix — use canonical first, bare name as safety net
             return Arrays.asList(
-                CANONICAL_PREFIX + moduleName + detectedSuffix,  // e.g. "@@googletest~"
+                CANONICAL_PREFIX + moduleName + canonicalSuffix,  // e.g. "@@googletest~"
                 moduleName                                         // e.g. "googletest" — fallback for NPE
             );
         } else {
-            // No suffix evidence in the mapping — detectedSuffix is just a default guess.
+            // No suffix evidence in the mapping — canonicalSuffix is just a default guess.
             // Try both known suffix forms then bare name rather than guessing one.
             return Arrays.asList(
                 CANONICAL_PREFIX + moduleName + SUFFIX_TILDE,
@@ -407,28 +411,28 @@ public class BzlmodRepoMappingResolver {
             }
 
             // Detect the canonical suffix from the first mapping value that ends with a known character.
-            // suffixDetected = true only when we have actual evidence — not just the hardcoded default.
+            // hasSuffixEvidence = true only when we have actual evidence — not just the hardcoded default.
             // This distinction matters in candidateRepoArgs(): when no suffix evidence exists, we try
             // both forms rather than guessing, covering projects where the entire mapping has no-suffix values.
-            String detectedSuffix = SUFFIX_PLUS; // safe default if no evidence is found
-            boolean suffixDetected = false;
+            String canonicalSuffix = SUFFIX_PLUS; // safe default if no evidence is found
+            boolean hasSuffixEvidence = false;
             for (String canonical : apparentToCanonical.values()) {
-                if (canonical.endsWith(SUFFIX_TILDE)) { detectedSuffix = SUFFIX_TILDE; suffixDetected = true; break; }
-                if (canonical.endsWith(SUFFIX_PLUS))  { detectedSuffix = SUFFIX_PLUS;  suffixDetected = true; break; }
+                if (canonical.endsWith(SUFFIX_TILDE)) { canonicalSuffix = SUFFIX_TILDE; hasSuffixEvidence = true; break; }
+                if (canonical.endsWith(SUFFIX_PLUS))  { canonicalSuffix = SUFFIX_PLUS;  hasSuffixEvidence = true; break; }
             }
             logger.info("BZLMOD BCR: repo mapping loaded ({} entries), detected canonical suffix: '{}' (evidence found: {})",
-                apparentToCanonical.size(), detectedSuffix, suffixDetected);
+                apparentToCanonical.size(), canonicalSuffix, hasSuffixEvidence);
 
             // Build the reverse map: strip suffix from each canonical value to get the module name
             Map<String, String> moduleNameToCanonical = new LinkedHashMap<>();
             for (String canonical : apparentToCanonical.values()) {
-                String moduleName = stripSuffix(canonical, detectedSuffix);
+                String moduleName = stripSuffix(canonical, canonicalSuffix);
                 if (!moduleName.isEmpty()) {
                     moduleNameToCanonical.putIfAbsent(moduleName, canonical);
                 }
             }
 
-            return new BzlmodRepoMappingResolver(apparentToCanonical, moduleNameToCanonical, detectedSuffix, true, suffixDetected);
+            return new BzlmodRepoMappingResolver(apparentToCanonical, moduleNameToCanonical, canonicalSuffix, true, hasSuffixEvidence);
 
         } catch (Exception e) {
             logger.warn("BZLMOD BCR: failed to parse dump_repo_mapping output ({}); degrading gracefully", e.getMessage());
@@ -462,7 +466,7 @@ public class BzlmodRepoMappingResolver {
      */
     private String stripKnownSuffix(String raw) {
         if (available) {
-            return stripSuffix(raw, detectedSuffix);
+            return stripSuffix(raw, canonicalSuffix);
         }
         return raw.replaceAll(KNOWN_SUFFIXES_REGEX, "");
     }
