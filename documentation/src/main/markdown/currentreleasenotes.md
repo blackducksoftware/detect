@@ -33,6 +33,7 @@
   * Pnpm: 11.8.0
   * NPM: 11.13.0
   * Node.js: 24.17.0
+  * Go: 1.26.5
   * pip: 26.1.2
   * Pipenv: 2026.6.2
   * Setuptools: 83.0.0
