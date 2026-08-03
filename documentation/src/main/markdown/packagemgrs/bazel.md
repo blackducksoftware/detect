@@ -393,7 +393,7 @@ The Bazel tool was replaced entirely in [detect_product_short] 11.3.0. The follo
 
 **Property:**
 
-The `detect.bazel.workspace.rules` property has been deprecated and replaced by `detect.bazel.dependency.sources`. The new property accepts the same source names (MAVEN_INSTALL, MAVEN_JAR, HASKELL_CABAL_LIBRARY, HTTP_ARCHIVE). NONE retains the auto-detect behavior.
+The `detect.bazel.workspace.rules` property was deprecated in [detect_product_short] 11.3.0 and has been **removed** in 12.0.0. Use `detect.bazel.dependency.sources` instead. The new property accepts the same source names (MAVEN_INSTALL, MAVEN_JAR, HASKELL_CABAL_LIBRARY, HTTP_ARCHIVE). NONE retains the auto-detect behavior.
 
 ### Mode Detection Behavior
 
