@@ -103,7 +103,7 @@ public class BzlmodBcrExtractor {
      */
     public DependencyGraph extractGraph() {
         // Step 1 — get the full module dependency tree
-        logger.info("BZLMOD BCR: running 'bazel mod graph --output json' to discover module dependency tree");
+        logger.debug("BZLMOD BCR: running 'bazel mod graph --output json' to discover module dependency tree");
         List<String> modGraphArgs = BazelQueryBuilder.mod().graph().withOutputJson().build();
         Optional<String> modGraphOutput = bazelCmd.executeModCommandToString(modGraphArgs);
 
@@ -120,7 +120,7 @@ public class BzlmodBcrExtractor {
             logger.warn("BZLMOD BCR: module graph contained no parseable module keys; returning empty graph");
             return new BasicDependencyGraph();
         }
-        logger.info("BZLMOD BCR: module graph has {} direct dep(s) and {} total unique module(s)",
+        logger.debug("BZLMOD BCR: module graph has {} direct dep(s) and {} total unique module(s)",
             tree.directModuleKeys.size(), allKeys.size());
 
         // Step 1b — load the repo mapping once.
@@ -142,7 +142,7 @@ public class BzlmodBcrExtractor {
                     filtered.add(key);
                 }
             }
-            logger.info("BZLMOD BCR: target-scoped filter: {} of {} module(s) in scope for '{}', {} pruned",
+            logger.debug("BZLMOD BCR: target-scoped filter: {} of {} module(s) in scope for '{}', {} pruned",
                 filtered.size(), allKeys.size(), bazelTarget, allKeys.size() - filtered.size());
             allKeys = filtered;
         } else {
@@ -168,8 +168,7 @@ public class BzlmodBcrExtractor {
         for (String key : allKeys) {
             String name = BzlmodGraphJsonParser.extractName(key);
             if (isExcludedModuleName(name)) {
-                logger.debug("BZLMOD BCR: skipping excluded infrastructure module '{}' " +
-                    "(matches EXCLUDED_REPO_PREFIXES — toolchain/build-rule, not a software component)", key);
+                logger.debug("BZLMOD BCR: skipping '{}' — build infrastructure, not a software component", key);
             } else {
                 keysForResolution.add(key);
             }
@@ -179,7 +178,7 @@ public class BzlmodBcrExtractor {
         Map<String, Dependency> moduleKeyToDep = resolveModules(keysForResolution, resolver);
         int excludedCount   = allKeys.size() - keysForResolution.size();
         int unresolvedCount = keysForResolution.size() - moduleKeyToDep.size();
-        logger.info("BZLMOD BCR extraction: {} module(s) resolved, {} unresolved (show_repo failed — see WARN above), {} excluded (infrastructure modules)",
+        logger.debug("BZLMOD BCR: show_repo summary — {} fetched, {} failed, {} skipped (build infrastructure)",
             moduleKeyToDep.size(), unresolvedCount, excludedCount);
 
         // Step 3 — build the graph preserving the direct/transitive tree structure
@@ -225,7 +224,7 @@ public class BzlmodBcrExtractor {
         // Attempt a single batched show_repo call (Bazel 7.1+ supports it; we are always 7.1+ here)
         Map<String, String> showRepoByKey = tryBatchedShowRepo(moduleKeys, repoArgs, resolver);
         if (showRepoByKey.isEmpty()) {
-            logger.info("BZLMOD BCR: batched show_repo returned no results; falling back to per-module calls");
+            logger.debug("BZLMOD BCR: batched show_repo returned no results; falling back to per-module calls");
             showRepoByKey = runPerModuleShowRepo(moduleKeys, resolver);
         } else {
             logger.debug("BZLMOD BCR: batched show_repo resolved {} of {} module(s)", showRepoByKey.size(), moduleKeys.size());
@@ -453,8 +452,9 @@ public class BzlmodBcrExtractor {
             recurseChildren(graph, directKey, dep, tree, moduleKeyToDep, recursed);
         }
 
-        logger.info("BZLMOD BCR graph built: {} direct dep(s), {} total module(s) resolved",
-            directCount, moduleKeyToDep.size());
+        logger.debug("BZLMOD BCR: dependency tree — {} direct, {} transitive Bazel module(s)",
+            directCount, moduleKeyToDep.size() - directCount);
+        logger.info("BZLMOD BCR: structured direct/transitive classification complete.");
         return graph;
     }
 
@@ -481,7 +481,7 @@ public class BzlmodBcrExtractor {
      * without a full re-evaluation — effectively zero extra cost.
      */
     private Set<String> getTargetScopedModuleNames(BzlmodRepoMappingResolver resolver) {
-        logger.info("BZLMOD BCR: querying target-scoped repos via 'bazel query kind(.*library, deps({}))'", bazelTarget);
+        logger.debug("BZLMOD BCR: querying target-scoped repos via 'bazel query kind(.*library, deps({}))'", bazelTarget);
         List<String> queryArgs = BazelQueryBuilder.query()
             .kind(LIBRARY_RULE_PATTERN, BazelQueryBuilder.deps(bazelTarget))
             .build();
@@ -514,7 +514,7 @@ public class BzlmodBcrExtractor {
             moduleNames.add(moduleName.get());
         }
 
-        logger.info("BZLMOD BCR: target-scoped filter set has {} candidate module name(s)", moduleNames.size());
+        logger.debug("BZLMOD BCR: target-scoped query found {} module name(s)", moduleNames.size());
         if (logger.isDebugEnabled()) {
             logger.debug("BZLMOD BCR: target-scoped module names: {}", moduleNames);
         }

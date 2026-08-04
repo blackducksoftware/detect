@@ -170,7 +170,7 @@ public class BzlmodRepoMappingResolver {
         // "mod dump_repo_mapping <repo>" — passing "" selects the root module.
         // This is a metadata-only command; Bazel reads from its resolved graph cache instantly.
         List<String> cmd = Arrays.asList("mod", "dump_repo_mapping", "");
-        logger.info("BZLMOD BCR: loading repo mapping via 'bazel mod dump_repo_mapping \"\"'");
+        logger.debug("BZLMOD BCR: loading repo mapping via 'bazel mod dump_repo_mapping \"\"'");
         Optional<String> output;
         try {
             output = bazelCmd.executeModCommandToString(cmd);
@@ -279,8 +279,7 @@ public class BzlmodRepoMappingResolver {
                 // that actually needs a suffix (e.g. "bazel_skylib" → "bazel_skylib").
                 // "@@bazel_skylib" would fail; the bare module name routes through Bazel's
                 // apparent-name path which handles it correctly across all versions.
-                logger.debug("BZLMOD BCR: module '{}' has no-suffix canonical value '{}' in mapping; " +
-                    "using bare module name for show_repo (Bazel 7.4 dump_repo_mapping inconsistency)",
+                logger.debug("BZLMOD BCR: '{}' has no-suffix canonical '{}' in mapping — using bare name for show_repo",
                     moduleName, canonical);
                 return moduleName;
             }
@@ -499,8 +498,8 @@ public class BzlmodRepoMappingResolver {
                 if (canonical.endsWith(SUFFIX_TILDE)) { canonicalSuffix = SUFFIX_TILDE; hasSuffixEvidence = true; break; }
                 if (canonical.endsWith(SUFFIX_PLUS))  { canonicalSuffix = SUFFIX_PLUS;  hasSuffixEvidence = true; break; }
             }
-            logger.info("BZLMOD BCR: repo mapping loaded ({} entries), detected canonical suffix: '{}' (evidence found: {})",
-                apparentToCanonical.size(), canonicalSuffix, hasSuffixEvidence);
+            logger.debug("BZLMOD BCR: repo mapping loaded — {} direct dep(s) visible; Bazel canonical suffix is '{}' ({})",
+                apparentToCanonical.size(), canonicalSuffix, hasSuffixEvidence ? "detected from map" : "defaulted, no evidence in map");
 
             // Build the reverse map: strip suffix from each canonical value to get the module name
             Map<String, String> moduleNameToCanonical = new LinkedHashMap<>();
