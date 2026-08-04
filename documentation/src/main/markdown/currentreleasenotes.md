@@ -49,3 +49,4 @@ Many direct and transitive dependencies throughout Detect, its plugins and add-o
 * Update Jackson libraries to version 2.22.0.
 * Update Java minimum version to 11.
 * Update Tika library to version 3.2.2.
+*  Update Component Locator Library to version 2.4.5
