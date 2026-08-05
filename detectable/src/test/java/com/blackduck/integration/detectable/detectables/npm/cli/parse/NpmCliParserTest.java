@@ -4,18 +4,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
 import com.blackduck.integration.bdio.graph.DependencyGraph;
+import com.blackduck.integration.bdio.model.Forge;
 import com.blackduck.integration.bdio.model.dependency.Dependency;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.detectable.detectables.npm.NpmDependencyType;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.result.NpmPackagerResult;
 import com.blackduck.integration.detectable.detectables.npm.packagejson.CombinedPackageJson;
+import com.blackduck.integration.detectable.util.graph.GraphAssert;
+import com.blackduck.integration.util.ExcludedIncludedWildcardFilter;
 
 class NpmCliParserTest {
 
@@ -179,5 +183,51 @@ class NpmCliParserTest {
         // Verify the actual package name is used for dev dependency alias
         assertEquals("devpackage", dependency.getName());
         assertEquals("1.0.0", dependency.getVersion());
+    }
+
+    @Test
+    public void excludedWorkspaceIsNotTreatedAsWorkspace() {
+        // npm ls -json output: root project has "my-ui" workspace and "express" regular dep.
+        // my-ui has lodash as its own dep.
+        // When my-ui is excluded, lodash should NOT become a root dependency.
+        String npmLsOutput = "{"
+            + "\"name\":\"my-project\","
+            + "\"version\":\"1.0.0\","
+            + "\"dependencies\":{"
+            +   "\"express\":{\"version\":\"4.18.0\"},"
+            +   "\"my-ui\":{"
+            +     "\"version\":\"1.0.0\","
+            +     "\"resolved\":\"file:../packages/ui\","
+            +     "\"dependencies\":{"
+            +       "\"lodash\":{\"version\":\"4.17.21\"}"
+            +     "}"
+            +   "}"
+            + "}"
+            + "}";
+
+        CombinedPackageJson combinedPackageJson = new CombinedPackageJson();
+        combinedPackageJson.setName("my-project");
+        combinedPackageJson.setVersion("1.0.0");
+        combinedPackageJson.getRelativeWorkspaces().add("packages/ui");
+
+        EnumListFilter<NpmDependencyType> depFilter = EnumListFilter.excludeNone();
+        NpmCliParser parser = new NpmCliParser(externalIdFactory, depFilter);
+
+        // Exclude by relative path
+        ExcludedIncludedWildcardFilter workspaceFilter =
+            ExcludedIncludedWildcardFilter.fromCollections(
+                Collections.singletonList("packages/ui"),
+                Collections.emptyList());
+
+        NpmPackagerResult result = parser.generateCodeLocation(npmLsOutput, combinedPackageJson, workspaceFilter);
+
+        DependencyGraph graph = result.getCodeLocation().getDependencyGraph();
+        GraphAssert graphAssert = new GraphAssert(Forge.NPMJS, graph);
+        graphAssert.hasRootDependency(
+            externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "express", "4.18.0"));
+        graphAssert.hasNoDependency(
+            externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "lodash", "4.17.21"));
+        graphAssert.hasNoDependency(
+            externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "my-ui", "1.0.0"));
     }
 }

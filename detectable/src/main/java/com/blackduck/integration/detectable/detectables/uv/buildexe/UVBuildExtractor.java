@@ -18,14 +18,21 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class UVBuildExtractor {
+
+    private static final String TREE_COMMAND = "tree";
+    private static final String NO_DEDUPE_FLAG = "--no-dedupe";
+    private static final String ALL_GROUPS_FLAG = "--all-groups";
+    private static final String NO_GROUP_FLAG = "--no-group";
+    private static final String ONLY_GROUP_FLAG = "--only-group";
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final DetectableExecutableRunner executableRunner;
     private final File sourceDirectory;
     private final UVTreeDependencyGraphTransformer uvTreeDependencyGraphTransformer;
-
 
     public UVBuildExtractor(DetectableExecutableRunner executableRunner, File sourceDirectory, UVTreeDependencyGraphTransformer uvTreeDependencyGraphTransformer) {
         this.executableRunner = executableRunner;
@@ -35,18 +42,8 @@ public class UVBuildExtractor {
 
     public Extraction extract(ExecutableTarget uvExe, UVDetectorOptions uvDetectorOptions, UVTomlParser uvTomlParser) throws ExecutableRunnerException {
         try {
-            List<String> arguments = new ArrayList<>();
-            arguments.add("tree");
-            arguments.add("--no-dedupe");
+            List<String> arguments = buildTreeCommandArguments(uvDetectorOptions);
 
-            if(!uvDetectorOptions.getExcludedDependencyGroups().isEmpty()) {
-                for(String group : uvDetectorOptions.getExcludedDependencyGroups()) {
-                    arguments.add("--no-group");
-                    arguments.add(group);
-                }
-            }
-
-            // run uv tree command
             ExecutableOutput executableOutput = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(sourceDirectory, uvExe, arguments));
             List<String> uvTreeOutput = executableOutput.getStandardOutputAsList();
 
@@ -60,6 +57,55 @@ public class UVBuildExtractor {
                     .build();
         } catch (Exception e) {
             return new Extraction.Builder().exception(e).build();
+        }
+    }
+
+    private List<String> buildTreeCommandArguments(UVDetectorOptions uvDetectorOptions) {
+        List<String> arguments = new ArrayList<>();
+        arguments.add(TREE_COMMAND);
+        arguments.add(NO_DEDUPE_FLAG);
+
+        Set<String> onlyGroups = uvDetectorOptions.getOnlyDependencyGroups();
+        Set<String> excludedGroups = uvDetectorOptions.getExcludedDependencyGroups();
+
+        if (!onlyGroups.isEmpty()) {
+            addOnlyGroupArguments(arguments, onlyGroups, excludedGroups);
+        } else {
+            addDefaultGroupArguments(arguments, excludedGroups);
+        }
+
+        return arguments;
+    }
+
+    private void addOnlyGroupArguments(List<String> arguments, Set<String> onlyGroups, Set<String> excludedGroups) {
+        Set<String> conflictingGroups = onlyGroups.stream()
+                .filter(excludedGroups::contains)
+                .collect(Collectors.toSet());
+
+        if (!conflictingGroups.isEmpty()) {
+            logger.warn(
+                    "Dependency groups {} are present in both 'detect.uv.dependency.groups.only' and 'detect.uv.dependency.groups.excluded'. "
+                    + "The exclusion setting takes precedence; these groups will be excluded.",
+                    conflictingGroups
+            );
+        }
+
+        Set<String> effectiveOnlyGroups = onlyGroups.stream()
+                .filter(group -> !excludedGroups.contains(group))
+                .collect(Collectors.toSet());
+
+        for (String group : effectiveOnlyGroups) {
+            arguments.add(ONLY_GROUP_FLAG);
+            arguments.add(group);
+        }
+    }
+
+    private void addDefaultGroupArguments(List<String> arguments, Set<String> excludedGroups) {
+        arguments.add(ALL_GROUPS_FLAG);
+
+        for (String group : excludedGroups) {
+            arguments.add(NO_GROUP_FLAG);
+            arguments.add(group);
         }
     }
 }

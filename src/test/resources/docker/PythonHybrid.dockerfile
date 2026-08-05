@@ -1,6 +1,7 @@
 FROM eclipse-temurin:11-jdk-jammy
 
 ARG ARTIFACTORY_URL
+ENV PIP_INDEX_URL="${ARTIFACTORY_URL}/artifactory/api/pypi/pypi-virtual/simple/"
 ARG UV_VERSION="0.8.15"
 ARG SETUPTOOLS_VERSION="80.9.0"
 ARG PIP_VERSION="25.2"

@@ -13,7 +13,6 @@
 * (IDETECT-5125) Fixed failure during Python scans when the `requirements.txt` file contains Python extras syntax using square brackets, e.g.: `kopf[dev]>=1.3`
 * (IDETECT-5090) Fixed PIP Native Inspector failure to parse `requirements.txt` lines that contain [PEP 508 environment markers](https://peps.python.org/pep-0508/).
 * (IDETECT-5056) Fixed a Cargo Lock detector failure to parse the caret symbol '^' used in `Cargo.toml` dependency declarations.
-* (IDETECT-5071) Fixed an issue with Simple Build Tool (sbt) evictions being included in the BOM.
 * (IDETECT-5069) Fixed Setuptools parsing for unsupported install_requires syntax in setup.py: Detect now fails fast and logs an error instead of silently misparsing, generating an incorrect BOM, and incorrectly reporting success.
 * (IDETECT-5140) Changed the default output directory of the Quack Patch feature to use [detect_product_short] scan output directory instead of the current working directory.
 * (IDETECT-5121) Include Quack Patch output directory as part of diagnostic zip when the feature is enabled.

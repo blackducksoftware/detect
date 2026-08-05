@@ -1,7 +1,6 @@
 package com.blackduck.integration.detectable.detectables.npm.packagejson.unit;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Map.Entry;

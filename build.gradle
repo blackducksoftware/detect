@@ -22,7 +22,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '12.0.0-SIGQA11-SNAPSHOT'
+version = '12.1.0-SNAPSHOT'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
@@ -144,6 +144,9 @@ allprojects {
         implementation('org.antlr:antlr4-runtime:4.13.2')
         implementation 'org.freemarker:freemarker:2.3.31'
         implementation 'org.apache.httpcomponents:httpclient-osgi:4.5.14'
+        implementation('com.squareup.okio:okio:3.6.0') {
+            because 'previous version has a vulnerability with no direct parent upgrade available'
+        }
 
         testImplementation 'org.junit.jupiter:junit-jupiter-params:5.4.2'
         testImplementation 'org.mockito:mockito-core:2.+'
@@ -191,7 +194,7 @@ dependencies {
     implementation "com.blackduck.integration:blackduck-common:${blackDuckCommonVersion}"
     implementation 'com.blackduck.integration:blackduck-upload-common:4.1.6'
     implementation 'com.blackducksoftware:method-analyzer-core:1.0.7'
-    implementation "${locatorGroup}:${locatorModule}:2.4.2"
+    implementation "${locatorGroup}:${locatorModule}:2.4.5"
 
     implementation 'org.apache.maven.shared:maven-invoker:3.3.0'
 
@@ -210,7 +213,7 @@ dependencies {
     implementation 'org.apache.pdfbox:pdfbox:2.0.27'
 
     // autonomous
-    implementation 'org.apache.tika:tika-core:2.9.0'
+    implementation 'org.apache.tika:tika-core:3.2.2'
     implementation 'org.apache.logging.log4j:log4j-to-slf4j:2.23.1'
 
     constraints {

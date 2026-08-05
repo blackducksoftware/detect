@@ -4,6 +4,7 @@ FROM eclipse-temurin:11-jdk-jammy
 # conflicts with the `click` Python package's options and causes `pipenv install` to result in an error.
 ARG PIPENV_VERSION_VAL="2024.0.1"
 ARG ARTIFACTORY_URL
+ENV PIP_INDEX_URL="${ARTIFACTORY_URL}/artifactory/api/pypi/pypi-virtual/simple/"
 
 # Do not change SRC_DIR, value is expected by tests
 ENV SRC_DIR=/opt/project/src
