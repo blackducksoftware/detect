@@ -53,9 +53,13 @@ public class BzlmodBcrExtractor {
 
     // Prefix used in GitHub archive URLs to indicate a tag ref (e.g., refs/tags/v1.2.3)
     private static final String REFS_TAGS_PREFIX = "refs/tags/";
-    // Separator between individual repo blocks in batched show_repo output.
-    // Each block starts with "## @@<name><suffix>:" regardless of the suffix character.
-    private static final String REPO_BLOCK_SEPARATOR = "## @@";
+    // Block header prefix for canonical-form repo names in batched show_repo output (e.g. "## @@googletest~:")
+    private static final String REPO_BLOCK_SEPARATOR_CANONICAL = "## @@";
+    // Block header prefix for apparent/bare-name repo names in batched show_repo output (e.g. "## @bazel_skylib:").
+    // Bazel uses single @ in the header when the module was submitted as a bare/apparent name rather than @@canonical form.
+    private static final String REPO_BLOCK_SEPARATOR_APPARENT = "## @";
+    // Legacy constant kept for backward compatibility with any references; points to canonical form.
+    private static final String REPO_BLOCK_SEPARATOR = REPO_BLOCK_SEPARATOR_CANONICAL;
 
     // Pattern for the target-scoped library query (same as the HTTP_ARCHIVE pipeline)
     private static final String LIBRARY_RULE_PATTERN = ".*library";
@@ -214,26 +218,37 @@ public class BzlmodBcrExtractor {
         //   - Suffix-appended form (e.g. "@@googletest~") for pure transitives not in the mapping
         // If the batch fails for any reason, runPerModuleShowRepo() retries with the full
         // candidateRepoArgs() list which includes additional fallbacks including the bare name.
-        List<String> repoArgs = new ArrayList<>();
+        List<String> showRepoArgs = new ArrayList<>();
         for (String moduleKey : moduleKeys) {
-            String name    = BzlmodGraphJsonParser.extractName(moduleKey);
-            String repoArg = resolver.canonicalRepoArg(name);
-            repoArgs.add(repoArg);
+            String name        = BzlmodGraphJsonParser.extractName(moduleKey);
+            String showRepoArg = resolver.canonicalRepoArg(name);
+            showRepoArgs.add(showRepoArg);
         }
 
         // Attempt a single batched show_repo call (Bazel 7.1+ supports it; we are always 7.1+ here)
-        Map<String, String> showRepoByKey = tryBatchedShowRepo(moduleKeys, repoArgs, resolver);
-        if (showRepoByKey.isEmpty()) {
+        Map<String, String> showRepoOutputByKey = tryBatchedShowRepo(moduleKeys, showRepoArgs, resolver);
+        if (showRepoOutputByKey.isEmpty()) {
+            // Batch returned nothing at all — fall back to per-module for every module
             logger.debug("BZLMOD BCR: batched show_repo returned no results; falling back to per-module calls");
-            showRepoByKey = runPerModuleShowRepo(moduleKeys, resolver);
+            showRepoOutputByKey = runPerModuleShowRepo(moduleKeys, resolver);
         } else {
-            logger.debug("BZLMOD BCR: batched show_repo resolved {} of {} module(s)", showRepoByKey.size(), moduleKeys.size());
+            logger.debug("BZLMOD BCR: batched show_repo resolved {} of {} module(s)", showRepoOutputByKey.size(), moduleKeys.size());
+            // Partial batch success: some modules may have been submitted as bare names and came back
+            // with "## @name:" headers instead of "## @@name~:" — the parser now handles both, but
+            // as a safety net, retry any module still missing from the batch result using per-module calls.
+            Set<String> notResolvedByBatch = new LinkedHashSet<>(moduleKeys);
+            notResolvedByBatch.removeAll(showRepoOutputByKey.keySet());
+            if (!notResolvedByBatch.isEmpty()) {
+                logger.debug("BZLMOD BCR: {} module(s) not resolved by batch; retrying per-module", notResolvedByBatch.size());
+                Map<String, String> perModuleResults = runPerModuleShowRepo(notResolvedByBatch, resolver);
+                showRepoOutputByKey.putAll(perModuleResults);
+            }
         }
 
         // Convert show_repo output to Dependencies
         Map<String, Dependency> result = new LinkedHashMap<>();
         for (String moduleKey : moduleKeys) {
-            String showRepoOutput = showRepoByKey.get(moduleKey);
+            String showRepoOutput = showRepoOutputByKey.get(moduleKey);
             if (showRepoOutput == null || showRepoOutput.trim().isEmpty()) {
                 // Module could not be resolved — likely uses git_override or local_path_override
                 // with a non-standard canonical name, or is not a standard BCR module.
@@ -263,47 +278,60 @@ public class BzlmodBcrExtractor {
      * without a repo-mapping lookup. See {@link #resolveModules} for the full explanation.
      * The actual suffix character ("+" or "~") is detected dynamically by the resolver.
      */
-    private Map<String, String> tryBatchedShowRepo(Set<String> moduleKeys, List<String> repoArgs,
+    private Map<String, String> tryBatchedShowRepo(Set<String> moduleKeys, List<String> showRepoArgs,
                                                     BzlmodRepoMappingResolver resolver) {
-        if (repoArgs.isEmpty()) {
+        if (showRepoArgs.isEmpty()) {
             return Collections.emptyMap();
         }
         try {
-            List<String> batchCmd = BazelQueryBuilder.mod().showRepoRawBatch(repoArgs).build();
-            Optional<String> output = bazelCmd.executeModCommandToString(batchCmd);
-            if (!output.isPresent() || output.get().trim().isEmpty()) {
+            List<String> batchCmd = BazelQueryBuilder.mod().showRepoRawBatch(showRepoArgs).build();
+            Optional<String> batchOutput = bazelCmd.executeModCommandToString(batchCmd);
+            if (!batchOutput.isPresent() || batchOutput.get().trim().isEmpty()) {
                 return Collections.emptyMap();
             }
 
-            // Each repo block starts with "## @@<name><suffix>:" — split on that boundary.
-            // The suffix character varies by Bazel version ("+" pre-7.5, "~" on 7.5+);
-            // we strip it via the resolver rather than hardcoding.
-            String[] parts = output.get().split("(?=" + REPO_BLOCK_SEPARATOR + ")");
-            Map<String, String> blockByRepoName = new LinkedHashMap<>();
-            for (String part : parts) {
-                String trimmed = part.trim();
-                if (!trimmed.isEmpty() && trimmed.startsWith(REPO_BLOCK_SEPARATOR)) {
-                    // Header is "## @@<name><suffix>:" — extract the token between "@@" and ":"
-                    int colonIdx = trimmed.indexOf(':');
-                    if (colonIdx > REPO_BLOCK_SEPARATOR.length()) {
-                        // e.g. "## @@protobuf~:" → rawName = "protobuf~"
-                        String rawName = trimmed.substring(REPO_BLOCK_SEPARATOR.length(), colonIdx);
-                        // Strip the canonical suffix using the resolver (version-aware, not hardcoded)
-                        String moduleName = resolver.stripCanonicalSuffix(rawName);
-                        logger.debug("BZLMOD BCR: batched show_repo block header: rawName='{}' → moduleName='{}'",
-                            rawName, moduleName);
-                        blockByRepoName.put(moduleName, trimmed);
+            // Each repo block starts with either:
+            //   "## @@<name><suffix>:" — canonical form (submitted as @@name~ or @@name+)
+            //   "## @<name>:"          — apparent/bare form (submitted as bare name, Bazel resolves via apparent-name path)
+            // Split on "## @" (catches both) and then determine the prefix length when extracting the repo name.
+            String[] outputBlocks = batchOutput.get().split("(?=" + REPO_BLOCK_SEPARATOR_APPARENT + ")");
+            Map<String, String> blockContentByModuleName = new LinkedHashMap<>();
+            for (String outputBlock : outputBlocks) {
+                String trimmedBlock = outputBlock.trim();
+                if (trimmedBlock.isEmpty()) {
+                    continue;
+                }
+                // Determine which header form this block uses and extract the repo name from the header
+                String headerRepoName = null;
+                if (trimmedBlock.startsWith(REPO_BLOCK_SEPARATOR_CANONICAL)) {
+                    // e.g. "## @@protobuf~: ..." → headerRepoName = "protobuf~"
+                    int colonIdx = trimmedBlock.indexOf(':');
+                    if (colonIdx > REPO_BLOCK_SEPARATOR_CANONICAL.length()) {
+                        headerRepoName = trimmedBlock.substring(REPO_BLOCK_SEPARATOR_CANONICAL.length(), colonIdx);
                     }
+                } else if (trimmedBlock.startsWith(REPO_BLOCK_SEPARATOR_APPARENT)) {
+                    // e.g. "## @bazel_skylib: ..." → headerRepoName = "bazel_skylib" (already no suffix)
+                    int colonIdx = trimmedBlock.indexOf(':');
+                    if (colonIdx > REPO_BLOCK_SEPARATOR_APPARENT.length()) {
+                        headerRepoName = trimmedBlock.substring(REPO_BLOCK_SEPARATOR_APPARENT.length(), colonIdx);
+                    }
+                }
+                if (headerRepoName != null) {
+                    // Strip any canonical suffix (e.g. "protobuf~" → "protobuf"; "bazel_skylib" → "bazel_skylib")
+                    String moduleName = resolver.stripCanonicalSuffix(headerRepoName);
+                    logger.debug("BZLMOD BCR: batched show_repo block header: headerRepoName='{}' → moduleName='{}'",
+                        headerRepoName, moduleName);
+                    blockContentByModuleName.put(moduleName, trimmedBlock);
                 }
             }
 
-            // Map module keys to the block that corresponds to their extracted module name
+            // Map module keys to the block content that corresponds to their extracted module name
             Map<String, String> result = new LinkedHashMap<>();
             for (String moduleKey : moduleKeys) {
-                String name = BzlmodGraphJsonParser.extractName(moduleKey);
-                String block = blockByRepoName.get(name);
-                if (block != null) {
-                    result.put(moduleKey, block);
+                String name         = BzlmodGraphJsonParser.extractName(moduleKey);
+                String blockContent = blockContentByModuleName.get(name);
+                if (blockContent != null) {
+                    result.put(moduleKey, blockContent);
                 }
             }
             return result;
