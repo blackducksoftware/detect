@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -104,8 +105,11 @@ public class PnpmLockYamlParserInitial {
      * <ol>
      *   <li>Attempt to parse as {@link PnpmLockYaml} (v6/v9). Uses {@code loadAll()} to
      *       support pnpm 11's multi-document YAML format (two sections separated by {@code ---}).
-     *       For single-document lockfiles (pre-v11), {@code loadAll()} returns a single element
-     *       and behaviour is identical to the previous {@code load()} call. Four outcomes:
+     *       The document containing the real dependency graph is selected by
+     *       {@link #selectLockfileDocument(Iterable)} using a position-based rule
+     *       (last document when there are multiple, the sole document otherwise). For
+     *       single-document lockfiles (pre-v11), behaviour is identical to the previous
+     *       {@code load()} call. Four outcomes:
      *       <ul>
      *         <li><b>Empty file</b> → {@code selectLockfileDocument()} returns null
      *             → return null immediately (caller handles the empty case).</li>
@@ -175,46 +179,59 @@ public class PnpmLockYamlParserInitial {
     /**
      * Selects the correct lockfile document from a potentially multi-document YAML stream.
      *
-     * <p>pnpm 11 introduced a two-section multi-document YAML layout separated by {@code ---}:
+     * <p>pnpm 11 introduced a two-section multi-document YAML layout separated by {@code ---}.
+     * Both documents can carry a {@code lockfileVersion} field, so relying on that field to
+     * distinguish them (as the previous implementation did) picks the wrong section:
      * <ul>
-     *   <li><b>Document 1</b>: environment metadata ({@code configDependencies},
-     *       {@code packageManagerDependencies}) — no dependency graph.</li>
-     *   <li><b>Document 2</b>: the actual lockfile ({@code lockfileVersion}, {@code importers},
-     *       {@code packages}, {@code snapshots}) — the real dependency data.</li>
+     *   <li><b>Document 1</b>: environment metadata / config-dependencies section —
+     *       typically no real project dependency graph.</li>
+     *   <li><b>Document 2 (last)</b>: the actual lockfile with {@code settings},
+     *       {@code importers}, {@code packages}, {@code snapshots} — the real dependency data.</li>
      * </ul>
      *
-     * <p>For pre-v11 lockfiles that contain only a single YAML document, {@code loadAll()}
-     * yields exactly one element and this method returns it directly — no behaviour change.
-     *
-     * <p>Selection strategy: iterate all documents and return the first one that has a
-     * non-null {@code lockfileVersion} (the hallmark of the dependency document). If none
-     * match, return the first non-null document (backward compatibility for edge cases).
+     * <p>Selection strategy (position-based, not content-based):
+     * <ol>
+     *   <li><b>Zero documents</b> → return {@code null} (caller emits an empty BOM).</li>
+     *   <li><b>Exactly one document</b> (pre-pnpm 11 layout) → return it directly.
+     *       This preserves the original single-document behaviour with no regression.</li>
+     *   <li><b>Two or more documents</b> (pnpm 11+ layout) → return the <b>last</b> document.
+     *       For the documented two-section layout this is document 2. Using "last" rather
+     *       than a hardcoded index 1 is defensively future-proof if pnpm ever adds further
+     *       metadata sections ahead of the dependency section.</li>
+     * </ol>
      *
      * @param documents the iterable of parsed YAML documents from {@code loadAll()}
      * @return the document containing dependency information, or {@code null} if no documents exist
      */
     private PnpmLockYamlBase selectLockfileDocument(Iterable<Object> documents) {
-        PnpmLockYamlBase fallbackDocument = null;
-
+        List<PnpmLockYamlBase> parsedDocuments = new ArrayList<>();
         for (Object doc : documents) {
             if (doc instanceof PnpmLockYamlBase) {
-                PnpmLockYamlBase candidate = (PnpmLockYamlBase) doc;
-                if (fallbackDocument == null) {
-                    fallbackDocument = candidate;
-                }
-                if (candidate.lockfileVersion != null) {
-                    // This document contains lockfileVersion — it holds the actual dependency data.
-                    logger.debug("Selected YAML document with lockfileVersion '{}'.", candidate.lockfileVersion);
-                    return candidate;
-                }
+                parsedDocuments.add((PnpmLockYamlBase) doc);
             }
-            // Skip null documents and non-PnpmLockYamlBase objects (e.g. metadata-only sections).
+            // Skip null documents and non-PnpmLockYamlBase objects.
         }
 
-        if (fallbackDocument != null) {
-            logger.debug("No YAML document contained a lockfileVersion field. Using the first non-null document.");
+        if (parsedDocuments.isEmpty()) {
+            return null;
         }
-        return fallbackDocument;
+
+        if (parsedDocuments.size() == 1) {
+            // Pre-pnpm 11 single-document lockfile — behaviour identical to the original load().
+            PnpmLockYamlBase only = parsedDocuments.get(0);
+            logger.debug("Single YAML document detected (pre-pnpm 11 layout). Using it directly (lockfileVersion: '{}').",
+                only.lockfileVersion);
+            return only;
+        }
+
+        // pnpm 11+ multi-document layout: document 1 is metadata / config-dependencies,
+        // the last document holds the real dependency graph. Selecting the last document
+        // covers the documented two-section case (doc 2) and stays correct if additional
+        // metadata sections are ever prepended.
+        PnpmLockYamlBase selected = parsedDocuments.get(parsedDocuments.size() - 1);
+        logger.debug("Multi-document YAML detected ({} documents, pnpm 11+ layout). Selecting the last document (lockfileVersion: '{}') as the dependency source.",
+            parsedDocuments.size(), selected.lockfileVersion);
+        return selected;
     }
 
     /**
