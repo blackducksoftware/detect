@@ -444,7 +444,12 @@ public class BzlmodBcrExtractor {
         for (String directKey : tree.directModuleKeys) {
             Dependency dep = moduleKeyToDep.get(directKey);
             if (dep == null) {
-                logger.debug("BZLMOD BCR: no resolved dep for direct module '{}', skipping", directKey);
+                // Direct dep is excluded (infrastructure module). Pass through to its children
+                // so real software components reachable only via this node are not dropped.
+                logger.debug("BZLMOD BCR: direct dep '{}' is excluded — promoting its children to root level", directKey);
+                if (recursed.add(directKey)) {
+                    recurseChildren(graph, directKey, null, tree, moduleKeyToDep, recursed);
+                }
                 continue;
             }
             graph.addChildToRoot(dep);
@@ -537,7 +542,13 @@ public class BzlmodBcrExtractor {
     /**
      * Recursively adds child dependencies under {@code parentDep} in the graph.
      * Edges are always added (so multiple parents for a shared dep are all recorded).
-     * Recursion into a child's subtree is guarded by {@code recursed} to avoid
+     * <p>When a child has no resolved dependency (i.e. it is an excluded infrastructure module),
+     * the node itself is skipped but traversal continues through its children using the current
+     * {@code parentDep} as the attachment point. This ensures that real software components
+     * reachable only through an excluded node (e.g. protobuf reachable only via rules_python)
+     * are not silently dropped from the BOM.
+     *
+     * <p>Recursion into a child's subtree is guarded by {@code recursed} to avoid
      * re-traversing already-visited subtrees (handles diamond dependencies).
      */
     private void recurseChildren(DependencyGraph graph,
@@ -550,11 +561,24 @@ public class BzlmodBcrExtractor {
         for (String childKey : children) {
             Dependency childDep = moduleKeyToDep.get(childKey);
             if (childDep == null) {
-                logger.debug("BZLMOD BCR: no resolved dep for child '{}' (parent: {}), skipping edge", childKey, parentKey);
+                // This child is an excluded infrastructure module (e.g. rules_python).
+                // Skip the node itself but continue traversal through its children,
+                // attaching them to the current parent. This prevents real software
+                // components (e.g. protobuf, upb) that are only reachable via an
+                // excluded node from being silently dropped.
+                logger.debug("BZLMOD BCR: '{}' is excluded — passing through to its children (parent: {})", childKey, parentKey);
+                if (recursed.add(childKey)) {
+                    recurseChildren(graph, childKey, parentDep, tree, moduleKeyToDep, recursed);
+                }
                 continue;
             }
-            // Always add the edge — diamonds have multiple parents and all parent→child edges matter
-            graph.addChildWithParent(childDep, parentDep);
+            // Always add the edge — diamonds have multiple parents and all parent→child edges matter.
+            // parentDep == null means the parent was an excluded direct dep — attach to root.
+            if (parentDep == null) {
+                graph.addChildToRoot(childDep);
+            } else {
+                graph.addChildWithParent(childDep, parentDep);
+            }
             // Recurse into this child's subtree only once; subsequent encounters are edges-only
             if (recursed.add(childKey)) {
                 recurseChildren(graph, childKey, childDep, tree, moduleKeyToDep, recursed);
