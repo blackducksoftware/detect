@@ -22,7 +22,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '12.0.0-SIGQA23-IDETECT-5257'
+version = '12.0.0-SIGQA24-IDETECT-5257-SNAPSHOT'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
