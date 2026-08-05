@@ -188,7 +188,7 @@ public class PnpmLockYamlParserMultiDocTest {
      * </ol>
      */
     @Test
-    public void testParseV11MultiDoc_bothDocumentsHaveLockfileVersion() throws IOException, IntegrationException {
+    public void testParseV11MultiDocBothDocumentsHaveLockfileVersion() throws IOException, IntegrationException {
         List<CodeLocation> codeLocations = parseLockFile("/pnpm/v11-multi-doc-both-versions/pnpm-lock.yaml");
 
         Assertions.assertNotNull(codeLocations);
