@@ -137,6 +137,20 @@ public class BzlmodBcrExtractor {
         // This keeps the BCR path consistent with all other Bazel pipelines which are target-scoped
         // via 'bazel query deps(//target)'. We reuse the same library query the HTTP_ARCHIVE pipeline
         // runs, so Bazel serves it from its analysis cache at no extra cost.
+        //
+        // The whitelist check bridges two different Bazel naming planes:
+        //   bazel query output  → labels like  @@abseil-cpp~//absl/strings:strings
+        //   bazel mod graph     → keys  like   abseil-cpp@20240116.2
+        // resolveLabel() (called inside getTargetScopedModuleNames) reduces a query label to a plain
+        // BCR module name — by stripping the canonical suffix (@@name~ → name) or resolving a
+        // repo_name alias via the dump_repo_mapping forward map (@alias → module_name).
+        // extractName() reduces a mod graph key to the same plain module name by dropping @version.
+        // The filter is therefore: resolveLabel(query_label) ∈ { extractName(mod_graph_key) }.
+        // This holds for standard BCR modules because Bazel derives canonical repo names directly
+        // from module names (module name + version-specific suffix). It does NOT hold for module
+        // extension sub-repos (@@mod++ext+subrepo), which have no mod graph entry — resolveLabel
+        // returns empty for those and they are absent from targetModuleNames, falling through to
+        // separate pipelines (MAVEN_INSTALL for JVM deps managed by rules_jvm_external, etc.).
         Set<String> targetModuleNames = getTargetScopedModuleNames(resolver);
         if (!targetModuleNames.isEmpty()) {
             Set<String> filtered = new LinkedHashSet<>();
