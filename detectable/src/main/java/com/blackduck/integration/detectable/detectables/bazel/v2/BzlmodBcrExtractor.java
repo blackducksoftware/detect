@@ -66,7 +66,8 @@ public class BzlmodBcrExtractor {
     private static final Set<String> EXCLUDED_REPO_PREFIXES = new HashSet<>(Arrays.asList(
         "bazel_tools", "local_config_", "remotejdk", "platforms",
         "rules_python", "rules_java", "rules_cc",
-        "maven", "unpinned_maven", "rules_jvm_external"
+        "maven", "unpinned_maven", "rules_jvm_external",
+        "rules_shell"  // Bazel 9 implicitly injects rules_shell into every Java target; it is a build toolchain module, not shipped software
     ));
 
     private final BazelCommandExecutor bazelCmd;
