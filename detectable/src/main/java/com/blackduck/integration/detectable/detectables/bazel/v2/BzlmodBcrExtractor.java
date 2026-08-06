@@ -58,8 +58,6 @@ public class BzlmodBcrExtractor {
     // Block header prefix for apparent/bare-name repo names in batched show_repo output (e.g. "## @bazel_skylib:").
     // Bazel uses single @ in the header when the module was submitted as a bare/apparent name rather than @@canonical form.
     private static final String REPO_BLOCK_SEPARATOR_APPARENT = "## @";
-    // Legacy constant kept for backward compatibility with any references; points to canonical form.
-    private static final String REPO_BLOCK_SEPARATOR = REPO_BLOCK_SEPARATOR_CANONICAL;
 
     // Pattern for the target-scoped library query (same as the HTTP_ARCHIVE pipeline)
     private static final String LIBRARY_RULE_PATTERN = ".*library";
