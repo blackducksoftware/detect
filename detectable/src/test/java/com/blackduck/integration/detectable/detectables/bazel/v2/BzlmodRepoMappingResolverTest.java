@@ -208,22 +208,50 @@ public class BzlmodRepoMappingResolverTest {
     // -------------------------------------------------------------------------
 
     @Test
-    public void candidateRepoArgs_available_returnsSingleCanonicalArg() {
-        // Available resolver: single precise arg using detected suffix
+    public void candidateRepoArgs_inMapWithSuffix_returnsCanonicalThenBareName() {
+        // Module IS in the map with a suffixed value (e.g. protobuf → protobuf~).
+        // Primary candidate is the exact canonical form; bare name is the safety net for Bazel 7.x NPE.
         BzlmodRepoMappingResolver resolver = tildeResolver();
-        List<String> candidates = resolver.candidateRepoArgs("abseil-cpp");
-        assertEquals(1, candidates.size());
-        assertEquals("@@abseil-cpp~", candidates.get(0));
+        List<String> candidates = resolver.candidateRepoArgs("protobuf");
+        assertEquals(2, candidates.size());
+        assertEquals("@@protobuf~", candidates.get(0)); // exact canonical from map
+        assertEquals("protobuf",    candidates.get(1)); // bare name fallback for Bazel 7.x NPE
     }
 
     @Test
-    public void candidateRepoArgs_unavailable_returnsBothSuffixForms() {
-        // Unavailable resolver: both ~ and + forms returned to try in order
+    public void candidateRepoArgs_pureTransitive_suffixDetected_returnsCanonicalThenBareName() {
+        // Module is NOT in the map (pure transitive) but suffix was positively detected.
+        // abseil-cpp is not declared in TILDE_MAPPING_JSON — it's a pure transitive dep.
+        BzlmodRepoMappingResolver resolver = tildeResolver();
+        List<String> candidates = resolver.candidateRepoArgs("abseil-cpp");
+        assertEquals(2, candidates.size());
+        assertEquals("@@abseil-cpp~", candidates.get(0)); // canonical with detected suffix
+        assertEquals("abseil-cpp",    candidates.get(1)); // bare name fallback for Bazel 7.x NPE
+    }
+
+    @Test
+    public void candidateRepoArgs_inMapWithNoSuffix_returnsBareNameFirst() {
+        // Bazel 7.4 inconsistency: map value has no suffix (e.g. "bazel_skylib" → "bazel_skylib").
+        // "@@bazel_skylib" would fail; bare name is tried first (safe apparent path).
+        // Build a resolver with a no-suffix mapping entry.
+        BzlmodRepoMappingResolver resolver = BzlmodRepoMappingResolver.parse(
+            "{\"bazel_skylib\": \"bazel_skylib\", \"rules_cc\": \"rules_cc~\"}");
+        List<String> candidates = resolver.candidateRepoArgs("bazel_skylib");
+        assertEquals(3, candidates.size());
+        assertEquals("bazel_skylib",    candidates.get(0)); // bare name first — @@bazel_skylib fails
+        assertEquals("@@bazel_skylib~", candidates.get(1)); // try with detected suffix (~, from rules_cc)
+        assertEquals("@@bazel_skylib+", candidates.get(2)); // try with other suffix
+    }
+
+    @Test
+    public void candidateRepoArgs_unavailable_returnsBothSuffixFormsThenBareName() {
+        // Unavailable resolver: both ~ and + forms returned to try in order, then bare name as final fallback.
         BzlmodRepoMappingResolver resolver = unavailableResolver();
         List<String> candidates = resolver.candidateRepoArgs("protobuf");
-        assertEquals(2, candidates.size());
+        assertEquals(3, candidates.size());
         assertEquals("@@protobuf~", candidates.get(0)); // ~ tried first (Bazel 7.5+ default)
         assertEquals("@@protobuf+", candidates.get(1)); // + tried as fallback (pre-7.5)
+        assertEquals("protobuf",    candidates.get(2)); // bare name as final safety net
     }
 }
 

@@ -33,8 +33,13 @@ public class IntermediateStepExecuteShowRepoHeuristic implements IntermediateSte
     private final BazelVersion bazelVersion;
 
     // Extracted string constants for repo prefix markers
-    private static final String REPO_PREFIX_SINGLE = "@";
+    private static final String REPO_PREFIX_SINGLE    = "@";
     private static final String REPO_PREFIX_CANONICAL = "@@";
+    // The two canonical suffix characters used by Bazel across versions:
+    //   SUFFIX_TILDE (~) — introduced in Bazel 7.5+
+    //   SUFFIX_PLUS  (+) — used in Bazel 7.x (pre-7.5) and some 8.x builds
+    private static final String SUFFIX_TILDE = "~";
+    private static final String SUFFIX_PLUS  = "+";
 
     // Separator between repo blocks in batched show_repo output
     private static final String REPO_BLOCK_SEPARATOR = "## @";
@@ -199,7 +204,7 @@ public class IntermediateStepExecuteShowRepoHeuristic implements IntermediateSte
      */
     private boolean looksSynthetic(String name) {
         // Treat '+' (Bazel 8) and '~' (Bazel 7) as synthetic markers
-        return name.contains("+") || name.contains("~");
+        return name.contains(SUFFIX_PLUS) || name.contains(SUFFIX_TILDE);
     }
 
     /**
