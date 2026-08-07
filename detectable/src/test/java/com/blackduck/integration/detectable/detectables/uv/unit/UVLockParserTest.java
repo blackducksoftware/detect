@@ -446,6 +446,231 @@ class UVLockParserTest {
         );
     }
 
+    // -----------------------------------------------------------------------
+    // Tests for detect.uv.dependency.groups.only in the lockfile detector
+    // -----------------------------------------------------------------------
+
+    @Test
+    void onlyDependencyGroupsIncludesOnlySpecifiedDevGroup() {
+        String lockContent = String.join("\n",
+            "version = 1",
+            "",
+            "[[package]]",
+            "name = \"my-project\"",
+            "version = \"1.0.0\"",
+            "",
+            "[package.dev-dependencies]",
+            "dev = [",
+            "    { name = \"pytest\" },",
+            "]",
+            "lint = [",
+            "    { name = \"ruff\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"pytest\"",
+            "version = \"8.3.0\"",
+            "",
+            "[[package]]",
+            "name = \"ruff\"",
+            "version = \"0.4.1\""
+        );
+
+        UVLockParser parser = new UVLockParser(externalIdFactory);
+        UVDetectorOptions options = new UVDetectorOptions(
+            Collections.emptyList(),
+            Arrays.asList("dev"),
+            Collections.emptyList(),
+            Collections.emptyList()
+        );
+
+        List<CodeLocation> codeLocations = parser.parseLockFile(lockContent, "my-project", options);
+
+        assertEquals(1, codeLocations.size());
+        DependencyGraph graph = codeLocations.get(0).getDependencyGraph();
+        assertEquals(1, graph.getRootDependencies().size());
+        assertTrue(hasDependency(graph.getRootDependencies(), "pytest", "8.3.0"), "dev group should be included");
+        assertTrue(graph.getRootDependencies().stream().noneMatch(d -> d.getName().equals("ruff")), "lint group should not be included");
+    }
+
+    @Test
+    void onlyDependencyGroupsSkipsRegularDependencies() {
+        String lockContent = String.join("\n",
+            "version = 1",
+            "",
+            "[[package]]",
+            "name = \"my-project\"",
+            "version = \"1.0.0\"",
+            "dependencies = [",
+            "    { name = \"requests\" },",
+            "]",
+            "",
+            "[package.dev-dependencies]",
+            "dev = [",
+            "    { name = \"pytest\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"requests\"",
+            "version = \"2.31.0\"",
+            "",
+            "[[package]]",
+            "name = \"pytest\"",
+            "version = \"8.3.0\""
+        );
+
+        UVLockParser parser = new UVLockParser(externalIdFactory);
+        UVDetectorOptions options = new UVDetectorOptions(
+            Collections.emptyList(),
+            Arrays.asList("dev"),
+            Collections.emptyList(),
+            Collections.emptyList()
+        );
+
+        List<CodeLocation> codeLocations = parser.parseLockFile(lockContent, "my-project", options);
+
+        assertEquals(1, codeLocations.size());
+        DependencyGraph graph = codeLocations.get(0).getDependencyGraph();
+        assertEquals(1, graph.getRootDependencies().size());
+        assertTrue(hasDependency(graph.getRootDependencies(), "pytest", "8.3.0"), "dev group should be included");
+        assertTrue(graph.getRootDependencies().stream().noneMatch(d -> d.getName().equals("requests")), "regular [dependencies] should be skipped when only is set");
+    }
+
+    @Test
+    void onlyDependencyGroupsSkipsOptionalDependencies() {
+        String lockContent = String.join("\n",
+            "version = 1",
+            "",
+            "[[package]]",
+            "name = \"my-project\"",
+            "version = \"1.0.0\"",
+            "",
+            "[package.dev-dependencies]",
+            "dev = [",
+            "    { name = \"pytest\" },",
+            "]",
+            "",
+            "[package.optional-dependencies]",
+            "extras = [",
+            "    { name = \"boto3\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"pytest\"",
+            "version = \"8.3.0\"",
+            "",
+            "[[package]]",
+            "name = \"boto3\"",
+            "version = \"1.28.0\""
+        );
+
+        UVLockParser parser = new UVLockParser(externalIdFactory);
+        UVDetectorOptions options = new UVDetectorOptions(
+            Collections.emptyList(),
+            Arrays.asList("dev"),
+            Collections.emptyList(),
+            Collections.emptyList()
+        );
+
+        List<CodeLocation> codeLocations = parser.parseLockFile(lockContent, "my-project", options);
+
+        assertEquals(1, codeLocations.size());
+        DependencyGraph graph = codeLocations.get(0).getDependencyGraph();
+        assertEquals(1, graph.getRootDependencies().size());
+        assertTrue(hasDependency(graph.getRootDependencies(), "pytest", "8.3.0"), "dev group should be included");
+        assertTrue(graph.getRootDependencies().stream().noneMatch(d -> d.getName().equals("boto3")), "[optional-dependencies] should be skipped when only is set");
+    }
+
+    @Test
+    void onlyAndExcludedGroupsPartialOverlapExcludedWins() {
+        String lockContent = String.join("\n",
+            "version = 1",
+            "",
+            "[[package]]",
+            "name = \"my-project\"",
+            "version = \"1.0.0\"",
+            "",
+            "[package.dev-dependencies]",
+            "dev = [",
+            "    { name = \"pytest\" },",
+            "]",
+            "lint = [",
+            "    { name = \"ruff\" },",
+            "]",
+            "docs = [",
+            "    { name = \"sphinx\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"pytest\"",
+            "version = \"8.3.0\"",
+            "",
+            "[[package]]",
+            "name = \"ruff\"",
+            "version = \"0.4.1\"",
+            "",
+            "[[package]]",
+            "name = \"sphinx\"",
+            "version = \"7.0.0\""
+        );
+
+        UVLockParser parser = new UVLockParser(externalIdFactory);
+        UVDetectorOptions options = new UVDetectorOptions(
+            Arrays.asList("lint"),
+            Arrays.asList("dev", "lint"),
+            Collections.emptyList(),
+            Collections.emptyList()
+        );
+
+        List<CodeLocation> codeLocations = parser.parseLockFile(lockContent, "my-project", options);
+
+        assertEquals(1, codeLocations.size());
+        DependencyGraph graph = codeLocations.get(0).getDependencyGraph();
+        assertEquals(1, graph.getRootDependencies().size());
+        assertTrue(hasDependency(graph.getRootDependencies(), "pytest", "8.3.0"), "dev group should be included (in only, not excluded)");
+        assertTrue(graph.getRootDependencies().stream().noneMatch(d -> d.getName().equals("ruff")), "lint group should be excluded (excluded wins over only)");
+        assertTrue(graph.getRootDependencies().stream().noneMatch(d -> d.getName().equals("sphinx")), "docs group should be excluded (not in only list)");
+    }
+
+    @Test
+    void onlyAndExcludedGroupsAllSameReturnsEmptyBom() {
+        String lockContent = String.join("\n",
+            "version = 1",
+            "",
+            "[[package]]",
+            "name = \"my-project\"",
+            "version = \"1.0.0\"",
+            "",
+            "[package.dev-dependencies]",
+            "dev = [",
+            "    { name = \"pytest\" },",
+            "]",
+            "lint = [",
+            "    { name = \"ruff\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"pytest\"",
+            "version = \"8.3.0\"",
+            "",
+            "[[package]]",
+            "name = \"ruff\"",
+            "version = \"0.4.1\""
+        );
+
+        UVLockParser parser = new UVLockParser(externalIdFactory);
+        UVDetectorOptions options = new UVDetectorOptions(
+            Arrays.asList("dev", "lint"),
+            Arrays.asList("dev", "lint"),
+            Collections.emptyList(),
+            Collections.emptyList()
+        );
+
+        List<CodeLocation> codeLocations = parser.parseLockFile(lockContent, "my-project", options);
+
+        assertTrue(codeLocations.isEmpty(), "All only-groups are also excluded: should return empty BOM");
+    }
+
     private boolean hasDependency(Set<Dependency> dependencies, String name, String version) {
         return dependencies.stream()
             .anyMatch(dep -> dep.getName().equals(name) && dep.getVersion().equals(version));
