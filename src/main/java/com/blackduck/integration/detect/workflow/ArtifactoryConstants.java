@@ -10,8 +10,8 @@ public class ArtifactoryConstants {
     public static final String NUGET_INSPECTOR_WINDOWS_PROPERTY = "NUGET_INSPECTOR_WINDOWS_LATEST_1";
 
     public static final String DOCKER_INSPECTOR_REPO = "bds-integrations-release/com/blackduck/integration/detect-docker-inspector";
-    public static final String DOCKER_INSPECTOR_PROPERTY = "DOCKER_INSPECTOR_LATEST_11";
-    public static final String DOCKER_INSPECTOR_AIR_GAP_PROPERTY = "DOCKER_INSPECTOR_AIR_GAP_LATEST_11";
+    public static final String DOCKER_INSPECTOR_PROPERTY = "DOCKER_INSPECTOR_LATEST_12";
+    public static final String DOCKER_INSPECTOR_AIR_GAP_PROPERTY = "DOCKER_INSPECTOR_AIR_GAP_LATEST_12";
     public static final String DOCKER_INSPECTOR_VERSION_OVERRIDE =
         "/" + ArtifactoryConstants.VERSION_PLACEHOLDER + "/detect-docker-inspector-" + ArtifactoryConstants.VERSION_PLACEHOLDER + ".jar";
 

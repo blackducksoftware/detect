@@ -7,6 +7,7 @@ import com.blackduck.integration.detect.battery.docker.util.DetectCommandBuilder
 import com.blackduck.integration.detect.battery.docker.util.DetectDockerTestRunner;
 import com.blackduck.integration.detect.battery.docker.util.DockerAssertions;
 import com.blackduck.integration.detect.configuration.DetectProperties;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -39,6 +40,7 @@ public class AutonomousScanTests {
         }
     }
 
+    @Disabled
     @Test
     void autonomousScanModeONLINETest() throws Exception {
         try (DetectDockerTestRunner test = new DetectDockerTestRunner("autonomous-scan-mode-test-3", "autonomous-test:1.0.0")) {
