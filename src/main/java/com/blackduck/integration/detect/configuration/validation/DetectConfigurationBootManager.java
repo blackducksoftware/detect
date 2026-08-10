@@ -39,19 +39,20 @@ public class DetectConfigurationBootManager {
     }
 
     public List<RemovalDeprecation> checkForUsedRemovalDeprecations(PropertyConfiguration detectConfiguration) {
-        return DetectProperties.allProperties().getProperties()
-            .stream()
-            .filter(property -> wasProvided(property, detectConfiguration))
-            .filter(property -> property.getPropertyDeprecationInfo().getRemovalInfo().isPresent())
-            .map(property -> new RemovalDeprecation(property.getKey(), property.getPropertyDeprecationInfo().getRemovalInfo().get().getDeprecationText()))
-            .collect(Collectors.toList());
-    }
-
-    private boolean wasProvided(Property property, PropertyConfiguration detectConfiguration) {
-        if (property instanceof PassthroughProperty) {
-            return !detectConfiguration.getRaw((PassthroughProperty) property).isEmpty();
+        List<RemovalDeprecation> result = new ArrayList<>();
+        for (Property property : DetectProperties.allProperties().getProperties()) {
+            if (!property.getPropertyDeprecationInfo().getRemovalInfo().isPresent()) continue;
+            String deprecationText = property.getPropertyDeprecationInfo().getRemovalInfo().get().getDeprecationText();
+            if (property instanceof PassthroughProperty) {
+                PassthroughProperty passthrough = (PassthroughProperty) property;
+                detectConfiguration.getRaw(passthrough).keySet().stream()
+                    .map(subKey -> new RemovalDeprecation(passthrough.getKey() + "." + subKey, deprecationText))
+                    .forEach(result::add);
+            } else if (detectConfiguration.wasKeyProvided(property.getKey())) {
+                result.add(new RemovalDeprecation(property.getKey(), deprecationText));
+            }
         }
-        return detectConfiguration.wasKeyProvided(property.getKey());
+        return result;
     }
 
     public List<ValueDeprecation> checkForUsedValueDeprecations(PropertyConfiguration detectConfiguration) {
