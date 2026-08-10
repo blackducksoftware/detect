@@ -46,6 +46,7 @@ import com.blackduck.integration.configuration.property.types.string.StringPrope
 import com.blackduck.integration.detect.configuration.enumeration.BlackduckScanMode;
 import com.blackduck.integration.detect.configuration.enumeration.DetectCategory;
 import com.blackduck.integration.detect.configuration.enumeration.DetectGroup;
+import com.blackduck.integration.detect.configuration.enumeration.DetectMajorVersion;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTargetType;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
 import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
@@ -786,7 +787,6 @@ public class DetectProperties {
             .setCategory(DetectCategory.Advanced)
             .build();
 
-    // TODO: This could go away if we more tightly integrated Docker Inspector code within Detect. Yuuuge effort
     public static final PassthroughProperty DOCKER_PASSTHROUGH =
         PassthroughProperty.newBuilder("detect.docker.passthrough")
             .setInfo("Docker Passthrough", DetectPropertyFromVersion.VERSION_6_0_0)
@@ -795,6 +795,7 @@ public class DetectProperties {
             .setGroups(DetectGroup.DOCKER, DetectGroup.DEFAULT)
             .setCategory(DetectCategory.Advanced)
             .setExample("(This example is unusual in that it shows a complete propertyname=value) detect.docker.passthrough.imageinspector.service.log.length=1000")
+            .setDeprecated("Docker Inspector support is deprecated.", DetectMajorVersion.THIRTEEN)
             .build();
 
     public static final NullableStringProperty DETECT_DOCKER_IMAGE =
@@ -806,6 +807,7 @@ public class DetectProperties {
             )
             .setExample("ubuntu:22.04")
             .setGroups(DetectGroup.DOCKER, DetectGroup.SOURCE_PATH)
+            .setDeprecated("Docker Inspector support is deprecated.", DetectMajorVersion.THIRTEEN)
             .build();
 
     public static final NullableStringProperty DETECT_DOCKER_IMAGE_ID =
@@ -818,6 +820,7 @@ public class DetectProperties {
             .setExample("0d120b6ccaa8")
             .setGroups(DetectGroup.DOCKER, DetectGroup.SOURCE_PATH)
             .setExample("fe1cc5b91830")
+            .setDeprecated("Docker Inspector support is deprecated.", DetectMajorVersion.THIRTEEN)
             .build();
 
     public static final NullablePathProperty DETECT_DOCKER_INSPECTOR_PATH =
@@ -828,6 +831,7 @@ public class DetectProperties {
             )
             .setGroups(DetectGroup.DOCKER, DetectGroup.GLOBAL)
             .setCategory(DetectCategory.Advanced)
+            .setDeprecated("Docker Inspector support is deprecated.", DetectMajorVersion.THIRTEEN)
             .build();
 
     public static final NullableStringProperty DETECT_DOCKER_INSPECTOR_VERSION =
@@ -837,15 +841,16 @@ public class DetectProperties {
             .setGroups(DetectGroup.DOCKER, DetectGroup.GLOBAL)
             .setCategory(DetectCategory.Advanced)
             .setExample("9.1.1")
+            .setDeprecated("Docker Inspector support is deprecated.", DetectMajorVersion.THIRTEEN)
             .build();
 
-    // The docker exe is only used in air gap mode to load image tarfiles (from the air gap files) for docker inspector
     public static final NullablePathProperty DETECT_DOCKER_PATH =
         NullablePathProperty.newBuilder("detect.docker.path")
             .setInfo("Docker Executable", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp("Path to the docker executable (used to load image inspector Docker images in order to run the Docker Inspector in air gap mode).")
             .setExample("/usr/local/bin/docker")
             .setGroups(DetectGroup.DOCKER, DetectGroup.GLOBAL)
+            .setDeprecated("Docker Inspector support is deprecated.", DetectMajorVersion.THIRTEEN)
             .build();
 
     public static final NullableStringProperty DETECT_DOCKER_PLATFORM_TOP_LAYER_ID =
@@ -858,6 +863,7 @@ public class DetectProperties {
             .setGroups(DetectGroup.DOCKER, DetectGroup.GLOBAL)
             .setCategory(DetectCategory.Advanced)
             .setExample("sha256:f6253634dc78da2f2e3bee9c8063593f880dc35d701307f30f65553e0f50c18c")
+            .setDeprecated("Docker Inspector support is deprecated.", DetectMajorVersion.THIRTEEN)
             .build();
 
     public static final NullableStringProperty DETECT_DOCKER_TAR =
@@ -871,6 +877,7 @@ public class DetectProperties {
             )
             .setExample("./ubuntu21_04.tar")
             .setGroups(DetectGroup.DOCKER, DetectGroup.SOURCE_PATH)
+            .setDeprecated("Docker Inspector support is deprecated.", DetectMajorVersion.THIRTEEN)
             .build();
 
     public static final NoneEnumListProperty<DetectorType> DETECT_EXCLUDED_DETECTOR_TYPES =
@@ -1212,6 +1219,7 @@ public class DetectProperties {
             .setHelp("Path to the Java executable used by Docker Inspector.", "If set, Detect will use the given Java executable instead of searching for one.")
             .setGroups(DetectGroup.PATHS, DetectGroup.GLOBAL)
             .setExample("/usr/lib/jvm/jdk-17/bin/java")
+            .setDeprecated("This property is only used by Docker Inspector. Docker Inspector support is deprecated.", DetectMajorVersion.THIRTEEN)
             .build();
 
     public static final CaseSensitiveStringListProperty DETECT_LERNA_EXCLUDED_PACKAGES =
@@ -1801,7 +1809,8 @@ public class DetectProperties {
             )
             .setGroups(DetectGroup.PATHS, DetectGroup.GLOBAL)
             .setCategory(DetectCategory.Advanced)
-            .build();
+            .build()
+            .deprecateValue(DetectTool.DOCKER, "Docker Inspector support is deprecated. The DOCKER tool value will be removed in a future release.");
 
     public static final EnumProperty<ProjectVersionDistributionType> DETECT_PROJECT_VERSION_DISTRIBUTION =
         EnumProperty.newBuilder("detect.project.version.distribution", ProjectVersionDistributionType.EXTERNAL, ProjectVersionDistributionType.class)
@@ -2059,7 +2068,8 @@ public class DetectProperties {
                     "If neither detect.tools nor detect.tools.excluded are set, Detect will allow (run if applicable, based on the values of other properties) all Detect tools. If detect.tools is set, and detect.tools.excluded is not set, Detect will only allow to run those tools that are specified in the detect.tools list. If detect.tools.excluded is set, Detect will only allow those tools that are not specified in the detect.tools.excluded list."
             )
             .setGroups(DetectGroup.PATHS, DetectGroup.GLOBAL)
-            .build();
+            .build()
+            .deprecateValue(DetectTool.DOCKER, "Docker Inspector support is deprecated. The DOCKER tool value will be removed in a future release.");
 
     public static final AllEnumListProperty<DetectTool> DETECT_TOOLS =
         AllEnumListProperty.newBuilder("detect.tools", emptyList(), DetectTool.class)
@@ -2070,7 +2080,8 @@ public class DetectProperties {
                     "If neither detect.tools nor detect.tools.excluded are set, Detect will allow (run if applicable, based on the values of other properties) all non-exclusive Detect tools. If detect.tools is set, and detect.tools.excluded is not set, Detect will run those tools that are specified in the detect.tools list. If detect.tools.excluded is set, Detect will only allow those tools that are not specified in the detect.tools.excluded list."
             )
             .setGroups(DetectGroup.PATHS, DetectGroup.GLOBAL)
-            .build();
+            .build()
+            .deprecateValue(DetectTool.DOCKER, "Docker Inspector support is deprecated. The DOCKER tool value will be removed in a future release.");
 
     public static final NullablePathProperty DETECT_UV_PATH =
             NullablePathProperty.newBuilder("detect.uv.path")
