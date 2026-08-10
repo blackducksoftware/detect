@@ -44,6 +44,8 @@ public class DetectConfigurationBootManager {
             if (!property.getPropertyDeprecationInfo().getRemovalInfo().isPresent()) continue;
             String deprecationText = property.getPropertyDeprecationInfo().getRemovalInfo().get().getDeprecationText();
             if (property instanceof PassthroughProperty) {
+                // Passthrough sub-keys (e.g. detect.docker.passthrough.service.timeout) are never provided
+                // under the bare prefix key, so emit one entry per sub-key to match the printed log key.
                 PassthroughProperty passthrough = (PassthroughProperty) property;
                 detectConfiguration.getRaw(passthrough).keySet().stream()
                     .map(subKey -> new RemovalDeprecation(passthrough.getKey() + "." + subKey, deprecationText))
