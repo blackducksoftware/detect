@@ -17,6 +17,8 @@ import org.slf4j.LoggerFactory;
 
 import com.blackduck.integration.configuration.config.PropertyConfiguration;
 import com.blackduck.integration.configuration.help.PropertyConfigurationHelpContext;
+import com.blackduck.integration.configuration.property.Property;
+import com.blackduck.integration.configuration.property.base.PassthroughProperty;
 import com.blackduck.integration.configuration.property.base.TypedProperty;
 import com.blackduck.integration.configuration.property.deprecation.DeprecatedValueUsage;
 import com.blackduck.integration.detect.configuration.DetectProperties;
@@ -39,10 +41,17 @@ public class DetectConfigurationBootManager {
     public List<RemovalDeprecation> checkForUsedRemovalDeprecations(PropertyConfiguration detectConfiguration) {
         return DetectProperties.allProperties().getProperties()
             .stream()
-            .filter(property -> detectConfiguration.wasKeyProvided(property.getKey()))
+            .filter(property -> wasProvided(property, detectConfiguration))
             .filter(property -> property.getPropertyDeprecationInfo().getRemovalInfo().isPresent())
             .map(property -> new RemovalDeprecation(property.getKey(), property.getPropertyDeprecationInfo().getRemovalInfo().get().getDeprecationText()))
             .collect(Collectors.toList());
+    }
+
+    private boolean wasProvided(Property property, PropertyConfiguration detectConfiguration) {
+        if (property instanceof PassthroughProperty) {
+            return !detectConfiguration.getRaw((PassthroughProperty) property).isEmpty();
+        }
+        return detectConfiguration.wasKeyProvided(property.getKey());
     }
 
     public List<ValueDeprecation> checkForUsedValueDeprecations(PropertyConfiguration detectConfiguration) {
