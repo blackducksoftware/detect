@@ -18,10 +18,13 @@ public class AutonomousScanTests {
 
     public static String ARTIFACTORY_URL = System.getenv().get("SNPS_INTERNAL_ARTIFACTORY");
 
-//    @Test
+    @Test
     void autonomousScanModeOFFLINETest() throws Exception {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("autonomous-scan-mode-test-1", "detect-9.8.0:1.0.1")) {
-            test.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("Detect-9.8.0.dockerfile"));
+        // Uses a small, self-contained Gradle project baked into the image (see
+        // AutonomousScanOffline.dockerfile). Previously scanned the entire Detect 9.8
+        // source tree, which caused CI timeouts. See ticket for details.
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("autonomous-scan-mode-test-1", "autonomous-scan-offline:1.0.0")) {
+            test.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("AutonomousScanOffline.dockerfile"));
 
             DetectCommandBuilder commandBuilder = new DetectCommandBuilder().defaults().defaultDirectories(test);
             commandBuilder.waitForResults();
@@ -30,6 +33,11 @@ public class AutonomousScanTests {
 
             commandBuilder.property(DetectProperties.DETECT_AUTONOMOUS_SCAN_ENABLED, String.valueOf(true));
             commandBuilder.property(DetectProperties.DETECT_BLACKDUCK_SCAN_MODE, scanMode);
+            // RAPID mode without a Black Duck URL requires offline mode; otherwise the
+            // product-decision phase in DetectBoot fails before any scan-settings JSON
+            // is written. Under offline + RAPID, DetectRun short-circuits with
+            // "Rapid Scan is offline, nothing to do." and still writes scan-settings.
+            commandBuilder.property(DetectProperties.BLACKDUCK_OFFLINE_MODE, "true");
             DockerAssertions dockerAssertions = test.run(commandBuilder);
 
             dockerAssertions.bdioFiles(1);
