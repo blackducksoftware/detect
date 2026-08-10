@@ -33,11 +33,7 @@ public class AutonomousScanTests {
 
             commandBuilder.property(DetectProperties.DETECT_AUTONOMOUS_SCAN_ENABLED, String.valueOf(true));
             commandBuilder.property(DetectProperties.DETECT_BLACKDUCK_SCAN_MODE, scanMode);
-            // RAPID mode without a Black Duck URL requires offline mode; otherwise the
-            // product-decision phase in DetectBoot fails before any scan-settings JSON
-            // is written. Under offline + RAPID, DetectRun short-circuits with
-            // "Rapid Scan is offline, nothing to do." and still writes scan-settings.
-            commandBuilder.property(DetectProperties.BLACKDUCK_OFFLINE_MODE, "true");
+
             DockerAssertions dockerAssertions = test.run(commandBuilder);
 
             dockerAssertions.bdioFiles(1);
