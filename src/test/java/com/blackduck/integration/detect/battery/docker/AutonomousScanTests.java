@@ -21,9 +21,8 @@ public class AutonomousScanTests {
 
     @Test
     void autonomousScanModeOFFLINETest() throws Exception {
-        // Uses a small, self-contained Gradle project baked into the image (see
-        // AutonomousScanOffline.dockerfile). Previously scanned the entire Detect 9.8
-        // source tree, which caused CI timeouts. See ticket for details.
+        // Fixture is a minimal Gradle project inlined into the image
+        // (see AutonomousScanOffline.dockerfile).
         try (DetectDockerTestRunner test = new DetectDockerTestRunner("autonomous-scan-mode-test-1", "autonomous-scan-offline:1.0.0")) {
             test.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("AutonomousScanOffline.dockerfile"));
 
@@ -34,6 +33,10 @@ public class AutonomousScanTests {
 
             commandBuilder.property(DetectProperties.DETECT_AUTONOMOUS_SCAN_ENABLED, String.valueOf(true));
             commandBuilder.property(DetectProperties.DETECT_BLACKDUCK_SCAN_MODE, scanMode);
+            // No blackduck.url and no blackduck.offline.mode is intentional: with RAPID,
+            // setting offline.mode makes ProductDecider skip Black Duck entirely.
+            // Autonomous mode instead elects to run offline on its own, which is the
+            // path this test exercises.
             DockerAssertions dockerAssertions = test.run(commandBuilder);
 
             dockerAssertions.bdioFiles(1);
