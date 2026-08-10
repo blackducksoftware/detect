@@ -19,10 +19,13 @@ public class AutonomousScanTests {
 
     public static String ARTIFACTORY_URL = System.getenv().get("SNPS_INTERNAL_ARTIFACTORY");
 
-//    @Test
+    @Test
     void autonomousScanModeOFFLINETest() throws Exception {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("autonomous-scan-mode-test-1", "detect-9.8.0:1.0.1")) {
-            test.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("Detect-9.8.0.dockerfile"));
+        // Uses a small, self-contained Gradle project baked into the image (see
+        // AutonomousScanOffline.dockerfile). Previously scanned the entire Detect 9.8
+        // source tree, which caused CI timeouts. See ticket for details.
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("autonomous-scan-mode-test-1", "autonomous-scan-offline:1.0.0")) {
+            test.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("AutonomousScanOffline.dockerfile"));
 
             DetectCommandBuilder commandBuilder = new DetectCommandBuilder().defaults().defaultDirectories(test);
             commandBuilder.waitForResults();
