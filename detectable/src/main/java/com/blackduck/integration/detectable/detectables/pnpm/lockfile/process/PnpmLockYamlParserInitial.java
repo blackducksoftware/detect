@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -229,9 +230,37 @@ public class PnpmLockYamlParserInitial {
         // covers the documented two-section case (doc 2) and stays correct if additional
         // metadata sections are ever prepended.
         PnpmLockYamlBase selected = parsedDocuments.get(parsedDocuments.size() - 1);
+
+        // Validate: main lockfile should have project deps in importers
+        if (selected instanceof PnpmLockYaml && !hasProjectDependencies((PnpmLockYaml) selected)) {
+            logger.warn("Multi-document YAML ({} docs): selected document lacks project dependencies "
+                + "(dependencies/devDependencies/optionalDependencies) in importers. "
+                + "This may indicate an unexpected lockfile structure or an empty project.",
+                parsedDocuments.size());
+        }
+
         logger.debug("Multi-document YAML detected ({} documents, pnpm 11+ layout). Selecting the last document (lockfileVersion: '{}') as the dependency source.",
             parsedDocuments.size(), selected.lockfileVersion);
         return selected;
+    }
+
+    /**
+     * Returns true if the document contains actual project dependencies
+     * (dependencies, devDependencies, or optionalDependencies) in its importers.
+     */
+    private boolean hasProjectDependencies(PnpmLockYaml doc) {
+        if (doc.importers == null || doc.importers.isEmpty()) {
+            return false;
+        }
+        return doc.importers.values().stream()
+            .anyMatch(imp ->
+                hasEntries(imp.dependencies) ||
+                hasEntries(imp.devDependencies) ||
+                hasEntries(imp.optionalDependencies));
+    }
+
+    private boolean hasEntries(Map<?, ?> map) {
+        return map != null && !map.isEmpty();
     }
 
     /**
