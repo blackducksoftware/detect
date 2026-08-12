@@ -2104,8 +2104,11 @@ public class DetectProperties {
             CaseSensitiveStringListProperty.newBuilder("detect.uv.dependency.groups.only")
                     .setInfo("uv Only Dependency Groups", DetectPropertyFromVersion.VERSION_12_0_0)
                     .setHelp(
-                            "A comma-separated list of uv dependency groups to exclusively scan.",
-                            "When set, Detect will include only the named dependency groups defined in a project's pyproject.toml. Regular dependencies and optional extras are skipped. You can list multiple groups (for example: detect.uv.dependency.groups.only='dev,lint'). This property is only supported for projects that use pyproject.toml (dependency groups are not available in setup.py or setup.cfg). If both this property and detect.uv.dependency.groups.excluded are configured, the exclusion setting takes precedence for overlapping groups, and Detect will log a warning."
+                            "A comma-separated list of dependency group names to exclusively include in the BOM.",
+                            "When set, Detect scans only the named groups defined under [dependency-groups] in pyproject.toml. Main project dependencies and optional extras ([project.optional-dependencies]) are excluded from the scan.\n\n" +
+                            " Example: detect.uv.dependency.groups.only=dev,lint\n\n" +
+                            "Requires a pyproject.toml-based project. Setting this property on a project using setup.py or setup.cfg has no effect and a warning is logged.\n\n" +
+                            " If a group appears in both this property and detect.uv.dependency.groups.excluded, the excluded setting takes precedence for overlapping groups and that groups will not be scanned. Detect logs a warning when both properties overlap."
                     )
                     .setGroups(DetectGroup.UV, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
                     .setCategory(DetectCategory.Advanced)
