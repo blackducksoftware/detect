@@ -13,7 +13,7 @@
 	* na.store.scass.blackduck.com - 34.54.95.139
 	* eu.store.scass.blackduck.com - 34.54.213.11
 	* eu.scass.blackduck.com - 34.54.38.252
-	
+
 * **Removal of Java 8 support** - Support for Java 8 has been removed in compliance with EU Cyber Resilience Act (CRA) requirements.
 * **Deprecation of support for Java versions earlier than 17** - Support for Java versions earlier than 17 has been deprecated in [detect_product_short] 12.0.0 and will be removed in 13.0.0 to align with EU Cyber Resilience Act (CRA) requirements and compliance timelines.
 * **Deprecation of Docker Inspector** - Docker Inspector has been deprecated and will be removed in 13.0.0 release.
@@ -29,15 +29,15 @@
 * Renamed `detect.quack.patch.output` property to `detect.quack.patch.output.path` for improved clarity.
 * Added the `detect.npm.excluded.workspaces` and `detect.npm.included.workspace` configuration properties to control which npm workspaces are included in a [detect_product_short] scan. If a workspace is specified in both lists, the exclusion takes precedence. Added the `detect.npm.ignore.all.workspaces` property to exclude all npm workspaces when set to true, which is equivalent to excluding every workspace explicitly.
 * Support for the following package managers have been extended:
-  * RubyGems: 4.0.15
-  * Gradle: 9.6.1
-  * Maven: 3.9.16
-  * Pnpm: 11.8.0
-  * NPM: 11.13.0
-  * Node.js: 24.17.0
+	* RubyGems: 4.0.15
+	* Gradle: 9.6.1
+	* Maven: 3.9.16
+	* Pnpm: 11.8.0
+	* NPM: 11.13.0
+	* Node.js: 24.17.0
 
 ### Changed features
-* Added `detect.uv.dependency.groups.only` property for the UV CLI detector. To restrict scanning to specific dependency groups while excluding standard dependencies and optional extras, use this property. When set, Detect limits analysis to the explicitly listed dependency groups defined in the project's pyproject.toml. Multiple groups can be specified as a comma-separated list (e.g., `detect.uv.dependency.groups.only='dev,lint'`). This applies exclusively to groups under the `[dependency-groups]` section; extras under `[project.optional-dependencies]` are not included. If both this property and `detect.uv.dependency.groups.excluded` are configured, the exclusion setting takes precedence for any overlapping groups and Detect will log a warning.
+* (IDETECT-5117) Added `detect.uv.dependency.groups.only` property for the UV CLI detector. To restrict scanning to specific dependency groups while excluding standard dependencies and optional extras, use this property. When set, Detect limits analysis to the explicitly listed dependency groups defined in the project's pyproject.toml. Multiple groups can be specified as a comma-separated list (e.g., `detect.uv.dependency.groups.only='dev,lint'`). This applies exclusively to groups under the `[dependency-groups]` section; extras under `[project.optional-dependencies]` are not included. If both this property and `detect.uv.dependency.groups.excluded` are configured, the exclusion setting takes precedence for any overlapping groups and Detect will log a warning.
 * (IDETECT-5134) Enabled UTF-8 encoding when reading the pnpm-lock.yaml file allowing emojis and non-ASCII characters to be parsed.
 * (IDETECT-5146) pnpm scans now complete when the pnpm-lock.yaml has no dependencies.
 
