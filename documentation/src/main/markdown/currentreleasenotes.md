@@ -27,6 +27,7 @@
 * Introduced a property named `detect.diagnostic.archive.path`, which enables the specification of a custom path for the diagnostic archive.
 * Added the `detect.create.project.version.when.no.components` boolean property (default: true) to control whether [detect_product_short] creates a project version when a Detector scan finds no components and no other scan tools are enabled.
 * Renamed `detect.quack.patch.output` property to `detect.quack.patch.output.path` for improved clarity.
+* Added `detect.uv.dependency.groups.only` property for the UV CLI detector. To restrict scanning to specific dependency groups while excluding standard dependencies and optional extras, use this property. When set, Detect limits analysis to the explicitly listed dependency groups defined in the project's pyproject.toml. Multiple groups can be specified as a comma-separated list (e.g., `detect.uv.dependency.groups.only='dev,lint'`). This applies exclusively to groups under the `[dependency-groups]` section; extras under `[project.optional-dependencies]` are not included. If both this property and `detect.uv.dependency.groups.excluded` are configured, the exclusion setting takes precedence for any overlapping groups and Detect will log a warning.
 * Added the `detect.npm.excluded.workspaces` and `detect.npm.included.workspace` configuration properties to control which npm workspaces are included in a [detect_product_short] scan. If a workspace is specified in both lists, the exclusion takes precedence. Added the `detect.npm.ignore.all.workspaces` property to exclude all npm workspaces when set to true, which is equivalent to excluding every workspace explicitly.
 * Support for the following package managers have been extended:
 	* RubyGems: 4.0.15
@@ -37,7 +38,7 @@
 	* Node.js: 24.17.0
 
 ### Changed features
-* (IDETECT-5117) Added `detect.uv.dependency.groups.only` property for the UV CLI detector. To restrict scanning to specific dependency groups while excluding standard dependencies and optional extras, use this property. When set, Detect limits analysis to the explicitly listed dependency groups defined in the project's pyproject.toml. Multiple groups can be specified as a comma-separated list (e.g., `detect.uv.dependency.groups.only='dev,lint'`). This applies exclusively to groups under the `[dependency-groups]` section; extras under `[project.optional-dependencies]` are not included. If both this property and `detect.uv.dependency.groups.excluded` are configured, the exclusion setting takes precedence for any overlapping groups and Detect will log a warning.
+* The UV detector now scans all dependency groups by default. In previous releases, only the default group was included in the scan. The detector now passes the `--all-groups` flag to the `uv tree` command, ensuring all groups defined under `[dependency-groups]` in `pyproject.toml` are included. To restrict the scan to specific groups, use the `detect.uv.dependency.groups.only` property.
 * (IDETECT-5134) Enabled UTF-8 encoding when reading the pnpm-lock.yaml file allowing emojis and non-ASCII characters to be parsed.
 * (IDETECT-5146) pnpm scans now complete when the pnpm-lock.yaml has no dependencies.
 
