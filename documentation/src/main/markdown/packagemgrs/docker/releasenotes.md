@@ -1,5 +1,12 @@
 # [docker_inspector_name] Release notes
 
+## Version 12.0.1
+
+### Resolved issues
+
+* Improved security by disabling chmod functionality on the container.
+* Improved input validation to prevent a potential denial-of-service scenario triggered by maliciously crafted input.
+
 ## Version 12.0.0
 
 ### Changed features
