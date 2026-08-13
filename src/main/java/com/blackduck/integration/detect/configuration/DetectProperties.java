@@ -2081,7 +2081,7 @@ public class DetectProperties {
 
     public static final CaseSensitiveStringListProperty DETECT_UV_DEPENDENCY_GROUPS_EXCLUDED =
             CaseSensitiveStringListProperty.newBuilder("detect.uv.dependency.groups.excluded")
-                    .setInfo("uv dependency groups", DetectPropertyFromVersion.VERSION_10_5_0)
+                    .setInfo("Exclude UV Dependency Groups", DetectPropertyFromVersion.VERSION_10_5_0)
                     .setHelp(
                             createTypeFilterHelpText("UV dependency groups"),
                             "When specified, a pyproject.toml file and uv executable are required, or pyproject.toml file and either uv.lock or requirements.txt file are required. Components and related dependencies that belong to excluded groups will not be in the BOM unless the component also belongs to a non-excluded group. For example, to recursively exclude all components under the `[dependency-groups]` section of `pyproject.toml`: `detect.uv.dependency.groups.excluded='dev,abc'`. Note: In uv, `[project.optional-dependencies]` defines extras. Each extra (e.g., postgres, redis, mysql) is treated as its own dependency group. The group `optional` does not exist; therefore, specifying it in the `--detect.uv.dependency.groups.excluded` flag will have no impact."
@@ -2091,7 +2091,7 @@ public class DetectProperties {
 
     public static final CaseSensitiveStringListProperty DETECT_UV_DEPENDENCY_GROUPS_ONLY =
             CaseSensitiveStringListProperty.newBuilder("detect.uv.dependency.groups.only")
-                    .setInfo("uv Only Dependency Groups", DetectPropertyFromVersion.VERSION_12_0_0)
+                    .setInfo("Include Only the Specified UV Dependency Groups ", DetectPropertyFromVersion.VERSION_12_0_0)
                     .setHelp(
                             "A comma-separated list of dependency group names to exclusively include in the BOM.",
                             "When set, Detect scans only the named groups defined under [dependency-groups] in pyproject.toml. Main project dependencies and optional extras ([project.optional-dependencies]) are excluded from the scan.\n\n" +
