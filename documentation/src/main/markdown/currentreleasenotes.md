@@ -41,7 +41,7 @@
 * (IDETECT-5117) The UV detector now scans all dependency groups by default. In previous releases, only the default group was included in the scan. The detector now passes the `--all-groups` flag to the `uv tree` command, ensuring all groups defined under `[dependency-groups]` in `pyproject.toml` are included. To restrict the scan to specific groups, use the `detect.uv.dependency.groups.only` property.
 * (IDETECT-5134) Enabled UTF-8 encoding when reading the pnpm-lock.yaml file allowing emojis and non-ASCII characters to be parsed.
 * (IDETECT-5146) pnpm scans now complete when the pnpm-lock.yaml has no dependencies.
-* Docker Inspector no longer supports Centos and other rpm based images.
+* [detect_product_short] Docker Inspector support for RPM-based Linux platforms such as CentOS, and RedHat has been removed in 12.0.0.
 * Renamed `detect.quack.patch.output` property to `detect.quack.patch.output.path` for improved clarity.
 * `detect.bazel.workspace.rules` property removed.
 
