@@ -2102,7 +2102,7 @@ public class DetectProperties {
 
     public static final CaseSensitiveStringListProperty DETECT_UV_DEPENDENCY_GROUPS_ONLY =
             CaseSensitiveStringListProperty.newBuilder("detect.uv.dependency.groups.only")
-                    .setInfo("Include Only the Specified UV Dependency Groups ", DetectPropertyFromVersion.VERSION_12_0_0)
+                    .setInfo("Include Only the Specified UV Dependency Groups", DetectPropertyFromVersion.VERSION_12_0_0)
                     .setHelp(
                             "A comma-separated list of dependency group names to exclusively include in the BOM.",
                             "When set, Detect scans only the named groups defined under [dependency-groups] in pyproject.toml. Main project dependencies and optional extras ([project.optional-dependencies]) are excluded from the scan.\n\n" +
