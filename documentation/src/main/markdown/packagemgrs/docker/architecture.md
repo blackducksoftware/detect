@@ -3,7 +3,7 @@
 [docker_inspector_name] uses up to three container-based image inspector services; 
 one for each of the supported Linux package manager database formats.
 
-The three image inspector services provide coverage of the three package manager database formats: DPKG, RPM, and APK.
+Image inspector services provide coverage of package manager database formats: DPKG, and APK.
 By default, [docker_inspector_name] submits its request to inspect the target image to the DPKG (Ubuntu) image inspector service. All services 
 redirect to the appropriate image inspector service if it cannot handle the request. For example,
 if the target is an Alpine image, the Ubuntu inspector service, which cannot inspect an Alpine image, 
@@ -12,9 +12,7 @@ service. If most of your images have APK databases, you can improve performance 
 the [docker_inspector_name] property *imageinspector.service.distro.default*.
 
 In host mode (the default), [docker_inspector_name] automatically uses the Docker engine to pull as
-needed from Docker Hub
-the following three images: [image_repo_organization]/[imageinspector_image_name_base]-alpine, 
-[image_repo_organization]/[imageinspector_image_name_base]-centos (deprecated), and [image_repo_organization]/[imageinspector_image_name_base]-ubuntu.
+needed from Docker Hub the following images: [image_repo_organization]/[imageinspector_image_name_base]-alpine, and [image_repo_organization]/[imageinspector_image_name_base]-ubuntu.
 [docker_inspector_name] starts those services as needed,
 and stops and removes the containers when [docker_inspector_name] exits. It uses a shared volume to share files, such as the target Docker image,
 between the [docker_inspector_name] utility and the three service containers.
@@ -53,7 +51,7 @@ In container mode, you start four containers in such a way that they share a mou
 base URLs that you provide:
 
 * One container for [detect_product_short] / [docker_inspector_name].
-* One container for each of the three image inspector services: Alpine, CentOS (deprecated), and Ubuntu.
+* One container for each of the three image inspector services: Alpine, and Ubuntu.
 
 In container mode you must provide the target image in a .tar file with one of the supported formats; you cannot specify that target image by repo:tag.
 
