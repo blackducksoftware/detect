@@ -27,7 +27,7 @@ Refer to [Black Duck SCA Server properties](../../properties/configuration/black
 
 ## Offline mode
 
-If you do not have a [bd_product_short] instance, or if your network is down, you can still run [detect_product_short] in offline mode.
+If you do not have a [bd_product_short] instance, or if your network is down, you can still run [detect_product_short] in offline mode. See [feature availability in online and offline scanning](../onlineversesoffline.dita).
 <note type="note">Offline mode is not the same as air gap mode. Air gap mode requires the airgap.jar available to execute as it contains local copies of scanning libraries to support full offline execution.</note>
 In offline mode, [detect_product_short] writes output files (.bdio files and, when Vulnerability Impact Analysis runs, .bdmu files) to subdirectories
 within the run directory without attempting to upload them to [bd_product_short]. You can find the value of the run directory in the [detect_product_short] log.
@@ -43,10 +43,6 @@ Download the latest [detect_product_short] version:
 **Version 10.0.0 or later**   
 `detect-X.X.X-air-gap.zip` includes scanning for Gradle, Nuget, and Docker.
 `detect-X.X.X-air-gap-no-docker.zip` includes scanning for Gradle and Nuget. No Docker scanning.
-
-**Version 8.7 to 9.10.0**   
-`synopsys-detect-X.X.X-air-gap.zip` includes scanning for Gradle, Nuget, and Docker.
-`synopsys-detect-X.X.X-air-gap-no-docker.zip` includes scanning for Gradle and Nuget. No Docker scanning.
 
 Download the Signature Scanner from your [bd_product_short] server:
 https://{blackduckserver}/download/scan.cli.zip
