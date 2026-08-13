@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
 <concept id="online-vs-offline-detect-features">
-    <title>Feature availability in online and offline [detect_product_short] scanning</title>
+    <title>Feature availability in online and offline Detect scanning</title>
 
     <conbody>
-        <p>The following table summarizes the availability of [detect_product_short] features when running in
+        <p>The following table summarizes the availability of Detect features when running in
             online mode versus offline mode.</p>
 
         <table frame="all">
-            <title>Online and offline [detect_product_short] feature comparison</title>
+            <title>Online and offline Detect feature comparison</title>
             <tgroup cols="4">
                 <colspec colname="c1" colwidth="2.5*"/>
                 <colspec colname="c2" colwidth="1*"/>
@@ -18,8 +18,8 @@
                 <thead>
                     <row>
                         <entry>Feature</entry>
-                        <entry>Included in online [detect_product_short]</entry>
-                        <entry>Included in offline [detect_product_short]</entry>
+                        <entry>Included in online Detect</entry>
+                        <entry>Included in offline Detect</entry>
                         <entry>Notes</entry>
                     </row>
                 </thead>
@@ -40,28 +40,28 @@
                         <entry>Rapid scan</entry>
                         <entry>Yes</entry>
                         <entry>No</entry>
-                        <entry>Requires a connection to [bd_product_short].</entry>
+                        <entry>Requires a connection to Black Duck SCA.</entry>
                     </row>
 
                     <row>
                         <entry>BDBA/Binary scanning</entry>
                         <entry>Yes</entry>
                         <entry>No</entry>
-                        <entry>Requires uploading the binary to [bd_product_short].</entry>
+                        <entry>Requires uploading the binary to Black Duck SCA.</entry>
                     </row>
 
                     <row>
                         <entry>Snippets</entry>
                         <entry>Yes</entry>
                         <entry>No</entry>
-                        <entry>Uses [bd_product_short] APIs and is not included in JSON or BDIO output files.</entry>
+                        <entry>Uses Black Duck SCA APIs and is not included in JSON or BDIO output files.</entry>
                     </row>
 
                     <row>
                         <entry>Package managers (post-build)</entry>
                         <entry>Yes</entry>
                         <entry>Yes</entry>
-                        <entry>Supported only when using the local air-gap [detect_product_short] package for offline scanning.</entry>
+                        <entry>Supported only when using the local air-gap Detect package for offline scanning.</entry>
                     </row>
 
                     <row>
@@ -72,10 +72,10 @@
                     </row>
 
                     <row>
-                        <entry>Report generation through [detect_product_short]</entry>
+                        <entry>Report generation through Detect</entry>
                         <entry>Yes</entry>
                         <entry>No</entry>
-                        <entry>Because [detect_product_short] runs offline, it does not communicate with [bd_product_short].</entry>
+                        <entry>Detect does not communicate with Black Duck SCA when running offline.</entry>
                     </row>
 
                     <row>
@@ -86,8 +86,8 @@
                             <p>Offline mode cannot access Docker Hub or other external image repositories.</p>
                             <p>You can scan a locally available image by using:</p>
                             <codeblock>--detect.docker.image.id</codeblock>
-                            <p>This option requires the air-gap [detect_product_short] package.</p>
-                            <p>If only connectivity to [bd_product_short] is unavailable, Docker scanning can still be
+                            <p>This option requires the air-gap Detect package.</p>
+                            <p>If only connectivity to Black Duck SCA is unavailable, Docker scanning can still be
                                 performed using:</p>
                             <codeblock>--detect.docker.image</codeblock>
                         </entry>
@@ -111,7 +111,7 @@
                         <entry>Detect policy check</entry>
                         <entry>Yes</entry>
                         <entry>No</entry>
-                        <entry>Offline mode cannot connect to [bd_product_short] to evaluate project policies.</entry>
+                        <entry>Offline mode cannot connect to Black Duck SCA to evaluate project policies.</entry>
                     </row>
 
                     <row>
@@ -119,7 +119,7 @@
                         <entry>Yes</entry>
                         <entry>Yes*</entry>
                         <entry>
-                            <p>*Available only in air-gap mode when [var_product_sigma] is provided locally by specifying:</p>
+                            <p>*Available only in air-gap mode when Sigma is provided locally by specifying:</p>
                             <codeblock>--detect.iac.scanner.local.path</codeblock>
                             <p>IaC scanning does not generate a BDIO file.</p>
                         </entry>
