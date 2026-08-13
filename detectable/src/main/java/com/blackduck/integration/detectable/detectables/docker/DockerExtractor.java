@@ -92,6 +92,18 @@ public class DockerExtractor {
         DockerInspectorInfo dockerInspectorInfo,
         DockerProperties dockerProperties
     ) throws IOException, ExecutableRunnerException {
+        // Refuse to forward image identifiers that contain SpEL templates ("#{...}"). These values are
+        // passed to Docker Inspector on the fork command line as --docker.image / --docker.tar /
+        // --docker.image.id and are bound to @Value("${...}") fields in the inspector's Config.java,
+        // which triggers SpEL evaluation during Spring context refresh. See CVE-2026-41849.
+        try {
+            SpelInjectionGuard.rejectIfContainsSpelTemplate("docker.image", image);
+            SpelInjectionGuard.rejectIfContainsSpelTemplate("docker.tar", tar);
+            SpelInjectionGuard.rejectIfContainsSpelTemplate("docker.image.id", imageId);
+        } catch (IllegalArgumentException spelRejection) {
+            return new Extraction.Builder().failure(spelRejection.getMessage()).build();
+        }
+
         String imageArgument = null;
         String imagePiece = null;
         ImageIdentifierType imageIdentifierType = ImageIdentifierType.IMAGE_NAME;

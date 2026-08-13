@@ -36,9 +36,18 @@ public class DockerProperties {
         dockerProperties.setProperty("output.include.containerfilesystem", BOOLEAN_PROPERTY_VALUE_TRUE);
         dockerProperties.setProperty("output.include.squashedimage", BOOLEAN_PROPERTY_VALUE_TRUE);
         dockerProperties.setProperty("bdio2.enabled", BOOLEAN_PROPERTY_VALUE_FALSE); // soon DI will return BDIO2 by default, which Detect can't consume
-        dockerDetectableOptions.getDockerPlatformTopLayerId().ifPresent(id -> dockerProperties.setProperty("docker.platform.top.layer.id", id));
+        dockerDetectableOptions.getDockerPlatformTopLayerId().ifPresent(id -> {
+            SpelInjectionGuard.rejectIfContainsSpelTemplate("docker.platform.top.layer.id", id);
+            dockerProperties.setProperty("docker.platform.top.layer.id", id);
+        });
 
+        // Refuse to forward passthrough values that contain SpEL templates ("#{...}"). Docker Inspector
+        // binds these keys via @Value("${...}"), and Spring evaluates any "#{...}" in the resolved value
+        // during context refresh. See CVE-2026-41849.
         Map<String, String> additionalDockerProperties = dockerDetectableOptions.getAdditionalDockerProperties();
+        for (Map.Entry<String, String> entry : additionalDockerProperties.entrySet()) {
+            SpelInjectionGuard.rejectIfContainsSpelTemplate(entry.getKey(), entry.getValue());
+        }
         dockerProperties.putAll(additionalDockerProperties);
 
         logger.debug("Contents of application.properties passed to Docker Inspector: {}", dockerProperties);
