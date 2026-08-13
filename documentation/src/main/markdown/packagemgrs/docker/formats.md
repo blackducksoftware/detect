@@ -1,6 +1,6 @@
 # Supported image formats
 
-<note type="attention">Detect Docker Inspector support for RPM-based Linux platforms such as CentOS, and RedHat has been removed.</note>
+<note type="attention">Support for Detect Docker Inspector on RPM-based Linux platforms, including CentOS and Red Hat, has been removed.</note>
 
 Images passed to [detect_product_short] via the *detect.docker.image* property must either be pullable using the machine's docker engine (via the equivalent of a "docker pull" command) or already exist in the local docker cache. [detect_product_short] will save these to a file using the equivalent of a "docker save" command.
 

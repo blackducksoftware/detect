@@ -1,6 +1,6 @@
 # [detect_product_short] architecture overview
 
-[docker_inspector_name] uses up to three container-based image inspector services; 
+[docker_inspector_name] uses container-based image inspector services; 
 one for each of the supported Linux package manager database formats.
 
 Image inspector services provide coverage of package manager database formats: DPKG, and APK.
@@ -15,10 +15,10 @@ In host mode (the default), [docker_inspector_name] automatically uses the Docke
 needed from Docker Hub the following images: [image_repo_organization]/[imageinspector_image_name_base]-alpine, and [image_repo_organization]/[imageinspector_image_name_base]-ubuntu.
 [docker_inspector_name] starts those services as needed,
 and stops and removes the containers when [docker_inspector_name] exits. It uses a shared volume to share files, such as the target Docker image,
-between the [docker_inspector_name] utility and the three service containers.
+between the [docker_inspector_name] utility and the service containers.
 
-In container mode, start the container running [docker_inspector_name] and the three image inspector container-based services such that
-all four containers share a mounted volume and can communicate with each other using HTTP GET operations using base URLs that you provide.
+In container mode, start the container running [docker_inspector_name] and the image inspector container-based services such that
+all containers share a mounted volume and can communicate with each other using HTTP GET operations using base URLs that you provide.
 For more information, refer to [Deploying](deployment.md).
 
 ## Execution modes
@@ -51,7 +51,7 @@ In container mode, you start four containers in such a way that they share a mou
 base URLs that you provide:
 
 * One container for [detect_product_short] / [docker_inspector_name].
-* One container for each of the three image inspector services: Alpine, and Ubuntu.
+* One container for each image inspector service: Alpine and Ubuntu.
 
 In container mode you must provide the target image in a .tar file with one of the supported formats; you cannot specify that target image by repo:tag.
 
