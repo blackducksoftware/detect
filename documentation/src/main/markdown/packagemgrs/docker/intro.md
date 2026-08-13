@@ -36,7 +36,7 @@ Because it relies on the Linux package manager as its source of this data,
 the discovered packages are limited to those installed and managed using the Linux package manager.
 
 [docker_inspector_name] can discover package manager-installed components in
-Linux Docker images that use the DPKG, RPM, or APK package manager database formats.
+Linux Docker images that use the DPKG, or APK package manager database formats.
 
 ## Signature and binary scan targets
 
