@@ -4,10 +4,12 @@
 ## Version 11.5.1
 
 ### Resolved issues
+
 * (IDETECT-5207) Fixed an IndexOutOfBoundsException in component location analysis that was due to space characters within a version string.
 * (IDETECT-5247) Fixed a regression in the Gradle init script where phantom subprojects (modules without a `build.gradle` file) with dependencies declared in the root `build.gradle` were incorrectly assigned an empty configuration set, resulting in 0 components being detected.
 
 ### Dependency Updates
+
 * Updated Component Locator Library to version 2.4.4
 
 ## Version 11.5.0
@@ -18,7 +20,9 @@
 * CentOS support in Detect Docker Inspector has been deprecated and will be removed in 12.0.0. For more details, please see [Docker Inspector Release Notes](packagemgrs/docker/releasenotes.md).
     * imageinspector.service.port.centos has been deprecated and will be removed in 12.0.0.
 * Clarified documentation for `--detect.uv.dependency.groups.excluded`. Optional is not a dependency group in uv but a section defining extras, therefor supplying `optional` as a value has no effect and exclusions must reference the extra name directly (e.g., postgres, redis).
+
 ### Resolved issues
+
 * (IDETECT-5125) Fixed failure during Python scans when the `requirements.txt` file contains Python extras syntax using square brackets, e.g.: `kopf[dev]>=1.3`
 * (IDETECT-5090) Fixed PIP Native Inspector failure to parse `requirements.txt` lines that contain [PEP 508 environment markers](https://peps.python.org/pep-0508/).
 * (IDETECT-5056) Fixed a Cargo Lock detector failure to parse the caret symbol '^' used in `Cargo.toml` dependency declarations.
@@ -79,6 +83,7 @@
 * (IDETECT-4993) Fixed an issue where the Go Module Detector entered an infinite loop while scanning `go.mod` files containing circular dependencies.
 
 ### Dependency Updates
+
 * Update tomlj library to version 1.1.1.
 
 ## Version 11.3.0
