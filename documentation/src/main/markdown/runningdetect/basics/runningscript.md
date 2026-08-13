@@ -66,14 +66,14 @@ See [Quoting and escaping shell script arguments](../../scripts/script-escaping-
 
 ````
 set DETECT_LATEST_RELEASE_VERSION={Detect version}
-powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect11.ps1?$(Get-Random) | iex; detect"
+powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect12.ps1?$(Get-Random) | iex; detect"
 ````
 
-For example, to run [detect_product_short] version 11.3.0:
+For example, to run [detect_product_short] version 12.0.0:
 
 ````
-set DETECT_LATEST_RELEASE_VERSION=11.3.0
-powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect11.ps1?$(Get-Random) | iex; detect"
+set DETECT_LATEST_RELEASE_VERSION=12.0.0
+powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.blackduck.com/detect12.ps1?$(Get-Random) | iex; detect"
 ````
 
 ### Running from Windows Powershell
