@@ -19,7 +19,6 @@ import com.blackduck.integration.detectable.detectable.result.PropertyInsufficie
 import com.blackduck.integration.detectable.detectables.bazel.BazelDetectableOptions;
 import com.blackduck.integration.detectable.detectables.bazel.BazelProjectNameGenerator;
 import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
-import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelCommandExecutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelVariableSubstitutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.HaskellCabalLibraryJsonProtoParser;
@@ -32,9 +31,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Optional;
 import java.util.Set;
 import java.io.File;
-import java.util.stream.Collectors;
-import java.util.Collections;
-import java.util.Objects;
 
 /**
  * Detectable implementation for Bazel projects using Bazel CLI V2.
@@ -212,43 +208,9 @@ public class BazelV2Detectable extends Detectable {
         return mode;
     }
 
-    // Helper to map legacy workspace rules to DependencySource
-    private Set<DependencySource> mapWorkspaceRulesToSources(Set<WorkspaceRule> workspaceRules) {
-        if (workspaceRules == null || workspaceRules.isEmpty()) {
-            return Collections.emptySet();
-        }
-        return workspaceRules.stream()
-            .map(this::mapWorkspaceRuleToSource)
-            .filter(Objects::nonNull)
-            .collect(Collectors.toSet());
-    }
-
-    // Extracted helper: map a single WorkspaceRule to its DependencySource (or null if unrecognized)
-    private DependencySource mapWorkspaceRuleToSource(WorkspaceRule rule) {
-        switch (rule) {
-            case MAVEN_JAR:
-                return DependencySource.MAVEN_JAR;
-            case MAVEN_INSTALL:
-                return DependencySource.MAVEN_INSTALL;
-            case HASKELL_CABAL_LIBRARY:
-                return DependencySource.HASKELL_CABAL_LIBRARY;
-            case HTTP_ARCHIVE:
-                return DependencySource.HTTP_ARCHIVE;
-            default:
-                logger.warn("Unrecognized workspace rule '{}' in detect.bazel.workspace.rules; skipping.", rule.getName());
-                return null;
-        }
-    }
-
     // Helper to resolve pipelines either from properties or by probing
     private Set<DependencySource> resolvePipelines(BazelCommandExecutor bazelCmd, String target, BazelEnvironmentAnalyzer.Mode mode, BazelVersion bazelVersion) {
-        Set<WorkspaceRule> workspaceRulesFromProperty = options.getWorkspaceRulesFromProperty();
         Set<DependencySource> sourcesFromProperty = options.getDependencySourcesFromProperty();
-
-        if (!workspaceRulesFromProperty.isEmpty() && (sourcesFromProperty == null || sourcesFromProperty.isEmpty())) {
-            logger.warn("Deprecated property `detect.bazel.workspace.rules` detected. Mapped to `detect.bazel.dependency.sources`. Please migrate to the new property. Alias will be removed in a future release.");
-            sourcesFromProperty = mapWorkspaceRulesToSources(workspaceRulesFromProperty);
-        }
 
         if (sourcesFromProperty != null && !sourcesFromProperty.isEmpty()) {
             logger.info("Using detect.bazel.dependency.sources override; skipping graph probing. Pipelines: {}", sourcesFromProperty);
