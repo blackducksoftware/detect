@@ -172,7 +172,14 @@ public class DockerExtractor {
         throws IOException, ExecutableRunnerException {
 
         File dockerPropertiesFile = new File(outputDirectory, "application.properties");
-        dockerProperties.populatePropertiesFile(dockerPropertiesFile, outputDirectory);
+        try {
+            dockerProperties.populatePropertiesFile(dockerPropertiesFile, outputDirectory);
+        } catch (IllegalArgumentException spelRejection) {
+            // DockerProperties refused a passthrough (or docker.platform.top.layer.id) value that
+            // contained a SpEL template ("#{...}"). Surface the same clean failure the CLI-side
+            // guard produces in extract(), rather than propagating a raw exception. See CVE-2026-41849.
+            return new Extraction.Builder().failure(spelRejection.getMessage()).build();
+        }
         Map<String, String> environmentVariables = new HashMap<>(0);
         List<String> dockerArguments = new ArrayList<>();
         dockerArguments.add("-jar");
