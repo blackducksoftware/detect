@@ -45,6 +45,7 @@
 * Renamed `detect.quack.patch.output` property to `detect.quack.patch.output.path` for improved clarity.
 * `detect.bazel.workspace.rules` property removed.
 
+* Added `detect.uv.dependency.groups.only` property for the UV CLI detector. To restrict scanning to specific dependency groups while excluding standard dependencies and optional extras, use this property. When set, Detect limits analysis to the explicitly listed dependency groups defined in the project's pyproject.toml. Multiple groups can be specified as a comma-separated list (e.g., `detect.uv.dependency.groups.only='dev,lint'`). This applies exclusively to groups under the `[dependency-groups]` section; extras under `[project.optional-dependencies]` are not included. If both this property and `detect.uv.dependency.groups.excluded` are configured, the exclusion setting takes precedence for any overlapping groups and Detect will log a warning.
 
 ### Dependency Updates
 * Upgraded direct and transitive dependencies throughout [detect_product_short], plugins and add-ons.

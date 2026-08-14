@@ -17,7 +17,7 @@
 ### Changed features
 
 * The default output directory of the Quack Patch feature has been updated to use [detect_product_short] scan output directory. For more information, see [Quack Patch Documentation](runningdetect/quack-patch.md).
-* CentOS support in Detect Docker Inspector has been deprecated and will be removed in 12.0.0. For more details, please see [Docker Inspector Release Notes](packagemgrs/docker/releasenotes.md).
+* Detect Docker Inspector support for RPM-based Linux platforms such as CentOS, and RedHat has been deprecated and will be removed in 12.0.0. For more details, please see [Docker Inspector Release Notes](packagemgrs/docker/releasenotes.md).
     * imageinspector.service.port.centos has been deprecated and will be removed in 12.0.0.
 * Clarified documentation for `--detect.uv.dependency.groups.excluded`. Optional is not a dependency group in uv but a section defining extras, therefor supplying `optional` as a value has no effect and exclusions must reference the extra name directly (e.g., postgres, redis).
 
@@ -52,6 +52,7 @@
 ## Version 11.4.1
 
 ### Dependency Updates
+
 * Upgraded and released Nuget Inspector version 2.6.0
 
 ## Version 11.4.0
