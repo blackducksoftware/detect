@@ -1,6 +1,10 @@
 <!-- Check the support matrix to determine supported, non-current major version releases -->
 # Release notes for previous [detect_product_short] versions
 
+**Notices**
+
+* **Deprecation of Java 8 support** - In alignment with EU Cyber Resilience Act (CRA) requirements and compliance timelines, Java 8 support has been deprecated and will be removed in the Detect 12.0.0 release.
+
 ## Version 11.5.1
 
 ### Resolved issues
