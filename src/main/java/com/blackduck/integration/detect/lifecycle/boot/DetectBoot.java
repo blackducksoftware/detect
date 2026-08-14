@@ -62,6 +62,7 @@ import com.blackduck.integration.detect.workflow.airgap.AirGapTypeDecider;
 import com.blackduck.integration.detect.workflow.blackduck.settings.DetectPropertiesSetting;
 import com.blackduck.integration.detect.workflow.diagnostic.DiagnosticDecision;
 import com.blackduck.integration.detect.workflow.diagnostic.DiagnosticSystem;
+import com.blackduck.integration.detect.workflow.discovery.DetectorDiscoveryRunner;
 import com.blackduck.integration.detect.workflow.event.Event;
 import com.blackduck.integration.detect.workflow.event.EventSystem;
 import com.blackduck.integration.detect.workflow.file.DirectoryManager;
@@ -222,6 +223,10 @@ public class DetectBoot {
             return Optional.of(DetectBootResult.exception(e, propertyConfiguration, directoryManager, diagnosticSystem));
         }
         
+        if (detectArgumentState.isDiscoveryMode()) {
+            return runDiscoveryMode(detectVersion, detectableOptionFactory, detectConfigurationFactory, detectConfiguration, directoryManager, propertyConfiguration, diagnosticSystem);
+        }
+
         Map<DetectTool, Set<String>> scanTypeEvidenceMap = autonomousManager.getScanTypeMap(hasImageOrTar);
         BlackDuckDecision blackDuckDecision = null;
 
@@ -293,6 +298,40 @@ public class DetectBoot {
             );
 
         return Optional.of(DetectBootResult.run(bootSingletons, propertyConfiguration, productRunData, directoryManager, diagnosticSystem));
+    }
+
+    private Optional<DetectBootResult> runDiscoveryMode(
+        String detectVersion,
+        DetectableOptionFactory detectableOptionFactory,
+        DetectConfigurationFactory detectConfigurationFactory,
+        DetectPropertyConfiguration detectConfiguration,
+        DirectoryManager directoryManager,
+        PropertyConfiguration propertyConfiguration,
+        DiagnosticSystem diagnosticSystem
+    ) {
+        logger.info("");
+        logger.info("Running Detect in discovery mode. Only detector applicability will be evaluated; no scan will be performed.");
+        try {
+            boolean includeDocs = detectConfiguration.getValue(DetectProperties.DETECT_DISCOVERY_INCLUDE_DOCS);
+            java.nio.file.Path outputPathOverride = detectConfiguration.getPathOrNull(DetectProperties.DETECT_DISCOVERY_OUTPUT_PATH);
+            File outputDirectoryOverride = outputPathOverride != null ? outputPathOverride.toFile() : null;
+
+            DetectorDiscoveryRunner discoveryRunner = new DetectorDiscoveryRunner(gson);
+            File outputFile = discoveryRunner.run(
+                detectVersion,
+                detectableOptionFactory,
+                detectConfigurationFactory,
+                directoryManager,
+                includeDocs,
+                outputDirectoryOverride
+            );
+
+            logger.info("Discovery mode: output written to {}", outputFile.getAbsolutePath());
+        } catch (IOException e) {
+            logger.error("Discovery mode failed to write output: {}", e.getMessage());
+        }
+
+        return Optional.of(DetectBootResult.exit(propertyConfiguration, directoryManager, diagnosticSystem));
     }
 
     private void warnIfJava8() {
