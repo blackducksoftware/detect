@@ -44,8 +44,13 @@
 * Renamed `detect.quack.patch.output` property to `detect.quack.patch.output.path` for improved clarity.
 * `detect.bazel.workspace.rules` property removed.
 
+### Resolved issues
+
+* (IDETECT-5146) Resolved pnpm detector failing when there are no components present in the `pnpm-lock.yaml` file.
+* (IDETECT-5134) Resolved pnpm detector failing when there are emojis present in the `pnpm-lock.yaml` file.
 
 ### Dependency Updates
+
 * Upgraded direct and transitive dependencies throughout [detect_product_short], plugins and add-ons.
 	* [detect_product_short] Docker images were migrated to Chainguard.
 	* Update ANTLR library to version 4.13.2.
