@@ -278,7 +278,7 @@ public class CargoLockfileExtractor {
             CargoLockPackageData pkg = findPackageByNameVersion(nv, packageLookupMap);
             if (pkg != null) {
                 String name = pkg.getName().orElse(null);
-                String version = pkg.getVersion().orElse(null);
+                String version = VersionUtils.sanitizeVersion(pkg.getVersion().orElse(null));
                 resolvedRootDependencies.add(new NameVersion(name, version));
             } else {
                 resolvedRootDependencies.add(nv);
