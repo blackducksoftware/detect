@@ -71,15 +71,21 @@ public class UVLockParser {
         // Guard: if onlyGroups is non-empty but every group in it is also excluded,
         // there is nothing to scan — return empty BOM immediately.
         if (!onlyGroups.isEmpty()) {
+            Set<String> conflictingGroups = onlyGroups.stream()
+                    .filter(excludedGroups::contains)
+                    .collect(Collectors.toSet());
+            if (!conflictingGroups.isEmpty()) {
+                logger.warn(
+                        "Dependency groups {} are present in both 'detect.uv.dependency.groups.only' and 'detect.uv.dependency.groups.excluded'. "
+                        + "The exclusion setting takes precedence; these groups will be excluded.",
+                        conflictingGroups
+                );
+            }
+
             Set<String> effectiveOnlyGroups = onlyGroups.stream()
                     .filter(group -> !excludedGroups.contains(group))
                     .collect(Collectors.toSet());
             if (effectiveOnlyGroups.isEmpty()) {
-                logger.warn(
-                        "Dependency groups {} are present in both 'detect.uv.dependency.groups.only' and 'detect.uv.dependency.groups.excluded'. "
-                        + "The exclusion setting takes precedence; these groups will be excluded.",
-                        onlyGroups
-                );
                 logger.warn("No dependency groups remain to be scanned. Returning empty BOM.");
                 return;
             }

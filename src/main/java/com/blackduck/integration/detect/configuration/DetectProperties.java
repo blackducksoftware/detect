@@ -2107,7 +2107,7 @@ public class DetectProperties {
                             "A comma-separated list of dependency group names to exclusively include in the BOM.",
                             "When set, Detect scans only the named groups defined under [dependency-groups] in pyproject.toml. Main project dependencies and optional extras ([project.optional-dependencies]) are excluded from the scan.\n\n" +
                             " Example: detect.uv.dependency.groups.only=dev,lint\n\n" +
-                            "Requires a pyproject.toml-based project. Setting this property on a project using setup.py or setup.cfg has no effect and a warning is logged.\n\n" +
+                            "This property applies only to UV projects with a pyproject.toml file. The UV detector does not apply to projects using setup.py or setup.cfg.\n\n" +
                             " If a group appears in both this property and detect.uv.dependency.groups.excluded, the excluded setting takes precedence for overlapping groups and that groups will not be scanned. Detect logs a warning when both properties overlap."
                     )
                     .setGroups(DetectGroup.UV, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
