@@ -85,5 +85,35 @@ public final class BazelCommandArguments {
      * Double @@ prefix for canonical repository references
      */
     public static final String REPO_PREFIX_CANONICAL = "@@";
+
+    // ===== Canonical Repo-Name Suffixes (version-specific) =====
+
+    /**
+     * Canonical repo-name suffix used by Bazel 7.5+ (e.g. {@code @@protobuf~}).
+     */
+    public static final String REPO_CANONICAL_SUFFIX_TILDE = "~";
+
+    /**
+     * Canonical repo-name suffix used by Bazel 7.x (pre-7.5) and some 8.x builds (e.g. {@code @@protobuf+}).
+     */
+    public static final String REPO_CANONICAL_SUFFIX_PLUS = "+";
+
+    /**
+     * Regex matching any known trailing canonical suffix ({@code ~} or {@code +}) at end of a repo name.
+     * Used as a best-effort strip when the exact suffix is unknown.
+     */
+    public static final String KNOWN_CANONICAL_SUFFIX_REGEX = "[+~]$";
+
+    /**
+     * Marker present in canonical names of module-extension sub-repos
+     * (e.g. {@code rules_jvm_external++maven+guava}). These never appear as
+     * {@code bazel mod graph} module keys and are excluded from BCR resolution.
+     */
+    public static final String MODULE_EXTENSION_MARKER = "++";
+
+    /**
+     * Separator between the repo-name part and the {@code //path:target} part of a Bazel label.
+     */
+    public static final String LABEL_PATH_SEPARATOR = "//";
 }
 

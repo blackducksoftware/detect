@@ -1,6 +1,7 @@
 package com.blackduck.integration.detectable.detectables.bazel.pipeline.step;
 
 import com.blackduck.integration.detectable.detectable.exception.DetectableException;
+import com.blackduck.integration.detectable.detectables.bazel.query.BazelCommandArguments;
 import com.blackduck.integration.detectable.detectables.bazel.query.BazelQueryBuilder;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelVersion;
 import org.slf4j.Logger;
@@ -32,14 +33,14 @@ public class IntermediateStepExecuteShowRepoHeuristic implements IntermediateSte
     // Detected Bazel version; null means unknown (treat as < 7.1)
     private final BazelVersion bazelVersion;
 
-    // Extracted string constants for repo prefix markers
-    private static final String REPO_PREFIX_SINGLE    = "@";
-    private static final String REPO_PREFIX_CANONICAL = "@@";
+    // Extracted string constants for repo prefix markers (centralized in BazelCommandArguments)
+    private static final String REPO_PREFIX_SINGLE    = BazelCommandArguments.REPO_PREFIX_SINGLE;
+    private static final String REPO_PREFIX_CANONICAL = BazelCommandArguments.REPO_PREFIX_CANONICAL;
     // The two canonical suffix characters used by Bazel across versions:
     //   SUFFIX_TILDE (~) — introduced in Bazel 7.5+
     //   SUFFIX_PLUS  (+) — used in Bazel 7.x (pre-7.5) and some 8.x builds
-    private static final String SUFFIX_TILDE = "~";
-    private static final String SUFFIX_PLUS  = "+";
+    private static final String SUFFIX_TILDE = BazelCommandArguments.REPO_CANONICAL_SUFFIX_TILDE;
+    private static final String SUFFIX_PLUS  = BazelCommandArguments.REPO_CANONICAL_SUFFIX_PLUS;
 
     // Separator between repo blocks in batched show_repo output
     private static final String REPO_BLOCK_SEPARATOR = "## @";

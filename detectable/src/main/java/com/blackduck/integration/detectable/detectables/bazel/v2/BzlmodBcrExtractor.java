@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -61,14 +60,7 @@ public class BzlmodBcrExtractor {
 
     // Pattern for the target-scoped library query (same as the HTTP_ARCHIVE pipeline)
     private static final String LIBRARY_RULE_PATTERN = ".*library";
-    // Repo name prefixes that are Bazel toolchain / internal repos — excluded from BCR scope check.
-    // Mirrors the exclusion list in HttpFamilyProber and Pipelines.java.
-    private static final Set<String> EXCLUDED_REPO_PREFIXES = new HashSet<>(Arrays.asList(
-        "bazel_tools", "local_config_", "remotejdk", "platforms",
-        "rules_python", "rules_java", "rules_cc",
-        "maven", "unpinned_maven", "rules_jvm_external",
-        "rules_shell"  // Bazel 9 implicitly injects rules_shell into every Java target; it is a build toolchain module, not shipped software
-    ));
+    // Infrastructure / toolchain repo exclusion is centralized in BazelInfrastructureModules.
 
     private final BazelCommandExecutor bazelCmd;
     private final BazelVersion bazelVersion;
@@ -564,15 +556,10 @@ public class BzlmodBcrExtractor {
 
     /**
      * Returns true if the repo/module name should be excluded from BCR scope checks.
-     * Mirrors the exclusion list in HttpFamilyProber and Pipelines.java.
+     * Delegates to the shared {@link BazelInfrastructureModules} source of truth.
      */
     private boolean isExcludedModuleName(String name) {
-        for (String prefix : EXCLUDED_REPO_PREFIXES) {
-            if (name.startsWith(prefix)) {
-                return true;
-            }
-        }
-        return false;
+        return BazelInfrastructureModules.isInfrastructure(name);
     }
 
     /**
