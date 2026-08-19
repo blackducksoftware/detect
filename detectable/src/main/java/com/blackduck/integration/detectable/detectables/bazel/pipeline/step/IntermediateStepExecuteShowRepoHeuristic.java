@@ -2,7 +2,6 @@ package com.blackduck.integration.detectable.detectables.bazel.pipeline.step;
 
 import com.blackduck.integration.detectable.detectable.exception.DetectableException;
 import com.blackduck.integration.detectable.detectables.bazel.query.BazelCommandArguments;
-import com.blackduck.integration.detectable.detectables.bazel.query.BazelQueryBuilder;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,8 +27,8 @@ public class IntermediateStepExecuteShowRepoHeuristic implements IntermediateSte
     // Logger for this class
     private static final Logger logger = LoggerFactory.getLogger(IntermediateStepExecuteShowRepoHeuristic.class);
 
-    // Bazel command executor dependency
-    private final BazelCommandExecutor bazel;
+    // Shared show_repo execution mechanics (batching, block splitting, per-candidate fallback)
+    private final ShowRepoExecutor showRepoExecutor;
     // Detected Bazel version; null means unknown (treat as < 7.1)
     private final BazelVersion bazelVersion;
 
@@ -41,9 +40,6 @@ public class IntermediateStepExecuteShowRepoHeuristic implements IntermediateSte
     //   SUFFIX_PLUS  (+) — used in Bazel 7.x (pre-7.5) and some 8.x builds
     private static final String SUFFIX_TILDE = BazelCommandArguments.REPO_CANONICAL_SUFFIX_TILDE;
     private static final String SUFFIX_PLUS  = BazelCommandArguments.REPO_CANONICAL_SUFFIX_PLUS;
-
-    // Separator between repo blocks in batched show_repo output
-    private static final String REPO_BLOCK_SEPARATOR = "## @";
 
     /**
      * Constructor for IntermediateStepExecuteShowRepoHeuristic (backward-compatible).
@@ -59,7 +55,7 @@ public class IntermediateStepExecuteShowRepoHeuristic implements IntermediateSte
      * @param bazelVersion Detected Bazel version; null means unknown (per-repo fallback)
      */
     public IntermediateStepExecuteShowRepoHeuristic(BazelCommandExecutor bazel, BazelVersion bazelVersion) {
-        this.bazel = bazel;
+        this.showRepoExecutor = new ShowRepoExecutor(bazel);
         this.bazelVersion = bazelVersion;
     }
 
@@ -105,41 +101,14 @@ public class IntermediateStepExecuteShowRepoHeuristic implements IntermediateSte
 
         if (repoArgs.isEmpty()) return Optional.of(new ArrayList<>());
 
-        try {
-            logger.debug("Attempting batched show_repo for {} repos (Bazel {})", repoArgs.size(), bazelVersion);
-            List<String> modArgs = BazelQueryBuilder.mod()
-                .showRepoRawBatch(repoArgs)
-                .build();
-
-            // Use executeModCommandToString: a broken module extension (e.g., bazel_jar_jar+ on Bazel 9)
-            // causes exit code 2 even when the batch output is fully valid in stdout.
-            Optional<String> result = bazel.executeModCommandToString(modArgs);
-            if (result.isPresent() && !result.get().trim().isEmpty()) {
-                List<String> blocks = splitShowRepoOutput(result.get());
-                logger.debug("Batched show_repo succeeded: {} blocks from {} repos", blocks.size(), repoArgs.size());
-                return Optional.of(blocks);
-            }
-        } catch (Exception e) {
-            logger.debug("Batched show_repo failed: {}", e.getMessage());
+        logger.debug("Attempting batched show_repo for {} repos (Bazel {})", repoArgs.size(), bazelVersion);
+        Optional<String> result = showRepoExecutor.runBatch(repoArgs);
+        if (result.isPresent()) {
+            List<String> blocks = showRepoExecutor.splitIntoBlocks(result.get());
+            logger.debug("Batched show_repo succeeded: {} blocks from {} repos", blocks.size(), repoArgs.size());
+            return Optional.of(blocks);
         }
         return Optional.empty();
-    }
-
-    /**
-     * Splits the combined output of a batched `bazel mod show_repo` into individual repo blocks.
-     * Each block starts with "## @reponame:" header.
-     */
-    private List<String> splitShowRepoOutput(String combinedOutput) {
-        List<String> blocks = new ArrayList<>();
-        // Split on the "## @" boundary which separates repo blocks
-        String[] parts = combinedOutput.split("(?=" + REPO_BLOCK_SEPARATOR + ")");
-        for (String part : parts) {
-            String trimmed = part.trim();
-            if (!trimmed.isEmpty()) {
-                blocks.add(trimmed);
-            }
-        }
-        return blocks;
     }
 
     /**
@@ -148,23 +117,21 @@ public class IntermediateStepExecuteShowRepoHeuristic implements IntermediateSte
     private List<String> processPerRepo(List<String> input) {
         List<String> out = new ArrayList<>();
 
-        int successes = 0, failures = 0;
+        int successes = 0;
+        int failures = 0;
         for (String raw : input) {
             if (raw == null) continue;
             String token = raw.trim();
             if (token.isEmpty()) continue;
 
             // Generate candidate repo arguments according to heuristic and try them in order
-            List<String> candidates = candidateRepoArgs(token);
-            boolean success = false;
-            for (String candidate : candidates) {
-                if (tryShowRepoAddOutput(candidate, out)) {
-                    success = true;
-                    break;
-                }
+            Optional<String> resolved = showRepoExecutor.runFirstSuccessful(candidateRepoArgs(token));
+            if (resolved.isPresent()) {
+                out.add(resolved.get());
+                successes++;
+            } else {
+                failures++;
             }
-
-            if (success) successes++; else failures++;
         }
         logger.info("bzlmod HTTP show_repo (heuristic) summary: successes={}, failures={}", successes, failures);
         return out;
@@ -206,24 +173,5 @@ public class IntermediateStepExecuteShowRepoHeuristic implements IntermediateSte
     private boolean looksSynthetic(String name) {
         // Treat '+' (Bazel 8) and '~' (Bazel 7) as synthetic markers
         return name.contains(SUFFIX_PLUS) || name.contains(SUFFIX_TILDE);
-    }
-
-    /**
-     * Runs 'bazel mod show_repo' for the given repo argument and adds output to the result list if successful.
-     * @param repoArg Repo argument (with leading @ or @@)
-     * @param out Output list to add successful results
-     * @return true if the command succeeded and output was added, false otherwise
-     */
-    private boolean tryShowRepoAddOutput(String repoArg, List<String> out) {
-        // Use executeModCommandToString: a broken module extension (e.g., bazel_jar_jar+ on Bazel 9)
-        // poisons the exit code to 2 even when show_repo produced a valid repo definition in stdout.
-        // stdout being non-empty is the authoritative success signal for mod show_repo.
-        Optional<String> res = bazel.executeModCommandToString(Arrays.asList("mod", "show_repo", repoArg));
-        if (res.isPresent()) {
-            out.add(res.get());
-            return true;
-        }
-        logger.debug("mod show_repo {} produced no usable output", repoArg);
-        return false;
     }
 }

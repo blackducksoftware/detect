@@ -8,6 +8,7 @@ import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.detectable.detectable.executable.ExecutableFailedException;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelCommandExecutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.IntermediateStepParseShowRepoToUrlCandidates;
+import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.ShowRepoExecutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.parse.GithubUrlParser;
 import com.blackduck.integration.detectable.detectables.bazel.query.BazelQueryBuilder;
 import org.slf4j.Logger;
@@ -70,6 +71,8 @@ public class BzlmodBcrExtractor {
     // Stateless helpers — instantiated internally, no external injection needed
     private final GithubUrlParser githubUrlParser;
     private final IntermediateStepParseShowRepoToUrlCandidates urlCandidateParser;
+    // Shared show_repo execution mechanics (batching, block splitting, per-candidate fallback)
+    private final ShowRepoExecutor showRepoExecutor;
     // Populated during extractGraph(); used by callers to avoid re-adding BCR deps flat via other pipelines.
     private final Set<ExternalId> resolvedExternalIds = new LinkedHashSet<>();
 
@@ -79,6 +82,7 @@ public class BzlmodBcrExtractor {
         this.bazelTarget = bazelTarget;
         this.githubUrlParser = new GithubUrlParser();
         this.urlCandidateParser = new IntermediateStepParseShowRepoToUrlCandidates();
+        this.showRepoExecutor = new ShowRepoExecutor(bazelCmd);
     }
 
     /**
@@ -288,62 +292,53 @@ public class BzlmodBcrExtractor {
         if (showRepoArgs.isEmpty()) {
             return Collections.emptyMap();
         }
-        try {
-            List<String> batchCmd = BazelQueryBuilder.mod().showRepoRawBatch(showRepoArgs).build();
-            Optional<String> batchOutput = bazelCmd.executeModCommandToString(batchCmd);
-            if (!batchOutput.isPresent() || batchOutput.get().trim().isEmpty()) {
-                return Collections.emptyMap();
-            }
-
-            // Each repo block starts with either:
-            //   "## @@<name><suffix>:" — canonical form (submitted as @@name~ or @@name+)
-            //   "## @<name>:"          — apparent/bare form (submitted as bare name, Bazel resolves via apparent-name path)
-            // Split on "## @" (catches both) and then determine the prefix length when extracting the repo name.
-            String[] outputBlocks = batchOutput.get().split("(?=" + REPO_BLOCK_SEPARATOR_APPARENT + ")");
-            Map<String, String> blockContentByModuleName = new LinkedHashMap<>();
-            for (String outputBlock : outputBlocks) {
-                String trimmedBlock = outputBlock.trim();
-                if (trimmedBlock.isEmpty()) {
-                    continue;
-                }
-                // Determine which header form this block uses and extract the repo name from the header
-                String headerRepoName = null;
-                if (trimmedBlock.startsWith(REPO_BLOCK_SEPARATOR_CANONICAL)) {
-                    // e.g. "## @@protobuf~: ..." → headerRepoName = "protobuf~"
-                    int colonIdx = trimmedBlock.indexOf(':');
-                    if (colonIdx > REPO_BLOCK_SEPARATOR_CANONICAL.length()) {
-                        headerRepoName = trimmedBlock.substring(REPO_BLOCK_SEPARATOR_CANONICAL.length(), colonIdx);
-                    }
-                } else if (trimmedBlock.startsWith(REPO_BLOCK_SEPARATOR_APPARENT)) {
-                    // e.g. "## @bazel_skylib: ..." → headerRepoName = "bazel_skylib" (already no suffix)
-                    int colonIdx = trimmedBlock.indexOf(':');
-                    if (colonIdx > REPO_BLOCK_SEPARATOR_APPARENT.length()) {
-                        headerRepoName = trimmedBlock.substring(REPO_BLOCK_SEPARATOR_APPARENT.length(), colonIdx);
-                    }
-                }
-                if (headerRepoName != null) {
-                    // Strip any canonical suffix (e.g. "protobuf~" → "protobuf"; "bazel_skylib" → "bazel_skylib")
-                    String moduleName = resolver.stripCanonicalSuffix(headerRepoName);
-                    logger.debug("BZLMOD BCR: batched show_repo block header: headerRepoName='{}' → moduleName='{}'",
-                        headerRepoName, moduleName);
-                    blockContentByModuleName.put(moduleName, trimmedBlock);
-                }
-            }
-
-            // Map module keys to the block content that corresponds to their extracted module name
-            Map<String, String> result = new LinkedHashMap<>();
-            for (String moduleKey : moduleKeys) {
-                String name         = BzlmodGraphJsonParser.extractName(moduleKey);
-                String blockContent = blockContentByModuleName.get(name);
-                if (blockContent != null) {
-                    result.put(moduleKey, blockContent);
-                }
-            }
-            return result;
-        } catch (Exception e) {
-            logger.debug("BZLMOD BCR: batched show_repo failed with exception: {}", e.getMessage());
+        Optional<String> batchOutput = showRepoExecutor.runBatch(showRepoArgs);
+        if (!batchOutput.isPresent()) {
             return Collections.emptyMap();
         }
+
+        // Each repo block starts with either:
+        //   "## @@<name><suffix>:" — canonical form (submitted as @@name~ or @@name+)
+        //   "## @<name>:"          — apparent/bare form (submitted as bare name, Bazel resolves via apparent-name path)
+        // ShowRepoExecutor splits on the "## @" boundary (catches both); we then determine the prefix
+        // length when extracting the repo name from each block header.
+        List<String> outputBlocks = showRepoExecutor.splitIntoBlocks(batchOutput.get());
+        Map<String, String> blockContentByModuleName = new LinkedHashMap<>();
+        for (String trimmedBlock : outputBlocks) {
+            // Determine which header form this block uses and extract the repo name from the header
+            String headerRepoName = null;
+            if (trimmedBlock.startsWith(REPO_BLOCK_SEPARATOR_CANONICAL)) {
+                // e.g. "## @@protobuf~: ..." → headerRepoName = "protobuf~"
+                int colonIdx = trimmedBlock.indexOf(':');
+                if (colonIdx > REPO_BLOCK_SEPARATOR_CANONICAL.length()) {
+                    headerRepoName = trimmedBlock.substring(REPO_BLOCK_SEPARATOR_CANONICAL.length(), colonIdx);
+                }
+            } else if (trimmedBlock.startsWith(REPO_BLOCK_SEPARATOR_APPARENT)) {
+                // e.g. "## @bazel_skylib: ..." → headerRepoName = "bazel_skylib" (already no suffix)
+                int colonIdx = trimmedBlock.indexOf(':');
+                if (colonIdx > REPO_BLOCK_SEPARATOR_APPARENT.length()) {
+                    headerRepoName = trimmedBlock.substring(REPO_BLOCK_SEPARATOR_APPARENT.length(), colonIdx);
+                }
+            }
+            if (headerRepoName != null) {
+                // Strip any canonical suffix (e.g. "protobuf~" → "protobuf"; "bazel_skylib" → "bazel_skylib")
+                String moduleName = resolver.stripCanonicalSuffix(headerRepoName);
+                logger.debug("BZLMOD BCR: batched show_repo block header: headerRepoName='{}' → moduleName='{}'",
+                    headerRepoName, moduleName);
+                blockContentByModuleName.put(moduleName, trimmedBlock);
+            }
+        }
+
+        // Map module keys to the block content that corresponds to their extracted module name
+        Map<String, String> result = new LinkedHashMap<>();
+        for (String moduleKey : moduleKeys) {
+            String name         = BzlmodGraphJsonParser.extractName(moduleKey);
+            String blockContent = blockContentByModuleName.get(name);
+            if (blockContent != null) {
+                result.put(moduleKey, blockContent);
+            }
+        }
+        return result;
     }
 
     /**
@@ -367,30 +362,13 @@ public class BzlmodBcrExtractor {
         Map<String, String> result = new LinkedHashMap<>();
         for (String moduleKey : moduleKeys) {
             String name = BzlmodGraphJsonParser.extractName(moduleKey);
-            boolean resolved = false;
-            for (String candidate : resolver.candidateRepoArgs(name)) {
-                try {
-                    List<String> showRepoArgs = BazelQueryBuilder.mod().showRepoRaw(candidate).build();
-                    Optional<String> output = bazelCmd.executeModCommandToString(showRepoArgs);
-                    if (output.isPresent() && !output.get().trim().isEmpty()) {
-                        result.put(moduleKey, output.get());
-                        resolved = true;
-                        logger.debug("BZLMOD BCR: per-module show_repo resolved '{}' using candidate '{}'",
-                            moduleKey, candidate);
-                        break;
-                    }
-                    logger.debug("BZLMOD BCR: show_repo candidate '{}' for '{}' returned no output; trying next",
-                        candidate, name);
-                } catch (Exception e) {
-                    // Bazel 7.x can FATAL-crash (NullPointerException inside ModuleArg$CanonicalRepoName)
-                    // when given certain canonical forms for modules not in its internal repo map.
-                    // Treat any exception as "this candidate failed" and advance to the next candidate.
-                    // See SHOW_REPO_ARG_BUGS.md — Bug 2 for full analysis.
-                    logger.debug("BZLMOD BCR: show_repo candidate '{}' for '{}' failed with exception: {} — trying next",
-                        candidate, name, e.getMessage());
-                }
-            }
-            if (!resolved) {
+            // The ordered candidate list handles cross-version Bazel inconsistencies (see resolver javadoc).
+            // ShowRepoExecutor tries each in turn and returns the first non-empty result; any candidate
+            // that crashes Bazel (7.x NPE) is treated as a miss and the loop advances.
+            Optional<String> output = showRepoExecutor.runFirstSuccessful(resolver.candidateRepoArgs(name));
+            if (output.isPresent()) {
+                result.put(moduleKey, output.get());
+            } else {
                 logger.debug("BZLMOD BCR: per-module show_repo produced no output for '{}'", moduleKey);
             }
         }
