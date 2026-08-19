@@ -29,7 +29,7 @@ class PnpmWorkspaceDependencySummaryTest {
     void testEmptyGraph() {
         DependencyGraph graph = new BasicDependencyGraph();
 
-        PnpmWorkspaceDependencySummary summary = PnpmWorkspaceDependencySummary.from(graph);
+        PnpmWorkspaceDependencySummary summary = PnpmWorkspaceDependencySummary.from(graph, true);
 
         assertEquals(0, summary.directCount);
         assertEquals(0, summary.transitiveCount);
@@ -42,7 +42,7 @@ class PnpmWorkspaceDependencySummaryTest {
         DependencyGraph graph = new BasicDependencyGraph();
         graph.addChildrenToRoot(dep("react", "18.0.0"), dep("lodash", "4.17.21"));
 
-        PnpmWorkspaceDependencySummary summary = PnpmWorkspaceDependencySummary.from(graph);
+        PnpmWorkspaceDependencySummary summary = PnpmWorkspaceDependencySummary.from(graph, true);
 
         assertEquals(2, summary.directCount);
         assertEquals(0, summary.transitiveCount);
@@ -61,7 +61,7 @@ class PnpmWorkspaceDependencySummaryTest {
         graph.addChildrenToRoot(webpack);
         graph.addParentWithChild(webpack, acorn);
 
-        PnpmWorkspaceDependencySummary summary = PnpmWorkspaceDependencySummary.from(graph);
+        PnpmWorkspaceDependencySummary summary = PnpmWorkspaceDependencySummary.from(graph, true);
 
         assertEquals(1, summary.directCount);
         assertEquals(1, summary.transitiveCount);
@@ -88,7 +88,7 @@ class PnpmWorkspaceDependencySummaryTest {
         graph.addParentWithChild(a, d);
         graph.addParentWithChild(b, d);
 
-        PnpmWorkspaceDependencySummary summary = PnpmWorkspaceDependencySummary.from(graph);
+        PnpmWorkspaceDependencySummary summary = PnpmWorkspaceDependencySummary.from(graph, true);
 
         assertEquals(2, summary.directCount, "Expected 2 direct deps (pkg-a, pkg-b)");
         assertEquals(1, summary.transitiveCount, "Expected 1 transitive dep (shared-dep counted once, not twice)");
@@ -106,7 +106,7 @@ class PnpmWorkspaceDependencySummaryTest {
             dep("moment", "1.0.0")
         );
 
-        PnpmWorkspaceDependencySummary summary = PnpmWorkspaceDependencySummary.from(graph);
+        PnpmWorkspaceDependencySummary summary = PnpmWorkspaceDependencySummary.from(graph, true);
 
         List<String> names = summary.depNames;
         assertEquals(3, names.size());
