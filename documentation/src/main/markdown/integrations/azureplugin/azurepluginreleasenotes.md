@@ -9,7 +9,7 @@
 	
 **Resolved issues**
 
-* (DETECTADO-113) Updates to adm-zip, azure-pipelines-task-lib, mocha, types/mocha, and node.js, third party libraries to resolve vulnerabilities.
+* (DETECTADO-113) Updates to adm-zip, azure-pipelines-task-lib, mocha, types/mocha, brace-expansion, and node.js, third party libraries to resolve vulnerabilities.
 
 ## Version 11.0.0
 
