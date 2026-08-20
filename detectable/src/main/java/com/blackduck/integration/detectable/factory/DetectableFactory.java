@@ -50,6 +50,11 @@ import com.blackduck.integration.detectable.detectables.bazel.BazelWorkspaceFile
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.DependencySourceChooser;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelVariableSubstitutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.HaskellCabalLibraryJsonProtoParser;
+import com.blackduck.integration.detectable.detectable.executable.resolver.BunResolver;
+import com.blackduck.integration.detectable.detectables.bun.lockb.BunLockbDetectable;
+import com.blackduck.integration.detectable.detectables.bun.lockb.BunLockbExtractor;
+import com.blackduck.integration.detectable.detectables.bun.lockb.BunLockbParser;
+import com.blackduck.integration.detectable.detectables.bun.lockb.BunLockbTransformer;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectable;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectableOptions;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeExtractor;
@@ -309,7 +314,9 @@ import com.blackduck.integration.detectable.detectables.opam.lockfile.OpamLockFi
 import com.blackduck.integration.detectable.detectables.opam.lockfile.OpamLockFileExtractor;
 import com.blackduck.integration.detectable.detectables.opam.transform.OpamGraphTransformer;
 import com.blackduck.integration.detectable.util.ToolVersionLogger;
+import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.util.ExcludedIncludedWildcardFilter;
+import com.blackduck.integration.detectable.detectables.yarn.YarnDependencyType;
 
 /*
  Entry point for creating detectables using most
@@ -789,6 +796,10 @@ public class DetectableFactory {
 
     public UVLockFileDetectable createUVLockFileDetectable(DetectableEnvironment environment, UVDetectorOptions uvDetectorOptions) {
         return new UVLockFileDetectable(environment, fileFinder, uvDetectorOptions, uvLockfileExtractor(environment.getDirectory()));
+    }
+
+    public BunLockbDetectable createBunLockbDetectable(DetectableEnvironment environment, BunResolver bunResolver) {
+        return new BunLockbDetectable(environment, fileFinder, bunResolver, bunLockbExtractor());
     }
 
     // Used by three Detectables
@@ -1273,6 +1284,19 @@ public class DetectableFactory {
         return new UVLockParser(externalIdFactory);
     }
 
+
+    private BunLockbParser bunLockbParser() {
+        return new BunLockbParser(yarnLockParser());
+    }
+
+    private BunLockbTransformer bunLockbTransformer() {
+        YarnTransformer yarnTransformer = new YarnTransformer(externalIdFactory, EnumListFilter.<YarnDependencyType>excludeNone());
+        return new BunLockbTransformer(yarnTransformer);
+    }
+
+    private BunLockbExtractor bunLockbExtractor() {
+        return new BunLockbExtractor(executableRunner, bunLockbParser(), bunLockbTransformer(), packageJsonFiles());
+    }
 
     //#endregion Utility
 
