@@ -1,5 +1,16 @@
 # Release Notes for Azure DevOps Plugin
 
+## Version 12.0.0
+
+**New features**
+
+* Updated the plugin to use [detect_product_long] 12.
+    * [detect_product_long] [Release Notes](../../currentreleasenotes.md)
+	
+**Resolved issues**
+
+* (DETECTADO-113) Update adm-zip third party library to version 0.6.0 to resolve vulnerabilities.
+
 ## Version 11.0.0
 
 **New features**
@@ -8,6 +19,7 @@
     * [detect_product_long] [Release Notes](../../currentreleasenotes.md)
 
 ## Version 10.1.0
+
 **New features**
 
 * (DETECTADO-102) Added support for Node.js versions Node16 and Node20_1. Node10 end-of-life warning will no longer be displayed.
@@ -17,6 +29,7 @@
 * (DETECTADO-103) Updated dependencies to resolve their associated security vulnerabilities.
 
 ## Version 10.0.0
+
 **Notice**
 
 The [company_name] Software Integrity Group is now [var_company_name]    
@@ -46,6 +59,7 @@ The [company_name] Software Integrity Group is now [var_company_name]
 For [detect_product_short] script downloads, `detect.synopsys.com` is being deprecated in favor of `detect.blackduck.com`. After March 31st, 2025, only `detect.blackduck.com` will be available.
 
 <note type="attention">To continuing using the deprecated [company_name] [detect_product_short] plugin, it is essential to update to version 9.0.1, available at the [Previous Marketplace location](https://marketplace.visualstudio.com/items?itemName=synopsys-detect.synopsys-detect), before March 31st, 2025.</note>
+
 **Changed features**
 
 * Adds logic to fallback between pulling the [detect_product_short] script from `detect.synopys.com` and `detect.blackduck.com`.
@@ -53,6 +67,7 @@ For [detect_product_short] script downloads, `detect.synopsys.com` is being depr
 <note type="note">It is recommended that customers add both `repo.blackduck.com`, and `detect.blackduck.com`, to their allow list, while also maintaining `sig-repo.synopsys.com`, and `detect.synopsys.com`, until March 31st, 2025 when `sig-repo.synopsys.com`, and `detect.synopsys.com`, will be fully replaced by `repo.blackduck.com` and `detect.blackduck.com` respectively.</note>
 
 ## Version 9.0.0
+
 **New features**
 
 * Updated the plugin to use [company_name] [solution_name] 9.   
@@ -63,23 +78,27 @@ For [detect_product_short] script downloads, `detect.synopsys.com` is being depr
 * (DETECTADO-92) Pipeline will now fail as expected when invalid proxy details are provided for Linux and Mac Agents.
 
 ## Version 8.1.0
+
 **New features**
 
 * (DETECTADO-95) Plugin is now able to inherit the Azure agent's proxy configuration.
 	* Refer to [Configuring a Build Agent with a proxy](configuringbuildagent.md) for more information.
 
 ## Version 8.0.0
+
 **New features**
 
 * Updated the plugin to use [company_name] [solution_name] 8.
 
 ## Version 7.0.0
+
 **New features** 
 
 * Updated the plugin to use [company_name] [solution_name] 7.
 * Added the ability to run [company_name] [solution_name] in air gap mode.
 
 ## Version 6.0.0
+
 **Resolved issues**
 
 * (DETECTADO-68) Improved error messaging when invalid proxy details are used.
@@ -91,6 +110,7 @@ For [detect_product_short] script downloads, `detect.synopsys.com` is being depr
 * The plugin versioning was changed to match the major version of [company_name] [solution_name] that it is designed to work with, for example Detect ADO 6.0.0 works with [company_name] [solution_name] major version 6.
 
 ## Version 3.0.0
+
 **New features**
 
 * Added the capability for the script to use the tool directory in the ADO agent to store the [company_name] [solution_name] JAR. It will continue to use this JAR as long as the JAR version matches the version specified in the task configuration.
@@ -101,6 +121,7 @@ For [detect_product_short] script downloads, `detect.synopsys.com` is being depr
 * Removed support for Polaris.
 
 ## Version 2.0.0
+
 **New features**
 
 * Added support for Polaris.
@@ -110,12 +131,14 @@ For [detect_product_short] script downloads, `detect.synopsys.com` is being depr
 * Product renamed to [company_name] [solution_name] for Azure DevOps.
 
 ## Version 1.1.0
+
 **Changed features**
 
 * The service endpoint configuration is now optional.
 * Added support for using an API token for user authentication.
 
 ## Version 1.0.4
+
 **Changed features**
 
 * Improved proxy support and handling of supplied proxy arguments.
@@ -125,8 +148,10 @@ For [detect_product_short] script downloads, `detect.synopsys.com` is being depr
 * Resolved an issue that could result in an *Access denied* error.
 
 ## Version 1.0.3
+
 **Resolved issues**
 * Resolved an issue involving the SSL issue casting protocol.
 
 ## Version 1.0.0
+
 * First release of product
