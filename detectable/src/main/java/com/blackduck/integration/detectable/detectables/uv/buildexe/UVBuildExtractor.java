@@ -8,6 +8,7 @@ import com.blackduck.integration.detectable.ExecutableTarget;
 import com.blackduck.integration.detectable.ExecutableUtils;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import com.blackduck.integration.detectable.detectable.executable.DetectableExecutableRunner;
+import com.blackduck.integration.detectable.detectables.uv.UVDependencyGroupFilter;
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import com.blackduck.integration.detectable.detectables.uv.parse.UVTomlParser;
 import com.blackduck.integration.detectable.detectables.uv.transform.UVTreeDependencyGraphTransformer;
@@ -22,8 +23,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class UVBuildExtractor {
 
@@ -46,15 +45,12 @@ public class UVBuildExtractor {
 
     public Extraction extract(ExecutableTarget uvExe, UVDetectorOptions uvDetectorOptions, UVTomlParser uvTomlParser) throws ExecutableRunnerException {
         try {
-            Optional<List<String>> arguments = buildTreeCommandArguments(uvDetectorOptions);
+            UVDependencyGroupFilter groupFilter = new UVDependencyGroupFilter(uvDetectorOptions);
+            groupFilter.logGroupConflictWarnings(logger);
 
-            // If no valid groups remain after exclusion, return an empty BOM (a CodeLocation with zero dependencies)
-            // rather than running "uv tree --no-dedupe" which would incorrectly return ALL dependencies.
+            Optional<List<String>> arguments = buildTreeCommandArguments(groupFilter);
+
             if (!arguments.isPresent()) {
-                logger.warn(
-                        "All dependency groups specified in 'detect.uv.dependency.groups.only' are also present in "
-                        + "'detect.uv.dependency.groups.excluded'. No dependency groups remain to scan. Returning an empty BOM."
-                );
                 DependencyGraph emptyGraph = new BasicDependencyGraph();
                 Optional<NameVersion> projectNameVersion = uvTomlParser.parseNameVersion();
                 CodeLocation emptyCodeLocation = projectNameVersion
@@ -82,63 +78,27 @@ public class UVBuildExtractor {
         }
     }
 
-    private Optional<List<String>> buildTreeCommandArguments(UVDetectorOptions uvDetectorOptions) {
+    private Optional<List<String>> buildTreeCommandArguments(UVDependencyGroupFilter groupFilter) {
         List<String> arguments = new ArrayList<>();
         arguments.add(TREE_COMMAND);
         arguments.add(NO_DEDUPE_FLAG);
 
-        Set<String> onlyGroups = uvDetectorOptions.getOnlyDependencyGroups();
-        Set<String> excludedGroups = uvDetectorOptions.getExcludedDependencyGroups();
-
-        if (!onlyGroups.isEmpty()) {
-            boolean hasEffectiveGroups = addOnlyGroupArguments(arguments, onlyGroups, excludedGroups);
-            if (!hasEffectiveGroups) {
+        if (!groupFilter.getOnlyGroups().isEmpty()) {
+            if (!groupFilter.hasEffectiveGroups()) {
                 return Optional.empty();
             }
+            for (String group : groupFilter.getEffectiveOnlyGroups()) {
+                arguments.add(ONLY_GROUP_FLAG);
+                arguments.add(group);
+            }
         } else {
-            addDefaultGroupArguments(arguments, excludedGroups);
+            arguments.add(ALL_GROUPS_FLAG);
+            for (String group : groupFilter.getExcludedGroups()) {
+                arguments.add(NO_GROUP_FLAG);
+                arguments.add(group);
+            }
         }
 
         return Optional.of(arguments);
-    }
-
-    // Computes effectiveOnlyGroups = onlyGroups minus excludedGroups.
-    // Returns false if no groups remain (signals caller to produce an empty BOM).
-    private boolean addOnlyGroupArguments(List<String> arguments, Set<String> onlyGroups, Set<String> excludedGroups) {
-        Set<String> conflictingGroups = onlyGroups.stream()
-                .filter(excludedGroups::contains)
-                .collect(Collectors.toSet());
-
-        if (!conflictingGroups.isEmpty()) {
-            logger.warn(
-                    "Dependency groups {} are present in both 'detect.uv.dependency.groups.only' and 'detect.uv.dependency.groups.excluded'. "
-                    + "The exclusion setting takes precedence; these groups will be excluded.",
-                    conflictingGroups
-            );
-        }
-
-        Set<String> effectiveOnlyGroups = onlyGroups.stream()
-                .filter(group -> !excludedGroups.contains(group))
-                .collect(Collectors.toSet());
-
-        if (effectiveOnlyGroups.isEmpty()) {
-            return false;
-        }
-
-        for (String group : effectiveOnlyGroups) {
-            arguments.add(ONLY_GROUP_FLAG);
-            arguments.add(group);
-        }
-
-        return true;
-    }
-
-    private void addDefaultGroupArguments(List<String> arguments, Set<String> excludedGroups) {
-        arguments.add(ALL_GROUPS_FLAG);
-
-        for (String group : excludedGroups) {
-            arguments.add(NO_GROUP_FLAG);
-            arguments.add(group);
-        }
     }
 }

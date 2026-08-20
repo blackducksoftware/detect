@@ -7,6 +7,7 @@ import com.blackduck.integration.bdio.model.dependency.Dependency;
 import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
+import com.blackduck.integration.detectable.detectables.uv.UVDependencyGroupFilter;
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +22,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.stream.Collectors;
 
 public class UVLockParser {
 
@@ -65,31 +65,15 @@ public class UVLockParser {
     // In the first go, we will get all dependency and transitive dependencies information,
     // In the second go, we will recursively loop all the workspace members which will have their direct, transitives and so on to build the graph.
     private void parseDependencies(TomlArray dependencies, String rootName, UVDetectorOptions uvDetectorOptions) {
-        Set<String> onlyGroups = uvDetectorOptions.getOnlyDependencyGroups();
-        Set<String> excludedGroups = uvDetectorOptions.getExcludedDependencyGroups();
+        UVDependencyGroupFilter groupFilter = new UVDependencyGroupFilter(uvDetectorOptions);
+        groupFilter.logGroupConflictWarnings(logger);
 
-        // Guard: if onlyGroups is non-empty but every group in it is also excluded,
-        // there is nothing to scan — return empty BOM immediately.
-        if (!onlyGroups.isEmpty()) {
-            Set<String> conflictingGroups = onlyGroups.stream()
-                    .filter(excludedGroups::contains)
-                    .collect(Collectors.toSet());
-            if (!conflictingGroups.isEmpty()) {
-                logger.warn(
-                        "Dependency groups {} are present in both 'detect.uv.dependency.groups.only' and 'detect.uv.dependency.groups.excluded'. "
-                        + "The exclusion setting takes precedence; these groups will be excluded.",
-                        conflictingGroups
-                );
-            }
-
-            Set<String> effectiveOnlyGroups = onlyGroups.stream()
-                    .filter(group -> !excludedGroups.contains(group))
-                    .collect(Collectors.toSet());
-            if (effectiveOnlyGroups.isEmpty()) {
-                logger.warn("No dependency groups remain to be scanned. Returning empty BOM.");
-                return;
-            }
+        if (!groupFilter.hasEffectiveGroups()) {
+            return;
         }
+
+        Set<String> onlyGroups = groupFilter.getOnlyGroups();
+        Set<String> excludedGroups = groupFilter.getExcludedGroups();
 
         for(int i = 0; i < dependencies.size(); i++) {
             TomlTable dependencyTable = dependencies.getTable(i);
@@ -112,7 +96,7 @@ public class UVLockParser {
                 }
 
                 //parse transitive dependencies section of current dependency
-                parseDependenciesSection(dependencyTable, dependencyName, uvDetectorOptions);
+                parseDependenciesSection(dependencyTable, dependencyName, onlyGroups, excludedGroups);
             }
         }
 
@@ -120,9 +104,7 @@ public class UVLockParser {
 
     }
 
-    private void parseDependenciesSection(TomlTable dependencyTable, String dependencyName, UVDetectorOptions uvDetectorOptions) {
-        Set<String> onlyGroups = uvDetectorOptions.getOnlyDependencyGroups();
-        Set<String> excludedGroups = uvDetectorOptions.getExcludedDependencyGroups();
+    private void parseDependenciesSection(TomlTable dependencyTable, String dependencyName, Set<String> onlyGroups, Set<String> excludedGroups) {
 
         // [dependencies] (regular project deps) — skipped when onlyGroups is set,
         // mirroring CLI behaviour where --only-group does not include regular dependencies.
