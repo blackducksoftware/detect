@@ -49,7 +49,11 @@ public class UVLockfileExtractor {
             // When all only-groups are also excluded, parseLockFile returns an empty list.
             // Create one empty CodeLocation with the project identity so the BOM still
             // contains the project — consistent with the CLI/buildless detector path.
-            if (codeLocations.isEmpty() && !uvDetectorOptions.getOnlyDependencyGroups().isEmpty()) {
+            // Gate on uvLockFile != null: if there was no uv.lock, parseLockFile was never
+            // called, so an empty codeLocations list is expected (requirements.txt may still
+            // add its own CodeLocation below). We must not add a spurious empty CodeLocation
+            // in that case.
+            if (uvLockFile != null && codeLocations.isEmpty() && !uvDetectorOptions.getOnlyDependencyGroups().isEmpty()) {
                 DependencyGraph emptyGraph = new BasicDependencyGraph();
                 CodeLocation emptyCodeLocation = projectNameVersion
                         .map(nv -> new CodeLocation(emptyGraph, ExternalId.FACTORY.createNameVersionExternalId(Forge.PYPI, nv.getName(), nv.getVersion())))

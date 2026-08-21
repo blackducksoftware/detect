@@ -107,9 +107,11 @@ public class UVOnlyGroupsFunctionalTest extends DetectableFunctionalTest {
         graphAssert.hasDependency("packaging", "24.2");
         graphAssert.hasDependency("pluggy", "1.5.0");
 
-        // Verify excluded deps are NOT in the graph
-        graphAssert.hasNoDependency("fastapi", "0.109.0");
-        graphAssert.hasNoDependency("ruff", "0.4.1");
+        // Verify excluded deps are NOT in the graph (version-agnostic — check by name only)
+        Assertions.assertTrue(extraction.getCodeLocations().get(0).getDependencyGraph().getRootDependencies().stream().noneMatch(d -> d.getName().equals("fastapi")),
+                "Expected regular [project.dependencies] to be excluded when onlyGroups is set");
+        Assertions.assertTrue(extraction.getCodeLocations().get(0).getDependencyGraph().getRootDependencies().stream().noneMatch(d -> d.getName().equals("ruff")),
+                "Expected non-selected dependency-groups (lint) to be excluded when onlyGroups is set");
     }
 }
 
