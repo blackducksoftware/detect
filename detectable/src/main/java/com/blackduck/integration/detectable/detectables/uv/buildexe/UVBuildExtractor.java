@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.TreeSet;
 
 public class UVBuildExtractor {
 
@@ -87,13 +88,13 @@ public class UVBuildExtractor {
             if (!groupFilter.hasEffectiveGroups()) {
                 return Optional.empty();
             }
-            for (String group : groupFilter.getEffectiveOnlyGroups()) {
+            for (String group : new TreeSet<>(groupFilter.getEffectiveOnlyGroups())) {
                 arguments.add(ONLY_GROUP_FLAG);
                 arguments.add(group);
             }
         } else {
             arguments.add(ALL_GROUPS_FLAG);
-            for (String group : groupFilter.getExcludedGroups()) {
+            for (String group : new TreeSet<>(groupFilter.getExcludedGroups())) {
                 arguments.add(NO_GROUP_FLAG);
                 arguments.add(group);
             }

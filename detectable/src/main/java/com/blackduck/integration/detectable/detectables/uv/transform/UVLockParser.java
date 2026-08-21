@@ -129,10 +129,11 @@ public class UVLockParser {
     // includes only groups that pass both the onlyGroups allowlist and the excludedGroups denylist.
     private void parseFilteredGroupDependencies(TomlTable groupTable, String dependencyName, Set<String> onlyGroups, Set<String> excludedGroups) {
         for (List<String> keyPath : groupTable.keyPathSet()) {
-            String groupName = keyPath.get(0);
+            String rawGroupName = keyPath.get(0);
+            String groupName = rawGroupName.toLowerCase();
             boolean groupAllowed = onlyGroups.isEmpty() || onlyGroups.contains(groupName);
             if (groupAllowed && !excludedGroups.contains(groupName)) {
-                parseTransitiveDependencies(groupTable.getArray(groupName), dependencyName);
+                parseTransitiveDependencies(groupTable.getArray(rawGroupName), dependencyName);
             }
         }
     }
