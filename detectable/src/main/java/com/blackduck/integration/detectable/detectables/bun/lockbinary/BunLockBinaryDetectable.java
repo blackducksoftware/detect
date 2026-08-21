@@ -40,7 +40,7 @@ public class BunLockBinaryDetectable extends Detectable {
     public DetectableResult applicable() {
         Requirements requirements = new Requirements(fileFinder, environment);
         packageJson = requirements.file(PACKAGE_JSON_FILENAME);
-        requirements.eitherFile(BUN_LOCKB_FILENAME, BUN_LOCK_FILENAME);
+        requirements.file(BUN_LOCKB_FILENAME);
         return requirements.result();
     }
 

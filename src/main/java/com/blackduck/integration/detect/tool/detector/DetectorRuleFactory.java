@@ -3,6 +3,7 @@ package com.blackduck.integration.detect.tool.detector;
 import com.blackduck.integration.detect.tool.detector.factory.DetectDetectableFactory;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectable;
 import com.blackduck.integration.detectable.detectables.bun.lockbinary.BunLockBinaryDetectable;
+import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockfileDetectable;
 import com.blackduck.integration.detectable.detectables.cargo.CargoCliDetectable;
 import com.blackduck.integration.detectable.detectables.cargo.CargoLockDetectable;
 import com.blackduck.integration.detectable.detectables.carthage.CarthageLockDetectable;
@@ -220,7 +221,10 @@ public class DetectorRuleFactory {
         rules.addDetector(DetectorType.BUN, detector -> {
             detector.entryPoint(BunLockBinaryDetectable.class)
                 .search().defaultLock();
-        }).yieldsTo(DetectorType.LERNA, DetectorType.RUSH);
+            detector.entryPoint(BunLockfileDetectable.class)
+                .search().defaultLock();
+        }).allEntryPointsFallbackToNext()
+          .yieldsTo(DetectorType.LERNA, DetectorType.RUSH);
 
         rules.addDetector(DetectorType.YARN, detector -> {
             detector.entryPoint(YarnLockDetectable.class)

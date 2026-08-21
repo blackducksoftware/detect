@@ -12,6 +12,7 @@ import com.blackduck.integration.detectable.detectables.bazel.BazelDetectableOpt
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelV2Detectable;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectable;
 import com.blackduck.integration.detectable.detectables.bun.lockbinary.BunLockBinaryDetectable;
+import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockfileDetectable;
 import com.blackduck.integration.detectable.detectables.cargo.CargoCliDetectable;
 import com.blackduck.integration.detectable.detectables.cargo.CargoLockDetectable;
 import com.blackduck.integration.detectable.detectables.carthage.CarthageLockDetectable;
@@ -409,5 +410,9 @@ public class DetectDetectableFactory {
 
     public BunLockBinaryDetectable createBunLockBinaryDetectable(DetectableEnvironment environment) {
         return detectableFactory.createBunLockBinaryDetectable(environment, detectExecutableResolver);
+    }
+
+    public BunLockfileDetectable createBunLockfileDetectable(DetectableEnvironment environment) {
+        return detectableFactory.createBunLockfileDetectable(environment);
     }
 }
