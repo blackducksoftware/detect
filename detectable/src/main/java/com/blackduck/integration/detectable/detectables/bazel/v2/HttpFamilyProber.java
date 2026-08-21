@@ -53,8 +53,8 @@ public class HttpFamilyProber {
     private static final int LARGE_TARGET_THRESHOLD = 150;
 
     // Repo prefix / path markers are centralized in BazelCommandArguments.
+    // Structural label parsing is delegated to BazelLabel; these remain for building label strings.
     private static final String REPO_PREFIX_SINGLE = BazelCommandArguments.REPO_PREFIX_SINGLE;
-    private static final String REPO_PREFIX_CANONICAL = BazelCommandArguments.REPO_PREFIX_CANONICAL;
     // Repo path separator used in Bazel labels
     private static final String REPO_PATH_SEPARATOR = BazelCommandArguments.LABEL_PATH_SEPARATOR;
 
@@ -164,7 +164,7 @@ public class HttpFamilyProber {
             .withOutputJson()
             .build();
 
-        ExecutableOutput output = bazel.executeWithoutThrowing(modGraphJsonCmd);
+        ExecutableOutput output = bazel.executeToleratingExitCode(modGraphJsonCmd);
         if (output.getReturnCode() != 0) {
             // Don't bail immediately on non-zero exit: a broken module extension (e.g., bazel_jar_jar+
             // on Bazel 9) poisons the exit code even when the JSON graph was fully emitted to stdout.
@@ -245,9 +245,9 @@ public class HttpFamilyProber {
         String[] lines = depsOutput.split("\r?\n");
         Map<String, LinkedHashSet<String>> repoLabels = new HashMap<>();
         for (String line : lines) {
-            if (line.startsWith(REPO_PREFIX_SINGLE) && line.contains(REPO_PATH_SEPARATOR)) {
-                int start = line.startsWith(REPO_PREFIX_CANONICAL) ? 2 : 1; // Support canonical names starting with @@
-                String repo = line.substring(start, line.indexOf(REPO_PATH_SEPARATOR));
+            BazelLabel label = BazelLabel.parse(line);
+            if (label.isRepoLabel() && label.hasPath()) {
+                String repo = label.getRepoName(); // repo name with suffix, prefix and //path stripped
                 if (isExcludedRepo(repo)) {
                     continue;
                 }

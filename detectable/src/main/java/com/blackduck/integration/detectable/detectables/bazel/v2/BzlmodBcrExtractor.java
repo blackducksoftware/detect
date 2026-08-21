@@ -513,7 +513,7 @@ public class BzlmodBcrExtractor {
         Set<String> moduleNames = new LinkedHashSet<>();
         for (String line : queryOutput.get().split("\\r?\\n")) {
             String label = line.trim();
-            if (!label.startsWith("@")) {
+            if (!BazelLabel.parse(label).isRepoLabel()) {
                 continue;
             }
             // Delegate all label-format complexity to the resolver:

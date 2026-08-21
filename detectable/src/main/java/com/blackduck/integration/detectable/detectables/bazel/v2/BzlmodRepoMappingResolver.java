@@ -70,14 +70,9 @@ import java.util.Optional;
 public class BzlmodRepoMappingResolver {
     private static final Logger logger = LoggerFactory.getLogger(BzlmodRepoMappingResolver.class);
 
-    // Label prefix constants (centralized in BazelCommandArguments)
+    // Label prefix constant (centralized in BazelCommandArguments). Used when constructing
+    // canonical @@name show_repo arguments. Structural label *parsing* is delegated to BazelLabel.
     private static final String CANONICAL_PREFIX = BazelCommandArguments.REPO_PREFIX_CANONICAL;
-    private static final String APPARENT_PREFIX  = BazelCommandArguments.REPO_PREFIX_SINGLE;
-    // Canonical names for module extension sub-repos contain "++" (e.g., rules_jvm_external++maven+guava).
-    // These never appear as module keys in bazel mod graph and must be excluded.
-    private static final String MODULE_EXTENSION_MARKER = BazelCommandArguments.MODULE_EXTENSION_MARKER;
-    // Separator between repo name and path in a fully-qualified label
-    private static final String LABEL_PATH_SEPARATOR = BazelCommandArguments.LABEL_PATH_SEPARATOR;
     // Regex that strips any known canonical suffix when the mapping is unavailable
     private static final String KNOWN_SUFFIXES_REGEX = BazelCommandArguments.KNOWN_CANONICAL_SUFFIX_REGEX;
     // The two canonical suffix characters used by Bazel across versions:
@@ -206,43 +201,40 @@ public class BzlmodRepoMappingResolver {
      * </ul>
      */
     public Optional<String> resolveLabel(String label) {
-        if (label == null || label.isEmpty() || !label.startsWith(APPARENT_PREFIX)) {
+        BazelLabel parsed = BazelLabel.parse(label);
+        if (!parsed.isRepoLabel()) {
+            return Optional.empty();
+        }
+        // Module extension sub-repos (canonical names contain "++", e.g. rules_jvm_external++maven+guava)
+        // never appear as module keys in bazel mod graph and must be excluded.
+        if (parsed.isModuleExtensionSubRepo()) {
             return Optional.empty();
         }
 
-        // Strip the //path:target suffix — we only care about the repo name part
-        String repoName;
-        int pathIdx = label.indexOf(LABEL_PATH_SEPARATOR);
-        repoName = pathIdx >= 0 ? label.substring(0, pathIdx) : label;
+        // The repo name is the repository portion after the @/@@ prefix and before //path:target,
+        // with any version suffix (~/+) still attached — not yet the resolved BCR module name.
+        String rawRepoName = parsed.getRepoName();
 
         String moduleName;
-        if (repoName.startsWith(CANONICAL_PREFIX)) {
+        if (parsed.isCanonical()) {
             // ──────────────────────────────────────────────────────────────────
             // Canonical form: @@abseil-cpp~  or  @@abseil-cpp+
             // The suffix carries Bazel's version-specific mangling and must be stripped.
             // No mapping lookup needed — the name is already unambiguous.
             // ──────────────────────────────────────────────────────────────────
-            String raw = repoName.substring(CANONICAL_PREFIX.length()); // "abseil-cpp~"
-            if (raw.contains(MODULE_EXTENSION_MARKER)) {
-                return Optional.empty(); // e.g. rules_jvm_external++maven+guava
-            }
-            moduleName = stripKnownSuffix(raw);
+            moduleName = stripKnownSuffix(rawRepoName);
         } else {
             // ──────────────────────────────────────────────────────────────────
             // Apparent form: @com_google_protobuf
             // Look up in the forward map to resolve any repo_name alias.
             // If not found, the apparent name equals the module name (no override).
             // ──────────────────────────────────────────────────────────────────
-            String apparent = repoName.substring(APPARENT_PREFIX.length()); // "com_google_protobuf"
-            if (apparent.contains(MODULE_EXTENSION_MARKER)) {
-                return Optional.empty();
-            }
-            if (available && apparentToCanonical.containsKey(apparent)) {
-                String canonical = apparentToCanonical.get(apparent); // "protobuf~"
-                moduleName = stripKnownSuffix(canonical);             // "protobuf"
+            if (available && apparentToCanonical.containsKey(rawRepoName)) {
+                String canonical = apparentToCanonical.get(rawRepoName); // "protobuf~"
+                moduleName = stripKnownSuffix(canonical);                // "protobuf"
             } else {
                 // No alias in the mapping — apparent name IS the module name
-                moduleName = apparent;
+                moduleName = rawRepoName;
             }
         }
 

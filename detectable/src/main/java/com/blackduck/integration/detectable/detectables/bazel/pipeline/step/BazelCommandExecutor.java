@@ -60,7 +60,7 @@ public class BazelCommandExecutor {
      * @return stdout content if non-empty, {@link Optional#empty()} otherwise
      */
     public Optional<String> executeModCommandToString(List<String> args) {
-        ExecutableOutput result = executeWithoutThrowing(args);
+        ExecutableOutput result = executeToleratingExitCode(args);
         int exitCode = result.getReturnCode();
         if (exitCode != 0) {
             String stderr = result.getErrorOutput();
@@ -102,7 +102,7 @@ public class BazelCommandExecutor {
      * @throws ExecutableFailedException if exit code is non-zero and not 3
      */
     public Optional<String> executeQueryToString(List<String> args) throws ExecutableFailedException {
-        ExecutableOutput result = executeWithoutThrowing(args);
+        ExecutableOutput result = executeToleratingExitCode(args);
         int exitCode = result.getReturnCode();
 
         if (exitCode == BAZEL_EXIT_CODE_PARTIAL_SUCCESS) {
@@ -142,12 +142,25 @@ public class BazelCommandExecutor {
     private static final int BAZEL_EXIT_CODE_PARTIAL_SUCCESS = 3;
 
     /**
-     * Executes a Bazel command without throwing on failure, allowing caller to inspect exit code and error output.
-     * Used for probing commands where we need to distinguish different failure modes.
+     * Executes a Bazel command and returns the raw {@link ExecutableOutput} <b>without throwing on a
+     * non-zero exit code</b>, so the caller can inspect the return code, stdout, and stderr itself.
+     * This is the counterpart to {@link #executeToString} / {@code executeSuccessfully}, which treat
+     * any non-zero exit as a hard failure. Probing commands need the opposite: a non-zero exit is
+     * frequently expected and still carries usable output (e.g. a broken but unrelated module
+     * extension poisons the exit code to 2 while the requested graph is fully written to stdout).
+     *
+     * <p><b>Why this method still throws:</b> the {@code catch} below only triggers on an
+     * {@link com.blackduck.integration.executable.ExecutableRunnerException} — i.e. Bazel could not be
+     * launched at all (executable missing, IO error, interrupted). That is a genuinely unrecoverable
+     * environment problem, distinct from "Bazel ran and returned a non-zero exit code." There is no
+     * meaningful {@code ExecutableOutput} to hand back when the process never started, and returning a
+     * fabricated empty result would silently mask a broken setup as an empty query result. So a
+     * launch failure is surfaced as a {@link RuntimeException}; a non-zero exit is not.
+     *
      * @param args Bazel command arguments
      * @return ExecutableOutput containing return code, stdout, and stderr
      */
-    public ExecutableOutput executeWithoutThrowing(List<String> args) {
+    public ExecutableOutput executeToleratingExitCode(List<String> args) {
         try {
             return executableRunner.execute(ExecutableUtils.createFromTarget(workspaceDir, bazelExe, args));
         } catch (Exception e) {

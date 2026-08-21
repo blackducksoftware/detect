@@ -115,5 +115,12 @@ public final class BazelCommandArguments {
      * Separator between the repo-name part and the {@code //path:target} part of a Bazel label.
      */
     public static final String LABEL_PATH_SEPARATOR = "//";
+
+    /**
+     * Separator between the module name and version in a {@code bazel mod graph} module key
+     * (e.g. the {@code @} in {@code protobuf@31.0}). Same character as {@link #REPO_PREFIX_SINGLE}
+     * but semantically distinct — this one splits {@code name@version}, not a repo reference.
+     */
+    public static final String MODULE_KEY_SEPARATOR = "@";
 }
 
