@@ -28,13 +28,9 @@ public class MavenCodeLocationPackager {
 
     private static final String END_OF_TREE_PATTERN_STRING = "^-*< .* >-*$";
     private final Pattern endOfTreePattern = Pattern.compile(END_OF_TREE_PATTERN_STRING);
-    // Characters that never appear in a valid Maven coordinate part (groupId,
-    // artifactId, type, classifier, version, scope). Any project-header
-    // candidate whose colon-split parts contain these characters is log prose,
-    // not a GAV, and is rejected. Prevents INFO-level messages (e.g. artifact
-    // provenance warnings from newer maven-resolver versions) that happen to
-    // embed a coordinate and colon-heavy URLs from being mistaken for the
-    // project header.
+    // Characters that are never valid in a Maven coordinate part. A
+    // project-header candidate whose colon-split parts contain any of
+    // these is treated as log prose, not a GAV.
     private static final Pattern PROJECT_COORDINATE_INVALID_CHARS = Pattern.compile("[\\s/()\\[\\]{},]");
     private final ExternalIdFactory externalIdFactory;
     private List<MavenParseResult> codeLocations = new ArrayList<>();
@@ -43,10 +39,13 @@ public class MavenCodeLocationPackager {
     // in-scope components found in an out-of-scope tree go in the orphans list
     private final List<Dependency> orphans = new ArrayList<>();
     private boolean parsingProjectSection;
-    // True if any dependency:tree goal header was observed during this
-    // extraction. Used to emit a WARN when the parser sees a tree section
-    // but fails to anchor a project — a historically-silent failure mode.
+    // True if a dependency:tree goal header was observed in this extraction.
     private boolean treeHeaderEverSeen;
+    // True if at least one valid project GAV was recognized in this
+    // extraction, whether the modules filter later included or excluded it.
+    // Used to distinguish "parser failed to identify a project" from
+    // "modules filter excluded every project."
+    private boolean validProjectHeaderSeen;
     private int level;
     private boolean inOutOfScopeTree = false;
     private DependencyGraph currentGraph = null;
@@ -75,6 +74,7 @@ public class MavenCodeLocationPackager {
         dependencyParentStack = new Stack<>();
         parsingProjectSection = false;
         treeHeaderEverSeen = false;
+        validProjectHeaderSeen = false;
         currentGraph = new BasicDependencyGraph();
 
         if(!shadedDependencies.isEmpty()) {
@@ -130,12 +130,10 @@ public class MavenCodeLocationPackager {
         addOrphansToGraph(currentGraph, orphans);
         logger.debug(String.format("Modified %d Eclipse package external IDs.", eclipsePackageExternalIdModifiedCounter));
 
-        // If we saw a dependency:tree goal header but never anchored a
-        // project, the parser was unable to identify the project GAV in
-        // Maven's output. This has historically manifested as a SUCCESS
-        // scan with an empty BOM. Emit a WARN so the condition is visible
-        // in the run log instead of failing silently.
-        if (treeHeaderEverSeen && codeLocations.isEmpty()) {
+        // Warn if a tree header was seen but no project GAV was ever
+        // recognized. Keyed on validProjectHeaderSeen so scans where the
+        // modules filter legitimately excludes every project do not warn.
+        if (treeHeaderEverSeen && !validProjectHeaderSeen) {
             logger.warn(
                 "Maven dependency:tree output was scanned but no project could be extracted. "
               + "This can occur when Maven or maven-resolver emits unexpected INFO lines "
@@ -169,45 +167,45 @@ public class MavenCodeLocationPackager {
     }
 
     private void initializeCurrentMavenProject(ExcludedIncludedWildcardFilter modulesFilter, String sourcePath, String line) {
-        // The candidate line is the first non-noise line seen after a
-        // dependency:tree goal header. In well-formed Maven output this is
-        // always the project GAV. Three outcomes are possible:
-        //   (1) valid GAV, module included -> anchor the project and start
-        //       collecting the tree.
-        //   (2) valid GAV, module excluded by the user's modules filter ->
-        //       disarm parsingProjectSection so we fast-forward past this
-        //       module's tree body until the next @ module header re-arms.
-        //   (3) not a valid GAV -> keep parsingProjectSection = true and
-        //       retry the next non-noise line. This lets the parser recover
-        //       when Maven or maven-resolver emit unexpected INFO lines
-        //       between the tree header and the project header.
-        // The graph is allocated only when we actually anchor a project,
-        // to avoid churn while (3) retries consume candidate lines.
-        DependencyGraph candidateGraph = new BasicDependencyGraph();
-        MavenParseResult mavenProject = createMavenParseResult(sourcePath, line, candidateGraph);
+        // The candidate line is the first non-noise line after a
+        // dependency:tree goal header. Three outcomes:
+        //   (1) valid GAV, module included -> anchor and start collecting.
+        //   (2) valid GAV, module excluded -> disarm so the tree body is
+        //       fast-forwarded until the next @ module header re-arms.
+        //   (3) anything else -> keep parsingProjectSection = true and
+        //       retry the next non-noise line.
+        //
+        // End-of-section for an anchored module is handled by the main
+        // loop's finished branch, not here.
+        //
+        // currentGraph is allocated unconditionally here so leftover
+        // shaded-dependency orphans emitted at end-of-extraction are
+        // isolated per candidate — reassigning only in the happy path
+        // would let an excluded module's leftovers attach to a
+        // previously-anchored module's graph.
+        currentGraph = new BasicDependencyGraph();
+        MavenParseResult mavenProject = createMavenParseResult(sourcePath, line, currentGraph);
         if (null != mavenProject && modulesFilter.shouldInclude(mavenProject.getProjectName())) {
-            // (1) Happy path.
+            // (1) Anchor.
             logger.trace(String.format("Project: %s", mavenProject.getProjectName()));
-            currentGraph = candidateGraph;
             this.currentMavenProject = mavenProject;
             codeLocations.add(mavenProject);
+            validProjectHeaderSeen = true;
         } else if (null != mavenProject) {
-            // (2) Excluded module: valid GAV, but filtered out. Disarm so
-            // subsequent tree body lines are skipped by shouldSkipLine's
+            // (2) Excluded by modules filter. Disarm so subsequent tree
+            // body lines are skipped by shouldSkipLine's
             // !parsingProjectSection gate.
             logger.trace(String.format("Project %s excluded by modules filter", mavenProject.getProjectName()));
             currentMavenProject = null;
             dependencyParentStack.clear();
             parsingProjectSection = false;
             level = 0;
+            validProjectHeaderSeen = true;
         } else {
-            // (3) Candidate line was not a valid project GAV. Do NOT disarm —
-            // leave parsingProjectSection = true so the next non-noise line
-            // is retried as a header candidate.
+            // (3) Not a GAV. Retry on the next line.
             logger.debug(String.format(
                 "Line following dependency:tree header did not parse as a project GAV; will retry with the next non-noise line. Line: %s",
                 line));
-            // Intentionally leave parsingProjectSection, dependencyParentStack, level untouched.
         }
     }
 
@@ -416,15 +414,15 @@ public class MavenCodeLocationPackager {
         // This is a GAV line.
         componentText = removeGroupArtifactPipedSuffixIfExists(componentText);
 
-        String[] gavParts = componentText.split(":");
+        // Preserve trailing empty fields so "g:a:jar:1.0:" is rejected
+        // as invalid rather than silently truncated to 4 parts.
+        String[] gavParts = componentText.split(":", -1);
 
-        // Strict project-header validation. A valid project GAV is exactly
-        // G:A:type:V (4 parts) or G:A:type:classifier:V (5 parts). isGav()
-        // only enforces "at least 4 non-blank parts", which is too loose —
-        // log prose that happens to embed a coordinate and colon-heavy URLs
-        // (e.g. maven-resolver provenance INFO lines listing repository URLs
-        // with explicit :PORTs) can otherwise slip through and be
-        // misidentified as the project header.
+        // A valid project GAV is exactly G:A:type:V (4 parts) or
+        // G:A:type:classifier:V (5 parts), and each part must contain
+        // only characters valid in a Maven coordinate. Reject anything
+        // else — including log prose that embeds a coordinate and
+        // colon-heavy URLs.
         if (gavParts.length != 4 && gavParts.length != 5) {
             logger.debug(String.format(
                 "%s does not look like a project header we can parse (colon-part count: %d)",
@@ -432,6 +430,12 @@ public class MavenCodeLocationPackager {
             return null;
         }
         for (String part : gavParts) {
+            if (StringUtils.isBlank(part)) {
+                logger.debug(String.format(
+                    "%s does not look like a project header we can parse (blank part)",
+                    componentText));
+                return null;
+            }
             if (PROJECT_COORDINATE_INVALID_CHARS.matcher(part).find()) {
                 logger.debug(String.format(
                     "%s does not look like a project header we can parse (part '%s' contains characters not valid in a Maven coordinate)",
