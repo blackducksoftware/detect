@@ -55,6 +55,10 @@ import com.blackduck.integration.detectable.detectables.bun.lockbinary.BunLockBi
 import com.blackduck.integration.detectable.detectables.bun.lockbinary.BunLockBinaryExtractor;
 import com.blackduck.integration.detectable.detectables.bun.lockbinary.BunLockBinaryParser;
 import com.blackduck.integration.detectable.detectables.bun.lockbinary.BunLockBinaryTransformer;
+import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockfileDetectable;
+import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockfileExtractor;
+import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockJsonParser;
+import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockfileTransformer;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectable;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectableOptions;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeExtractor;
@@ -802,6 +806,10 @@ public class DetectableFactory {
         return new BunLockBinaryDetectable(environment, fileFinder, bunResolver, bunLockBinaryExtractor());
     }
 
+    public BunLockfileDetectable createBunLockfileDetectable(DetectableEnvironment environment) {
+        return new BunLockfileDetectable(environment, fileFinder, bunLockfileExtractor());
+    }
+
     // Used by three Detectables
     private PackageResolvedExtractor createPackageResolvedExtractor() {
         PackageResolvedParser parser = new PackageResolvedParser(gson);
@@ -1296,6 +1304,18 @@ public class DetectableFactory {
 
     private BunLockBinaryExtractor bunLockBinaryExtractor() {
         return new BunLockBinaryExtractor(executableRunner, bunLockBinaryParser(), bunLockBinaryTransformer(), packageJsonFiles());
+    }
+
+    private BunLockJsonParser bunLockJsonParser() {
+        return new BunLockJsonParser(gson);
+    }
+
+    private BunLockfileTransformer bunLockfileTransformer() {
+        return new BunLockfileTransformer(externalIdFactory);
+    }
+
+    private BunLockfileExtractor bunLockfileExtractor() {
+        return new BunLockfileExtractor(bunLockJsonParser(), bunLockfileTransformer(), packageJsonFiles());
     }
 
     //#endregion Utility
