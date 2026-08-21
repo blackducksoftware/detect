@@ -157,8 +157,11 @@ public class BazelV2Extractor {
                                          Pipelines pipelines) throws ExecutableFailedException, DetectableException {
         logger.info("BZLMOD mode on Bazel {}: using BCR extraction path for structured direct/transitive classification", bazelVersion);
 
-        // Run BCR extraction to get the tree-structured graph (target-scoped via internal query)
-        BzlmodBcrExtractor bcrExtractor = new BzlmodBcrExtractor(bazelCmd, bazelVersion, bazelTarget);
+        // Run BCR extraction to get the tree-structured graph (target-scoped via internal query).
+        // Pass the user's query options so the internal target-scope query is consistent with the
+        // HTTP_ARCHIVE pipeline / HttpFamilyProber (same args → served from the executor's query cache).
+        BzlmodBcrExtractor bcrExtractor = new BzlmodBcrExtractor(bazelCmd, bazelVersion, bazelTarget,
+            bazelVariableSubstitutor.getQueryAdditionalOptions());
         DependencyGraph graph = bcrExtractor.extractGraph();
 
         // Run all configured pipelines (Maven, Haskell, HTTP_ARCHIVE) alongside the BCR graph.

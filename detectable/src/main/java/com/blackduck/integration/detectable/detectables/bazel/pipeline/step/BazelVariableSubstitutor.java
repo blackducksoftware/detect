@@ -1,6 +1,7 @@
 package com.blackduck.integration.detectable.detectables.bazel.pipeline.step;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,8 +22,18 @@ public class BazelVariableSubstitutor {
         listInsertions.put("${detect.bazel.query.options}", queryAdditionalOptions);
     }
 
-    public List<String> substitute(List<String> origStrings, String input) {
-        List<String> modifiedStrings = new ArrayList<>(origStrings.size());
+    /**
+     * Returns the user-supplied {@code detect.bazel.query.options} list (never null).
+     * Allows callers that build queries directly (not via placeholder substitution) — e.g. the
+     * BCR target-scope query — to apply the same options, keeping their command args identical to
+     * the substituted pipeline/prober queries.
+     */
+    public List<String> getQueryAdditionalOptions() {
+        List<String> opts = listInsertions.get("${detect.bazel.query.options}");
+        return opts != null ? opts : Collections.emptyList();
+    }
+
+    public List<String> substitute(List<String> origStrings, String input) {        List<String> modifiedStrings = new ArrayList<>(origStrings.size());
         for (String origString : origStrings) {
             boolean foundListInsertionPlaceholder = handleListInsertion(modifiedStrings, origString, input);
             if (!foundListInsertionPlaceholder) {

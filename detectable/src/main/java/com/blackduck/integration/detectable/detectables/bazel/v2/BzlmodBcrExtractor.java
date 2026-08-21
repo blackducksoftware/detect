@@ -68,6 +68,10 @@ public class BzlmodBcrExtractor {
     // The Bazel target being scanned (e.g., //java/src/...:client-combined).
     // Used to scope the BCR BOM to only modules the target actually fetches.
     private final String bazelTarget;
+    // User-supplied query options (detect.bazel.query.options). Applied to the target-scope library
+    // query so it is consistent with the HTTP_ARCHIVE pipeline and HttpFamilyProber, which both honor
+    // these options. Keeping the args identical also lets BazelCommandExecutor memoize/reuse the result.
+    private final List<String> queryOptions;
     // Stateless helpers — instantiated internally, no external injection needed
     private final GithubUrlParser githubUrlParser;
     private final IntermediateStepParseShowRepoToUrlCandidates urlCandidateParser;
@@ -76,10 +80,18 @@ public class BzlmodBcrExtractor {
     // Populated during extractGraph(); used by callers to avoid re-adding BCR deps flat via other pipelines.
     private final Set<ExternalId> resolvedExternalIds = new LinkedHashSet<>();
 
+    /**
+     * Backward-compatible constructor with no user query options (used by unit tests).
+     */
     public BzlmodBcrExtractor(BazelCommandExecutor bazelCmd, BazelVersion bazelVersion, String bazelTarget) {
+        this(bazelCmd, bazelVersion, bazelTarget, Collections.emptyList());
+    }
+
+    public BzlmodBcrExtractor(BazelCommandExecutor bazelCmd, BazelVersion bazelVersion, String bazelTarget, List<String> queryOptions) {
         this.bazelCmd = bazelCmd;
         this.bazelVersion = bazelVersion;
         this.bazelTarget = bazelTarget;
+        this.queryOptions = queryOptions != null ? queryOptions : Collections.emptyList();
         this.githubUrlParser = new GithubUrlParser();
         this.urlCandidateParser = new IntermediateStepParseShowRepoToUrlCandidates();
         this.showRepoExecutor = new ShowRepoExecutor(bazelCmd);
@@ -131,8 +143,10 @@ public class BzlmodBcrExtractor {
 
         // Step 1c — narrow the mod graph to only modules the target actually fetches.
         // This keeps the BCR path consistent with all other Bazel pipelines which are target-scoped
-        // via 'bazel query deps(//target)'. We reuse the same library query the HTTP_ARCHIVE pipeline
-        // runs, so Bazel serves it from its analysis cache at no extra cost.
+        // via 'bazel query deps(//target)'. We reuse the exact same library query (same args, including
+        // detect.bazel.query.options) that HttpFamilyProber runs during probing; BazelCommandExecutor
+        // memoizes read-only query results for the extraction, so this is served in-process rather than
+        // re-executing Bazel.
         //
         // The whitelist check bridges two different Bazel naming planes:
         //   bazel query output  → labels like  @@abseil-cpp~//absl/strings:strings
@@ -488,13 +502,16 @@ public class BzlmodBcrExtractor {
      *   <li>{@code @@module++ext+subrepo//...} (module extension sub-repo) → skipped (empty Optional)</li>
      * </ul>
      *
-     * <p>The same query is run by the HTTP_ARCHIVE pipeline, so Bazel's analysis cache serves it
-     * without a full re-evaluation — effectively zero extra cost.
+     * <p>The same query (same args, including {@code detect.bazel.query.options}) is issued by
+     * {@code HttpFamilyProber} during probing; because {@link BazelCommandExecutor} memoizes
+     * read-only query results for the extraction, this call is served from that in-process cache
+     * rather than re-executing Bazel.
      */
     private Set<String> getTargetScopedModuleNames(BzlmodRepoMappingResolver resolver) {
         logger.debug("BZLMOD BCR: querying target-scoped repos via 'bazel query kind(.*library, deps({}))'", bazelTarget);
         List<String> queryArgs = BazelQueryBuilder.query()
             .kind(LIBRARY_RULE_PATTERN, BazelQueryBuilder.deps(bazelTarget))
+            .withOptions(queryOptions)
             .build();
 
         Optional<String> queryOutput;
