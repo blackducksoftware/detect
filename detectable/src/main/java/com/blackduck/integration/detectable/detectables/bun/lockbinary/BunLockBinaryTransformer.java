@@ -1,4 +1,4 @@
-package com.blackduck.integration.detectable.detectables.bun.lockb;
+package com.blackduck.integration.detectable.detectables.bun.lockbinary;
 
 import java.util.List;
 
@@ -8,10 +8,10 @@ import com.blackduck.integration.detectable.detectables.yarn.YarnTransformer;
 import com.blackduck.integration.detectable.detectables.yarn.parse.YarnLockResult;
 import com.blackduck.integration.util.NameVersion;
 
-public class BunLockbTransformer {
+public class BunLockBinaryTransformer {
     private final YarnTransformer delegate;
 
-    public BunLockbTransformer(YarnTransformer delegate) {
+    public BunLockBinaryTransformer(YarnTransformer delegate) {
         this.delegate = delegate;
     }
 

@@ -1,4 +1,4 @@
-package com.blackduck.integration.detectable.detectables.bun.lockb;
+package com.blackduck.integration.detectable.detectables.bun.lockbinary;
 
 import java.io.File;
 
@@ -17,23 +17,23 @@ import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 
 @DetectableInfo(name = "Bun Lock Binary", language = "Node JS", forge = "npmjs", accuracy = DetectableAccuracyType.HIGH,
     requirementsMarkdown = "Files: package.json and (bun.lockb or bun.lock). Executable: bun.")
-public class BunLockbDetectable extends Detectable {
+public class BunLockBinaryDetectable extends Detectable {
     public static final String BUN_LOCKB_FILENAME = "bun.lockb";
     public static final String BUN_LOCK_FILENAME = "bun.lock";
     public static final String PACKAGE_JSON_FILENAME = "package.json";
 
     private final FileFinder fileFinder;
     private final BunResolver bunResolver;
-    private final BunLockbExtractor bunLockbExtractor;
+    private final BunLockBinaryExtractor bunLockBinaryExtractor;
 
     private File packageJson;
     private ExecutableTarget bunExe;
 
-    public BunLockbDetectable(DetectableEnvironment environment, FileFinder fileFinder, BunResolver bunResolver, BunLockbExtractor bunLockbExtractor) {
+    public BunLockBinaryDetectable(DetectableEnvironment environment, FileFinder fileFinder, BunResolver bunResolver, BunLockBinaryExtractor bunLockBinaryExtractor) {
         super(environment);
         this.fileFinder = fileFinder;
         this.bunResolver = bunResolver;
-        this.bunLockbExtractor = bunLockbExtractor;
+        this.bunLockBinaryExtractor = bunLockBinaryExtractor;
     }
 
     @Override
@@ -51,12 +51,12 @@ public class BunLockbDetectable extends Detectable {
         // TODO: Uncomment this version guard once BunCliDetectable is implemented.
         //
         // DetectorRuleFactory will register entry points in order:
-        //   1. BunCliDetectable  (bun >= 1.2) — "bun pm list --all"
-        //   2. BunLockbDetectable (bun < 1.2) — "bun bun.lockb"       ← this class
-        //   3. BunLockDetectable  (no bun exe) — parse bun.lock JSONC
+        //   1. BunCliDetectable        (bun >= 1.2) — "bun pm list --all"
+        //   2. BunLockBinaryDetectable  (bun < 1.2) — "bun bun.lockb"       ← this class
+        //   3. BunLockfileDetectable    (no bun exe) — parse bun.lock JSONC
         //
         // This guard ensures that when bun >= 1.2 is installed but BunCliDetectable fails
-        // for some reason, we do NOT fall through here — we let BunLockDetectable handle it.
+        // for some reason, we do NOT fall through here — we let BunLockfileDetectable handle it.
         // Requires injecting DetectableExecutableRunner to run "bun --version".
         //
         // if (requirements.result().getPassed()) {
@@ -70,6 +70,6 @@ public class BunLockbDetectable extends Detectable {
 
     @Override
     public Extraction extract(ExtractionEnvironment extractionEnvironment) {
-        return bunLockbExtractor.extract(environment.getDirectory(), packageJson, bunExe);
+        return bunLockBinaryExtractor.extract(environment.getDirectory(), packageJson, bunExe);
     }
 }

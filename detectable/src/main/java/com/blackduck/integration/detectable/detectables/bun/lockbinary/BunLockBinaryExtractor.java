@@ -1,4 +1,4 @@
-package com.blackduck.integration.detectable.detectables.bun.lockb;
+package com.blackduck.integration.detectable.detectables.bun.lockbinary;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -17,34 +17,34 @@ import com.blackduck.integration.detectable.detectables.yarn.parse.YarnLockResul
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.executable.ExecutableOutput;
 
-public class BunLockbExtractor {
-    private static final List<String> BUN_LOCKB_COMMAND = Collections.singletonList(BunLockbDetectable.BUN_LOCKB_FILENAME);
+public class BunLockBinaryExtractor {
+    private static final List<String> BUN_LOCKB_COMMAND = Collections.singletonList(BunLockBinaryDetectable.BUN_LOCKB_FILENAME);
 
     private final DetectableExecutableRunner executableRunner;
-    private final BunLockbParser bunLockbParser;
-    private final BunLockbTransformer bunLockbTransformer;
+    private final BunLockBinaryParser bunLockBinaryParser;
+    private final BunLockBinaryTransformer bunLockBinaryTransformer;
     private final PackageJsonFiles packageJsonFiles;
 
-    public BunLockbExtractor(
+    public BunLockBinaryExtractor(
         DetectableExecutableRunner executableRunner,
-        BunLockbParser bunLockbParser,
-        BunLockbTransformer bunLockbTransformer,
+        BunLockBinaryParser bunLockBinaryParser,
+        BunLockBinaryTransformer bunLockBinaryTransformer,
         PackageJsonFiles packageJsonFiles
     ) {
         this.executableRunner = executableRunner;
-        this.bunLockbParser = bunLockbParser;
-        this.bunLockbTransformer = bunLockbTransformer;
+        this.bunLockBinaryParser = bunLockBinaryParser;
+        this.bunLockBinaryTransformer = bunLockBinaryTransformer;
         this.packageJsonFiles = packageJsonFiles;
     }
 
     public Extraction extract(File projectDir, File packageJsonFile, ExecutableTarget bunExe) {
         try {
-            List<String> outputLines = runBunLockbCommand(projectDir, bunExe);
+            List<String> outputLines = runBunLockBinaryCommand(projectDir, bunExe);
 
-            YarnLock yarnLock = bunLockbParser.parseBunLockb(outputLines);
+            YarnLock yarnLock = bunLockBinaryParser.parseBunLockBinary(outputLines);
             NullSafePackageJson rootPackageJson = packageJsonFiles.read(packageJsonFile);
             YarnLockResult yarnLockResult = new YarnLockResult(rootPackageJson, yarnLock);
-            List<CodeLocation> codeLocations = bunLockbTransformer.generateCodeLocations(yarnLockResult, new ArrayList<>());
+            List<CodeLocation> codeLocations = bunLockBinaryTransformer.generateCodeLocations(yarnLockResult, new ArrayList<>());
 
             return new Extraction.Builder()
                 .projectName(rootPackageJson.getName().orElse(null))
@@ -56,7 +56,7 @@ public class BunLockbExtractor {
         }
     }
 
-    private List<String> runBunLockbCommand(File directory, ExecutableTarget bunExe) throws ExecutableFailedException {
+    private List<String> runBunLockBinaryCommand(File directory, ExecutableTarget bunExe) throws ExecutableFailedException {
         ExecutableOutput output = executableRunner.executeSuccessfully(
             ExecutableUtils.createFromTarget(directory, bunExe, BUN_LOCKB_COMMAND)
         );

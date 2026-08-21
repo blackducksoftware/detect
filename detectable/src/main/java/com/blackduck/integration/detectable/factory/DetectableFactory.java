@@ -51,10 +51,10 @@ import com.blackduck.integration.detectable.detectables.bazel.pipeline.Dependenc
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelVariableSubstitutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.HaskellCabalLibraryJsonProtoParser;
 import com.blackduck.integration.detectable.detectable.executable.resolver.BunResolver;
-import com.blackduck.integration.detectable.detectables.bun.lockb.BunLockbDetectable;
-import com.blackduck.integration.detectable.detectables.bun.lockb.BunLockbExtractor;
-import com.blackduck.integration.detectable.detectables.bun.lockb.BunLockbParser;
-import com.blackduck.integration.detectable.detectables.bun.lockb.BunLockbTransformer;
+import com.blackduck.integration.detectable.detectables.bun.lockbinary.BunLockBinaryDetectable;
+import com.blackduck.integration.detectable.detectables.bun.lockbinary.BunLockBinaryExtractor;
+import com.blackduck.integration.detectable.detectables.bun.lockbinary.BunLockBinaryParser;
+import com.blackduck.integration.detectable.detectables.bun.lockbinary.BunLockBinaryTransformer;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectable;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectableOptions;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeExtractor;
@@ -798,8 +798,8 @@ public class DetectableFactory {
         return new UVLockFileDetectable(environment, fileFinder, uvDetectorOptions, uvLockfileExtractor(environment.getDirectory()));
     }
 
-    public BunLockbDetectable createBunLockbDetectable(DetectableEnvironment environment, BunResolver bunResolver) {
-        return new BunLockbDetectable(environment, fileFinder, bunResolver, bunLockbExtractor());
+    public BunLockBinaryDetectable createBunLockBinaryDetectable(DetectableEnvironment environment, BunResolver bunResolver) {
+        return new BunLockBinaryDetectable(environment, fileFinder, bunResolver, bunLockBinaryExtractor());
     }
 
     // Used by three Detectables
@@ -1285,17 +1285,17 @@ public class DetectableFactory {
     }
 
 
-    private BunLockbParser bunLockbParser() {
-        return new BunLockbParser(yarnLockParser());
+    private BunLockBinaryParser bunLockBinaryParser() {
+        return new BunLockBinaryParser(yarnLockParser());
     }
 
-    private BunLockbTransformer bunLockbTransformer() {
+    private BunLockBinaryTransformer bunLockBinaryTransformer() {
         YarnTransformer yarnTransformer = new YarnTransformer(externalIdFactory, EnumListFilter.<YarnDependencyType>excludeNone());
-        return new BunLockbTransformer(yarnTransformer);
+        return new BunLockBinaryTransformer(yarnTransformer);
     }
 
-    private BunLockbExtractor bunLockbExtractor() {
-        return new BunLockbExtractor(executableRunner, bunLockbParser(), bunLockbTransformer(), packageJsonFiles());
+    private BunLockBinaryExtractor bunLockBinaryExtractor() {
+        return new BunLockBinaryExtractor(executableRunner, bunLockBinaryParser(), bunLockBinaryTransformer(), packageJsonFiles());
     }
 
     //#endregion Utility
