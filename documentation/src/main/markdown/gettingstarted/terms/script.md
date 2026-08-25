@@ -14,4 +14,4 @@ Linux/MacOs:
 bash <(curl -s https://detect.blackduck.com/detect.sh)
 ````
 
-<note type="note">Running the unversioned `detect.sh/ps1` script will use the latest version of the [detect_product_short] .jar file, whereas running a versioned script such as `detect11.sh/ps1` will use the latest version of the [detect_product_short] .jar file within that specific major version.</note>  
+<note type="note">Running the unversioned `detect.sh/ps1` script will use the latest version of the [detect_product_short] .jar file, whereas running a versioned script such as `detect12.sh/ps1` will use the latest version of the [detect_product_short] .jar file within that specific major version.</note>  

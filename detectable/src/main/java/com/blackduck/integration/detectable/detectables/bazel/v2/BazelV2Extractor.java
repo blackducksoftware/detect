@@ -91,6 +91,23 @@ public class BazelV2Extractor {
             return runBzlmodBcrPath(bazelCmd, sources, bazelTarget, bazelVersion, pipelines);
         }
 
+        // Log explicitly when BZLMOD is active but the Bazel version is too old (or unknown) for BCR
+        // extraction. Users on BZLMOD projects may expect direct/transitive classification — this
+        // message explains why everything is reported flat and what to upgrade to.
+        if (mode == BazelEnvironmentAnalyzer.Mode.BZLMOD) {
+            if (bazelVersion == null) {
+                logger.warn("BZLMOD mode detected but the Bazel version could not be determined — " +
+                    "structured BCR extraction requires Bazel 7.1 or later. " +
+                    "All dependencies will be reported as direct (flat).");
+            } else {
+                logger.warn("BZLMOD mode detected but Bazel version {} is below 7.1 — " +
+                    "direct/transitive dependency classification is unavailable for BCR modules. " +
+                    "All dependencies will be reported as direct (flat). " +
+                    "Upgrade to Bazel 7.1 or later to enable structured BCR extraction.",
+                    bazelVersion);
+            }
+        }
+
         // Legacy path: all dependencies added flat as root children
         List<DependencySource> ordered = sources.stream()
             .sorted(Comparator.comparingInt(this::priority))

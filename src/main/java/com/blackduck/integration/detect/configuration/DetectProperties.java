@@ -42,10 +42,11 @@ import com.blackduck.integration.configuration.property.types.string.CaseSensiti
 import com.blackduck.integration.configuration.property.types.string.NullableStringProperty;
 import com.blackduck.integration.configuration.property.types.string.StringListProperty;
 import com.blackduck.integration.configuration.property.types.string.StringProperty;
-import com.blackduck.integration.configuration.util.ProductMajorVersion;
+
 import com.blackduck.integration.detect.configuration.enumeration.BlackduckScanMode;
 import com.blackduck.integration.detect.configuration.enumeration.DetectCategory;
 import com.blackduck.integration.detect.configuration.enumeration.DetectGroup;
+import com.blackduck.integration.detect.configuration.enumeration.DetectMajorVersion;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTargetType;
 import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
 import com.blackduck.integration.detect.configuration.enumeration.RapidCompareMode;
@@ -53,7 +54,6 @@ import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedIndi
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedReducedPersistanceMode;
 import com.blackduck.integration.detect.tool.signaturescanner.enums.ExtendedSnippetMode;
 import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
-import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDependencyType;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
 import com.blackduck.integration.detectable.detectables.conan.cli.config.ConanDependencyType;
@@ -243,7 +243,7 @@ public class DetectProperties {
         AllNoneEnumListProperty.newBuilder("detect.bazel.dependency.sources", AllNoneEnum.NONE, DependencySource.class)
             .setInfo("Bazel dependency sources", DetectPropertyFromVersion.VERSION_11_3_0)
             .setHelp(
-                "Replaces the deprecated detect.bazel.workspace.rules property. Manually specify which dependency sources to extract. Valid values: MAVEN_INSTALL, MAVEN_JAR, HTTP_ARCHIVE, HASKELL_CABAL_LIBRARY, ALL, NONE. " +
+                "Manually specify which dependency sources to extract. Valid values: MAVEN_INSTALL, MAVEN_JAR, HTTP_ARCHIVE, HASKELL_CABAL_LIBRARY, ALL, NONE. " +
                 "By default (NONE), Detect automatically probes the Bazel dependency graph to determine which sources are present and runs the appropriate pipelines. " +
                 "This property works for both BZLMOD and WORKSPACE projects.",
                 "Set this property when you know which dependency sources are present in your target to skip the probing step and improve performance, especially in CI/CD environments. " +
@@ -252,17 +252,6 @@ public class DetectProperties {
             )
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();
-
-    public static final AllNoneEnumListProperty<WorkspaceRule> DETECT_BAZEL_WORKSPACE_RULES =
-            AllNoneEnumListProperty.newBuilder("detect.bazel.workspace.rules", AllNoneEnum.NONE, WorkspaceRule.class)
-                    .setInfo("Bazel workspace rules", DetectPropertyFromVersion.VERSION_7_12_0)
-                    .setHelp(
-                            "By default Detect discovers Bazel dependencies using all supported Bazel workspace rules that it finds in the WORKSPACE file. Alternatively you can use this property to specify the list of Bazel workspace rules Detect should use.",
-                            "Setting this property (or letting it default) to NONE tells Detect to use supported rules that it finds in the WORKSPACE file."
-                    )
-                    .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
-                    .setDeprecated("This property has been deprecated. Please use detect.bazel.dependency.sources instead.", new ProductMajorVersion(12))
-                    .build();
 
     public static final NullableStringProperty DETECT_BAZEL_MODE =
         NullableStringProperty.newBuilder("detect.bazel.mode")
@@ -798,7 +787,6 @@ public class DetectProperties {
             .setCategory(DetectCategory.Advanced)
             .build();
 
-    // TODO: This could go away if we more tightly integrated Docker Inspector code within Detect. Yuuuge effort
     public static final PassthroughProperty DOCKER_PASSTHROUGH =
         PassthroughProperty.newBuilder("detect.docker.passthrough")
             .setInfo("Docker Passthrough", DetectPropertyFromVersion.VERSION_6_0_0)
@@ -807,6 +795,7 @@ public class DetectProperties {
             .setGroups(DetectGroup.DOCKER, DetectGroup.DEFAULT)
             .setCategory(DetectCategory.Advanced)
             .setExample("(This example is unusual in that it shows a complete propertyname=value) detect.docker.passthrough.imageinspector.service.log.length=1000")
+            .setDeprecated("Docker Inspector support is deprecated.", DetectMajorVersion.THIRTEEN)
             .build();
 
     public static final NullableStringProperty DETECT_DOCKER_IMAGE =
@@ -818,6 +807,7 @@ public class DetectProperties {
             )
             .setExample("ubuntu:22.04")
             .setGroups(DetectGroup.DOCKER, DetectGroup.SOURCE_PATH)
+            .setDeprecated("Docker Inspector support is deprecated.", DetectMajorVersion.THIRTEEN)
             .build();
 
     public static final NullableStringProperty DETECT_DOCKER_IMAGE_ID =
@@ -830,6 +820,7 @@ public class DetectProperties {
             .setExample("0d120b6ccaa8")
             .setGroups(DetectGroup.DOCKER, DetectGroup.SOURCE_PATH)
             .setExample("fe1cc5b91830")
+            .setDeprecated("Docker Inspector support is deprecated.", DetectMajorVersion.THIRTEEN)
             .build();
 
     public static final NullablePathProperty DETECT_DOCKER_INSPECTOR_PATH =
@@ -840,6 +831,7 @@ public class DetectProperties {
             )
             .setGroups(DetectGroup.DOCKER, DetectGroup.GLOBAL)
             .setCategory(DetectCategory.Advanced)
+            .setDeprecated("Docker Inspector support is deprecated.", DetectMajorVersion.THIRTEEN)
             .build();
 
     public static final NullableStringProperty DETECT_DOCKER_INSPECTOR_VERSION =
@@ -849,15 +841,16 @@ public class DetectProperties {
             .setGroups(DetectGroup.DOCKER, DetectGroup.GLOBAL)
             .setCategory(DetectCategory.Advanced)
             .setExample("9.1.1")
+            .setDeprecated("Docker Inspector support is deprecated.", DetectMajorVersion.THIRTEEN)
             .build();
 
-    // The docker exe is only used in air gap mode to load image tarfiles (from the air gap files) for docker inspector
     public static final NullablePathProperty DETECT_DOCKER_PATH =
         NullablePathProperty.newBuilder("detect.docker.path")
             .setInfo("Docker Executable", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp("Path to the docker executable (used to load image inspector Docker images in order to run the Docker Inspector in air gap mode).")
             .setExample("/usr/local/bin/docker")
             .setGroups(DetectGroup.DOCKER, DetectGroup.GLOBAL)
+            .setDeprecated("Docker Inspector support is deprecated.", DetectMajorVersion.THIRTEEN)
             .build();
 
     public static final NullableStringProperty DETECT_DOCKER_PLATFORM_TOP_LAYER_ID =
@@ -870,6 +863,7 @@ public class DetectProperties {
             .setGroups(DetectGroup.DOCKER, DetectGroup.GLOBAL)
             .setCategory(DetectCategory.Advanced)
             .setExample("sha256:f6253634dc78da2f2e3bee9c8063593f880dc35d701307f30f65553e0f50c18c")
+            .setDeprecated("Docker Inspector support is deprecated.", DetectMajorVersion.THIRTEEN)
             .build();
 
     public static final NullableStringProperty DETECT_DOCKER_TAR =
@@ -883,6 +877,7 @@ public class DetectProperties {
             )
             .setExample("./ubuntu21_04.tar")
             .setGroups(DetectGroup.DOCKER, DetectGroup.SOURCE_PATH)
+            .setDeprecated("Docker Inspector support is deprecated.", DetectMajorVersion.THIRTEEN)
             .build();
 
     public static final NoneEnumListProperty<DetectorType> DETECT_EXCLUDED_DETECTOR_TYPES =
@@ -1224,6 +1219,7 @@ public class DetectProperties {
             .setHelp("Path to the Java executable used by Docker Inspector.", "If set, Detect will use the given Java executable instead of searching for one.")
             .setGroups(DetectGroup.PATHS, DetectGroup.GLOBAL)
             .setExample("/usr/lib/jvm/jdk-17/bin/java")
+            .setDeprecated("This property is only used by Docker Inspector. Docker Inspector support is deprecated.", DetectMajorVersion.THIRTEEN)
             .build();
 
     public static final CaseSensitiveStringListProperty DETECT_LERNA_EXCLUDED_PACKAGES =
@@ -1813,7 +1809,8 @@ public class DetectProperties {
             )
             .setGroups(DetectGroup.PATHS, DetectGroup.GLOBAL)
             .setCategory(DetectCategory.Advanced)
-            .build();
+            .build()
+            .deprecateValue(DetectTool.DOCKER, "Docker Inspector support is deprecated. The DOCKER tool value will be removed in a future release.");
 
     public static final EnumProperty<ProjectVersionDistributionType> DETECT_PROJECT_VERSION_DISTRIBUTION =
         EnumProperty.newBuilder("detect.project.version.distribution", ProjectVersionDistributionType.EXTERNAL, ProjectVersionDistributionType.class)
@@ -2071,7 +2068,8 @@ public class DetectProperties {
                     "If neither detect.tools nor detect.tools.excluded are set, Detect will allow (run if applicable, based on the values of other properties) all Detect tools. If detect.tools is set, and detect.tools.excluded is not set, Detect will only allow to run those tools that are specified in the detect.tools list. If detect.tools.excluded is set, Detect will only allow those tools that are not specified in the detect.tools.excluded list."
             )
             .setGroups(DetectGroup.PATHS, DetectGroup.GLOBAL)
-            .build();
+            .build()
+            .deprecateValue(DetectTool.DOCKER, "Docker Inspector support is deprecated. The DOCKER tool value will be removed in a future release.");
 
     public static final AllEnumListProperty<DetectTool> DETECT_TOOLS =
         AllEnumListProperty.newBuilder("detect.tools", emptyList(), DetectTool.class)
@@ -2082,7 +2080,8 @@ public class DetectProperties {
                     "If neither detect.tools nor detect.tools.excluded are set, Detect will allow (run if applicable, based on the values of other properties) all non-exclusive Detect tools. If detect.tools is set, and detect.tools.excluded is not set, Detect will run those tools that are specified in the detect.tools list. If detect.tools.excluded is set, Detect will only allow those tools that are not specified in the detect.tools.excluded list."
             )
             .setGroups(DetectGroup.PATHS, DetectGroup.GLOBAL)
-            .build();
+            .build()
+            .deprecateValue(DetectTool.DOCKER, "Docker Inspector support is deprecated. The DOCKER tool value will be removed in a future release.");
 
     public static final NullablePathProperty DETECT_UV_PATH =
             NullablePathProperty.newBuilder("detect.uv.path")
@@ -2093,7 +2092,7 @@ public class DetectProperties {
 
     public static final CaseSensitiveStringListProperty DETECT_UV_DEPENDENCY_GROUPS_EXCLUDED =
             CaseSensitiveStringListProperty.newBuilder("detect.uv.dependency.groups.excluded")
-                    .setInfo("uv dependency groups", DetectPropertyFromVersion.VERSION_10_5_0)
+                    .setInfo("Exclude UV Dependency Groups", DetectPropertyFromVersion.VERSION_10_5_0)
                     .setHelp(
                             createTypeFilterHelpText("UV dependency groups"),
                             "When specified, a pyproject.toml file and uv executable are required, or pyproject.toml file and either uv.lock or requirements.txt file are required. Components and related dependencies that belong to excluded groups will not be in the BOM unless the component also belongs to a non-excluded group. For example, to recursively exclude all components under the `[dependency-groups]` section of `pyproject.toml`: `detect.uv.dependency.groups.excluded='dev,abc'`. Note: In uv, `[project.optional-dependencies]` defines extras. Each extra (e.g., postgres, redis, mysql) is treated as its own dependency group. The group `optional` does not exist; therefore, specifying it in the `--detect.uv.dependency.groups.excluded` flag will have no impact."
@@ -2103,10 +2102,13 @@ public class DetectProperties {
 
     public static final CaseSensitiveStringListProperty DETECT_UV_DEPENDENCY_GROUPS_ONLY =
             CaseSensitiveStringListProperty.newBuilder("detect.uv.dependency.groups.only")
-                    .setInfo("uv Only Dependency Groups", DetectPropertyFromVersion.VERSION_12_0_0)
+                    .setInfo("Include Only the Specified UV Dependency Groups", DetectPropertyFromVersion.VERSION_12_0_0)
                     .setHelp(
-                            "A comma-separated list of uv dependency groups to exclusively scan.",
-                            "When set, Detect will include only the named dependency groups defined in a project's pyproject.toml. Regular dependencies and optional extras are skipped. You can list multiple groups (for example: detect.uv.dependency.groups.only='dev,lint'). This property is only supported for projects that use pyproject.toml (dependency groups are not available in setup.py or setup.cfg). If both this property and detect.uv.dependency.groups.excluded are configured, the exclusion setting takes precedence for overlapping groups, and Detect will log a warning."
+                            "A comma-separated list of dependency group names to exclusively include in the BOM.",
+                            "When set, Detect scans only the named groups defined under [dependency-groups] in pyproject.toml. Main project dependencies and optional extras ([project.optional-dependencies]) are excluded from the scan.\n\n" +
+                            " Example: detect.uv.dependency.groups.only=dev,lint\n\n" +
+                            "Requires a pyproject.toml-based project. Setting this property on a project using setup.py or setup.cfg has no effect and a warning is logged.\n\n" +
+                            " If a group appears in both this property and detect.uv.dependency.groups.excluded, the excluded setting takes precedence for overlapping groups and that groups will not be scanned. Detect logs a warning when both properties overlap."
                     )
                     .setGroups(DetectGroup.UV, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
                     .setCategory(DetectCategory.Advanced)

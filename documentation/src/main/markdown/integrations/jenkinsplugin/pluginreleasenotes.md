@@ -1,6 +1,23 @@
 # Release Notes for Jenkins Plugin
 
+## Version 12.0.0
+
+**New features**
+
+* This release is compatible with [detect_product_long] 12.x.x. (Downloading and using detect12.(sh/ps1)).
+
+**Changed features**
+
+* Updated to use [detect_product_long] 12.x.x for execution.
+
+**Resolved issues**
+
+* (IDTCTJNKNS-286) Updates to xstream, json-path, json-smart, jackson-core, jackson-databind, jackson-annotations, plexus-utils, and commons-beanutils third party libraries to resolve vulnerabilities.
+
+<note type="note">Configuration and usage of the plugin is unchanged.</note>
+
 ## Version 11.0.0
+
 **New features**
 
 * This release is compatible with [detect_product_long] 11.x.x. (Downloading and using detect11.(sh/ps1)).
@@ -10,9 +27,8 @@
 * Updated to use [detect_product_long] 11.x.x for execution.
 * Jenkins version 2.462.3 or later is required.
 
-<note type="note">Configuration and usage of the plugin is unchanged.</note>
-
 ## Version 10.0.0
+
 **Notice**
 
 The [company_name] Software Integrity Group is now [var_company_name]    
@@ -41,6 +57,7 @@ If you are a new user, you may proceed with installing the [detect_product_long]
 * The plugin has been built against upgraded Jenkins/Jenkins plugin versions to mitigate known security risks.
 
 ## Version 9.0.0
+
 **New features**
 
 * This release is compatible with [company_name] [solution_name] 9.x.x. (Downloading and using detect9.(sh/ps1)).
@@ -59,6 +76,7 @@ If you are a new user, you may proceed with installing the [detect_product_long]
 * (IDTCTJNKNS-272) Updated [company_name] [solution_name] Jenkins Plugin to support passing '&' in the DETECT_SOURCE_PATH property.
 
 ## Version 8.0.1
+
 **Resolved issues**
 
 * (IDTCTJNKNS-266) Resolved the following issues:
@@ -69,6 +87,7 @@ If you are a new user, you may proceed with installing the [detect_product_long]
 <note type="important">Customers running Jenkins version 2.410 and above should upgrade to [company_name] [solution_name] Jenkins plugin 8.0.1</note>
 
 ## Version 8.0.0
+
 **New features**
 
 * Updated to be compatible with [company_name] [solution_name] 8.x.x. (Downloading and using detect8.(sh/ps1)).
@@ -96,6 +115,7 @@ If you are a new user, you may proceed with installing the [detect_product_long]
 * (IDTCTJNKNS-192) Size must be between 1 and 50 when --detect.project.tag is more than 50 characters
 
 ## Version 7.0.0
+
 **New features**
 
 * Update major version to match major version of [company_name] [solution_name] that it runs.
@@ -109,11 +129,13 @@ If you are a new user, you may proceed with installing the [detect_product_long]
 * When using script (sh/ps1), no longer cache the script. Plugin will download the script on each execution.
 
 ## Version 3.1.0
+
 **New features**
 
 * Added the capability to run [company_name] [solution_name] in air gap mode using the [company_name] [solution_name] plugin.
 
 ## Version 3.0.0
+
 **New features**
 
 * Added capability to turn off automatic escaping by setting the environment variable DETECT\_PLUGIN\_ESCAPING to false.
@@ -130,6 +152,7 @@ If you are a new user, you may proceed with installing the [detect_product_long]
 * Connection validation is improved when testing through a proxy.
 
 ## Version 2.1.1
+
 **Resolved issues**
 
 * Resolved an issue wherein [company_name] [solution_name] for Jenkins didn't escape commas correctly in PowerShell arguments. 
@@ -137,6 +160,7 @@ If you are a new user, you may proceed with installing the [detect_product_long]
 * Version 2.0.2 of the S[company_name] [solution_name] for Jenkins plugin violated semantic versioning by introducing a non-backward compatible change. Updating to any 2.X version from version 2.0.1 or earlier must be done with caution as that update might break existing functionality. 
 
 ## Version 2.1.0
+
 **New features**
 
 * [company_name] [solution_name] for Jenkins now returns an exit code of 0 for a successful pipeline run.
@@ -149,6 +173,7 @@ If you are a new user, you may proceed with installing the [detect_product_long]
 * Verified support for [company_name] [solution_name] Jenkins plugin in the Cloudbees Core environment built with Kubernetes.
 
 ## Version 2.0.2
+
 **New features**
 
 * Added auto-escaping parameters.
@@ -163,17 +188,20 @@ If you are a new user, you may proceed with installing the [detect_product_long]
 * Resolved in issue wherein the plugin was not properly escaping the path to the PowerShell script.  This also improves handling of elements like random pipes in the path.
 
 ## Version 2.0.1
+
 **Resolved issues**
 
 * Resolved an issue wherein configuration/connection settings for the plugin are deleted when restarting Jenkins.
 
 ## Version 2.0.0
+
 **New features**
 
 * You can now run [company_name] [solution_name] for Jenkins by uploading a Detect JAR file.
 * [company_name] [solution_name] for Jenkins now uses the Polaris credentials stored in the credentials plugin in Jenkins.
 
 ## Version 1.5.0
+
 **Resolved issues**
 
 * Resolved an issue wherein the proxy settings may be ignored when downloading the jar file.
