@@ -5,6 +5,7 @@ import java.io.File;
 import com.blackduck.integration.common.util.finder.FileFinder;
 import com.blackduck.integration.detectable.Detectable;
 import com.blackduck.integration.detectable.DetectableEnvironment;
+import com.blackduck.integration.detectable.detectables.bun.BunPackageNameUtils;
 import com.blackduck.integration.detectable.ExecutableTarget;
 import com.blackduck.integration.detectable.detectable.DetectableAccuracyType;
 import com.blackduck.integration.detectable.detectable.Requirements;
@@ -19,8 +20,6 @@ import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
     requirementsMarkdown = "Files: package.json and (bun.lockb or bun.lock). Executable: bun.")
 public class BunLockBinaryDetectable extends Detectable {
     public static final String BUN_LOCKB_FILENAME = "bun.lockb";
-    public static final String BUN_LOCK_FILENAME = "bun.lock";
-    public static final String PACKAGE_JSON_FILENAME = "package.json";
 
     private final FileFinder fileFinder;
     private final BunResolver bunResolver;
@@ -39,7 +38,7 @@ public class BunLockBinaryDetectable extends Detectable {
     @Override
     public DetectableResult applicable() {
         Requirements requirements = new Requirements(fileFinder, environment);
-        packageJson = requirements.file(PACKAGE_JSON_FILENAME);
+        packageJson = requirements.file(BunPackageNameUtils.PACKAGE_JSON_FILENAME);
         requirements.file(BUN_LOCKB_FILENAME);
         return requirements.result();
     }
@@ -48,23 +47,7 @@ public class BunLockBinaryDetectable extends Detectable {
     public DetectableResult extractable() throws DetectableException {
         Requirements requirements = new Requirements(fileFinder, environment);
         bunExe = requirements.executable(() -> bunResolver.resolveBun(), "bun");
-        // TODO: Uncomment this version guard once BunCliDetectable is implemented.
-        //
-        // DetectorRuleFactory will register entry points in order:
-        //   1. BunCliDetectable        (bun >= 1.2) — "bun pm list --all"
-        //   2. BunLockBinaryDetectable  (bun < 1.2) — "bun bun.lockb"       ← this class
-        //   3. BunLockfileDetectable    (no bun exe) — parse bun.lock JSONC
-        //
-        // This guard ensures that when bun >= 1.2 is installed but BunCliDetectable fails
-        // for some reason, we do NOT fall through here — we let BunLockfileDetectable handle it.
-        // Requires injecting DetectableExecutableRunner to run "bun --version".
-        //
-        // if (requirements.result().getPassed()) {
-        //     String version = getBunVersion(bunExe);  // run: bun --version, trim stdout
-        //     if (version != null && !isBunVersionBelow12(version)) {
-        //         return new ExecutableVersionMismatchDetectableResult("bun", "< 1.2", version);
-        //     }
-        // }
+        // TODO (IDETECT-5295): add bun version guard here once version-check infrastructure is in place
         return requirements.result();
     }
 

@@ -10,6 +10,7 @@ import com.blackduck.integration.detectable.ExecutableUtils;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import com.blackduck.integration.detectable.detectable.executable.DetectableExecutableRunner;
 import com.blackduck.integration.detectable.detectable.executable.ExecutableFailedException;
+import com.blackduck.integration.detectable.detectables.yarn.YarnTransformer;
 import com.blackduck.integration.detectable.detectables.yarn.packagejson.NullSafePackageJson;
 import com.blackduck.integration.detectable.detectables.yarn.packagejson.PackageJsonFiles;
 import com.blackduck.integration.detectable.detectables.yarn.parse.YarnLock;
@@ -22,18 +23,18 @@ public class BunLockBinaryExtractor {
 
     private final DetectableExecutableRunner executableRunner;
     private final BunLockBinaryParser bunLockBinaryParser;
-    private final BunLockBinaryTransformer bunLockBinaryTransformer;
+    private final YarnTransformer yarnTransformer;
     private final PackageJsonFiles packageJsonFiles;
 
     public BunLockBinaryExtractor(
         DetectableExecutableRunner executableRunner,
         BunLockBinaryParser bunLockBinaryParser,
-        BunLockBinaryTransformer bunLockBinaryTransformer,
+        YarnTransformer yarnTransformer,
         PackageJsonFiles packageJsonFiles
     ) {
         this.executableRunner = executableRunner;
         this.bunLockBinaryParser = bunLockBinaryParser;
-        this.bunLockBinaryTransformer = bunLockBinaryTransformer;
+        this.yarnTransformer = yarnTransformer;
         this.packageJsonFiles = packageJsonFiles;
     }
 
@@ -44,7 +45,7 @@ public class BunLockBinaryExtractor {
             YarnLock yarnLock = bunLockBinaryParser.parseBunLockBinary(outputLines);
             NullSafePackageJson rootPackageJson = packageJsonFiles.read(packageJsonFile);
             YarnLockResult yarnLockResult = new YarnLockResult(rootPackageJson, yarnLock);
-            List<CodeLocation> codeLocations = bunLockBinaryTransformer.generateCodeLocations(yarnLockResult, new ArrayList<>());
+            List<CodeLocation> codeLocations = yarnTransformer.generateCodeLocations(yarnLockResult, new ArrayList<>(), null);
 
             return new Extraction.Builder()
                 .projectName(rootPackageJson.getName().orElse(null))
