@@ -16,13 +16,15 @@ import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.executable.ExecutableOutput;
 
 public class BunCliExtractor {
-    // `bun pm list --all` outputs a hierarchical tree where level-0 entries appear to be direct
-    // deps, but Bun's flat node_modules layout also hoists many transitives to level 0.
-    // Packages that are shared by multiple parents get hoisted and appear ONLY at level 0 — their
-    // edges to logical parents are not repeated. Filtering them out of the root set would orphan
-    // their entire subtree (BDIO has no "transitive root" concept). Known limitation: hoisted
-    // transitives are labeled as direct deps in the SBOM. package.json names could distinguish
-    // true directs, but adding them differently is not supported by the current graph API.
+    // Fallback path: fires when bun.lock is absent but a compatible lockfile is present
+    // (package-lock.json, yarn.lock, or pnpm-lock.yaml). Bun auto-migrates these formats.
+    //
+    // Known limitation: Bun's flat/hoisted node_modules layout causes packages shared by
+    // multiple parents to appear ONLY at level 0 in the tree output — their edges to logical
+    // parents are not repeated. Filtering them from the root set would orphan their entire
+    // subtree (BDIO has no "transitive root" concept). Hoisted transitives are therefore
+    // labeled as direct deps in the SBOM. The Bun Lockfile Detector provides accurate
+    // classification when bun.lock is present.
     private static final List<String> BUN_LIST_ALL_COMMAND = Arrays.asList("pm", "list", "--all");
 
     private final DetectableExecutableRunner executableRunner;
