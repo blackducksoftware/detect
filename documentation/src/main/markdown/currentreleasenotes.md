@@ -30,7 +30,7 @@
 
 ### Resolved issues
 
-*
+* (IDETECT-5267) Fixed cargo detectors to handle pre-release version suffixes and malformed version output.
 
 ### Dependency Updates
 
