@@ -54,9 +54,6 @@ import com.blackduck.integration.detectable.detectable.executable.resolver.BunRe
 import com.blackduck.integration.detectable.detectables.bun.cli.BunCliDetectable;
 import com.blackduck.integration.detectable.detectables.bun.cli.BunCliExtractor;
 import com.blackduck.integration.detectable.detectables.bun.cli.BunCliParser;
-import com.blackduck.integration.detectable.detectables.bun.lockbinary.BunLockBinaryDetectable;
-import com.blackduck.integration.detectable.detectables.bun.lockbinary.BunLockBinaryExtractor;
-import com.blackduck.integration.detectable.detectables.bun.lockbinary.BunLockBinaryParser;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockfileDetectable;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockfileExtractor;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockJsonParser;
@@ -180,7 +177,6 @@ import com.blackduck.integration.detectable.detectables.gradle.inspection.parse.
 import com.blackduck.integration.detectable.detectables.gradle.inspection.parse.GradleReportTransformer;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.parse.GradleRootMetadataParser;
 import com.blackduck.integration.detectable.detectables.gradle.parsing.GradleProjectInspectorDetectable;
-import com.blackduck.integration.detectable.detectables.ivy.IvyCliDetectable;
 import com.blackduck.integration.detectable.detectables.ivy.IvyCliExtractor;
 import com.blackduck.integration.detectable.detectables.ivy.IvyParseDetectable;
 import com.blackduck.integration.detectable.detectables.ivy.IvyParseExtractor;
@@ -808,10 +804,6 @@ public class DetectableFactory {
         return new BunCliDetectable(environment, fileFinder, bunResolver, bunCliExtractor());
     }
 
-    public BunLockBinaryDetectable createBunLockBinaryDetectable(DetectableEnvironment environment, BunResolver bunResolver) {
-        return new BunLockBinaryDetectable(environment, fileFinder, bunResolver, bunLockBinaryExtractor());
-    }
-
     public BunLockfileDetectable createBunLockfileDetectable(DetectableEnvironment environment) {
         return new BunLockfileDetectable(environment, fileFinder, bunLockfileExtractor());
     }
@@ -1305,15 +1297,6 @@ public class DetectableFactory {
 
     private BunCliExtractor bunCliExtractor() {
         return new BunCliExtractor(executableRunner, bunCliParser(), packageJsonFiles());
-    }
-
-    private BunLockBinaryParser bunLockBinaryParser() {
-        return new BunLockBinaryParser(yarnLockParser());
-    }
-
-    private BunLockBinaryExtractor bunLockBinaryExtractor() {
-        YarnTransformer yarnTransformer = new YarnTransformer(externalIdFactory, EnumListFilter.<YarnDependencyType>excludeNone());
-        return new BunLockBinaryExtractor(executableRunner, bunLockBinaryParser(), yarnTransformer, packageJsonFiles());
     }
 
     private BunLockJsonParser bunLockJsonParser() {
