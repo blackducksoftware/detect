@@ -5,6 +5,7 @@ import java.io.File;
 import com.blackduck.integration.common.util.finder.FileFinder;
 import com.blackduck.integration.detectable.Detectable;
 import com.blackduck.integration.detectable.DetectableEnvironment;
+import com.blackduck.integration.detectable.detectables.bun.BunPackageNameUtils;
 import com.blackduck.integration.detectable.detectable.DetectableAccuracyType;
 import com.blackduck.integration.detectable.detectable.Requirements;
 import com.blackduck.integration.detectable.detectable.annotation.DetectableInfo;
@@ -17,7 +18,6 @@ import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
     requirementsMarkdown = "Files: package.json and bun.lock.")
 public class BunLockfileDetectable extends Detectable {
     public static final String BUN_LOCK_FILENAME = "bun.lock";
-    public static final String PACKAGE_JSON_FILENAME = "package.json";
 
     private final FileFinder fileFinder;
     private final BunLockfileExtractor bunLockfileExtractor;
@@ -34,7 +34,7 @@ public class BunLockfileDetectable extends Detectable {
     @Override
     public DetectableResult applicable() {
         Requirements requirements = new Requirements(fileFinder, environment);
-        packageJson = requirements.file(PACKAGE_JSON_FILENAME);
+        packageJson = requirements.file(BunPackageNameUtils.PACKAGE_JSON_FILENAME);
         bunLockFile = requirements.file(BUN_LOCK_FILENAME);
         return requirements.result();
     }

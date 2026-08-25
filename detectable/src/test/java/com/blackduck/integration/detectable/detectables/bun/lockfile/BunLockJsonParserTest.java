@@ -13,12 +13,11 @@ import org.junit.jupiter.api.Test;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockPackage;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockResult;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockfileData;
-import com.google.gson.Gson;
 
 class BunLockJsonParserTest {
 
     private BunLockJsonParser parser() {
-        return new BunLockJsonParser(new Gson());
+        return new BunLockJsonParser();
     }
 
     private File testLockFile() throws Exception {

@@ -14,7 +14,6 @@ import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation
 import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockDependency;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockPackage;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockResult;
-import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockfileData;
 import com.blackduck.integration.detectable.detectables.yarn.packagejson.NullSafePackageJson;
 
 public class BunLockfileTransformer {
@@ -25,8 +24,7 @@ public class BunLockfileTransformer {
     }
 
     public List<CodeLocation> generateCodeLocations(BunLockResult result, NullSafePackageJson packageJson) {
-        BunLockfileData data = result.getData();
-        Map<String, Map<String, String>> rangeToVersion = data.getRangeToVersion();
+        Map<String, Map<String, String>> rangeToVersion = result.getRangeToVersion();
         BasicDependencyGraph graph = new BasicDependencyGraph();
 
         // Seed the graph root from package.json direct dependencies
@@ -41,7 +39,7 @@ public class BunLockfileTransformer {
         }
 
         // Wire all transitive edges; graph traversal at BDIO time enforces reachability from root
-        for (BunLockPackage pkg : data.getPackages()) {
+        for (BunLockPackage pkg : result.getPackages()) {
             Dependency parent = makeDep(pkg.getName(), pkg.getVersion());
             for (BunLockDependency dep : pkg.getDependencies()) {
                 Dependency child = resolve(dep.getName(), dep.getRange(), rangeToVersion);

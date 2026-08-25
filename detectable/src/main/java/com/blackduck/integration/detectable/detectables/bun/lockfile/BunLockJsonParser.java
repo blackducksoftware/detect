@@ -12,13 +12,14 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
+import com.blackduck.integration.detectable.detectables.bun.BunPackageNameUtils;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockDependency;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockPackage;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockResult;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockfileData;
 import com.blackduck.integration.util.NameVersion;
-import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 
@@ -29,13 +30,9 @@ public class BunLockJsonParser {
     private static final String DEV_DEPENDENCIES_KEY = "devDependencies";
     private static final String OPTIONAL_DEPENDENCIES_KEY = "optionalDependencies";
     private static final char NV_KEY_SEP = '§'; // § separator — never appears in npm names or semver
+    private static final Pattern TRAILING_COMMA = Pattern.compile(",([\\s\\r\\n]*[}\\]])");
 
-    @SuppressWarnings("unused")
-    private final Gson gson;
-
-    public BunLockJsonParser(Gson gson) {
-        this.gson = gson;
-    }
+    public BunLockJsonParser() {}
 
     public BunLockResult parseBunLock(File bunLockFile) {
         String content;
@@ -43,7 +40,7 @@ public class BunLockJsonParser {
             String raw = new String(Files.readAllBytes(bunLockFile.toPath()), StandardCharsets.UTF_8);
             // bun.lock is JSONC; Gson setLenient handles comments but NOT trailing commas.
             // Version specifiers and SHA hashes never contain ", }" so this replacement is safe.
-            content = raw.replaceAll(",([\\s\\r\\n]*[}\\]])", "$1");
+            content = TRAILING_COMMA.matcher(raw).replaceAll("$1");
         } catch (Exception e) {
             throw new RuntimeException("Failed to read bun.lock: " + bunLockFile.getAbsolutePath(), e);
         }
@@ -123,7 +120,7 @@ public class BunLockJsonParser {
             String key = nvKey(e.getValue());
             uniqueNvKeys.putIfAbsent(key, e.getValue());
             Map<String, BunLockDependency> depMap = mergedEntryDeps.computeIfAbsent(key, k -> new LinkedHashMap<>());
-            for (BunLockDependency dep : rawEntryDeps.getOrDefault(e.getKey(), Collections.emptyList())) {
+            for (BunLockDependency dep : rawEntryDeps.get(e.getKey())) {
                 depMap.putIfAbsent(dep.getName(), dep);
             }
         }
@@ -132,7 +129,7 @@ public class BunLockJsonParser {
         List<BunLockPackage> packages = new ArrayList<>(uniqueNvKeys.size());
         for (Map.Entry<String, NameVersion> e : uniqueNvKeys.entrySet()) {
             NameVersion nv = e.getValue();
-            List<BunLockDependency> deps = new ArrayList<>(mergedEntryDeps.getOrDefault(e.getKey(), Collections.emptyMap()).values());
+            List<BunLockDependency> deps = new ArrayList<>(mergedEntryDeps.get(e.getKey()).values());
             packages.add(new BunLockPackage(nv.getName(), nv.getVersion(), deps));
         }
 
@@ -162,15 +159,10 @@ public class BunLockJsonParser {
 
         List<BunLockDependency> deps = Collections.emptyList();
         if (reader.hasNext()) {
-            JsonToken next = reader.peek();
-            if (next == JsonToken.STRING) {
-                // lockfileVersion 1: ["specifier", "", {metadata}, "sha512-..."]
-                reader.nextString(); // skip registry tag ("")
-                if (reader.hasNext() && reader.peek() == JsonToken.BEGIN_OBJECT) {
-                    deps = parseDeps(reader);
-                }
-            } else if (next == JsonToken.BEGIN_OBJECT) {
-                // lockfileVersion 0: ["specifier", {metadata}, "cacheKey", ...]
+            if (reader.peek() == JsonToken.STRING) {
+                reader.nextString(); // skip registry tag ("") present in lockfileVersion 1
+            }
+            if (reader.hasNext() && reader.peek() == JsonToken.BEGIN_OBJECT) {
                 deps = parseDeps(reader);
             }
         }
@@ -263,13 +255,9 @@ public class BunLockJsonParser {
     }
 
     // Splits "react@18.3.1" → ("react", "18.3.1") and "@babel/core@7.0.0" → ("@babel/core", "7.0.0").
-    // lastIndexOf('@') preserves the leading '@' in scoped package names.
     private static NameVersion parseResolvedSpecifier(String resolvedSpecifier) {
-        int lastAt = resolvedSpecifier.lastIndexOf('@');
-        if (lastAt <= 0) {
-            return new NameVersion(resolvedSpecifier, "");
-        }
-        return new NameVersion(resolvedSpecifier.substring(0, lastAt), resolvedSpecifier.substring(lastAt + 1));
+        NameVersion nv = BunPackageNameUtils.parseNameVersion(resolvedSpecifier);
+        return nv != null ? nv : new NameVersion(resolvedSpecifier, "");
     }
 
     private static String nvKey(NameVersion nv) {
