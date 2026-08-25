@@ -51,10 +51,12 @@ import com.blackduck.integration.detectable.detectables.bazel.pipeline.Dependenc
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelVariableSubstitutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.HaskellCabalLibraryJsonProtoParser;
 import com.blackduck.integration.detectable.detectable.executable.resolver.BunResolver;
+import com.blackduck.integration.detectable.detectables.bun.cli.BunCliDetectable;
+import com.blackduck.integration.detectable.detectables.bun.cli.BunCliExtractor;
+import com.blackduck.integration.detectable.detectables.bun.cli.BunCliParser;
 import com.blackduck.integration.detectable.detectables.bun.lockbinary.BunLockBinaryDetectable;
 import com.blackduck.integration.detectable.detectables.bun.lockbinary.BunLockBinaryExtractor;
 import com.blackduck.integration.detectable.detectables.bun.lockbinary.BunLockBinaryParser;
-import com.blackduck.integration.detectable.detectables.bun.lockbinary.BunLockBinaryTransformer;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockfileDetectable;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockfileExtractor;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockJsonParser;
@@ -802,6 +804,10 @@ public class DetectableFactory {
         return new UVLockFileDetectable(environment, fileFinder, uvDetectorOptions, uvLockfileExtractor(environment.getDirectory()));
     }
 
+    public BunCliDetectable createBunCliDetectable(DetectableEnvironment environment, BunResolver bunResolver) {
+        return new BunCliDetectable(environment, fileFinder, bunResolver, bunCliExtractor());
+    }
+
     public BunLockBinaryDetectable createBunLockBinaryDetectable(DetectableEnvironment environment, BunResolver bunResolver) {
         return new BunLockBinaryDetectable(environment, fileFinder, bunResolver, bunLockBinaryExtractor());
     }
@@ -1293,21 +1299,25 @@ public class DetectableFactory {
     }
 
 
+    private BunCliParser bunCliParser() {
+        return new BunCliParser(externalIdFactory);
+    }
+
+    private BunCliExtractor bunCliExtractor() {
+        return new BunCliExtractor(executableRunner, bunCliParser(), packageJsonFiles());
+    }
+
     private BunLockBinaryParser bunLockBinaryParser() {
         return new BunLockBinaryParser(yarnLockParser());
     }
 
-    private BunLockBinaryTransformer bunLockBinaryTransformer() {
-        YarnTransformer yarnTransformer = new YarnTransformer(externalIdFactory, EnumListFilter.<YarnDependencyType>excludeNone());
-        return new BunLockBinaryTransformer(yarnTransformer);
-    }
-
     private BunLockBinaryExtractor bunLockBinaryExtractor() {
-        return new BunLockBinaryExtractor(executableRunner, bunLockBinaryParser(), bunLockBinaryTransformer(), packageJsonFiles());
+        YarnTransformer yarnTransformer = new YarnTransformer(externalIdFactory, EnumListFilter.<YarnDependencyType>excludeNone());
+        return new BunLockBinaryExtractor(executableRunner, bunLockBinaryParser(), yarnTransformer, packageJsonFiles());
     }
 
     private BunLockJsonParser bunLockJsonParser() {
-        return new BunLockJsonParser(gson);
+        return new BunLockJsonParser();
     }
 
     private BunLockfileTransformer bunLockfileTransformer() {
