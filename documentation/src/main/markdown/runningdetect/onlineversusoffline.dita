@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
-<concept id="online-vs-offline-detect-features">
+<!DOCTYPE topic PUBLIC "-//OASIS//DTD DITA Topic//EN" "topic.dtd">
+<topic id="online-vs-offline-detect-features">
     <title>Feature availability in online and offline Detect scanning</title>
 
-    <conbody>
+    <body>
         <p>The following table summarizes the availability of Detect features when running in
             online mode versus offline mode.</p>
 
@@ -128,5 +128,5 @@
                 </tbody>
             </tgroup>
         </table>
-    </conbody>
-</concept>
+    </body>
+</topic>
