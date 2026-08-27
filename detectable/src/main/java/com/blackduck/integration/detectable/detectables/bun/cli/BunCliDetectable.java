@@ -20,7 +20,7 @@ import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
     name = "Bun CLI",
     language = "Node JS",
     forge = "npmjs",
-    accuracy = DetectableAccuracyType.HIGH,
+    accuracy = DetectableAccuracyType.LOW,
     requirementsMarkdown = "Files: package.json and one of package-lock.json, yarn.lock, or pnpm-lock.yaml. Executable: bun."
 )
 public class BunCliDetectable extends Detectable {
