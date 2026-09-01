@@ -175,6 +175,10 @@ public class BazelV2Extractor {
             .sorted(Comparator.comparingInt(this::priority))
             .collect(Collectors.toList());
 
+        int pipelineTotalDeps = 0;
+        int pipelineSuppressed = 0;
+        int pipelineAddedFlat = 0;
+
         for (DependencySource source : ordered) {
             logger.debug("Executing pipeline for dependency source: {}", source);
             List<Dependency> deps = pipelines.get(source).run();
@@ -196,7 +200,14 @@ public class BazelV2Extractor {
             if (!nonBcrDeps.isEmpty()) {
                 graph.addChildrenToRoot(nonBcrDeps);
             }
+            pipelineTotalDeps += deps.size();
+            pipelineSuppressed += suppressed;
+            pipelineAddedFlat += nonBcrDeps.size();
         }
+
+        logger.info("Bazel extraction complete — BCR: {} module(s) classified with direct/transitive edges; " +
+                "pipelines: {} found, {} suppressed (BCR overlap), {} added flat",
+            bcrExternalIds.size(), pipelineTotalDeps, pipelineSuppressed, pipelineAddedFlat);
 
         CodeLocation cl = new CodeLocation(graph);
         String projectName = projectNameGenerator.generateFromBazelTarget(bazelTarget);
