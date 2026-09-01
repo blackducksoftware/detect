@@ -1,6 +1,9 @@
 package com.blackduck.integration.detectable.detectables.uv.lockfile;
 
+import com.blackduck.integration.bdio.graph.BasicDependencyGraph;
 import com.blackduck.integration.bdio.graph.DependencyGraph;
+import com.blackduck.integration.bdio.model.Forge;
+import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import com.blackduck.integration.detectable.detectables.pip.parser.RequirementsFileDependencyTransformer;
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
@@ -41,6 +44,21 @@ public class UVLockfileExtractor {
             if (uvLockFile != null) {
                 String uvLockContents = FileUtils.readFileToString(uvLockFile, StandardCharsets.UTF_8);
                 codeLocations = uvLockParser.parseLockFile(uvLockContents, projectName, uvDetectorOptions);
+            }
+
+            // When all only-groups are also excluded, parseLockFile returns an empty list.
+            // Create one empty CodeLocation with the project identity so the BOM still
+            // contains the project — consistent with the CLI/buildless detector path.
+            // Gate on uvLockFile != null: if there was no uv.lock, parseLockFile was never
+            // called, so an empty codeLocations list is expected (requirements.txt may still
+            // add its own CodeLocation below). We must not add a spurious empty CodeLocation
+            // in that case.
+            if (uvLockFile != null && codeLocations.isEmpty() && !uvDetectorOptions.getOnlyDependencyGroups().isEmpty()) {
+                DependencyGraph emptyGraph = new BasicDependencyGraph();
+                CodeLocation emptyCodeLocation = projectNameVersion
+                        .map(nv -> new CodeLocation(emptyGraph, ExternalId.FACTORY.createNameVersionExternalId(Forge.PYPI, nv.getName(), nv.getVersion())))
+                        .orElse(new CodeLocation(emptyGraph));
+                codeLocations.add(emptyCodeLocation);
             }
 
             if (requirementsTxtFile != null) {
