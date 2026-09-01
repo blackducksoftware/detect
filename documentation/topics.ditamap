@@ -70,6 +70,7 @@
 			<topicref href="runningdetect/basics/runningjar.md" format="markdown"/>
 			<topicref href="runningdetect/basics/choosingtargettype.md" format="markdown"/>
 			<topicref href="runningdetect/basics/runningwithblackduck.md" format="markdown"/>
+			<topicref href="runningdetect/onlineversusoffline.dita" format="dita"/>
 		<topicref href="runningdetect/includingexcluding/intro.md" format="markdown">
 			<topicref href="runningdetect/includingexcluding/tools.md" format="markdown"/>
 			<topicref href="runningdetect/includingexcluding/detectors.md" format="markdown"/>

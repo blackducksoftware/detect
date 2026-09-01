@@ -1623,7 +1623,8 @@ public class DetectProperties {
         AllNoneEnumListProperty.newBuilder("detect.policy.check.fail.on.severities", AllNoneEnum.NONE, PolicyRuleSeverityType.class)
             .setInfo("Fail on Policy Violation Severities", DetectPropertyFromVersion.VERSION_3_0_0)
             .setHelp(
-                "A comma-separated list of policy violation severities that will fail Detect. If this is set to NONE, Detect will not fail due to policy violations. A value of ALL is equivalent to all of the other possible values except NONE.")
+                "A comma-separated list of policy violation severities that will fail Detect. If this is set to NONE, Detect will not fail due to policy violations. A value of ALL is equivalent to all of the other possible values except NONE. This property is ignored when Detect is run in STATELESS mode."
+			)
             .setGroups(DetectGroup.PROJECT, DetectGroup.GLOBAL, DetectGroup.PROJECT_SETTING, DetectGroup.POLICY)
             .build();
 
@@ -1631,8 +1632,7 @@ public class DetectProperties {
         StringListProperty.newBuilder("detect.policy.check.fail.on.names", Collections.emptyList())
             .setInfo("Fail on Policy Names with Violations", DetectPropertyFromVersion.VERSION_7_12_0)
             .setHelp(
-                "A comma-separated list of policy names with a non-zero number of violations that will fail Detect.",
-                "If left unset, Detect will not fail due to violated policies of a certain name. This property does not change the behavior of detect.policy.check.fail.on.severities."
+                "A comma-separated list of policy names with a non-zero number of violations that will fail Detect. If left unset, Detect will not fail due to violated policies of a certain name. This property does not change the behavior of detect.policy.check.fail.on.severities. This property is ignored when Detect is run in STATELESS mode."
             )
             .setGroups(DetectGroup.PROJECT, DetectGroup.GLOBAL, DetectGroup.PROJECT_SETTING, DetectGroup.POLICY)
             .build();
@@ -2107,8 +2107,8 @@ public class DetectProperties {
                             "A comma-separated list of dependency group names to exclusively include in the BOM.",
                             "When set, Detect scans only the named groups defined under [dependency-groups] in pyproject.toml. Main project dependencies and optional extras ([project.optional-dependencies]) are excluded from the scan.\n\n" +
                             " Example: detect.uv.dependency.groups.only=dev,lint\n\n" +
-                            "Requires a pyproject.toml-based project. Setting this property on a project using setup.py or setup.cfg has no effect and a warning is logged.\n\n" +
-                            " If a group appears in both this property and detect.uv.dependency.groups.excluded, the excluded setting takes precedence for overlapping groups and that groups will not be scanned. Detect logs a warning when both properties overlap."
+                            "This property applies only to UV projects with a pyproject.toml file. The UV detector does not apply to projects using setup.py or setup.cfg.\n\n" +
+                            " If a group appears in both this property and detect.uv.dependency.groups.excluded, the excluded setting takes precedence for overlapping groups and those groups will not be scanned. Detect logs a warning when both properties overlap."
                     )
                     .setGroups(DetectGroup.UV, DetectGroup.GLOBAL, DetectGroup.SOURCE_SCAN)
                     .setCategory(DetectCategory.Advanced)
