@@ -33,7 +33,8 @@ public class BazelVariableSubstitutor {
         return opts != null ? opts : Collections.emptyList();
     }
 
-    public List<String> substitute(List<String> origStrings, String input) {        List<String> modifiedStrings = new ArrayList<>(origStrings.size());
+    public List<String> substitute(List<String> origStrings, String input) {
+        List<String> modifiedStrings = new ArrayList<>(origStrings.size());
         for (String origString : origStrings) {
             boolean foundListInsertionPlaceholder = handleListInsertion(modifiedStrings, origString, input);
             if (!foundListInsertionPlaceholder) {
