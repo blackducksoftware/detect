@@ -15,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.MalformedURLException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -53,11 +52,6 @@ public class BzlmodBcrExtractor {
 
     // Prefix used in GitHub archive URLs to indicate a tag ref (e.g., refs/tags/v1.2.3)
     private static final String REFS_TAGS_PREFIX = "refs/tags/";
-    // Block header prefix for canonical-form repo names in batched show_repo output (e.g. "## @@googletest~:")
-    private static final String REPO_BLOCK_SEPARATOR_CANONICAL = "## @@";
-    // Block header prefix for apparent/bare-name repo names in batched show_repo output (e.g. "## @bazel_skylib:").
-    // Bazel uses single @ in the header when the module was submitted as a bare/apparent name rather than @@canonical form.
-    private static final String REPO_BLOCK_SEPARATOR_APPARENT = "## @";
 
     // Pattern for the target-scoped library query (same as the HTTP_ARCHIVE pipeline)
     private static final String LIBRARY_RULE_PATTERN = ".*library";
@@ -72,7 +66,7 @@ public class BzlmodBcrExtractor {
     // query so it is consistent with the HTTP_ARCHIVE pipeline and HttpFamilyProber, which both honor
     // these options. Keeping the args identical also lets BazelCommandExecutor memoize/reuse the result.
     private final List<String> queryOptions;
-    // Stateless helpers — instantiated internally, no external injection needed
+    // Stateless helpers — created by default constructors; can be injected for testing
     private final GithubUrlParser githubUrlParser;
     private final IntermediateStepParseShowRepoToUrlCandidates urlCandidateParser;
     // Shared show_repo execution mechanics (batching, block splitting, per-candidate fallback)
@@ -88,13 +82,29 @@ public class BzlmodBcrExtractor {
     }
 
     public BzlmodBcrExtractor(BazelCommandExecutor bazelCmd, BazelVersion bazelVersion, String bazelTarget, List<String> queryOptions) {
+        this(bazelCmd, bazelVersion, bazelTarget, queryOptions,
+            new GithubUrlParser(),
+            new IntermediateStepParseShowRepoToUrlCandidates(),
+            new ShowRepoExecutor(bazelCmd));
+    }
+
+    /**
+     * Full-injection constructor. Accepts all collaborators explicitly, enabling unit tests that
+     * exercise classification and URL-parsing logic without spawning a real Bazel process.
+     * Production code uses the shorter constructors above, which supply default implementations.
+     */
+    public BzlmodBcrExtractor(BazelCommandExecutor bazelCmd, BazelVersion bazelVersion, String bazelTarget,
+                               List<String> queryOptions,
+                               GithubUrlParser githubUrlParser,
+                               IntermediateStepParseShowRepoToUrlCandidates urlCandidateParser,
+                               ShowRepoExecutor showRepoExecutor) {
         this.bazelCmd = bazelCmd;
         this.bazelVersion = bazelVersion;
         this.bazelTarget = bazelTarget;
         this.queryOptions = queryOptions != null ? queryOptions : Collections.emptyList();
-        this.githubUrlParser = new GithubUrlParser();
-        this.urlCandidateParser = new IntermediateStepParseShowRepoToUrlCandidates();
-        this.showRepoExecutor = new ShowRepoExecutor(bazelCmd);
+        this.githubUrlParser = githubUrlParser;
+        this.urlCandidateParser = urlCandidateParser;
+        this.showRepoExecutor = showRepoExecutor;
     }
 
     /**
@@ -217,13 +227,11 @@ public class BzlmodBcrExtractor {
     // -------------------------------------------------------------------------
 
     /**
-     * Resolves each module key to a {@link Dependency} by calling
-     * {@code bazel mod show_repo} and parsing the GitHub URL from the output.
+     * Resolves each module key to a {@link Dependency} by calling {@code bazel mod show_repo}
+     * (via {@link ShowRepoExecutor#resolveWithFallback}) and parsing the GitHub URL from the output.
      *
-     * <p>Strategy: try a single batched call first (fast path). If the batch returns nothing,
-     * fall back to per-module calls using {@link BzlmodRepoMappingResolver#candidateRepoArgs},
-     * which tries multiple argument forms in a safe priority order to handle Bazel version
-     * inconsistencies (see {@link BzlmodRepoMappingResolver} class javadoc for the full matrix).
+     * <p>Batch+fallback orchestration is delegated to {@link ShowRepoExecutor#resolveWithFallback},
+     * which tries a single batched call first and retries only missing modules per-module.
      *
      * <p>Excluded modules (infrastructure / toolchain repos) must be filtered from
      * {@code moduleKeys} by the caller before invoking this method — see Step 1d in
@@ -234,41 +242,8 @@ public class BzlmodBcrExtractor {
      * WARN. The HTTP_ARCHIVE pipeline may still capture it via {@code bazel query}.
      */
     private Map<String, Dependency> resolveModules(Set<String> moduleKeys, BzlmodRepoMappingResolver resolver) {
-        // Build the primary show_repo argument for each module (used in the batch call).
-        // canonicalRepoArg() selects the best single argument form:
-        //   - Suffixed canonical (e.g. "@@protobuf~") when the mapping has a suffixed value
-        //   - Bare module name when the mapping has a no-suffix value (Bazel 7.4 inconsistency)
-        //   - Suffix-appended form (e.g. "@@googletest~") for pure transitives not in the mapping
-        // If the batch fails for any reason, runPerModuleShowRepo() retries with the full
-        // candidateRepoArgs() list which includes additional fallbacks including the bare name.
-        List<String> showRepoArgs = new ArrayList<>();
-        for (String moduleKey : moduleKeys) {
-            String name        = BzlmodGraphJsonParser.extractName(moduleKey);
-            String showRepoArg = resolver.canonicalRepoArg(name);
-            showRepoArgs.add(showRepoArg);
-        }
+        Map<String, String> showRepoOutputByKey = showRepoExecutor.resolveWithFallback(moduleKeys, resolver);
 
-        // Attempt a single batched show_repo call (Bazel 7.1+ supports it; we are always 7.1+ here)
-        Map<String, String> showRepoOutputByKey = tryBatchedShowRepo(moduleKeys, showRepoArgs, resolver);
-        if (showRepoOutputByKey.isEmpty()) {
-            // Batch returned nothing at all — fall back to per-module for every module
-            logger.debug("BZLMOD BCR: batched show_repo returned no results; falling back to per-module calls");
-            showRepoOutputByKey = runPerModuleShowRepo(moduleKeys, resolver);
-        } else {
-            logger.debug("BZLMOD BCR: batched show_repo resolved {} of {} module(s)", showRepoOutputByKey.size(), moduleKeys.size());
-            // Partial batch success: some modules may have been submitted as bare names and came back
-            // with "## @name:" headers instead of "## @@name~:" — the parser now handles both, but
-            // as a safety net, retry any module still missing from the batch result using per-module calls.
-            Set<String> notResolvedByBatch = new LinkedHashSet<>(moduleKeys);
-            notResolvedByBatch.removeAll(showRepoOutputByKey.keySet());
-            if (!notResolvedByBatch.isEmpty()) {
-                logger.debug("BZLMOD BCR: {} module(s) not resolved by batch; retrying per-module", notResolvedByBatch.size());
-                Map<String, String> perModuleResults = runPerModuleShowRepo(notResolvedByBatch, resolver);
-                showRepoOutputByKey.putAll(perModuleResults);
-            }
-        }
-
-        // Convert show_repo output to Dependencies
         Map<String, Dependency> result = new LinkedHashMap<>();
         for (String moduleKey : moduleKeys) {
             String showRepoOutput = showRepoOutputByKey.get(moduleKey);
@@ -287,103 +262,6 @@ public class BzlmodBcrExtractor {
             if (dep != null) {
                 result.put(moduleKey, dep);
                 resolvedExternalIds.add(dep.getExternalId());
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Attempts a single batched {@code bazel mod show_repo @@name~ @@name2~ ...} and maps the
-     * split output blocks back to module keys via the {@code ## @@name<suffix>:} header in each block.
-     * Returns an empty map if the batch fails, returns no stdout, or cannot be split.
-     *
-     * <p>The canonical {@code @@name<suffix>} form is used so that pure transitive modules resolve
-     * without a repo-mapping lookup. See {@link #resolveModules} for the full explanation.
-     * The actual suffix character ("+" or "~") is detected dynamically by the resolver.
-     */
-    private Map<String, String> tryBatchedShowRepo(Set<String> moduleKeys, List<String> showRepoArgs,
-                                                    BzlmodRepoMappingResolver resolver) {
-        if (showRepoArgs.isEmpty()) {
-            return Collections.emptyMap();
-        }
-        Optional<String> batchOutput = showRepoExecutor.runBatch(showRepoArgs);
-        if (!batchOutput.isPresent()) {
-            return Collections.emptyMap();
-        }
-
-        // Each repo block starts with either:
-        //   "## @@<name><suffix>:" — canonical form (submitted as @@name~ or @@name+)
-        //   "## @<name>:"          — apparent/bare form (submitted as bare name, Bazel resolves via apparent-name path)
-        // ShowRepoExecutor splits on the "## @" boundary (catches both); we then determine the prefix
-        // length when extracting the repo name from each block header.
-        List<String> outputBlocks = showRepoExecutor.splitIntoBlocks(batchOutput.get());
-        Map<String, String> blockContentByModuleName = new LinkedHashMap<>();
-        for (String trimmedBlock : outputBlocks) {
-            // Determine which header form this block uses and extract the repo name from the header
-            String headerRepoName = null;
-            if (trimmedBlock.startsWith(REPO_BLOCK_SEPARATOR_CANONICAL)) {
-                // e.g. "## @@protobuf~: ..." → headerRepoName = "protobuf~"
-                int colonIdx = trimmedBlock.indexOf(':');
-                if (colonIdx > REPO_BLOCK_SEPARATOR_CANONICAL.length()) {
-                    headerRepoName = trimmedBlock.substring(REPO_BLOCK_SEPARATOR_CANONICAL.length(), colonIdx);
-                }
-            } else if (trimmedBlock.startsWith(REPO_BLOCK_SEPARATOR_APPARENT)) {
-                // e.g. "## @bazel_skylib: ..." → headerRepoName = "bazel_skylib" (already no suffix)
-                int colonIdx = trimmedBlock.indexOf(':');
-                if (colonIdx > REPO_BLOCK_SEPARATOR_APPARENT.length()) {
-                    headerRepoName = trimmedBlock.substring(REPO_BLOCK_SEPARATOR_APPARENT.length(), colonIdx);
-                }
-            }
-            if (headerRepoName != null) {
-                // Strip any canonical suffix (e.g. "protobuf~" → "protobuf"; "bazel_skylib" → "bazel_skylib")
-                String moduleName = resolver.stripCanonicalSuffix(headerRepoName);
-                logger.debug("BZLMOD BCR: batched show_repo block header: headerRepoName='{}' → moduleName='{}'",
-                    headerRepoName, moduleName);
-                blockContentByModuleName.put(moduleName, trimmedBlock);
-            }
-        }
-
-        // Map module keys to the block content that corresponds to their extracted module name
-        Map<String, String> result = new LinkedHashMap<>();
-        for (String moduleKey : moduleKeys) {
-            String name         = BzlmodGraphJsonParser.extractName(moduleKey);
-            String blockContent = blockContentByModuleName.get(name);
-            if (blockContent != null) {
-                result.put(moduleKey, blockContent);
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Runs {@code bazel mod show_repo} individually for each module key using the ordered candidate
-     * list from {@link BzlmodRepoMappingResolver#candidateRepoArgs}. Used as a fallback when the
-     * batched call fails or returns no results.
-     *
-     * <p>The candidate list is designed to handle cross-version Bazel inconsistencies:
-     * <ul>
-     *   <li>Canonical form ({@code @@name~}) is tried first when the suffix is known — works on 8.x+.</li>
-     *   <li>Bare module name ({@code name}) is tried as a fallback — avoids Bazel 7.x NPE crashes
-     *       that can occur when passing canonical form for some modules.</li>
-     *   <li>Both suffix forms are tried when no suffix evidence exists — avoids guessing wrong.</li>
-     * </ul>
-     *
-     * <p>Any candidate that causes a Bazel crash (exception or empty output) is treated as
-     * "this candidate failed — try next". The loop never propagates a Bazel-side crash upward;
-     * if all candidates fail, the module is logged and skipped.
-     */
-    private Map<String, String> runPerModuleShowRepo(Set<String> moduleKeys, BzlmodRepoMappingResolver resolver) {
-        Map<String, String> result = new LinkedHashMap<>();
-        for (String moduleKey : moduleKeys) {
-            String name = BzlmodGraphJsonParser.extractName(moduleKey);
-            // The ordered candidate list handles cross-version Bazel inconsistencies (see resolver javadoc).
-            // ShowRepoExecutor tries each in turn and returns the first non-empty result; any candidate
-            // that crashes Bazel (7.x NPE) is treated as a miss and the loop advances.
-            Optional<String> output = showRepoExecutor.runFirstSuccessful(resolver.candidateRepoArgs(name));
-            if (output.isPresent()) {
-                result.put(moduleKey, output.get());
-            } else {
-                logger.debug("BZLMOD BCR: per-module show_repo produced no output for '{}'", moduleKey);
             }
         }
         return result;
