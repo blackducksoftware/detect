@@ -7,7 +7,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +23,8 @@ import com.blackduck.integration.configuration.property.Property;
 import com.blackduck.integration.detect.configuration.DetectConfigurationFactory;
 import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detect.configuration.DetectableOptionFactory;
+import com.blackduck.integration.detect.configuration.enumeration.DetectTool;
+import com.blackduck.integration.detect.lifecycle.autonomous.ScanTypeDecider;
 import com.blackduck.integration.detect.tool.detector.DetectorRuleFactory;
 import com.blackduck.integration.detect.tool.detector.factory.DetectDetectableFactory;
 import com.blackduck.integration.detect.workflow.file.DirectoryManager;
@@ -32,14 +38,20 @@ import com.google.gson.GsonBuilder;
  * Top-level orchestrator for discovery mode.
  *
  * Builds the detector rule set (reusing Detect's own {@code DetectorRuleFactory}), runs the
- * applicability-only scan, enriches each applicable detector with its live flag catalog from
- * {@code DetectProperties} and (optionally) its documentation markdown, then writes the result JSON.
+ * applicability-only scan, adds autonomous scan-type recommendations and their evidence, enriches
+ * each applicable detector with its live flag catalog from {@code DetectProperties} and (optionally)
+ * its documentation markdown, then writes the result JSON.
  *
  * The {@code DetectDetectableFactory} is built with null inspector resolvers on purpose: resolvers are
  * only used during extractable()/extract(), never during applicable(), which is all discovery runs.
  */
 public class DetectorDiscoveryRunner {
     private static final String OUTPUT_FILE_NAME = "detect-discovery-output.json";
+    private static final List<DetectTool> DISCOVERY_SCAN_TYPE_ORDER = Arrays.asList(
+        DetectTool.DETECTOR,
+        DetectTool.SIGNATURE_SCAN,
+        DetectTool.BINARY_SCAN
+    );
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final Gson gson;
@@ -53,6 +65,7 @@ public class DetectorDiscoveryRunner {
         DetectableOptionFactory detectableOptionFactory,
         DetectConfigurationFactory detectConfigurationFactory,
         DirectoryManager directoryManager,
+        boolean hasImageOrTar,
         boolean includeDocs,
         File outputDirectoryOverride
     ) throws IOException {
@@ -108,6 +121,12 @@ public class DetectorDiscoveryRunner {
         output.outputFilePath = outputFile.getAbsolutePath();
         output.timestamp = Instant.now().toString();
         output.includedDocs = includeDocs;
+        Map<DetectTool, Set<String>> scanTypeEvidence = new ScanTypeDecider().decideForDiscovery(
+            hasImageOrTar,
+            detectConfigurationFactory.getDetectPropertyConfiguration(),
+            sourceDirectory.toPath()
+        );
+        populateScanTypeRecommendations(output, scanTypeEvidence);
         output.applicableDetectors = applicableDetectors;
         output.notApplicableDetectors = scanResult.notApplicable;
 
@@ -116,6 +135,33 @@ public class DetectorDiscoveryRunner {
 
         logger.info("Discovery found {} applicable detector(s).", applicableDetectors.size());
         return outputFile;
+    }
+
+    static void populateScanTypeRecommendations(DetectorDiscoveryOutput output, Map<DetectTool, Set<String>> scanTypeEvidence) {
+        output.recommendedScanTypes.clear();
+        output.scanTypeSignals.clear();
+        for (DetectTool detectTool : DISCOVERY_SCAN_TYPE_ORDER) {
+            Set<String> signals = scanTypeEvidence.get(detectTool);
+            if (signals == null) {
+                continue;
+            }
+            String publicName = publicScanTypeName(detectTool);
+            output.recommendedScanTypes.add(publicName);
+            output.scanTypeSignals.put(publicName, signals.stream().sorted().collect(Collectors.toList()));
+        }
+    }
+
+    private static String publicScanTypeName(DetectTool detectTool) {
+        switch (detectTool) {
+            case DETECTOR:
+                return "DETECTOR";
+            case SIGNATURE_SCAN:
+                return "SIGNATURE";
+            case BINARY_SCAN:
+                return "BINARY";
+            default:
+                throw new IllegalArgumentException("Unsupported discovery scan type: " + detectTool);
+        }
     }
 
     /**

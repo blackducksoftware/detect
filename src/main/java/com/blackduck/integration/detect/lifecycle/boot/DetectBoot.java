@@ -72,7 +72,6 @@ import com.blackduck.integration.rest.proxy.ProxyInfo;
 import com.google.gson.Gson;
 
 import freemarker.template.Configuration;
-import java.util.Set;
 
 public class DetectBoot {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -224,7 +223,7 @@ public class DetectBoot {
         }
         
         if (detectArgumentState.isDiscoveryMode()) {
-            return runDiscoveryMode(detectVersion, detectableOptionFactory, detectConfigurationFactory, detectConfiguration, directoryManager, propertyConfiguration, diagnosticSystem);
+            return runDiscoveryMode(detectVersion, detectableOptionFactory, detectConfigurationFactory, directoryManager, propertyConfiguration, diagnosticSystem, hasImageOrTar);
         }
 
         Map<DetectTool, Set<String>> scanTypeEvidenceMap = autonomousManager.getScanTypeMap(hasImageOrTar);
@@ -304,14 +303,15 @@ public class DetectBoot {
         String detectVersion,
         DetectableOptionFactory detectableOptionFactory,
         DetectConfigurationFactory detectConfigurationFactory,
-        DetectPropertyConfiguration detectConfiguration,
         DirectoryManager directoryManager,
         PropertyConfiguration propertyConfiguration,
-        DiagnosticSystem diagnosticSystem
+        DiagnosticSystem diagnosticSystem,
+        boolean hasImageOrTar
     ) {
         logger.info("");
-        logger.info("Running Detect in discovery mode. Only detector applicability will be evaluated; no scan will be performed.");
+        logger.info("Running Detect in discovery mode. Detector applicability and scan type recommendations will be evaluated; no scan will be performed.");
         try {
+            DetectPropertyConfiguration detectConfiguration = detectConfigurationFactory.getDetectPropertyConfiguration();
             boolean includeDocs = detectConfiguration.getValue(DetectProperties.DETECT_DISCOVERY_INCLUDE_DOCS);
             java.nio.file.Path outputPathOverride = detectConfiguration.getPathOrNull(DetectProperties.DETECT_DISCOVERY_OUTPUT_PATH);
             File outputDirectoryOverride = outputPathOverride != null ? outputPathOverride.toFile() : null;
@@ -322,6 +322,7 @@ public class DetectBoot {
                 detectableOptionFactory,
                 detectConfigurationFactory,
                 directoryManager,
+                hasImageOrTar,
                 includeDocs,
                 outputDirectoryOverride
             );

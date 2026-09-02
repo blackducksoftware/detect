@@ -15,8 +15,8 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -35,28 +35,41 @@ public class ScanTypeDecider {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     
     public Map<DetectTool, Set<String>> decide(boolean hasImageOrTar, DetectPropertyConfiguration detectConfiguration, Path detectSourcePath) {
-        if (!hasImageOrTar && detectConfiguration.getValue(DetectProperties.DETECT_AUTONOMOUS_SCAN_ENABLED)) {
-            AllNoneEnumCollection<DetectTool> includedTools = detectConfiguration.getValue(DetectProperties.DETECT_TOOLS);
-            AllNoneEnumCollection<DetectTool> excludedTools = detectConfiguration.getValue(DetectProperties.DETECT_TOOLS_EXCLUDED);
-            List<String> fileInclusionPatterns = detectConfiguration.getValue(DetectProperties.DETECT_BINARY_SCAN_FILE_NAME_PATTERNS);
-            if (detectSourcePath == null) {
-                logger.error("Detect autonomous scan mode requires Detect Source Path (--detect.source.path) to be set.");
-            } else {
-                // This map has individual paths to files grouped under types.
-                logger.debug("includedTools: {}", includedTools.toPresentValues());
-                logger.debug("excludedTools: {}", excludedTools.toPresentValues());
-                Set<String> rootPathMonoSet = new HashSet<>();
-                rootPathMonoSet.add(detectSourcePath.toAbsolutePath().toString());
-                final Map<DetectTool, Set<String>> scanTypeEvidenceMap = new HashMap<>();
-                if (fileInclusionPatterns.isEmpty()) {
-                    decideBinary(scanTypeEvidenceMap, includedTools, excludedTools, detectSourcePath);
-                }
-                decideTool(scanTypeEvidenceMap, rootPathMonoSet, includedTools, excludedTools, DetectTool.DETECTOR);
-                decideTool(scanTypeEvidenceMap, rootPathMonoSet, includedTools, excludedTools, DetectTool.SIGNATURE_SCAN);
-                return scanTypeEvidenceMap;
-            }
+        if (!Boolean.TRUE.equals(detectConfiguration.getValue(DetectProperties.DETECT_AUTONOMOUS_SCAN_ENABLED))) {
+            return Collections.emptyMap();
         }
-        return Collections.EMPTY_MAP;
+        return decideScanTypes(hasImageOrTar, detectConfiguration, detectSourcePath);
+    }
+
+    /** Runs the autonomous scan-type algorithm for Discovery without requiring autonomous mode to be enabled. */
+    public Map<DetectTool, Set<String>> decideForDiscovery(boolean hasImageOrTar, DetectPropertyConfiguration detectConfiguration, Path detectSourcePath) {
+        return decideScanTypes(hasImageOrTar, detectConfiguration, detectSourcePath);
+    }
+
+    private Map<DetectTool, Set<String>> decideScanTypes(boolean hasImageOrTar, DetectPropertyConfiguration detectConfiguration, Path detectSourcePath) {
+        if (hasImageOrTar) {
+            return Collections.emptyMap();
+        }
+        if (detectSourcePath == null) {
+            logger.error("Detect scan type decision requires Detect Source Path (--detect.source.path) to be set.");
+            return Collections.emptyMap();
+        }
+
+        AllNoneEnumCollection<DetectTool> includedTools = detectConfiguration.getValue(DetectProperties.DETECT_TOOLS);
+        AllNoneEnumCollection<DetectTool> excludedTools = detectConfiguration.getValue(DetectProperties.DETECT_TOOLS_EXCLUDED);
+        List<String> fileInclusionPatterns = detectConfiguration.getValue(DetectProperties.DETECT_BINARY_SCAN_FILE_NAME_PATTERNS);
+
+        // This map has individual paths to files grouped under types.
+        logger.debug("includedTools: {}", includedTools.toPresentValues());
+        logger.debug("excludedTools: {}", excludedTools.toPresentValues());
+        Set<String> rootPathMonoSet = Collections.singleton(detectSourcePath.toAbsolutePath().toString());
+        Map<DetectTool, Set<String>> scanTypeEvidenceMap = new EnumMap<>(DetectTool.class);
+        if (fileInclusionPatterns.isEmpty()) {
+            decideBinary(scanTypeEvidenceMap, includedTools, excludedTools, detectSourcePath);
+        }
+        decideTool(scanTypeEvidenceMap, rootPathMonoSet, includedTools, excludedTools, DetectTool.DETECTOR);
+        decideTool(scanTypeEvidenceMap, rootPathMonoSet, includedTools, excludedTools, DetectTool.SIGNATURE_SCAN);
+        return scanTypeEvidenceMap;
     }
 
     private void decideTool(Map<DetectTool, Set<String>> scanTypeEvidenceMap,
