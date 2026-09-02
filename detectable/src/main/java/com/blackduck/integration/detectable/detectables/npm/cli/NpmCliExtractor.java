@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.apache.commons.io.FileUtils;
@@ -15,6 +17,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.blackduck.integration.detectable.ExecutableTarget;
 import com.blackduck.integration.detectable.ExecutableUtils;
 import com.blackduck.integration.detectable.detectable.executable.DetectableExecutableRunner;
@@ -22,7 +26,6 @@ import com.blackduck.integration.detectable.detectables.npm.cli.parse.NpmCliPars
 import com.blackduck.integration.detectable.detectables.npm.lockfile.result.NpmPackagerResult;
 import com.blackduck.integration.detectable.detectables.npm.packagejson.CombinedPackageJson;
 import com.blackduck.integration.detectable.detectables.npm.packagejson.CombinedPackageJsonExtractor;
-import com.blackduck.integration.detectable.detectables.npm.packagejson.model.PackageJson;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.util.ToolVersionLogger;
 import com.blackduck.integration.executable.ExecutableOutput;
@@ -86,13 +89,65 @@ public class NpmCliExtractor {
         } else if (StringUtils.isNotBlank(standardOutput)) {
             logger.debug("Parsing npm ls file.");
             logger.debug(standardOutput);
-            NpmPackagerResult result = npmCliParser.generateCodeLocation(standardOutput, combinedPackageJson, workspaceFilter);
+            Map<String, String> nodeModulesAliases = buildNodeModulesAliasMap(directory);
+            NpmPackagerResult result = npmCliParser.generateCodeLocation(standardOutput, combinedPackageJson, workspaceFilter, nodeModulesAliases);
             String projectName = result.getProjectName() != null ? result.getProjectName() : combinedPackageJson.getName();
             String projectVersion = result.getProjectVersion() != null ? result.getProjectVersion() : combinedPackageJson.getVersion();
             return new Extraction.Builder().success(result.getCodeLocation()).projectName(projectName).projectVersion(projectVersion).build();
         } else {
             logger.error("Nothing returned from npm ls -json command");
             return new Extraction.Builder().failure("Npm returned error after running npm ls.").build();
+        }
+    }
+
+    private Map<String, String> buildNodeModulesAliasMap(File projectDirectory) {
+        Map<String, String> aliases = new HashMap<>();
+        File nodeModules = new File(projectDirectory, "node_modules");
+        if (!nodeModules.isDirectory()) {
+            return aliases;
+        }
+        File[] entries = nodeModules.listFiles();
+        if (entries == null) {
+            return aliases;
+        }
+        for (File entry : entries) {
+            if (!entry.isDirectory()) {
+                continue;
+            }
+            if (entry.getName().startsWith("@")) {
+                // Scope directory (e.g. node_modules/@babel) — each subdirectory is a scoped package.
+                // An alias whose key is scoped (e.g. "@acme/utils": "npm:lodash@4") is installed here.
+                File[] scopedEntries = entry.listFiles();
+                if (scopedEntries != null) {
+                    for (File scopedEntry : scopedEntries) {
+                        if (scopedEntry.isDirectory()) {
+                            readAliasEntry(scopedEntry, entry.getName() + "/" + scopedEntry.getName(), aliases);
+                        }
+                    }
+                }
+            } else {
+                readAliasEntry(entry, entry.getName(), aliases);
+            }
+        }
+        return aliases;
+    }
+
+    private void readAliasEntry(File directory, String dirName, Map<String, String> aliases) {
+        File pkgJson = new File(directory, "package.json");
+        if (!pkgJson.isFile()) {
+            return;
+        }
+        try {
+            String content = FileUtils.readFileToString(pkgJson, StandardCharsets.UTF_8);
+            JsonObject obj = JsonParser.parseString(content).getAsJsonObject();
+            if (obj.has("name")) {
+                String actualName = obj.get("name").getAsString();
+                if (!dirName.equals(actualName)) {
+                    aliases.put(dirName, actualName);
+                }
+            }
+        } catch (Exception e) {
+            logger.debug("Could not read package.json for node_modules/{}: {}", dirName, e.getMessage());
         }
     }
 

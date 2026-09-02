@@ -1,6 +1,6 @@
 package com.blackduck.integration.detectable.detectables.npm.cli.parse;
 
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -46,26 +46,41 @@ public class NpmCliParser {
     }
 
     public NpmPackagerResult generateCodeLocation(String npmLsOutput, CombinedPackageJson combinedPackageJson) {
-        return generateCodeLocation(npmLsOutput, combinedPackageJson, null);
+        return generateCodeLocation(npmLsOutput, combinedPackageJson, (ExcludedIncludedWildcardFilter) null);
     }
 
     public NpmPackagerResult generateCodeLocation(String npmLsOutput, CombinedPackageJson combinedPackageJson,
             ExcludedIncludedWildcardFilter workspaceFilter) {
+        return generateCodeLocation(npmLsOutput, combinedPackageJson, workspaceFilter, Collections.emptyMap());
+    }
+
+    public NpmPackagerResult generateCodeLocation(String npmLsOutput, CombinedPackageJson combinedPackageJson,
+            Map<String, String> supplementalAliases) {
+        return generateCodeLocation(npmLsOutput, combinedPackageJson, null, supplementalAliases);
+    }
+
+    public NpmPackagerResult generateCodeLocation(String npmLsOutput, CombinedPackageJson combinedPackageJson,
+            ExcludedIncludedWildcardFilter workspaceFilter, Map<String, String> supplementalAliases) {
         if (StringUtils.isBlank(npmLsOutput)) {
             logger.error("Ran into an issue creating and writing to file");
             return null;
         }
 
         logger.debug("Generating results from npm ls -json");
-        return convertNpmJsonFileToCodeLocation(npmLsOutput, combinedPackageJson, workspaceFilter);
+        return convertNpmJsonFileToCodeLocation(npmLsOutput, combinedPackageJson, workspaceFilter, supplementalAliases);
     }
 
     public NpmPackagerResult convertNpmJsonFileToCodeLocation(String npmLsOutput, CombinedPackageJson combinedPackageJson) {
-        return convertNpmJsonFileToCodeLocation(npmLsOutput, combinedPackageJson, null);
+        return convertNpmJsonFileToCodeLocation(npmLsOutput, combinedPackageJson, null, Collections.emptyMap());
     }
 
     public NpmPackagerResult convertNpmJsonFileToCodeLocation(String npmLsOutput, CombinedPackageJson combinedPackageJson,
             ExcludedIncludedWildcardFilter workspaceFilter) {
+        return convertNpmJsonFileToCodeLocation(npmLsOutput, combinedPackageJson, workspaceFilter, Collections.emptyMap());
+    }
+
+    public NpmPackagerResult convertNpmJsonFileToCodeLocation(String npmLsOutput, CombinedPackageJson combinedPackageJson,
+            ExcludedIncludedWildcardFilter workspaceFilter, Map<String, String> supplementalAliases) {
         JsonObject npmJson = JsonParser.parseString(npmLsOutput).getAsJsonObject();
         DependencyGraph graph = new BasicDependencyGraph();
 
@@ -74,8 +89,8 @@ public class NpmCliParser {
         String projectName = projectNameElement != null ? projectNameElement.getAsString() : null;
         String projectVersion = projectVersionElement != null ? projectVersionElement.getAsString() : null;
 
-        // Build alias mapping once from package.json
         Map<String, String> aliasMapping = buildAliasMapping(combinedPackageJson);
+        aliasMapping.putAll(supplementalAliases);
 
         populateChildren(graph, null, npmJson.getAsJsonObject(JSON_DEPENDENCIES), true,
             combinedPackageJson, aliasMapping, workspaceFilter);
@@ -87,14 +102,6 @@ public class NpmCliParser {
         return new NpmPackagerResult(projectName, projectVersion, codeLocation);
     }
 
-    /**
-     * Builds a mapping of alias names to actual package names from CombinedPackageJson.
-     * Scans all dependency maps (dependencies, devDependencies, peerDependencies, optionalDependencies)
-     * looking for entries with "npm:" prefix.
-     *
-     * @param combinedPackageJson The package.json data
-     * @return Map of alias name -> actual package name
-     */
     private Map<String, String> buildAliasMapping(CombinedPackageJson combinedPackageJson) {
         return NpmAliasParser.buildAliasMapping(
             combinedPackageJson.getDependencies(),
