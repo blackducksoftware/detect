@@ -76,7 +76,7 @@ public class IntermediateStepExecuteShowRepoHeuristic implements IntermediateSte
             if (batchResult.isPresent()) {
                 return batchResult.get();
             }
-            logger.info("Batched show_repo failed; falling back to per-repo calls.");
+            logger.debug("Batched show_repo failed; falling back to per-repo calls.");
         }
 
         return processPerRepo(input);
@@ -133,7 +133,7 @@ public class IntermediateStepExecuteShowRepoHeuristic implements IntermediateSte
                 failures++;
             }
         }
-        logger.info("bzlmod HTTP show_repo (heuristic) summary: successes={}, failures={}", successes, failures);
+        logger.debug("show_repo resolution summary: successes={}, failures={}", successes, failures);
         return out;
     }
 

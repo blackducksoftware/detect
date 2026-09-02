@@ -171,13 +171,11 @@ public class BzlmodRepoMappingResolver {
         try {
             output = bazelCmd.executeModCommandToString(cmd);
         } catch (Exception e) {
-            logger.warn("BZLMOD BCR: dump_repo_mapping command failed ({}); " +
-                "apparent-name aliases (repo_name overrides) will not be resolved", e.getMessage());
+            logger.warn("Repo alias resolution failed ({}); packages with custom names may not be resolved correctly", e.getMessage());
             return unavailable();
         }
         if (!output.isPresent() || output.get().trim().isEmpty()) {
-            logger.warn("BZLMOD BCR: dump_repo_mapping produced no output; " +
-                "apparent-name aliases will not be resolved");
+            logger.warn("Repo alias data was empty; packages with custom names may not be resolved correctly");
             return unavailable();
         }
         return parse(output.get());
@@ -462,7 +460,7 @@ public class BzlmodRepoMappingResolver {
         try {
             JsonElement element = JsonParser.parseString(json);
             if (!element.isJsonObject()) {
-                logger.warn("BZLMOD BCR: dump_repo_mapping output is not a JSON object; degrading gracefully");
+                logger.warn("Repo alias data has an unexpected format; degrading gracefully");
                 return unavailable();
             }
             JsonObject obj = element.getAsJsonObject();
@@ -477,7 +475,7 @@ public class BzlmodRepoMappingResolver {
                 }
             }
             if (apparentToCanonical.isEmpty()) {
-                logger.warn("BZLMOD BCR: dump_repo_mapping JSON had no usable entries; degrading gracefully");
+                logger.warn("Repo alias data contained no usable entries; degrading gracefully");
                 return unavailable();
             }
 
@@ -506,7 +504,7 @@ public class BzlmodRepoMappingResolver {
             return new BzlmodRepoMappingResolver(apparentToCanonical, moduleNameToCanonical, canonicalSuffix, true, hasSuffixEvidence);
 
         } catch (Exception e) {
-            logger.warn("BZLMOD BCR: failed to parse dump_repo_mapping output ({}); degrading gracefully", e.getMessage());
+            logger.warn("Failed to parse repo alias data ({}); degrading gracefully", e.getMessage());
             return unavailable();
         }
     }

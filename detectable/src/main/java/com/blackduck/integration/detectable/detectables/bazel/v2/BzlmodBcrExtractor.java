@@ -129,7 +129,7 @@ public class BzlmodBcrExtractor {
         Optional<String> modGraphOutput = bazelCmd.executeModCommandToString(modGraphArgs);
 
         if (!modGraphOutput.isPresent()) {
-            logger.warn("BZLMOD BCR: 'bazel mod graph --output json' produced no output; returning empty graph");
+            logger.warn("Bazel module graph returned no output; dependency extraction will be skipped");
             return new BasicDependencyGraph();
         }
 
@@ -138,7 +138,7 @@ public class BzlmodBcrExtractor {
 
         Set<String> allKeys = tree.getAllModuleKeys();
         if (allKeys.isEmpty()) {
-            logger.warn("BZLMOD BCR: module graph contained no parseable module keys; returning empty graph");
+            logger.warn("Bazel module graph contained no recognizable entries; dependency extraction will be skipped");
             return new BasicDependencyGraph();
         }
         logger.debug("BZLMOD BCR: module graph has {} direct dep(s) and {} total unique module(s)",
@@ -183,7 +183,7 @@ public class BzlmodBcrExtractor {
                 filtered.size(), allKeys.size(), bazelTarget, allKeys.size() - filtered.size());
             allKeys = filtered;
         } else {
-            logger.warn("BZLMOD BCR: target-scoped filter unavailable — reporting full project-scoped mod graph ({} modules)",
+            logger.warn("Target-specific dependency filter unavailable — all {} module(s) in the project will be reported",
                 allKeys.size());
         }
 
@@ -251,10 +251,9 @@ public class BzlmodBcrExtractor {
                 // Module could not be resolved — likely uses git_override or local_path_override
                 // with a non-standard canonical name, or is not a standard BCR module.
                 // The HTTP_ARCHIVE pipeline may still capture it via bazel query.
-                logger.warn("BZLMOD BCR: show_repo produced no output for '{}' — " +
-                    "module may use a git_override or local_path_override with a non-standard canonical name. " +
-                    "It will not be included in the BCR BOM. " +
-                    "It may still appear via the HTTP_ARCHIVE pipeline.",
+                logger.warn("Module '{}' could not be resolved — it may use a local override. " +
+                    "It will not be included in these scan results. " +
+                    "It may still be found via other scan methods.",
                     moduleKey);
                 continue;
             }
@@ -308,13 +307,11 @@ public class BzlmodBcrExtractor {
 
         // No GitHub URL found — log all raw URLs so users can investigate
         if (!urlCandidates.isEmpty()) {
-            logger.warn("BZLMOD BCR: no GitHub URL found for '{}' — raw URL(s): {}. " +
-                "This component is not included in the BOM. " +
-                "Consider running signature scan on this path or consulting the KB team about forge support.",
+            logger.warn("Module '{}' was found but its source URL is not a supported GitHub URL — it will not appear in the scan results. " +
+                "Raw URL(s): {}. Consider running a signature scan for this component.",
                 moduleKey, urlCandidates);
         } else {
-            logger.warn("BZLMOD BCR: no URLs found in show_repo output for '{}'. " +
-                "This component is not included in the BOM.", moduleKey);
+            logger.warn("Module '{}' was found but no source URL could be extracted — it will not appear in the scan results.", moduleKey);
         }
         return null;
     }
@@ -357,7 +354,7 @@ public class BzlmodBcrExtractor {
 
         logger.debug("BZLMOD BCR: dependency tree — {} direct, {} transitive Bazel module(s)",
             directCount, moduleKeyToDep.size() - directCount);
-        logger.info("BZLMOD BCR: structured direct/transitive classification complete.");
+        logger.debug("BZLMOD BCR: structured direct/transitive classification complete.");
         return graph;
     }
 
