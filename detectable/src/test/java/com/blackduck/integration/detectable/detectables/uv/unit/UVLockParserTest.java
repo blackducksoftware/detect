@@ -671,6 +671,109 @@ class UVLockParserTest {
         assertTrue(codeLocations.isEmpty(), "All only-groups are also excluded: parser should return empty list (extractor handles empty BOM creation)");
     }
 
+    // Regression test for: with detect.uv.dependency.groups.only=dev set, a selected group's
+    // direct dependency (e.g. "httpx") had its own `dependencies = [...]` block skipped, so its
+    // transitive dependencies (anyio, certifi, httpcore, idna, sniffio) were dropped from the BOM.
+    // Mirrors the real-world uv.lock example reported for httpx 0.27.0, plus an extra level of
+    // nesting (httpcore -> certifi, h11) to confirm the fix isn't limited to a single level.
+    @Test
+    void onlyDependencyGroupsIncludesTransitiveDependenciesOfSelectedGroupMembers() {
+        String lockContent = String.join("\n",
+            "version = 1",
+            "",
+            "[[package]]",
+            "name = \"my-project\"",
+            "version = \"1.0.0\"",
+            "dependencies = [",
+            "    { name = \"requests\" },",
+            "]",
+            "",
+            "[package.dev-dependencies]",
+            "dev = [",
+            "    { name = \"httpx\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"requests\"",
+            "version = \"2.31.0\"",
+            "",
+            "[[package]]",
+            "name = \"httpx\"",
+            "version = \"0.27.0\"",
+            "dependencies = [",
+            "    { name = \"anyio\" },",
+            "    { name = \"certifi\" },",
+            "    { name = \"httpcore\" },",
+            "    { name = \"idna\" },",
+            "    { name = \"sniffio\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"anyio\"",
+            "version = \"4.3.0\"",
+            "dependencies = [",
+            "    { name = \"idna\" },",
+            "    { name = \"sniffio\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"certifi\"",
+            "version = \"2024.2.2\"",
+            "",
+            "[[package]]",
+            "name = \"httpcore\"",
+            "version = \"1.0.2\"",
+            "dependencies = [",
+            "    { name = \"certifi\" },",
+            "    { name = \"h11\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"idna\"",
+            "version = \"3.6\"",
+            "",
+            "[[package]]",
+            "name = \"sniffio\"",
+            "version = \"1.3.1\"",
+            "",
+            "[[package]]",
+            "name = \"h11\"",
+            "version = \"0.14.0\""
+        );
+
+        UVLockParser parser = new UVLockParser(externalIdFactory);
+        UVDetectorOptions options = new UVDetectorOptions(
+            Collections.emptyList(),
+            Arrays.asList("dev"),
+            Collections.emptyList(),
+            Collections.emptyList()
+        );
+
+        List<CodeLocation> codeLocations = parser.parseLockFile(lockContent, "my-project", options);
+
+        assertEquals(1, codeLocations.size(), "Expected one code location");
+        DependencyGraph graph = codeLocations.get(0).getDependencyGraph();
+
+        assertEquals(1, graph.getRootDependencies().size(), "Expected only 'httpx' as root dependency; 'requests' must remain excluded since onlyGroups=dev");
+        assertTrue(hasDependency(graph.getRootDependencies(), "httpx", "0.27.0"), "Expected 'httpx' from the selected 'dev' group to be a root dependency");
+        assertTrue(graph.getRootDependencies().stream().noneMatch(d -> d.getName().equals("requests")), "Expected regular [dependencies] ('requests') to remain excluded when onlyGroups is set");
+
+        Dependency httpxDep = findDependency(graph.getRootDependencies(), "httpx");
+        Set<Dependency> httpxChildren = graph.getChildrenForParent(httpxDep);
+        assertEquals(5, httpxChildren.size(), "Expected httpx's own dependencies = [...] block to be parsed even though onlyGroups is set");
+        assertTrue(hasDependency(httpxChildren, "anyio", "4.3.0"), "Expected 'anyio' as a transitive dependency of httpx");
+        assertTrue(hasDependency(httpxChildren, "certifi", "2024.2.2"), "Expected 'certifi' as a transitive dependency of httpx");
+        assertTrue(hasDependency(httpxChildren, "httpcore", "1.0.2"), "Expected 'httpcore' as a transitive dependency of httpx");
+        assertTrue(hasDependency(httpxChildren, "idna", "3.6"), "Expected 'idna' as a transitive dependency of httpx");
+        assertTrue(hasDependency(httpxChildren, "sniffio", "1.3.1"), "Expected 'sniffio' as a transitive dependency of httpx");
+
+        Dependency httpcoreDep = findDependency(httpxChildren, "httpcore");
+        Set<Dependency> httpcoreChildren = graph.getChildrenForParent(httpcoreDep);
+        assertEquals(2, httpcoreChildren.size(), "Expected httpcore's own dependencies (certifi, h11) to also be parsed, confirming the fix isn't limited to a single level of transitivity");
+        assertTrue(hasDependency(httpcoreChildren, "certifi", "2024.2.2"), "Expected 'certifi' as a transitive dependency of httpcore");
+        assertTrue(hasDependency(httpcoreChildren, "h11", "0.14.0"), "Expected 'h11' as a transitive dependency of httpcore");
+    }
+
     private boolean hasDependency(Set<Dependency> dependencies, String name, String version) {
         return dependencies.stream()
             .anyMatch(dep -> dep.getName().equals(name) && dep.getVersion().equals(version));

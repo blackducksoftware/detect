@@ -91,12 +91,13 @@ public class UVLockParser {
                 // we parse project name and workspace members first and add them to a list, while recursively looping over dependencies, we loop over all workspaceMembers list
                 // which will in turn mean that their dependencies are direct since uv.lock always has one entry for the root project
                 // Here if rootName from pyproject.toml or workspace member is encountered then we store it
-                if(rootName.equals(dependencyName) || workSpaceMembers.contains(dependencyName)) {
+                boolean isProjectEntry = rootName.equals(dependencyName) || workSpaceMembers.contains(dependencyName);
+                if(isProjectEntry) {
                     workSpaceMembers.add(dependencyName);
                 }
 
                 //parse transitive dependencies section of current dependency
-                parseDependenciesSection(dependencyTable, dependencyName, onlyGroups, excludedGroups);
+                parseDependenciesSection(dependencyTable, dependencyName, onlyGroups, excludedGroups, isProjectEntry);
             }
         }
 
@@ -104,11 +105,19 @@ public class UVLockParser {
 
     }
 
-    private void parseDependenciesSection(TomlTable dependencyTable, String dependencyName, Set<String> onlyGroups, Set<String> excludedGroups) {
+    // isProjectEntry is true only for the root project's own [[package]] entry and for
+    // workspace member entries (identified via [manifest].members, collected up-front by
+    // collectWorkspaceMembers before this loop runs). It is false for every other (regular,
+    // third-party/transitive) package such as "httpx" or "requests" pulled in as a dependency.
+    private void parseDependenciesSection(TomlTable dependencyTable, String dependencyName, Set<String> onlyGroups, Set<String> excludedGroups, boolean isProjectEntry) {
 
-        // [dependencies] (regular project deps) — skipped when onlyGroups is set,
-        // mirroring CLI behaviour where --only-group does not include regular dependencies.
-        if (onlyGroups.isEmpty() && dependencyTable.contains(DEPENDENCIES_KEY)) {
+        // [dependencies] — for the root project / workspace members this is [project.dependencies]
+        // (the main project's regular deps), which is skipped when onlyGroups is set, mirroring CLI
+        // behaviour where --only-group does not include regular dependencies.
+        // For every OTHER package (e.g. "httpx" pulled in via a selected dev group), [dependencies]
+        // is that package's OWN runtime requirements and must always be parsed — otherwise the
+        // transitive closure of a selected group's dependencies would be silently dropped.
+        if ((!isProjectEntry || onlyGroups.isEmpty()) && dependencyTable.contains(DEPENDENCIES_KEY)) {
             parseTransitiveDependencies(dependencyTable.getArray(DEPENDENCIES_KEY), dependencyName);
         }
 
@@ -118,9 +127,10 @@ public class UVLockParser {
             parseFilteredGroupDependencies(dependencyTable.getTable(DEV_DEPENDENCIES_KEY), dependencyName, onlyGroups, excludedGroups);
         }
 
-        // [optional-dependencies] — skipped when onlyGroups is set,
-        // mirroring CLI behaviour where --only-group does not include optional extras.
-        if (onlyGroups.isEmpty() && dependencyTable.contains(OPTIONAL_DEPENDENCIES_KEY)) {
+        // [optional-dependencies] — same rationale as [dependencies] above: skipped only for the
+        // root project / workspace members (their own [project.optional-dependencies] extras),
+        // always parsed for any other package so extras needed to resolve that dependency remain.
+        if ((!isProjectEntry || onlyGroups.isEmpty()) && dependencyTable.contains(OPTIONAL_DEPENDENCIES_KEY)) {
             parseFilteredGroupDependencies(dependencyTable.getTable(OPTIONAL_DEPENDENCIES_KEY), dependencyName, onlyGroups, excludedGroups);
         }
     }
