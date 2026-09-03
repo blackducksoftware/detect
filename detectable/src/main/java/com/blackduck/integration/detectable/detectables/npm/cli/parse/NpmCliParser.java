@@ -89,6 +89,8 @@ public class NpmCliParser {
         String projectName = projectNameElement != null ? projectNameElement.getAsString() : null;
         String projectVersion = projectVersionElement != null ? projectVersionElement.getAsString() : null;
 
+        // Build alias mapping from package.json, then merge the supplemental map built by NpmCliExtractor
+        // from scanning node_modules. The supplemental map covers transitive aliases not in package.json.
         Map<String, String> aliasMapping = buildAliasMapping(combinedPackageJson);
         aliasMapping.putAll(supplementalAliases);
 

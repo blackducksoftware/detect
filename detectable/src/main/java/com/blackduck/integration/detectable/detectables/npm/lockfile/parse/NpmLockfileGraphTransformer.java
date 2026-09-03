@@ -38,7 +38,10 @@ public class NpmLockfileGraphTransformer {
             logger.debug(String.format("Found %d packages in the lockfile.",
                     packageLock.packages != null ? packageLock.packages.size() : packageLock.dependencies.size()));
 
+            // First we will recreate the graph from the resolved npm dependencies
             createGraphFromResolvedDependencies(project, externalDependencies, workspaces, dependencyGraph);
+
+            // Then we will add relationships between the project (root) and the graph
             addRootDependencies(project, dependencyGraph, externalDependencies, workspaces);
 
             logger.debug(String.format("Found %d root dependencies.", dependencyGraph.getRootDependencies().size()));
@@ -119,9 +122,11 @@ public class NpmLockfileGraphTransformer {
             return;
         }
 
+        // add workspaces as direct dependencies
         if (workspaces != null && !StringUtils.isBlank(npmDependency.getName()) &&
                 workspaces.stream().anyMatch(x -> x.equals(npmDependency.getName()))) {
             dependencyGraph.addDirectDependency(npmDependency);
+            // add workspace requires
             addWorkspaceRequires(npmDependency, npmProject, dependencyGraph, externalDependencies);
         } else {
             npmDependency.getRequires().forEach(required -> {
@@ -142,8 +147,9 @@ public class NpmLockfileGraphTransformer {
     }
 
     /**
-     * Adds all requires under a workspace dependency directly to the root. Workspace dependencies'
-     * own deps are treated as direct project dependencies in Black Duck.
+     * This method adds any requires under npmDependency to the root of the project. This should only be called for npmDependency objects that are found
+     * at the workspace level. This makes all requires under that dependency direct dependencies in BlackDuck, which is what we want as they are specified
+     * directly in the workspace's package.json.
      */
     private void addWorkspaceRequires(NpmDependency npmDependency, NpmProject npmProject, DependencyGraph dependencyGraph, List<NameVersion> externalDependencies) {
         for (NpmRequires required : npmDependency.getRequires()) {
