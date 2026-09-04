@@ -2,9 +2,7 @@ package com.blackduck.integration.detectable.detectables.npm.lockfile.unit;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import com.google.gson.Gson;
 import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.Forge;
+import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.model.NpmDependency;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.model.NpmProject;
@@ -103,7 +102,7 @@ public class NpmLockfileGraphTransformerTest {
         NpmLockfileGraphTransformer graphTransformer = new NpmLockfileGraphTransformer(null);
         List<String> workspaces = new ArrayList<>();
         workspaces.add("packages/a");
-        DependencyGraph graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), workspaces, Collections.emptyMap());
+        DependencyGraph graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), workspaces);
         
         GraphAssert graphAssert = new GraphAssert(Forge.NPMJS, graph);
         graphAssert.hasRootDependency(externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "abbrev", "^2.0.0"));
@@ -159,7 +158,7 @@ public class NpmLockfileGraphTransformerTest {
         NpmLockfileGraphTransformer graphTransformer = new NpmLockfileGraphTransformer(filter);
         PackageLock packageLock = new PackageLock();
         packageLock.packages = Collections.emptyMap();
-        DependencyGraph graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), Collections.emptyList(), Collections.emptyMap());
+        DependencyGraph graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), Collections.emptyList());
         
         // Verify that the regular child dependency is included but optional child dependency is excluded
         GraphAssert graphAssert = new GraphAssert(Forge.NPMJS, graph);
@@ -172,42 +171,36 @@ public class NpmLockfileGraphTransformerTest {
     
     @Test
     void testNpmAliasesResolvedCorrectly() {
-        // Test that npm aliases are properly resolved using the 'name' field from package-lock.json
-        // When package.json has: "coloring": "npm:picocolors@^1.0.0"
-        // The package-lock.json has: "node_modules/coloring": { "name": "picocolors", ... }
+        // package.json has: "coloring": "npm:picocolors@^1.0.0"
+        // package-lock.json has: "node_modules/coloring": { "name": "picocolors", "version": "1.1.1" }
+        // After the fix, NpmDependencyConverter stores the dependency under the alias key "coloring"
+        // but with an ExternalId that identifies picocolors@1.1.1.
 
-        // Create resolved dependencies with the ACTUAL package name (picocolors)
-        NpmDependency picocolorsDependency = new NpmDependency("picocolors", "1.1.1", false, false, false);
+        ExternalId picocolorsId = externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "picocolors", "1.1.1");
+        // name="coloring" (alias key, for lookup), externalId=picocolors@1.1.1 (actual component)
+        NpmDependency coloringDependency = new NpmDependency("coloring", "1.1.1", picocolorsId, false, false, false);
 
         List<NpmDependency> resolvedDependencies = new ArrayList<>();
-        resolvedDependencies.add(picocolorsDependency);
+        resolvedDependencies.add(coloringDependency);
 
-        // Create declared dependencies with the ALIAS name (coloring)
         List<NpmRequires> declaredDependencies = new ArrayList<>();
         declaredDependencies.add(new NpmRequires("coloring", "npm:picocolors@^1.0.0"));
 
-        // Create alias mapping (coloring -> picocolors)
-        Map<String, String> aliasMapping = new HashMap<>();
-        aliasMapping.put("coloring", "picocolors");
-
-        // Create npm project
         NpmProject npmProject = new NpmProject(
             "test-project",
             "1.0.0",
-            Collections.emptyList(), // devDependencies
-            Collections.emptyList(), // peerDependencies
-            declaredDependencies,    // dependencies
-            Collections.emptyList(), // optionalDependencies
+            Collections.emptyList(),
+            Collections.emptyList(),
+            declaredDependencies,
+            Collections.emptyList(),
             resolvedDependencies
         );
 
-        // Transform the graph with alias mapping
         NpmLockfileGraphTransformer graphTransformer = new NpmLockfileGraphTransformer(EnumListFilter.excludeNone());
         PackageLock packageLock = new PackageLock();
         packageLock.packages = Collections.emptyMap();
-        DependencyGraph graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), Collections.emptyList(), aliasMapping);
+        DependencyGraph graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), Collections.emptyList());
 
-        // Verify that picocolors (the actual package) is in the graph, not coloring (the alias)
         GraphAssert graphAssert = new GraphAssert(Forge.NPMJS, graph);
         graphAssert.hasRootDependency(externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "picocolors", "1.1.1"));
     }
@@ -261,7 +254,7 @@ public class NpmLockfileGraphTransformerTest {
         NpmLockfileGraphTransformer graphTransformer = new NpmLockfileGraphTransformer(filter);
         PackageLock packageLock = new PackageLock();
         packageLock.packages = Collections.emptyMap();
-        DependencyGraph graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), Collections.emptyList(), Collections.emptyMap());
+        DependencyGraph graph = graphTransformer.transform(packageLock, npmProject, Collections.emptyList(), Collections.emptyList());
         
         // Verify that both regular and optional child dependencies are included
         GraphAssert graphAssert = new GraphAssert(Forge.NPMJS, graph);

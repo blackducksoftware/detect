@@ -3,9 +3,7 @@ package com.blackduck.integration.detectable.detectables.npm.lockfile.parse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -16,7 +14,6 @@ import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
-import com.blackduck.integration.detectable.detectables.npm.NpmAliasParser;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.NpmDependencyConverter;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.model.NpmProject;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.model.PackageLock;
@@ -68,18 +65,8 @@ public class NpmLockfilePackager {
 
         NpmProject project = dependencyConverter.convertLockFile(packageLock, combinedPackageJson);
 
-        // Build alias mapping from package.json to resolve aliased package names
-        Map<String, String> aliasMapping = combinedPackageJson != null
-            ? NpmAliasParser.buildAliasMapping(
-                combinedPackageJson.getDependencies(),
-                combinedPackageJson.getDevDependencies(),
-                combinedPackageJson.getPeerDependencies(),
-                combinedPackageJson.getOptionalDependencies()
-            )
-            : new HashMap<>();
-
         DependencyGraph dependencyGraph = graphTransformer.transform(packageLock, project, externalDependencies,
-                getFilteredWorkspaces(combinedPackageJson), aliasMapping);
+                getFilteredWorkspaces(combinedPackageJson));
         ExternalId projectId = projectIdTransformer.transform(combinedPackageJson, packageLock);
         CodeLocation codeLocation = new CodeLocation(dependencyGraph, projectId);
         return new NpmPackagerResult(projectId.getName(), projectId.getVersion(), codeLocation);

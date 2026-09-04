@@ -6,7 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -187,6 +189,45 @@ class NpmCliParserTest {
     }
 
     @Test
+    void transitiveAliasIsResolvedToActualPackageNameViaSupplementalAliasMap() {
+        // Root package.json has no alias entries — react-is-18 is a transitive alias declared by
+        // pretty-format, not the root project. The supplemental map comes from scanning node_modules.
+        CombinedPackageJson combinedPackageJson = new CombinedPackageJson();
+        combinedPackageJson.getDependencies().put("pretty-format", "^30.0.0");
+
+        String npmLsOutput = "{"
+            + "\"name\":\"test-project\","
+            + "\"version\":\"1.0.0\","
+            + "\"dependencies\":{"
+            +   "\"pretty-format\":{"
+            +     "\"version\":\"30.0.0\","
+            +     "\"dependencies\":{"
+            +       "\"react-is-18\":{\"version\":\"18.3.1\"},"
+            +       "\"react-is-19\":{\"version\":\"19.2.7\"}"
+            +     "}"
+            +   "}"
+            + "}}";
+
+        // Built by scanning node_modules/react-is-18/package.json etc. in NpmCliExtractor
+        Map<String, String> nodeModulesAliasMap = new HashMap<>();
+        nodeModulesAliasMap.put("react-is-18", "react-is");
+        nodeModulesAliasMap.put("react-is-19", "react-is");
+
+        EnumListFilter<NpmDependencyType> filter = EnumListFilter.excludeNone();
+        NpmCliParser parser = new NpmCliParser(externalIdFactory, filter);
+
+        NpmPackagerResult result = parser.generateCodeLocation(npmLsOutput, combinedPackageJson, nodeModulesAliasMap);
+
+        DependencyGraph graph = result.getCodeLocation().getDependencyGraph();
+        GraphAssert graphAssert = new GraphAssert(Forge.NPMJS, graph);
+
+        graphAssert.hasDependency(externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "react-is", "18.3.1"));
+        graphAssert.hasDependency(externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "react-is", "19.2.7"));
+        graphAssert.hasNoDependency(externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "react-is-18", "18.3.1"));
+        graphAssert.hasNoDependency(externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "react-is-19", "19.2.7"));
+    }
+
+    @Test
     public void excludedWorkspaceIsNotTreatedAsWorkspace() {
         // npm ls -json output: root project has "my-ui" workspace and "express" regular dep.
         // my-ui has lodash as its own dep.
@@ -230,5 +271,40 @@ class NpmCliParserTest {
             externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "lodash", "4.17.21"));
         graphAssert.hasNoDependency(
             externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "my-ui", "1.0.0"));
+    }
+
+    @Test
+    void scopedAliasKeyIsResolvedToActualScopedPackageNameViaSupplementalAliasMap() {
+        // Alias key is a scoped name: "@acme/types": "npm:@babel/types@^7.26.0"
+        // node_modules/@acme/types/package.json has "name": "@babel/types"
+        // buildNodeModulesAliasMap must descend into the @acme scope directory to find this entry.
+        CombinedPackageJson combinedPackageJson = new CombinedPackageJson();
+        combinedPackageJson.getDependencies().put("some-lib", "^1.0.0");
+
+        String npmLsOutput = "{"
+            + "\"name\":\"test-project\","
+            + "\"version\":\"1.0.0\","
+            + "\"dependencies\":{"
+            +   "\"some-lib\":{"
+            +     "\"version\":\"1.0.0\","
+            +     "\"dependencies\":{"
+            +       "\"@acme/types\":{\"version\":\"7.26.0\"}"
+            +     "}"
+            +   "}"
+            + "}}";
+
+        Map<String, String> nodeModulesAliasMap = new HashMap<>();
+        nodeModulesAliasMap.put("@acme/types", "@babel/types");
+
+        EnumListFilter<NpmDependencyType> filter = EnumListFilter.excludeNone();
+        NpmCliParser parser = new NpmCliParser(externalIdFactory, filter);
+
+        NpmPackagerResult result = parser.generateCodeLocation(npmLsOutput, combinedPackageJson, nodeModulesAliasMap);
+
+        DependencyGraph graph = result.getCodeLocation().getDependencyGraph();
+        GraphAssert graphAssert = new GraphAssert(Forge.NPMJS, graph);
+
+        graphAssert.hasDependency(externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "@babel/types", "7.26.0"));
+        graphAssert.hasNoDependency(externalIdFactory.createNameVersionExternalId(Forge.NPMJS, "@acme/types", "7.26.0"));
     }
 }
