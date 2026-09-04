@@ -72,7 +72,7 @@ public class UVLockParser {
             return;
         }
 
-        Set<String> effectiveOnlyGroups = groupFilter.getEffectiveOnlyGroups();
+        Set<String> effectiveOnlyGroups = new java.util.TreeSet<>(groupFilter.getEffectiveOnlyGroups());
         if (!effectiveOnlyGroups.isEmpty()) {
             logger.info("UV Lock detector: scanning only dependency groups: {}", effectiveOnlyGroups);
         }
