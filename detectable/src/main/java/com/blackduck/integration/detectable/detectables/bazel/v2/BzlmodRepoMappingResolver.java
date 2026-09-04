@@ -1,6 +1,7 @@
 package com.blackduck.integration.detectable.detectables.bazel.v2;
 
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelCommandExecutor;
+import com.blackduck.integration.detectable.detectables.bazel.query.BazelCommandArguments;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -69,21 +70,16 @@ import java.util.Optional;
 public class BzlmodRepoMappingResolver {
     private static final Logger logger = LoggerFactory.getLogger(BzlmodRepoMappingResolver.class);
 
-    // Label prefix constants
-    private static final String CANONICAL_PREFIX = "@@";
-    private static final String APPARENT_PREFIX  = "@";
-    // Canonical names for module extension sub-repos contain "++" (e.g., rules_jvm_external++maven+guava).
-    // These never appear as module keys in bazel mod graph and must be excluded.
-    private static final String MODULE_EXTENSION_MARKER = "++";
-    // Separator between repo name and path in a fully-qualified label
-    private static final String LABEL_PATH_SEPARATOR = "//";
+    // Label prefix constant (centralized in BazelCommandArguments). Used when constructing
+    // canonical @@name show_repo arguments. Structural label *parsing* is delegated to BazelLabel.
+    private static final String CANONICAL_PREFIX = BazelCommandArguments.REPO_PREFIX_CANONICAL;
     // Regex that strips any known canonical suffix when the mapping is unavailable
-    private static final String KNOWN_SUFFIXES_REGEX = "[+~]$";
+    private static final String KNOWN_SUFFIXES_REGEX = BazelCommandArguments.KNOWN_CANONICAL_SUFFIX_REGEX;
     // The two canonical suffix characters used by Bazel across versions:
     //   SUFFIX_TILDE (~) — introduced in Bazel 7.5+
     //   SUFFIX_PLUS  (+) — used in Bazel 7.x (pre-7.5) and some 8.x builds
-    private static final String SUFFIX_TILDE = "~";
-    private static final String SUFFIX_PLUS  = "+";
+    private static final String SUFFIX_TILDE = BazelCommandArguments.REPO_CANONICAL_SUFFIX_TILDE;
+    private static final String SUFFIX_PLUS  = BazelCommandArguments.REPO_CANONICAL_SUFFIX_PLUS;
 
     // -------------------------------------------------------------------------
     // Inner types
@@ -175,13 +171,11 @@ public class BzlmodRepoMappingResolver {
         try {
             output = bazelCmd.executeModCommandToString(cmd);
         } catch (Exception e) {
-            logger.warn("BZLMOD BCR: dump_repo_mapping command failed ({}); " +
-                "apparent-name aliases (repo_name overrides) will not be resolved", e.getMessage());
+            logger.warn("Repo alias resolution failed ({}); packages with custom names may not be resolved correctly", e.getMessage());
             return unavailable();
         }
         if (!output.isPresent() || output.get().trim().isEmpty()) {
-            logger.warn("BZLMOD BCR: dump_repo_mapping produced no output; " +
-                "apparent-name aliases will not be resolved");
+            logger.warn("Repo alias data was empty; packages with custom names may not be resolved correctly");
             return unavailable();
         }
         return parse(output.get());
@@ -205,43 +199,40 @@ public class BzlmodRepoMappingResolver {
      * </ul>
      */
     public Optional<String> resolveLabel(String label) {
-        if (label == null || label.isEmpty() || !label.startsWith(APPARENT_PREFIX)) {
+        BazelLabel parsed = BazelLabel.parse(label);
+        if (!parsed.isRepoLabel()) {
+            return Optional.empty();
+        }
+        // Module extension sub-repos (canonical names contain "++", e.g. rules_jvm_external++maven+guava)
+        // never appear as module keys in bazel mod graph and must be excluded.
+        if (parsed.isModuleExtensionSubRepo()) {
             return Optional.empty();
         }
 
-        // Strip the //path:target suffix — we only care about the repo name part
-        String repoName;
-        int pathIdx = label.indexOf(LABEL_PATH_SEPARATOR);
-        repoName = pathIdx >= 0 ? label.substring(0, pathIdx) : label;
+        // The repo name is the repository portion after the @/@@ prefix and before //path:target,
+        // with any version suffix (~/+) still attached — not yet the resolved BCR module name.
+        String rawRepoName = parsed.getRepoName();
 
         String moduleName;
-        if (repoName.startsWith(CANONICAL_PREFIX)) {
+        if (parsed.isCanonical()) {
             // ──────────────────────────────────────────────────────────────────
             // Canonical form: @@abseil-cpp~  or  @@abseil-cpp+
             // The suffix carries Bazel's version-specific mangling and must be stripped.
             // No mapping lookup needed — the name is already unambiguous.
             // ──────────────────────────────────────────────────────────────────
-            String raw = repoName.substring(CANONICAL_PREFIX.length()); // "abseil-cpp~"
-            if (raw.contains(MODULE_EXTENSION_MARKER)) {
-                return Optional.empty(); // e.g. rules_jvm_external++maven+guava
-            }
-            moduleName = stripKnownSuffix(raw);
+            moduleName = stripKnownSuffix(rawRepoName);
         } else {
             // ──────────────────────────────────────────────────────────────────
             // Apparent form: @com_google_protobuf
             // Look up in the forward map to resolve any repo_name alias.
             // If not found, the apparent name equals the module name (no override).
             // ──────────────────────────────────────────────────────────────────
-            String apparent = repoName.substring(APPARENT_PREFIX.length()); // "com_google_protobuf"
-            if (apparent.contains(MODULE_EXTENSION_MARKER)) {
-                return Optional.empty();
-            }
-            if (available && apparentToCanonical.containsKey(apparent)) {
-                String canonical = apparentToCanonical.get(apparent); // "protobuf~"
-                moduleName = stripKnownSuffix(canonical);             // "protobuf"
+            if (available && apparentToCanonical.containsKey(rawRepoName)) {
+                String canonical = apparentToCanonical.get(rawRepoName); // "protobuf~"
+                moduleName = stripKnownSuffix(canonical);                // "protobuf"
             } else {
                 // No alias in the mapping — apparent name IS the module name
-                moduleName = apparent;
+                moduleName = rawRepoName;
             }
         }
 
@@ -469,7 +460,7 @@ public class BzlmodRepoMappingResolver {
         try {
             JsonElement element = JsonParser.parseString(json);
             if (!element.isJsonObject()) {
-                logger.warn("BZLMOD BCR: dump_repo_mapping output is not a JSON object; degrading gracefully");
+                logger.warn("Repo alias data has an unexpected format; degrading gracefully");
                 return unavailable();
             }
             JsonObject obj = element.getAsJsonObject();
@@ -484,7 +475,7 @@ public class BzlmodRepoMappingResolver {
                 }
             }
             if (apparentToCanonical.isEmpty()) {
-                logger.warn("BZLMOD BCR: dump_repo_mapping JSON had no usable entries; degrading gracefully");
+                logger.warn("Repo alias data contained no usable entries; degrading gracefully");
                 return unavailable();
             }
 
@@ -513,7 +504,7 @@ public class BzlmodRepoMappingResolver {
             return new BzlmodRepoMappingResolver(apparentToCanonical, moduleNameToCanonical, canonicalSuffix, true, hasSuffixEvidence);
 
         } catch (Exception e) {
-            logger.warn("BZLMOD BCR: failed to parse dump_repo_mapping output ({}); degrading gracefully", e.getMessage());
+            logger.warn("Failed to parse repo alias data ({}); degrading gracefully", e.getMessage());
             return unavailable();
         }
     }

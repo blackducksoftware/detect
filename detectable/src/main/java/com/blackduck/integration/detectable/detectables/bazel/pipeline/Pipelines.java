@@ -14,6 +14,7 @@ import com.blackduck.integration.detectable.detectables.bazel.pipeline.xpathquer
 import com.blackduck.integration.detectable.detectables.bazel.query.BazelQueryBuilder;
 import com.blackduck.integration.detectable.detectables.bazel.query.OutputFormat;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelEnvironmentAnalyzer;
+import com.blackduck.integration.detectable.detectables.bazel.v2.BazelInfrastructureModules;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +54,8 @@ public class Pipelines {
     private static final String STRIP_LEADING_ATS_REGEX = "^@+";
     private static final String STRIP_SINGLE_AT_REGEX = "^@";
     private static final String STRIP_REPO_PATH_REGEX = "//.*";
-    private static final String EXCLUDE_BUILTINS_REGEX = "^(?!(bazel_tools|platforms|remotejdk|local_config_.*|rules_python|rules_java|rules_cc|maven|unpinned_maven|rules_jvm_external)).*$";
+    // Infrastructure/builtins exclusion regex is derived from the single BazelInfrastructureModules source of truth.
+    private static final String EXCLUDE_BUILTINS_REGEX = BazelInfrastructureModules.exclusionLookaheadRegex();
     private static final String PREPEND_AT = "@";
     private static final String PREPEND_EXTERNAL = "//external:";
 

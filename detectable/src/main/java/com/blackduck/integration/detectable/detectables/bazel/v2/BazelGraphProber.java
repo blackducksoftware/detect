@@ -108,7 +108,7 @@ public class BazelGraphProber {
             enabled.add(DependencySource.HTTP_ARCHIVE);
         }
 
-        logger.info("Probing completed. Enabled pipelines: {}", enabled);
+        logger.debug("Probing completed. Enabled pipelines: {}", enabled);
         return enabled;
     }
 
