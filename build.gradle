@@ -134,11 +134,10 @@ allprojects {
         implementation "com.google.guava:guava:32.1.2-jre"
         implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.22.2'
         implementation 'org.yaml:snakeyaml:2.0'
-        // jackson-core is a transitive dep coming from jackson-dataformat-yaml, earlier versions have vulnerability sonatype-2022-6438
-        // 2.22.2 also fixes CVE-2026-68498 and GHSA-2c4j-63jj-9fqr (maxNameLength/maxDocumentLength bypasses)
+        // jackson-core is a transitive dep coming from jackson-dataformat-yaml
         implementation('com.fasterxml.jackson.core:jackson-core:2.22.2')
         // jackson-databind and jackson-annotations are pinned by Spring Boot 2.7 BOM to 2.13.5;
-        // override to fix CVE-2026-54512, CVE-2026-54513 and keep all jackson artifacts in sync
+        // override to keep all jackson artifacts in sync
         implementation('com.fasterxml.jackson.core:jackson-databind:2.22.2')
         implementation('com.fasterxml.jackson.core:jackson-annotations:2.22')
         // antlr4-runtime is a transitive dep via org.tomlj:tomlj; 4.11.1 has CVE-2026-13500
