@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.TreeSet;
 
 public class UVLockParser {
 
@@ -72,7 +73,7 @@ public class UVLockParser {
             return;
         }
 
-        Set<String> effectiveOnlyGroups = new java.util.TreeSet<>(groupFilter.getEffectiveOnlyGroups());
+        Set<String> effectiveOnlyGroups = new TreeSet<>(groupFilter.getEffectiveOnlyGroups());
         if (!effectiveOnlyGroups.isEmpty()) {
             logger.info("UV Lock detector: scanning only dependency groups: {}", effectiveOnlyGroups);
         }
