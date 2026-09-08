@@ -34,4 +34,4 @@
 
 ### Dependency Updates
 
-* 
+* Updated Jackson libraries to version 2.22.2.
