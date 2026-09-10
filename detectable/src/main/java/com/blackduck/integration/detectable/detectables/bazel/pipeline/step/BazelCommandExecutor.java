@@ -1,8 +1,11 @@
 package com.blackduck.integration.detectable.detectables.bazel.pipeline.step;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
@@ -22,6 +25,19 @@ public class BazelCommandExecutor {
     private final ExecutableTarget bazelExe;
     private static final String BAZEL = "bazel";
 
+    // Memoization of read-only Bazel command results for the lifetime of a single extraction.
+    // The workspace is never modified between Bazel invocations during a scan, so an identical
+    // command is deterministic — we cache its raw ExecutableOutput and reuse it. Caching at this
+    // lowest layer (executeToleratingExitCode) means every read-only path that funnels through it —
+    // executeQueryToString (query/cquery) and executeModCommandToString (mod graph / show_repo) —
+    // shares one cache. This eliminates redundant re-execution of, e.g., the kind(.*library, deps(T))
+    // query (issued during probing and again during extraction) and 'mod graph --output json'
+    // (issued by both HttpFamilyProber's fast path and BzlmodBcrExtractor), without relying on
+    // Bazel's server-side analysis cache (which may be evicted by intervening commands).
+    // Keyed on the exact argument list; only successful (non-throwing) results are cached, and each
+    // caller still applies its own exit-code interpretation to the shared raw output.
+    private final Map<List<String>, ExecutableOutput> rawOutputCache = new HashMap<>();
+
     public BazelCommandExecutor(DetectableExecutableRunner executableRunner, File workspaceDir, ExecutableTarget bazelExe) {
         this.executableRunner = executableRunner;
         this.workspaceDir = workspaceDir;
@@ -29,13 +45,27 @@ public class BazelCommandExecutor {
     }
 
     public Optional<String> executeToString(List<String> args) throws ExecutableFailedException {
-        ExecutableOutput targetDependenciesQueryResults = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(workspaceDir, bazelExe, args));
-        String cmdStdErr = targetDependenciesQueryResults.getErrorOutput();
+        // Route through the cached raw-output path (executeToleratingExitCode) so an identical
+        // read-only command issued elsewhere in the extraction (e.g. the same maven cquery run by a
+        // pipeline via executeQueryToString) is reused instead of re-executed.
+        //
+        // Semantics are preserved exactly: this method is strict — ANY non-zero exit code is a hard
+        // failure surfaced as ExecutableFailedException (it does NOT tolerate exit 3, unlike
+        // executeQueryToString). A launch failure still propagates as the RuntimeException thrown by
+        // executeToleratingExitCode; callers (BazelGraphProber probes, HttpFamilyProber) catch broadly.
+        ExecutableOutput result = executeToleratingExitCode(args);
+        if (result.getReturnCode() != 0) {
+            throw new ExecutableFailedException(
+                ExecutableUtils.createFromTarget(workspaceDir, bazelExe, args),
+                result
+            );
+        }
+        String cmdStdErr = result.getErrorOutput();
         if (cmdStdErr != null && cmdStdErr.contains("ERROR")) {
             logger.warn("Bazel error: {}", cmdStdErr.trim());
         }
-        String cmdStdOut = targetDependenciesQueryResults.getStandardOutput();
-        if ((StringUtils.isBlank(cmdStdOut))) {
+        String cmdStdOut = result.getStandardOutput();
+        if (StringUtils.isBlank(cmdStdOut)) {
             logger.debug("bazel command produced no output");
             return Optional.empty();
         }
@@ -60,7 +90,7 @@ public class BazelCommandExecutor {
      * @return stdout content if non-empty, {@link Optional#empty()} otherwise
      */
     public Optional<String> executeModCommandToString(List<String> args) {
-        ExecutableOutput result = executeWithoutThrowing(args);
+        ExecutableOutput result = executeToleratingExitCode(args);
         int exitCode = result.getReturnCode();
         if (exitCode != 0) {
             String stderr = result.getErrorOutput();
@@ -102,7 +132,9 @@ public class BazelCommandExecutor {
      * @throws ExecutableFailedException if exit code is non-zero and not 3
      */
     public Optional<String> executeQueryToString(List<String> args) throws ExecutableFailedException {
-        ExecutableOutput result = executeWithoutThrowing(args);
+        // Raw output is served from the shared per-extraction cache (see executeToleratingExitCode);
+        // this method re-applies query exit-code interpretation to it on every call.
+        ExecutableOutput result = executeToleratingExitCode(args);
         int exitCode = result.getReturnCode();
 
         if (exitCode == BAZEL_EXIT_CODE_PARTIAL_SUCCESS) {
@@ -142,14 +174,39 @@ public class BazelCommandExecutor {
     private static final int BAZEL_EXIT_CODE_PARTIAL_SUCCESS = 3;
 
     /**
-     * Executes a Bazel command without throwing on failure, allowing caller to inspect exit code and error output.
-     * Used for probing commands where we need to distinguish different failure modes.
+     * Executes a Bazel command and returns the raw {@link ExecutableOutput} <b>without throwing on a
+     * non-zero exit code</b>, so the caller can inspect the return code, stdout, and stderr itself.
+     * This is the counterpart to {@link #executeToString} / {@code executeSuccessfully}, which treat
+     * any non-zero exit as a hard failure. Probing commands need the opposite: a non-zero exit is
+     * frequently expected and still carries usable output (e.g. a broken but unrelated module
+     * extension poisons the exit code to 2 while the requested graph is fully written to stdout).
+     *
+     * <p><b>Why this method still throws:</b> the {@code catch} below only triggers on an
+     * {@link com.blackduck.integration.executable.ExecutableRunnerException} — i.e. Bazel could not be
+     * launched at all (executable missing, IO error, interrupted). That is a genuinely unrecoverable
+     * environment problem, distinct from "Bazel ran and returned a non-zero exit code." There is no
+     * meaningful {@code ExecutableOutput} to hand back when the process never started, and returning a
+     * fabricated empty result would silently mask a broken setup as an empty query result. So a
+     * launch failure is surfaced as a {@link RuntimeException}; a non-zero exit is not.
+     * <p><b>Caching:</b> successful results are memoized per extraction in {@link #rawOutputCache}
+     * keyed on the exact argument list, so an identical read-only command issued more than once
+     * (e.g. during probing and again during extraction) runs Bazel only once. A launch failure is
+     * never cached.
+     *
      * @param args Bazel command arguments
      * @return ExecutableOutput containing return code, stdout, and stderr
      */
-    public ExecutableOutput executeWithoutThrowing(List<String> args) {
+    public ExecutableOutput executeToleratingExitCode(List<String> args) {
+        List<String> cacheKey = (args == null) ? Collections.emptyList() : new ArrayList<>(args);
+        ExecutableOutput cached = rawOutputCache.get(cacheKey);
+        if (cached != null) {
+            logger.debug("Reusing cached Bazel command result for args: {}", cacheKey);
+            return cached;
+        }
         try {
-            return executableRunner.execute(ExecutableUtils.createFromTarget(workspaceDir, bazelExe, args));
+            ExecutableOutput output = executableRunner.execute(ExecutableUtils.createFromTarget(workspaceDir, bazelExe, args));
+            rawOutputCache.put(cacheKey, output);
+            return output;
         } catch (Exception e) {
             String command = (bazelExe != null ? bazelExe.toCommand() : BAZEL) + " " + String.join(" ", args == null ? Collections.emptyList() : args);
             String msg = String.format("Failed to execute Bazel command '%s': %s", command, e.getMessage());

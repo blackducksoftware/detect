@@ -28,8 +28,9 @@ public class BazelCommandExecutorTest {
     @Test
     public void executeToString_whenExecutableFails_throwsExecutableFailedException() throws Exception {
         DetectableExecutableRunner executableRunner = Mockito.mock(DetectableExecutableRunner.class);
-        ExecutableFailedException failedException = Mockito.mock(ExecutableFailedException.class);
-        when(executableRunner.executeSuccessfully(any())).thenThrow(failedException);
+        // executeToString now routes through executeToleratingExitCode (execute), treating any
+        // non-zero exit as a hard failure → ExecutableFailedException.
+        when(executableRunner.execute(any())).thenReturn(new ExecutableOutput(1, "", "ERROR: build failed"));
 
         BazelCommandExecutor executor = makeExecutor(executableRunner);
 

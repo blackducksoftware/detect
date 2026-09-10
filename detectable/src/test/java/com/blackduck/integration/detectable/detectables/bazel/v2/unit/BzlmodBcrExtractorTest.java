@@ -263,6 +263,32 @@ public class BzlmodBcrExtractorTest {
                 + "    urls = [\"https://github.com/google/glog/archive/v0.6.0.tar.gz\"],\n"
                 + ")\n";
         }
+
+        /**
+         * One direct dep (zlib@1.3) whose show_repo block uses a single {@code url =} attribute
+         * (not a {@code urls = [...]} list). Used to verify the single-url extraction path in
+         * {@link com.blackduck.integration.detectable.detectables.bazel.pipeline.step.IntermediateStepParseShowRepoToUrlCandidates}.
+         */
+        static final class SingleUrlAttribute {
+            static final String MOD_GRAPH =
+                "{\n"
+                + "  \"key\": \"<root>\",\n"
+                + "  \"dependencies\": [\n"
+                + "    { \"key\": \"zlib@1.3\", \"dependencies\": [] }\n"
+                + "  ]\n"
+                + "}";
+
+            static final String REPO_MAPPING = "{ \"zlib\": \"zlib~\" }";
+
+            static final String TARGET_QUERY = "@@zlib~//zlib:zlib\n";
+
+            static final String SHOW_REPO_BATCH =
+                "## @@zlib~:\n"
+                + "http_archive(\n"
+                + "    name = \"zlib~\",\n"
+                + "    url = \"https://github.com/madler/zlib/archive/v1.3.tar.gz\",\n"
+                + ")\n";
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -446,6 +472,30 @@ public class BzlmodBcrExtractorTest {
         Dependency glog = rootDeps.iterator().next();
         assertEquals("google/glog", glog.getExternalId().getName());
         assertEquals("v0.6.0", glog.getExternalId().getVersion());
+    }
+
+    // -------------------------------------------------------------------------
+    // Tests — single url= attribute (not urls=[...] list)
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void extractGraph_singleUrlAttribute_depResolvedCorrectly() {
+        StubBazelCommandExecutor stub = new StubBazelCommandExecutor();
+        stub.addModResponse(Fixtures.SingleUrlAttribute.MOD_GRAPH);
+        stub.addModResponse(Fixtures.SingleUrlAttribute.REPO_MAPPING);
+        stub.addQueryResponse(Fixtures.SingleUrlAttribute.TARGET_QUERY);
+        stub.addModResponse(Fixtures.SingleUrlAttribute.SHOW_REPO_BATCH);
+
+        DependencyGraph graph = new BzlmodBcrExtractor(stub, VERSION_7_1, TEST_TARGET).extractGraph();
+
+        Set<Dependency> rootDeps = graph.getRootDependencies();
+        assertEquals(1, rootDeps.size(), "zlib should be the sole root dependency");
+
+        Dependency zlib = rootDeps.iterator().next();
+        assertEquals("madler/zlib", zlib.getExternalId().getName(),
+            "org/repo must be parsed from the single url= attribute");
+        assertEquals("v1.3", zlib.getExternalId().getVersion(),
+            "version must be parsed from the archive path segment");
     }
 
     // -------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 package com.blackduck.integration.detectable.detectables.bazel.v2;
 
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelCommandExecutor;
+import com.blackduck.integration.detectable.detectables.bazel.query.BazelCommandArguments;
 import com.blackduck.integration.detectable.detectables.bazel.query.BazelQueryBuilder;
 import com.blackduck.integration.detectable.detectables.bazel.query.OutputFormat;
 import com.blackduck.integration.executable.ExecutableOutput;
@@ -44,30 +45,18 @@ public class HttpFamilyProber {
         "bazel_dep"
     );
 
-    // Excluded repository prefixes
-    private static final List<String> EXCLUDED_REPO_PREFIXES = Arrays.asList(
-        "bazel_tools",
-        "local_config_",
-        "remotejdk",
-        "platforms",
-        "rules_python",
-        "rules_java",
-        "rules_cc",
-        "maven",
-        "unpinned_maven",
-        "rules_jvm_external"
-    );
+    // Excluded repository prefixes are centralized in BazelInfrastructureModules.
 
     // TODO: Consider making this configurable if customers report performance issues on very large
     //       targets (500+ external repos). For now, hardcoded threshold with automatic HTTP pipeline
     //       enablement for large targets provides the best balance of performance and completeness.
     private static final int LARGE_TARGET_THRESHOLD = 150;
 
-    // Extracted string constants for repo prefix markers
-    private static final String REPO_PREFIX_SINGLE = "@";
-    private static final String REPO_PREFIX_CANONICAL = "@@";
+    // Repo prefix / path markers are centralized in BazelCommandArguments.
+    // Structural label parsing is delegated to BazelLabel; these remain for building label strings.
+    private static final String REPO_PREFIX_SINGLE = BazelCommandArguments.REPO_PREFIX_SINGLE;
     // Repo path separator used in Bazel labels
-    private static final String REPO_PATH_SEPARATOR = "//";
+    private static final String REPO_PATH_SEPARATOR = BazelCommandArguments.LABEL_PATH_SEPARATOR;
 
 
     /**
@@ -175,7 +164,7 @@ public class HttpFamilyProber {
             .withOutputJson()
             .build();
 
-        ExecutableOutput output = bazel.executeWithoutThrowing(modGraphJsonCmd);
+        ExecutableOutput output = bazel.executeToleratingExitCode(modGraphJsonCmd);
         if (output.getReturnCode() != 0) {
             // Don't bail immediately on non-zero exit: a broken module extension (e.g., bazel_jar_jar+
             // on Bazel 9) poisons the exit code even when the JSON graph was fully emitted to stdout.
@@ -256,9 +245,9 @@ public class HttpFamilyProber {
         String[] lines = depsOutput.split("\r?\n");
         Map<String, LinkedHashSet<String>> repoLabels = new HashMap<>();
         for (String line : lines) {
-            if (line.startsWith(REPO_PREFIX_SINGLE) && line.contains(REPO_PATH_SEPARATOR)) {
-                int start = line.startsWith(REPO_PREFIX_CANONICAL) ? 2 : 1; // Support canonical names starting with @@
-                String repo = line.substring(start, line.indexOf(REPO_PATH_SEPARATOR));
+            BazelLabel label = BazelLabel.parse(line);
+            if (label.isRepoLabel() && label.hasPath()) {
+                String repo = label.getRepoName(); // repo name with suffix, prefix and //path stripped
                 if (isExcludedRepo(repo)) {
                     continue;
                 }
@@ -376,7 +365,7 @@ public class HttpFamilyProber {
      * Returns true if the repo name is in the list of excluded (non-HTTP) repositories.
      */
     private boolean isExcludedRepo(String repo) {
-        return EXCLUDED_REPO_PREFIXES.stream().anyMatch(repo::startsWith);
+        return BazelInfrastructureModules.isInfrastructure(repo);
     }
 
     /**
