@@ -22,7 +22,7 @@
 
 ### New features
 
-* 
+* Support for OpenJDK 25 has been added.
 
 ### Changed features
 
