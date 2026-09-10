@@ -204,6 +204,9 @@ public class VersionUtility {
     }
     
     private Optional<String> mustUpgradeEqual(List<Version> versionList, String version) {
+        if (version.isEmpty()) {
+            return versionList.isEmpty() ? Optional.empty() : Optional.of(versionList.get(0).toString());
+        }
         Version right = buildVersion(version.substring(1).trim());
         String nearestVersion = null;
         int currentNearestVersion = Integer.MAX_VALUE;
