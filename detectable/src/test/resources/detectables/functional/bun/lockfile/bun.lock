@@ -1,0 +1,31 @@
+{
+  "lockfileVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "test-project",
+      "dependencies": {
+        "express": "^4.13.4",
+      },
+      "devDependencies": {
+        "async": "^2.0.0-rc.4",
+        "grunt": "^1.0.3",
+        "grunt-concurrent": "^2.3.0",
+      },
+    },
+  },
+  "packages": {
+    // flat entries
+    "async": ["async@2.6.4", "", { "dependencies": { "lodash": "^4.17.14" } }, "sha512-async264"],
+    "express": ["express@4.21.2", "", { "dependencies": { "body-parser": "~1.20.3" } }, "sha512-express421"],
+    "grunt": ["grunt@1.6.3", "", { "dependencies": { "grunt-legacy-util": "~2.0.0" } }, "sha512-grunt163"],
+    "grunt-concurrent": ["grunt-concurrent@2.3.1", "", { "dependencies": { "async": "^1.2.1" } }, "sha512-gruntc231"],
+    "grunt-legacy-util": ["grunt-legacy-util@2.0.2", "", { "dependencies": { "async": "~3.2.0" } }, "sha512-gruntlu202"],
+    "lodash": ["lodash@4.17.21", "", {}, "sha512-lodash4"],
+    "body-parser": ["body-parser@1.20.3", "", {}, "sha512-bp1203"],
+
+    // path-qualified entries (grunt-concurrent uses async@1.5.2, not the top-level 2.6.4)
+    "grunt-concurrent/async": ["async@1.5.2", "", {}, "sha512-async152"],
+    // grunt-legacy-util uses async@3.2.6
+    "grunt-legacy-util/async": ["async@3.2.6", "", {}, "sha512-async326"],
+  },
+}

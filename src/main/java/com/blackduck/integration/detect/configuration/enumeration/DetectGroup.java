@@ -67,6 +67,7 @@ public enum DetectGroup implements Group {
     OPAM("opam", DETECTORS),
     UV("uv", DETECTORS),
     RUSH("rush", DETECTORS),
+    BUN("bun", DETECTORS),
 
     //Additional groups (should not be used as a primary group
     BLACKDUCK("blackduck"),

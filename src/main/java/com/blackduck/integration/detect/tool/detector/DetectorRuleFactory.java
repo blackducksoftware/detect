@@ -2,6 +2,8 @@ package com.blackduck.integration.detect.tool.detector;
 
 import com.blackduck.integration.detect.tool.detector.factory.DetectDetectableFactory;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectable;
+import com.blackduck.integration.detectable.detectables.bun.cli.BunCliDetectable;
+import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockfileDetectable;
 import com.blackduck.integration.detectable.detectables.cargo.CargoCliDetectable;
 import com.blackduck.integration.detectable.detectables.cargo.CargoLockDetectable;
 import com.blackduck.integration.detectable.detectables.carthage.CarthageLockDetectable;
@@ -216,6 +218,14 @@ public class DetectorRuleFactory {
                     .search().defaults();
         });
 
+        rules.addDetector(DetectorType.BUN, detector -> {
+            detector.entryPoint(BunLockfileDetectable.class)
+                    .search().defaultLock();
+            detector.entryPoint(BunCliDetectable.class)
+                .search().defaults();
+        }).allEntryPointsFallbackToNext()
+          .yieldsTo(DetectorType.LERNA, DetectorType.RUSH);
+
         rules.addDetector(DetectorType.YARN, detector -> {
             detector.entryPoint(YarnLockDetectable.class)
                 .search().defaultLock();
@@ -236,7 +246,7 @@ public class DetectorRuleFactory {
                 detector.entryPoint(NpmPackageJsonParseDetectable.class)
                     .search().defaults(); //maybe this one should be defaultLock?
             }).allEntryPointsFallbackToNext()
-            .yieldsTo(DetectorType.LERNA, DetectorType.YARN, DetectorType.PNPM, DetectorType.RUSH);
+            .yieldsTo(DetectorType.LERNA, DetectorType.YARN, DetectorType.PNPM, DetectorType.RUSH, DetectorType.BUN);
 
         rules.addDetector(DetectorType.NUGET, detector -> {
             //four different detectables, last one will be the project inspector

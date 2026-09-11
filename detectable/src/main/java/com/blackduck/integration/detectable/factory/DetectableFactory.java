@@ -50,6 +50,14 @@ import com.blackduck.integration.detectable.detectables.bazel.BazelWorkspaceFile
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.DependencySourceChooser;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelVariableSubstitutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.HaskellCabalLibraryJsonProtoParser;
+import com.blackduck.integration.detectable.detectable.executable.resolver.BunResolver;
+import com.blackduck.integration.detectable.detectables.bun.cli.BunCliDetectable;
+import com.blackduck.integration.detectable.detectables.bun.cli.BunCliExtractor;
+import com.blackduck.integration.detectable.detectables.bun.cli.BunCliParser;
+import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockfileDetectable;
+import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockfileExtractor;
+import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockJsonParser;
+import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockfileTransformer;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectable;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectableOptions;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeExtractor;
@@ -169,7 +177,6 @@ import com.blackduck.integration.detectable.detectables.gradle.inspection.parse.
 import com.blackduck.integration.detectable.detectables.gradle.inspection.parse.GradleReportTransformer;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.parse.GradleRootMetadataParser;
 import com.blackduck.integration.detectable.detectables.gradle.parsing.GradleProjectInspectorDetectable;
-import com.blackduck.integration.detectable.detectables.ivy.IvyCliDetectable;
 import com.blackduck.integration.detectable.detectables.ivy.IvyCliExtractor;
 import com.blackduck.integration.detectable.detectables.ivy.IvyParseDetectable;
 import com.blackduck.integration.detectable.detectables.ivy.IvyParseExtractor;
@@ -309,7 +316,9 @@ import com.blackduck.integration.detectable.detectables.opam.lockfile.OpamLockFi
 import com.blackduck.integration.detectable.detectables.opam.lockfile.OpamLockFileExtractor;
 import com.blackduck.integration.detectable.detectables.opam.transform.OpamGraphTransformer;
 import com.blackduck.integration.detectable.util.ToolVersionLogger;
+import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.util.ExcludedIncludedWildcardFilter;
+import com.blackduck.integration.detectable.detectables.yarn.YarnDependencyType;
 
 /*
  Entry point for creating detectables using most
@@ -789,6 +798,14 @@ public class DetectableFactory {
 
     public UVLockFileDetectable createUVLockFileDetectable(DetectableEnvironment environment, UVDetectorOptions uvDetectorOptions) {
         return new UVLockFileDetectable(environment, fileFinder, uvDetectorOptions, uvLockfileExtractor(environment.getDirectory()));
+    }
+
+    public BunCliDetectable createBunCliDetectable(DetectableEnvironment environment, BunResolver bunResolver) {
+        return new BunCliDetectable(environment, fileFinder, bunResolver, bunCliExtractor());
+    }
+
+    public BunLockfileDetectable createBunLockfileDetectable(DetectableEnvironment environment) {
+        return new BunLockfileDetectable(environment, fileFinder, bunLockfileExtractor());
     }
 
     // Used by three Detectables
@@ -1273,6 +1290,26 @@ public class DetectableFactory {
         return new UVLockParser(externalIdFactory);
     }
 
+
+    private BunCliParser bunCliParser() {
+        return new BunCliParser(externalIdFactory);
+    }
+
+    private BunCliExtractor bunCliExtractor() {
+        return new BunCliExtractor(executableRunner, bunCliParser(), packageJsonFiles());
+    }
+
+    private BunLockJsonParser bunLockJsonParser() {
+        return new BunLockJsonParser();
+    }
+
+    private BunLockfileTransformer bunLockfileTransformer() {
+        return new BunLockfileTransformer(externalIdFactory);
+    }
+
+    private BunLockfileExtractor bunLockfileExtractor() {
+        return new BunLockfileExtractor(bunLockJsonParser(), bunLockfileTransformer(), packageJsonFiles());
+    }
 
     //#endregion Utility
 
