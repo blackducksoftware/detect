@@ -1,15 +1,17 @@
 # Contributing to Blackduck Software Integration's
 
-If you decide to contribute to our repository, please follow our [Code of conduct](./CODE_OF_CONDUCT.md) when contributing. We value all contributions and will review them as soon as we can.
+If you decide to contribute to our repository, please follow our [Code of conduct](/.github/CODE_OF_CONDUCT.md) when contributing. We value all contributions and will review them as soon as we can.
 
-### Bugs
-When using our software, it is possible that you will come across a bug. If this happens, Be sure to come to our issues page to see if anyone else has ran into this same problem. If no one has reported it, then please submit an issue following this [Issue template](./ISSUE_TEMPLATE.md).
+## Support
 
-### Issues
-When you don't run into a bug, but have an issue or a question, then the best option is to message our [Support team](https://www.blackducksoftware.com/support/contact-support). They are available 24 hours a day and work directly with us to resolve any issues you may have.
+### Paid Support
+The best option for customers with active support contracts is to directly message our [Support team](https://www.blackducksoftware.com/support/contact-support). The support team is available 24 hours a day.
+
+### Community Support
+Community support is available in the [BlackDuck Community portal](https://community.blackduck.com/s/). Questions (which includes, but is not limited to reporting bugs, feature requests, etc) can be directed to the [BlackDuck Community Discussions](https://community.blackduck.com/s/discussions) board.
 
 ## Pull Requests
-Anyone can directly contribute to our integrations by opening their own branch and creating a pull request. When doing so, please follow the [Pull request template](./PULL_REQUEST_TEMPLATE.md) so that we can review your request more quickly and get your code into master.
+Anyone can directly contribute to our integrations by opening their own branch and creating a pull request. When doing so, please follow the [Pull request template](/.github/PULL_REQUEST_TEMPLATE.md) so that we can review your request more quickly and get your code into master.
 
 When creating code to be merged into our project, please adhere to the following as best you can
 * Create variable and method names that describe their functionality
