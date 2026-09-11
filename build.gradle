@@ -192,7 +192,7 @@ dependencies {
 
     implementation 'com.blackducksoftware.bdio:bdio-protobuf:3.2.12'
     implementation "com.blackduck.integration:blackduck-common:${blackDuckCommonVersion}"
-    implementation 'com.blackduck.integration:blackduck-upload-common:4.1.6'
+    implementation 'com.blackduck.integration:blackduck-upload-common:4.1.8-SNAPSHOT'
     implementation 'com.blackducksoftware:method-analyzer-core:1.0.7'
     implementation "${locatorGroup}:${locatorModule}:2.4.5"
 
