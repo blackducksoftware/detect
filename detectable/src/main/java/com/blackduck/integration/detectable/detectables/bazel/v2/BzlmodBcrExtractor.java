@@ -248,13 +248,26 @@ public class BzlmodBcrExtractor {
         for (String moduleKey : moduleKeys) {
             String showRepoOutput = showRepoOutputByKey.get(moduleKey);
             if (showRepoOutput == null || showRepoOutput.trim().isEmpty()) {
-                // Module could not be resolved — likely uses git_override or local_path_override
-                // with a non-standard canonical name, or is not a standard BCR module.
-                // The HTTP_ARCHIVE pipeline may still capture it via bazel query.
-                logger.warn("Module '{}' could not be resolved — it may use a local override. " +
-                    "It will not be included in these scan results. " +
-                    "It may still be found via other scan methods.",
-                    moduleKey);
+                ModuleKey parsedKey = ModuleKey.parse(moduleKey);
+                if (parsedKey.isNonRegistryOverride()) {
+                    // "_" confirms this really is a non-registry override (archive_override,
+                    // git_override, local_path_override, etc.) rather than a guess — show_repo
+                    // gave us nothing to work with at all, so the component will be missing
+                    // from the BOM entirely unless another pipeline (e.g. HTTP_ARCHIVE) finds it.
+                    logger.warn("Module '{}' has a non-standard coordinate ('{}') — it is sourced from a non-registry " +
+                            "override (e.g. archive_override, git_override, local_path_override), not the Bazel Central " +
+                            "Registry, and 'bazel mod show_repo' returned no output for it. It will not be included in " +
+                            "these scan results. It may still be found via other scan methods.",
+                        parsedKey.getName(), moduleKey);
+                } else {
+                    // Module could not be resolved — likely uses git_override or local_path_override
+                    // with a non-standard canonical name, or is not a standard BCR module.
+                    // The HTTP_ARCHIVE pipeline may still capture it via bazel query.
+                    logger.warn("Module '{}' could not be resolved — it may use a local override. " +
+                        "It will not be included in these scan results. " +
+                        "It may still be found via other scan methods.",
+                        moduleKey);
+                }
                 continue;
             }
             Dependency dep = urlOutputToDependency(moduleKey, showRepoOutput);
@@ -283,7 +296,8 @@ public class BzlmodBcrExtractor {
             return null;
         }
 
-        String moduleVersion = BzlmodGraphJsonParser.extractVersion(moduleKey);
+        ModuleKey parsedKey = ModuleKey.parse(moduleKey);
+        String moduleVersion = parsedKey.getVersion();
 
         for (String urlCandidate : urlCandidates) {
             try {
@@ -299,6 +313,17 @@ public class BzlmodBcrExtractor {
                     ? parsedVersion
                     : moduleVersion;
                 logger.debug("BZLMOD BCR: resolved '{}' → github:{}/{} version:{}", moduleKey, organization, repo, resolvedVersion);
+                if (parsedKey.isNonRegistryOverride()) {
+                    // "_" is Bazel's literal marker for a module governed by a non-registry
+                    // override (archive_override/git_override/local_path_override, etc.).
+                    // It was never resolved against the Bazel Central Registry, so make sure
+                    // this is visible even at default log levels.
+                    logger.warn("Module '{}' has a non-standard coordinate ('{}') — it is sourced from a non-registry " +
+                            "override (e.g. archive_override, git_override, local_path_override), not the Bazel Central " +
+                            "Registry. It will be reported as github:{}/{} version:{}, inferred from its resolved source " +
+                            "URL; this version has not been verified against BCR.",
+                        parsedKey.getName(), moduleKey, organization, repo, resolvedVersion);
+                }
                 return Dependency.FACTORY.createNameVersionDependency(Forge.GITHUB, organization + "/" + repo, resolvedVersion);
             } catch (MalformedURLException e) {
                 // Not a GitHub URL — try the next candidate
@@ -306,7 +331,20 @@ public class BzlmodBcrExtractor {
         }
 
         // No GitHub URL found — log all raw URLs so users can investigate
-        if (!urlCandidates.isEmpty()) {
+        if (parsedKey.isNonRegistryOverride()) {
+            if (!urlCandidates.isEmpty()) {
+                logger.warn("Module '{}' has a non-standard coordinate ('{}') — it is sourced from a non-registry override " +
+                        "(e.g. archive_override, git_override, local_path_override), not the Bazel Central Registry. " +
+                        "Additionally, its source URL is not a supported GitHub URL — it will not appear in the scan results. " +
+                        "Raw URL(s): {}. Consider running a signature scan for this component.",
+                    parsedKey.getName(), moduleKey, urlCandidates);
+            } else {
+                logger.warn("Module '{}' has a non-standard coordinate ('{}') — it is sourced from a non-registry override " +
+                        "(e.g. archive_override, git_override, local_path_override), not the Bazel Central Registry. " +
+                        "Additionally, no source URL could be extracted — it will not appear in the scan results.",
+                    parsedKey.getName(), moduleKey);
+            }
+        } else if (!urlCandidates.isEmpty()) {
             logger.warn("Module '{}' was found but its source URL is not a supported GitHub URL — it will not appear in the scan results. " +
                 "Raw URL(s): {}. Consider running a signature scan for this component.",
                 moduleKey, urlCandidates);
