@@ -118,6 +118,21 @@ public class BzlmodBcrExtractor {
     }
 
     /**
+     * Builds the shared prefix for a "non-standard coordinate" WARN: identifies the module and
+     * explains that its {@code _} version marks it as sourced from a non-registry override
+     * (e.g. {@code archive_override}, {@code git_override}, {@code local_path_override}), not the
+     * Bazel Central Registry. Callers append their own outcome-specific sentence(s) after this
+     * prefix so all three "module@_" warning sites stay worded consistently.
+     */
+    private static String nonRegistryOverrideWarningPrefix(ModuleKey parsedKey, String moduleKey) {
+        return String.format(
+                "Module '%s' has a non-standard coordinate ('%s') — it is sourced from a non-registry override " +
+                        "(e.g. archive_override, git_override, local_path_override), not the Bazel Central Registry. ",
+                parsedKey.getName(), moduleKey);
+    }
+
+
+    /**
      * Main entry point. Runs the full BCR extraction and returns a {@link DependencyGraph}
      * with direct/transitive edges populated. Returns an empty graph on failure — callers
      * should check the log output to understand what went wrong.
@@ -248,13 +263,24 @@ public class BzlmodBcrExtractor {
         for (String moduleKey : moduleKeys) {
             String showRepoOutput = showRepoOutputByKey.get(moduleKey);
             if (showRepoOutput == null || showRepoOutput.trim().isEmpty()) {
-                // Module could not be resolved — likely uses git_override or local_path_override
-                // with a non-standard canonical name, or is not a standard BCR module.
-                // The HTTP_ARCHIVE pipeline may still capture it via bazel query.
-                logger.warn("Module '{}' could not be resolved — it may use a local override. " +
-                    "It will not be included in these scan results. " +
-                    "It may still be found via other scan methods.",
-                    moduleKey);
+                ModuleKey parsedKey = ModuleKey.parse(moduleKey);
+                if (parsedKey.isNonRegistryOverride()) {
+                    // "_" confirms this really is a non-registry override (archive_override,
+                    // git_override, local_path_override, etc.) rather than a guess — show_repo
+                    // gave us nothing to work with at all, so the component will be missing
+                    // from the BOM entirely unless another pipeline (e.g. HTTP_ARCHIVE) finds it.
+                    logger.warn(nonRegistryOverrideWarningPrefix(parsedKey, moduleKey) +
+                        "'bazel mod show_repo' returned no output for it. It will not be included in " +
+                        "these scan results. It may still be found via other scan methods.");
+                } else {
+                    // Module could not be resolved — likely uses git_override or local_path_override
+                    // with a non-standard canonical name, or is not a standard BCR module.
+                    // The HTTP_ARCHIVE pipeline may still capture it via bazel query.
+                    logger.warn("Module '{}' could not be resolved — it may use a local override. " +
+                        "It will not be included in these scan results. " +
+                        "It may still be found via other scan methods.",
+                        moduleKey);
+                }
                 continue;
             }
             Dependency dep = urlOutputToDependency(moduleKey, showRepoOutput);
@@ -283,7 +309,8 @@ public class BzlmodBcrExtractor {
             return null;
         }
 
-        String moduleVersion = BzlmodGraphJsonParser.extractVersion(moduleKey);
+        ModuleKey parsedKey = ModuleKey.parse(moduleKey);
+        String moduleVersion = parsedKey.getVersion();
 
         for (String urlCandidate : urlCandidates) {
             try {
@@ -299,6 +326,15 @@ public class BzlmodBcrExtractor {
                     ? parsedVersion
                     : moduleVersion;
                 logger.debug("BZLMOD BCR: resolved '{}' → github:{}/{} version:{}", moduleKey, organization, repo, resolvedVersion);
+                if (parsedKey.isNonRegistryOverride()) {
+                    // "_" is Bazel's literal marker for a module governed by a non-registry
+                    // override (archive_override/git_override/local_path_override, etc.).
+                    // It was never resolved against the Bazel Central Registry, so make sure
+                    // this is visible even at default log levels.
+                    logger.warn(nonRegistryOverrideWarningPrefix(parsedKey, moduleKey) +
+                        String.format("It will be reported as github:%s/%s version:%s, inferred from its resolved " +
+                            "source URL; this version has not been verified against BCR.", organization, repo, resolvedVersion));
+                }
                 return Dependency.FACTORY.createNameVersionDependency(Forge.GITHUB, organization + "/" + repo, resolvedVersion);
             } catch (MalformedURLException e) {
                 // Not a GitHub URL — try the next candidate
@@ -306,7 +342,13 @@ public class BzlmodBcrExtractor {
         }
 
         // No GitHub URL found — log all raw URLs so users can investigate
-        if (!urlCandidates.isEmpty()) {
+        if (parsedKey.isNonRegistryOverride()) {
+            String detail = !urlCandidates.isEmpty()
+                ? String.format("Additionally, its source URL is not a supported GitHub URL — it will not appear in " +
+                    "the scan results. Raw URL(s): %s. Consider running a signature scan for this component.", urlCandidates)
+                : "Additionally, no source URL could be extracted — it will not appear in the scan results.";
+            logger.warn(nonRegistryOverrideWarningPrefix(parsedKey, moduleKey) + detail);
+        } else if (!urlCandidates.isEmpty()) {
             logger.warn("Module '{}' was found but its source URL is not a supported GitHub URL — it will not appear in the scan results. " +
                 "Raw URL(s): {}. Consider running a signature scan for this component.",
                 moduleKey, urlCandidates);

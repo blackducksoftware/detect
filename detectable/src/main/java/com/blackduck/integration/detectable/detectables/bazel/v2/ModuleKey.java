@@ -21,6 +21,19 @@ import com.blackduck.integration.detectable.detectables.bazel.query.BazelCommand
 public final class ModuleKey {
     private static final String SEPARATOR = BazelCommandArguments.MODULE_KEY_SEPARATOR;
 
+    /**
+     * The literal version string Bazel emits in {@code bazel mod graph} output for a module
+     * governed by a non-registry override ({@code archive_override}, {@code git_override},
+     * {@code local_path_override}, etc.) — e.g. {@code abseil-cpp@_}. Such a module was never
+     * resolved against the Bazel Central Registry, so its "version" is not a real BCR coordinate.
+     *
+     * <p>This is Bazel's own documented placeholder, not a Detect-invented heuristic — Bazel does
+     * not currently define any other non-registry version marker, so a single exact-match constant
+     * (rather than an enum of "kinds" of non-standard version) is intentional. If Bazel ever
+     * introduces additional non-registry markers, extend {@link #isNonRegistryOverride()} then.
+     */
+    public static final String NON_REGISTRY_VERSION_MARKER = "_";
+
     private final String rawKey;
     private final String name;
     private final String version; // nullable, mirrors extractVersion() returning null
@@ -57,6 +70,18 @@ public final class ModuleKey {
     /** @return the original, unmodified key string. */
     public String getRawKey() {
         return rawKey;
+    }
+
+    /**
+     * Returns {@code true} when this key's version is the non-registry override marker
+     * ({@code "_"}), meaning the module was resolved via {@code archive_override},
+     * {@code git_override}, {@code local_path_override}, or a similar mechanism rather than
+     * from the Bazel Central Registry. Coordinates like {@code abseil-cpp@_} are non-standard:
+     * any dependency built from them should be flagged so users know the reported version was
+     * inferred from the override's source URL, not verified against BCR.
+     */
+    public boolean isNonRegistryOverride() {
+        return NON_REGISTRY_VERSION_MARKER.equals(version);
     }
 
     @Override
