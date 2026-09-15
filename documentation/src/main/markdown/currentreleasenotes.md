@@ -30,7 +30,7 @@
 
 ### Resolved issues
 
-* (IDETECT-5240) npm alias handling has been enhanced. Aliases used by direct dependency packages are now displayed in the BOM. Multiple aliases to the same underlying package now resolve properly.
+* (IDETECT-5240) Enhanced npm alias handling: Aliases used by direct dependencies are now displayed in the BOM. In addition, multiple aliases that reference the same underlying package are now resolved correctly.
 * (IDETECT-5267) Improved Cargo detector version parsing to more reliably handle pre-release suffixes, malformed, and non-standard version output.
 
 ### Dependency Updates
