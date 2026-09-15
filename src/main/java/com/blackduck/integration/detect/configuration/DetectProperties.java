@@ -2136,6 +2136,13 @@ public class DetectProperties {
                     .setCategory(DetectCategory.Advanced)
                     .build();
 
+    public static final NullablePathProperty DETECT_BUN_PATH =
+            NullablePathProperty.newBuilder("detect.bun.path")
+                    .setInfo("Bun Executable", DetectPropertyFromVersion.VERSION_12_1_0)
+                    .setHelp("The path to the bun executable.")
+                    .setGroups(DetectGroup.BUN, DetectGroup.GLOBAL)
+                    .build();
+
     public static final BooleanProperty DETECT_YARN_IGNORE_ALL_WORKSPACES_MODE =
         BooleanProperty.newBuilder("detect.yarn.ignore.all.workspaces", false)
             .setInfo("Ignore All Workspaces", DetectPropertyFromVersion.VERSION_9_4_0)
