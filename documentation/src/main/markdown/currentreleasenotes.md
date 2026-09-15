@@ -30,6 +30,7 @@
 
 ### Resolved issues
 
+* (IDETECT-5258) Retries now occur for SCASS based operations that manipulate smaller files. Previously only large files that were broken into chunks had their uploads retried in the case of failures.
 * (IDETECT-5267) Improved Cargo detector version parsing to more reliably handle pre-release suffixes, malformed, and non-standard version output.
 
 ### Dependency Updates
