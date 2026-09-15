@@ -26,6 +26,11 @@ public final class ModuleKey {
      * governed by a non-registry override ({@code archive_override}, {@code git_override},
      * {@code local_path_override}, etc.) — e.g. {@code abseil-cpp@_}. Such a module was never
      * resolved against the Bazel Central Registry, so its "version" is not a real BCR coordinate.
+     *
+     * <p>This is Bazel's own documented placeholder, not a Detect-invented heuristic — Bazel does
+     * not currently define any other non-registry version marker, so a single exact-match constant
+     * (rather than an enum of "kinds" of non-standard version) is intentional. If Bazel ever
+     * introduces additional non-registry markers, extend {@link #isNonRegistryOverride()} then.
      */
     public static final String NON_REGISTRY_VERSION_MARKER = "_";
 

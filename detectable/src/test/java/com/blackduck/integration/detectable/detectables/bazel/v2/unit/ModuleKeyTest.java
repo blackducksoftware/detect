@@ -1,7 +1,9 @@
 package com.blackduck.integration.detectable.detectables.bazel.v2.unit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -54,6 +56,31 @@ class ModuleKeyTest {
     @Test
     void equalityByNameAndVersion() {
         assertEquals(ModuleKey.parse("foo@1.0"), ModuleKey.parse("foo@1.0"));
+    }
+
+    // -------------------------------------------------------------------------
+    // isNonRegistryOverride() — Bazel's "_" version marker for non-registry overrides
+    // -------------------------------------------------------------------------
+
+    @Test
+    void underscoreVersionIsNonRegistryOverride() {
+        assertTrue(ModuleKey.parse("abseil-cpp@_").isNonRegistryOverride());
+    }
+
+    @Test
+    void ordinaryVersionIsNotNonRegistryOverride() {
+        assertFalse(ModuleKey.parse("protobuf@31.0").isNonRegistryOverride());
+    }
+
+    @Test
+    void missingVersionIsNotNonRegistryOverride() {
+        assertFalse(ModuleKey.parse("bazel_tools").isNonRegistryOverride());
+    }
+
+    @Test
+    void similarButNotExactMarkerIsNotNonRegistryOverride() {
+        // Only an exact "_" version counts — "__" or "_beta" etc. must not match.
+        assertFalse(ModuleKey.parse("foo@__").isNonRegistryOverride());
     }
 }
 

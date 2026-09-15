@@ -289,6 +289,37 @@ public class BzlmodBcrExtractorTest {
                 + "    url = \"https://github.com/madler/zlib/archive/v1.3.tar.gz\",\n"
                 + ")\n";
         }
+
+        /**
+         * One direct dep (abseil-cpp@_) whose module key version is Bazel's non-registry
+         * override marker ({@code "_"}) — mirrors what {@code bazel mod graph} reports for a
+         * module replaced via {@code archive_override}. Its show_repo output still resolves to
+         * a valid GitHub URL. Used to verify that non-registry-override modules are still fully
+         * resolved into the BOM (the accompanying WARN is a logging-only concern, not asserted
+         * here
+         * for coverage of the underlying marker detection).
+         */
+        static final class NonRegistryOverride {
+            static final String MOD_GRAPH =
+                "{\n"
+                + "  \"key\": \"<root>\",\n"
+                + "  \"dependencies\": [\n"
+                + "    { \"key\": \"abseil-cpp@_\", \"dependencies\": [] }\n"
+                + "  ]\n"
+                + "}";
+
+            static final String REPO_MAPPING = "{ \"abseil-cpp\": \"abseil-cpp+\" }";
+
+            static final String TARGET_QUERY = "@@abseil-cpp+//absl/strings:strings\n";
+
+            static final String SHOW_REPO_BATCH =
+                "## @@abseil-cpp+:\n"
+                + "http_archive(\n"
+                + "    name = \"abseil-cpp+\",\n"
+                + "    urls = [\"https://github.com/abseil/abseil-cpp/archive/refs/tags/20240116.0.tar.gz\"],\n"
+                + "    strip_prefix = \"abseil-cpp-20240116.0\",\n"
+                + ")\n";
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -496,6 +527,32 @@ public class BzlmodBcrExtractorTest {
             "org/repo must be parsed from the single url= attribute");
         assertEquals("v1.3", zlib.getExternalId().getVersion(),
             "version must be parsed from the archive path segment");
+    }
+
+    // -------------------------------------------------------------------------
+    // Tests — non-registry override version marker (module@_)
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void extractGraph_nonRegistryOverrideVersion_depStillResolvedIntoBom() {
+        StubBazelCommandExecutor stub = new StubBazelCommandExecutor();
+        stub.addModResponse(Fixtures.NonRegistryOverride.MOD_GRAPH);
+        stub.addModResponse(Fixtures.NonRegistryOverride.REPO_MAPPING);
+        stub.addQueryResponse(Fixtures.NonRegistryOverride.TARGET_QUERY);
+        stub.addModResponse(Fixtures.NonRegistryOverride.SHOW_REPO_BATCH);
+
+        DependencyGraph graph = new BzlmodBcrExtractor(stub, VERSION_7_1, TEST_TARGET).extractGraph();
+
+        // A module@_ key (non-registry override, e.g. archive_override) must still resolve into
+        // the BOM exactly like a normal BCR module — the accompanying WARN (see BzlmodBcrExtractor)
+        // is a logging-only addition and must not change resolution/graph behavior.
+        Set<Dependency> rootDeps = graph.getRootDependencies();
+        assertEquals(1, rootDeps.size(), "abseil-cpp@_ must still be resolved into the BOM");
+
+        Dependency abseil = rootDeps.iterator().next();
+        assertEquals("abseil/abseil-cpp", abseil.getExternalId().getName());
+        assertEquals("20240116.0", abseil.getExternalId().getVersion(),
+            "version must be parsed from the resolved GitHub archive URL, not the literal '_' module key version");
     }
 
     // -------------------------------------------------------------------------
