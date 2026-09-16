@@ -22,6 +22,7 @@ import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.Hask
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelV2Detectable;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelV2Detectable.BazelGraphProberFactory;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelGraphProber;
+import com.blackduck.integration.detectable.detectables.bazel.v2.BazelExtractionOptions;
 import com.blackduck.integration.detectable.detectable.exception.DetectableException;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelEnvironmentAnalyzer;
 
@@ -40,8 +41,9 @@ public class BazelV2DetectableNoPipelinesTest {
         BazelProjectNameGenerator projectNameGenerator = new BazelProjectNameGenerator();
 
         // Mock a prober that returns empty set
-        BazelGraphProberFactory proberFactory = (bazelCmd, target, mode, cqueryOpts, queryOpts) -> Mockito.mock(BazelGraphProber.class);
-        BazelGraphProber mockProber = proberFactory.create(null, "//:test", BazelEnvironmentAnalyzer.Mode.UNKNOWN, Collections.emptyList(), Collections.emptyList());
+        BazelGraphProberFactory proberFactory = (bazelCmd, target, extractionOptions) -> Mockito.mock(BazelGraphProber.class);
+        BazelExtractionOptions options0 = BazelExtractionOptions.builder().mode(BazelEnvironmentAnalyzer.Mode.UNKNOWN).build();
+        BazelGraphProber mockProber = proberFactory.create(null, "//:test", options0);
         Mockito.when(mockProber.decidePipelines()).thenReturn(Collections.emptySet());
 
         // Use mode override UNKNOWN to avoid auto-detection which would execute Bazel
@@ -51,7 +53,7 @@ public class BazelV2DetectableNoPipelinesTest {
             .build();
 
         BazelV2Detectable detectable = new BazelV2Detectable(environment, fileFinder, executableRunner, externalIdFactory, bazelResolver, options, substitutor, haskellParser, projectNameGenerator,
-            (bazelCmd, target, mode, cqueryOpts, queryOpts) -> mockProber);
+            (bazelCmd, target, extractionOptions) -> mockProber);
 
         // Act & Assert
         assertThrows(DetectableException.class, () -> detectable.extract(new com.blackduck.integration.detectable.extraction.ExtractionEnvironment(new File("out"))));

@@ -31,6 +31,7 @@
 ### Resolved issues
 
 * (IDETECT-5258) Retry logic now applies to [var_company_long] SCA Scan Service (SCASS) operations involving smaller files. Previously, retries were only performed for large files uploaded in chunks.
+* (IDETECT-5240) Enhanced npm alias handling: Aliases used by direct dependencies are now displayed in the BOM. In addition, multiple aliases that reference the same underlying package are now resolved correctly.
 * (IDETECT-5267) Improved Cargo detector version parsing to more reliably handle pre-release suffixes, malformed, and non-standard version output.
 
 ### Dependency Updates
