@@ -7,7 +7,6 @@ import com.blackduck.integration.detectable.detectables.bazel.query.OutputFormat
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -23,34 +22,18 @@ public class BazelGraphProber {
 
     private final BazelCommandExecutor bazel;
     private final String target;
-    private final BazelEnvironmentAnalyzer.Mode mode;
-    private final List<String> cqueryOptions;
-    private final List<String> queryOptions;
-    private BazelVersion bazelVersion;
+    private final BazelExtractionOptions options;
 
     /**
      * Constructor for BazelGraphProber
      * @param bazel Bazel command executor
      * @param target Bazel target to probe
-     * @param mode Bazel environment mode
-     * @param cqueryOptions Additional options for bazel cquery commands (from detect.bazel.cquery.options)
-     * @param queryOptions Additional options for bazel query commands (from detect.bazel.query.options)
+     * @param options Cross-cutting Bazel extraction settings (mode, cquery/query options, detected version)
      */
-    public BazelGraphProber(BazelCommandExecutor bazel, String target, BazelEnvironmentAnalyzer.Mode mode,
-                            List<String> cqueryOptions, List<String> queryOptions) {
+    public BazelGraphProber(BazelCommandExecutor bazel, String target, BazelExtractionOptions options) {
         this.bazel = bazel;
         this.target = target;
-        this.mode = mode;
-        this.cqueryOptions = cqueryOptions != null ? cqueryOptions : Collections.emptyList();
-        this.queryOptions = queryOptions != null ? queryOptions : Collections.emptyList();
-    }
-
-    /**
-     * Sets the detected Bazel version for feature gating (e.g., mod graph --output json for 7.1+).
-     * @param bazelVersion Detected Bazel version; null means unknown
-     */
-    public void setBazelVersion(BazelVersion bazelVersion) {
-        this.bazelVersion = bazelVersion;
+        this.options = options;
     }
 
     /**
@@ -86,7 +69,7 @@ public class BazelGraphProber {
         }
         // Probe for http_archive and related rules
         try {
-            HttpFamilyProber httpProber = new HttpFamilyProber(bazel, mode, queryOptions, bazelVersion);
+            HttpFamilyProber httpProber = new HttpFamilyProber(bazel, options);
             httpFamily = httpProber.detect(target);
         } catch (Exception e) {
             logger.debug("HTTP_ARCHIVE family probe failed: {}", e.getMessage());
@@ -122,7 +105,7 @@ public class BazelGraphProber {
         List<String> queryArgs = BazelQueryBuilder.cquery()
             .kind(JAVA_IMPORT_RULE_PATTERN, BazelQueryBuilder.deps(target))
             .withNoImplicitDeps()
-            .withOptions(cqueryOptions)
+            .withOptions(options.getCqueryOptions())
             .withOutput(OutputFormat.BUILD)
             .build();
 
@@ -147,7 +130,7 @@ public class BazelGraphProber {
         List<String> queryArgs = BazelQueryBuilder.cquery()
             .filter(MAVEN_JAR_FILTER_PATTERN, BazelQueryBuilder.deps(target))
             .withNoImplicitDeps()
-            .withOptions(cqueryOptions)
+            .withOptions(options.getCqueryOptions())
             .build();
 
         Optional<String> out = bazel.executeToString(queryArgs);
@@ -168,7 +151,7 @@ public class BazelGraphProber {
         List<String> queryArgs = BazelQueryBuilder.cquery()
             .kind(HASKELL_CABAL_RULE_PATTERN, BazelQueryBuilder.deps(target))
             .withNoImplicitDeps()
-            .withOptions(cqueryOptions)
+            .withOptions(options.getCqueryOptions())
             .withOutput(OutputFormat.LABEL_KIND)
             .build();
 

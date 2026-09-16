@@ -51,8 +51,7 @@ public class BazelV2Detectable extends Detectable {
 
     // Factory interface to create BazelGraphProber instances; injectable for tests.
     public interface BazelGraphProberFactory {
-        BazelGraphProber create(BazelCommandExecutor bazelCmd, String target, BazelEnvironmentAnalyzer.Mode mode,
-                                java.util.List<String> cqueryOptions, java.util.List<String> queryOptions);
+        BazelGraphProber create(BazelCommandExecutor bazelCmd, String target, BazelExtractionOptions options);
     }
 
     private final BazelGraphProberFactory bazelGraphProberFactory;
@@ -79,7 +78,7 @@ public class BazelV2Detectable extends Detectable {
                               HaskellCabalLibraryJsonProtoParser haskellParser,
                               BazelProjectNameGenerator projectNameGenerator) {
         this(environment, fileFinder, executableRunner, externalIdFactory, bazelResolver, options, bazelVariableSubstitutor, haskellParser, projectNameGenerator,
-            (bazelCmd, target, mode, cqueryOpts, queryOpts) -> new BazelGraphProber(bazelCmd, target, mode, cqueryOpts, queryOpts)
+            (bazelCmd, target, extractionOptions) -> new BazelGraphProber(bazelCmd, target, extractionOptions)
         );
     }
 
@@ -162,7 +161,13 @@ public class BazelV2Detectable extends Detectable {
         }
 
         // Determine pipelines (either from properties or by probing)
-        Set<DependencySource> pipelines = resolvePipelines(bazelCmd, target, mode, bazelVersion);
+        BazelExtractionOptions extractionOptions = BazelExtractionOptions.builder()
+            .mode(mode)
+            .bazelVersion(bazelVersion)
+            .cqueryOptions(options.getBazelCqueryAdditionalOptions())
+            .queryOptions(options.getBazelQueryAdditionalOptions())
+            .build();
+        Set<DependencySource> pipelines = resolvePipelines(bazelCmd, target, extractionOptions);
 
         // Fail if no supported pipelines are found
         if (pipelines == null || pipelines.isEmpty()) {
@@ -171,7 +176,7 @@ public class BazelV2Detectable extends Detectable {
 
         // Run the extraction using the determined pipelines
         BazelV2Extractor extractor = new BazelV2Extractor(externalIdFactory, bazelVariableSubstitutor, haskellParser, projectNameGenerator);
-        Extraction extraction = extractor.run(bazelCmd, pipelines, target, mode, bazelVersion);
+        Extraction extraction = extractor.run(bazelCmd, pipelines, target, extractionOptions);
         logger.info("The Bazel tool actions finished.");
         return extraction;
     }
@@ -209,7 +214,7 @@ public class BazelV2Detectable extends Detectable {
     }
 
     // Helper to resolve pipelines either from properties or by probing
-    private Set<DependencySource> resolvePipelines(BazelCommandExecutor bazelCmd, String target, BazelEnvironmentAnalyzer.Mode mode, BazelVersion bazelVersion) {
+    private Set<DependencySource> resolvePipelines(BazelCommandExecutor bazelCmd, String target, BazelExtractionOptions extractionOptions) {
         Set<DependencySource> sourcesFromProperty = options.getDependencySourcesFromProperty();
 
         if (sourcesFromProperty != null && !sourcesFromProperty.isEmpty()) {
@@ -217,9 +222,7 @@ public class BazelV2Detectable extends Detectable {
             return sourcesFromProperty;
         }
 
-        BazelGraphProber prober = bazelGraphProberFactory.create(bazelCmd, target, mode,
-            options.getBazelCqueryAdditionalOptions(), options.getBazelQueryAdditionalOptions());
-        prober.setBazelVersion(bazelVersion);
+        BazelGraphProber prober = bazelGraphProberFactory.create(bazelCmd, target, extractionOptions);
         return prober.decidePipelines();
     }
 }

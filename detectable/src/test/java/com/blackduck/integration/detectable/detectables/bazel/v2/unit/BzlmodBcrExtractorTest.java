@@ -16,6 +16,7 @@ import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.detectable.detectable.executable.ExecutableFailedException;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelCommandExecutor;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelVersion;
+import com.blackduck.integration.detectable.detectables.bazel.v2.BazelExtractionOptions;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BzlmodBcrExtractor;
 
 /**
@@ -46,6 +47,12 @@ public class BzlmodBcrExtractorTest {
 
     /** Bazel 7.1.0 — gates the BCR extraction path in BzlmodBcrExtractor. */
     private static final BazelVersion VERSION_7_1 = new BazelVersion(7, 1, 0);
+
+    /** Shared extraction options (BZLMOD, Bazel 7.1.0) used across all tests. */
+    private static final BazelExtractionOptions TEST_OPTIONS = BazelExtractionOptions.builder()
+        .mode(com.blackduck.integration.detectable.detectables.bazel.v2.BazelEnvironmentAnalyzer.Mode.BZLMOD)
+        .bazelVersion(VERSION_7_1)
+        .build();
 
     /** The Bazel target used across all tests. */
     private static final String TEST_TARGET = "//src/main:example";
@@ -334,7 +341,7 @@ public class BzlmodBcrExtractorTest {
         stub.addQueryResponse(Fixtures.BasicDirectTransitive.TARGET_QUERY);
         stub.addModResponse(Fixtures.BasicDirectTransitive.SHOW_REPO_BATCH);
 
-        DependencyGraph graph = new BzlmodBcrExtractor(stub, VERSION_7_1, TEST_TARGET).extractGraph();
+        DependencyGraph graph = new BzlmodBcrExtractor(stub, TEST_TARGET, TEST_OPTIONS).extractGraph();
 
         Set<Dependency> rootDeps = graph.getRootDependencies();
         assertEquals(1, rootDeps.size(), "Only protobuf should be a root (direct) dependency");
@@ -359,7 +366,7 @@ public class BzlmodBcrExtractorTest {
         stub.addQueryResponse(Fixtures.BasicDirectTransitive.TARGET_QUERY);
         stub.addModResponse(Fixtures.BasicDirectTransitive.SHOW_REPO_BATCH);
 
-        BzlmodBcrExtractor extractor = new BzlmodBcrExtractor(stub, VERSION_7_1, TEST_TARGET);
+        BzlmodBcrExtractor extractor = new BzlmodBcrExtractor(stub, TEST_TARGET, TEST_OPTIONS);
         extractor.extractGraph();
 
         Set<ExternalId> resolved = extractor.getResolvedExternalIds();
@@ -385,7 +392,7 @@ public class BzlmodBcrExtractorTest {
         stub.addQueryResponse(Fixtures.RefsTagsVersion.TARGET_QUERY);
         stub.addModResponse(Fixtures.RefsTagsVersion.SHOW_REPO_BATCH);
 
-        DependencyGraph graph = new BzlmodBcrExtractor(stub, VERSION_7_1, TEST_TARGET).extractGraph();
+        DependencyGraph graph = new BzlmodBcrExtractor(stub, TEST_TARGET, TEST_OPTIONS).extractGraph();
 
         Set<Dependency> rootDeps = graph.getRootDependencies();
         assertEquals(1, rootDeps.size());
@@ -408,7 +415,7 @@ public class BzlmodBcrExtractorTest {
         stub.addQueryResponse(Fixtures.NonGithubUrl.TARGET_QUERY);
         stub.addModResponse(Fixtures.NonGithubUrl.SHOW_REPO_BATCH);
 
-        DependencyGraph graph = new BzlmodBcrExtractor(stub, VERSION_7_1, TEST_TARGET).extractGraph();
+        DependencyGraph graph = new BzlmodBcrExtractor(stub, TEST_TARGET, TEST_OPTIONS).extractGraph();
 
         assertTrue(graph.getRootDependencies().isEmpty(),
             "A dep with a non-GitHub URL must be excluded from the BOM");
@@ -422,7 +429,7 @@ public class BzlmodBcrExtractorTest {
         stub.addQueryResponse(Fixtures.NoUrl.TARGET_QUERY);
         stub.addModResponse(Fixtures.NoUrl.SHOW_REPO_BATCH);
 
-        DependencyGraph graph = new BzlmodBcrExtractor(stub, VERSION_7_1, TEST_TARGET).extractGraph();
+        DependencyGraph graph = new BzlmodBcrExtractor(stub, TEST_TARGET, TEST_OPTIONS).extractGraph();
 
         assertTrue(graph.getRootDependencies().isEmpty(),
             "A dep with no URL in show_repo output must be excluded from the BOM");
@@ -437,7 +444,7 @@ public class BzlmodBcrExtractorTest {
         StubBazelCommandExecutor stub = new StubBazelCommandExecutor();
         stub.addEmptyModResponse();
 
-        DependencyGraph graph = new BzlmodBcrExtractor(stub, VERSION_7_1, TEST_TARGET).extractGraph();
+        DependencyGraph graph = new BzlmodBcrExtractor(stub, TEST_TARGET, TEST_OPTIONS).extractGraph();
 
         assertTrue(graph.getRootDependencies().isEmpty(),
             "Empty mod graph output must yield an empty dependency graph");
@@ -448,7 +455,7 @@ public class BzlmodBcrExtractorTest {
         StubBazelCommandExecutor stub = new StubBazelCommandExecutor();
         stub.addModResponse("{ \"key\": \"<root>\", \"dependencies\": [] }");
 
-        DependencyGraph graph = new BzlmodBcrExtractor(stub, VERSION_7_1, TEST_TARGET).extractGraph();
+        DependencyGraph graph = new BzlmodBcrExtractor(stub, TEST_TARGET, TEST_OPTIONS).extractGraph();
 
         assertTrue(graph.getRootDependencies().isEmpty());
     }
@@ -465,7 +472,7 @@ public class BzlmodBcrExtractorTest {
         stub.addQueryResponse(Fixtures.Diamond.TARGET_QUERY);
         stub.addModResponse(Fixtures.Diamond.SHOW_REPO_BATCH);
 
-        DependencyGraph graph = new BzlmodBcrExtractor(stub, VERSION_7_1, TEST_TARGET).extractGraph();
+        DependencyGraph graph = new BzlmodBcrExtractor(stub, TEST_TARGET, TEST_OPTIONS).extractGraph();
 
         Set<Dependency> rootDeps = graph.getRootDependencies();
         assertEquals(2, rootDeps.size(), "moduleA and moduleB must be direct (root) dependencies");
@@ -495,7 +502,7 @@ public class BzlmodBcrExtractorTest {
         stub.addEmptyModResponse();                                    // batched show_repo → empty → triggers fallback
         stub.addModResponse(Fixtures.BatchFallback.SHOW_REPO_PER_MODULE); // per-module show_repo for glog
 
-        DependencyGraph graph = new BzlmodBcrExtractor(stub, VERSION_7_1, TEST_TARGET).extractGraph();
+        DependencyGraph graph = new BzlmodBcrExtractor(stub, TEST_TARGET, TEST_OPTIONS).extractGraph();
 
         Set<Dependency> rootDeps = graph.getRootDependencies();
         assertEquals(1, rootDeps.size(), "glog must be resolved via the per-module fallback path");
@@ -517,7 +524,7 @@ public class BzlmodBcrExtractorTest {
         stub.addQueryResponse(Fixtures.SingleUrlAttribute.TARGET_QUERY);
         stub.addModResponse(Fixtures.SingleUrlAttribute.SHOW_REPO_BATCH);
 
-        DependencyGraph graph = new BzlmodBcrExtractor(stub, VERSION_7_1, TEST_TARGET).extractGraph();
+        DependencyGraph graph = new BzlmodBcrExtractor(stub, TEST_TARGET, TEST_OPTIONS).extractGraph();
 
         Set<Dependency> rootDeps = graph.getRootDependencies();
         assertEquals(1, rootDeps.size(), "zlib should be the sole root dependency");
@@ -541,7 +548,7 @@ public class BzlmodBcrExtractorTest {
         stub.addQueryResponse(Fixtures.NonRegistryOverride.TARGET_QUERY);
         stub.addModResponse(Fixtures.NonRegistryOverride.SHOW_REPO_BATCH);
 
-        DependencyGraph graph = new BzlmodBcrExtractor(stub, VERSION_7_1, TEST_TARGET).extractGraph();
+        DependencyGraph graph = new BzlmodBcrExtractor(stub, TEST_TARGET, TEST_OPTIONS).extractGraph();
 
         // A module@_ key (non-registry override, e.g. archive_override) must still resolve into
         // the BOM exactly like a normal BCR module — the accompanying WARN (see BzlmodBcrExtractor)

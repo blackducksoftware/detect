@@ -60,27 +60,15 @@ public class HttpFamilyProber {
 
 
     /**
-     * Constructor for HttpFamilyProber (backward-compatible, treats version as unknown).
+     * Constructor for HttpFamilyProber.
      * @param bazel Bazel command executor
-     * @param mode Bazel environment mode
-     * @param queryOptions Additional options for bazel query commands (from detect.bazel.query.options)
+     * @param options Cross-cutting Bazel extraction settings (mode, query options, detected version)
      */
-    public HttpFamilyProber(BazelCommandExecutor bazel, BazelEnvironmentAnalyzer.Mode mode, List<String> queryOptions) {
-        this(bazel, mode, queryOptions, null);
-    }
-
-    /**
-     * Constructor for HttpFamilyProber with Bazel version for tiered detection.
-     * @param bazel Bazel command executor
-     * @param mode Bazel environment mode
-     * @param queryOptions Additional options for bazel query commands (from detect.bazel.query.options)
-     * @param bazelVersion Detected Bazel version; null means unknown (fallback to legacy probing)
-     */
-    public HttpFamilyProber(BazelCommandExecutor bazel, BazelEnvironmentAnalyzer.Mode mode, List<String> queryOptions, BazelVersion bazelVersion) {
+    public HttpFamilyProber(BazelCommandExecutor bazel, BazelExtractionOptions options) {
         this.bazel = bazel;
-        this.mode = mode;
-        this.queryOptions = queryOptions != null ? queryOptions : Collections.emptyList();
-        this.bazelVersion = bazelVersion;
+        this.mode = options.getMode();
+        this.queryOptions = options.getQueryOptions();
+        this.bazelVersion = options.getBazelVersion();
     }
 
     /**

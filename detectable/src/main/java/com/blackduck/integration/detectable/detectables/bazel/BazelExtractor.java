@@ -33,6 +33,7 @@ import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.Hask
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.util.ToolVersionLogger;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelEnvironmentAnalyzer;
+import com.blackduck.integration.detectable.detectables.bazel.v2.BazelExtractionOptions;
 
 public class BazelExtractor {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -76,7 +77,8 @@ public class BazelExtractor {
         BazelCommandExecutor bazelCommandExecutor = new BazelCommandExecutor(executableRunner, workspaceDir, bazelExe);
         // Detect Bazel mode once and pass it to Pipelines for correct HTTP variant selection.
         BazelEnvironmentAnalyzer.Mode mode = new BazelEnvironmentAnalyzer(bazelCommandExecutor).getMode();
-        Pipelines pipelines = new Pipelines(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, mode);
+        BazelExtractionOptions pipelineOptions = BazelExtractionOptions.builder().mode(mode).build();
+        Pipelines pipelines = new Pipelines(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, pipelineOptions);
         Set<DependencySource> dependencySourcesFromFile = parseDependencySourcesFromFile(workspaceFile);
         Set<DependencySource> dependencySourcesToQuery = dependencySourceChooser.choose(dependencySourcesFromFile, dependencySourcesFromProperty);
         CodeLocation codeLocation = generateCodelocation(pipelines, dependencySourcesToQuery);
