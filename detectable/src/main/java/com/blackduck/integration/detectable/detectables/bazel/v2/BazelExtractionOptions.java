@@ -1,5 +1,6 @@
 package com.blackduck.integration.detectable.detectables.bazel.v2;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -23,8 +24,8 @@ public final class BazelExtractionOptions {
 
     private BazelExtractionOptions(BazelEnvironmentAnalyzer.Mode mode, List<String> cqueryOptions, List<String> queryOptions, BazelVersion bazelVersion) {
         this.mode = mode;
-        this.cqueryOptions = cqueryOptions;
-        this.queryOptions = queryOptions;
+        this.cqueryOptions = Collections.unmodifiableList(new ArrayList<>(cqueryOptions));
+        this.queryOptions = Collections.unmodifiableList(new ArrayList<>(queryOptions));
         this.bazelVersion = bazelVersion;
     }
 
