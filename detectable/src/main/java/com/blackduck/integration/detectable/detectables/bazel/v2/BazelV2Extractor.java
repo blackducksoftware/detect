@@ -33,6 +33,7 @@ public class BazelV2Extractor {
     private static final String JSON_KEY_PREFIX = "\"prefix\"";
     private static final String JSON_KEY_SUFFIX = "\"suffix\"";
     private static final String JSON_KEY_SCOPE = "\"scope\"";
+    private static final String LOG_DEPENDENCIES_DISCOVERED_FOR_SOURCE = "Dependencies discovered for source {}: {}";
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final ExternalIdFactory externalIdFactory;
@@ -68,8 +69,7 @@ public class BazelV2Extractor {
      * @param bazelCmd Bazel command executor
      * @param sources Set of dependency sources to execute
      * @param bazelTarget Bazel target to analyze
-     * @param mode Bazel environment mode (for HTTP variant selection)
-     * @param bazelVersion Detected Bazel version for feature gating; may be null
+     * @param options Cross-cutting Bazel extraction settings (mode, detected version, query options)
      * @return Extraction result containing discovered dependencies and project name
      * @throws ExecutableFailedException if a Bazel command fails
      * @throws DetectableException if extraction fails
@@ -77,18 +77,20 @@ public class BazelV2Extractor {
     public Extraction run(BazelCommandExecutor bazelCmd,
                           Set<DependencySource> sources,
                           String bazelTarget,
-                          BazelEnvironmentAnalyzer.Mode mode,
-                          BazelVersion bazelVersion) throws ExecutableFailedException, DetectableException {
+                          BazelExtractionOptions options) throws ExecutableFailedException, DetectableException {
         logger.info("Starting Bazel dependency scan for target: {}. Active sources: {}", bazelTarget, sources);
         // Create pipelines for each dependency source (used by both paths)
-        Pipelines pipelines = new Pipelines(bazelCmd, bazelVariableSubstitutor, externalIdFactory, haskellParser, mode, bazelVersion);
+        Pipelines pipelines = new Pipelines(bazelCmd, bazelVariableSubstitutor, externalIdFactory, haskellParser, options);
+
+        BazelEnvironmentAnalyzer.Mode mode = options.getMode();
+        BazelVersion bazelVersion = options.getBazelVersion();
 
         // BZLMOD mode on Bazel 7.1+ uses a dedicated BCR extraction path that produces a
         // properly classified direct/transitive BOM via `bazel mod graph --output json`.
         // The legacy flat path is unchanged for WORKSPACE mode and older Bazel versions.
         if (mode == BazelEnvironmentAnalyzer.Mode.BZLMOD
                 && bazelVersion != null && bazelVersion.isAtLeast(7, 1)) {
-            return runBzlmodBcrPath(bazelCmd, sources, bazelTarget, bazelVersion, pipelines);
+            return runBzlmodBcrPath(bazelCmd, sources, bazelTarget, options, pipelines);
         }
 
         // Log explicitly when BZLMOD is active but the Bazel version is too old (or unknown) for BCR
@@ -116,9 +118,9 @@ public class BazelV2Extractor {
         for (DependencySource source : ordered) {
             logger.debug("Executing pipeline for dependency source: {}", source);
             List<Dependency> deps = pipelines.get(source).run();
-            logger.debug("Dependencies discovered for source {}: {}", source, deps.size());
+            logger.debug(LOG_DEPENDENCIES_DISCOVERED_FOR_SOURCE, source, deps.size());
             if (logger.isDebugEnabled()) {
-                logger.debug("Dependencies discovered for source {}: {}", source, dependenciesToDebugString(deps));
+                logger.debug(LOG_DEPENDENCIES_DISCOVERED_FOR_SOURCE, source, dependenciesToDebugString(deps));
             }
             aggregated.addAll(deps);
         }
@@ -152,15 +154,14 @@ public class BazelV2Extractor {
     private Extraction runBzlmodBcrPath(BazelCommandExecutor bazelCmd,
                                          Set<DependencySource> sources,
                                          String bazelTarget,
-                                         BazelVersion bazelVersion,
+                                         BazelExtractionOptions options,
                                          Pipelines pipelines) throws ExecutableFailedException, DetectableException {
-        logger.info("Bazel {} with BZLMOD: using module-aware extraction for accurate direct/transitive dependency classification", bazelVersion);
+        logger.info("Bazel {} with BZLMOD: using module-aware extraction for accurate direct/transitive dependency classification", options.getBazelVersion());
 
         // Run BCR extraction to get the tree-structured graph (target-scoped via internal query).
         // Pass the user's query options so the internal target-scope query is consistent with the
         // HTTP_ARCHIVE pipeline / HttpFamilyProber (same args → served from the executor's query cache).
-        BzlmodBcrExtractor bcrExtractor = new BzlmodBcrExtractor(bazelCmd, bazelVersion, bazelTarget,
-            bazelVariableSubstitutor.getQueryAdditionalOptions());
+        BzlmodBcrExtractor bcrExtractor = new BzlmodBcrExtractor(bazelCmd, bazelTarget, options);
         DependencyGraph graph = bcrExtractor.extractGraph();
 
         // Run all configured pipelines (Maven, Haskell, HTTP_ARCHIVE) alongside the BCR graph.
@@ -181,9 +182,9 @@ public class BazelV2Extractor {
         for (DependencySource source : ordered) {
             logger.debug("Executing pipeline for dependency source: {}", source);
             List<Dependency> deps = pipelines.get(source).run();
-            logger.debug("Dependencies discovered for source {}: {}", source, deps.size());
+            logger.debug(LOG_DEPENDENCIES_DISCOVERED_FOR_SOURCE, source, deps.size());
             if (logger.isDebugEnabled()) {
-                logger.debug("Dependencies discovered for source {}: {}", source, dependenciesToDebugString(deps));
+                logger.debug(LOG_DEPENDENCIES_DISCOVERED_FOR_SOURCE, source, dependenciesToDebugString(deps));
             }
             if (deps.isEmpty()) {
                 continue;

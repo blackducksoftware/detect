@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelEnvironmentAnalyzer;
+import com.blackduck.integration.detectable.detectables.bazel.v2.BazelExtractionOptions;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -319,7 +320,7 @@ class PipelinesTest {
             bazelVariableSubstitutor,
             externalIdFactory,
             haskellCabalLibraryJsonProtoParser,
-            BazelEnvironmentAnalyzer.Mode.WORKSPACE
+            BazelExtractionOptions.builder().mode(BazelEnvironmentAnalyzer.Mode.WORKSPACE).build()
         );
         Pipeline pipeline = pipelines.get(dependencySource);
         return pipeline.run();

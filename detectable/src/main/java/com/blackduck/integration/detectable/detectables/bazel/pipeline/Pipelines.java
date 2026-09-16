@@ -14,6 +14,7 @@ import com.blackduck.integration.detectable.detectables.bazel.pipeline.xpathquer
 import com.blackduck.integration.detectable.detectables.bazel.query.BazelQueryBuilder;
 import com.blackduck.integration.detectable.detectables.bazel.query.OutputFormat;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelEnvironmentAnalyzer;
+import com.blackduck.integration.detectable.detectables.bazel.v2.BazelExtractionOptions;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelInfrastructureModules;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelVersion;
 import org.slf4j.Logger;
@@ -65,47 +66,18 @@ public class Pipelines {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     /**
-     * Constructs pipelines and auto-detects Bazel mode for legacy callers.
-     * Deprecated in favor of the mode-aware constructor.
-     */
-    public Pipelines(
-        BazelCommandExecutor bazelCommandExecutor,
-        BazelVariableSubstitutor bazelVariableSubstitutor,
-        ExternalIdFactory externalIdFactory,
-        HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser
-    ) {
-        // Auto-detect mode for legacy callers and delegate to the mode-aware constructor.
-        BazelEnvironmentAnalyzer analyzer = new BazelEnvironmentAnalyzer(bazelCommandExecutor);
-        BazelEnvironmentAnalyzer.Mode mode = analyzer.getMode();
-        this.init(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, mode, null);
-    }
-
-    /**
-     * Constructs pipelines for the specified Bazel mode.
+     * Constructs pipelines for the given cross-cutting Bazel extraction settings
+     * (mode + detected version). When bazelVersion is 7.1+, the bzlmod HTTP pipeline
+     * uses batched show_repo for better performance.
      */
     public Pipelines(
         BazelCommandExecutor bazelCommandExecutor,
         BazelVariableSubstitutor bazelVariableSubstitutor,
         ExternalIdFactory externalIdFactory,
         HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser,
-        BazelEnvironmentAnalyzer.Mode mode
+        BazelExtractionOptions options
     ) {
-        this.init(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, mode, null);
-    }
-
-    /**
-     * Constructs pipelines for the specified Bazel mode and version.
-     * When bazelVersion is 7.1+, the bzlmod HTTP pipeline uses batched show_repo for better performance.
-     */
-    public Pipelines(
-        BazelCommandExecutor bazelCommandExecutor,
-        BazelVariableSubstitutor bazelVariableSubstitutor,
-        ExternalIdFactory externalIdFactory,
-        HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser,
-        BazelEnvironmentAnalyzer.Mode mode,
-        BazelVersion bazelVersion
-    ) {
-        this.init(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, mode, bazelVersion);
+        this.init(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, options.getMode(), options.getBazelVersion());
     }
 
     /**
