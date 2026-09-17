@@ -5,8 +5,7 @@ import java.util.Map;
 
 public class BunLockfileData {
     private final List<BunLockPackage> packages;
-    // name → { range-or-version → resolvedVersion }
-    // Built from path-qualified key analysis; used to wire dep edges in the graph.
+    // name to (range-or-version to resolvedVersion); wires dep edges in the graph
     private final Map<String, Map<String, String>> rangeToVersion;
 
     public BunLockfileData(List<BunLockPackage> packages, Map<String, Map<String, String>> rangeToVersion) {

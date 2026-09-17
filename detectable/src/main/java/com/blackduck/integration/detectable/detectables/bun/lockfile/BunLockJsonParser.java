@@ -29,12 +29,17 @@ public class BunLockJsonParser {
     private static final String DEPENDENCIES_KEY = "dependencies";
     private static final String DEV_DEPENDENCIES_KEY = "devDependencies";
     private static final String OPTIONAL_DEPENDENCIES_KEY = "optionalDependencies";
-    private static final char NV_KEY_SEP = '§'; // § separator — never appears in npm names or semver
     private static final Pattern TRAILING_COMMA = Pattern.compile(",([\\s\\r\\n]*[}\\]])");
 
-    public BunLockJsonParser() {}
-
     public BunLockResult parseBunLock(File bunLockFile) {
+        ParsedLockfile parsed = readLockfile(bunLockFile);
+        Map<String, Map<String, String>> rangeToVersion = buildRangeToVersion(parsed);
+        List<BunLockPackage> packages = buildPackages(parsed);
+        return new BunLockResult(new BunLockfileData(packages, rangeToVersion));
+    }
+
+    // Reads bun.lock and streams it into the raw key/dep structures.
+    private ParsedLockfile readLockfile(File bunLockFile) {
         String content;
         try {
             String raw = new String(Files.readAllBytes(bunLockFile.toPath()), StandardCharsets.UTF_8);
@@ -45,22 +50,20 @@ public class BunLockJsonParser {
             throw new RuntimeException("Failed to read bun.lock: " + bunLockFile.getAbsolutePath(), e);
         }
 
-        // key → (name, resolvedVersion) for every packages entry, insertion-ordered
-        Map<String, NameVersion> keyToVersion = new LinkedHashMap<>();
-        // key → dep list (dependencies + optionalDependencies) for that entry
-        Map<String, List<BunLockDependency>> rawEntryDeps = new LinkedHashMap<>();
-        // dep ranges from the workspaces section
-        List<BunLockDependency> workspaceDeps = new ArrayList<>();
-
+        ParsedLockfile parsed = new ParsedLockfile();
         try (JsonReader reader = new JsonReader(new StringReader(content))) {
             reader.setLenient(true);
             reader.beginObject();
             while (reader.hasNext()) {
                 String topKey = reader.nextName();
                 if (WORKSPACES_KEY.equals(topKey)) {
-                    parseWorkspaceDeps(reader, workspaceDeps);
+                    readWorkspaceDeps(reader, parsed.getWorkspaceDeps());
                 } else if (PACKAGES_KEY.equals(topKey)) {
-                    parseAllPackages(reader, keyToVersion, rawEntryDeps);
+                    reader.beginObject();
+                    while (reader.hasNext()) {
+                        readPackageEntry(reader, reader.nextName(), parsed.getKeyToVersion(), parsed.getRawEntryDeps());
+                    }
+                    reader.endObject();
                 } else {
                     reader.skipValue();
                 }
@@ -69,86 +72,66 @@ public class BunLockJsonParser {
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse bun.lock: " + bunLockFile.getAbsolutePath(), e);
         }
+        return parsed;
+    }
 
-        // Build range-to-version mapping using bun.lock's path-qualified key structure.
-        // For each dep (D, range R) in entry with key K: look up "K/D" in keyToVersion.
-        // If found, R resolves to that nested version; otherwise fall back to the flat entry.
-        // This correctly routes each range to its target version for multi-version packages.
-        //
-        // nvKey (name§version) → set of version ranges that resolve to this exact version
-        Map<String, Set<String>> versionRanges = new LinkedHashMap<>();
+    // Builds name to (range or version to resolvedVersion), letting the transformer
+    // resolve dep ranges without Yarn machinery.
+    private Map<String, Map<String, String>> buildRangeToVersion(ParsedLockfile parsed) {
+        // Each NameVersion to the set of ranges that resolve to it
+        Map<NameVersion, Set<String>> versionRanges = new LinkedHashMap<>();
 
         // Workspace deps always map to the top-level (flat) entry
-        for (BunLockDependency dep : workspaceDeps) {
-            NameVersion nv = keyToVersion.get(dep.getName());
-            if (nv != null) {
-                versionRanges.computeIfAbsent(nvKey(nv), k -> new LinkedHashSet<>()).add(dep.getRange());
-            }
+        for (BunLockDependency dep : parsed.getWorkspaceDeps()) {
+            addRange(versionRanges, parsed.getKeyToVersion().get(dep.getName()), dep.getRange());
         }
 
-        // Each entry's deps: use hierarchical ancestor walk to route ranges to the right version.
-        // bun resolves "npm/chalk"'s dep "ansi-styles" by trying npm/chalk/ansi-styles → npm/ansi-styles → ansi-styles.
-        for (Map.Entry<String, List<BunLockDependency>> e : rawEntryDeps.entrySet()) {
+        // Ancestor-walk each entry's deps to the correct resolved version.
+        for (Map.Entry<String, List<BunLockDependency>> e : parsed.getRawEntryDeps().entrySet()) {
             String parentKey = e.getKey();
             for (BunLockDependency dep : e.getValue()) {
-                NameVersion targetNV = resolveInContext(parentKey, dep.getName(), keyToVersion);
-                if (targetNV != null) {
-                    versionRanges.computeIfAbsent(nvKey(targetNV), k -> new LinkedHashSet<>()).add(dep.getRange());
-                }
+                addRange(versionRanges, resolveInContext(parentKey, dep.getName(), parsed.getKeyToVersion()), dep.getRange());
             }
         }
 
-        // Build rangeToVersion: name → { range → resolvedVersion }
-        // This lets the transformer resolve any dep range to its exact version without Yarn machinery.
         Map<String, Map<String, String>> rangeToVersion = new HashMap<>();
-        for (Map.Entry<String, Set<String>> e : versionRanges.entrySet()) {
-            String key = e.getKey();
-            int sep = key.lastIndexOf(NV_KEY_SEP);
-            String name = key.substring(0, sep);
-            String version = key.substring(sep + 1);
-            Map<String, String> rangeMap = rangeToVersion.computeIfAbsent(name, k -> new HashMap<>());
-            rangeMap.put(version, version); // exact version resolves to itself
+        for (Map.Entry<NameVersion, Set<String>> e : versionRanges.entrySet()) {
+            NameVersion nv = e.getKey();
+            Map<String, String> rangeMap = rangeToVersion.computeIfAbsent(nv.getName(), k -> new HashMap<>());
+            rangeMap.put(nv.getVersion(), nv.getVersion()); // exact version resolves to itself
             for (String range : e.getValue()) {
-                rangeMap.put(range, version);
+                rangeMap.put(range, nv.getVersion());
             }
         }
+        return rangeToVersion;
+    }
 
-        // Deduplicate entries by (name, version), merging deps across all keys for the same pair
-        Map<String, Map<String, BunLockDependency>> mergedEntryDeps = new LinkedHashMap<>();
-        Map<String, NameVersion> uniqueNvKeys = new LinkedHashMap<>();
-        for (Map.Entry<String, NameVersion> e : keyToVersion.entrySet()) {
-            String key = nvKey(e.getValue());
-            uniqueNvKeys.putIfAbsent(key, e.getValue());
-            Map<String, BunLockDependency> depMap = mergedEntryDeps.computeIfAbsent(key, k -> new LinkedHashMap<>());
-            for (BunLockDependency dep : rawEntryDeps.get(e.getKey())) {
+    private void addRange(Map<NameVersion, Set<String>> versionRanges, NameVersion nv, String range) {
+        if (nv != null) {
+            versionRanges.computeIfAbsent(nv, k -> new LinkedHashSet<>()).add(range);
+        }
+    }
+
+    // Deduplicates entries by (name, version), merging deps across all keys for the same pair.
+    private List<BunLockPackage> buildPackages(ParsedLockfile parsed) {
+        Map<NameVersion, Map<String, BunLockDependency>> mergedEntryDeps = new LinkedHashMap<>();
+        for (Map.Entry<String, NameVersion> e : parsed.getKeyToVersion().entrySet()) {
+            Map<String, BunLockDependency> depMap = mergedEntryDeps.computeIfAbsent(e.getValue(), k -> new LinkedHashMap<>());
+            for (BunLockDependency dep : parsed.getRawEntryDeps().get(e.getKey())) {
                 depMap.putIfAbsent(dep.getName(), dep);
             }
         }
 
-        // Build the final package list
-        List<BunLockPackage> packages = new ArrayList<>(uniqueNvKeys.size());
-        for (Map.Entry<String, NameVersion> e : uniqueNvKeys.entrySet()) {
-            NameVersion nv = e.getValue();
-            List<BunLockDependency> deps = new ArrayList<>(mergedEntryDeps.get(e.getKey()).values());
+        List<BunLockPackage> packages = new ArrayList<>(mergedEntryDeps.size());
+        for (Map.Entry<NameVersion, Map<String, BunLockDependency>> e : mergedEntryDeps.entrySet()) {
+            NameVersion nv = e.getKey();
+            List<BunLockDependency> deps = new ArrayList<>(e.getValue().values());
             packages.add(new BunLockPackage(nv.getName(), nv.getVersion(), deps));
         }
-
-        return new BunLockResult(new BunLockfileData(packages, rangeToVersion));
+        return packages;
     }
 
-    private void parseAllPackages(
-            JsonReader reader,
-            Map<String, NameVersion> keyToVersion,
-            Map<String, List<BunLockDependency>> rawEntryDeps) throws Exception {
-        reader.beginObject();
-        while (reader.hasNext()) {
-            String entryKey = reader.nextName();
-            parseTupleInto(reader, entryKey, keyToVersion, rawEntryDeps);
-        }
-        reader.endObject();
-    }
-
-    private void parseTupleInto(
+    private void readPackageEntry(
             JsonReader reader,
             String entryKey,
             Map<String, NameVersion> keyToVersion,
@@ -163,7 +146,7 @@ public class BunLockJsonParser {
                 reader.nextString(); // skip registry tag ("") present in lockfileVersion 1
             }
             if (reader.hasNext() && reader.peek() == JsonToken.BEGIN_OBJECT) {
-                deps = parseDeps(reader);
+                deps = readDeps(reader);
             }
         }
         while (reader.hasNext()) {
@@ -175,7 +158,7 @@ public class BunLockJsonParser {
         rawEntryDeps.put(entryKey, deps);
     }
 
-    private List<BunLockDependency> parseDeps(JsonReader reader) throws Exception {
+    private List<BunLockDependency> readDeps(JsonReader reader) throws Exception {
         List<BunLockDependency> deps = new ArrayList<>();
         reader.beginObject();
         while (reader.hasNext()) {
@@ -202,7 +185,7 @@ public class BunLockJsonParser {
         reader.endObject();
     }
 
-    private void parseWorkspaceDeps(JsonReader reader, List<BunLockDependency> workspaceDeps) throws Exception {
+    private void readWorkspaceDeps(JsonReader reader, List<BunLockDependency> workspaceDeps) throws Exception {
         reader.beginObject();
         while (reader.hasNext()) {
             reader.nextName(); // workspace path (e.g. "" for root, "packages/foo" for sub-workspace)
@@ -226,8 +209,7 @@ public class BunLockJsonParser {
         reader.endObject();
     }
 
-    // Walk from context toward the root, trying context/depName at each level, then the flat entry.
-    // Example: context="npm/chalk", dep="ansi-styles" tries npm/chalk/ansi-styles → npm/ansi-styles → ansi-styles.
+    // Ancestor-walk: tries context/depName at each level up to the flat key.
     private NameVersion resolveInContext(String context, String depName, Map<String, NameVersion> keyToVersion) {
         String ctx = context;
         while (ctx != null) {
@@ -240,8 +222,7 @@ public class BunLockJsonParser {
         return keyToVersion.get(depName);
     }
 
-    // Strip the rightmost path segment. Returns null when already at flat level.
-    // Scoped packages (@scope/name) are atomic — the single separating slash must not be stripped.
+    // Strips the rightmost segment; null at flat level. Scoped packages (@scope/name) are atomic.
     private static String parentContext(String key) {
         int lastSlash = key.lastIndexOf('/');
         if (lastSlash < 0) {
@@ -254,13 +235,10 @@ public class BunLockJsonParser {
         return parent;
     }
 
-    // Splits "react@18.3.1" → ("react", "18.3.1") and "@babel/core@7.0.0" → ("@babel/core", "7.0.0").
+    // Parses "name@version" or "@scope/name@version" by splitting on the last '@'.
     private static NameVersion parseResolvedSpecifier(String resolvedSpecifier) {
         NameVersion nv = BunPackageNameUtils.parseNameVersion(resolvedSpecifier);
         return nv != null ? nv : new NameVersion(resolvedSpecifier, "");
     }
 
-    private static String nvKey(NameVersion nv) {
-        return nv.getName() + NV_KEY_SEP + nv.getVersion();
-    }
 }

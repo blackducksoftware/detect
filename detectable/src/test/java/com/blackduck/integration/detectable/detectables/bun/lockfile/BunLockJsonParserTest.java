@@ -39,9 +39,9 @@ class BunLockJsonParserTest {
     void assignsWorkspaceRangeToFlatEntry() throws Exception {
         BunLockfileData data = parser().parseBunLock(testLockFile()).getData();
         Map<String, String> gruntVersions = data.getRangeToVersion().get("grunt");
-        // workspace declares grunt@^1.0.3 → must map to 1.6.3
+        // workspace declares grunt@^1.0.3 and must resolve to 1.6.3
         assertTrue(gruntVersions != null && "1.6.3".equals(gruntVersions.get("^1.0.3")),
-            "Expected ^1.0.3 → 1.6.3 in grunt rangeToVersion");
+            "Expected ^1.0.3 to resolve to 1.6.3 in grunt rangeToVersion");
     }
 
     @Test
