@@ -31,7 +31,6 @@ public class DetectExecutableOptions {
     private final Path cargoUserPath;
     private final Path uvUserPath;
     private final Path condaTreeUserPath;
-    private final Path bunUserPath;
 
     public DetectExecutableOptions(
         Path bashUserPath,
@@ -61,8 +60,7 @@ public class DetectExecutableOptions {
         Path opamUserPath,
         Path cargoUserPath,
         Path uvUserPath,
-        Path condaTreeUserPath,
-        Path bunUserPath
+        Path condaTreeUserPath
     ) {
         this.bashUserPath = bashUserPath;
         this.bazelUserPath = bazelUserPath;
@@ -92,7 +90,6 @@ public class DetectExecutableOptions {
         this.cargoUserPath = cargoUserPath;
         this.uvUserPath = uvUserPath;
         this.condaTreeUserPath = condaTreeUserPath;
-        this.bunUserPath = bunUserPath;
     }
 
     public Path getBashUserPath() {
@@ -196,6 +193,6 @@ public class DetectExecutableOptions {
     public Path getCargoUserPath() { return cargoUserPath; }
 
     public Path getUVUserPath() { return uvUserPath; }
+
     public Path getCondaTreeUserPath() { return condaTreeUserPath; }
-    public Path getBunUserPath() { return bunUserPath; }
 }

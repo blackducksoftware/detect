@@ -16,7 +16,7 @@ import com.blackduck.integration.detectable.detectables.conan.cli.ConanResolver;
 public class DetectExecutableResolver implements
     JavaResolver, GradleResolver, BashResolver, ConanResolver, CondaResolver, CpanmResolver, CpanResolver, DartResolver, PearResolver, Rebar3Resolver, PythonResolver, PipResolver,
     PipenvResolver, MavenResolver, NpmResolver, BazelResolver, AntResolver,
-    DockerResolver, GitResolver, SwiftResolver, GoResolver, LernaResolver, SbtResolver, FlutterResolver, OpamResolver, CargoResolver, UVResolver, CondaTreeResolver, BunResolver {
+    DockerResolver, GitResolver, SwiftResolver, GoResolver, LernaResolver, SbtResolver, FlutterResolver, OpamResolver, CargoResolver, UVResolver, CondaTreeResolver {
 
     private final DirectoryExecutableFinder directoryExecutableFinder;
     private final SystemPathExecutableFinder systemPathExecutableFinder;
@@ -258,11 +258,6 @@ public class DetectExecutableResolver implements
     @Nullable
     public ExecutableTarget resolveUV() throws DetectableException {
         return ExecutableTarget.forFile(resolveCachedSystemExecutable("uv", detectExecutableOptions.getUVUserPath()));
-    }
-
-    @Override
-    public ExecutableTarget resolveBun() throws DetectableException {
-        return ExecutableTarget.forFile(resolveCachedSystemExecutable("bun", detectExecutableOptions.getBunUserPath()));
     }
 }
 
