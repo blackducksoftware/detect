@@ -141,7 +141,7 @@ public class BazelV2Detectable extends Detectable {
         new ToolVersionLogger(executableRunner).log(environment.getDirectory(), bazelExe, "version");
 
         // Set up Bazel command executor and determine environment mode
-        BazelCommandExecutor bazelCmd = new BazelCommandExecutor(executableRunner, environment.getDirectory(), bazelExe);
+        BazelCommandExecutor bazelCmd = new BazelCommandExecutor(executableRunner, environment.getDirectory(), bazelExe, options.getCommandTimeoutSeconds());
 
         // Determine mode (either via override or auto-detection)
         BazelEnvironmentAnalyzer.Mode mode = determineMode(bazelCmd);

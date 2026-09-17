@@ -15,19 +15,22 @@ public class BazelDetectableOptions {
     private final List<String> bazelCqueryAdditionalOptions;
     private final List<String> bazelQueryAdditionalOptions;
     private final String modeOverride;
+    private final int commandTimeoutSeconds;
 
     public BazelDetectableOptions(
         String targetName,
         Set<DependencySource> dependencySourcesFromProperty,
         List<String> bazelCqueryAdditionalOptions,
         List<String> bazelQueryAdditionalOptions,
-        String modeOverride
+        String modeOverride,
+        int commandTimeoutSeconds
     ) {
         this.targetName = targetName;
         this.dependencySourcesFromProperty = dependencySourcesFromProperty;
         this.bazelCqueryAdditionalOptions = bazelCqueryAdditionalOptions;
         this.bazelQueryAdditionalOptions = bazelQueryAdditionalOptions;
         this.modeOverride = modeOverride;
+        this.commandTimeoutSeconds = commandTimeoutSeconds;
     }
 
     public Optional<String> getTargetName() {
@@ -44,6 +47,15 @@ public class BazelDetectableOptions {
 
     public Set<DependencySource> getDependencySourcesFromProperty() {
         return dependencySourcesFromProperty;
+    }
+
+    /**
+     * Timeout, in seconds, for any single Bazel command Detect runs (query, cquery, mod graph,
+     * show_repo, etc.). Guards against Bazel hanging indefinitely (e.g. a fetch stall on a broken
+     * local_repository) instead of failing fast. See {@code detect.bazel.command.timeout}.
+     */
+    public int getCommandTimeoutSeconds() {
+        return commandTimeoutSeconds;
     }
 
 

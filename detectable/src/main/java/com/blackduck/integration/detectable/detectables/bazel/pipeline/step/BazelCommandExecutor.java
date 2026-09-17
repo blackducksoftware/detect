@@ -7,6 +7,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -25,6 +33,29 @@ public class BazelCommandExecutor {
     private final ExecutableTarget bazelExe;
     private static final String BAZEL = "bazel";
 
+    // Default timeout used by the backward-compatible 3-arg constructor (unit tests, and any
+    // caller that does not have a configured value available, e.g. the legacy BazelExtractor
+    // path). Production callers that have access to DetectProperties should use the 4-arg
+    // constructor and pass detect.bazel.command.timeout instead.
+    public static final int DEFAULT_COMMAND_TIMEOUT_SECONDS = 1800;
+
+    private final int commandTimeoutSeconds;
+
+    // Bazel commands are run on a bounded-lifetime daemon-thread executor so a hung subprocess
+    // (e.g. Process.waitFor() blocking forever on a stalled repository fetch) can be bounded with
+    // Future#get(timeout) instead of blocking the calling thread indefinitely. Daemon threads
+    // ensure a timed-out worker never prevents JVM shutdown.
+    private static final ThreadFactory DAEMON_THREAD_FACTORY;
+    private static final AtomicLong THREAD_COUNTER = new AtomicLong();
+    static {
+        DAEMON_THREAD_FACTORY = runnable -> {
+            Thread thread = new Thread(runnable, "bazel-command-executor-" + THREAD_COUNTER.incrementAndGet());
+            thread.setDaemon(true);
+            return thread;
+        };
+    }
+    private final ExecutorService commandExecutor = Executors.newCachedThreadPool(DAEMON_THREAD_FACTORY);
+
     // Memoization of read-only Bazel command results for the lifetime of a single extraction.
     // The workspace is never modified between Bazel invocations during a scan, so an identical
     // command is deterministic — we cache its raw ExecutableOutput and reuse it. Caching at this
@@ -38,11 +69,24 @@ public class BazelCommandExecutor {
     // caller still applies its own exit-code interpretation to the shared raw output.
     private final Map<List<String>, ExecutableOutput> rawOutputCache = new HashMap<>();
 
+    /**
+     * Backward-compatible constructor using {@link #DEFAULT_COMMAND_TIMEOUT_SECONDS}.
+     */
     public BazelCommandExecutor(DetectableExecutableRunner executableRunner, File workspaceDir, ExecutableTarget bazelExe) {
+        this(executableRunner, workspaceDir, bazelExe, DEFAULT_COMMAND_TIMEOUT_SECONDS);
+    }
+
+    /**
+     * @param commandTimeoutSeconds Maximum time, in seconds, to wait for any single Bazel command
+     *                              to complete before aborting it. See {@code detect.bazel.command.timeout}.
+     */
+    public BazelCommandExecutor(DetectableExecutableRunner executableRunner, File workspaceDir, ExecutableTarget bazelExe, int commandTimeoutSeconds) {
         this.executableRunner = executableRunner;
         this.workspaceDir = workspaceDir;
         this.bazelExe = bazelExe;
+        this.commandTimeoutSeconds = commandTimeoutSeconds > 0 ? commandTimeoutSeconds : DEFAULT_COMMAND_TIMEOUT_SECONDS;
     }
+
 
     public Optional<String> executeToString(List<String> args) throws ExecutableFailedException {
         // Route through the cached raw-output path (executeToleratingExitCode) so an identical
@@ -193,6 +237,15 @@ public class BazelCommandExecutor {
      * (e.g. during probing and again during extraction) runs Bazel only once. A launch failure is
      * never cached.
      *
+     * <p><b>Timeout / hang protection:</b> the command is run on a bounded-lifetime worker thread
+     * and bounded with {@link Future#get(long, TimeUnit)} using {@code commandTimeoutSeconds}
+     * (see {@code detect.bazel.command.timeout}). If Bazel hangs — e.g. its subprocess stalls
+     * fetching a broken {@code local_repository}/{@code git_repository} instead of failing fast —
+     * the worker thread is interrupted and the timeout is surfaced as a {@link RuntimeException}
+     * instead of blocking the scan forever. Because Bazel uses a persistent client/server model,
+     * interrupting/abandoning the client-side thread does not guarantee the server-side fetch also
+     * stops; the logged error advises a manual {@code bazel shutdown} if this occurs repeatedly.
+     *
      * @param args Bazel command arguments
      * @return ExecutableOutput containing return code, stdout, and stderr
      */
@@ -203,15 +256,38 @@ public class BazelCommandExecutor {
             logger.debug("Reusing cached Bazel command result for args: {}", cacheKey);
             return cached;
         }
+
+        String command = (bazelExe != null ? bazelExe.toCommand() : BAZEL) + " " + String.join(" ", args == null ? Collections.emptyList() : args);
+        Future<ExecutableOutput> future = commandExecutor.submit(() ->
+            executableRunner.execute(ExecutableUtils.createFromTarget(workspaceDir, bazelExe, args))
+        );
         try {
-            ExecutableOutput output = executableRunner.execute(ExecutableUtils.createFromTarget(workspaceDir, bazelExe, args));
+            ExecutableOutput output = future.get(commandTimeoutSeconds, TimeUnit.SECONDS);
             rawOutputCache.put(cacheKey, output);
             return output;
-        } catch (Exception e) {
-            String command = (bazelExe != null ? bazelExe.toCommand() : BAZEL) + " " + String.join(" ", args == null ? Collections.emptyList() : args);
-            String msg = String.format("Failed to execute Bazel command '%s': %s", command, e.getMessage());
+        } catch (TimeoutException e) {
+            future.cancel(true); // interrupt the worker thread, unblocking any local Process.waitFor()
+            String msg = String.format(
+                "Bazel command timed out after %d second(s) and was aborted: '%s'. "
+                + "This usually means Bazel itself is stalled (for example, fetching a broken local_repository/git_repository "
+                + "instead of failing fast) rather than Detect. Increase detect.bazel.command.timeout if this command is "
+                + "simply slow on a large workspace. Because Bazel uses a persistent background server, the stalled fetch "
+                + "may still be running server-side; running 'bazel shutdown' in the project directory may be required "
+                + "before retrying the scan.",
+                commandTimeoutSeconds, command
+            );
+            logger.error(msg);
+            throw new RuntimeException(msg, e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            String msg = String.format("Interrupted while waiting for Bazel command '%s'", command);
             logger.error(msg, e);
             throw new RuntimeException(msg, e);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
+            String msg = String.format("Failed to execute Bazel command '%s': %s", command, cause.getMessage());
+            logger.error(msg, cause);
+            throw new RuntimeException(msg, cause);
         }
     }
 }

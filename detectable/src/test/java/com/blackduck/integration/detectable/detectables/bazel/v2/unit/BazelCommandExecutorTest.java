@@ -38,6 +38,27 @@ public class BazelCommandExecutorTest {
     }
 
     @Test
+    public void executeToleratingExitCode_whenCommandHangs_abortsAfterTimeout() {
+        DetectableExecutableRunner executableRunner = Mockito.mock(DetectableExecutableRunner.class);
+        try {
+            when(executableRunner.execute(any())).thenAnswer(invocation -> {
+                // Simulate a hung Bazel subprocess (e.g. a stalled repository fetch): block far
+                // longer than the configured timeout, honoring interruption like a real
+                // Process.waitFor() would.
+                Thread.sleep(60_000);
+                return new ExecutableOutput(0, "", "");
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        BazelCommandExecutor executor = new BazelCommandExecutor(executableRunner, new File("."), ExecutableTarget.forCommand("bazel"), 1);
+
+        RuntimeException thrown = assertThrows(RuntimeException.class, () -> executor.executeToleratingExitCode(QUERY_ARGS));
+        assertTrue(thrown.getMessage().contains("timed out"));
+    }
+
+    @Test
     public void executeQueryToString_exitCode0_returnsStdout() throws Exception {
         DetectableExecutableRunner executableRunner = Mockito.mock(DetectableExecutableRunner.class);
         when(executableRunner.execute(any())).thenReturn(new ExecutableOutput(0, "@repo//:lib", ""));
