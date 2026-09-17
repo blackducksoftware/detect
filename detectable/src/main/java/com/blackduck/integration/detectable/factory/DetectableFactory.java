@@ -50,10 +50,6 @@ import com.blackduck.integration.detectable.detectables.bazel.BazelWorkspaceFile
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.DependencySourceChooser;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelVariableSubstitutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.HaskellCabalLibraryJsonProtoParser;
-import com.blackduck.integration.detectable.detectable.executable.resolver.BunResolver;
-import com.blackduck.integration.detectable.detectables.bun.cli.BunCliDetectable;
-import com.blackduck.integration.detectable.detectables.bun.cli.BunCliExtractor;
-import com.blackduck.integration.detectable.detectables.bun.cli.BunCliParser;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockfileDetectable;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockfileExtractor;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockJsonParser;
@@ -800,10 +796,6 @@ public class DetectableFactory {
         return new UVLockFileDetectable(environment, fileFinder, uvDetectorOptions, uvLockfileExtractor(environment.getDirectory()));
     }
 
-    public BunCliDetectable createBunCliDetectable(DetectableEnvironment environment, BunResolver bunResolver) {
-        return new BunCliDetectable(environment, fileFinder, bunResolver, bunCliExtractor());
-    }
-
     public BunLockfileDetectable createBunLockfileDetectable(DetectableEnvironment environment) {
         return new BunLockfileDetectable(environment, fileFinder, bunLockfileExtractor());
     }
@@ -1288,15 +1280,6 @@ public class DetectableFactory {
 
     private UVLockParser uvLockParser() {
         return new UVLockParser(externalIdFactory);
-    }
-
-
-    private BunCliParser bunCliParser() {
-        return new BunCliParser(externalIdFactory);
-    }
-
-    private BunCliExtractor bunCliExtractor() {
-        return new BunCliExtractor(executableRunner, bunCliParser(), packageJsonFiles());
     }
 
     private BunLockJsonParser bunLockJsonParser() {

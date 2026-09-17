@@ -11,7 +11,6 @@ import com.blackduck.integration.detectable.detectables.bazel.BazelDetectable;
 import com.blackduck.integration.detectable.detectables.bazel.BazelDetectableOptions;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelV2Detectable;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectable;
-import com.blackduck.integration.detectable.detectables.bun.cli.BunCliDetectable;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockfileDetectable;
 import com.blackduck.integration.detectable.detectables.cargo.CargoCliDetectable;
 import com.blackduck.integration.detectable.detectables.cargo.CargoLockDetectable;
@@ -406,10 +405,6 @@ public class DetectDetectableFactory {
 
     public UVLockFileDetectable createUVLockfileDetectable(DetectableEnvironment environment) {
         return detectableFactory.createUVLockFileDetectable(environment, detectableOptionFactory.createUVDetectorOptions());
-    }
-
-    public BunCliDetectable createBunCliDetectable(DetectableEnvironment environment) {
-        return detectableFactory.createBunCliDetectable(environment, detectExecutableResolver);
     }
 
     public BunLockfileDetectable createBunLockfileDetectable(DetectableEnvironment environment) {
