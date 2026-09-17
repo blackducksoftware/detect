@@ -1287,7 +1287,7 @@ public class DetectableFactory {
     }
 
     private BunLockfileTransformer bunLockfileTransformer() {
-        return new BunLockfileTransformer(externalIdFactory);
+        return new BunLockfileTransformer();
     }
 
     private BunLockfileExtractor bunLockfileExtractor() {

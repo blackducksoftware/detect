@@ -11,7 +11,6 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockPackage;
-import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockResult;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockfileData;
 
 class BunLockJsonParserTest {
@@ -30,14 +29,14 @@ class BunLockJsonParserTest {
 
     @Test
     void parsesCorrectPackageCount() throws Exception {
-        BunLockResult result = parser().parseBunLock(testLockFile());
+        BunLockfileData data = parser().parseBunLock(testLockFile());
         // 7 flat + 2 path-qualified (async@1.5.2, async@3.2.6) = 9 unique (name, version) pairs
-        assertEquals(9, result.getData().getPackages().size());
+        assertEquals(9, data.getPackages().size());
     }
 
     @Test
     void assignsWorkspaceRangeToFlatEntry() throws Exception {
-        BunLockfileData data = parser().parseBunLock(testLockFile()).getData();
+        BunLockfileData data = parser().parseBunLock(testLockFile());
         Map<String, String> gruntVersions = data.getRangeToVersion().get("grunt");
         // workspace declares grunt@^1.0.3 and must resolve to 1.6.3
         assertTrue(gruntVersions != null && "1.6.3".equals(gruntVersions.get("^1.0.3")),
@@ -46,7 +45,7 @@ class BunLockJsonParserTest {
 
     @Test
     void assignsPathQualifiedRangeToNestedVersion() throws Exception {
-        BunLockfileData data = parser().parseBunLock(testLockFile()).getData();
+        BunLockfileData data = parser().parseBunLock(testLockFile());
         Map<String, String> asyncVersions = data.getRangeToVersion().get("async");
 
         // grunt-concurrent depends on async@^1.2.1; grunt-concurrent/async resolves to async@1.5.2
@@ -61,7 +60,7 @@ class BunLockJsonParserTest {
 
     @Test
     void doesNotCrossContaminateRangesAcrossVersions() throws Exception {
-        BunLockfileData data = parser().parseBunLock(testLockFile()).getData();
+        BunLockfileData data = parser().parseBunLock(testLockFile());
         Map<String, String> asyncVersions = data.getRangeToVersion().get("async");
 
         // Each range must map to exactly the right version, not bleed into others
@@ -72,7 +71,7 @@ class BunLockJsonParserTest {
 
     @Test
     void fallsBackToFlatEntryWhenNoPathQualifiedKeyExists() throws Exception {
-        BunLockfileData data = parser().parseBunLock(testLockFile()).getData();
+        BunLockfileData data = parser().parseBunLock(testLockFile());
         // lodash is a dep of async@2.6.4 with range ^4.17.14; no path-qualified lodash entry exists
         Map<String, String> lodashVersions = data.getRangeToVersion().get("lodash");
         assertEquals("4.17.21", lodashVersions.get("^4.17.14"), "^4.17.14 should fall back to lodash@4.17.21");
@@ -80,15 +79,15 @@ class BunLockJsonParserTest {
 
     @Test
     void mergesDepsFromMultipleKeysForSameVersion() throws Exception {
-        BunLockResult result = parser().parseBunLock(testLockFile());
-        BunLockPackage async264 = findPackage(result, "async", "2.6.4");
+        BunLockfileData data = parser().parseBunLock(testLockFile());
+        BunLockPackage async264 = findPackage(data, "async", "2.6.4");
         // async@2.6.4 has lodash as a dep
         assertTrue(async264.getDependencies().stream().anyMatch(d -> "lodash".equals(d.getName())),
             "async@2.6.4 should have lodash dep");
     }
 
-    private BunLockPackage findPackage(BunLockResult result, String name, String version) {
-        return result.getData().getPackages().stream()
+    private BunLockPackage findPackage(BunLockfileData data, String name, String version) {
+        return data.getPackages().stream()
             .filter(p -> name.equals(p.getName()) && version.equals(p.getVersion()))
             .findFirst()
             .orElseThrow(() -> new AssertionError("Package not found: " + name + "@" + version));

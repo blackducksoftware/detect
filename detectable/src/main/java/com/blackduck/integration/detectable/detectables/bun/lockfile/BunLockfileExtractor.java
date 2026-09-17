@@ -4,7 +4,7 @@ import java.io.File;
 import java.util.List;
 
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
-import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockResult;
+import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockfileData;
 import com.blackduck.integration.detectable.detectables.yarn.packagejson.NullSafePackageJson;
 import com.blackduck.integration.detectable.detectables.yarn.packagejson.PackageJsonFiles;
 import com.blackduck.integration.detectable.extraction.Extraction;
@@ -23,8 +23,8 @@ public class BunLockfileExtractor {
     public Extraction extract(File bunLockFile, File packageJsonFile) {
         try {
             NullSafePackageJson packageJson = packageJsonFiles.read(packageJsonFile);
-            BunLockResult bunLockResult = bunLockJsonParser.parseBunLock(bunLockFile);
-            List<CodeLocation> codeLocations = bunLockfileTransformer.generateCodeLocations(bunLockResult, packageJson);
+            BunLockfileData bunLockData = bunLockJsonParser.parseBunLock(bunLockFile);
+            List<CodeLocation> codeLocations = bunLockfileTransformer.generateCodeLocations(bunLockData, packageJson);
             return new Extraction.Builder()
                 .projectName(packageJson.getNameString())
                 .projectVersion(packageJson.getVersionString())

@@ -3,21 +3,19 @@ package com.blackduck.integration.detectable.detectables.bun.lockfile;
 import java.io.File;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Pattern;
+
+import org.apache.commons.io.FileUtils;
 
 import com.blackduck.integration.detectable.detectables.bun.BunPackageNameUtils;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockDependency;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockPackage;
-import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockResult;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockfileData;
 import com.blackduck.integration.util.NameVersion;
 import com.google.gson.stream.JsonReader;
@@ -31,18 +29,18 @@ public class BunLockJsonParser {
     private static final String OPTIONAL_DEPENDENCIES_KEY = "optionalDependencies";
     private static final Pattern TRAILING_COMMA = Pattern.compile(",([\\s\\r\\n]*[}\\]])");
 
-    public BunLockResult parseBunLock(File bunLockFile) {
+    public BunLockfileData parseBunLock(File bunLockFile) {
         ParsedLockfile parsed = readLockfile(bunLockFile);
         Map<String, Map<String, String>> rangeToVersion = buildRangeToVersion(parsed);
         List<BunLockPackage> packages = buildPackages(parsed);
-        return new BunLockResult(new BunLockfileData(packages, rangeToVersion));
+        return new BunLockfileData(packages, rangeToVersion);
     }
 
     // Reads bun.lock and streams it into the raw key/dep structures.
     private ParsedLockfile readLockfile(File bunLockFile) {
         String content;
         try {
-            String raw = new String(Files.readAllBytes(bunLockFile.toPath()), StandardCharsets.UTF_8);
+            String raw = FileUtils.readFileToString(bunLockFile, StandardCharsets.UTF_8);
             // bun.lock is JSONC; Gson setLenient handles comments but NOT trailing commas.
             // Version specifiers and SHA hashes never contain ", }" so this replacement is safe.
             content = TRAILING_COMMA.matcher(raw).replaceAll("$1");
@@ -78,38 +76,33 @@ public class BunLockJsonParser {
     // Builds name to (range or version to resolvedVersion), letting the transformer
     // resolve dep ranges without Yarn machinery.
     private Map<String, Map<String, String>> buildRangeToVersion(ParsedLockfile parsed) {
-        // Each NameVersion to the set of ranges that resolve to it
-        Map<NameVersion, Set<String>> versionRanges = new LinkedHashMap<>();
+        Map<String, Map<String, String>> rangeToVersion = new HashMap<>();
 
         // Workspace deps always map to the top-level (flat) entry
         for (BunLockDependency dep : parsed.getWorkspaceDeps()) {
-            addRange(versionRanges, parsed.getKeyToVersion().get(dep.getName()), dep.getRange());
+            NameVersion nv = parsed.getKeyToVersion().get(dep.getName());
+            if (nv != null) {
+                rangeToVersion.computeIfAbsent(nv.getName(), k -> new HashMap<>()).put(dep.getRange(), nv.getVersion());
+            }
         }
 
         // Ancestor-walk each entry's deps to the correct resolved version.
         for (Map.Entry<String, List<BunLockDependency>> e : parsed.getRawEntryDeps().entrySet()) {
             String parentKey = e.getKey();
             for (BunLockDependency dep : e.getValue()) {
-                addRange(versionRanges, resolveInContext(parentKey, dep.getName(), parsed.getKeyToVersion()), dep.getRange());
+                NameVersion nv = resolveInContext(parentKey, dep.getName(), parsed.getKeyToVersion());
+                if (nv != null) {
+                    rangeToVersion.computeIfAbsent(nv.getName(), k -> new HashMap<>()).put(dep.getRange(), nv.getVersion());
+                }
             }
         }
 
-        Map<String, Map<String, String>> rangeToVersion = new HashMap<>();
-        for (Map.Entry<NameVersion, Set<String>> e : versionRanges.entrySet()) {
-            NameVersion nv = e.getKey();
-            Map<String, String> rangeMap = rangeToVersion.computeIfAbsent(nv.getName(), k -> new HashMap<>());
-            rangeMap.put(nv.getVersion(), nv.getVersion()); // exact version resolves to itself
-            for (String range : e.getValue()) {
-                rangeMap.put(range, nv.getVersion());
-            }
+        // Each exact version also resolves to itself
+        for (NameVersion nv : parsed.getKeyToVersion().values()) {
+            rangeToVersion.computeIfAbsent(nv.getName(), k -> new HashMap<>()).putIfAbsent(nv.getVersion(), nv.getVersion());
         }
+
         return rangeToVersion;
-    }
-
-    private void addRange(Map<NameVersion, Set<String>> versionRanges, NameVersion nv, String range) {
-        if (nv != null) {
-            versionRanges.computeIfAbsent(nv, k -> new LinkedHashSet<>()).add(range);
-        }
     }
 
     // Deduplicates entries by (name, version), merging deps across all keys for the same pair.
@@ -193,13 +186,7 @@ public class BunLockJsonParser {
             while (reader.hasNext()) {
                 String key = reader.nextName();
                 if (DEPENDENCIES_KEY.equals(key) || DEV_DEPENDENCIES_KEY.equals(key)) {
-                    reader.beginObject();
-                    while (reader.hasNext()) {
-                        String depName = reader.nextName();
-                        String range = reader.nextString();
-                        workspaceDeps.add(new BunLockDependency(depName, range, false));
-                    }
-                    reader.endObject();
+                    readDepMap(reader, workspaceDeps, false);
                 } else {
                     reader.skipValue();
                 }
