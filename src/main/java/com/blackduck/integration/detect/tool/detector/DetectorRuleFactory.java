@@ -220,8 +220,7 @@ public class DetectorRuleFactory {
         rules.addDetector(DetectorType.BUN, detector -> {
             detector.entryPoint(BunLockfileDetectable.class)
                     .search().defaultLock();
-        }).allEntryPointsFallbackToNext()
-          .yieldsTo(DetectorType.LERNA, DetectorType.RUSH);
+        }).yieldsTo(DetectorType.LERNA, DetectorType.RUSH);
 
         rules.addDetector(DetectorType.YARN, detector -> {
             detector.entryPoint(YarnLockDetectable.class)
