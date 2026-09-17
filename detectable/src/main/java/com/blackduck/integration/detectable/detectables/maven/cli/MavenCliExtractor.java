@@ -90,13 +90,13 @@ public class MavenCliExtractor {
             .map(MavenParseResult::getCodeLocation)
             .toList();
 
-        boolean scopeFilteringActive = !excludedScopes.isEmpty() || !includedScopes.isEmpty();
+        boolean scopeFilteringActive = !(excludedScopes.isEmpty() && includedScopes.isEmpty());
         boolean allGraphsEmpty = !mavenResults.isEmpty() && mavenResults.stream()
             .allMatch(r -> r.getCodeLocation().getDependencyGraph().getRootDependencies().isEmpty());
         if (allGraphsEmpty && scopeFilteringActive) {
             logger.warn(
                 "No dependencies collected for Maven detector. All dependencies may have been excluded by scope filtering "
-                + "(detect.maven.excluded.scopes). An empty BOM will be generated."
+                + "(detect.maven.excluded.scopes / detect.maven.included.scopes). An empty BOM will be generated."
             );
         }
 
