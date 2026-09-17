@@ -896,11 +896,11 @@ public class DetectProperties {
         StringListProperty.newBuilder("detect.excluded.detectors", new ArrayList<>())
             .setInfo("Detectors Excluded", DetectPropertyFromVersion.VERSION_11_0_0)
             .setHelp(
-                "By default, all Detectors will be included. If you want to exclude specific Detectors, specify the ones to exclude here. Exclusion rules take precedence.",
-                "This property is similar to --detect.excluded.detector.types; but, allows for more granular control. Values are case-insensitive and spaces can be omitted."
+                "By default, all Detectors will be included. If you want to exclude specific Detectors, specify them via this parameter. Exclusion rules take precedence.",
+                "This property is similar to --detect.excluded.detector.types; but, allows for more granular control. Values are case and space insensitive."
             )
             .setGroups(DetectGroup.DETECTOR, DetectGroup.GLOBAL)
-            .setExample("PIPNativeInspector,PIPRequirementsFileParse")
+            .setExample("PIPNativeInspector,PIPRequirementsFileParse,Cargo CLI,Cargo Lock")
             .setCategory(DetectCategory.Advanced)
             .build();
 
