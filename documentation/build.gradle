@@ -52,9 +52,9 @@ task ditasourcezip(type: Zip) {
     // depending on ditasite does some validation of the files going into the dita source zip
     dependsOn ditasite
 
-    archiveName "${rootProject.name}-${version}-ditasource.zip"
+    archiveFileName = "${rootProject.name}-${version}-ditasource.zip"
     from generatedDir
-    destinationDir(file("${buildDir}/libs/"))
+    destinationDirectory.set(file("${buildDir}/libs/"))
 }
 
 task publishDitaSource() {
@@ -84,9 +84,9 @@ task helppdf() {
 task helpzip(type: Zip) {
     dependsOn ditasite
 
-    archiveName "${project.name}-${version}-help.zip"
+    archiveFileName = "${project.name}-${version}-help.zip"
     from ditaSiteDir
-    destinationDir(file("${buildDir}/libs/"))
+    destinationDirectory.set(file("${buildDir}/libs/"))
 }
 
 task docs() {
