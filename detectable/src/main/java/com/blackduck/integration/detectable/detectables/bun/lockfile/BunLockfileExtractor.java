@@ -24,7 +24,7 @@ public class BunLockfileExtractor {
         try {
             NullSafePackageJson packageJson = packageJsonFiles.read(packageJsonFile);
             BunLockfileData bunLockData = bunLockJsonParser.parseBunLock(bunLockFile);
-            List<CodeLocation> codeLocations = bunLockfileTransformer.generateCodeLocations(bunLockData, packageJson);
+            List<CodeLocation> codeLocations = bunLockfileTransformer.generateCodeLocations(bunLockData);
             return new Extraction.Builder()
                 .projectName(packageJson.getNameString())
                 .projectVersion(packageJson.getVersionString())
