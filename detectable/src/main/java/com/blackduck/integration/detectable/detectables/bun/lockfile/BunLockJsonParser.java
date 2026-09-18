@@ -209,17 +209,23 @@ public class BunLockJsonParser {
         return keyToVersion.get(depName);
     }
 
-    // Strips the rightmost segment; null at flat level. Scoped packages (@scope/name) are atomic.
+    // Strips the rightmost logical segment (one component for plain names, two for @scope/name).
+    // Returns null when no further parent context exists (at the flat-key level).
     private static String parentContext(String key) {
         int lastSlash = key.lastIndexOf('/');
         if (lastSlash < 0) {
             return null;
         }
-        String parent = key.substring(0, lastSlash);
-        if (parent.startsWith("@") && parent.indexOf('/') == parent.lastIndexOf('/')) {
+        // If the segment before lastSlash starts with '@', the tail is the second half of
+        // @scope/name -- strip both components together so we land on the true parent key.
+        int prevSlash = key.lastIndexOf('/', lastSlash - 1);
+        int cutAt = (prevSlash >= 0 && key.charAt(prevSlash + 1) == '@') ? prevSlash : lastSlash;
+        if (cutAt <= 0) {
             return null;
         }
-        return parent;
+        String parent = key.substring(0, cutAt);
+        // "@scope" alone (no '/') is a fragment, not a valid key -- stop the walk.
+        return (parent.startsWith("@") && !parent.contains("/")) ? null : parent;
     }
 
     // Parses "name@version" or "@scope/name@version" by splitting on the last '@'.
