@@ -1,23 +1,6 @@
-
-
-                   `.:/oo/-`                 
-                 `+dNNMMMMNmy:     `-+`      
-                -dNMMMMMMMMMMNy:../dmd.      
-               .dNMMMMMMMMMMMMMNNNNNN+       
-               +NNMMMMMMMMMMMMMMMMMNm-``     
-               oNMMMMMMMMMMMMMMMMMMMNmhy/`   
-               /NNMMMMMMMMMMMMMMMMMMMmy/.    ______     _            _
-               `yNMMMMMMMMMMMMMMMMMNy:`      |  _  \   | |          | |
-                .hNMMMMMMMMMMMMMMMN+`        | | | |___| |_ ___  ___| |_
-  `.`            `+hNMMMMMMMMMMMMNd`         | | | / _ \ __/ _ \/ __| __|
- .hmhs:`           `/mNMMMMMMMMMMMm+.`       | |/ /  __/ ||  __/ (__| |_
- :NMMNNdyo//+osyhhhyhNMMMMMMMMMMMMMNmh+-     |___/ \___|\__\___|\___|\__|
- -NMMMMMMMNNNMMMMMMMMMMMMMMMMMMMMMMMMMNms-   
- `dNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMNm:` 
-  oNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMNd.   
-  .mNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMN:   
-   /mMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMN:   
-   `/NNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMNh`   
-     -smNMMNNNMMMMMMMMMMMMMMMMMMMMMMMNNNds.  
-       `.--::////+++ooooooooooo++////::-`
-
+______     _            _
+|  _  \   | |          | |
+| | | |___| |_ ___  ___| |_
+| | | / _ \ __/ _ \/ __| __|
+| |/ /  __/ ||  __/ (__| |_
+|___/ \___|\__\___|\___|\__|
