@@ -4,15 +4,18 @@ import java.util.List;
 import java.util.Map;
 
 public class BunLockfileData {
-    private final List<BunLockPackage> packages;
-    // name to (range-or-version to resolvedVersion); wires dep edges in the graph
-    private final Map<String, Map<String, String>> rangeToVersion;
+    private final List<DirectDependency> directDependencies;
+    // name to exact version; populated from the "catalog" section of bun.lock
+    private final Map<String, String> catalog;
+    private final List<BunPackage> packages;
 
-    public BunLockfileData(List<BunLockPackage> packages, Map<String, Map<String, String>> rangeToVersion) {
+    public BunLockfileData(List<DirectDependency> directDependencies, Map<String, String> catalog, List<BunPackage> packages) {
+        this.directDependencies = directDependencies;
+        this.catalog = catalog;
         this.packages = packages;
-        this.rangeToVersion = rangeToVersion;
     }
 
-    public List<BunLockPackage> getPackages() { return packages; }
-    public Map<String, Map<String, String>> getRangeToVersion() { return rangeToVersion; }
+    public List<DirectDependency> getDirectDependencies() { return directDependencies; }
+    public Map<String, String> getCatalog() { return catalog; }
+    public List<BunPackage> getPackages() { return packages; }
 }
