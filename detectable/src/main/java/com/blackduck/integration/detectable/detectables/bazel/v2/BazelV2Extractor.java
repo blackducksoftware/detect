@@ -33,7 +33,7 @@ public class BazelV2Extractor {
     private static final String JSON_KEY_PREFIX = "\"prefix\"";
     private static final String JSON_KEY_SUFFIX = "\"suffix\"";
     private static final String JSON_KEY_SCOPE = "\"scope\"";
-    private static final String LOG_DEPENDENCIES_DISCOVERED_FOR_SOURCE = "Dependencies discovered for source {}: {}";
+    private static final String LOG_DEPENDENCIES_DISCOVERED_FOR_SOURCE = "Number of dependencies discovered for source {}: {}";
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final ExternalIdFactory externalIdFactory;
@@ -118,7 +118,7 @@ public class BazelV2Extractor {
         for (DependencySource source : ordered) {
             logger.debug("Executing pipeline for dependency source: {}", source);
             List<Dependency> deps = pipelines.get(source).run();
-            logger.debug(LOG_DEPENDENCIES_DISCOVERED_FOR_SOURCE, source, deps.size());
+            logger.info(LOG_DEPENDENCIES_DISCOVERED_FOR_SOURCE, source, deps.size());
             if (logger.isDebugEnabled()) {
                 logger.debug(LOG_DEPENDENCIES_DISCOVERED_FOR_SOURCE, source, dependenciesToDebugString(deps));
             }
@@ -182,7 +182,7 @@ public class BazelV2Extractor {
         for (DependencySource source : ordered) {
             logger.debug("Executing pipeline for dependency source: {}", source);
             List<Dependency> deps = pipelines.get(source).run();
-            logger.debug(LOG_DEPENDENCIES_DISCOVERED_FOR_SOURCE, source, deps.size());
+            logger.info(LOG_DEPENDENCIES_DISCOVERED_FOR_SOURCE, source, deps.size());
             if (logger.isDebugEnabled()) {
                 logger.debug(LOG_DEPENDENCIES_DISCOVERED_FOR_SOURCE, source, dependenciesToDebugString(deps));
             }
