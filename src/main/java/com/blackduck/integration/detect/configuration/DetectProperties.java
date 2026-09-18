@@ -269,11 +269,9 @@ public class DetectProperties {
         IntegerProperty.newBuilder("detect.bazel.command.timeout", 1800)
             .setInfo("Bazel Command Timeout", DetectPropertyFromVersion.VERSION_12_0_0)
             .setHelp(
-                "The amount of time, in seconds, Detect will wait for any single Bazel command (query, cquery, mod graph, show_repo, etc.) to complete before aborting it.",
-                "This is a hang-detector, not a performance budget — it exists to guarantee Detect never blocks indefinitely if Bazel itself stalls (for example, "
-                + "when a broken local_repository/git_repository entry causes a fetch to hang instead of failing fast). The default is intentionally generous "
-                + "because legitimate Bazel queries against large workspaces can take a long time. If a scan is aborted due to this timeout, Detect logs an error "
-                + "and, because Bazel uses a persistent background server, a manual 'bazel shutdown' in the project directory may be needed to clear a stuck server-side fetch."
+                "The maximum time, in seconds, that Detect waits for an individual Bazel command to complete before aborting it.",
+                "This timeout prevents Detect from waiting indefinitely if Bazel becomes unresponsive. The default value is intentionally high as commands against large workspaces might take a long time to complete. "
+                + "If this timeout is reached, Detect logs an error and aborts the command. Bazel uses a persistent background server, which might require running 'bazel shutdown' in the project directory to clear a stalled server process."
             )
             .setExample("3600")
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
