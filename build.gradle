@@ -22,7 +22,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '12.1.0-SIGQA12-IDETECT-5276a-SNAPSHOT'
+version = '12.1.0-SIGQA13-SNAPSHOT'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
@@ -142,7 +142,7 @@ allprojects {
         implementation('com.fasterxml.jackson.core:jackson-annotations:2.22')
         // antlr4-runtime is a transitive dep via org.tomlj:tomlj; 4.11.1 has CVE-2026-13500
         implementation('org.antlr:antlr4-runtime:4.13.2')
-        implementation 'org.freemarker:freemarker:2.3.31'
+        implementation 'org.freemarker:freemarker:2.3.35'
         implementation 'org.apache.httpcomponents:httpclient-osgi:4.5.14'
         implementation('com.squareup.okio:okio:3.6.0') {
             because 'previous version has a vulnerability with no direct parent upgrade available'

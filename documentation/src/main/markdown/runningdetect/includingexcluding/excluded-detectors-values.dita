@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE topic PUBLIC "-//OASIS//DTD DITA Topic//EN" "topic.dtd">
+<topic id="valid-excluded-detectors-values">
+    <title>Valid <codeph>detect.excluded.detectors</codeph> values</title>
+    <shortdesc>The <codeph>detect.excluded.detectors</codeph> property accepts a comma-separated
+        list of detector names. Supply one or more of the values in the following table to exclude
+        the corresponding detectors from a <keyword keyref="detect_product_short"/> scan.</shortdesc>
+    <body>
+        <note type="note" id="detector-name-matching-normalization">
+            <p>Detector name matching is case-insensitive and space-insensitive.
+                    <keyword keyref="detect_product_short"/> normalizes both the value you supply
+                and the detector name. The values <codeph>NPM CLI</codeph> and <codeph>npmcli</codeph> are therefore
+                equivalent.</p>
+        </note>
+
+        <table id="excluded-detectors-values-by-ecosystem" frame="all" outputclass="basictable">
+            <title>Detector names accepted by <codeph>detect.excluded.detectors</codeph></title>
+            <tgroup cols="2">
+                <colspec colname="c1" colwidth="1*"/>
+                <colspec colname="c2" colwidth="3*"/>
+
+                <thead>
+                    <row>
+                        <entry>Ecosystem</entry>
+                        <entry>Valid <codeph>detect.excluded.detectors</codeph> values</entry>
+                    </row>
+                </thead>
+
+                <tbody>
+                    <row>
+                        <entry>npm</entry>
+                        <entry><codeph>NPM Shrinkwrap</codeph>, <codeph>NPM Package Lock</codeph>,
+                            <codeph>NPM CLI</codeph>, <codeph>NPM Package Json Parse</codeph>,
+                            <codeph>Yarn Lock</codeph>, <codeph>Pnpm Lock</codeph>,
+                            <codeph>Lerna CLI</codeph>, <codeph>Rush Lock</codeph></entry>
+                    </row>
+                    <row>
+                        <entry>Maven</entry>
+                        <entry><codeph>Maven CLI</codeph>, <codeph>Maven Wrapper CLI</codeph>,
+                            <codeph>Maven Project Inspector</codeph></entry>
+                    </row>
+                    <row>
+                        <entry>Gradle</entry>
+                        <entry><codeph>Gradle Native Inspector</codeph>,
+                            <codeph>Gradle Project Inspector</codeph></entry>
+                    </row>
+                    <row>
+                        <entry>Go</entry>
+                        <entry><codeph>GoMod CLI</codeph>, <codeph>Go Mod File</codeph>,
+                            <codeph>GoDep Lock</codeph>, <codeph>GoVndr CLI</codeph>,
+                            <codeph>Go Vendor</codeph>, <codeph>GoGradle Lock</codeph></entry>
+                    </row>
+                    <row>
+                        <entry>Python (pip)</entry>
+                        <entry><codeph>PIP Native Inspector</codeph>,
+                            <codeph>PIP Requirements File Parse</codeph>,
+                            <codeph>Pipenv CLI</codeph>, <codeph>Pipfile Lock</codeph></entry>
+                    </row>
+                    <row>
+                        <entry>Python (other)</entry>
+                        <entry><codeph>Setuptools CLI</codeph>, <codeph>Setuptools Parse</codeph>,
+                            <codeph>Poetry Lock</codeph>, <codeph>UV CLI</codeph>,
+                            <codeph>UV Lock</codeph>, <codeph>Conda Tree</codeph>,
+                            <codeph>Conda CLI</codeph></entry>
+                    </row>
+                    <row>
+                        <entry>NuGet</entry>
+                        <entry><codeph>NuGet Solution Native Inspector</codeph>,
+                            <codeph>NuGet Project Native Inspector</codeph>,
+                            <codeph>NuGet Project Inspector</codeph></entry>
+                    </row>
+                    <row>
+                        <entry>Rust</entry>
+                        <entry><codeph>Cargo CLI</codeph>, <codeph>Cargo Lock</codeph></entry>
+                    </row>
+                    <row>
+                        <entry>Ivy</entry>
+                        <entry><codeph>Ivy CLI</codeph>, <codeph>Ivy Build Parse</codeph></entry>
+                    </row>
+                    <row>
+                        <entry>Sbt/Scala</entry>
+                        <entry><codeph>Sbt Native Inspector</codeph></entry>
+                    </row>
+                    <row>
+                        <entry>RubyGems</entry>
+                        <entry><codeph>Gemfile Lock</codeph>, <codeph>Gemspec Parse</codeph></entry>
+                    </row>
+                    <row>
+                        <entry>CocoaPods</entry>
+                        <entry><codeph>Pod Lock</codeph></entry>
+                    </row>
+                    <row>
+                        <entry>Carthage</entry>
+                        <entry><codeph>Carthage Lock</codeph></entry>
+                    </row>
+                    <row>
+                        <entry>Xcode/Swift</entry>
+                        <entry><codeph>Xcode Workspace Lock</codeph>,
+                            <codeph>Xcode Project Lock</codeph>, <codeph>Swift Lock</codeph>,
+                            <codeph>Swift CLI</codeph></entry>
+                    </row>
+                    <row>
+                        <entry>Conan (C/C++)</entry>
+                        <entry><codeph>Conan 1 CLI</codeph>, <codeph>Conan 2 CLI</codeph>,
+                            <codeph>Conan Lock</codeph></entry>
+                    </row>
+                    <row>
+                        <entry>Clang</entry>
+                        <entry><codeph>Clang CLI</codeph></entry>
+                    </row>
+                    <row>
+                        <entry>OCaml (opam)</entry>
+                        <entry><codeph>Opam CLI</codeph>, <codeph>Opam Lock</codeph></entry>
+                    </row>
+                    <row>
+                        <entry>Dart</entry>
+                        <entry><codeph>Dart CLI</codeph>,
+                            <codeph>Dart PubSpec Lock</codeph></entry>
+                    </row>
+                    <row>
+                        <entry>PHP</entry>
+                        <entry><codeph>Composer Lock</codeph>, <codeph>Pear CLI</codeph></entry>
+                    </row>
+                    <row>
+                        <entry>Perl</entry>
+                        <entry><codeph>Cpan CLI</codeph></entry>
+                    </row>
+                    <row>
+                        <entry>R (CRAN)</entry>
+                        <entry><codeph>Packrat Lock</codeph></entry>
+                    </row>
+                    <row>
+                        <entry>Erlang/Hex</entry>
+                        <entry><codeph>Rebar CLI</codeph></entry>
+                    </row>
+                    <row>
+                        <entry>Yocto</entry>
+                        <entry><codeph>Bitbake CLI</codeph></entry>
+                    </row>
+                    <row>
+                        <entry>Git</entry>
+                        <entry><codeph>Git</codeph>, <codeph>Git Parse</codeph></entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+    </body>
+</topic>
