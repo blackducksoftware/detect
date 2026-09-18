@@ -1,17 +1,18 @@
 package com.blackduck.integration.detectable.detectables.bun.lockfile;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.net.URL;
-import java.util.Map;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockPackage;
+import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunDependencyType;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockfileData;
+import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunPackage;
+import com.blackduck.integration.detectable.detectables.bun.lockfile.model.DirectDependency;
 
 class BunLockJsonParserTest {
 
@@ -28,68 +29,68 @@ class BunLockJsonParserTest {
     }
 
     @Test
-    void parsesCorrectPackageCount() throws Exception {
+    void parsesDirectDependenciesWithResolvedVersions() throws Exception {
         BunLockfileData data = parser().parseBunLock(testLockFile());
-        // 7 flat + 2 path-qualified (async@1.5.2, async@3.2.6) = 9 unique (name, version) pairs
+        List<DirectDependency> directDependencies = data.getDirectDependencies();
+
+        assertEquals(4, directDependencies.size(), "express + async + grunt + grunt-concurrent");
+        assertTrue(directDependencies.stream()
+            .anyMatch(d -> "express".equals(d.getName()) && "4.21.2".equals(d.getVersion()) && d.getType() == BunDependencyType.NORMAL),
+            "express should be a normal direct dependency with resolved version");
+        assertTrue(directDependencies.stream()
+            .anyMatch(d -> "grunt".equals(d.getName()) && "1.6.3".equals(d.getVersion()) && d.getType() == BunDependencyType.DEV),
+            "grunt should be a dev direct dependency with resolved version");
+    }
+
+    @Test
+    void parsesEmptyCatalogWhenAbsent() throws Exception {
+        BunLockfileData data = parser().parseBunLock(testLockFile());
+        assertTrue(data.getCatalog().isEmpty(), "test bun.lock has no catalog section");
+    }
+
+    @Test
+    void parsesAllPackageEntries() throws Exception {
+        BunLockfileData data = parser().parseBunLock(testLockFile());
+        // 7 flat + 2 path-qualified (grunt-concurrent/async, grunt-legacy-util/async) = 9 entries
         assertEquals(9, data.getPackages().size());
     }
 
     @Test
-    void assignsWorkspaceRangeToFlatEntry() throws Exception {
+    void flatPackageHasCorrectKeyAndVersion() throws Exception {
         BunLockfileData data = parser().parseBunLock(testLockFile());
-        Map<String, String> gruntVersions = data.getRangeToVersion().get("grunt");
-        // workspace declares grunt@^1.0.3 and must resolve to 1.6.3
-        assertTrue(gruntVersions != null && "1.6.3".equals(gruntVersions.get("^1.0.3")),
-            "Expected ^1.0.3 to resolve to 1.6.3 in grunt rangeToVersion");
+        BunPackage pkg = findByKey(data, "async");
+        assertEquals("async", pkg.getName());
+        assertEquals("2.6.4", pkg.getVersion());
     }
 
     @Test
-    void assignsPathQualifiedRangeToNestedVersion() throws Exception {
+    void pathQualifiedPackageHasCorrectKeyAndVersion() throws Exception {
         BunLockfileData data = parser().parseBunLock(testLockFile());
-        Map<String, String> asyncVersions = data.getRangeToVersion().get("async");
-
-        // grunt-concurrent depends on async@^1.2.1; grunt-concurrent/async resolves to async@1.5.2
-        assertEquals("1.5.2", asyncVersions.get("^1.2.1"), "^1.2.1 should map to async@1.5.2");
-
-        // grunt-legacy-util depends on async@~3.2.0; grunt-legacy-util/async resolves to async@3.2.6
-        assertEquals("3.2.6", asyncVersions.get("~3.2.0"), "~3.2.0 should map to async@3.2.6");
-
-        // workspace declares async@^2.0.0-rc.4; top-level async resolves to 2.6.4
-        assertEquals("2.6.4", asyncVersions.get("^2.0.0-rc.4"), "^2.0.0-rc.4 should map to async@2.6.4");
+        BunPackage pkg = findByKey(data, "grunt-concurrent/async");
+        assertEquals("async", pkg.getName());
+        assertEquals("1.5.2", pkg.getVersion());
     }
 
     @Test
-    void doesNotCrossContaminateRangesAcrossVersions() throws Exception {
+    void secondPathQualifiedPackageHasCorrectKeyAndVersion() throws Exception {
         BunLockfileData data = parser().parseBunLock(testLockFile());
-        Map<String, String> asyncVersions = data.getRangeToVersion().get("async");
-
-        // Each range must map to exactly the right version, not bleed into others
-        assertFalse("1.5.2".equals(asyncVersions.get("^2.0.0-rc.4")), "^2.0.0-rc.4 must not map to 1.5.2");
-        assertFalse("2.6.4".equals(asyncVersions.get("^1.2.1")), "^1.2.1 must not map to 2.6.4");
-        assertFalse("3.2.6".equals(asyncVersions.get("^1.2.1")), "^1.2.1 must not map to 3.2.6");
+        BunPackage pkg = findByKey(data, "grunt-legacy-util/async");
+        assertEquals("async", pkg.getName());
+        assertEquals("3.2.6", pkg.getVersion());
     }
 
     @Test
-    void fallsBackToFlatEntryWhenNoPathQualifiedKeyExists() throws Exception {
+    void packageDependenciesAreParsed() throws Exception {
         BunLockfileData data = parser().parseBunLock(testLockFile());
-        // lodash is a dep of async@2.6.4 with range ^4.17.14; no path-qualified lodash entry exists
-        Map<String, String> lodashVersions = data.getRangeToVersion().get("lodash");
-        assertEquals("4.17.21", lodashVersions.get("^4.17.14"), "^4.17.14 should fall back to lodash@4.17.21");
-    }
-
-    @Test
-    void mergesDepsFromMultipleKeysForSameVersion() throws Exception {
-        BunLockfileData data = parser().parseBunLock(testLockFile());
-        BunLockPackage async264 = findPackage(data, "async", "2.6.4");
-        // async@2.6.4 has lodash as a dep
+        BunPackage async264 = findByKey(data, "async");
         assertTrue(async264.getDependencies().stream().anyMatch(d -> "lodash".equals(d.getName())),
-            "async@2.6.4 should have lodash dep");
+            "async@2.6.4 should have lodash as a dependency");
     }
 
-    private BunLockPackage findPackage(BunLockfileData data, String name, String version) {
+    private BunPackage findByKey(BunLockfileData data, String key) {
         return data.getPackages().stream()
-            .filter(p -> name.equals(p.getName()) && version.equals(p.getVersion()))
+            .filter(p -> key.equals(p.getKey()))
             .findFirst()
-            .orElseThrow(() -> new AssertionError("Package not found: " + name + "@" + version));
+            .orElseThrow(() -> new AssertionError("Package not found with key: " + key));
     }
 }
