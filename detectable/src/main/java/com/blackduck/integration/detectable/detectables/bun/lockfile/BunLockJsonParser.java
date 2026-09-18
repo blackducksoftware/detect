@@ -5,18 +5,22 @@ import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 
 import com.blackduck.integration.detectable.detectables.bun.BunPackageNameUtils;
-import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockDependency;
-import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockPackage;
+import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunDependencyType;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockfileData;
+import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunPackage;
+import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunPackageDependency;
+import com.blackduck.integration.detectable.detectables.bun.lockfile.model.DirectDependency;
+import com.blackduck.integration.detectable.detectables.bun.lockfile.model.WorkspaceDependency;
 import com.blackduck.integration.util.NameVersion;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
@@ -24,40 +28,35 @@ import com.google.gson.stream.JsonToken;
 public class BunLockJsonParser {
     private static final String PACKAGES_KEY = "packages";
     private static final String WORKSPACES_KEY = "workspaces";
+    private static final String CATALOG_KEY = "catalog";
     private static final String DEPENDENCIES_KEY = "dependencies";
     private static final String DEV_DEPENDENCIES_KEY = "devDependencies";
+    private static final String PEER_DEPENDENCIES_KEY = "peerDependencies";
     private static final String OPTIONAL_DEPENDENCIES_KEY = "optionalDependencies";
+    private static final String OPTIONAL_PEERS_KEY = "optionalPeers";
     private static final Pattern TRAILING_COMMA = Pattern.compile(",([\\s\\r\\n]*[}\\]])");
 
     public BunLockfileData parseBunLock(File bunLockFile) {
-        ParsedLockfile parsed = readLockfile(bunLockFile);
-        Map<String, Map<String, String>> rangeToVersion = buildRangeToVersion(parsed);
-        List<BunLockPackage> packages = buildPackages(parsed);
-        return new BunLockfileData(packages, rangeToVersion);
-    }
+        String content = readContent(bunLockFile);
 
-    private ParsedLockfile readLockfile(File bunLockFile) {
-        String content;
-        try {
-            String raw = FileUtils.readFileToString(bunLockFile, StandardCharsets.UTF_8);
-            // bun.lock is JSONC; Gson setLenient handles comments but NOT trailing commas.
-            content = TRAILING_COMMA.matcher(raw).replaceAll("$1");
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to read bun.lock: " + bunLockFile.getAbsolutePath(), e);
-        }
+        List<WorkspaceDependency> workspaceDependencies = new ArrayList<>();
+        Map<String, String> catalog = new LinkedHashMap<>();
+        List<BunPackage> packages = new ArrayList<>();
 
-        ParsedLockfile parsed = new ParsedLockfile();
         try (JsonReader reader = new JsonReader(new StringReader(content))) {
             reader.setLenient(true);
             reader.beginObject();
             while (reader.hasNext()) {
                 String topKey = reader.nextName();
                 if (WORKSPACES_KEY.equals(topKey)) {
-                    readWorkspaceDeps(reader, parsed.workspaceDeps);
+                    readWorkspaceDependencies(reader, workspaceDependencies);
+                } else if (CATALOG_KEY.equals(topKey)) {
+                    readCatalog(reader, catalog);
                 } else if (PACKAGES_KEY.equals(topKey)) {
                     reader.beginObject();
                     while (reader.hasNext()) {
-                        readPackageEntry(reader, reader.nextName(), parsed.keyToVersion, parsed.rawEntryDeps);
+                        String entryKey = reader.nextName();
+                        packages.add(readPackage(reader, entryKey));
                     }
                     reader.endObject();
                 } else {
@@ -68,70 +67,126 @@ public class BunLockJsonParser {
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse bun.lock: " + bunLockFile.getAbsolutePath(), e);
         }
-        return parsed;
+
+        List<DirectDependency> directDependencies = resolveDirectDependencies(workspaceDependencies, catalog, packages);
+        return new BunLockfileData(directDependencies, catalog, packages);
     }
 
-    private Map<String, Map<String, String>> buildRangeToVersion(ParsedLockfile parsed) {
-        Map<String, Map<String, String>> rangeToVersion = new HashMap<>();
+    private String readContent(File bunLockFile) {
+        try {
+            String raw = FileUtils.readFileToString(bunLockFile, StandardCharsets.UTF_8);
+            // bun.lock is JSONC; Gson setLenient handles comments but NOT trailing commas.
+            return TRAILING_COMMA.matcher(raw).replaceAll("$1");
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to read bun.lock: " + bunLockFile.getAbsolutePath(), e);
+        }
+    }
 
-        for (BunLockDependency dep : parsed.workspaceDeps) {
-            NameVersion nv = parsed.keyToVersion.get(dep.getName());
-            if (nv != null) {
-                rangeToVersion.computeIfAbsent(nv.getName(), k -> new HashMap<>()).put(dep.getRange(), nv.getVersion());
-            }
+    private List<DirectDependency> resolveDirectDependencies(List<WorkspaceDependency> workspaceDependencies, Map<String, String> catalog, List<BunPackage> packages) {
+        Map<String, BunPackage> packagesByKey = new LinkedHashMap<>();
+        for (BunPackage pkg : packages) {
+            packagesByKey.put(pkg.getKey(), pkg);
         }
 
-        for (Map.Entry<String, List<BunLockDependency>> e : parsed.rawEntryDeps.entrySet()) {
-            String parentKey = e.getKey();
-            for (BunLockDependency dep : e.getValue()) {
-                NameVersion nv = resolveInContext(parentKey, dep.getName(), parsed.keyToVersion);
-                if (nv != null) {
-                    rangeToVersion.computeIfAbsent(nv.getName(), k -> new HashMap<>()).put(dep.getRange(), nv.getVersion());
+        List<DirectDependency> result = new ArrayList<>();
+        for (WorkspaceDependency dep : workspaceDependencies) {
+            if (dep.getRange().startsWith("workspace:")) {
+                continue; // local monorepo package, no npm registry entry
+            }
+            String version = null;
+            if (dep.getRange().startsWith("catalog:")) {
+                version = catalog.get(dep.getName());
+            }
+            if (version == null) {
+                BunPackage pkg = packagesByKey.get(dep.getName());
+                if (pkg != null) {
+                    version = pkg.getVersion();
                 }
             }
-        }
-
-        // Each exact version also maps to itself so the transformer can resolve exact-version deps.
-        for (NameVersion nv : parsed.keyToVersion.values()) {
-            rangeToVersion.computeIfAbsent(nv.getName(), k -> new HashMap<>()).putIfAbsent(nv.getVersion(), nv.getVersion());
-        }
-
-        return rangeToVersion;
-    }
-
-    private List<BunLockPackage> buildPackages(ParsedLockfile parsed) {
-        Map<NameVersion, Map<String, BunLockDependency>> mergedEntryDeps = new LinkedHashMap<>();
-        for (Map.Entry<String, NameVersion> e : parsed.keyToVersion.entrySet()) {
-            Map<String, BunLockDependency> depMap = mergedEntryDeps.computeIfAbsent(e.getValue(), k -> new LinkedHashMap<>());
-            for (BunLockDependency dep : parsed.rawEntryDeps.get(e.getKey())) {
-                depMap.putIfAbsent(dep.getName(), dep);
+            if (version != null) {
+                result.add(new DirectDependency(dep.getName(), version, dep.getType()));
             }
         }
-
-        List<BunLockPackage> packages = new ArrayList<>(mergedEntryDeps.size());
-        for (Map.Entry<NameVersion, Map<String, BunLockDependency>> e : mergedEntryDeps.entrySet()) {
-            NameVersion nv = e.getKey();
-            packages.add(new BunLockPackage(nv.getName(), nv.getVersion(), new ArrayList<>(e.getValue().values())));
-        }
-        return packages;
+        return result;
     }
 
-    private void readPackageEntry(
-            JsonReader reader,
-            String entryKey,
-            Map<String, NameVersion> keyToVersion,
-            Map<String, List<BunLockDependency>> rawEntryDeps) throws Exception {
+    private void readWorkspaceDependencies(JsonReader reader, List<WorkspaceDependency> workspaceDependencies) throws Exception {
+        reader.beginObject();
+        while (reader.hasNext()) {
+            reader.nextName();
+            readWorkspaceEntry(reader, workspaceDependencies);
+        }
+        reader.endObject();
+    }
+
+    private void readWorkspaceEntry(JsonReader reader, List<WorkspaceDependency> workspaceDependencies) throws Exception {
+        List<WorkspaceDependency> peerDependencies = new ArrayList<>();
+        Set<String> optionalPeers = new HashSet<>();
+
+        reader.beginObject();
+        while (reader.hasNext()) {
+            String key = reader.nextName();
+            if (DEPENDENCIES_KEY.equals(key)) {
+                readWorkspaceDependencyMap(reader, workspaceDependencies, BunDependencyType.NORMAL);
+            } else if (DEV_DEPENDENCIES_KEY.equals(key)) {
+                readWorkspaceDependencyMap(reader, workspaceDependencies, BunDependencyType.DEV);
+            } else if (PEER_DEPENDENCIES_KEY.equals(key)) {
+                readWorkspaceDependencyMap(reader, peerDependencies, BunDependencyType.PEER);
+            } else if (OPTIONAL_DEPENDENCIES_KEY.equals(key)) {
+                readWorkspaceDependencyMap(reader, workspaceDependencies, BunDependencyType.OPTIONAL);
+            } else if (OPTIONAL_PEERS_KEY.equals(key)) {
+                readOptionalPeersList(reader, optionalPeers);
+            } else {
+                reader.skipValue();
+            }
+        }
+        reader.endObject();
+
+        // optionalPeers lists which peerDependencies entries are optional; apply that flag now.
+        for (WorkspaceDependency peer : peerDependencies) {
+            BunDependencyType type = optionalPeers.contains(peer.getName()) ? BunDependencyType.OPTIONAL_PEER : BunDependencyType.PEER;
+            workspaceDependencies.add(new WorkspaceDependency(peer.getName(), peer.getRange(), type));
+        }
+    }
+
+    private void readWorkspaceDependencyMap(JsonReader reader, List<WorkspaceDependency> list, BunDependencyType type) throws Exception {
+        reader.beginObject();
+        while (reader.hasNext()) {
+            String name = reader.nextName();
+            String range = reader.nextString();
+            list.add(new WorkspaceDependency(name, range, type));
+        }
+        reader.endObject();
+    }
+
+    private void readOptionalPeersList(JsonReader reader, Set<String> optionalPeers) throws Exception {
+        reader.beginArray();
+        while (reader.hasNext()) {
+            optionalPeers.add(reader.nextString());
+        }
+        reader.endArray();
+    }
+
+    private void readCatalog(JsonReader reader, Map<String, String> catalog) throws Exception {
+        reader.beginObject();
+        while (reader.hasNext()) {
+            catalog.put(reader.nextName(), reader.nextString());
+        }
+        reader.endObject();
+    }
+
+    private BunPackage readPackage(JsonReader reader, String entryKey) throws Exception {
         reader.beginArray();
         String resolvedSpecifier = reader.nextString();
-        NameVersion nv = parseResolvedSpecifier(resolvedSpecifier);
+        NameVersion nameVersion = parseResolvedSpecifier(resolvedSpecifier);
 
-        List<BunLockDependency> deps = Collections.emptyList();
+        List<BunPackageDependency> dependencies = Collections.emptyList();
         if (reader.hasNext()) {
             if (reader.peek() == JsonToken.STRING) {
                 reader.nextString(); // skip registry tag ("") in lockfileVersion 1
             }
             if (reader.hasNext() && reader.peek() == JsonToken.BEGIN_OBJECT) {
-                deps = readDeps(reader);
+                dependencies = readPackageDependencies(reader);
             }
         }
         while (reader.hasNext()) {
@@ -139,94 +194,38 @@ public class BunLockJsonParser {
         }
         reader.endArray();
 
-        keyToVersion.put(entryKey, nv);
-        rawEntryDeps.put(entryKey, deps);
+        return new BunPackage(entryKey, nameVersion.getName(), nameVersion.getVersion(), dependencies);
     }
 
-    private List<BunLockDependency> readDeps(JsonReader reader) throws Exception {
-        List<BunLockDependency> deps = new ArrayList<>();
+    private List<BunPackageDependency> readPackageDependencies(JsonReader reader) throws Exception {
+        List<BunPackageDependency> dependencies = new ArrayList<>();
         reader.beginObject();
         while (reader.hasNext()) {
             String key = reader.nextName();
             if (DEPENDENCIES_KEY.equals(key)) {
-                readDepMap(reader, deps, false);
+                readPackageDependencyMap(reader, dependencies, BunDependencyType.NORMAL);
             } else if (OPTIONAL_DEPENDENCIES_KEY.equals(key)) {
-                readDepMap(reader, deps, true);
+                readPackageDependencyMap(reader, dependencies, BunDependencyType.OPTIONAL);
             } else {
                 reader.skipValue();
             }
         }
         reader.endObject();
-        return deps;
+        return dependencies;
     }
 
-    private void readDepMap(JsonReader reader, List<BunLockDependency> deps, boolean optional) throws Exception {
+    private void readPackageDependencyMap(JsonReader reader, List<BunPackageDependency> dependencies, BunDependencyType type) throws Exception {
         reader.beginObject();
         while (reader.hasNext()) {
-            String depName = reader.nextName();
+            String name = reader.nextName();
             String range = reader.nextString();
-            deps.add(new BunLockDependency(depName, range, optional));
+            dependencies.add(new BunPackageDependency(name, range, type));
         }
         reader.endObject();
-    }
-
-    private void readWorkspaceDeps(JsonReader reader, List<BunLockDependency> workspaceDeps) throws Exception {
-        reader.beginObject();
-        while (reader.hasNext()) {
-            reader.nextName(); // workspace path ("" for root, "packages/foo" for sub-workspace)
-            reader.beginObject();
-            while (reader.hasNext()) {
-                String key = reader.nextName();
-                if (DEPENDENCIES_KEY.equals(key) || DEV_DEPENDENCIES_KEY.equals(key)) {
-                    readDepMap(reader, workspaceDeps, false);
-                } else {
-                    reader.skipValue();
-                }
-            }
-            reader.endObject();
-        }
-        reader.endObject();
-    }
-
-    private NameVersion resolveInContext(String context, String depName, Map<String, NameVersion> keyToVersion) {
-        String ctx = context;
-        while (ctx != null) {
-            NameVersion nv = keyToVersion.get(ctx + "/" + depName);
-            if (nv != null) {
-                return nv;
-            }
-            ctx = parentContext(ctx);
-        }
-        return keyToVersion.get(depName);
-    }
-
-    // Strips the rightmost logical segment (one component for plain names, two for @scope/name).
-    // Returns null when no further parent context exists (at the flat-key level).
-    private static String parentContext(String key) {
-        int lastSlash = key.lastIndexOf('/');
-        if (lastSlash < 0) {
-            return null;
-        }
-        // If the segment before lastSlash starts with '@', the tail is the second half of
-        // @scope/name -- strip both components together so we land on the true parent key.
-        int prevSlash = key.lastIndexOf('/', lastSlash - 1);
-        int cutAt = (prevSlash >= 0 && key.charAt(prevSlash + 1) == '@') ? prevSlash : lastSlash;
-        if (cutAt <= 0) {
-            return null;
-        }
-        String parent = key.substring(0, cutAt);
-        // "@scope" alone (no '/') is a fragment, not a valid key -- stop the walk.
-        return (parent.startsWith("@") && !parent.contains("/")) ? null : parent;
     }
 
     private static NameVersion parseResolvedSpecifier(String resolvedSpecifier) {
-        NameVersion nv = BunPackageNameUtils.parseNameVersion(resolvedSpecifier);
-        return nv != null ? nv : new NameVersion(resolvedSpecifier, "");
-    }
-
-    private static final class ParsedLockfile {
-        final Map<String, NameVersion> keyToVersion = new LinkedHashMap<>();
-        final Map<String, List<BunLockDependency>> rawEntryDeps = new LinkedHashMap<>();
-        final List<BunLockDependency> workspaceDeps = new ArrayList<>();
+        NameVersion nameVersion = BunPackageNameUtils.parseNameVersion(resolvedSpecifier);
+        return nameVersion != null ? nameVersion : new NameVersion(resolvedSpecifier, "");
     }
 }
