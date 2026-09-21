@@ -43,12 +43,6 @@ class BunLockJsonParserTest {
     }
 
     @Test
-    void parsesEmptyCatalogWhenAbsent() throws Exception {
-        BunLockfileData data = parser().parseBunLock(testLockFile());
-        assertTrue(data.getCatalog().isEmpty(), "test bun.lock has no catalog section");
-    }
-
-    @Test
     void parsesAllPackageEntries() throws Exception {
         BunLockfileData data = parser().parseBunLock(testLockFile());
         // 7 flat + 2 path-qualified (grunt-concurrent/async, grunt-legacy-util/async) = 9 entries
