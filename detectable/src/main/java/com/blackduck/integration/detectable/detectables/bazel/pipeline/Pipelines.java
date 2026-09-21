@@ -14,6 +14,8 @@ import com.blackduck.integration.detectable.detectables.bazel.pipeline.xpathquer
 import com.blackduck.integration.detectable.detectables.bazel.query.BazelQueryBuilder;
 import com.blackduck.integration.detectable.detectables.bazel.query.OutputFormat;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelEnvironmentAnalyzer;
+import com.blackduck.integration.detectable.detectables.bazel.v2.BazelExtractionOptions;
+import com.blackduck.integration.detectable.detectables.bazel.v2.BazelInfrastructureModules;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +55,8 @@ public class Pipelines {
     private static final String STRIP_LEADING_ATS_REGEX = "^@+";
     private static final String STRIP_SINGLE_AT_REGEX = "^@";
     private static final String STRIP_REPO_PATH_REGEX = "//.*";
-    private static final String EXCLUDE_BUILTINS_REGEX = "^(?!(bazel_tools|platforms|remotejdk|local_config_.*|rules_python|rules_java|rules_cc|maven|unpinned_maven|rules_jvm_external)).*$";
+    // Infrastructure/builtins exclusion regex is derived from the single BazelInfrastructureModules source of truth.
+    private static final String EXCLUDE_BUILTINS_REGEX = BazelInfrastructureModules.exclusionLookaheadRegex();
     private static final String PREPEND_AT = "@";
     private static final String PREPEND_EXTERNAL = "//external:";
 
@@ -63,47 +66,18 @@ public class Pipelines {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     /**
-     * Constructs pipelines and auto-detects Bazel mode for legacy callers.
-     * Deprecated in favor of the mode-aware constructor.
-     */
-    public Pipelines(
-        BazelCommandExecutor bazelCommandExecutor,
-        BazelVariableSubstitutor bazelVariableSubstitutor,
-        ExternalIdFactory externalIdFactory,
-        HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser
-    ) {
-        // Auto-detect mode for legacy callers and delegate to the mode-aware constructor.
-        BazelEnvironmentAnalyzer analyzer = new BazelEnvironmentAnalyzer(bazelCommandExecutor);
-        BazelEnvironmentAnalyzer.Mode mode = analyzer.getMode();
-        this.init(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, mode, null);
-    }
-
-    /**
-     * Constructs pipelines for the specified Bazel mode.
+     * Constructs pipelines for the given cross-cutting Bazel extraction settings
+     * (mode + detected version). When bazelVersion is 7.1+, the bzlmod HTTP pipeline
+     * uses batched show_repo for better performance.
      */
     public Pipelines(
         BazelCommandExecutor bazelCommandExecutor,
         BazelVariableSubstitutor bazelVariableSubstitutor,
         ExternalIdFactory externalIdFactory,
         HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser,
-        BazelEnvironmentAnalyzer.Mode mode
+        BazelExtractionOptions options
     ) {
-        this.init(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, mode, null);
-    }
-
-    /**
-     * Constructs pipelines for the specified Bazel mode and version.
-     * When bazelVersion is 7.1+, the bzlmod HTTP pipeline uses batched show_repo for better performance.
-     */
-    public Pipelines(
-        BazelCommandExecutor bazelCommandExecutor,
-        BazelVariableSubstitutor bazelVariableSubstitutor,
-        ExternalIdFactory externalIdFactory,
-        HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser,
-        BazelEnvironmentAnalyzer.Mode mode,
-        BazelVersion bazelVersion
-    ) {
-        this.init(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, mode, bazelVersion);
+        this.init(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, options.getMode(), options.getBazelVersion());
     }
 
     /**

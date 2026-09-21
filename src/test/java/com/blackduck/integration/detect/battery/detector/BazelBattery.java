@@ -42,8 +42,9 @@ class BazelBattery {
     private static final String BAZEL_V2_BZLMOD_PROBE_HASKELL_RESOURCE = "probe-haskell-cabal.xout";
     private static final String BAZEL_V2_BZLMOD_PROBE_HTTP_RESOURCE = "probe-http-libraries.xout";
     private static final String BAZEL_V2_BZLMOD_PROBE_CLASSIFY_GFLAGS_RESOURCE = "probe-classify-gflags.xout";
-    private static final String BAZEL_V2_BZLMOD_HTTP_INITIAL_QUERY_RESOURCE = "http-initial-query.xout";
-    private static final String BAZEL_V2_BZLMOD_HTTP_SHOW_REPO_GFLAGS_RESOURCE = "http-show-repo-gflags.xout";
+    // NOTE: the HTTP pipeline's initial library query and its gflags show_repo are identical to the
+    // HTTP probe query and the classify-gflags show_repo respectively, so both are served from
+    // BazelCommandExecutor's per-extraction cache (no separate fixtures needed).
     private static final String BAZEL_V2_BZLMOD_HTTP_SHOW_REPO_GLOG_RESOURCE = "http-show-repo-glog.xout";
 
     @Test
@@ -197,12 +198,15 @@ class BazelBattery {
             BAZEL_V2_BZLMOD_PROBE_MAVEN_INSTALL_RESOURCE,  // Probe for maven_install -> empty
             BAZEL_V2_BZLMOD_PROBE_MAVEN_JAR_RESOURCE,      // Probe for maven_jar -> empty
             BAZEL_V2_BZLMOD_PROBE_HASKELL_RESOURCE,        // Probe for haskell_cabal_library -> empty
-            BAZEL_V2_BZLMOD_PROBE_HTTP_RESOURCE,           // Probe for HTTP archives -> finds gflags & glog
-            BAZEL_V2_BZLMOD_PROBE_CLASSIFY_GFLAGS_RESOURCE, // mod show_repo to classify gflags as HTTP family
-            // HTTP Pipeline Execution Phase (3 queries to extract dependencies)
-            BAZEL_V2_BZLMOD_HTTP_INITIAL_QUERY_RESOURCE,   // Initial library query
-            BAZEL_V2_BZLMOD_HTTP_SHOW_REPO_GFLAGS_RESOURCE, // bazel mod show_repo com_github_gflags_gflags
-            BAZEL_V2_BZLMOD_HTTP_SHOW_REPO_GLOG_RESOURCE    // bazel mod show_repo glog
+            BAZEL_V2_BZLMOD_PROBE_HTTP_RESOURCE,           // Probe for HTTP archives -> finds gflags & glog (query kind(.*library, deps(target)))
+            BAZEL_V2_BZLMOD_PROBE_CLASSIFY_GFLAGS_RESOURCE, // mod show_repo @com_github_gflags_gflags -> classifies gflags as HTTP family
+            // HTTP Pipeline Execution Phase. Two commands are now served from BazelCommandExecutor's
+            // per-extraction cache and make NO Bazel call (so no fixture is consumed for them):
+            //   (a) the pipeline's initial library query — identical to the HTTP probe query above.
+            //   (b) the gflags show_repo — identical to the classify-gflags command above.
+            // Only glog's show_repo is a genuinely new command (glog was never probed — probing stops
+            // at the first HTTP repo, gflags).
+            BAZEL_V2_BZLMOD_HTTP_SHOW_REPO_GLOG_RESOURCE    // bazel mod show_repo @glog
         );
         test.sourceDirectoryNamed("bazel-v2-graph-probing-http-bzlmod");
         test.sourceFileNamed("MODULE.bazel");  // BZLMOD uses MODULE.bazel instead of WORKSPACE

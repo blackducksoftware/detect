@@ -62,7 +62,7 @@ public class ModCommandBuilder {
 
         // Remove any existing @ prefixes from the repo name
         String cleanRepoName = repoName;
-        while (cleanRepoName.startsWith("@")) {
+        while (cleanRepoName.startsWith(BazelCommandArguments.REPO_PREFIX_SINGLE)) {
             cleanRepoName = cleanRepoName.substring(1);
         }
 

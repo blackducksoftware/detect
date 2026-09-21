@@ -44,13 +44,20 @@ public class IntermediateStepParseShowRepoToUrlCandidates implements Intermediat
             }
 
             // 1) Extract explicit url(s)
-            addExplicitUrlAttributes(block, results);
-
             // 2) git_repository: remote (only http/https)
+            // Track the list size before processing this block so the go_repository synthesis
+            // guard can be evaluated per-block rather than against the accumulated results list.
+            // (Previously, results.isEmpty() was checked inside addSynthesizedGoUrlIfNoExplicit,
+            // which caused synthesis to be skipped for any block that followed a block that
+            // contributed URLs — a bug when processing multiple repos in one call.)
+            int sizeBeforeBlock = results.size();
+            addExplicitUrlAttributes(block, results);
             addRemoteUrls(block, results);
 
-            // 3) go_repository: synthesize from importpath if rule class is go_repository and no urls present
-            addSynthesizedGoUrlIfNoExplicit(block, results);
+            // 3) go_repository: synthesize from importpath only when THIS block produced no URLs
+            if (results.size() == sizeBeforeBlock) {
+                addSynthesizedGoUrlIfNoExplicit(block, results);
+            }
         }
         return results;
     }
@@ -79,10 +86,11 @@ public class IntermediateStepParseShowRepoToUrlCandidates implements Intermediat
         }
     }
 
-    // Synthesize a https://<importpath> URL for go_repository only when no explicit URLs were found so far
+    // Synthesize a https://<importpath> URL for go_repository.
+    // Only called when the current block has not yet contributed any explicit URLs (guarded by caller).
     private void addSynthesizedGoUrlIfNoExplicit(String block, List<String> results) {
         String ruleClass = extractRuleClass(block).orElse("");
-        if (results.isEmpty() && ruleClass.equalsIgnoreCase(RULE_CLASS_GO_REPOSITORY)) {
+        if (ruleClass.equalsIgnoreCase(RULE_CLASS_GO_REPOSITORY)) {
             Matcher mImport = IMPORTPATH_PATTERN.matcher(block);
             if (mImport.find()) {
                 String importPath = mImport.group(1).trim();

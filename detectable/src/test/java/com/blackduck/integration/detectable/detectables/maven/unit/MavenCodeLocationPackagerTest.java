@@ -6,6 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 import com.blackduck.integration.bdio.model.Forge;
 import org.junit.jupiter.api.Test;
 
@@ -13,6 +17,7 @@ import com.blackduck.integration.bdio.model.dependency.Dependency;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.annotations.UnitTest;
 import com.blackduck.integration.detectable.detectables.maven.cli.MavenCodeLocationPackager;
+import com.blackduck.integration.detectable.detectables.maven.cli.MavenParseResult;
 import com.blackduck.integration.detectable.detectables.maven.cli.ScopedDependency;
 
 @UnitTest
@@ -267,5 +272,104 @@ public class MavenCodeLocationPackagerTest {
         String cleanedLine = mavenCodeLocationPackager.calculateCurrentLevelAndCleanLine(line);
         Dependency dependency = mavenCodeLocationPackager.textToDependency(cleanedLine);
         assertEquals("org.eclipse.scout.sdk.deps:org.eclipse.core.jobs:pants (version selected from", dependency.getExternalId().createExternalId());
+    }
+
+    // Provenance INFO line with a 5-part colon split that would previously
+    // have been latched as a fake project header. Real project GAV should
+    // still be anchored on the next line.
+    @Test
+    public void testProvenanceInfoLineWithFewColons_realProjectStillAnchored() {
+        MavenCodeLocationPackager packager = new MavenCodeLocationPackager(new ExternalIdFactory());
+        List<String> mavenOutput = Arrays.asList(
+            "[INFO] --- maven-dependency-plugin:2.8:tree (default-cli) @ demo ---",
+            "[INFO] Artifact org.codehaus.plexus:plexus-utils:pom:4.0.1 is present in the local repository, but cached from a remote repository ID that is unavailable in current build context, verifying that is downloadable from [internal (https://repo.maven.apache.org/maven2, default, releases+snapshots)]",
+            "[INFO] com.example:demo:jar:1.0",
+            "[INFO] +- com.google.guava:guava:jar:32.1.3-jre:compile"
+        );
+
+        List<MavenParseResult> results = packager.extractCodeLocations(
+            "", mavenOutput,
+            Collections.emptyList(), Collections.emptyList(),
+            Collections.emptyList(), Collections.emptyList(),
+            Collections.emptyMap()
+        );
+
+        assertEquals(1, results.size());
+        assertEquals("demo", results.get(0).getProjectName());
+        assertEquals("1.0", results.get(0).getProjectVersion());
+    }
+
+    // Provenance INFO line with a many-part colon split (URL contains ":443")
+    // that would previously have disarmed the parser and produced an empty
+    // BOM. Real project GAV should still be anchored on the next line.
+    @Test
+    public void testProvenanceInfoLineWithManyColons_realProjectStillAnchored() {
+        MavenCodeLocationPackager packager = new MavenCodeLocationPackager(new ExternalIdFactory());
+        List<String> mavenOutput = Arrays.asList(
+            "[INFO] --- maven-dependency-plugin:2.8:tree (default-cli) @ demo ---",
+            "[INFO] Artifact org.codehaus.plexus:plexus-utils:pom:4.0.1 is present in the local repository, but cached from a remote repository ID that is unavailable in current build context, verifying that is downloadable from [internal (https://repo.maven.apache.org:443/maven2, default, releases+snapshots)]",
+            "[INFO] com.example:demo:jar:1.0",
+            "[INFO] +- com.google.guava:guava:jar:32.1.3-jre:compile"
+        );
+
+        List<MavenParseResult> results = packager.extractCodeLocations(
+            "", mavenOutput,
+            Collections.emptyList(), Collections.emptyList(),
+            Collections.emptyList(), Collections.emptyList(),
+            Collections.emptyMap()
+        );
+
+        assertEquals(1, results.size());
+        assertEquals("demo", results.get(0).getProjectName());
+        assertEquals("1.0", results.get(0).getProjectVersion());
+    }
+
+    // Tree goal header seen but no valid project GAV ever recognized in the
+    // output. Extraction must return an empty list (not a fabricated one).
+    @Test
+    public void testTreeHeaderButNoValidProjectGav_returnsEmpty() {
+        MavenCodeLocationPackager packager = new MavenCodeLocationPackager(new ExternalIdFactory());
+        List<String> mavenOutput = Arrays.asList(
+            "[INFO] --- maven-dependency-plugin:2.8:tree (default-cli) @ demo ---",
+            "[INFO] Artifact org.codehaus.plexus:plexus-utils:pom:4.0.1 is present in the local repository, but cached from a remote repository ID that is unavailable in current build context, verifying that is downloadable from [internal (https://repo.maven.apache.org/maven2, default, releases+snapshots)]",
+            "[INFO] BUILD SUCCESS"
+        );
+
+        List<MavenParseResult> results = packager.extractCodeLocations(
+            "", mavenOutput,
+            Collections.emptyList(), Collections.emptyList(),
+            Collections.emptyList(), Collections.emptyList(),
+            Collections.emptyMap()
+        );
+
+        assertTrue(results.isEmpty());
+    }
+
+    // Reactor with two modules where the user excludes one. Only the
+    // included module should be returned; the excluded module's tree body
+    // must not leak into the included module.
+    @Test
+    public void testExcludedModuleFilter_onlyIncludedModuleReturned() {
+        MavenCodeLocationPackager packager = new MavenCodeLocationPackager(new ExternalIdFactory());
+        List<String> mavenOutput = Arrays.asList(
+            "[INFO] --- maven-dependency-plugin:2.8:tree (default-cli) @ moduleA ---",
+            "[INFO] com.example:moduleA:jar:1.0",
+            "[INFO] +- com.google.guava:guava:jar:32.1.3-jre:compile",
+            "[INFO] ------------------------------------------------------------------------",
+            "[INFO] --- maven-dependency-plugin:2.8:tree (default-cli) @ moduleB ---",
+            "[INFO] com.example:moduleB:jar:1.0",
+            "[INFO] +- org.apache.commons:commons-lang3:jar:3.14.0:compile",
+            "[INFO] ------------------------------------------------------------------------"
+        );
+
+        List<MavenParseResult> results = packager.extractCodeLocations(
+            "", mavenOutput,
+            Collections.emptyList(), Collections.emptyList(),
+            Collections.singletonList("moduleB"), Collections.emptyList(),
+            Collections.emptyMap()
+        );
+
+        assertEquals(1, results.size());
+        assertEquals("moduleA", results.get(0).getProjectName());
     }
 }

@@ -16,6 +16,7 @@ import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.detectable.detectable.executable.ExecutableFailedException;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelCommandExecutor;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelVersion;
+import com.blackduck.integration.detectable.detectables.bazel.v2.BazelExtractionOptions;
 import com.blackduck.integration.detectable.detectables.bazel.v2.BzlmodBcrExtractor;
 
 /**
@@ -46,6 +47,12 @@ public class BzlmodBcrExtractorTest {
 
     /** Bazel 7.1.0 — gates the BCR extraction path in BzlmodBcrExtractor. */
     private static final BazelVersion VERSION_7_1 = new BazelVersion(7, 1, 0);
+
+    /** Shared extraction options (BZLMOD, Bazel 7.1.0) used across all tests. */
+    private static final BazelExtractionOptions TEST_OPTIONS = BazelExtractionOptions.builder()
+        .mode(com.blackduck.integration.detectable.detectables.bazel.v2.BazelEnvironmentAnalyzer.Mode.BZLMOD)
+        .bazelVersion(VERSION_7_1)
+        .build();
 
     /** The Bazel target used across all tests. */
     private static final String TEST_TARGET = "//src/main:example";
@@ -263,6 +270,63 @@ public class BzlmodBcrExtractorTest {
                 + "    urls = [\"https://github.com/google/glog/archive/v0.6.0.tar.gz\"],\n"
                 + ")\n";
         }
+
+        /**
+         * One direct dep (zlib@1.3) whose show_repo block uses a single {@code url =} attribute
+         * (not a {@code urls = [...]} list). Used to verify the single-url extraction path in
+         * {@link com.blackduck.integration.detectable.detectables.bazel.pipeline.step.IntermediateStepParseShowRepoToUrlCandidates}.
+         */
+        static final class SingleUrlAttribute {
+            static final String MOD_GRAPH =
+                "{\n"
+                + "  \"key\": \"<root>\",\n"
+                + "  \"dependencies\": [\n"
+                + "    { \"key\": \"zlib@1.3\", \"dependencies\": [] }\n"
+                + "  ]\n"
+                + "}";
+
+            static final String REPO_MAPPING = "{ \"zlib\": \"zlib~\" }";
+
+            static final String TARGET_QUERY = "@@zlib~//zlib:zlib\n";
+
+            static final String SHOW_REPO_BATCH =
+                "## @@zlib~:\n"
+                + "http_archive(\n"
+                + "    name = \"zlib~\",\n"
+                + "    url = \"https://github.com/madler/zlib/archive/v1.3.tar.gz\",\n"
+                + ")\n";
+        }
+
+        /**
+         * One direct dep (abseil-cpp@_) whose module key version is Bazel's non-registry
+         * override marker ({@code "_"}) — mirrors what {@code bazel mod graph} reports for a
+         * module replaced via {@code archive_override}. Its show_repo output still resolves to
+         * a valid GitHub URL. Used to verify that non-registry-override modules are still fully
+         * resolved into the BOM (the accompanying WARN is a logging-only concern, not asserted
+         * here
+         * for coverage of the underlying marker detection).
+         */
+        static final class NonRegistryOverride {
+            static final String MOD_GRAPH =
+                "{\n"
+                + "  \"key\": \"<root>\",\n"
+                + "  \"dependencies\": [\n"
+                + "    { \"key\": \"abseil-cpp@_\", \"dependencies\": [] }\n"
+                + "  ]\n"
+                + "}";
+
+            static final String REPO_MAPPING = "{ \"abseil-cpp\": \"abseil-cpp+\" }";
+
+            static final String TARGET_QUERY = "@@abseil-cpp+//absl/strings:strings\n";
+
+            static final String SHOW_REPO_BATCH =
+                "## @@abseil-cpp+:\n"
+                + "http_archive(\n"
+                + "    name = \"abseil-cpp+\",\n"
+                + "    urls = [\"https://github.com/abseil/abseil-cpp/archive/refs/tags/20240116.0.tar.gz\"],\n"
+                + "    strip_prefix = \"abseil-cpp-20240116.0\",\n"
+                + ")\n";
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -277,7 +341,7 @@ public class BzlmodBcrExtractorTest {
         stub.addQueryResponse(Fixtures.BasicDirectTransitive.TARGET_QUERY);
         stub.addModResponse(Fixtures.BasicDirectTransitive.SHOW_REPO_BATCH);
 
-        DependencyGraph graph = new BzlmodBcrExtractor(stub, VERSION_7_1, TEST_TARGET).extractGraph();
+        DependencyGraph graph = new BzlmodBcrExtractor(stub, TEST_TARGET, TEST_OPTIONS).extractGraph();
 
         Set<Dependency> rootDeps = graph.getRootDependencies();
         assertEquals(1, rootDeps.size(), "Only protobuf should be a root (direct) dependency");
@@ -302,7 +366,7 @@ public class BzlmodBcrExtractorTest {
         stub.addQueryResponse(Fixtures.BasicDirectTransitive.TARGET_QUERY);
         stub.addModResponse(Fixtures.BasicDirectTransitive.SHOW_REPO_BATCH);
 
-        BzlmodBcrExtractor extractor = new BzlmodBcrExtractor(stub, VERSION_7_1, TEST_TARGET);
+        BzlmodBcrExtractor extractor = new BzlmodBcrExtractor(stub, TEST_TARGET, TEST_OPTIONS);
         extractor.extractGraph();
 
         Set<ExternalId> resolved = extractor.getResolvedExternalIds();
@@ -328,7 +392,7 @@ public class BzlmodBcrExtractorTest {
         stub.addQueryResponse(Fixtures.RefsTagsVersion.TARGET_QUERY);
         stub.addModResponse(Fixtures.RefsTagsVersion.SHOW_REPO_BATCH);
 
-        DependencyGraph graph = new BzlmodBcrExtractor(stub, VERSION_7_1, TEST_TARGET).extractGraph();
+        DependencyGraph graph = new BzlmodBcrExtractor(stub, TEST_TARGET, TEST_OPTIONS).extractGraph();
 
         Set<Dependency> rootDeps = graph.getRootDependencies();
         assertEquals(1, rootDeps.size());
@@ -351,7 +415,7 @@ public class BzlmodBcrExtractorTest {
         stub.addQueryResponse(Fixtures.NonGithubUrl.TARGET_QUERY);
         stub.addModResponse(Fixtures.NonGithubUrl.SHOW_REPO_BATCH);
 
-        DependencyGraph graph = new BzlmodBcrExtractor(stub, VERSION_7_1, TEST_TARGET).extractGraph();
+        DependencyGraph graph = new BzlmodBcrExtractor(stub, TEST_TARGET, TEST_OPTIONS).extractGraph();
 
         assertTrue(graph.getRootDependencies().isEmpty(),
             "A dep with a non-GitHub URL must be excluded from the BOM");
@@ -365,7 +429,7 @@ public class BzlmodBcrExtractorTest {
         stub.addQueryResponse(Fixtures.NoUrl.TARGET_QUERY);
         stub.addModResponse(Fixtures.NoUrl.SHOW_REPO_BATCH);
 
-        DependencyGraph graph = new BzlmodBcrExtractor(stub, VERSION_7_1, TEST_TARGET).extractGraph();
+        DependencyGraph graph = new BzlmodBcrExtractor(stub, TEST_TARGET, TEST_OPTIONS).extractGraph();
 
         assertTrue(graph.getRootDependencies().isEmpty(),
             "A dep with no URL in show_repo output must be excluded from the BOM");
@@ -380,7 +444,7 @@ public class BzlmodBcrExtractorTest {
         StubBazelCommandExecutor stub = new StubBazelCommandExecutor();
         stub.addEmptyModResponse();
 
-        DependencyGraph graph = new BzlmodBcrExtractor(stub, VERSION_7_1, TEST_TARGET).extractGraph();
+        DependencyGraph graph = new BzlmodBcrExtractor(stub, TEST_TARGET, TEST_OPTIONS).extractGraph();
 
         assertTrue(graph.getRootDependencies().isEmpty(),
             "Empty mod graph output must yield an empty dependency graph");
@@ -391,7 +455,7 @@ public class BzlmodBcrExtractorTest {
         StubBazelCommandExecutor stub = new StubBazelCommandExecutor();
         stub.addModResponse("{ \"key\": \"<root>\", \"dependencies\": [] }");
 
-        DependencyGraph graph = new BzlmodBcrExtractor(stub, VERSION_7_1, TEST_TARGET).extractGraph();
+        DependencyGraph graph = new BzlmodBcrExtractor(stub, TEST_TARGET, TEST_OPTIONS).extractGraph();
 
         assertTrue(graph.getRootDependencies().isEmpty());
     }
@@ -408,7 +472,7 @@ public class BzlmodBcrExtractorTest {
         stub.addQueryResponse(Fixtures.Diamond.TARGET_QUERY);
         stub.addModResponse(Fixtures.Diamond.SHOW_REPO_BATCH);
 
-        DependencyGraph graph = new BzlmodBcrExtractor(stub, VERSION_7_1, TEST_TARGET).extractGraph();
+        DependencyGraph graph = new BzlmodBcrExtractor(stub, TEST_TARGET, TEST_OPTIONS).extractGraph();
 
         Set<Dependency> rootDeps = graph.getRootDependencies();
         assertEquals(2, rootDeps.size(), "moduleA and moduleB must be direct (root) dependencies");
@@ -438,7 +502,7 @@ public class BzlmodBcrExtractorTest {
         stub.addEmptyModResponse();                                    // batched show_repo → empty → triggers fallback
         stub.addModResponse(Fixtures.BatchFallback.SHOW_REPO_PER_MODULE); // per-module show_repo for glog
 
-        DependencyGraph graph = new BzlmodBcrExtractor(stub, VERSION_7_1, TEST_TARGET).extractGraph();
+        DependencyGraph graph = new BzlmodBcrExtractor(stub, TEST_TARGET, TEST_OPTIONS).extractGraph();
 
         Set<Dependency> rootDeps = graph.getRootDependencies();
         assertEquals(1, rootDeps.size(), "glog must be resolved via the per-module fallback path");
@@ -446,6 +510,56 @@ public class BzlmodBcrExtractorTest {
         Dependency glog = rootDeps.iterator().next();
         assertEquals("google/glog", glog.getExternalId().getName());
         assertEquals("v0.6.0", glog.getExternalId().getVersion());
+    }
+
+    // -------------------------------------------------------------------------
+    // Tests — single url= attribute (not urls=[...] list)
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void extractGraph_singleUrlAttribute_depResolvedCorrectly() {
+        StubBazelCommandExecutor stub = new StubBazelCommandExecutor();
+        stub.addModResponse(Fixtures.SingleUrlAttribute.MOD_GRAPH);
+        stub.addModResponse(Fixtures.SingleUrlAttribute.REPO_MAPPING);
+        stub.addQueryResponse(Fixtures.SingleUrlAttribute.TARGET_QUERY);
+        stub.addModResponse(Fixtures.SingleUrlAttribute.SHOW_REPO_BATCH);
+
+        DependencyGraph graph = new BzlmodBcrExtractor(stub, TEST_TARGET, TEST_OPTIONS).extractGraph();
+
+        Set<Dependency> rootDeps = graph.getRootDependencies();
+        assertEquals(1, rootDeps.size(), "zlib should be the sole root dependency");
+
+        Dependency zlib = rootDeps.iterator().next();
+        assertEquals("madler/zlib", zlib.getExternalId().getName(),
+            "org/repo must be parsed from the single url= attribute");
+        assertEquals("v1.3", zlib.getExternalId().getVersion(),
+            "version must be parsed from the archive path segment");
+    }
+
+    // -------------------------------------------------------------------------
+    // Tests — non-registry override version marker (module@_)
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void extractGraph_nonRegistryOverrideVersion_depStillResolvedIntoBom() {
+        StubBazelCommandExecutor stub = new StubBazelCommandExecutor();
+        stub.addModResponse(Fixtures.NonRegistryOverride.MOD_GRAPH);
+        stub.addModResponse(Fixtures.NonRegistryOverride.REPO_MAPPING);
+        stub.addQueryResponse(Fixtures.NonRegistryOverride.TARGET_QUERY);
+        stub.addModResponse(Fixtures.NonRegistryOverride.SHOW_REPO_BATCH);
+
+        DependencyGraph graph = new BzlmodBcrExtractor(stub, TEST_TARGET, TEST_OPTIONS).extractGraph();
+
+        // A module@_ key (non-registry override, e.g. archive_override) must still resolve into
+        // the BOM exactly like a normal BCR module — the accompanying WARN (see BzlmodBcrExtractor)
+        // is a logging-only addition and must not change resolution/graph behavior.
+        Set<Dependency> rootDeps = graph.getRootDependencies();
+        assertEquals(1, rootDeps.size(), "abseil-cpp@_ must still be resolved into the BOM");
+
+        Dependency abseil = rootDeps.iterator().next();
+        assertEquals("abseil/abseil-cpp", abseil.getExternalId().getName());
+        assertEquals("20240116.0", abseil.getExternalId().getVersion(),
+            "version must be parsed from the resolved GitHub archive URL, not the literal '_' module key version");
     }
 
     // -------------------------------------------------------------------------
