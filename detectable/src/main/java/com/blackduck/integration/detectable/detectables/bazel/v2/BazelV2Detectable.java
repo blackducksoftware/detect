@@ -171,10 +171,8 @@ public class BazelV2Detectable extends Detectable {
                 .build();
             Set<DependencySource> pipelines = resolvePipelines(bazelCmd, target, extractionOptions);
 
-            // Probing swallows failures per-probe (so one probe's failure doesn't block the next),
-            // which means a fatal workspace misconfiguration observed during probing may not have
-            // propagated as an exception here even though it happened. Check explicitly so we report
-            // the specific, actionable cause instead of the generic "no pipelines found" message.
+            // Probing swallows per-probe failures, so a fatal signature seen there may not have
+            // propagated here as an exception. Check explicitly for a clearer error message.
             if (bazelCmd.getFatalWorkspaceError().isPresent()) {
                 throw new BazelFatalWorkspaceException(bazelCmd.getFatalWorkspaceError().get());
             }
@@ -187,13 +185,18 @@ public class BazelV2Detectable extends Detectable {
             // Run the extraction using the determined pipelines
             BazelV2Extractor extractor = new BazelV2Extractor(externalIdFactory, bazelVariableSubstitutor, haskellParser, projectNameGenerator);
             Extraction extraction = extractor.run(bazelCmd, pipelines, target, extractionOptions);
+
+            // Extraction can also swallow the fatal signature per-call (e.g. in ShowRepoExecutor);
+            // re-check here so we never return a partial BOM for a misconfigured workspace.
+            if (bazelCmd.getFatalWorkspaceError().isPresent()) {
+                throw new BazelFatalWorkspaceException(bazelCmd.getFatalWorkspaceError().get());
+            }
+
             logger.info("The Bazel tool actions finished.");
             return extraction;
         } catch (BazelFatalWorkspaceException e) {
-            // The Bazel workspace itself is structurally broken (e.g. a local_repository/git_repository
-            // rule pointing at a location with no MODULE.bazel/REPO.bazel/WORKSPACE file). Reporting a
-            // partial/empty BOM here would be misleading, so fail the extraction outright, consistent
-            // with how other detectables handle a malformed project.
+            // Bazel workspace is structurally broken (e.g. local_repository/git_repository pointing
+            // at an invalid location) — fail outright rather than report a misleading partial BOM.
             throw new DetectableException(
                 "Bazel workspace is misconfigured and cannot be scanned reliably: " + e.getMessage()
                 + ". Fix the broken repository reference (e.g. local_repository/git_repository) and re-run.",

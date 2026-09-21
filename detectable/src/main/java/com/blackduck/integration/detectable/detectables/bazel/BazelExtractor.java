@@ -86,10 +86,8 @@ public class BazelExtractor {
             CodeLocation codeLocation = generateCodelocation(pipelines, dependencySourcesToQuery);
             return buildResults(codeLocation, bazelProjectNameGenerator.generateFromBazelTarget(bazelTarget));
         } catch (BazelFatalWorkspaceException e) {
-            // The Bazel workspace itself is structurally broken (e.g. a local_repository/git_repository
-            // rule pointing at a location with no MODULE.bazel/REPO.bazel/WORKSPACE file). Reporting a
-            // partial/empty BOM here would be misleading, so fail the extraction outright, consistent
-            // with how other detectables handle a malformed project.
+            // Bazel workspace is structurally broken (e.g. local_repository/git_repository pointing
+            // at an invalid location) — fail outright rather than report a misleading BOM.
             throw new DetectableException(
                 "Bazel workspace is misconfigured and cannot be scanned reliably: " + e.getMessage()
                 + ". Fix the broken repository reference (e.g. local_repository/git_repository) and re-run.",
