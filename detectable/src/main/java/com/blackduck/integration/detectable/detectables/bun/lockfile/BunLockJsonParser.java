@@ -28,7 +28,6 @@ import com.google.gson.stream.JsonToken;
 public class BunLockJsonParser {
     private static final String PACKAGES_KEY = "packages";
     private static final String WORKSPACES_KEY = "workspaces";
-    private static final String CATALOG_KEY = "catalog";
     private static final String DEPENDENCIES_KEY = "dependencies";
     private static final String DEV_DEPENDENCIES_KEY = "devDependencies";
     private static final String PEER_DEPENDENCIES_KEY = "peerDependencies";
@@ -40,7 +39,6 @@ public class BunLockJsonParser {
         String content = readContent(bunLockFile);
 
         List<WorkspaceDependency> workspaceDependencies = new ArrayList<>();
-        Map<String, String> catalog = new LinkedHashMap<>();
         List<BunPackage> packages = new ArrayList<>();
 
         try (JsonReader reader = new JsonReader(new StringReader(content))) {
@@ -50,8 +48,6 @@ public class BunLockJsonParser {
                 String topKey = reader.nextName();
                 if (WORKSPACES_KEY.equals(topKey)) {
                     readWorkspaceDependencies(reader, workspaceDependencies);
-                } else if (CATALOG_KEY.equals(topKey)) {
-                    readCatalog(reader, catalog);
                 } else if (PACKAGES_KEY.equals(topKey)) {
                     reader.beginObject();
                     while (reader.hasNext()) {
@@ -68,8 +64,8 @@ public class BunLockJsonParser {
             throw new RuntimeException("Failed to parse bun.lock: " + bunLockFile.getAbsolutePath(), e);
         }
 
-        List<DirectDependency> directDependencies = resolveDirectDependencies(workspaceDependencies, catalog, packages);
-        return new BunLockfileData(directDependencies, catalog, packages);
+        List<DirectDependency> directDependencies = resolveDirectDependencies(workspaceDependencies, packages);
+        return new BunLockfileData(directDependencies, packages);
     }
 
     private String readContent(File bunLockFile) {
@@ -82,7 +78,7 @@ public class BunLockJsonParser {
         }
     }
 
-    private List<DirectDependency> resolveDirectDependencies(List<WorkspaceDependency> workspaceDependencies, Map<String, String> catalog, List<BunPackage> packages) {
+    private List<DirectDependency> resolveDirectDependencies(List<WorkspaceDependency> workspaceDependencies, List<BunPackage> packages) {
         Map<String, BunPackage> packagesByKey = new LinkedHashMap<>();
         for (BunPackage pkg : packages) {
             packagesByKey.put(pkg.getKey(), pkg);
@@ -93,18 +89,11 @@ public class BunLockJsonParser {
             if (dep.getRange().startsWith("workspace:")) {
                 continue; // local monorepo package, no npm registry entry
             }
-            String version = null;
-            if (dep.getRange().startsWith("catalog:")) {
-                version = catalog.get(dep.getName());
-            }
-            if (version == null) {
-                BunPackage pkg = packagesByKey.get(dep.getName());
-                if (pkg != null) {
-                    version = pkg.getVersion();
-                }
-            }
-            if (version != null) {
-                result.add(new DirectDependency(dep.getName(), version, dep.getType()));
+            // Always resolve from the packages section; it holds the pinned version regardless
+            // of how the dep was referenced in the workspace (semver, catalog:, file:, etc.).
+            BunPackage pkg = packagesByKey.get(dep.getName());
+            if (pkg != null) {
+                result.add(new DirectDependency(dep.getName(), pkg.getVersion(), dep.getType()));
             }
         }
         return result;
@@ -153,8 +142,11 @@ public class BunLockJsonParser {
         reader.beginObject();
         while (reader.hasNext()) {
             String name = reader.nextName();
-            String range = reader.nextString();
-            list.add(new WorkspaceDependency(name, range, type));
+            if (reader.peek() == JsonToken.STRING) {
+                list.add(new WorkspaceDependency(name, reader.nextString(), type));
+            } else {
+                reader.skipValue();
+            }
         }
         reader.endObject();
     }
@@ -165,14 +157,6 @@ public class BunLockJsonParser {
             optionalPeers.add(reader.nextString());
         }
         reader.endArray();
-    }
-
-    private void readCatalog(JsonReader reader, Map<String, String> catalog) throws Exception {
-        reader.beginObject();
-        while (reader.hasNext()) {
-            catalog.put(reader.nextName(), reader.nextString());
-        }
-        reader.endObject();
     }
 
     private BunPackage readPackage(JsonReader reader, String entryKey) throws Exception {
@@ -218,8 +202,11 @@ public class BunLockJsonParser {
         reader.beginObject();
         while (reader.hasNext()) {
             String name = reader.nextName();
-            String range = reader.nextString();
-            dependencies.add(new BunPackageDependency(name, range, type));
+            if (reader.peek() == JsonToken.STRING) {
+                dependencies.add(new BunPackageDependency(name, reader.nextString(), type));
+            } else {
+                reader.skipValue();
+            }
         }
         reader.endObject();
     }
