@@ -280,10 +280,8 @@ public class BazelCommandExecutor {
             .trim();
         fatalWorkspaceErrorDetail = detail;
         logger.error(
-            "Bazel workspace is fatally misconfigured: {}. A repository rule (e.g. local_repository, git_repository) "
-            + "points at a location that is not a valid Bazel repository. Detect cannot produce a reliable BOM for this "
-            + "target and will abort this Bazel extraction rather than report incomplete or incorrect results. Fix the "
-            + "broken repository reference and re-run.",
+            "Bazel workspace is misconfigured: {}. Check for a local_repository or git_repository rule "
+            + "pointing at an invalid location.",
             detail
         );
         throw new BazelFatalWorkspaceException(detail);
