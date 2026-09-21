@@ -312,9 +312,7 @@ import com.blackduck.integration.detectable.detectables.opam.lockfile.OpamLockFi
 import com.blackduck.integration.detectable.detectables.opam.lockfile.OpamLockFileExtractor;
 import com.blackduck.integration.detectable.detectables.opam.transform.OpamGraphTransformer;
 import com.blackduck.integration.detectable.util.ToolVersionLogger;
-import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.util.ExcludedIncludedWildcardFilter;
-import com.blackduck.integration.detectable.detectables.yarn.YarnDependencyType;
 
 /*
  Entry point for creating detectables using most
