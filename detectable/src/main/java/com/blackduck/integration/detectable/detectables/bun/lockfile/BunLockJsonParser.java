@@ -14,7 +14,6 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 
-import com.blackduck.integration.detectable.detectables.bun.BunPackageNameUtils;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunDependencyType;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunLockfileData;
 import com.blackduck.integration.detectable.detectables.bun.lockfile.model.BunPackage;
@@ -212,7 +211,15 @@ public class BunLockJsonParser {
     }
 
     private static NameVersion parseResolvedSpecifier(String resolvedSpecifier) {
-        NameVersion nameVersion = BunPackageNameUtils.parseNameVersion(resolvedSpecifier);
+        NameVersion nameVersion = parseNameVersion(resolvedSpecifier);
         return nameVersion != null ? nameVersion : new NameVersion(resolvedSpecifier, "");
+    }
+
+    public static NameVersion parseNameVersion(String s) {
+        int lastAt = s.lastIndexOf('@');
+        if (lastAt <= 0) {
+            return null;
+        }
+        return new NameVersion(s.substring(0, lastAt), s.substring(lastAt + 1));
     }
 }
