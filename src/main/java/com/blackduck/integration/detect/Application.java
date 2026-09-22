@@ -125,15 +125,19 @@ public class Application implements ApplicationRunner {
     // ANTLR runtime version mismatches from bundled third-party parsers produce spurious warnings on
     // System.err, bypassing SLF4J. Filter by exact format string to avoid silencing unrelated output.
     private static void suppressAntlrVersionWarnings() {
-        System.setErr(new PrintStream(new FileOutputStream(FileDescriptor.err), true) {
-            @Override
-            public PrintStream format(String format, Object... args) {
-                if (ANTLR_VERSION_MISMATCH_FORMATS.contains(format)) {
-                    return this;
+        try {
+            System.setErr(new PrintStream(new FileOutputStream(FileDescriptor.err), true) {
+                @Override
+                public PrintStream format(String format, Object... args) {
+                    if (ANTLR_VERSION_MISMATCH_FORMATS.contains(format)) {
+                        return this;
+                    }
+                    return super.format(format, args);
                 }
-                return super.format(format, args);
-            }
-        });
+            });
+        } catch (Exception ignored) {
+            // Suppression is cosmetic; ANTLR warnings remain visible if unavailable
+        }
     }
 
     private static void configureLoggingGroupIfNeeded(String[] args) {
