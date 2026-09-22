@@ -234,7 +234,7 @@ public class BazelCommandExecutor {
      */
     public ExecutableOutput executeToleratingExitCode(List<String> args) {
         if (fatalWorkspaceErrorDetail != null) {
-            logger.debug("Skipping Bazel invocation; workspace already known to be fatally misconfigured: {}", fatalWorkspaceErrorDetail);
+            logger.debug("Skipping Bazel invocation; workspace misconfiguration already detected: {}", fatalWorkspaceErrorDetail);
             throw new BazelFatalWorkspaceException(fatalWorkspaceErrorDetail);
         }
 

@@ -28,7 +28,6 @@ import com.blackduck.integration.detectable.detectable.executable.ExecutableFail
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.Pipelines;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.DependencySourceChooser;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelCommandExecutor;
-import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelFatalWorkspaceException;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelVariableSubstitutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.HaskellCabalLibraryJsonProtoParser;
 import com.blackduck.integration.detectable.extraction.Extraction;
@@ -76,24 +75,14 @@ public class BazelExtractor {
     public Extraction extract(ExecutableTarget bazelExe, File workspaceDir, File workspaceFile) throws ExecutableFailedException, DetectableException {
         toolVersionLogger.log(workspaceDir, bazelExe, "version");
         BazelCommandExecutor bazelCommandExecutor = new BazelCommandExecutor(executableRunner, workspaceDir, bazelExe);
-        try {
-            // Detect Bazel mode once and pass it to Pipelines for correct HTTP variant selection.
-            BazelEnvironmentAnalyzer.Mode mode = new BazelEnvironmentAnalyzer(bazelCommandExecutor).getMode();
-            BazelExtractionOptions pipelineOptions = BazelExtractionOptions.builder().mode(mode).build();
-            Pipelines pipelines = new Pipelines(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, pipelineOptions);
-            Set<DependencySource> dependencySourcesFromFile = parseDependencySourcesFromFile(workspaceFile);
-            Set<DependencySource> dependencySourcesToQuery = dependencySourceChooser.choose(dependencySourcesFromFile, dependencySourcesFromProperty);
-            CodeLocation codeLocation = generateCodelocation(pipelines, dependencySourcesToQuery);
-            return buildResults(codeLocation, bazelProjectNameGenerator.generateFromBazelTarget(bazelTarget));
-        } catch (BazelFatalWorkspaceException e) {
-            // Bazel workspace is structurally broken (e.g. local_repository/git_repository pointing
-            // at an invalid location) — fail outright rather than report a misleading BOM.
-            throw new DetectableException(
-                "Bazel workspace is misconfigured and cannot be scanned reliably: " + e.getMessage()
-                + ". Fix the broken repository reference (e.g. local_repository/git_repository) and re-run.",
-                e
-            );
-        }
+        // Detect Bazel mode once and pass it to Pipelines for correct HTTP variant selection.
+        BazelEnvironmentAnalyzer.Mode mode = new BazelEnvironmentAnalyzer(bazelCommandExecutor).getMode();
+        BazelExtractionOptions pipelineOptions = BazelExtractionOptions.builder().mode(mode).build();
+        Pipelines pipelines = new Pipelines(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, pipelineOptions);
+        Set<DependencySource> dependencySourcesFromFile = parseDependencySourcesFromFile(workspaceFile);
+        Set<DependencySource> dependencySourcesToQuery = dependencySourceChooser.choose(dependencySourcesFromFile, dependencySourcesFromProperty);
+        CodeLocation codeLocation = generateCodelocation(pipelines, dependencySourcesToQuery);
+        return buildResults(codeLocation, bazelProjectNameGenerator.generateFromBazelTarget(bazelTarget));
     }
 
     private Set<DependencySource> parseDependencySourcesFromFile(File workspaceFile) {
