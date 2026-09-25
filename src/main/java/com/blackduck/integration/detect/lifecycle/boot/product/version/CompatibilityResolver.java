@@ -1,7 +1,6 @@
 package com.blackduck.integration.detect.lifecycle.boot.product.version;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 import com.blackduck.integration.blackduck.version.BlackDuckVersion;
@@ -76,17 +75,16 @@ public class CompatibilityResolver {
     }
 
     private boolean isDetectVersionNewerThanMatrix(String detectVersion, CompatibilityMatrix matrix) {
-        int[] running = CompatibilityVersions.parse(detectVersion);
-        if (running == null) {
-            return false; // can't parse; err on the side of running the row check
-        }
-        return matrix.getRows().stream()
+        Optional<int[]> running = CompatibilityVersions.parse(detectVersion);
+        // empty matrix; row check will produce its own UNKNOWN
+        // can't parse; err on the side of running the row check
+        return running.map(ints -> matrix.getRows().stream()
             .flatMap(row -> row.getDetectVersions().stream())
             .map(CompatibilityVersions::parse)
-            .filter(Objects::nonNull)
+            .flatMap(Optional::stream)
             .max(CompatibilityVersions::compare)
-            .map(max -> CompatibilityVersions.compare(running, max) > 0)
-            .orElse(false); // empty matrix; row check will produce its own UNKNOWN
+            .map(max -> CompatibilityVersions.compare(ints, max) > 0)
+            .orElse(false)).orElse(false);
     }
 
     // Row label examples on the public page: "2026.7.x", "2026.4.x". Match on major+minor only.
@@ -100,11 +98,9 @@ public class CompatibilityResolver {
     }
 
     private boolean rowMatchesServer(String rowLabel, BlackDuckVersion serverVersion) {
-        int[] parts = CompatibilityVersions.parse(rowLabel);
-        if (parts == null) {
-            return false;
-        }
-        return serverVersion.getMajor() == parts[0] && serverVersion.getMinor() == parts[1];
+        return CompatibilityVersions.parse(rowLabel)
+            .map(parts -> serverVersion.getMajor() == parts[0] && serverVersion.getMinor() == parts[1])
+            .orElse(false);
     }
 
     // Entry examples: exact "12.0.0" or minor wildcard "9.10.x".
@@ -112,7 +108,7 @@ public class CompatibilityResolver {
         if (candidates == null) {
             return false;
         }
-        int[] parsedDetectVersion = CompatibilityVersions.parse(detectVersion);
+        Optional<int[]> parsedDetectVersion = CompatibilityVersions.parse(detectVersion);
         for (String candidate : candidates) {
             if (candidate == null) {
                 continue;
@@ -120,9 +116,9 @@ public class CompatibilityResolver {
             if (candidate.equals(detectVersion)) {
                 return true;
             }
-            if (parsedDetectVersion != null
+            if (parsedDetectVersion.isPresent()
                 && candidate.endsWith(WILDCARD_SUFFIX)
-                && matchesMinorWildcard(parsedDetectVersion, candidate)) {
+                && matchesMinorWildcard(parsedDetectVersion.get(), candidate)) {
                 return true;
             }
         }
@@ -131,7 +127,8 @@ public class CompatibilityResolver {
 
     // "9.10.5" matches wildcard "9.10.x" (major.minor equal, any patch).
     private boolean matchesMinorWildcard(int[] parsedDetectVersion, String wildcardCandidate) {
-        int[] wild = CompatibilityVersions.parse(wildcardCandidate);
-        return wild != null && parsedDetectVersion[0] == wild[0] && parsedDetectVersion[1] == wild[1];
+        return CompatibilityVersions.parse(wildcardCandidate)
+            .map(wild -> parsedDetectVersion[0] == wild[0] && parsedDetectVersion[1] == wild[1])
+            .orElse(false);
     }
 }
