@@ -1,0 +1,17 @@
+{
+    "schemaVersion": 1,
+    "matrixSourceUrl": "https://docs.blackduck.com/r/blackduck/black-duck-compatibility-reference/black-duck-sca-release-compatibility.html",
+    "rows": [
+        { "blackDuckScaRelease": "2026.7.x",  "detectVersions": ["12.0.0","11.5.1","11.5.0","11.4.2","11.4.1","11.4.0","10.7.0"] },
+        { "blackDuckScaRelease": "2026.4.x",  "detectVersions": ["12.0.0","11.5.1","11.5.0","11.4.2","11.4.1","11.4.0","10.7.0"] },
+        { "blackDuckScaRelease": "2026.1.x",  "detectVersions": ["12.0.0","11.5.1","11.5.0","11.4.2","11.4.1","11.4.0","11.3.0","11.2.1","11.2.0","10.7.0"] },
+        { "blackDuckScaRelease": "2025.10.x", "detectVersions": ["11.5.1","11.5.0","11.4.2","11.4.1","11.4.0","11.3.0","11.2.1","11.2.0","11.1.0","11.0.0","10.7.0","9.10.1"] },
+        { "blackDuckScaRelease": "2025.7.x",  "detectVersions": ["11.2.1","11.2.0","11.1.0","11.0.0","10.7.0","10.6.0","9.10.x"] },
+        { "blackDuckScaRelease": "2025.4.x",  "detectVersions": ["11.0.0","10.7.0","10.6.0","10.5.0","10.4.0","10.3.0","9.10.x"] },
+        { "blackDuckScaRelease": "2025.1.x",  "detectVersions": ["10.7.0","10.6.0","10.5.0","10.4.0","10.3.0","10.2.x","10.1.0","10.0.0","9.10.x"] },
+        { "blackDuckScaRelease": "2024.10.x", "detectVersions": ["10.4.0","10.3.0","10.2.x","10.1.0","10.0.0","9.10.x","8.11.x"] },
+        { "blackDuckScaRelease": "2024.7.x",  "detectVersions": ["10.2.x","10.1.0","10.0.0","9.10.x","9.9.0","9.8.0","8.11.x"] },
+        { "blackDuckScaRelease": "2024.4.x",  "detectVersions": ["10.0.0","9.10.x","9.9.0","9.8.0","9.7.0","9.6.0","9.5.0","8.11.x"] },
+        { "blackDuckScaRelease": "2024.1.x",  "detectVersions": ["9.9.0","9.8.0","9.7.0","9.6.0","9.5.0","9.4.0","9.3.0","9.2.0","8.11.x"] }
+    ]
+}

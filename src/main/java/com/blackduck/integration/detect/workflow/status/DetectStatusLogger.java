@@ -81,11 +81,13 @@ public class DetectStatusLogger {
             Predicate<DetectIssue> exceptionsFilter = issue -> issue.getType() == DetectIssueType.EXCEPTION;
             Predicate<DetectIssue> deprecationsFilter = issue -> issue.getType() == DetectIssueType.DEPRECATION;
             Predicate<DetectIssue> propertyKeysFilter = issue -> issue.getType() == DetectIssueType.PROPERTY_KEY;
+            Predicate<DetectIssue> compatibilityFilter = issue -> issue.getType() == DetectIssueType.COMPATIBILITY;
             logIssuesInGroup(logger, "DETECTORS:", detectorsFilter, detectIssues);
             logIssuesInGroup(logger, "DETECTABLE TOOLS:", detectableToolsFilter, detectIssues);
             logIssuesInGroup(logger, "EXCEPTIONS:", exceptionsFilter, detectIssues);
             logIssuesInGroup(logger, "DEPRECATIONS:", deprecationsFilter, detectIssues);
             logIssuesInGroup(logger, "PROPERTY KEYS:", propertyKeysFilter, detectIssues);
+            logIssuesInGroup(logger, "COMPATIBILITY:", compatibilityFilter, detectIssues);
         }
     }
 
