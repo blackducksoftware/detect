@@ -103,8 +103,7 @@ public class BzlmodGraphJsonParser {
      * @return Module name
      */
     public static String extractName(String moduleKey) {
-        int atIdx = moduleKey.indexOf(MODULE_KEY_SEPARATOR);
-        return atIdx > 0 ? moduleKey.substring(0, atIdx) : moduleKey;
+        return ModuleKey.parse(moduleKey).getName();
     }
 
     /**
@@ -115,8 +114,7 @@ public class BzlmodGraphJsonParser {
      * @return Module version, or null if not present
      */
     public static String extractVersion(String moduleKey) {
-        int atIdx = moduleKey.indexOf(MODULE_KEY_SEPARATOR);
-        return atIdx > 0 && atIdx < moduleKey.length() - 1 ? moduleKey.substring(atIdx + 1) : null;
+        return ModuleKey.parse(moduleKey).getVersion();
     }
 
     // -------------------------------------------------------------------------

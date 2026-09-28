@@ -7,6 +7,7 @@ import com.blackduck.integration.bdio.model.dependency.Dependency;
 import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
+import com.blackduck.integration.detectable.detectables.uv.UVDependencyGroupFilter;
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.TreeSet;
 
 public class UVLockParser {
 
@@ -64,6 +66,21 @@ public class UVLockParser {
     // In the first go, we will get all dependency and transitive dependencies information,
     // In the second go, we will recursively loop all the workspace members which will have their direct, transitives and so on to build the graph.
     private void parseDependencies(TomlArray dependencies, String rootName, UVDetectorOptions uvDetectorOptions) {
+        UVDependencyGroupFilter groupFilter = new UVDependencyGroupFilter(uvDetectorOptions);
+        groupFilter.logGroupConflictWarnings(logger);
+
+        if (!groupFilter.hasEffectiveGroups()) {
+            return;
+        }
+
+        Set<String> effectiveOnlyGroups = new TreeSet<>(groupFilter.getEffectiveOnlyGroups());
+        if (!effectiveOnlyGroups.isEmpty()) {
+            logger.info("UV Lock detector: scanning only dependency groups: {}", effectiveOnlyGroups);
+        }
+
+        Set<String> onlyGroups = groupFilter.getOnlyGroups();
+        Set<String> excludedGroups = groupFilter.getExcludedGroups();
+
         for(int i = 0; i < dependencies.size(); i++) {
             TomlTable dependencyTable = dependencies.getTable(i);
 
@@ -80,12 +97,13 @@ public class UVLockParser {
                 // we parse project name and workspace members first and add them to a list, while recursively looping over dependencies, we loop over all workspaceMembers list
                 // which will in turn mean that their dependencies are direct since uv.lock always has one entry for the root project
                 // Here if rootName from pyproject.toml or workspace member is encountered then we store it
-                if(rootName.equals(dependencyName) || workSpaceMembers.contains(dependencyName)) {
+                boolean isProjectEntry = rootName.equals(dependencyName) || workSpaceMembers.contains(dependencyName);
+                if(isProjectEntry) {
                     workSpaceMembers.add(dependencyName);
                 }
 
                 //parse transitive dependencies section of current dependency
-                parseDependenciesSection(dependencyTable, dependencyName, uvDetectorOptions);
+                parseDependenciesSection(dependencyTable, dependencyName, onlyGroups, excludedGroups, isProjectEntry);
             }
         }
 
@@ -93,34 +111,45 @@ public class UVLockParser {
 
     }
 
-    private void parseDependenciesSection(TomlTable dependencyTable, String dependencyName, UVDetectorOptions uvDetectorOptions) {
-        //parse dependencies section
-        if(dependencyTable.contains(DEPENDENCIES_KEY)) {
-            TomlArray directDependencyArray = dependencyTable.getArray(DEPENDENCIES_KEY);
-            parseTransitiveDependencies(directDependencyArray, dependencyName);
+    // isProjectEntry is true only for the root project's own [[package]] entry and for
+    // workspace member entries (identified via [manifest].members, collected up-front by
+    // collectWorkspaceMembers before this loop runs). It is false for every other (regular,
+    // third-party/transitive) package pulled in as a dependency.
+    private void parseDependenciesSection(TomlTable dependencyTable, String dependencyName, Set<String> onlyGroups, Set<String> excludedGroups, boolean isProjectEntry) {
+
+        // [dependencies] — for the root project / workspace members this is [project.dependencies]
+        // (the main project's regular deps), which is skipped when onlyGroups is set, mirroring CLI
+        // behaviour where --only-group does not include regular dependencies.
+        // For every OTHER package (e.g. a package pulled in via a selected dev group), [dependencies]
+        // is that package's OWN runtime requirements and must always be parsed — otherwise the
+        // transitive closure of a selected group's dependencies would be silently dropped.
+        if ((!isProjectEntry || onlyGroups.isEmpty()) && dependencyTable.contains(DEPENDENCIES_KEY)) {
+            parseTransitiveDependencies(dependencyTable.getArray(DEPENDENCIES_KEY), dependencyName);
         }
 
-        //parse dev dependencies, it is a toml table with group name as the key and dependencies as list, check if that group is not included then do not parse them
-        if(dependencyTable.contains(DEV_DEPENDENCIES_KEY)) {
-            TomlTable devDependencyTable = dependencyTable.getTable(DEV_DEPENDENCIES_KEY);
-            for(List<String> keyPath: devDependencyTable.keyPathSet()) {
-                String groupName = keyPath.get(0);
-                if(!uvDetectorOptions.getExcludedDependencyGroups().contains(groupName)) {
-                    TomlArray devDependencyArray = devDependencyTable.getArray(groupName);
-                    parseTransitiveDependencies(devDependencyArray, dependencyName);
-                }
-            }
+        // [dev-dependencies] — when onlyGroups is set, include a group only if it is
+        // in onlyGroups AND not in excludedGroups. Excluded always wins.
+        if (dependencyTable.contains(DEV_DEPENDENCIES_KEY)) {
+            parseFilteredGroupDependencies(dependencyTable.getTable(DEV_DEPENDENCIES_KEY), dependencyName, onlyGroups, excludedGroups);
         }
 
-        //parse optional dependencies which is part of uv tree command, it can be excluded by users using uv configuration
-        if(dependencyTable.contains(OPTIONAL_DEPENDENCIES_KEY)) {
-            TomlTable optionalDependencyTable = dependencyTable.getTable(OPTIONAL_DEPENDENCIES_KEY);
-            for(List<String> keyPath: optionalDependencyTable.keyPathSet()) {
-                String groupName = keyPath.get(0);
-                if(!uvDetectorOptions.getExcludedDependencyGroups().contains(groupName)) {
-                    TomlArray optionalDependencyArray = optionalDependencyTable.getArray(groupName);
-                    parseTransitiveDependencies(optionalDependencyArray, dependencyName);
-                }
+        // [optional-dependencies] — same rationale as [dependencies] above: skipped only for the
+        // root project / workspace members (their own [project.optional-dependencies] extras),
+        // always parsed for any other package so extras needed to resolve that dependency remain.
+        if ((!isProjectEntry || onlyGroups.isEmpty()) && dependencyTable.contains(OPTIONAL_DEPENDENCIES_KEY)) {
+            parseFilteredGroupDependencies(dependencyTable.getTable(OPTIONAL_DEPENDENCIES_KEY), dependencyName, onlyGroups, excludedGroups);
+        }
+    }
+
+    // Iterates over a TOML group table (dev-dependencies or optional-dependencies) and
+    // includes only groups that pass both the onlyGroups allowlist and the excludedGroups denylist.
+    private void parseFilteredGroupDependencies(TomlTable groupTable, String dependencyName, Set<String> onlyGroups, Set<String> excludedGroups) {
+        for (List<String> keyPath : groupTable.keyPathSet()) {
+            String rawGroupName = keyPath.get(0);
+            String groupName = rawGroupName.toLowerCase();
+            boolean groupAllowed = onlyGroups.isEmpty() || onlyGroups.contains(groupName);
+            if (groupAllowed && !excludedGroups.contains(groupName)) {
+                parseTransitiveDependencies(groupTable.getArray(rawGroupName), dependencyName);
             }
         }
     }

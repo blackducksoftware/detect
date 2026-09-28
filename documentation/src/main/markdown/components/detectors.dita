@@ -16,7 +16,7 @@
 		<body>
 			<p>The following table contains information for each Detector type, and detector. Details on
                 these terms is available on the <xref href="../runningdetect/detectorcascade.md" format="markdown">detector search</xref> page.</p>
-			<table>
+			<table outputclass="basictable">
 				<tgroup cols="6">
 					<colspec colname="col1"/>
 					<colspec colname="col2"/>

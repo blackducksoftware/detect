@@ -3,7 +3,7 @@
 ## General requirements
      
 * Minimum 8GB RAM.   
-* Java: OpenJDK 64-bit version 11, 13, 14, 15, 16, 17, or 21. 
+* Java: OpenJDK 64-bit version 11, 13, 14, 15, 16, 17, 21, or 25.
 * Minimum curl version 7.34.0, recommended 8.4.0 or later.   
 * Bash.   
 * If using [powershell_script_name]: PowerShell versions 4.0 or higher.   

@@ -28,6 +28,10 @@ public class MavenCodeLocationPackager {
 
     private static final String END_OF_TREE_PATTERN_STRING = "^-*< .* >-*$";
     private final Pattern endOfTreePattern = Pattern.compile(END_OF_TREE_PATTERN_STRING);
+    // Characters that are never valid in a Maven coordinate part. A
+    // project-header candidate whose colon-split parts contain any of
+    // these is treated as log prose, not a GAV.
+    private static final Pattern PROJECT_COORDINATE_INVALID_CHARS = Pattern.compile("[\\s/()\\[\\]{},]");
     private final ExternalIdFactory externalIdFactory;
     private List<MavenParseResult> codeLocations = new ArrayList<>();
     private MavenParseResult currentMavenProject = null;
@@ -35,6 +39,13 @@ public class MavenCodeLocationPackager {
     // in-scope components found in an out-of-scope tree go in the orphans list
     private final List<Dependency> orphans = new ArrayList<>();
     private boolean parsingProjectSection;
+    // True if a dependency:tree goal header was observed in this extraction.
+    private boolean treeHeaderEverSeen;
+    // True if at least one valid project GAV was recognized in this
+    // extraction, whether the modules filter later included or excluded it.
+    // Used to distinguish "parser failed to identify a project" from
+    // "modules filter excluded every project."
+    private boolean validProjectHeaderSeen;
     private int level;
     private boolean inOutOfScopeTree = false;
     private DependencyGraph currentGraph = null;
@@ -62,6 +73,8 @@ public class MavenCodeLocationPackager {
         currentMavenProject = null;
         dependencyParentStack = new Stack<>();
         parsingProjectSection = false;
+        treeHeaderEverSeen = false;
+        validProjectHeaderSeen = false;
         currentGraph = new BasicDependencyGraph();
 
         if(!shadedDependencies.isEmpty()) {
@@ -117,6 +130,17 @@ public class MavenCodeLocationPackager {
         addOrphansToGraph(currentGraph, orphans);
         logger.debug(String.format("Modified %d Eclipse package external IDs.", eclipsePackageExternalIdModifiedCounter));
 
+        // Warn if a tree header was seen but no project GAV was ever
+        // recognized. Keyed on validProjectHeaderSeen so scans where the
+        // modules filter legitimately excludes every project do not warn.
+        if (treeHeaderEverSeen && !validProjectHeaderSeen) {
+            logger.warn(
+                "Maven dependency:tree output was scanned but no project could be extracted. "
+              + "This can occur when Maven or maven-resolver emits unexpected INFO lines "
+              + "between the tree header and the project header. "
+              + "No components will be reported for this Maven detector run.");
+        }
+
         return codeLocations;
     }
 
@@ -130,6 +154,7 @@ public class MavenCodeLocationPackager {
         }
         if (isProjectSection(line)) {
             parsingProjectSection = true;
+            treeHeaderEverSeen = true;
             return true;
         }
         if (!parsingProjectSection) {
@@ -142,19 +167,45 @@ public class MavenCodeLocationPackager {
     }
 
     private void initializeCurrentMavenProject(ExcludedIncludedWildcardFilter modulesFilter, String sourcePath, String line) {
-        // this is the first line of a new code location, the following lines will be the tree of dependencies for this code location
+        // The candidate line is the first non-noise line after a
+        // dependency:tree goal header. Three outcomes:
+        //   (1) valid GAV, module included -> anchor and start collecting.
+        //   (2) valid GAV, module excluded -> disarm so the tree body is
+        //       fast-forwarded until the next @ module header re-arms.
+        //   (3) anything else -> keep parsingProjectSection = true and
+        //       retry the next non-noise line.
+        //
+        // End-of-section for an anchored module is handled by the main
+        // loop's finished branch, not here.
+        //
+        // currentGraph is allocated unconditionally here so leftover
+        // shaded-dependency orphans emitted at end-of-extraction are
+        // isolated per candidate — reassigning only in the happy path
+        // would let an excluded module's leftovers attach to a
+        // previously-anchored module's graph.
         currentGraph = new BasicDependencyGraph();
         MavenParseResult mavenProject = createMavenParseResult(sourcePath, line, currentGraph);
         if (null != mavenProject && modulesFilter.shouldInclude(mavenProject.getProjectName())) {
+            // (1) Anchor.
             logger.trace(String.format("Project: %s", mavenProject.getProjectName()));
             this.currentMavenProject = mavenProject;
             codeLocations.add(mavenProject);
-        } else {
-            logger.trace("Project: unknown");
+            validProjectHeaderSeen = true;
+        } else if (null != mavenProject) {
+            // (2) Excluded by modules filter. Disarm so subsequent tree
+            // body lines are skipped by shouldSkipLine's
+            // !parsingProjectSection gate.
+            logger.trace(String.format("Project %s excluded by modules filter", mavenProject.getProjectName()));
             currentMavenProject = null;
             dependencyParentStack.clear();
             parsingProjectSection = false;
             level = 0;
+            validProjectHeaderSeen = true;
+        } else {
+            // (3) Not a GAV. Retry on the next line.
+            logger.debug(String.format(
+                "Line following dependency:tree header did not parse as a project GAV; will retry with the next non-noise line. Line: %s",
+                line));
         }
     }
 
@@ -363,19 +414,45 @@ public class MavenCodeLocationPackager {
         // This is a GAV line.
         componentText = removeGroupArtifactPipedSuffixIfExists(componentText);
 
-        String[] gavParts = componentText.split(":");
+        // Preserve trailing empty fields so "g:a:jar:1.0:" is rejected
+        // as invalid rather than silently truncated to 4 parts.
+        String[] gavParts = componentText.split(":", -1);
+
+        // A valid project GAV is exactly G:A:type:V (4 parts) or
+        // G:A:type:classifier:V (5 parts), and each part must contain
+        // only characters valid in a Maven coordinate. Reject anything
+        // else — including log prose that embeds a coordinate and
+        // colon-heavy URLs.
+        if (gavParts.length != 4 && gavParts.length != 5) {
+            logger.debug(String.format(
+                "%s does not look like a project header we can parse (colon-part count: %d)",
+                componentText, gavParts.length));
+            return null;
+        }
+        for (String part : gavParts) {
+            if (StringUtils.isBlank(part)) {
+                logger.debug(String.format(
+                    "%s does not look like a project header we can parse (blank part)",
+                    componentText));
+                return null;
+            }
+            if (PROJECT_COORDINATE_INVALID_CHARS.matcher(part).find()) {
+                logger.debug(String.format(
+                    "%s does not look like a project header we can parse (part '%s' contains characters not valid in a Maven coordinate)",
+                    componentText, part));
+                return null;
+            }
+        }
+
         String group = gavParts[0];
         String artifact = gavParts[1];
         String version;
         if (gavParts.length == 4) {
             // Dependency does not include the classifier
             version = gavParts[gavParts.length - 1];
-        } else if (gavParts.length == 5) {
-            // Dependency does include the classifier
-            version = gavParts[gavParts.length - 1]; //Should be 2. Possible sleeper.
         } else {
-            logger.debug(String.format("%s does not look like a dependency we can parse", componentText));
-            return null;
+            // Dependency does include the classifier (gavParts.length == 5)
+            version = gavParts[gavParts.length - 1]; //Should be 2. Possible sleeper.
         }
         ExternalId externalId = externalIdFactory.createMavenExternalId(group, artifact, version);
         return new Dependency(artifact, version, externalId);

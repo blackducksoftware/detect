@@ -33,7 +33,7 @@ public class BazelEnvironmentAnalyzer {
             .graph()
             .build();
 
-        ExecutableOutput output = bazel.executeWithoutThrowing(modGraphCommand);
+        ExecutableOutput output = bazel.executeToleratingExitCode(modGraphCommand);
 
         if (output.getReturnCode() == 0) {
             String stdout = output.getStandardOutput().trim();

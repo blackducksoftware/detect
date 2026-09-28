@@ -27,7 +27,7 @@ public class BazelVersionChecker {
      */
     public Optional<BazelVersion> detectVersion() {
         try {
-            ExecutableOutput output = bazel.executeWithoutThrowing(Collections.singletonList("--version"));
+            ExecutableOutput output = bazel.executeToleratingExitCode(Collections.singletonList("--version"));
             if (output.getReturnCode() != 0) {
                 logger.debug("bazel --version returned non-zero exit code: {}", output.getReturnCode());
                 return Optional.empty();

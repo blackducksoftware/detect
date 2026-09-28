@@ -3,7 +3,6 @@ package com.blackduck.integration.detect.lifecycle.run.step;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
-import java.net.SocketException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -16,7 +15,6 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Collections;
 
-import org.apache.http.conn.HttpHostConnectException;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +60,7 @@ public class SignatureScanStepRunner {
         List<SignatureScannerReport> reports;
         try {
             reports = executeScan(scanBatch, scanBatchRunner, scanPaths, scanIdsToWaitFor, gson, true);
-        } catch (SocketException e) {
+        } catch (IOException e) {
             if (!operationRunner.isCorrelationScanningEnabled("SIGNATURE")) {
                 logger.warn("Initial Signature Scan failed due to connectivity issues. Retrying scan. Please allow the SCASS IPs to increase scanning performance.");
                 scanBatch = operationRunner.createScanBatchOnline(detectRunUuid, scanPaths, projectNameVersion, dockerTargetData, blackDuckRunData, true);
@@ -189,7 +187,7 @@ public class SignatureScanStepRunner {
 
     private void processOnlineScan(Set<String> scanIdsToWaitFor, Gson gson,
             boolean scassScan, Set<String> failedScans, ScanCommandOutput output, File specificRunOutputDirectory,
-            String scanOutputLocation) throws IOException, HttpHostConnectException, SocketException {
+            String scanOutputLocation) throws IOException {
         SignatureScanResult result;
         try (Reader reader = Files.newBufferedReader(Paths.get(scanOutputLocation))) {
             result = gson.fromJson(reader, SignatureScanResult.class);
@@ -216,14 +214,8 @@ public class SignatureScanStepRunner {
                 logger.debug("Added the following signature scans to list of scanIds to wait for: {}." , result.parseScanIds());
             }
         } catch (IntegrationException e) {
-            if (e.getCause() instanceof SocketException) {
-                // The most likely cause of a failure like this is that the SCASS URLs are
-                // not accessible. Attempt a legacy scan.
-                throw (SocketException) e.getCause();
-            } else {
-                failedScans.add(output.getCodeLocationName());
-                operationRunner.publishSignatureFailure(e.getMessage());
-            }
+            // Any SCASS upload failure triggers a legacy scan retry.
+            throw new IOException(e);
         }
     }
 
