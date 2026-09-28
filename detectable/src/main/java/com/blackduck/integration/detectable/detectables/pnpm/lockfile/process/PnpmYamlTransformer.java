@@ -57,8 +57,11 @@ public class PnpmYamlTransformer {
         @Nullable Map<String, PnpmPackageInfo> snapshots
     ) throws IntegrationException {
         DependencyGraph dependencyGraph = new BasicDependencyGraph();
-        List<String> rootPackageIds = extractRootPackageIds(projectPackage, reportingProjectPackagePath, linkedPackageResolver);        
-        buildGraph(dependencyGraph, rootPackageIds, packageMap, linkedPackageResolver, reportingProjectPackagePath, snapshots);
+        PnpmLinkedDependencyDiagnostics diagnostics = new PnpmLinkedDependencyDiagnostics(
+            logger.isInfoEnabled() || logger.isDebugEnabled(), dependencyTypeFilter);
+        List<String> rootPackageIds = extractRootPackageIds(projectPackage, reportingProjectPackagePath, linkedPackageResolver, diagnostics);
+        buildGraph(dependencyGraph, rootPackageIds, packageMap, linkedPackageResolver, reportingProjectPackagePath, snapshots, diagnostics);
+        diagnostics.log(logger, reportingProjectPackagePath, this::isRootPackage);
 
         if (projectNameVersion != null) {
             return new CodeLocation(
@@ -76,7 +79,8 @@ public class PnpmYamlTransformer {
         @Nullable Map<String, PnpmPackageInfo> packageMap,
         PnpmLinkedPackageResolver linkedPackageResolver,
         @Nullable String reportingProjectPackagePath, 
-        @Nullable Map<String, PnpmPackageInfo> snapshots
+        @Nullable Map<String, PnpmPackageInfo> snapshots,
+        PnpmLinkedDependencyDiagnostics diagnostics
     ) throws IntegrationException {
         if (packageMap == null) {
             logger.debug("No packages available to build dependency graph for workspace '{}'. Skipping graph construction.",
@@ -95,6 +99,7 @@ public class PnpmYamlTransformer {
             // Process direct dependencies
             if (isRootPackage(packageId, rootPackageIds)) {
                 graphBuilder.addChildToRoot(pnpmPackage.get());
+                diagnostics.recordAddedPackage(packageId);
             }
 
             PnpmPackageInfo packageInfo = getDependencyInformation(packageEntry, snapshots);  
@@ -178,7 +183,8 @@ public class PnpmYamlTransformer {
     private List<String> extractRootPackageIds(
         PnpmProjectPackage pnpmProjectPackage,
         @Nullable String reportingProjectPackagePath,
-        PnpmLinkedPackageResolver linkedPackageResolver
+        PnpmLinkedPackageResolver linkedPackageResolver,
+        PnpmLinkedDependencyDiagnostics diagnostics
     ) {
         Map<String, PnpmDependencyInfo> rawPackageInfo = new HashMap<>();
         if (pnpmProjectPackage.dependencies != null) {
@@ -188,7 +194,12 @@ public class PnpmYamlTransformer {
         dependencyTypeFilter.ifShouldInclude(PnpmDependencyType.OPTIONAL, pnpmProjectPackage.optionalDependencies, rawPackageInfo::putAll);
 
         return rawPackageInfo.entrySet().stream()
-            .map(entry -> convertRawEntryToPackageId(entry.getKey(), entry.getValue().version, linkedPackageResolver, reportingProjectPackagePath))
+            .map(entry -> {
+                String packageId = convertRawEntryToPackageId(entry.getKey(), entry.getValue().version, linkedPackageResolver, reportingProjectPackagePath);
+                diagnostics.recordLink(entry.getKey(), entry.getValue().version, packageId,
+                    pnpmProjectPackage.devDependencies, pnpmProjectPackage.optionalDependencies);
+                return packageId;
+            })
             .collect(Collectors.toList());
     }
 

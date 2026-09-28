@@ -77,7 +77,7 @@ public class PnpmWorkspaceDependencySummary {
         }
         String moduleLabel = IS_NODE_ROOT.evaluate(projectKey) ? ROOT_MODULE_LABEL : projectKey; // Fix 4: consistent Predicate
         PnpmWorkspaceDependencySummary summary = from(graph, logger.isDebugEnabled()); // Fix 3: pass flag
-        logger.info("Workspace module '{}': {} direct and {} transitive dependencies discovered.",
+        logger.info("Workspace module '{}': generated dependency graph contains {} direct and {} transitive dependencies.",
             moduleLabel, summary.directCount, summary.transitiveCount);
         if (logger.isDebugEnabled()) {
             logger.debug("Workspace module '{}' full dependency list: {}", moduleLabel, summary.depNames);
