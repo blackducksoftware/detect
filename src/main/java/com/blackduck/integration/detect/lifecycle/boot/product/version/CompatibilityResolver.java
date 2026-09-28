@@ -45,7 +45,10 @@ public class CompatibilityResolver {
         }
 
         String message = String.format(
-            "Detect %s is NOT listed as compatible with Black Duck SCA %s. "
+            "Detect %s is not listed as compatible with Black Duck SCA %s. "
+                + "Some features may not be supported or may not work as expected. "
+                + "Detect may still run. "
+                + "It is recommended to use a listed Detect version. "
                 + "Compatible Detect versions for Black Duck SCA %s: %s. "
                 + "See the compatibility matrix: %s",
             detectVersion,
