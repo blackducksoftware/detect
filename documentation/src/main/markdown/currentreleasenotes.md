@@ -31,10 +31,6 @@
     * Poetry: 2.4.1
     * Go: 1.26.5
 
-### Changed features
-
-* 
-
 ### Resolved issues
 
 * (IDETECT-5258) Retry logic now applies to [var_company_long] SCA Scan Service (SCASS) operations involving smaller files. Previously, retries were only performed for large files uploaded in chunks.
