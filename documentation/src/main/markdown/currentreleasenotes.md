@@ -23,6 +23,13 @@
 ### New features
 
 * Support for OpenJDK 25 has been added.
+* Support for the following package managers have been extended:
+    * pip: 26.1.2
+    * Pipenv: 2026.6.2
+    * Setuptools: 83.0.0
+    * uv: 0.11.29
+    * Poetry: 2.4.1
+    * Go: 1.26.5
 
 ### Changed features
 
@@ -33,6 +40,7 @@
 * (IDETECT-5258) Retry logic now applies to [var_company_long] SCA Scan Service (SCASS) operations involving smaller files. Previously, retries were only performed for large files uploaded in chunks.
 * (IDETECT-5240) Enhanced npm alias handling: Aliases used by direct dependencies are now displayed in the BOM. In addition, multiple aliases that reference the same underlying package are now resolved correctly.
 * (IDETECT-5267) Improved Cargo detector version parsing to more reliably handle pre-release suffixes, malformed, and non-standard version output.
+* (IDETECT-5253) Component Location Analysis now correctly identifies component locations for packages with partially specified versions in `package-lock.json`.
 
 ### Dependency Updates
 
