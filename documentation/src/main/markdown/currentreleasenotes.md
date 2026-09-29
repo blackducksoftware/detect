@@ -23,7 +23,7 @@
 ### New features
 
 * Support for OpenJDK 25 has been added.
-* Support for the following package managers have been extended:
+* Package Manager support has been extended to include:
     * pip: 26.1.2
     * Pipenv: 2026.6.2
     * Setuptools: 83.0.0
