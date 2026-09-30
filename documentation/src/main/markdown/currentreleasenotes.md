@@ -37,6 +37,7 @@
 * (IDETECT-5240) Enhanced npm alias handling: Aliases used by direct dependencies are now displayed in the BOM. In addition, multiple aliases that reference the same underlying package are now resolved correctly.
 * (IDETECT-5267) Improved Cargo detector version parsing to more reliably handle pre-release suffixes, malformed, and non-standard version output.
 * (IDETECT-5253) Component Location Analysis now correctly identifies component locations for packages with partially specified versions in `package-lock.json`.
+* (IDETECT-5287) Fixed an issue where Maven scans could produce an incomplete or incorrect BOM when additional log lines appeared within `mvn dependency:tree` output.
 
 ### Dependency Updates
 
