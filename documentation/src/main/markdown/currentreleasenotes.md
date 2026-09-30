@@ -46,3 +46,4 @@
 * Updated Jackson libraries to version 2.22.3.
 * Updated FreeMarker to version 2.3.35.
 * Upgraded and released Nuget Inspector version 2.7.0.
+* Update Component Locator Library to version 2.4.8.
