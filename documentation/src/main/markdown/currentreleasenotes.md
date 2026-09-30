@@ -31,8 +31,14 @@
     * Poetry: 2.4.1
     * Go: 1.26.5
 
+### Changed features
+
+* (IDETECT-5250) Extended `detect.uv.dependency.groups.only` support to the UV Lockfile (buildless) detector.
+* (IDETECT-5220) Improved PNPM detector logging to provide clearer informational and debug visibility into discovered workspace modules and dependencies during scans.
+
 ### Resolved issues
 
+* (IDETECT-5246) Fixed a null-pointer crash when multiple `detect.nuget.packages.repo.url` entries were configured; the NuGet inspector now continues scanning instead of failing.
 * (IDETECT-5258) Retry logic now applies to [var_company_long] SCA Scan Service (SCASS) operations involving smaller files. Previously, retries were only performed for large files uploaded in chunks.
 * (IDETECT-5240) Enhanced npm alias handling: Aliases used by direct dependencies are now displayed in the BOM. In addition, multiple aliases that reference the same underlying package are now resolved correctly.
 * (IDETECT-5267) Improved Cargo detector version parsing to more reliably handle pre-release suffixes, malformed, and non-standard version output.
