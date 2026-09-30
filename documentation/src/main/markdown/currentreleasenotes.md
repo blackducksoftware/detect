@@ -43,6 +43,6 @@
 
 ### Dependency Updates
 
-* Updated Jackson libraries to version 2.22.2.
+* Updated Jackson libraries to version 2.22.3.
 * Updated FreeMarker to version 2.3.35.
 * Upgraded and released Nuget Inspector version 2.7.0.
