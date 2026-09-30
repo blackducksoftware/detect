@@ -23,6 +23,8 @@ public class HttpFamilyProber {
     private final List<String> queryOptions;
     // Detected Bazel version; null means unknown (treat as < 7.1)
     private final BazelVersion bazelVersion;
+    // User-supplied exclusion patterns from detect.bazel.modules.excluded
+    private final List<String> excludedModules;
 
     // Bazel rule kind patterns for queries
     private static final String LIBRARY_RULE_PATTERN = ".*library";
@@ -69,6 +71,7 @@ public class HttpFamilyProber {
         this.mode = options.getMode();
         this.queryOptions = options.getQueryOptions();
         this.bazelVersion = options.getBazelVersion();
+        this.excludedModules = options.getExcludedModules() != null ? options.getExcludedModules() : Collections.emptyList();
     }
 
     /**
@@ -353,7 +356,7 @@ public class HttpFamilyProber {
      * Returns true if the repo name is in the list of excluded (non-HTTP) repositories.
      */
     private boolean isExcludedRepo(String repo) {
-        return BazelInfrastructureModules.isInfrastructure(repo);
+        return BazelInfrastructureModules.isExcluded(repo, excludedModules);
     }
 
     /**

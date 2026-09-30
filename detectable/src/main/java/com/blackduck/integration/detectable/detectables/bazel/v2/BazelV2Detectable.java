@@ -166,6 +166,7 @@ public class BazelV2Detectable extends Detectable {
             .bazelVersion(bazelVersion)
             .cqueryOptions(options.getBazelCqueryAdditionalOptions())
             .queryOptions(options.getBazelQueryAdditionalOptions())
+            .excludedModules(options.getExcludedModules())
             .build();
         Set<DependencySource> pipelines = resolvePipelines(bazelCmd, target, extractionOptions);
 
