@@ -11,8 +11,8 @@ Spring Boot looks for a configuration file named `application.properties` or `ap
 For example, if you want to set the `detect.project.name` property using a configuration (`.properties`) file, you can do so as follows:
 
 ````
-echo "detect.project.name=myproject" &gt; application.properties
-bash &lt;(curl -s -L https://detect.blackduck.com/detect12.sh) --detect.source.path=/opt/projects/project1
+echo "detect.project.name=myproject" > application.properties
+bash <(curl -s -L https://detect.blackduck.com/detect12.sh) --detect.source.path=/opt/projects/project1
 ````
 
 Because the configuration file has one of the file names that Spring looks for by default (in this case, `application.properties`) and exists in one of the locations that Spring looks in by default (in this case, the current directory), there is no need to specify the path to the configuration file on the command line.
