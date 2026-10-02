@@ -17,7 +17,7 @@ bash &lt;(curl -s -L https://detect.blackduck.com/detect12.sh) --detect.source.p
 
 Because the configuration file has one of the file names that Spring looks for by default (in this case, `application.properties`) and exists in one of the locations that Spring looks in by default (in this case, the current directory), there is no need to specify the path to the configuration file on the command line.
 
-Additional details can be found in the [Spring Boot documentation](https://docs.spring.io/spring-boot/docs/2.4.5/reference/html/howto.html#howto-externalize-configuration).
+Additional details can be found in the [Spring Boot documentation](https://docs.spring.io/spring-boot/docs/2.7.12/reference/html/howto.html#howto-externalize-configuration).
 
 ## Properties file
 
