@@ -24,8 +24,8 @@ import com.blackduck.integration.exception.IntegrationException;
 public class DetectOnDetectTest {
     @Test
     void detectOnDetect() throws IOException, IntegrationException {
-        try (DetectDockerTestRunner test = new DetectDockerTestRunner("detect-on-detect", "detect-7.1.0:1.0.0")) {
-            test.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("Detect-7.1.0.dockerfile"));
+        try (DetectDockerTestRunner test = new DetectDockerTestRunner("detect-on-detect", "detect-11.5.1:1.0.0")) {
+            test.withImageProvider(BuildDockerImageProvider.forDockerfilResourceNamed("Detect-11.5.1.dockerfile"));
 
             BlackDuckTestConnection blackDuckTestConnection = BlackDuckTestConnection.fromEnvironment();
             BlackDuckAssertions blackduckAssertions = blackDuckTestConnection.projectVersionAssertions("detect-on-detect-docker", "happy-path");
