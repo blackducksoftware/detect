@@ -66,6 +66,9 @@ public class BzlmodBcrExtractor {
     // query so it is consistent with the HTTP_ARCHIVE pipeline and HttpFamilyProber, which both honor
     // these options. Keeping the args identical also lets BazelCommandExecutor memoize/reuse the result.
     private final List<String> queryOptions;
+    // User-supplied exclusion patterns from detect.bazel.modules.excluded, appended on top of the
+    // hard-coded exclusion list in BazelInfrastructureModules.
+    private final List<String> excludedModules;
     // Stateless helpers — created by default constructors; can be injected for testing
     private final GithubUrlParser githubUrlParser;
     private final IntermediateStepParseShowRepoToUrlCandidates urlCandidateParser;
@@ -98,6 +101,7 @@ public class BzlmodBcrExtractor {
         this.bazelVersion = options.getBazelVersion();
         this.bazelTarget = bazelTarget;
         this.queryOptions = options.getQueryOptions() != null ? options.getQueryOptions() : Collections.emptyList();
+        this.excludedModules = options.getExcludedModules() != null ? options.getExcludedModules() : Collections.emptyList();
         this.githubUrlParser = githubUrlParser;
         this.urlCandidateParser = urlCandidateParser;
         this.showRepoExecutor = showRepoExecutor;
@@ -486,10 +490,11 @@ public class BzlmodBcrExtractor {
 
     /**
      * Returns true if the repo/module name should be excluded from BCR scope checks.
-     * Delegates to the shared {@link BazelInfrastructureModules} source of truth.
+     * Checks the hard-coded list first, then the user-configured patterns from
+     * {@code detect.bazel.modules.excluded}.
      */
     private boolean isExcludedModuleName(String name) {
-        return BazelInfrastructureModules.isInfrastructure(name);
+        return BazelInfrastructureModules.isExcluded(name, excludedModules);
     }
 
     /**

@@ -55,8 +55,9 @@ public class Pipelines {
     private static final String STRIP_LEADING_ATS_REGEX = "^@+";
     private static final String STRIP_SINGLE_AT_REGEX = "^@";
     private static final String STRIP_REPO_PATH_REGEX = "//.*";
-    // Infrastructure/builtins exclusion regex is derived from the single BazelInfrastructureModules source of truth.
-    private static final String EXCLUDE_BUILTINS_REGEX = BazelInfrastructureModules.exclusionLookaheadRegex();
+    // Infrastructure/builtins exclusion regex is built per-instance from the combined hard-coded +
+    // user-configured exclusion patterns. Not static because it depends on detect.bazel.modules.excluded.
+    private final String excludeBuiltinsRegex;
     private static final String PREPEND_AT = "@";
     private static final String PREPEND_EXTERNAL = "//external:";
 
@@ -77,6 +78,7 @@ public class Pipelines {
         HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser,
         BazelExtractionOptions options
     ) {
+        this.excludeBuiltinsRegex = BazelInfrastructureModules.buildCombinedExclusionRegex(options.getExcludedModules());
         this.init(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, options.getMode(), options.getBazelVersion());
     }
 
@@ -175,7 +177,7 @@ public class Pipelines {
             .parseReplaceInEachLine(STRIP_LEADING_ATS_REGEX, "")
             .parseReplaceInEachLine(STRIP_REPO_PATH_REGEX, "")
             .deDupLines()
-            .parseFilterLines(EXCLUDE_BUILTINS_REGEX)
+            .parseFilterLines(excludeBuiltinsRegex)
             .parseReplaceInEachLine("^", PREPEND_AT)
             // Add intermediate step to run 'bazel mod show_repo' for each repo
             .addIntermediateStep(new IntermediateStepExecuteShowRepoHeuristic(

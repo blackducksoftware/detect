@@ -265,6 +265,18 @@ public class DetectProperties {
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
             .build();
 
+    public static final CaseSensitiveStringListProperty DETECT_BAZEL_MODULES_EXCLUDED =
+        CaseSensitiveStringListProperty.newBuilder("detect.bazel.modules.excluded")
+            .setInfo("Bazel Modules Excluded", DetectPropertyFromVersion.VERSION_12_0_0)
+            .setHelp(
+                "A comma-separated list of Bazel module or repository names to exclude from the BOM.",
+                "Supports glob-style wildcards (for example, rules_* excludes all modules whose names start with rules_). " +
+                "This property accepts filename globbing-style wildcards. For more information, refer to the <xref href=\"https://docs%2Eblackduck%2Ecom/r/detect/latest/black%2Dduck%2Ddetect/property%2Dwildcard%2Dsupport%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Property wildcard support page.</xref>"
+            )
+            .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
+            .setCategory(DetectCategory.Advanced)
+            .build();
+
 
     public static final NullablePathProperty DETECT_CONAN_PATH =
         NullablePathProperty.newBuilder("detect.conan.path")

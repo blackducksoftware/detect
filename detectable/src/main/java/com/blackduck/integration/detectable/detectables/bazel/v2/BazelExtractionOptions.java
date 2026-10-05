@@ -21,12 +21,14 @@ public final class BazelExtractionOptions {
     private final List<String> cqueryOptions;
     private final List<String> queryOptions;
     private final BazelVersion bazelVersion;
+    private final List<String> excludedModules;
 
-    private BazelExtractionOptions(BazelEnvironmentAnalyzer.Mode mode, List<String> cqueryOptions, List<String> queryOptions, BazelVersion bazelVersion) {
+    private BazelExtractionOptions(BazelEnvironmentAnalyzer.Mode mode, List<String> cqueryOptions, List<String> queryOptions, BazelVersion bazelVersion, List<String> excludedModules) {
         this.mode = mode;
         this.cqueryOptions = Collections.unmodifiableList(new ArrayList<>(cqueryOptions));
         this.queryOptions = Collections.unmodifiableList(new ArrayList<>(queryOptions));
         this.bazelVersion = bazelVersion;
+        this.excludedModules = Collections.unmodifiableList(new ArrayList<>(excludedModules));
     }
 
     public BazelEnvironmentAnalyzer.Mode getMode() {
@@ -48,6 +50,14 @@ public final class BazelExtractionOptions {
         return bazelVersion;
     }
 
+    /**
+     * User-supplied module exclusion patterns from {@code detect.bazel.modules.excluded}.
+     * Applied on top of the hard-coded exclusion list in {@link BazelInfrastructureModules}.
+     */
+    public List<String> getExcludedModules() {
+        return excludedModules;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -57,6 +67,7 @@ public final class BazelExtractionOptions {
         private List<String> cqueryOptions = Collections.emptyList();
         private List<String> queryOptions = Collections.emptyList();
         private BazelVersion bazelVersion = null;
+        private List<String> excludedModules = Collections.emptyList();
 
         public Builder mode(BazelEnvironmentAnalyzer.Mode mode) {
             this.mode = mode;
@@ -78,8 +89,13 @@ public final class BazelExtractionOptions {
             return this;
         }
 
+        public Builder excludedModules(List<String> excludedModules) {
+            this.excludedModules = excludedModules != null ? excludedModules : Collections.emptyList();
+            return this;
+        }
+
         public BazelExtractionOptions build() {
-            return new BazelExtractionOptions(mode, cqueryOptions, queryOptions, bazelVersion);
+            return new BazelExtractionOptions(mode, cqueryOptions, queryOptions, bazelVersion, excludedModules);
         }
     }
 }
