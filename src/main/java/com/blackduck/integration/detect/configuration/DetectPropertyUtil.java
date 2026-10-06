@@ -15,6 +15,7 @@ public class DetectPropertyUtil {
             new HashSet<>(Arrays.asList(
                     "password",
                     "api.token",
+                    "bearer.token",
                     "access.token",
                     "api.key"
             ))

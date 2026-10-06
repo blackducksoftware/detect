@@ -86,6 +86,14 @@ public class DetectProperties {
             .setGroups(DetectGroup.BLACKDUCK_SERVER, DetectGroup.BLACKDUCK, DetectGroup.DEFAULT)
             .build();
 
+    public static final NullableStringProperty BLACKDUCK_BEARER_TOKEN =
+        NullableStringProperty.newBuilder("blackduck.bearer.token")
+            .setInfo("Black Duck SCA Bearer Token", DetectPropertyFromVersion.VERSION_12_2_0)
+            .setHelp("A pre-issued, short-lived bearer token for authenticating with the Black Duck SCA Server.",
+                     "When provided, Detect skips the /api/tokens/authenticate exchange and attaches this token directly to all requests.")
+            .setGroups(DetectGroup.BLACKDUCK_SERVER, DetectGroup.BLACKDUCK, DetectGroup.DEFAULT)
+            .build();
+
     public static final BooleanProperty BLACKDUCK_OFFLINE_MODE =
         BooleanProperty.newBuilder("blackduck.offline.mode", false)
             .setInfo("Offline Mode", DetectPropertyFromVersion.VERSION_4_2_0)
