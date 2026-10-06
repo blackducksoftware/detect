@@ -18,6 +18,10 @@ public class GradleReportConfigurationParser {
 
         configuration.setName(parseConfigurationName(header));
         configuration.setUnresolved(parseUnresolved(header));
+        // Fresh parser per configuration so rich-version state from one configuration
+        // does not pollute version resolution in subsequent configurations.
+        // Cross-file parent→child inheritance relies on Gradle emitting "x -> y" in the
+        // dep graph when a strict constraint changes a version, which it always does.
         GradleReportLineParser parser = new GradleReportLineParser();
         List<GradleTreeNode> children = new ArrayList<>();
         for (String line: dependencyLines) {
