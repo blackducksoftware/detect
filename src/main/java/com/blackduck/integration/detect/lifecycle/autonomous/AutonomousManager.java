@@ -42,7 +42,7 @@ public class AutonomousManager {
     private SortedMap<String, String> allProperties = new TreeMap<>();
     private Set<String> decidedScanTypes = new HashSet<>();
     private Set<String> decidedDetectorTypes = new HashSet<>();
-    private static final List<String> propertiesNotAutonomous = Arrays.asList("blackduck.api.token", "detect.diagnostic", "detect.source.path", "blackduck.proxy.password");
+    private static final List<String> propertiesNotAutonomous = Arrays.asList("blackduck.api.token", "blackduck.bearer.token", "detect.diagnostic", "detect.source.path", "blackduck.proxy.password");
 
     public AutonomousManager(
             DirectoryManager directoryManager,
