@@ -13,13 +13,12 @@ public class GradleReportConfigurationParser {
     private static final String UNRESOLVED_SUFFIX = "(n)";
     private static final String GRADLE_CONSTRAINT_SUFFIX = "(c)";
 
-    private final GradleReportLineParser parser = new GradleReportLineParser();
-
     public GradleConfiguration parse(String header, List<String> dependencyLines, Map<String, String> metadata) {
         GradleConfiguration configuration = new GradleConfiguration();
 
         configuration.setName(parseConfigurationName(header));
         configuration.setUnresolved(parseUnresolved(header));
+        GradleReportLineParser parser = new GradleReportLineParser();
         List<GradleTreeNode> children = new ArrayList<>();
         for (String line: dependencyLines) {
             if (!line.trim().endsWith(GRADLE_CONSTRAINT_SUFFIX)) {
