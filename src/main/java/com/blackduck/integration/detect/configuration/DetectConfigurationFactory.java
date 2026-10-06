@@ -207,6 +207,7 @@ public class DetectConfigurationFactory {
         Set<String> allBlackDuckKeys = BlackDuckServerConfig.newApiTokenBuilder().getPropertyKeys().stream()
             .filter(it -> !(it.toLowerCase().contains("proxy")))
             .collect(Collectors.toSet());
+        allBlackDuckKeys.add(DetectProperties.BLACKDUCK_BEARER_TOKEN.getKey());
         Map<String, String> blackDuckProperties = detectConfiguration.getRaw(allBlackDuckKeys);
 
         return new BlackDuckConnectionDetails(offline, blackduckUrl, blackDuckProperties, findParallelProcessors(), createConnectionDetails(), forceBdio);
