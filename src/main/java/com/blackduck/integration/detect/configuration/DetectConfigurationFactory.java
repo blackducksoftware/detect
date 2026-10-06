@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -204,10 +205,12 @@ public class DetectConfigurationFactory {
         Boolean offline = detectConfiguration.getValue(DetectProperties.BLACKDUCK_OFFLINE_MODE);
         Boolean forceBdio = forceBdio();
         String blackduckUrl = detectConfiguration.getNullableValue(DetectProperties.BLACKDUCK_URL);
-        Set<String> allBlackDuckKeys = BlackDuckServerConfig.newApiTokenBuilder().getPropertyKeys().stream()
+        Set<String> allBlackDuckKeys = Stream.concat(
+                BlackDuckServerConfig.newApiTokenBuilder().getPropertyKeys().stream(),
+                BlackDuckServerConfig.newBearerTokenBuilder().getPropertyKeys().stream()
+            )
             .filter(it -> !(it.toLowerCase().contains("proxy")))
             .collect(Collectors.toSet());
-        allBlackDuckKeys.add(DetectProperties.BLACKDUCK_BEARER_TOKEN.getKey());
         Map<String, String> blackDuckProperties = detectConfiguration.getRaw(allBlackDuckKeys);
 
         return new BlackDuckConnectionDetails(offline, blackduckUrl, blackDuckProperties, findParallelProcessors(), createConnectionDetails(), forceBdio);
