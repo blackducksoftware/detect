@@ -23,18 +23,33 @@
 ### New features
 
 * Support for OpenJDK 25 has been added.
+* Package Manager support has been extended to include:
+    * pip: 26.1.2
+    * Pipenv: 2026.6.2
+    * Setuptools: 83.0.0
+    * uv: 0.11.29
+    * Poetry: 2.4.1
+    * Go: 1.26.5
 
 ### Changed features
 
-* 
+* (IDETECT-5250) Extended `detect.uv.dependency.groups.only` support to the UV Lockfile (buildless) detector.
+* (IDETECT-5220) Improved PNPM detector logging to provide clearer informational and debug visibility into discovered workspace modules and dependencies during scans.
 
 ### Resolved issues
 
+* (IDETECT-5246) Fixed a null-pointer crash when multiple `detect.nuget.packages.repo.url` entries were configured; the NuGet inspector now continues scanning instead of failing.
 * (IDETECT-5258) Retry logic now applies to [var_company_long] SCA Scan Service (SCASS) operations involving smaller files. Previously, retries were only performed for large files uploaded in chunks.
 * (IDETECT-5240) Enhanced npm alias handling: Aliases used by direct dependencies are now displayed in the BOM. In addition, multiple aliases that reference the same underlying package are now resolved correctly.
 * (IDETECT-5267) Improved Cargo detector version parsing to more reliably handle pre-release suffixes, malformed, and non-standard version output.
+* (IDETECT-5253) Component Location Analysis now correctly identifies component locations for packages with partially specified versions in `package-lock.json`.
+* (IDETECT-5287) Fixed an issue where Maven scans could produce an incomplete or incorrect BOM when additional log lines appeared within `mvn dependency:tree` output.
+* (IDETECT-5276) Fixed an issue where [detect_product_short] would hang indefinitely when `bazel cquery` stalled on an unresolvable local_repository entry in WORKSPACE.bzlmod in Bazel version 7.1.
+* (IDETECT-5250) Extended `detect.uv.dependency.groups.only` support to the UV Lockfile (buildless) detector.
 
 ### Dependency Updates
 
-* Updated Jackson libraries to version 2.22.2.
+* Updated Jackson libraries to version 2.22.3.
 * Updated FreeMarker to version 2.3.35.
+* Upgraded and released Nuget Inspector version 2.6.1.
+* Update Component Locator Library to version 2.4.8.

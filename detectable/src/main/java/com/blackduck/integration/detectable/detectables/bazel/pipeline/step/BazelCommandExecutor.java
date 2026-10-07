@@ -2,6 +2,7 @@ package com.blackduck.integration.detectable.detectables.bazel.pipeline.step;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +26,19 @@ public class BazelCommandExecutor {
     private final ExecutableTarget bazelExe;
     private static final String BAZEL = "bazel";
 
+    // Bazel's own diagnostic text for a repository rule (local_repository, git_repository, etc.)
+    // pointing at a location with no MODULE.bazel/REPO.bazel/WORKSPACE file. This is a fatal,
+    // structural misconfiguration of the scanned project (not a transient failure): every
+    // subsequent Bazel command touching the same dependency graph will hit it again, and on some
+    // Bazel versions (a known bug present in at least 7.1) encountering it a second time can hang
+    // instead of failing fast. Once observed, we stop invoking Bazel again for the remainder of
+    // this extraction and fail fast with BazelFatalWorkspaceException instead.
+    private static final String FATAL_WORKSPACE_ERROR_SIGNATURE = "No MODULE.bazel, REPO.bazel, or WORKSPACE file found";
+
+    // First-observed detail message for the fatal signature above, or null if not yet observed.
+    // Scoped to the lifetime of this executor (one extraction), same as rawOutputCache.
+    private volatile String fatalWorkspaceErrorDetail;
+
     // Memoization of read-only Bazel command results for the lifetime of a single extraction.
     // The workspace is never modified between Bazel invocations during a scan, so an identical
     // command is deterministic — we cache its raw ExecutableOutput and reuse it. Caching at this
@@ -42,6 +56,19 @@ public class BazelCommandExecutor {
         this.executableRunner = executableRunner;
         this.workspaceDir = workspaceDir;
         this.bazelExe = bazelExe;
+    }
+
+    /**
+     * Returns the detail message for the fatal workspace misconfiguration signature (see
+     * {@link #FATAL_WORKSPACE_ERROR_SIGNATURE}) if it has been observed at any point during this
+     * extraction, even if the {@link BazelFatalWorkspaceException} that was thrown at the time was
+     * caught and suppressed by an intermediate caller (e.g. individual probes in
+     * {@code BazelGraphProber} each catch broadly so one probe's failure doesn't block the next).
+     * Callers at the top of the extraction (e.g. {@code BazelV2Detectable#extract}) should check
+     * this explicitly rather than relying solely on the exception propagating, since it may not.
+     */
+    public Optional<String> getFatalWorkspaceError() {
+        return Optional.ofNullable(fatalWorkspaceErrorDetail);
     }
 
     public Optional<String> executeToString(List<String> args) throws ExecutableFailedException {
@@ -193,10 +220,24 @@ public class BazelCommandExecutor {
      * (e.g. during probing and again during extraction) runs Bazel only once. A launch failure is
      * never cached.
      *
+     * <p><b>Fatal workspace misconfiguration:</b> if Bazel's stderr ever contains
+     * {@link #FATAL_WORKSPACE_ERROR_SIGNATURE} (a repository rule pointing at a location with no
+     * MODULE.bazel/REPO.bazel/WORKSPACE file), that detail is remembered for the remainder of this
+     * extraction and {@link BazelFatalWorkspaceException} is thrown instead of returning a normal
+     * result — on this call, and immediately (without invoking Bazel again) on every subsequent
+     * call. This avoids both hanging on a known-broken repository a second time and silently
+     * producing an incomplete/incorrect BOM for a structurally broken project.
+     *
      * @param args Bazel command arguments
      * @return ExecutableOutput containing return code, stdout, and stderr
+     * @throws BazelFatalWorkspaceException if the workspace is fatally misconfigured (see above)
      */
     public ExecutableOutput executeToleratingExitCode(List<String> args) {
+        if (fatalWorkspaceErrorDetail != null) {
+            logger.debug("Skipping Bazel invocation; workspace misconfiguration already detected: {}", fatalWorkspaceErrorDetail);
+            throw new BazelFatalWorkspaceException(fatalWorkspaceErrorDetail);
+        }
+
         List<String> cacheKey = (args == null) ? Collections.emptyList() : new ArrayList<>(args);
         ExecutableOutput cached = rawOutputCache.get(cacheKey);
         if (cached != null) {
@@ -205,13 +246,44 @@ public class BazelCommandExecutor {
         }
         try {
             ExecutableOutput output = executableRunner.execute(ExecutableUtils.createFromTarget(workspaceDir, bazelExe, args));
+            checkForFatalWorkspaceError(output);
             rawOutputCache.put(cacheKey, output);
             return output;
+        } catch (BazelFatalWorkspaceException e) {
+            // Rethrow as-is: this is a deliberate, already-logged signal, not a launch failure —
+            // it must not be wrapped/masked by the generic RuntimeException handling below.
+            throw e;
         } catch (Exception e) {
             String command = (bazelExe != null ? bazelExe.toCommand() : BAZEL) + " " + String.join(" ", args == null ? Collections.emptyList() : args);
             String msg = String.format("Failed to execute Bazel command '%s': %s", command, e.getMessage());
             logger.error(msg, e);
             throw new RuntimeException(msg, e);
         }
+    }
+
+    // Scans a non-zero-exit result's stderr for the fatal workspace misconfiguration signature.
+    // If found, records the detail (first occurrence wins), logs a clear one-time ERROR, and
+    // throws BazelFatalWorkspaceException so this result is never cached as if it were a normal
+    // tolerated failure.
+    private void checkForFatalWorkspaceError(ExecutableOutput output) {
+        if (output.getReturnCode() == 0) {
+            return;
+        }
+        String stderr = output.getErrorOutput();
+        if (stderr == null || !stderr.contains(FATAL_WORKSPACE_ERROR_SIGNATURE)) {
+            return;
+        }
+        String detail = Arrays.stream(stderr.split("\\r?\\n"))
+            .filter(line -> line.contains(FATAL_WORKSPACE_ERROR_SIGNATURE))
+            .findFirst()
+            .orElse(FATAL_WORKSPACE_ERROR_SIGNATURE)
+            .trim();
+        fatalWorkspaceErrorDetail = detail;
+        logger.error(
+            "Bazel workspace is misconfigured: {}. Check for a local_repository or git_repository rule "
+            + "pointing at an invalid location.",
+            detail
+        );
+        throw new BazelFatalWorkspaceException(detail);
     }
 }
