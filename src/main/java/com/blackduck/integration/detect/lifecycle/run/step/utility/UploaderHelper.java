@@ -25,8 +25,13 @@ public class UploaderHelper {
                 .setBlackDuckTimeoutInSeconds(blackDuckRunData.getBlackDuckServerConfig().getTimeout())
                 .setMultipartUploadTimeoutInMinutes(blackDuckRunData.getBlackDuckServerConfig().getTimeout() /  60)
                 .setAlwaysTrustServerCertificate(blackDuckRunData.getBlackDuckServerConfig().isAlwaysTrustServerCertificate())
-                .setBlackDuckUrl(blackDuckRunData.getBlackDuckServerConfig().getBlackDuckUrl())
-                .setApiToken(blackDuckRunData.getBlackDuckServerConfig().getApiToken().get());
+                .setBlackDuckUrl(blackDuckRunData.getBlackDuckServerConfig().getBlackDuckUrl());
+
+        if (blackDuckRunData.getBlackDuckServerConfig().usingBearerToken()) {
+            uploaderConfigBuilder.setBearerToken(blackDuckRunData.getBlackDuckServerConfig().getBearerToken().orElse(null));
+        } else {
+            uploaderConfigBuilder.setApiToken(blackDuckRunData.getBlackDuckServerConfig().getApiToken().orElse(null));
+        }
             
             UploaderConfig uploaderConfig = uploaderConfigBuilder.build();
             return new UploaderFactory(uploaderConfig, new Slf4jIntLogger(logger), new Gson());
