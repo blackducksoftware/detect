@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 // TODO: Get as close to the software managing the packages as possible
 public enum DetectorType { // TODO: 8.0.0 Rename DetectorTypes
     BITBAKE,
+    BUN,
     CARGO,
     CARTHAGE,
     COCOAPODS,

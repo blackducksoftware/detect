@@ -50,6 +50,10 @@ import com.blackduck.integration.detectable.detectables.bazel.BazelWorkspaceFile
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.DependencySourceChooser;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelVariableSubstitutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.HaskellCabalLibraryJsonProtoParser;
+import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockfileDetectable;
+import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockfileExtractor;
+import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockJsonParser;
+import com.blackduck.integration.detectable.detectables.bun.lockfile.BunLockfileTransformer;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectable;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectableOptions;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeExtractor;
@@ -169,7 +173,6 @@ import com.blackduck.integration.detectable.detectables.gradle.inspection.parse.
 import com.blackduck.integration.detectable.detectables.gradle.inspection.parse.GradleReportTransformer;
 import com.blackduck.integration.detectable.detectables.gradle.inspection.parse.GradleRootMetadataParser;
 import com.blackduck.integration.detectable.detectables.gradle.parsing.GradleProjectInspectorDetectable;
-import com.blackduck.integration.detectable.detectables.ivy.IvyCliDetectable;
 import com.blackduck.integration.detectable.detectables.ivy.IvyCliExtractor;
 import com.blackduck.integration.detectable.detectables.ivy.IvyParseDetectable;
 import com.blackduck.integration.detectable.detectables.ivy.IvyParseExtractor;
@@ -791,6 +794,10 @@ public class DetectableFactory {
         return new UVLockFileDetectable(environment, fileFinder, uvDetectorOptions, uvLockfileExtractor(environment.getDirectory()));
     }
 
+    public BunLockfileDetectable createBunLockfileDetectable(DetectableEnvironment environment) {
+        return new BunLockfileDetectable(environment, fileFinder, bunLockfileExtractor());
+    }
+
     // Used by three Detectables
     private PackageResolvedExtractor createPackageResolvedExtractor() {
         PackageResolvedParser parser = new PackageResolvedParser(gson);
@@ -1273,6 +1280,17 @@ public class DetectableFactory {
         return new UVLockParser(externalIdFactory);
     }
 
+    private BunLockJsonParser bunLockJsonParser() {
+        return new BunLockJsonParser();
+    }
+
+    private BunLockfileTransformer bunLockfileTransformer() {
+        return new BunLockfileTransformer();
+    }
+
+    private BunLockfileExtractor bunLockfileExtractor() {
+        return new BunLockfileExtractor(bunLockJsonParser(), bunLockfileTransformer(), packageJsonFiles());
+    }
 
     //#endregion Utility
 
