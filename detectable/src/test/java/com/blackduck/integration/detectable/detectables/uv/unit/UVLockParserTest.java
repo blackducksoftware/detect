@@ -1,6 +1,8 @@
 package com.blackduck.integration.detectable.detectables.uv.unit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
@@ -774,6 +776,503 @@ class UVLockParserTest {
         assertTrue(hasDependency(httpcoreChildren, "h11", "0.14.0"), "Expected 'h11' as a transitive dependency of httpcore");
     }
 
+    // -----------------------------------------------------------------------
+    // Tests for packages that are resolved to multiple versions in uv.lock:
+    // a package is identified by normalized name + version, not by name alone
+    // -----------------------------------------------------------------------
+
+    @Test
+    void multipleVersionsOfSamePackageAreAllReported() {
+        String lockContent = String.join("\n",
+            "version = 1",
+            "",
+            "[[package]]",
+            "name = \"my-project\"",
+            "version = \"1.0.0\"",
+            "dependencies = [",
+            "    { name = \"ipython\", version = \"8.18.1\", marker = \"python_full_version < '3.10'\" },",
+            "    { name = \"ipython\", version = \"9.0.0\", marker = \"python_full_version >= '3.10'\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"ipython\"",
+            "version = \"8.18.1\"",
+            "",
+            "[[package]]",
+            "name = \"ipython\"",
+            "version = \"9.0.0\""
+        );
+
+        List<CodeLocation> codeLocations = new UVLockParser(externalIdFactory).parseLockFile(lockContent, "my-project", createDefaultOptions());
+
+        assertEquals(1, codeLocations.size(), "Expected one code location");
+        DependencyGraph graph = codeLocations.get(0).getDependencyGraph();
+        assertEquals(2, graph.getRootDependencies().size(), "Expected both ipython versions as root dependencies");
+        assertTrue(hasDependency(graph.getRootDependencies(), "ipython", "8.18.1"), "Expected 'ipython' v8.18.1 in the graph");
+        assertTrue(hasDependency(graph.getRootDependencies(), "ipython", "9.0.0"), "Expected 'ipython' v9.0.0 in the graph");
+    }
+
+    @Test
+    void multipleVersionsKeepTheirOwnTransitiveDependencies() {
+        String lockContent = String.join("\n",
+            "version = 1",
+            "",
+            "[[package]]",
+            "name = \"my-project\"",
+            "version = \"1.0.0\"",
+            "dependencies = [",
+            "    { name = \"ipython\", version = \"8.18.1\" },",
+            "    { name = \"ipython\", version = \"9.0.0\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"ipython\"",
+            "version = \"8.18.1\"",
+            "dependencies = [",
+            "    { name = \"jedi\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"ipython\"",
+            "version = \"9.0.0\"",
+            "dependencies = [",
+            "    { name = \"ipython-pygments-lexers\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"jedi\"",
+            "version = \"0.19.1\"",
+            "",
+            "[[package]]",
+            "name = \"ipython-pygments-lexers\"",
+            "version = \"1.1.1\""
+        );
+
+        List<CodeLocation> codeLocations = new UVLockParser(externalIdFactory).parseLockFile(lockContent, "my-project", createDefaultOptions());
+
+        DependencyGraph graph = codeLocations.get(0).getDependencyGraph();
+        Dependency ipython8 = findDependency(graph.getRootDependencies(), "ipython", "8.18.1");
+        Dependency ipython9 = findDependency(graph.getRootDependencies(), "ipython", "9.0.0");
+        assertNotNull(ipython8, "Expected 'ipython' v8.18.1");
+        assertNotNull(ipython9, "Expected 'ipython' v9.0.0");
+
+        Set<Dependency> ipython8Children = graph.getChildrenForParent(ipython8);
+        assertEquals(1, ipython8Children.size(), "ipython 8.x must only have its own dependency");
+        assertTrue(hasDependency(ipython8Children, "jedi", "0.19.1"), "Expected 'jedi' under ipython 8.x");
+
+        Set<Dependency> ipython9Children = graph.getChildrenForParent(ipython9);
+        assertEquals(1, ipython9Children.size(), "ipython 9.x must only have its own dependency");
+        assertTrue(hasDependency(ipython9Children, "ipython-pygments-lexers", "1.1.1"), "Expected 'ipython-pygments-lexers' under ipython 9.x");
+        assertFalse(hasDependency(ipython9Children, "jedi", "0.19.1"), "Children of ipython 8.x must not leak into ipython 9.x");
+    }
+
+    @Test
+    void sharedNameAndVersionIsReferencedByAllParents() {
+        String lockContent = String.join("\n",
+            "version = 1",
+            "",
+            "[[package]]",
+            "name = \"my-project\"",
+            "version = \"1.0.0\"",
+            "dependencies = [",
+            "    { name = \"parent-a\" },",
+            "    { name = \"parent-b\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"parent-a\"",
+            "version = \"1.0.0\"",
+            "dependencies = [",
+            "    { name = \"shared\", version = \"1.0.0\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"parent-b\"",
+            "version = \"1.0.0\"",
+            "dependencies = [",
+            "    { name = \"shared\", version = \"1.0.0\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"shared\"",
+            "version = \"1.0.0\"",
+            "dependencies = [",
+            "    { name = \"leaf\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"shared\"",
+            "version = \"2.0.0\"",
+            "",
+            "[[package]]",
+            "name = \"leaf\"",
+            "version = \"0.1.0\""
+        );
+
+        List<CodeLocation> codeLocations = new UVLockParser(externalIdFactory).parseLockFile(lockContent, "my-project", createDefaultOptions());
+
+        DependencyGraph graph = codeLocations.get(0).getDependencyGraph();
+        Dependency parentA = findDependency(graph.getRootDependencies(), "parent-a", "1.0.0");
+        Dependency parentB = findDependency(graph.getRootDependencies(), "parent-b", "1.0.0");
+
+        Dependency sharedFromA = findDependency(graph.getChildrenForParent(parentA), "shared", "1.0.0");
+        Dependency sharedFromB = findDependency(graph.getChildrenForParent(parentB), "shared", "1.0.0");
+        assertNotNull(sharedFromA, "Expected 'shared' v1.0.0 under parent-a");
+        assertNotNull(sharedFromB, "Expected 'shared' v1.0.0 under parent-b");
+        assertEquals(sharedFromA.getExternalId(), sharedFromB.getExternalId(), "A shared name + version must be the same component for all parents");
+
+        // The shared node is expanded for every parent and does not receive the dependencies of another version
+        assertTrue(hasDependency(graph.getChildrenForParent(sharedFromA), "leaf", "0.1.0"), "Expected 'leaf' under shared v1.0.0");
+        assertEquals(1, graph.getChildrenForParent(sharedFromB).size(), "Expected the same single child for the shared node");
+        assertFalse(hasDependency(graph.getChildrenForParent(parentA), "shared", "2.0.0"), "Version 2.0.0 was never referenced by parent-a");
+    }
+
+    @Test
+    void unversionedReferenceResolvesToTheOnlyVersion() {
+        String lockContent = String.join("\n",
+            "version = 1",
+            "",
+            "[[package]]",
+            "name = \"my-project\"",
+            "version = \"1.0.0\"",
+            "dependencies = [",
+            "    { name = \"requests\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"requests\"",
+            "version = \"2.31.0\""
+        );
+
+        List<CodeLocation> codeLocations = new UVLockParser(externalIdFactory).parseLockFile(lockContent, "my-project", createDefaultOptions());
+
+        DependencyGraph graph = codeLocations.get(0).getDependencyGraph();
+        assertEquals(1, graph.getRootDependencies().size(), "Expected exactly one root dependency");
+        assertTrue(hasDependency(graph.getRootDependencies(), "requests", "2.31.0"), "Expected the only available version of 'requests'");
+    }
+
+    @Test
+    void unversionedReferenceIsAttachedToAllAvailableVersions() {
+        String lockContent = String.join("\n",
+            "version = 1",
+            "",
+            "[[package]]",
+            "name = \"my-project\"",
+            "version = \"1.0.0\"",
+            "dependencies = [",
+            "    { name = \"ipython\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"ipython\"",
+            "version = \"8.18.1\"",
+            "dependencies = [",
+            "    { name = \"jedi\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"ipython\"",
+            "version = \"9.0.0\"",
+            "",
+            "[[package]]",
+            "name = \"jedi\"",
+            "version = \"0.19.1\""
+        );
+
+        List<CodeLocation> codeLocations = new UVLockParser(externalIdFactory).parseLockFile(lockContent, "my-project", createDefaultOptions());
+
+        DependencyGraph graph = codeLocations.get(0).getDependencyGraph();
+        assertEquals(2, graph.getRootDependencies().size(), "Expected the reference without version to be attached to both versions");
+        assertTrue(hasDependency(graph.getRootDependencies(), "ipython", "8.18.1"), "Expected 'ipython' v8.18.1");
+        assertTrue(hasDependency(graph.getRootDependencies(), "ipython", "9.0.0"), "Expected 'ipython' v9.0.0");
+
+        Dependency ipython8 = findDependency(graph.getRootDependencies(), "ipython", "8.18.1");
+        assertTrue(hasDependency(graph.getChildrenForParent(ipython8), "jedi", "0.19.1"), "Expected the children of ipython 8.x to be kept");
+    }
+
+    @Test
+    void versionedReferenceWithLocalSuffixResolvesToNormalizedVersion() {
+        String lockContent = String.join("\n",
+            "version = 1",
+            "",
+            "[[package]]",
+            "name = \"my-project\"",
+            "version = \"1.0.0\"",
+            "dependencies = [",
+            "    { name = \"torch\", version = \"2.0.0+cu118\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"torch\"",
+            "version = \"2.0.0+cu118\"",
+            "",
+            "[[package]]",
+            "name = \"torch\"",
+            "version = \"2.1.0\""
+        );
+
+        List<CodeLocation> codeLocations = new UVLockParser(externalIdFactory).parseLockFile(lockContent, "my-project", createDefaultOptions());
+
+        DependencyGraph graph = codeLocations.get(0).getDependencyGraph();
+        assertEquals(1, graph.getRootDependencies().size(), "Only the referenced torch version is expected");
+        assertTrue(hasDependency(graph.getRootDependencies(), "torch", "2.0.0"), "Expected version '2.0.0' after stripping '+cu118' suffix");
+    }
+
+    @Test
+    void referenceToVersionThatIsNotInLockFileIsIgnored() {
+        String lockContent = String.join("\n",
+            "version = 1",
+            "",
+            "[[package]]",
+            "name = \"my-project\"",
+            "version = \"1.0.0\"",
+            "dependencies = [",
+            "    { name = \"requests\", version = \"9.9.9\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"requests\"",
+            "version = \"2.31.0\""
+        );
+
+        List<CodeLocation> codeLocations = new UVLockParser(externalIdFactory).parseLockFile(lockContent, "my-project", createDefaultOptions());
+
+        assertEquals(1, codeLocations.size(), "Expected one code location");
+        assertTrue(codeLocations.get(0).getDependencyGraph().getRootDependencies().isEmpty(), "A version that is not in the lock file must not be replaced by another one");
+    }
+
+    @Test
+    void multipleVersionsAcrossDependencyLevelsAndGroups() {
+        String lockContent = String.join("\n",
+            "version = 1",
+            "",
+            "[[package]]",
+            "name = \"my-project\"",
+            "version = \"1.0.0\"",
+            "dependencies = [",
+            "    { name = \"parent\" },",
+            "]",
+            "",
+            "[package.dev-dependencies]",
+            "dev = [",
+            "    { name = \"ipython\", version = \"9.0.0\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"parent\"",
+            "version = \"1.0.0\"",
+            "dependencies = [",
+            "    { name = \"ipython\", version = \"8.18.1\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"ipython\"",
+            "version = \"8.18.1\"",
+            "dependencies = [",
+            "    { name = \"jedi\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"ipython\"",
+            "version = \"9.0.0\"",
+            "dependencies = [",
+            "    { name = \"ipython-pygments-lexers\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"jedi\"",
+            "version = \"0.19.1\"",
+            "",
+            "[[package]]",
+            "name = \"ipython-pygments-lexers\"",
+            "version = \"1.1.1\""
+        );
+
+        List<CodeLocation> codeLocations = new UVLockParser(externalIdFactory).parseLockFile(lockContent, "my-project", createDefaultOptions());
+
+        DependencyGraph graph = codeLocations.get(0).getDependencyGraph();
+        Dependency parent = findDependency(graph.getRootDependencies(), "parent", "1.0.0");
+        Dependency devIpython = findDependency(graph.getRootDependencies(), "ipython", "9.0.0");
+        assertNotNull(parent, "Expected 'parent' as root dependency");
+        assertNotNull(devIpython, "Expected 'ipython' v9.0.0 from the dev group as root dependency");
+
+        Dependency transitiveIpython = findDependency(graph.getChildrenForParent(parent), "ipython", "8.18.1");
+        assertNotNull(transitiveIpython, "Expected 'ipython' v8.18.1 as transitive dependency of 'parent'");
+
+        assertTrue(hasDependency(graph.getChildrenForParent(transitiveIpython), "jedi", "0.19.1"), "Expected 'jedi' under ipython 8.x");
+        assertEquals(1, graph.getChildrenForParent(transitiveIpython).size(), "ipython 8.x must only have its own dependency");
+        assertTrue(hasDependency(graph.getChildrenForParent(devIpython), "ipython-pygments-lexers", "1.1.1"), "Expected 'ipython-pygments-lexers' under ipython 9.x");
+        assertEquals(1, graph.getChildrenForParent(devIpython).size(), "ipython 9.x must only have its own dependency");
+    }
+
+    @Test
+    void circularDependencyBetweenMultipleVersionsTerminates() {
+        String lockContent = String.join("\n",
+            "version = 1",
+            "",
+            "[[package]]",
+            "name = \"my-project\"",
+            "version = \"1.0.0\"",
+            "dependencies = [",
+            "    { name = \"pkg-a\", version = \"1.0.0\" },",
+            "    { name = \"pkg-a\", version = \"2.0.0\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"pkg-a\"",
+            "version = \"1.0.0\"",
+            "dependencies = [",
+            "    { name = \"pkg-b\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"pkg-a\"",
+            "version = \"2.0.0\"",
+            "dependencies = [",
+            "    { name = \"pkg-c\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"pkg-b\"",
+            "version = \"1.0.0\"",
+            "dependencies = [",
+            "    { name = \"pkg-a\", version = \"1.0.0\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"pkg-c\"",
+            "version = \"1.0.0\""
+        );
+
+        List<CodeLocation> codeLocations = new UVLockParser(externalIdFactory).parseLockFile(lockContent, "my-project", createDefaultOptions());
+
+        DependencyGraph graph = codeLocations.get(0).getDependencyGraph();
+        Dependency pkgA1 = findDependency(graph.getRootDependencies(), "pkg-a", "1.0.0");
+        Dependency pkgA2 = findDependency(graph.getRootDependencies(), "pkg-a", "2.0.0");
+        assertNotNull(pkgA1, "Expected 'pkg-a' v1.0.0");
+        assertNotNull(pkgA2, "Expected 'pkg-a' v2.0.0");
+
+        Dependency pkgB = findDependency(graph.getChildrenForParent(pkgA1), "pkg-b", "1.0.0");
+        assertNotNull(pkgB, "Expected 'pkg-b' under pkg-a v1.0.0");
+        assertTrue(hasDependency(graph.getChildrenForParent(pkgB), "pkg-a", "1.0.0"), "Expected the cycle back to pkg-a v1.0.0");
+        assertTrue(hasDependency(graph.getChildrenForParent(pkgA2), "pkg-c", "1.0.0"), "Expected 'pkg-c' under pkg-a v2.0.0");
+        assertEquals(1, graph.getChildrenForParent(pkgA2).size(), "pkg-a v2.0.0 must not get the dependencies of pkg-a v1.0.0");
+    }
+
+    @Test
+    void everyWorkspaceMemberGetsTheCompleteTreeOfItsOwnVersions() {
+        String lockContent = String.join("\n",
+            "version = 1",
+            "",
+            "[manifest]",
+            "members = [\"lib-a\", \"lib-b\"]",
+            "",
+            "[[package]]",
+            "name = \"lib-a\"",
+            "version = \"1.0.0\"",
+            "dependencies = [",
+            "    { name = \"shared\", version = \"1.0.0\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"lib-b\"",
+            "version = \"2.0.0\"",
+            "dependencies = [",
+            "    { name = \"shared\", version = \"2.0.0\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"shared\"",
+            "version = \"1.0.0\"",
+            "dependencies = [",
+            "    { name = \"leaf-old\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"shared\"",
+            "version = \"2.0.0\"",
+            "dependencies = [",
+            "    { name = \"leaf-new\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"leaf-old\"",
+            "version = \"0.1.0\"",
+            "",
+            "[[package]]",
+            "name = \"leaf-new\"",
+            "version = \"0.2.0\""
+        );
+
+        List<CodeLocation> codeLocations = new UVLockParser(externalIdFactory).parseLockFile(lockContent, "lib-a", createDefaultOptions());
+
+        assertEquals(2, codeLocations.size(), "Expected one code location per workspace member");
+
+        DependencyGraph graphA = findCodeLocation(codeLocations, "lib-a").getDependencyGraph();
+        Dependency sharedInA = findDependency(graphA.getRootDependencies(), "shared", "1.0.0");
+        assertNotNull(sharedInA, "Expected 'shared' v1.0.0 for lib-a");
+        assertEquals(1, graphA.getRootDependencies().size(), "lib-a only depends on shared v1.0.0");
+        assertTrue(hasDependency(graphA.getChildrenForParent(sharedInA), "leaf-old", "0.1.0"), "Expected 'leaf-old' under shared v1.0.0 for lib-a");
+
+        DependencyGraph graphB = findCodeLocation(codeLocations, "lib-b").getDependencyGraph();
+        Dependency sharedInB = findDependency(graphB.getRootDependencies(), "shared", "2.0.0");
+        assertNotNull(sharedInB, "Expected 'shared' v2.0.0 for lib-b");
+        assertEquals(1, graphB.getRootDependencies().size(), "lib-b only depends on shared v2.0.0");
+        assertTrue(hasDependency(graphB.getChildrenForParent(sharedInB), "leaf-new", "0.2.0"), "Expected 'leaf-new' under shared v2.0.0 for lib-b");
+    }
+
+    @Test
+    void sameDependencyOfMultipleWorkspaceMembersIsExpandedInEachGraph() {
+        String lockContent = String.join("\n",
+            "version = 1",
+            "",
+            "[manifest]",
+            "members = [\"lib-a\", \"lib-b\"]",
+            "",
+            "[[package]]",
+            "name = \"lib-a\"",
+            "version = \"1.0.0\"",
+            "dependencies = [",
+            "    { name = \"shared\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"lib-b\"",
+            "version = \"2.0.0\"",
+            "dependencies = [",
+            "    { name = \"shared\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"shared\"",
+            "version = \"3.0.0\"",
+            "dependencies = [",
+            "    { name = \"leaf\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"leaf\"",
+            "version = \"0.1.0\""
+        );
+
+        List<CodeLocation> codeLocations = new UVLockParser(externalIdFactory).parseLockFile(lockContent, "lib-a", createDefaultOptions());
+
+        assertEquals(2, codeLocations.size(), "Expected one code location per workspace member");
+        for (String member : Arrays.asList("lib-a", "lib-b")) {
+            DependencyGraph graph = findCodeLocation(codeLocations, member).getDependencyGraph();
+            Dependency shared = findDependency(graph.getRootDependencies(), "shared", "3.0.0");
+            assertNotNull(shared, "Expected 'shared' as root dependency of " + member);
+            assertTrue(hasDependency(graph.getChildrenForParent(shared), "leaf", "0.1.0"), "Expected 'leaf' under 'shared' in the graph of " + member);
+        }
+    }
+
+    private CodeLocation findCodeLocation(List<CodeLocation> codeLocations, String projectName) {
+        return codeLocations.stream()
+            .filter(codeLocation -> codeLocation.getExternalId().isPresent() && codeLocation.getExternalId().get().getName().equals(projectName))
+            .findFirst()
+            .orElse(null);
+    }
+
     private boolean hasDependency(Set<Dependency> dependencies, String name, String version) {
         return dependencies.stream()
             .anyMatch(dep -> dep.getName().equals(name) && dep.getVersion().equals(version));
@@ -782,6 +1281,13 @@ class UVLockParserTest {
     private Dependency findDependency(Set<Dependency> dependencies, String name) {
         return dependencies.stream()
             .filter(dep -> dep.getName().equals(name))
+            .findFirst()
+            .orElse(null);
+    }
+
+    private Dependency findDependency(Set<Dependency> dependencies, String name, String version) {
+        return dependencies.stream()
+            .filter(dep -> dep.getName().equals(name) && dep.getVersion().equals(version))
             .findFirst()
             .orElse(null);
     }
