@@ -1,6 +1,42 @@
 <!-- Check the support matrix to determine supported, non-current major version releases -->
 # Release notes for previous [detect_product_short] versions
 
+## Version 12.1.0
+
+### New features
+
+* Support for OpenJDK 25 has been added.
+* Package Manager support has been extended to include:
+    * pip: 26.1.2
+    * Pipenv: 2026.6.2
+    * Setuptools: 83.0.0
+    * uv: 0.11.29
+    * Poetry: 2.4.1
+    * Go: 1.26.5
+
+### Changed features
+
+* (IDETECT-5250) Extended `detect.uv.dependency.groups.only` support to the UV Lockfile (buildless) detector.
+* (IDETECT-5220) Improved PNPM detector logging to provide clearer informational and debug visibility into discovered workspace modules and dependencies during scans.
+
+### Resolved issues
+
+* (IDETECT-5246) Fixed a null-pointer crash when multiple `detect.nuget.packages.repo.url` entries were configured; the NuGet inspector now continues scanning instead of failing.
+* (IDETECT-5258) Retry logic now applies to [var_company_long] SCA Scan Service (SCASS) operations involving smaller files. Previously, retries were only performed for large files uploaded in chunks.
+* (IDETECT-5240) Enhanced npm alias handling: Aliases used by direct dependencies are now displayed in the BOM. In addition, multiple aliases that reference the same underlying package are now resolved correctly.
+* (IDETECT-5267) Improved Cargo detector version parsing to more reliably handle pre-release suffixes, malformed, and non-standard version output.
+* (IDETECT-5253) Component Location Analysis now correctly identifies component locations for packages with partially specified versions in `package-lock.json`.
+* (IDETECT-5287) Fixed an issue where Maven scans could produce an incomplete or incorrect BOM when additional log lines appeared within `mvn dependency:tree` output.
+* (IDETECT-5276) Fixed an issue where [detect_product_short] would hang indefinitely when `bazel cquery` stalled on an unresolvable local_repository entry in WORKSPACE.bzlmod in Bazel version 7.1.
+* (IDETECT-5250) Extended `detect.uv.dependency.groups.only` support to the UV Lockfile (buildless) detector.
+
+### Dependency Updates
+
+* Updated Jackson libraries to version 2.22.3.
+* Updated FreeMarker to version 2.3.35.
+* Upgraded and released Nuget Inspector version 2.6.1.
+* Update Component Locator Library to version 2.4.8.
+
 ## Version 12.0.0
 
 ### New features
@@ -488,235 +524,3 @@
 * Upgraded and released Nuget Inspector version 2.0.0.
 * Upgraded and released [detect_product_short] Docker Inspector version 11.0.1
 
-## Version 9.10.1
-
-<note type="notice">`sig-repo.synopsys.com` and `detect.synopsys.com` are being deprecated. Please make use of `repo.blackduck.com` and `detect.blackduck.com` respectively.</note>
-* After February 2025, [detect_product_short] script download details will only be available via detect.blackduck.com.
-* See the [Domain Change FAQ for the deprecation of sig-repo](https://community.blackduck.com/s/question/0D5Uh00000Jq18XKAR/black-duck-sca-and-the-impact-of-decommissioning-of-sigrepo).
-<note type="important">It is essential to update to 9.10.1 before sig-repo is decommissioned.</note>
-
-<note type="note">It is recommended that customers continue to maintain `sig-repo.synopsys.com`, and `repo.blackduck.com` on their allow list until February 2025 when `sig-repo.synopsys.com` will be fully replaced by `repo.blackduck.com`.</note>
-
-### Changed features
-
-* Adds logic to pull necessary artifacts from the repo.blackduck.com repository. If this is not accessible, artifacts will be downloaded from the sig-repo.synopsys.com repository. 
-
-## Version 9.10.0
-
-### Changed features
-
-* The `logging.level.com.synopsys.integration` property has been deprecated in favor of `logging.level.detect` and will be removed in 10.0.0. 
-    <note type="note">There is no functional difference between the two properties.</note>
-
-* Switched from Universal Analytics to Google Analytics 4 (GA4) as our phone home analytics measurement solution. 
-
-* In 9.9.0 the ability to perform multipart uploads for binary scans was added where related properties were not configurable at runtime. As of this release an optional environment variable setting the upload chunk size has been made available. This variable is primarily intended for troubleshooting purposes. See [Environment variables](scripts/overview.md).
-
-### Dependency updates
-
-* Detect Docker Inspector version updated to 10.2.1
-
-## Version 9.9.0
-
-### New features
-
-* [solution_name] now supports binary scanning of large files via a chunking method employed during upload. Testing has confirmed successful upload of 20GB files.
-    <note type="note">This feature requires [blackduck_product_name] 2024.7.0 or later.</note>
-
-### Changed features
-
-* When running [company_name] [solution_name] against a [blackduck_product_name] instance of version 2024.7.0 or later, the Scan CLI tool download will use a new format for the URL. 
-    * Current URL format: https://<BlackDuck_Instance>/download/scan.cli-macosx.zip
-    * New URL format: https://<BlackDuck_Instance>/api/tools/scan.cli.zip/versions/latest/platforms/macosx
-
-### Resolved issues
-
-* (IDETECT-4408) - Remediated vulnerability in Logback-Core library to resolve high severity issues [CVE-2023-6378](https://nvd.nist.gov/vuln/detail/CVE-2023-6378) and [CVE-2023-6481](https://nvd.nist.gov/vuln/detail/CVE-2023-6481).
-
-### Dependency updates
-
-* Component Location Analysis version updated to 1.1.13
-* Project Inspector version updated to 2024.9.0
-* Logback Core version updated to 1.2.13
-
-## Version 9.8.0
-
-### New features
-* Autonomous Scanning - this new feature simplifies default analysis of source and binary files by allowing [company_name] [solution_name] to handle, and easily repeat, basic analysis decisions.
-  See [Autonomous Scanning](runningdetect/autonomousscan.dita) for further information.
-
-### Resolved issues
-* (IDETECT-4315) A filter was added to prevent performance issues related to the [company_name] [solution_name] API call that retrieves role information on startup.
-* (IDETECT-4360) Resolved an issue with component location analysis failing with an index out of bounds exception when attempting to extract certain code substrings.
-
-## Version 9.7.0
-
-### New features
-
-* Support for GoLang is now extended to Go 1.22.2.
-* [company_name] [solution_name] now allows exclusion of development dependencies when using the Poetry detector. See the [detect.poetry.dependency.groups.excluded](properties/detectors/poetry.md#detect.poetry.dependency.groups.excluded) property for more information.
-* Support has been added for Python package detection via [Setuptools](https://setuptools.pypa.io/en/latest/index.html), versions 47.0.0 through 69.4.2. See the [Python Package Managers](packagemgrs/python.md) page for further details.
-* Added Docker 25 and 26 support to [Docker Inspector](packagemgrs/docker/releasenotes.md).
-
-### Resolved issues
-
-* (IDETECT-4341) The Poetry detector will now recognize Python components with case insensitivity.
-* (IDETECT-3181) Improved Eclipse component matching implementation through better handling of external identifiers.
-* (IDETECT-3989) Complete set of policy violations, regardless of category, now printed to console output.
-* (IDETECT-4353) Resolved issue of including "go" as an unmatched component for Go Mod CLI Detector.
-
-## Version 9.6.0
-
-### New features
-
-* ReversingLabs Scans - this new feature provides analysis of software packages for file-based malware threats.
-* Component Location Analysis upgraded to certify support for location of components in Yarn Lock and Nuget Centralized Package Management files.
-* Added support for Gradles rich model for declaring versions, allowing the combination of different levels of version information. See [rich version declarations](packagemgrs/gradle.md#rich-version-declaration-support).
-
-### Resolved issues
-
-* (IDETECT-4211) Resolved an error handling issue with the scan retry mechanism when the git SCM data is conflicting with another already scanned project.
-* (IDETECT-4263) Remediated the possibility of [solution_name] sending Git credentials to [blackduck_product_name] Projects API in cases when the credentials are present in the Git URLs.
-
-## Version 9.5.0
-
-### New features
-
-* [company_name] [solution_name] now includes the Maven embedded or shaded dependencies as part of the Bill of Materials (BOM) via the property --detect.maven.include.shaded.dependencies. See the [detect.maven.include.shaded.dependencies](properties/detectors/maven.md#maven-include-shaded-dependencies) property for more information.
-* [company_name] [solution_name] Maven Project Inspector now supports the exclusion of Maven dependencies having "\<exclude\>" tags in the pom file.
-* [company_name] [solution_name] Maven Project Inspector and Gradle Project Inspector honours effects of dependency scopes during dependency resolution.
-
-### Dependency updates
-
-* Upgraded Project Inspector to version 2024.2.0. Please refer to [Maven](packagemgrs/maven.md), [Gradle](packagemgrs/gradle.md) and [Nuget](packagemgrs/nuget.md) documentation for more information on the changes.
-  As of version 9.5.0 [company_name] [solution_name] will only be compatible with, and support, Project Inspector 2024.2.0 or later.
-
-## Version 9.4.0
-
-### New features
-
-* Nuget Inspector now supports the exclusion of user-specified dependency types from the Bill of Materials (BOM) via the [solution_name] property --detect.nuget.dependency.types.excluded. See the [detect.nuget.dependency.types.excluded](properties/detectors/nuget.md#nuget-dependency-types-excluded) property for more information.
-* A new detector for Python packages has been added. The PIP Requirements File Parse is a buildless detector that acts as a LOW accuracy fallback for the PIP Native Inspector. This detector is triggered for PIP projects that contain one or more requirements.txt files if [solution_name] does not have access to a PIP executable in the environment where the scan is run.
-	* See [PIP Requirements File Parse](packagemgrs/python.md).
-* To improve Yarn detector performance a new parameter is now available. The `--detect.yarn.ignore.all.workspaces` parameter enables the Yarn detector to build the dependency graph without analysis of workspaces. The default setting for this parameter is false and must be set to true to be enabled. This property ignores other Yarn detector properties if set.
-	* See [Yarn support](packagemgrs/yarn.md).
-* Support for BitBake is now extended to 2.6 (Yocto 4.3.2).
-* Support for Yarn extended to include Yarn 3 and Yarn 4.
-
-### Changed features
-
-* Key-value pairs specified as part of the `detect.blackduck.signature.scanner.arguments` property will now replace the values specified elsewhere, rather than act as additions.
-
-### Resolved issues
-
-* (IDETECT-4155) Improved input validation in Component Location Analysis.
-* (IDETECT-4187) Removed references to 'murex' from test resources.
-* (IDETECT-4207) Fixed Nuget Inspector IndexOutofRangeException for cases of multiple `Directory.Packages.props` files.
-* (IDETECT-3909) Resolved an issue causing ASM8 Error when running Vulnerability Impact Analysis.
-
-### Dependency updates
-
-* Released and Upgraded Nuget Inspector to version 1.3.0.
-* Released and Upgraded Detect Docker Inspector to version 10.1.1.
-
-## Version 9.3.0
-
-### Changed features
-
-* Any arguments that specify the number of threads to be used provided as part of the `detect.maven.build.command` [company_name] [solution_name] property will be omitted when executing the Maven CLI.
-
-### Resolved issues
-
-* (IDETECT-4164) Improved Component Location Analysis parser support for package managers like Poetry that employ variable delimiters, for better location accuracy.
-* (IDETECT-4171) Improved Component Location Analysis data validation support for package managers like NPM.
-* (IDETECT-4174) Resolved an issue where [company_name] [solution_name] was not sending the container scan size to [blackduck_product_name] server, resulting in  [blackduck_product_name]'s "Scans" page reporting the size as zero.
-* (IDETECT-4176) The FULL_SNIPPET_MATCHING and FULL_SNIPPET_MATCHING_ONLY options, currently controlled via registration key, for the --detect.blackduck.signature.scanner.snippet.matching property are deprecated and will be removed in the next major release of [company_name] [solution_name].
-
-### Dependency updates
-
-* Updated Guava library from 31.1 to 32.1.2 to resolve high severity [CVE-2023-2976](https://nvd.nist.gov/vuln/detail/CVE-2023-2976).
-
-## Version 9.2.0
-
-### New features
-
-* Support for pnpm is now extended to 8.9.2.
-* Nuget support extended to version 6.2 with Central Package Management now supported for projects and solutions.
-* Support for Conan is now extended to 2.0.14.
-* Support for Go and Python added to Component Location Analysis.
-
-### Changed features
-
-* pnpm 6, and pnpm 7 using the default v5 pnpm-lock.yaml file, are being deprecated. Support will be removed in [company_name] [solution_name] 10.
-
-### Resolved issues
-
-* (IDETECT-3515) Resolved an issue where the Nuget Inspector was not supporting "\<Version\>" tags for "\<PackageReference\>" on the second line and was not cascading to Project Inspector in case of failure.
-
-### Dependency updates
-
-* Released and Upgraded Nuget Inspector to version 1.2.0.
-
-## Version 9.1.0
-
-### New features
-
-* Container Scan. Providing component risk detail analysis for each layer of a container image, (including non-Linux, non-Docker images). Please see [Container Scan ](runningdetect/containerscanning.md) for details.
-	<note type="restriction">Your [blackduck_product_name] server must have [blackduck_product_name] Secure Container (BDSC) licensed and enabled.</note>
-* Support for Dart is now extended to Dart 3.1.2 and Flutter 3.13.4.
-* Documentation for [CPAN Package Manager](packagemgrs/cpan.md) and [BitBucket Integration](integrations/bitbucket/bitbucketintegration.md) has been added.
-
-### Changed features
-
-* When [blackduck_product_name] version 2023.10.0 or later is busy and includes a retry-after value greater than 0 in the header, [company_name] [solution_name] will now wait the number of seconds specified by [blackduck_product_name] before attempting to retry scan creation. 
-	* [company_name] [solution_name] 9.1.0 will not retry scan creation with versions of [blackduck_product_name] prior to 2023.10.0
-
-### Resolved issues
-
-* (IDETECT-3843) Additional information is now provided when [company_name] [solution_name] fails to update and [company_name] [solution_name] is internally hosted.
-* (IDETECT-4056) Resolved an issue where no components were reported by CPAN detector.
-  If the cpan command has not been previously configured and run on the system, [company_name] [solution_name] instructs CPAN to accept default configurations.
-* (IDETECT-4005) Resolved an issue where the location is not identified for a Maven component version when defined as a property.
-* (IDETECT-4066) Resolved an issue of incorrect TAB width calculation in Component Locator.
-
-### Dependency updates
-
-* Upgraded [company_name] [solution_name] Alpine Docker images (standard and buildless) to 3.18 to pull the latest curl version with no known vulnerabilities.
-* Removed curl as a dependency from [company_name] [solution_name] Ubuntu Docker image by using wget instead of curl.
-
-## Version 9.0.0
-
-### New features
-
-* Support for npm is now extended to npm 9.8.1.
-* Support for npm workspaces.
-* Lerna projects leveraging npm now support npm up to version 9.8.1.
-* Support for Gradle is now extended to Gradle 8.2.
-* Support for GoLang is now extended to Go 1.20.4.
-* Support for Nuget package reference properties from Directory.Build.props and Project.csproj.nuget.g.props files.
-
-### Changed features
-
-* The `detect.diagnostic.extended` property and the -de command line option, that were deprecated in [company_name] [solution_name] 8.x, have been removed. Use `detect.diagnostic`, and the command line option -d, instead.
-* The Ephemeral Scan Mode, that was deprecated in [company_name] [solution_name] 8.x, has been removed in favor of Stateless Scan Mode. See the [Stateless Scans page](runningdetect/statelessscan.md) for further details.
-* npm 6, which was deprecated in [company_name] [solution_name] 8.x, is no longer supported.
-* The detectors\[N\].statusReason field of the status.json file will now contain the exit code of the detector subprocess command in cases when the code is non-zero.
-  In the case of subprocess exit code 137, the detectors\[N\].statusCode and detectors\[N\].statusReason fields will be populated with a new status indicating a likely out-of-memory issue.
-* In addition to node_modules, bin, build, .git, .gradle, out, packages, target, the Gradle wrapper directory `gradle` will be excluded from signature scan by default. Use
-  [detect.excluded.directories.defaults.disabled](properties/configuration/paths.md#detect-excluded-directories-defaults-disabled-advanced) to disable these defaults.
-* Removed reliance on [company_name] [solution_name] libraries for init-detect.gradle script to prevent them from being included in the Gradle dependency verification of target projects.   
-<note type="notice">[company_name] [solution_name] 7.x has entered end of support. See the [Product Maintenance, Support, and Service Schedule page](https://docs.blackduck.com/r/blackduck/black-duck-compatibility-reference/black-duck-sca-release-compatibility.html) for further details.</note>
-
-### Resolved issues
-
-* (IDETECT-3821) Detect will now capture and record failures of the Signature Scanner due to command lengths exceeding Windows limits. This can happen with certain folder structures when using the `detect.excluded.directories` property.
-* (IDETECT-3820) Introduced an enhanced approach to NuGet Inspector for handling different formats of the `project.json` file, ensuring compatibility with both old and new structures.
-* (IDETECT-4027) Resolved a problem with the npm CLI detector for npm versions 7 and later, which was causing only direct dependencies to be reported.
-* (IDETECT-3997) Resolved npm package JSON parse detector issue of classifying components as RubyGems instead of npmjs.
-* (IDETECT-4023) Resolved the issue of Scan failure if Project level "Retain Unmatched File Data" not set for "System Default".
-
-### Dependency updates
-
-* Released and Upgraded Project Inspector to version 2021.9.10.
-* Released and Upgraded Nuget Inspector to version 1.1.0.
-* Fixed EsotericSoftware YAMLBeans library version to resolve critical severity [CVE-2023-24621](https://nvd.nist.gov/vuln/detail/CVE-2023-24621)

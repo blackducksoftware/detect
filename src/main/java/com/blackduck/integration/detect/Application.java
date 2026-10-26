@@ -1,12 +1,17 @@
 package com.blackduck.integration.detect;
 
 import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -72,6 +77,10 @@ public class Application implements ApplicationRunner {
     private static final String LOGGING_GROUP_DETECT = "logging.group.detect";
     private static final String DEFAULT_LOGGING_GROUP = "com.blackduck.integration";
     private final ConfigurableEnvironment environment;
+    private static final Set<String> ANTLR_VERSION_MISMATCH_FORMATS = new HashSet<>(Arrays.asList(
+        "ANTLR Tool version %s used for code generation does not match the current runtime version %s%n",
+        "ANTLR Runtime version %s used for parser compilation does not match the current runtime version %s%n"
+    ));
 
     @Autowired
     public Application(ConfigurableEnvironment environment) {
@@ -89,6 +98,7 @@ public class Application implements ApplicationRunner {
 
     public static void main(String[] args) {
         configureLoggingGroupIfNeeded(args);
+        suppressAntlrVersionWarnings();
         SpringApplicationBuilder builder = new SpringApplicationBuilder(Application.class);
         builder.logStartupInfo(false);
         builder.listeners(new SpringConfigErrorListener());
@@ -109,6 +119,24 @@ public class Application implements ApplicationRunner {
                 // ensure the process does not "hang" in case of some non-shutdown Executor(s) and an unhandled error
                 System.exit(ExitCodeType.FAILURE_UNKNOWN_ERROR.getExitCode());
             }
+        }
+    }
+
+    // ANTLR runtime version mismatches from bundled third-party parsers produce spurious warnings on
+    // System.err, bypassing SLF4J. Filter by exact format string to avoid silencing unrelated output.
+    private static void suppressAntlrVersionWarnings() {
+        try {
+            System.setErr(new PrintStream(new FileOutputStream(FileDescriptor.err), true) {
+                @Override
+                public PrintStream format(String format, Object... args) {
+                    if (ANTLR_VERSION_MISMATCH_FORMATS.contains(format)) {
+                        return this;
+                    }
+                    return super.format(format, args);
+                }
+            });
+        } catch (Exception ignored) {
+            // Suppression is cosmetic; ANTLR warnings remain visible if unavailable
         }
     }
 

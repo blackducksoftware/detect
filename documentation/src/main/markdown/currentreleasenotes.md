@@ -18,11 +18,11 @@
 * **Deprecation of support for Java versions earlier than 17** - Support for Java versions earlier than 17 has been deprecated in [detect_product_short] 12.0.0 and will be removed in 13.0.0 to align with EU Cyber Resilience Act (CRA) requirements and compliance timelines.
 * **Deprecation of Docker Inspector** - Docker Inspector has been deprecated and will be removed in 13.0.0 release.
 
-## Version 12.1.0
+## Version 12.2.0
 
 ### New features
 
-* Support for OpenJDK 25 has been added.
+* 
 
 ### Changed features
 
@@ -30,11 +30,8 @@
 
 ### Resolved issues
 
-* (IDETECT-5258) Retry logic now applies to [var_company_long] SCA Scan Service (SCASS) operations involving smaller files. Previously, retries were only performed for large files uploaded in chunks.
-* (IDETECT-5240) Enhanced npm alias handling: Aliases used by direct dependencies are now displayed in the BOM. In addition, multiple aliases that reference the same underlying package are now resolved correctly.
-* (IDETECT-5267) Improved Cargo detector version parsing to more reliably handle pre-release suffixes, malformed, and non-standard version output.
+* 
 
 ### Dependency Updates
 
-* Updated Jackson libraries to version 2.22.2.
-* Updated FreeMarker to version 2.3.35.
+* 
