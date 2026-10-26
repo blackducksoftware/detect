@@ -251,7 +251,7 @@ class UVLockParserTest {
     }
 
     @Test
-    void normalizeVersionWithPlusSuffix() {
+    void keepVersionWithPlusSuffix() {
         String lockContent = String.join("\n",
             "version = 1",
             "",
@@ -274,7 +274,11 @@ class UVLockParserTest {
 
         assertEquals(1, codeLocations.size(), "Expected one code location");
         DependencyGraph graph = codeLocations.get(0).getDependencyGraph();
-        assertTrue(hasDependency(graph.getRootDependencies(), "torch", "2.0.0"), "Expected version '2.0.0' after stripping '+cu118' suffix");
+        assertTrue(hasDependency(graph.getRootDependencies(), "torch", "2.0.0+cu118"), "Expected the '+cu118' local version suffix to be kept");
+        assertFalse(hasDependency(graph.getRootDependencies(), "torch", "2.0.0"), "Expected the version not to be stripped to '2.0.0'");
+
+        Dependency torch = findDependency(graph.getRootDependencies(), "torch", "2.0.0+cu118");
+        assertEquals("2.0.0+cu118", torch.getExternalId().getVersion(), "Expected the ExternalId to carry the full version including '+cu118'");
     }
 
     @Test
@@ -365,6 +369,66 @@ class UVLockParserTest {
         List<CodeLocation> codeLocations = parser.parseLockFile(lockContent, "lib-a", options);
 
         assertEquals(1, codeLocations.size(), "Expected one code location for included member lib-a");
+        assertEquals("lib-a", codeLocations.get(0).getExternalId().get().getName(), "Expected lib-a as the only included workspace member");
+    }
+
+    @Test
+    void excludedMemberWithUnderscoreDoesNotMatchNormalizedMemberName() {
+        String lockContent = String.join("\n",
+            "version = 1",
+            "",
+            "[manifest]",
+            "members = [\"lib-a\", \"lib-b\"]",
+            "",
+            "[[package]]",
+            "name = \"lib-a\"",
+            "version = \"1.0.0\"",
+            "",
+            "[[package]]",
+            "name = \"lib-b\"",
+            "version = \"2.0.0\""
+        );
+
+        UVLockParser parser = new UVLockParser(externalIdFactory);
+        UVDetectorOptions options = new UVDetectorOptions(
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Arrays.asList("lib_a")
+        );
+
+        List<CodeLocation> codeLocations = parser.parseLockFile(lockContent, "lib-a", options);
+
+        assertEquals(1, codeLocations.size(), "Expected lib-a excluded and lib-b included");
+        assertEquals("lib-b", codeLocations.get(0).getExternalId().get().getName(), "Expected lib-b as the remaining workspace member");
+    }
+
+    @Test
+    void includedMemberWithMixedCaseAndDotsDoesNotMatchNormalizedMemberName() {
+        String lockContent = String.join("\n",
+            "version = 1",
+            "",
+            "[manifest]",
+            "members = [\"lib-a\", \"lib-b\"]",
+            "",
+            "[[package]]",
+            "name = \"lib-a\"",
+            "version = \"1.0.0\"",
+            "",
+            "[[package]]",
+            "name = \"lib-b\"",
+            "version = \"2.0.0\""
+        );
+
+        UVLockParser parser = new UVLockParser(externalIdFactory);
+        UVDetectorOptions options = new UVDetectorOptions(
+            Collections.emptyList(),
+            Arrays.asList("Lib.A"),
+            Collections.emptyList()
+        );
+
+        List<CodeLocation> codeLocations = parser.parseLockFile(lockContent, "lib-a", options);
+
+        assertEquals(1, codeLocations.size(), "Expected only lib-a included");
         assertEquals("lib-a", codeLocations.get(0).getExternalId().get().getName(), "Expected lib-a as the only included workspace member");
     }
 
@@ -991,7 +1055,7 @@ class UVLockParserTest {
     }
 
     @Test
-    void versionedReferenceWithLocalSuffixResolvesToNormalizedVersion() {
+    void versionedReferenceWithLocalSuffixResolvesToExactVersion() {
         String lockContent = String.join("\n",
             "version = 1",
             "",
@@ -1015,7 +1079,8 @@ class UVLockParserTest {
 
         DependencyGraph graph = codeLocations.get(0).getDependencyGraph();
         assertEquals(1, graph.getRootDependencies().size(), "Only the referenced torch version is expected");
-        assertTrue(hasDependency(graph.getRootDependencies(), "torch", "2.0.0"), "Expected version '2.0.0' after stripping '+cu118' suffix");
+        assertTrue(hasDependency(graph.getRootDependencies(), "torch", "2.0.0+cu118"), "Expected the reference to resolve to the exact locked version '2.0.0+cu118', suffix kept");
+        assertFalse(hasDependency(graph.getRootDependencies(), "torch", "2.1.0"), "The other torch version must not be reported");
     }
 
     @Test
@@ -1264,6 +1329,84 @@ class UVLockParserTest {
             assertNotNull(shared, "Expected 'shared' as root dependency of " + member);
             assertTrue(hasDependency(graph.getChildrenForParent(shared), "leaf", "0.1.0"), "Expected 'leaf' under 'shared' in the graph of " + member);
         }
+    }
+
+    @Test
+    void localVersionVariantsReferencedByDifferentWorkspaceMembersStaySeparate() {
+        String lockContent = String.join("\n",
+            "version = 1",
+            "",
+            "[manifest]",
+            "members = [\"lib-a\", \"lib-b\"]",
+            "",
+            "[[package]]",
+            "name = \"lib-a\"",
+            "version = \"1.0.0\"",
+            "dependencies = [",
+            "    { name = \"torch\", version = \"2.6.0+cpu\", source = { registry = \"https://download.pytorch.org/whl/cpu\" } },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"lib-b\"",
+            "version = \"1.0.0\"",
+            "dependencies = [",
+            "    { name = \"torch\", version = \"2.6.0+cu124\", source = { registry = \"https://download.pytorch.org/whl/cu124\" } },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"torch\"",
+            "version = \"2.6.0+cpu\"",
+            "source = { registry = \"https://download.pytorch.org/whl/cpu\" }",
+            "dependencies = [",
+            "    { name = \"cpu-only-dep\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"torch\"",
+            "version = \"2.6.0+cu124\"",
+            "source = { registry = \"https://download.pytorch.org/whl/cu124\" }",
+            "dependencies = [",
+            "    { name = \"cuda-only-dep\" },",
+            "]",
+            "",
+            "[[package]]",
+            "name = \"cpu-only-dep\"",
+            "version = \"1.0.0\"",
+            "",
+            "[[package]]",
+            "name = \"cuda-only-dep\"",
+            "version = \"2.0.0\""
+        );
+
+        List<CodeLocation> codeLocations = new UVLockParser(externalIdFactory).parseLockFile(lockContent, "lib-a", createDefaultOptions());
+
+        assertEquals(2, codeLocations.size(), "Expected one code location per workspace member");
+
+        // lib-a: only the CPU build of torch and only its own child
+        DependencyGraph graphA = findCodeLocation(codeLocations, "lib-a").getDependencyGraph();
+        assertEquals(1, graphA.getRootDependencies().size(), "lib-a must only have one root dependency (torch cpu)");
+        Dependency torchCpu = findDependency(graphA.getRootDependencies(), "torch", "2.6.0+cpu");
+        assertNotNull(torchCpu, "Expected 'torch' v2.6.0+cpu in the graph of lib-a");
+        assertEquals("2.6.0+cpu", torchCpu.getExternalId().getVersion(), "Expected the ExternalId of lib-a's torch to carry '+cpu'");
+        assertFalse(hasDependency(graphA.getRootDependencies(), "torch", "2.6.0+cu124"), "lib-a must not contain the CUDA build of torch");
+        assertFalse(hasDependency(graphA.getRootDependencies(), "torch", "2.6.0"), "The version must not be stripped to '2.6.0'");
+        Set<Dependency> torchCpuChildren = graphA.getChildrenForParent(torchCpu);
+        assertEquals(1, torchCpuChildren.size(), "torch 2.6.0+cpu must only have its own dependency");
+        assertTrue(hasDependency(torchCpuChildren, "cpu-only-dep", "1.0.0"), "Expected 'cpu-only-dep' under torch 2.6.0+cpu");
+        assertFalse(hasDependency(torchCpuChildren, "cuda-only-dep", "2.0.0"), "CUDA-only dependency must not leak into lib-a");
+
+        // lib-b: only the CUDA build of torch and only its own child
+        DependencyGraph graphB = findCodeLocation(codeLocations, "lib-b").getDependencyGraph();
+        assertEquals(1, graphB.getRootDependencies().size(), "lib-b must only have one root dependency (torch cu124)");
+        Dependency torchCuda = findDependency(graphB.getRootDependencies(), "torch", "2.6.0+cu124");
+        assertNotNull(torchCuda, "Expected 'torch' v2.6.0+cu124 in the graph of lib-b");
+        assertEquals("2.6.0+cu124", torchCuda.getExternalId().getVersion(), "Expected the ExternalId of lib-b's torch to carry '+cu124'");
+        assertFalse(hasDependency(graphB.getRootDependencies(), "torch", "2.6.0+cpu"), "lib-b must not contain the CPU build of torch");
+        assertFalse(hasDependency(graphB.getRootDependencies(), "torch", "2.6.0"), "The version must not be stripped to '2.6.0'");
+        Set<Dependency> torchCudaChildren = graphB.getChildrenForParent(torchCuda);
+        assertEquals(1, torchCudaChildren.size(), "torch 2.6.0+cu124 must only have its own dependency");
+        assertTrue(hasDependency(torchCudaChildren, "cuda-only-dep", "2.0.0"), "Expected 'cuda-only-dep' under torch 2.6.0+cu124");
+        assertFalse(hasDependency(torchCudaChildren, "cpu-only-dep", "1.0.0"), "CPU-only dependency must not leak into lib-b");
     }
 
     private CodeLocation findCodeLocation(List<CodeLocation> codeLocations, String projectName) {

@@ -109,7 +109,8 @@ public class UVLockParser {
                 String dependencyName = normalizePackageName(rawName);
                 String dependencyVersion = DEFAULT_VERSION; // If version is not present, create a project with default version
                 if(dependencyTable.contains(VERSION_KEY)) {
-                    dependencyVersion = normalizeVersion(dependencyTable.getString(VERSION_KEY));
+                    // the full locked version is kept, including a PEP 440 local version label such as "+cpu" or "+cu124"
+                    dependencyVersion = dependencyTable.getString(VERSION_KEY);
                 }
 
                 // a package is identified by name + version, so several versions of the same name are all kept
@@ -134,8 +135,9 @@ public class UVLockParser {
 
     }
 
-    // Registers a [[package]] entry. If the very same name + version is present more than once
-    // (e.g. only the "+local" suffix differs, which is stripped) the entries share one node.
+    // Registers a [[package]] entry. The version is the full locked version (a "+local" label is part of it, so
+    // torch 2.6.0+cpu and torch 2.6.0+cu124 are different packages). Only a name + version that is present more than
+    // once in the lock file (e.g. the same release locked from two sources) shares one node.
     private PackageNode registerPackage(String name, String version) {
         versionsByName.computeIfAbsent(name, key -> new LinkedHashSet<>()).add(version);
         return packageNodes.computeIfAbsent(packageKey(name, version), key -> new PackageNode(key, name, version));
@@ -194,7 +196,8 @@ public class UVLockParser {
                 String referencedName = normalizePackageName(currentDependencyTable.getString(NAME_KEY));
                 String referencedVersion = null; // null means the reference does not specify a version
                 if (currentDependencyTable.contains(VERSION_KEY)) {
-                    referencedVersion = normalizeVersion(currentDependencyTable.getString(VERSION_KEY));
+                    // exact locked version (including any "+local" label), so the reference matches its package node exactly
+                    referencedVersion = currentDependencyTable.getString(VERSION_KEY);
                 }
                 packageNode.references.add(new DependencyReference(referencedName, referencedVersion));
             }
@@ -279,13 +282,6 @@ public class UVLockParser {
         }
     }
 
-    //sometimes the version has extra information which we don't want, parse and remove that eg. 2.5.1+cuddjf (only this as far as I have seen in many projects)
-    private String normalizeVersion(String dependencyVersion) {
-        if(dependencyVersion.contains("+")) {
-            return dependencyVersion.substring(0, dependencyVersion.indexOf("+"));
-        }
-        return dependencyVersion;
-    }
 
     private String normalizePackageName(String packageName) {
         return packageName.replaceAll("[_.-]+", "-").toLowerCase();
