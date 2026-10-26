@@ -65,13 +65,6 @@
                     </row>
 
                     <row>
-                        <entry>Impact analysis</entry>
-                        <entry>Yes</entry>
-                        <entry>No</entry>
-                        <entry>Requires file uploads and is not included in JSON or BDIO output files.</entry>
-                    </row>
-
-                    <row>
                         <entry>Report generation through Detect</entry>
                         <entry>Yes</entry>
                         <entry>No</entry>
@@ -123,6 +116,13 @@
                             <codeblock>--detect.iac.scanner.local.path</codeblock>
                             <p>IaC scanning does not generate a BDIO file.</p>
                         </entry>
+                    </row>
+					
+					<row>
+                        <entry>Impact analysis</entry>
+                        <entry>Yes</entry>
+                        <entry>Yes*</entry>
+                        <entry>*Requires manual upload of BDIO, BDMU files via SCA scan page.</entry>
                     </row>
 
                 </tbody>
