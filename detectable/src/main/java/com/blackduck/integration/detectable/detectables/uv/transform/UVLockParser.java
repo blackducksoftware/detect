@@ -9,6 +9,7 @@ import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import com.blackduck.integration.detectable.detectables.uv.UVDependencyGroupFilter;
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
+import com.blackduck.integration.detectable.detectables.uv.UVPackageNameNormalizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tomlj.Toml;
@@ -69,7 +70,7 @@ public class UVLockParser {
         TomlParseResult uvLockObject = Toml.parse(lockFileContent);
 
         collectWorkspaceMembers(uvLockObject);
-        rootName = normalizePackageName(rootName);
+        rootName = UVPackageNameNormalizer.normalize(rootName);
         if(uvLockObject.get(PACKAGE_KEY) != null) {
             TomlArray dependencies = uvLockObject.getArray(PACKAGE_KEY);
             parseDependencies(dependencies, rootName, uvDetectorOptions);
@@ -106,7 +107,7 @@ public class UVLockParser {
                     logger.warn("Skipping a [[package]] entry of the uv.lock that has no name.");
                     continue;
                 }
-                String dependencyName = normalizePackageName(rawName);
+                String dependencyName = UVPackageNameNormalizer.normalize(rawName);
                 String dependencyVersion = DEFAULT_VERSION; // If version is not present, create a project with default version
                 if(dependencyTable.contains(VERSION_KEY)) {
                     // the full locked version is kept, including a PEP 440 local version label such as "+cpu" or "+cu124"
@@ -193,7 +194,7 @@ public class UVLockParser {
         for (int j = 0; j < transitiveDependencyArray.size(); j++) {
             TomlTable currentDependencyTable = transitiveDependencyArray.getTable(j);
             if (currentDependencyTable != null && currentDependencyTable.contains(NAME_KEY)) {
-                String referencedName = normalizePackageName(currentDependencyTable.getString(NAME_KEY));
+                String referencedName = UVPackageNameNormalizer.normalize(currentDependencyTable.getString(NAME_KEY));
                 String referencedVersion = null; // null means the reference does not specify a version
                 if (currentDependencyTable.contains(VERSION_KEY)) {
                     // exact locked version (including any "+local" label), so the reference matches its package node exactly
@@ -282,11 +283,6 @@ public class UVLockParser {
         }
     }
 
-
-    private String normalizePackageName(String packageName) {
-        return packageName.replaceAll("[_.-]+", "-").toLowerCase();
-    }
-
     // unique identity of a package: normalized name + version (neither can contain "==")
     private String packageKey(String normalizedName, String version) {
         return normalizedName + "==" + version;
@@ -299,7 +295,7 @@ public class UVLockParser {
             if(manifestTable.get(MEMBERS_KEY) != null) {
                 TomlArray membersArray = manifestTable.getArray(MEMBERS_KEY);
                 for(int i = 0; i < membersArray.size(); i++) {
-                    workSpaceMembers.add(normalizePackageName(membersArray.getString(i)));
+                    workSpaceMembers.add(UVPackageNameNormalizer.normalize(membersArray.getString(i)));
                 }
             }
         }
@@ -324,7 +320,7 @@ public class UVLockParser {
     }
 
     private Dependency createDependency(String dependencyName, String dependencyVersion) {
-        String normalizedDependencyName = normalizePackageName(dependencyName);
+        String normalizedDependencyName = UVPackageNameNormalizer.normalize(dependencyName);
         ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.PYPI, normalizedDependencyName, dependencyVersion);
         return new Dependency(normalizedDependencyName, dependencyVersion, externalId);
     }

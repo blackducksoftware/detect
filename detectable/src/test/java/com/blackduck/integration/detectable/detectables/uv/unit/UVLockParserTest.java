@@ -373,7 +373,7 @@ class UVLockParserTest {
     }
 
     @Test
-    void excludedMemberWithUnderscoreDoesNotMatchNormalizedMemberName() {
+    void excludedMemberWithUnderscoreMatchesNormalizedMemberName() {
         String lockContent = String.join("\n",
             "version = 1",
             "",
@@ -403,7 +403,7 @@ class UVLockParserTest {
     }
 
     @Test
-    void includedMemberWithMixedCaseAndDotsDoesNotMatchNormalizedMemberName() {
+    void includedMemberWithMixedCaseAndDotsMatchesNormalizedMemberName() {
         String lockContent = String.join("\n",
             "version = 1",
             "",
@@ -429,6 +429,66 @@ class UVLockParserTest {
         List<CodeLocation> codeLocations = parser.parseLockFile(lockContent, "lib-a", options);
 
         assertEquals(1, codeLocations.size(), "Expected only lib-a included");
+        assertEquals("lib-a", codeLocations.get(0).getExternalId().get().getName(), "Expected lib-a as the only included workspace member");
+    }
+
+    @Test
+    void excludeFilterMatchesMemberWhenLockFileNamesAreNotNormalized() {
+        String lockContent = String.join("\n",
+            "version = 1",
+            "",
+            "[manifest]",
+            "members = [\"lib_a\", \"lib-b\"]",
+            "",
+            "[[package]]",
+            "name = \"lib_a\"",
+            "version = \"1.0.0\"",
+            "",
+            "[[package]]",
+            "name = \"lib-b\"",
+            "version = \"2.0.0\""
+        );
+
+        UVLockParser parser = new UVLockParser(externalIdFactory);
+        UVDetectorOptions options = new UVDetectorOptions(
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Arrays.asList("Lib.A")
+        );
+
+        List<CodeLocation> codeLocations = parser.parseLockFile(lockContent, "lib_a", options);
+
+        assertEquals(1, codeLocations.size(), "Expected lib_a to be excluded by 'Lib.A', leaving only lib-b");
+        assertEquals("lib-b", codeLocations.get(0).getExternalId().get().getName(), "Expected lib-b as the only remaining workspace member");
+    }
+
+    @Test
+    void includeFilterWithRepeatedSeparatorsMatchesNormalizedMemberName() {
+        String lockContent = String.join("\n",
+            "version = 1",
+            "",
+            "[manifest]",
+            "members = [\"lib-a\", \"lib-b\"]",
+            "",
+            "[[package]]",
+            "name = \"lib-a\"",
+            "version = \"1.0.0\"",
+            "",
+            "[[package]]",
+            "name = \"lib-b\"",
+            "version = \"2.0.0\""
+        );
+
+        UVLockParser parser = new UVLockParser(externalIdFactory);
+        UVDetectorOptions options = new UVDetectorOptions(
+            Collections.emptyList(),
+            Arrays.asList("lib.-a"),
+            Collections.emptyList()
+        );
+
+        List<CodeLocation> codeLocations = parser.parseLockFile(lockContent, "lib-a", options);
+
+        assertEquals(1, codeLocations.size(), "Expected only lib-a to be included by 'lib.-a'");
         assertEquals("lib-a", codeLocations.get(0).getExternalId().get().getName(), "Expected lib-a as the only included workspace member");
     }
 
