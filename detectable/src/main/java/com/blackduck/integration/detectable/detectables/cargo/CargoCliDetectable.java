@@ -94,8 +94,12 @@ public class CargoCliDetectable extends Detectable {
             ExecutableOutput cargoOutput = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(environment.getDirectory(), cargoExe, commandArguments));
             List<String> cargoVersionOutput = cargoOutput.getStandardOutputAsList();
             if (!cargoVersionOutput.isEmpty()) {
-                String version = cargoVersionOutput.get(0).split(" ")[1];
-                return VersionUtils.compareVersions(version, MINIMUM_CARGO_VERSION) >= 0;
+                String versionLine = cargoVersionOutput.get(0).trim();
+                String[] parts = versionLine.split("\\s+");
+                if (parts.length >= 2) {
+                    String version = VersionUtils.sanitizeVersion(parts[1]);
+                    return VersionUtils.compareVersions(version, MINIMUM_CARGO_VERSION) >= 0;
+                }
             }
         } catch (Exception e) {
             logger.error("Failed to get Cargo version.", e);

@@ -10,6 +10,8 @@ import java.util.Optional;
 import com.blackduck.integration.detectable.detectables.maven.parsing.MavenProjectInspectorDetectable;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.blackduck.integration.common.util.Bds;
 import com.blackduck.integration.common.util.parse.CommandParser;
@@ -23,6 +25,7 @@ import com.blackduck.integration.detectable.util.ToolVersionLogger;
 import com.blackduck.integration.executable.ExecutableOutput;
 
 public class MavenCliExtractor {
+    private final Logger logger = LoggerFactory.getLogger(MavenCliExtractor.class);
     private final DetectableExecutableRunner executableRunner;
     private final MavenCodeLocationPackager mavenCodeLocationPackager;
     private final CommandParser commandParser;
@@ -86,6 +89,16 @@ public class MavenCliExtractor {
         List<CodeLocation> codeLocations = Bds.of(mavenResults)
             .map(MavenParseResult::getCodeLocation)
             .toList();
+
+        boolean scopeFilteringActive = !(excludedScopes.isEmpty() && includedScopes.isEmpty());
+        boolean allGraphsEmpty = !mavenResults.isEmpty() && mavenResults.stream()
+            .allMatch(r -> r.getCodeLocation().getDependencyGraph().getRootDependencies().isEmpty());
+        if (allGraphsEmpty && scopeFilteringActive) {
+            logger.warn(
+                "No dependencies collected for Maven detector. All dependencies may have been excluded by scope filtering "
+                + "(detect.maven.excluded.scopes / detect.maven.included.scopes). An empty BOM will be generated."
+            );
+        }
 
         Optional<MavenParseResult> firstWithName = Bds.of(mavenResults)
             .firstFiltered(it -> StringUtils.isNotBlank(it.getProjectName()));

@@ -48,6 +48,11 @@ public class AllEnumListProperty<B extends Enum<B>> extends ExtendedEnumListProp
         ));
     }
 
+    public AllEnumListProperty<B> deprecateValue(B value, String reason) {
+        addDeprecatedBaseValue(value, reason);
+        return this;
+    }
+
     public AllEnumList<B> toList(List<ExtendedEnumValue<AllEnum, B>> values) {
         return new AllEnumList<>(values, bClass);
     }

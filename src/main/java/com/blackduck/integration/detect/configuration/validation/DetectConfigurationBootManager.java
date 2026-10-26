@@ -17,6 +17,8 @@ import org.slf4j.LoggerFactory;
 
 import com.blackduck.integration.configuration.config.PropertyConfiguration;
 import com.blackduck.integration.configuration.help.PropertyConfigurationHelpContext;
+import com.blackduck.integration.configuration.property.Property;
+import com.blackduck.integration.configuration.property.base.PassthroughProperty;
 import com.blackduck.integration.configuration.property.base.TypedProperty;
 import com.blackduck.integration.configuration.property.deprecation.DeprecatedValueUsage;
 import com.blackduck.integration.detect.configuration.DetectProperties;
@@ -37,12 +39,22 @@ public class DetectConfigurationBootManager {
     }
 
     public List<RemovalDeprecation> checkForUsedRemovalDeprecations(PropertyConfiguration detectConfiguration) {
-        return DetectProperties.allProperties().getProperties()
-            .stream()
-            .filter(property -> detectConfiguration.wasKeyProvided(property.getKey()))
-            .filter(property -> property.getPropertyDeprecationInfo().getRemovalInfo().isPresent())
-            .map(property -> new RemovalDeprecation(property.getKey(), property.getPropertyDeprecationInfo().getRemovalInfo().get().getDeprecationText()))
-            .collect(Collectors.toList());
+        List<RemovalDeprecation> result = new ArrayList<>();
+        for (Property property : DetectProperties.allProperties().getProperties()) {
+            if (!property.getPropertyDeprecationInfo().getRemovalInfo().isPresent()) continue;
+            String deprecationText = property.getPropertyDeprecationInfo().getRemovalInfo().get().getDeprecationText();
+            if (property instanceof PassthroughProperty) {
+                // Passthrough sub-keys (e.g. detect.docker.passthrough.service.timeout) are never provided
+                // under the bare prefix key, so emit one entry per sub-key to match the printed log key.
+                PassthroughProperty passthrough = (PassthroughProperty) property;
+                detectConfiguration.getRaw(passthrough).keySet().stream()
+                    .map(subKey -> new RemovalDeprecation(passthrough.getKey() + "." + subKey, deprecationText))
+                    .forEach(result::add);
+            } else if (detectConfiguration.wasKeyProvided(property.getKey())) {
+                result.add(new RemovalDeprecation(property.getKey(), deprecationText));
+            }
+        }
+        return result;
     }
 
     public List<ValueDeprecation> checkForUsedValueDeprecations(PropertyConfiguration detectConfiguration) {

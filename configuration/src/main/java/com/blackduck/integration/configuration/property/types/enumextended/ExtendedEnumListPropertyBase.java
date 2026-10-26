@@ -58,22 +58,38 @@ public abstract class ExtendedEnumListPropertyBase<E extends Enum<E>, B extends 
     }
 
     List<E> deprecatedExtendedValues = new ArrayList<>();
+    List<B> deprecatedBaseValues = new ArrayList<>();
 
     public void deprecateExtendedValue(E value, String reason) {
         deprecatedExtendedValues.add(value);
         addDeprecatedValueInfo(value.toString(), reason);
     }
 
+    protected void addDeprecatedBaseValue(B value, String reason) {
+        deprecatedBaseValues.add(value);
+        addDeprecatedValueInfo(value.toString(), reason);
+    }
+
     @Override
     @NotNull
     public List<DeprecatedValueUsage> checkForDeprecatedValues(List<ExtendedEnumValue<E, B>> value) {
-        return value.stream()
+        List<DeprecatedValueUsage> result = new ArrayList<>();
+        value.stream()
             .filter(element -> element.getExtendedValue().isPresent())
             .map(element -> element.getExtendedValue().get())
             .filter(deprecatedExtendedValues::contains)
             .map(element -> createDeprecatedValueUsageIfExists(element.toString()))
             .filter(Optional::isPresent)
             .map(Optional::get)
-            .collect(Collectors.toList());
+            .forEach(result::add);
+        value.stream()
+            .filter(element -> element.getBaseValue().isPresent())
+            .map(element -> element.getBaseValue().get())
+            .filter(deprecatedBaseValues::contains)
+            .map(element -> createDeprecatedValueUsageIfExists(element.toString()))
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .forEach(result::add);
+        return result;
     }
 }

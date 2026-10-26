@@ -164,5 +164,59 @@ public class PnpmLockYamlParserMultiDocTest {
             "Root dependencies should include chalk (dev dep). Found: " + rootDepNames);
     }
 
+    /**
+     * pnpm 11 multi-document lockfile where BOTH documents carry a {@code lockfileVersion} field.
+     *
+     * <p>Document 1 is a "trap": it has {@code lockfileVersion: '9.0'}, an importers section
+     * containing only {@code configDependencies} (not real project deps), and a package
+     * {@code ms@2.1.3}. Document 2 is the real dependency graph with {@code express@4.19.2}
+     * (and its transitive deps {@code accepts}, {@code array-flatten}).
+     *
+     * <p>Under the previous content-based selection strategy ("first document whose
+     * lockfileVersion is non-null"), the parser would have selected Document 1 and reported
+     * {@code ms} as a dependency while missing {@code express} entirely.
+     *
+     * <p>Under the fixed position-based strategy (last document when there are >= 2),
+     * the parser correctly selects Document 2 and reports the real dependencies.
+     *
+     * <p>Assertions:
+     * <ol>
+     *   <li>{@code express} must be present (proves Document 2 was selected).</li>
+     *   <li>{@code ms} must be absent (proves Document 1 was NOT selected — regression guard).</li>
+     *   <li>Transitive deps of express ({@code accepts}, {@code array-flatten}) must be present
+     *       (proves the full graph from Document 2's snapshots section was walked).</li>
+     * </ol>
+     */
+    @Test
+    public void testParseV11MultiDocBothDocumentsHaveLockfileVersion() throws IOException, IntegrationException {
+        List<CodeLocation> codeLocations = parseLockFile("/pnpm/v11-multi-doc-both-versions/pnpm-lock.yaml");
+
+        Assertions.assertNotNull(codeLocations);
+        Assertions.assertEquals(1, codeLocations.size(),
+            "Single-importer lockfile should produce one code location");
+
+        DependencyGraph graph = codeLocations.get(0).getDependencyGraph();
+
+        Set<String> rootDepNames = graph.getRootDependencies().stream()
+            .map(Dependency::getName)
+            .collect(Collectors.toSet());
+
+        Assertions.assertTrue(rootDepNames.contains("express"),
+            "Document 2 must be selected — root deps should include express. Found: " + rootDepNames);
+        Assertions.assertFalse(rootDepNames.contains("ms"),
+            "Document 1 (the trap doc) must NOT be selected — 'ms' should be absent. Found: " + rootDepNames);
+
+        Set<String> expressChildren = graph.getRootDependencies().stream()
+            .filter(dep -> "express".equals(dep.getName()))
+            .flatMap(dep -> graph.getChildrenForParent(dep).stream())
+            .map(Dependency::getName)
+            .collect(Collectors.toSet());
+
+        Assertions.assertTrue(expressChildren.contains("accepts"),
+            "express should have transitive dep accepts (from Document 2 snapshots). Found: " + expressChildren);
+        Assertions.assertTrue(expressChildren.contains("array-flatten"),
+            "express should have transitive dep array-flatten (from Document 2 snapshots). Found: " + expressChildren);
+    }
+
 }
 

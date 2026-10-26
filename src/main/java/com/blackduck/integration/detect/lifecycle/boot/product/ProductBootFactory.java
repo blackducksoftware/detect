@@ -3,14 +3,18 @@ package com.blackduck.integration.detect.lifecycle.boot.product;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.jetbrains.annotations.Nullable;
+
 import com.blackduck.integration.blackduck.configuration.BlackDuckServerConfig;
 import com.blackduck.integration.blackduck.phonehome.BlackDuckPhoneHomeHelper;
 import com.blackduck.integration.blackduck.service.BlackDuckServicesFactory;
+import com.blackduck.integration.blackduck.version.BlackDuckVersion;
 import com.blackduck.integration.detect.configuration.DetectConfigurationFactory;
 import com.blackduck.integration.detect.configuration.DetectInfo;
 import com.blackduck.integration.detect.configuration.DetectUserFriendlyException;
 import com.blackduck.integration.detect.configuration.connection.BlackDuckConfigFactory;
 import com.blackduck.integration.detect.configuration.connection.BlackDuckConnectionDetails;
+import com.blackduck.integration.detect.lifecycle.boot.product.version.CompatibilityCheckPublisher;
 import com.blackduck.integration.detect.workflow.event.EventSystem;
 import com.blackduck.integration.detect.workflow.phonehome.OnlinePhoneHomeManager;
 import com.blackduck.integration.detect.workflow.phonehome.PhoneHomeManager;
@@ -26,6 +30,10 @@ public class ProductBootFactory {
         this.detectInfo = detectInfo;
         this.eventSystem = eventSystem;
         this.detectConfigurationFactory = detectConfigurationFactory;
+    }
+
+    public void checkCompatibility(@Nullable BlackDuckVersion parsedServerVersion) {
+        new CompatibilityCheckPublisher().publish(detectInfo, eventSystem, parsedServerVersion);
     }
 
     public PhoneHomeManager createPhoneHomeManager(BlackDuckServicesFactory blackDuckServicesFactory, PhoneHomeCredentials phoneHomeCredentials) {

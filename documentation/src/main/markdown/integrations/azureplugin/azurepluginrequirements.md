@@ -6,8 +6,8 @@ The following is a list of requirements for the [detect_product_long] in Azure D
   For the supported versions of [bd_product_short], refer to [Black Duck Release Compatibility](https://docs.blackduck.com/r/blackduck/black-duck-compatibility-reference/black-duck-sca-release-compatibility.html).
 * [bd_product_short] API token to use with Azure.
 * Azure DevOps Services or Azure DevOps Server 17 or later
-* Java.
-  OpenJDK versions 8 and 11 are supported. Other Java development kits may be compatible, but only OpenJDK is officially supported for [bd_product_short].
+* Java: OpenJDK 64-bit version 11, 13, 14, 15, 16, 17, or 21. If using Java 11: 11.0.5 or higher is required.
+<note type="note">Other Java development kits may be compatible, but only OpenJDK is officially supported.</note>
 * Access to the internet is required to download components from GitHub and other locations.
 
 The [detect_product_short] plugin for Azure DevOps is supported on the same operating systems and browsers as [bd_product_short].

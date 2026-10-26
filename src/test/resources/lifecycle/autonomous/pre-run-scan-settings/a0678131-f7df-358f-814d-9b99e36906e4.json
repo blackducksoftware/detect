@@ -5,7 +5,6 @@
     "blackduck.trust.cert": "false",
     "blackduck.url": "https://test-hub.com/",
     "detect.autonomous.scan.enabled": "true",
-    "detect.bazel.workspace.rules": "NONE",
     "detect.blackduck.rapid.compare.mode": "ALL",
     "detect.blackduck.scan.mode": "INTELLIGENT",
     "detect.blackduck.signature.scanner.copyright.search": "false",

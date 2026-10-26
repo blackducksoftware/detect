@@ -19,7 +19,6 @@ import com.blackduck.integration.detectable.detectables.npm.lockfile.model.NpmDe
 import com.blackduck.integration.detectable.detectables.npm.lockfile.model.NpmProject;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.model.NpmRequires;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.model.PackageLock;
-import com.blackduck.integration.detectable.detectables.npm.NpmAliasParser;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.model.PackageLockDependency;
 import com.blackduck.integration.detectable.detectables.npm.lockfile.model.PackageLockPackage;
 import com.blackduck.integration.detectable.detectables.npm.packagejson.CombinedPackageJson;
@@ -80,11 +79,13 @@ public class NpmDependencyConverter {
             String packageKey = packageEntry.getKey();
             PackageLockPackage packageLockDependency = packageEntry.getValue();
 
-            // For npm aliases, the 'name' field contains the actual package name, while the key contains the alias.
-            // For regular packages, the 'name' field is null, so we use the key.
-            String packageName = packageLockDependency.name != null ? packageLockDependency.name : packageKey;
+            // For alias packages the key is the alias (e.g. "react-is-18") and the "name" field is the
+            // actual npm package (e.g. "react-is").  We use the key as the lookup name so that other
+            // packages' "requires" entries (which reference the alias) can find this dependency, but we
+            // build the ExternalId from the actual name so the BOM identifies the real component.
+            String actualName = packageLockDependency.name != null ? packageLockDependency.name : packageKey;
 
-            NpmDependency dependency = createNpmDependency(packageName, packageLockDependency.version, packageLockDependency.dev, packageLockDependency.peer, packageLockDependency.optional);
+            NpmDependency dependency = createNpmDependency(packageKey, actualName, packageLockDependency.version, packageLockDependency.dev, packageLockDependency.peer, packageLockDependency.optional);
             dependency.setParent(parent);
             children.add(dependency);
 
@@ -108,7 +109,7 @@ public class NpmDependencyConverter {
             String packageName = packageEntry.getKey();
             PackageLockDependency packageLockDependency = packageEntry.getValue();
 
-            NpmDependency dependency = createNpmDependency(packageName, packageLockDependency.version, packageLockDependency.dev, packageLockDependency.peer, packageLockDependency.optional);
+            NpmDependency dependency = createNpmDependency(packageName, packageName, packageLockDependency.version, packageLockDependency.dev, packageLockDependency.peer, packageLockDependency.optional);
             dependency.setParent(parent);
             children.add(dependency);
 
@@ -121,12 +122,12 @@ public class NpmDependencyConverter {
         return children;
     }
 
-    private NpmDependency createNpmDependency(String name, String version, Boolean isDev, Boolean isPeer, Boolean isOptional) {
+    private NpmDependency createNpmDependency(String lookupName, String actualName, String version, Boolean isDev, Boolean isPeer, Boolean isOptional) {
         boolean dev = isDev != null && isDev;
         boolean peer = isPeer != null && isPeer;
         boolean optional = isOptional != null && isOptional;
-        ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.NPMJS, name, version);
-        return new NpmDependency(name, version, externalId, dev, peer, optional);
+        ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.NPMJS, actualName, version);
+        return new NpmDependency(lookupName, version, externalId, dev, peer, optional);
     }
 
     public List<NpmRequires> convertNameVersionMapToRequires(MultiValuedMap<String, String> requires) {

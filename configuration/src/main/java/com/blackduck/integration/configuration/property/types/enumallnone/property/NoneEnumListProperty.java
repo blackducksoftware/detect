@@ -40,6 +40,11 @@ public class NoneEnumListProperty<B extends Enum<B>> extends ExtendedEnumListPro
         ));
     }
 
+    public NoneEnumListProperty<B> deprecateValue(B value, String reason) {
+        addDeprecatedBaseValue(value, reason);
+        return this;
+    }
+
     public NoneEnumList<B> toList(List<ExtendedEnumValue<NoneEnum, B>> values) {
         return new NoneEnumList<>(values, bClass);
     }

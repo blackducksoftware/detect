@@ -58,22 +58,22 @@ public class HttpArchiveDispatchPipeline extends Pipeline {
     public List<Dependency> run() throws DetectableException, ExecutableFailedException {
         // WORKSPACE-only environment: run workspace pipeline and return its result.
         if (mode == BazelEnvironmentAnalyzer.Mode.WORKSPACE) {
-            logger.info("HttpArchiveDispatch: mode=WORKSPACE → running workspace pipeline only");
+            logger.debug("HttpArchiveDispatch: mode=WORKSPACE → running workspace pipeline only");
             return workspacePipeline.run();
         }
 
         // BZLMOD-capable environment: attempt bzlmod pipeline first.
         try {
-            logger.info("HttpArchiveDispatch: mode=BZLMOD → attempting bzlmod pipeline first");
+            logger.debug("HttpArchiveDispatch: mode=BZLMOD → attempting bzlmod pipeline first");
             List<Dependency> bzlmodDeps = bzlmodPipeline.run();
             if (bzlmodDeps != null && !bzlmodDeps.isEmpty()) {
                 logger.debug("HttpArchiveDispatch: bzlmod pipeline produced {} deps → returning", bzlmodDeps.size());
                 return bzlmodDeps;
             }
-            logger.info("HttpArchiveDispatch: bzlmod pipeline returned empty result → fallback to workspace pipeline");
+            logger.debug("HttpArchiveDispatch: bzlmod pipeline returned empty result → fallback to workspace pipeline");
         } catch (ExecutableFailedException | DetectableException e) {
             // Controlled fallback for HTTP probing only. Do not treat as fatal here.
-            logger.info("HttpArchiveDispatch: bzlmod pipeline failed, falling back to workspace pipeline: {}", e.getMessage());
+            logger.debug("HttpArchiveDispatch: bzlmod pipeline failed, falling back to workspace pipeline: {}", e.getMessage());
             logger.debug("HttpArchiveDispatch: exception", e);
         }
 

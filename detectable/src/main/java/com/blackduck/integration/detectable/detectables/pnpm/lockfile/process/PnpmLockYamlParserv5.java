@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.collections4.Predicate;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -21,8 +20,7 @@ import com.blackduck.integration.util.NameVersion;
 
 public class PnpmLockYamlParserv5 {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
-    
-    private static final Predicate<String> isNodeRoot = "."::equals;
+
 
     private PnpmYamlTransformerv5 pnpmTransformer;
 
@@ -39,7 +37,6 @@ public class PnpmLockYamlParserv5 {
         }
         return codeLocationsFromImports;
     }
-    
 
     private List<CodeLocation> createCodeLocationsFromRoot(
         File sourcePath,
@@ -64,6 +61,12 @@ public class PnpmLockYamlParserv5 {
             return Collections.emptyList();
         }
 
+        logger.info("PNPM workspace detected in pnpm-lock.yaml. Found {} workspace module(s).",
+            pnpmLockYaml.importers.size());
+        logger.debug("PNPM workspace module paths: {}", pnpmLockYaml.importers.keySet());
+        logger.info("Subdirectory package.json files in workspace modules do not need to be processed separately; "
+            + "all dependency information is already contained in the root pnpm-lock.yaml.");
+
         if (pnpmLockYaml.packages == null) {
             logger.warn("The pnpm-lock.yaml file contains {} importer(s) {} but has no 'packages' section. "
                 + "No resolved dependencies are available. All workspaces will have empty dependency graphs.",
@@ -78,19 +81,21 @@ public class PnpmLockYamlParserv5 {
             NameVersion extractedNameVersion = extractProjectInfo(projectPackageInfo, linkedPackageResolver, projectNameVersion);
 
             String reportingProjectPackagePath = null;
-            if (!isNodeRoot.evaluate(projectKey)) {
+            if (!PnpmWorkspaceDependencySummary.IS_NODE_ROOT.evaluate(projectKey)) {
                 reportingProjectPackagePath = projectKey;
             }
             File generatedSourcePath = generateCodeLocationSourcePath(sourcePath, reportingProjectPackagePath);
 
-            codeLocations.add(pnpmTransformer.generateCodeLocation(
+            CodeLocation codeLocation = pnpmTransformer.generateCodeLocation(
                 generatedSourcePath,
                 projectPackage,
                 reportingProjectPackagePath,
                 extractedNameVersion,
                 pnpmLockYaml.packages,
                 linkedPackageResolver
-            ));
+            );
+            PnpmWorkspaceDependencySummary.logModuleSummary(logger, projectKey, codeLocation.getDependencyGraph());
+            codeLocations.add(codeLocation);
         }
 
         return codeLocations;
@@ -101,7 +106,7 @@ public class PnpmLockYamlParserv5 {
         PnpmLinkedPackageResolver linkedPackageResolver,
         @Nullable NameVersion projectNameVersion
     ) {
-        if (isNodeRoot.evaluate(projectPackageInfo.getKey()) && projectNameVersion != null && projectNameVersion.getName() != null) {
+        if (PnpmWorkspaceDependencySummary.IS_NODE_ROOT.evaluate(projectPackageInfo.getKey()) && projectNameVersion != null && projectNameVersion.getName() != null) {
             // resolve "." package to project root
             return projectNameVersion;
         }

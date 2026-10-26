@@ -15,22 +15,19 @@ public class BazelDetectableOptions {
     private final List<String> bazelCqueryAdditionalOptions;
     private final List<String> bazelQueryAdditionalOptions;
     private final String modeOverride;
-    private final Set<WorkspaceRule> workspaceRulesFromProperty;
 
     public BazelDetectableOptions(
         String targetName,
         Set<DependencySource> dependencySourcesFromProperty,
         List<String> bazelCqueryAdditionalOptions,
         List<String> bazelQueryAdditionalOptions,
-        String modeOverride,
-        Set<WorkspaceRule> workspaceRulesFromProperty
+        String modeOverride
     ) {
         this.targetName = targetName;
         this.dependencySourcesFromProperty = dependencySourcesFromProperty;
         this.bazelCqueryAdditionalOptions = bazelCqueryAdditionalOptions;
         this.bazelQueryAdditionalOptions = bazelQueryAdditionalOptions;
         this.modeOverride = modeOverride;
-        this.workspaceRulesFromProperty = workspaceRulesFromProperty;
     }
 
     public Optional<String> getTargetName() {
@@ -47,10 +44,6 @@ public class BazelDetectableOptions {
 
     public Set<DependencySource> getDependencySourcesFromProperty() {
         return dependencySourcesFromProperty;
-    }
-
-    public Set<WorkspaceRule> getWorkspaceRulesFromProperty() {
-        return workspaceRulesFromProperty;
     }
 
 

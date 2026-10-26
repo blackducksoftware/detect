@@ -114,7 +114,11 @@ public class ProductBoot {
                     ExitCodeType.FAILURE_BLACKDUCK_VERSION_NOT_SUPPORTED
                 );
             }
-            
+
+            productBootFactory.checkCompatibility(
+                new BlackDuckVersionParser().parse(blackDuckConnectivityResult.getContactedServerVersion()).orElse(null)
+            );
+
             BlackDuckServicesFactory blackDuckServicesFactory = blackDuckConnectivityResult.getBlackDuckServicesFactory();
             setBlackDuckVersionLevel(blackDuckServicesFactory, blackDuckConnectivityResult);
 

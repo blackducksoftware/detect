@@ -16,7 +16,7 @@ import com.blackduck.integration.detect.workflow.diagnostic.DiagnosticSystem;
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
 import com.blackduck.integration.detectable.detectables.bazel.BazelDetectableOptions;
 import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
-import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
+
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDependencyType;
 import com.blackduck.integration.detectable.detectables.bitbake.BitbakeDetectableOptions;
 import com.blackduck.integration.detectable.detectables.cargo.CargoDependencyType;
@@ -90,8 +90,7 @@ public class DetectableOptionFactory {
         List<String> bazelQueryAdditionalOptions = detectConfiguration.getValue(DetectProperties.DETECT_BAZEL_QUERY_OPTIONS);
         Set<DependencySource> dependencySourcesFromProperty = detectConfiguration.getValue(DetectProperties.DETECT_BAZEL_DEPENDENCY_SOURCES).representedValueSet();
         String modeOverride = detectConfiguration.getNullableValue(DetectProperties.DETECT_BAZEL_MODE);
-        Set<WorkspaceRule> workspaceRulesFromProperty = detectConfiguration.getValue(DetectProperties.DETECT_BAZEL_WORKSPACE_RULES).representedValueSet();
-        return new BazelDetectableOptions(targetName, dependencySourcesFromProperty, bazelCqueryAdditionalOptions, bazelQueryAdditionalOptions, modeOverride, workspaceRulesFromProperty);
+        return new BazelDetectableOptions(targetName, dependencySourcesFromProperty, bazelCqueryAdditionalOptions, bazelQueryAdditionalOptions, modeOverride);
     }
 
     public BitbakeDetectableOptions createBitbakeDetectableOptions() {

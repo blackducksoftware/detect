@@ -23,7 +23,7 @@ import com.blackduck.integration.detectable.detectable.result.PassedDetectableRe
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 
-@DetectableInfo(name = "NuGet Solution Native Inspector", language = "C#", forge = "NuGet.org", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: a solution file with a .sln extension.")
+@DetectableInfo(name = "NuGet Solution Native Inspector", language = "C#", forge = "NuGet.org", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: a solution file with a .sln or .slnx extension.")
 public class NugetSolutionDetectable extends Detectable {
     private static final List<String> SUPPORTED_SOLUTION_PATTERNS = Collections.unmodifiableList(Arrays.asList("*.sln", "*.slnx"));
 

@@ -18,7 +18,7 @@ public class BazelVersionCheckerTest {
     @Test
     public void detectVersion_successfulCommand_returnsVersion() {
         BazelCommandExecutor executor = mock(BazelCommandExecutor.class);
-        when(executor.executeWithoutThrowing(anyList()))
+        when(executor.executeToleratingExitCode(anyList()))
                 .thenReturn(new ExecutableOutput(0, "bazel 7.4.1", ""));
 
         BazelVersionChecker checker = new BazelVersionChecker(executor);
@@ -32,7 +32,7 @@ public class BazelVersionCheckerTest {
     @Test
     public void detectVersion_nonZeroExitCode_returnsEmpty() {
         BazelCommandExecutor executor = mock(BazelCommandExecutor.class);
-        when(executor.executeWithoutThrowing(anyList()))
+        when(executor.executeToleratingExitCode(anyList()))
                 .thenReturn(new ExecutableOutput(1, "", "command not found"));
 
         BazelVersionChecker checker = new BazelVersionChecker(executor);
@@ -42,7 +42,7 @@ public class BazelVersionCheckerTest {
     @Test
     public void detectVersion_unparsableOutput_returnsEmpty() {
         BazelCommandExecutor executor = mock(BazelCommandExecutor.class);
-        when(executor.executeWithoutThrowing(anyList()))
+        when(executor.executeToleratingExitCode(anyList()))
                 .thenReturn(new ExecutableOutput(0, "not a version string", ""));
 
         BazelVersionChecker checker = new BazelVersionChecker(executor);
@@ -52,7 +52,7 @@ public class BazelVersionCheckerTest {
     @Test
     public void detectVersion_commandThrows_returnsEmpty() {
         BazelCommandExecutor executor = mock(BazelCommandExecutor.class);
-        when(executor.executeWithoutThrowing(anyList()))
+        when(executor.executeToleratingExitCode(anyList()))
                 .thenThrow(new RuntimeException("bazel not found"));
 
         BazelVersionChecker checker = new BazelVersionChecker(executor);

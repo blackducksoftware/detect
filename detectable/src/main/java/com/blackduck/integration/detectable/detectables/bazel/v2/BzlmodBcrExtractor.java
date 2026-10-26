@@ -8,14 +8,13 @@ import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.detectable.detectable.executable.ExecutableFailedException;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelCommandExecutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.IntermediateStepParseShowRepoToUrlCandidates;
+import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.ShowRepoExecutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.parse.GithubUrlParser;
 import com.blackduck.integration.detectable.detectables.bazel.query.BazelQueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.MalformedURLException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -53,37 +52,55 @@ public class BzlmodBcrExtractor {
 
     // Prefix used in GitHub archive URLs to indicate a tag ref (e.g., refs/tags/v1.2.3)
     private static final String REFS_TAGS_PREFIX = "refs/tags/";
-    // Separator between individual repo blocks in batched show_repo output.
-    // Each block starts with "## @@<name><suffix>:" regardless of the suffix character.
-    private static final String REPO_BLOCK_SEPARATOR = "## @@";
 
     // Pattern for the target-scoped library query (same as the HTTP_ARCHIVE pipeline)
     private static final String LIBRARY_RULE_PATTERN = ".*library";
-    // Repo name prefixes that are Bazel toolchain / internal repos — excluded from BCR scope check.
-    // Mirrors the exclusion list in HttpFamilyProber and Pipelines.java.
-    private static final Set<String> EXCLUDED_REPO_PREFIXES = new HashSet<>(Arrays.asList(
-        "bazel_tools", "local_config_", "remotejdk", "platforms",
-        "rules_python", "rules_java", "rules_cc",
-        "maven", "unpinned_maven", "rules_jvm_external"
-    ));
+    // Infrastructure / toolchain repo exclusion is centralized in BazelInfrastructureModules.
 
     private final BazelCommandExecutor bazelCmd;
     private final BazelVersion bazelVersion;
     // The Bazel target being scanned (e.g., //java/src/...:client-combined).
     // Used to scope the BCR BOM to only modules the target actually fetches.
     private final String bazelTarget;
-    // Stateless helpers — instantiated internally, no external injection needed
+    // User-supplied query options (detect.bazel.query.options). Applied to the target-scope library
+    // query so it is consistent with the HTTP_ARCHIVE pipeline and HttpFamilyProber, which both honor
+    // these options. Keeping the args identical also lets BazelCommandExecutor memoize/reuse the result.
+    private final List<String> queryOptions;
+    // Stateless helpers — created by default constructors; can be injected for testing
     private final GithubUrlParser githubUrlParser;
     private final IntermediateStepParseShowRepoToUrlCandidates urlCandidateParser;
+    // Shared show_repo execution mechanics (batching, block splitting, per-candidate fallback)
+    private final ShowRepoExecutor showRepoExecutor;
     // Populated during extractGraph(); used by callers to avoid re-adding BCR deps flat via other pipelines.
     private final Set<ExternalId> resolvedExternalIds = new LinkedHashSet<>();
 
-    public BzlmodBcrExtractor(BazelCommandExecutor bazelCmd, BazelVersion bazelVersion, String bazelTarget) {
+    /**
+     * Production constructor. {@code options} carries the cross-cutting Bazel extraction
+     * settings (detected version, {@code detect.bazel.query.options}, etc.).
+     */
+    public BzlmodBcrExtractor(BazelCommandExecutor bazelCmd, String bazelTarget, BazelExtractionOptions options) {
+        this(bazelCmd, bazelTarget, options,
+            new GithubUrlParser(),
+            new IntermediateStepParseShowRepoToUrlCandidates(),
+            new ShowRepoExecutor(bazelCmd));
+    }
+
+    /**
+     * Full-injection constructor. Accepts all collaborators explicitly, enabling unit tests that
+     * exercise classification and URL-parsing logic without spawning a real Bazel process.
+     * Production code uses the constructor above, which supplies default implementations.
+     */
+    public BzlmodBcrExtractor(BazelCommandExecutor bazelCmd, String bazelTarget, BazelExtractionOptions options,
+                               GithubUrlParser githubUrlParser,
+                               IntermediateStepParseShowRepoToUrlCandidates urlCandidateParser,
+                               ShowRepoExecutor showRepoExecutor) {
         this.bazelCmd = bazelCmd;
-        this.bazelVersion = bazelVersion;
+        this.bazelVersion = options.getBazelVersion();
         this.bazelTarget = bazelTarget;
-        this.githubUrlParser = new GithubUrlParser();
-        this.urlCandidateParser = new IntermediateStepParseShowRepoToUrlCandidates();
+        this.queryOptions = options.getQueryOptions() != null ? options.getQueryOptions() : Collections.emptyList();
+        this.githubUrlParser = githubUrlParser;
+        this.urlCandidateParser = urlCandidateParser;
+        this.showRepoExecutor = showRepoExecutor;
     }
 
     /**
@@ -97,18 +114,33 @@ public class BzlmodBcrExtractor {
     }
 
     /**
+     * Builds the shared prefix for a "non-standard coordinate" WARN: identifies the module and
+     * explains that its {@code _} version marks it as sourced from a non-registry override
+     * (e.g. {@code archive_override}, {@code git_override}, {@code local_path_override}), not the
+     * Bazel Central Registry. Callers append their own outcome-specific sentence(s) after this
+     * prefix so all three "module@_" warning sites stay worded consistently.
+     */
+    private static String nonRegistryOverrideWarningPrefix(ModuleKey parsedKey, String moduleKey) {
+        return String.format(
+                "Module '%s' has a non-standard coordinate ('%s') — it is sourced from a non-registry override " +
+                        "(e.g. archive_override, git_override, local_path_override), not the Bazel Central Registry. ",
+                parsedKey.getName(), moduleKey);
+    }
+
+
+    /**
      * Main entry point. Runs the full BCR extraction and returns a {@link DependencyGraph}
      * with direct/transitive edges populated. Returns an empty graph on failure — callers
      * should check the log output to understand what went wrong.
      */
     public DependencyGraph extractGraph() {
         // Step 1 — get the full module dependency tree
-        logger.info("BZLMOD BCR: running 'bazel mod graph --output json' to discover module dependency tree");
+        logger.debug("BZLMOD BCR: running 'bazel mod graph --output json' to discover module dependency tree");
         List<String> modGraphArgs = BazelQueryBuilder.mod().graph().withOutputJson().build();
         Optional<String> modGraphOutput = bazelCmd.executeModCommandToString(modGraphArgs);
 
         if (!modGraphOutput.isPresent()) {
-            logger.warn("BZLMOD BCR: 'bazel mod graph --output json' produced no output; returning empty graph");
+            logger.warn("Bazel module graph returned no output; dependency extraction will be skipped");
             return new BasicDependencyGraph();
         }
 
@@ -117,10 +149,10 @@ public class BzlmodBcrExtractor {
 
         Set<String> allKeys = tree.getAllModuleKeys();
         if (allKeys.isEmpty()) {
-            logger.warn("BZLMOD BCR: module graph contained no parseable module keys; returning empty graph");
+            logger.warn("Bazel module graph contained no recognizable entries; dependency extraction will be skipped");
             return new BasicDependencyGraph();
         }
-        logger.info("BZLMOD BCR: module graph has {} direct dep(s) and {} total unique module(s)",
+        logger.debug("BZLMOD BCR: module graph has {} direct dep(s) and {} total unique module(s)",
             tree.directModuleKeys.size(), allKeys.size());
 
         // Step 1b — load the repo mapping once.
@@ -132,8 +164,24 @@ public class BzlmodBcrExtractor {
 
         // Step 1c — narrow the mod graph to only modules the target actually fetches.
         // This keeps the BCR path consistent with all other Bazel pipelines which are target-scoped
-        // via 'bazel query deps(//target)'. We reuse the same library query the HTTP_ARCHIVE pipeline
-        // runs, so Bazel serves it from its analysis cache at no extra cost.
+        // via 'bazel query deps(//target)'. We reuse the exact same library query (same args, including
+        // detect.bazel.query.options) that HttpFamilyProber runs during probing; BazelCommandExecutor
+        // memoizes read-only query results for the extraction, so this is served in-process rather than
+        // re-executing Bazel.
+        //
+        // The whitelist check bridges two different Bazel naming planes:
+        //   bazel query output  → labels like  @@abseil-cpp~//absl/strings:strings
+        //   bazel mod graph     → keys  like   abseil-cpp@20240116.2
+        // resolveLabel() (called inside getTargetScopedModuleNames) reduces a query label to a plain
+        // BCR module name — by stripping the canonical suffix (@@name~ → name) or resolving a
+        // repo_name alias via the dump_repo_mapping forward map (@alias → module_name).
+        // extractName() reduces a mod graph key to the same plain module name by dropping @version.
+        // The filter is therefore: resolveLabel(query_label) ∈ { extractName(mod_graph_key) }.
+        // This holds for standard BCR modules because Bazel derives canonical repo names directly
+        // from module names (module name + version-specific suffix). It does NOT hold for module
+        // extension sub-repos (@@mod++ext+subrepo), which have no mod graph entry — resolveLabel
+        // returns empty for those and they are absent from targetModuleNames, falling through to
+        // separate pipelines (MAVEN_INSTALL for JVM deps managed by rules_jvm_external, etc.).
         Set<String> targetModuleNames = getTargetScopedModuleNames(resolver);
         if (!targetModuleNames.isEmpty()) {
             Set<String> filtered = new LinkedHashSet<>();
@@ -142,18 +190,44 @@ public class BzlmodBcrExtractor {
                     filtered.add(key);
                 }
             }
-            logger.info("BZLMOD BCR: target-scoped filter: {} of {} module(s) in scope for '{}', {} pruned",
+            logger.debug("BZLMOD BCR: target-scoped filter: {} of {} module(s) in scope for '{}', {} pruned",
                 filtered.size(), allKeys.size(), bazelTarget, allKeys.size() - filtered.size());
             allKeys = filtered;
         } else {
-            logger.warn("BZLMOD BCR: target-scoped filter unavailable — reporting full project-scoped mod graph ({} modules)",
+            logger.warn("Target-specific dependency filter unavailable — all {} module(s) in the project will be reported",
                 allKeys.size());
         }
 
+        // Step 1d — remove excluded modules (toolchain infrastructure, build rules, etc.) before
+        // any show_repo call. This must happen here — after target-scoped filtering — so excluded
+        // modules never reach the batch or per-module show_repo calls.
+        //
+        // WHY THIS MATTERS FOR CORRECTNESS AND PERFORMANCE:
+        // show_repo is batched: a single bad argument (e.g. @@platforms+ for a no-suffix embedded
+        // module) causes Bazel to reject the ENTIRE batch with exit code 2 and no stdout.
+        // Every module in the batch then falls back to per-module calls — eliminating the
+        // performance benefit of batching for the entire scan.
+        //
+        // Modules like 'platforms' are already in EXCLUDED_REPO_PREFIXES by design (they are
+        // Bazel toolchain constraint infrastructure, not software components). The exclusion
+        // was applied at the target-scope query check (Step 1c) but previously not here.
+        // This step makes the exclusion consistent end-to-end.
+        Set<String> keysForResolution = new LinkedHashSet<>();
+        for (String key : allKeys) {
+            String name = BzlmodGraphJsonParser.extractName(key);
+            if (isExcludedModuleName(name)) {
+                logger.debug("BZLMOD BCR: skipping '{}' — build infrastructure, not a software component", key);
+            } else {
+                keysForResolution.add(key);
+            }
+        }
+
         // Step 2 — map each module key to a Dependency via show_repo
-        Map<String, Dependency> moduleKeyToDep = resolveModules(allKeys, resolver);
-        logger.info("BZLMOD BCR extraction: {} module(s) resolved, {} skipped (see WARN above for details)",
-            moduleKeyToDep.size(), allKeys.size() - moduleKeyToDep.size());
+        Map<String, Dependency> moduleKeyToDep = resolveModules(keysForResolution, resolver);
+        int excludedCount   = allKeys.size() - keysForResolution.size();
+        int unresolvedCount = keysForResolution.size() - moduleKeyToDep.size();
+        logger.debug("BZLMOD BCR: show_repo summary — {} fetched, {} failed, {} skipped (build infrastructure)",
+            moduleKeyToDep.size(), unresolvedCount, excludedCount);
 
         // Step 3 — build the graph preserving the direct/transitive tree structure
         return buildGraph(tree, moduleKeyToDep);
@@ -164,154 +238,51 @@ public class BzlmodBcrExtractor {
     // -------------------------------------------------------------------------
 
     /**
-     * Resolves each module key to a {@link Dependency} by calling
-     * {@code bazel mod show_repo @@<name><suffix>} and parsing the GitHub URL from the output.
+     * Resolves each module key to a {@link Dependency} by calling {@code bazel mod show_repo}
+     * (via {@link ShowRepoExecutor#resolveWithFallback}) and parsing the GitHub URL from the output.
      *
-     * <p>We use the <em>canonical</em> repo name form {@code @@<name><suffix>} rather than the
-     * apparent name {@code @<name>}. The distinction matters for pure transitive deps:
-     * <ul>
-     *   <li>{@code @protobuf} — apparent name, looked up in the <em>root module's</em> repo
-     *       mapping. Only works for modules explicitly declared in the root's {@code MODULE.bazel}.
-     *       Pure transitives are absent from the root's mapping → "unused modules" error.</li>
-     *   <li>{@code @@protobuf<suffix>} — canonical name, a globally unique identifier that Bazel
-     *       resolves directly without any repo-mapping lookup. Works for every BCR module in
-     *       the graph, including pure transitives that the root never declared.</li>
-     * </ul>
+     * <p>Batch+fallback orchestration is delegated to {@link ShowRepoExecutor#resolveWithFallback},
+     * which tries a single batched call first and retries only missing modules per-module.
+     *
+     * <p>Excluded modules (infrastructure / toolchain repos) must be filtered from
+     * {@code moduleKeys} by the caller before invoking this method — see Step 1d in
+     * {@link #extractGraph()}.
      *
      * <p>If a module cannot be resolved (e.g. it uses {@code git_override} or
      * {@code local_path_override} with a non-standard canonical name), it is skipped with a
      * WARN. The HTTP_ARCHIVE pipeline may still capture it via {@code bazel query}.
      */
     private Map<String, Dependency> resolveModules(Set<String> moduleKeys, BzlmodRepoMappingResolver resolver) {
-        // Build canonical @@<name><suffix> args for the batched show_repo call.
-        // canonicalRepoArg() uses the reverse map for known direct deps and falls back to
-        // appending the detected suffix for pure transitives absent from the root mapping.
-        // The canonical form is required (not apparent @name) so that pure transitive deps
-        // resolve without a repo-mapping lookup — see BzlmodBcrExtractor javadoc for details.
-        List<String> repoArgs = new ArrayList<>();
-        for (String moduleKey : moduleKeys) {
-            String name    = BzlmodGraphJsonParser.extractName(moduleKey);
-            String repoArg = resolver.canonicalRepoArg(name); // e.g. "@@protobuf~"
-            repoArgs.add(repoArg);
-        }
+        Map<String, String> showRepoOutputByKey = showRepoExecutor.resolveWithFallback(moduleKeys, resolver);
 
-        // Attempt a single batched show_repo call (Bazel 7.1+ supports it; we are always 7.1+ here)
-        Map<String, String> showRepoByKey = tryBatchedShowRepo(moduleKeys, repoArgs, resolver);
-        if (showRepoByKey.isEmpty()) {
-            logger.info("BZLMOD BCR: batched show_repo returned no results; falling back to per-module calls");
-            showRepoByKey = runPerModuleShowRepo(moduleKeys, resolver);
-        } else {
-            logger.debug("BZLMOD BCR: batched show_repo resolved {} of {} module(s)", showRepoByKey.size(), moduleKeys.size());
-        }
-
-        // Convert show_repo output to Dependencies
         Map<String, Dependency> result = new LinkedHashMap<>();
         for (String moduleKey : moduleKeys) {
-            String showRepoOutput = showRepoByKey.get(moduleKey);
+            String showRepoOutput = showRepoOutputByKey.get(moduleKey);
             if (showRepoOutput == null || showRepoOutput.trim().isEmpty()) {
-                // Module could not be resolved — likely uses git_override or local_path_override
-                // with a non-standard canonical name, or is not a standard BCR module.
-                // The HTTP_ARCHIVE pipeline may still capture it via bazel query.
-                logger.warn("BZLMOD BCR: show_repo produced no output for '{}' — " +
-                    "module may use a git_override or local_path_override with a non-standard canonical name. " +
-                    "It will not be included in the BCR BOM. " +
-                    "It may still appear via the HTTP_ARCHIVE pipeline.",
-                    moduleKey);
+                ModuleKey parsedKey = ModuleKey.parse(moduleKey);
+                if (parsedKey.isNonRegistryOverride()) {
+                    // "_" confirms this really is a non-registry override (archive_override,
+                    // git_override, local_path_override, etc.) rather than a guess — show_repo
+                    // gave us nothing to work with at all, so the component will be missing
+                    // from the BOM entirely unless another pipeline (e.g. HTTP_ARCHIVE) finds it.
+                    logger.warn(nonRegistryOverrideWarningPrefix(parsedKey, moduleKey) +
+                        "'bazel mod show_repo' returned no output for it. It will not be included in " +
+                        "these scan results. It may still be found via other scan methods.");
+                } else {
+                    // Module could not be resolved — likely uses git_override or local_path_override
+                    // with a non-standard canonical name, or is not a standard BCR module.
+                    // The HTTP_ARCHIVE pipeline may still capture it via bazel query.
+                    logger.warn("Module '{}' could not be resolved — it may use a local override. " +
+                        "It will not be included in these scan results. " +
+                        "It may still be found via other scan methods.",
+                        moduleKey);
+                }
                 continue;
             }
             Dependency dep = urlOutputToDependency(moduleKey, showRepoOutput);
             if (dep != null) {
                 result.put(moduleKey, dep);
                 resolvedExternalIds.add(dep.getExternalId());
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Attempts a single batched {@code bazel mod show_repo @@name~ @@name2~ ...} and maps the
-     * split output blocks back to module keys via the {@code ## @@name<suffix>:} header in each block.
-     * Returns an empty map if the batch fails, returns no stdout, or cannot be split.
-     *
-     * <p>The canonical {@code @@name<suffix>} form is used so that pure transitive modules resolve
-     * without a repo-mapping lookup. See {@link #resolveModules} for the full explanation.
-     * The actual suffix character ("+" or "~") is detected dynamically by the resolver.
-     */
-    private Map<String, String> tryBatchedShowRepo(Set<String> moduleKeys, List<String> repoArgs,
-                                                    BzlmodRepoMappingResolver resolver) {
-        if (repoArgs.isEmpty()) {
-            return Collections.emptyMap();
-        }
-        try {
-            List<String> batchCmd = BazelQueryBuilder.mod().showRepoRawBatch(repoArgs).build();
-            Optional<String> output = bazelCmd.executeModCommandToString(batchCmd);
-            if (!output.isPresent() || output.get().trim().isEmpty()) {
-                return Collections.emptyMap();
-            }
-
-            // Each repo block starts with "## @@<name><suffix>:" — split on that boundary.
-            // The suffix character varies by Bazel version ("+" pre-7.5, "~" on 7.5+);
-            // we strip it via the resolver rather than hardcoding.
-            String[] parts = output.get().split("(?=" + REPO_BLOCK_SEPARATOR + ")");
-            Map<String, String> blockByRepoName = new LinkedHashMap<>();
-            for (String part : parts) {
-                String trimmed = part.trim();
-                if (!trimmed.isEmpty() && trimmed.startsWith(REPO_BLOCK_SEPARATOR)) {
-                    // Header is "## @@<name><suffix>:" — extract the token between "@@" and ":"
-                    int colonIdx = trimmed.indexOf(':');
-                    if (colonIdx > REPO_BLOCK_SEPARATOR.length()) {
-                        // e.g. "## @@protobuf~:" → rawName = "protobuf~"
-                        String rawName = trimmed.substring(REPO_BLOCK_SEPARATOR.length(), colonIdx);
-                        // Strip the canonical suffix using the resolver (version-aware, not hardcoded)
-                        String moduleName = resolver.stripCanonicalSuffix(rawName);
-                        logger.debug("BZLMOD BCR: batched show_repo block header: rawName='{}' → moduleName='{}'",
-                            rawName, moduleName);
-                        blockByRepoName.put(moduleName, trimmed);
-                    }
-                }
-            }
-
-            // Map module keys to the block that corresponds to their extracted module name
-            Map<String, String> result = new LinkedHashMap<>();
-            for (String moduleKey : moduleKeys) {
-                String name = BzlmodGraphJsonParser.extractName(moduleKey);
-                String block = blockByRepoName.get(name);
-                if (block != null) {
-                    result.put(moduleKey, block);
-                }
-            }
-            return result;
-        } catch (Exception e) {
-            logger.debug("BZLMOD BCR: batched show_repo failed with exception: {}", e.getMessage());
-            return Collections.emptyMap();
-        }
-    }
-
-    /**
-     * Runs {@code bazel mod show_repo @@<name><suffix>} individually for each module key.
-     * Used as a fallback when the batched call fails or returns no results.
-     *
-     * <p>When the resolver is available, a single canonical arg is tried. When unavailable
-     * (e.g. {@code dump_repo_mapping} failed), both known suffix forms ({@code ~} and
-     * {@code +}) are tried in order so that the correct suffix is found regardless of the
-     * Bazel version, without hardcoding any specific suffix in this class.
-     */
-    private Map<String, String> runPerModuleShowRepo(Set<String> moduleKeys, BzlmodRepoMappingResolver resolver) {
-        Map<String, String> result = new LinkedHashMap<>();
-        for (String moduleKey : moduleKeys) {
-            String name = BzlmodGraphJsonParser.extractName(moduleKey);
-            boolean resolved = false;
-            for (String candidate : resolver.candidateRepoArgs(name)) {
-                List<String> showRepoArgs = BazelQueryBuilder.mod().showRepoRaw(candidate).build();
-                Optional<String> output = bazelCmd.executeModCommandToString(showRepoArgs);
-                if (output.isPresent() && !output.get().trim().isEmpty()) {
-                    result.put(moduleKey, output.get());
-                    resolved = true;
-                    break;
-                }
-            }
-            if (!resolved) {
-                logger.debug("BZLMOD BCR: per-module show_repo produced no output for '{}'", moduleKey);
             }
         }
         return result;
@@ -334,39 +305,75 @@ public class BzlmodBcrExtractor {
             return null;
         }
 
-        String moduleVersion = BzlmodGraphJsonParser.extractVersion(moduleKey);
+        ModuleKey parsedKey = ModuleKey.parse(moduleKey);
 
         for (String urlCandidate : urlCandidates) {
-            try {
-                String organization = githubUrlParser.parseOrganization(urlCandidate);
-                String repo = githubUrlParser.parseRepo(urlCandidate);
-                String parsedVersion = githubUrlParser.parseVersion(urlCandidate);
-                // Normalize refs/tags/v1.2.3 → v1.2.3 (same logic as FinalStepTransformGithubUrl)
-                if (parsedVersion != null && parsedVersion.startsWith(REFS_TAGS_PREFIX)) {
-                    parsedVersion = parsedVersion.substring(REFS_TAGS_PREFIX.length());
-                }
-                // Prefer the URL-parsed version; fall back to the version in the module key
-                String resolvedVersion = (parsedVersion != null && !parsedVersion.isEmpty())
-                    ? parsedVersion
-                    : moduleVersion;
-                logger.debug("BZLMOD BCR: resolved '{}' → github:{}/{} version:{}", moduleKey, organization, repo, resolvedVersion);
-                return Dependency.FACTORY.createNameVersionDependency(Forge.GITHUB, organization + "/" + repo, resolvedVersion);
-            } catch (MalformedURLException e) {
-                // Not a GitHub URL — try the next candidate
+            Dependency dependency = tryCreateGithubDependency(moduleKey, parsedKey, urlCandidate);
+            if (dependency != null) {
+                return dependency;
             }
         }
 
-        // No GitHub URL found — log all raw URLs so users can investigate
-        if (!urlCandidates.isEmpty()) {
-            logger.warn("BZLMOD BCR: no GitHub URL found for '{}' — raw URL(s): {}. " +
-                "This component is not included in the BOM. " +
-                "Consider running signature scan on this path or consulting the KB team about forge support.",
+        logUnresolvedGithubUrl(moduleKey, parsedKey, urlCandidates);
+        return null;
+    }
+
+    /**
+     * Attempts to parse {@code urlCandidate} as a GitHub URL and build a {@link Dependency} from it.
+     * Returns {@code null} if the candidate is not a GitHub URL — the caller tries the next candidate.
+     */
+    private Dependency tryCreateGithubDependency(String moduleKey, ModuleKey parsedKey, String urlCandidate) {
+        try {
+            String organization = githubUrlParser.parseOrganization(urlCandidate);
+            String repo = githubUrlParser.parseRepo(urlCandidate);
+            String resolvedVersion = resolveVersion(githubUrlParser.parseVersion(urlCandidate), parsedKey.getVersion());
+            logger.debug("BZLMOD BCR: resolved '{}' → github:{}/{} version:{}", moduleKey, organization, repo, resolvedVersion);
+            if (parsedKey.isNonRegistryOverride()) {
+                // "_" is Bazel's literal marker for a module governed by a non-registry
+                // override (archive_override/git_override/local_path_override, etc.).
+                // It was never resolved against the Bazel Central Registry, so make sure
+                // this is visible even at default log levels.
+                logger.warn(nonRegistryOverrideWarningPrefix(parsedKey, moduleKey) +
+                    String.format("It will be reported as github:%s/%s version:%s, inferred from its resolved " +
+                        "source URL; this version has not been verified against BCR.", organization, repo, resolvedVersion));
+            }
+            return Dependency.FACTORY.createNameVersionDependency(Forge.GITHUB, organization + "/" + repo, resolvedVersion);
+        } catch (MalformedURLException e) {
+            // Not a GitHub URL — caller tries the next candidate
+            return null;
+        }
+    }
+
+    /**
+     * Normalizes a URL-parsed version: strips the {@code refs/tags/} prefix (same logic as
+     * {@code FinalStepTransformGithubUrl}), and falls back to the module key's version when the
+     * URL itself did not yield one.
+     */
+    private String resolveVersion(String parsedVersion, String moduleVersion) {
+        if (parsedVersion != null && parsedVersion.startsWith(REFS_TAGS_PREFIX)) {
+            parsedVersion = parsedVersion.substring(REFS_TAGS_PREFIX.length());
+        }
+        return (parsedVersion != null && !parsedVersion.isEmpty()) ? parsedVersion : moduleVersion;
+    }
+
+    /**
+     * Logs why {@code moduleKey} could not be resolved into a BOM entry: none of
+     * {@code urlCandidates} was a supported GitHub URL (or no candidate was found at all).
+     */
+    private void logUnresolvedGithubUrl(String moduleKey, ModuleKey parsedKey, List<String> urlCandidates) {
+        if (parsedKey.isNonRegistryOverride()) {
+            String detail = !urlCandidates.isEmpty()
+                ? String.format("Additionally, its source URL is not a supported GitHub URL — it will not appear in " +
+                    "the scan results. Raw URL(s): %s. Consider running a signature scan for this component.", urlCandidates)
+                : "Additionally, no source URL could be extracted — it will not appear in the scan results.";
+            logger.warn(nonRegistryOverrideWarningPrefix(parsedKey, moduleKey) + detail);
+        } else if (!urlCandidates.isEmpty()) {
+            logger.warn("Module '{}' was found but its source URL is not a supported GitHub URL — it will not appear in the scan results. " +
+                "Raw URL(s): {}. Consider running a signature scan for this component.",
                 moduleKey, urlCandidates);
         } else {
-            logger.warn("BZLMOD BCR: no URLs found in show_repo output for '{}'. " +
-                "This component is not included in the BOM.", moduleKey);
+            logger.warn("Module '{}' was found but no source URL could be extracted — it will not appear in the scan results.", moduleKey);
         }
-        return null;
     }
 
     // -------------------------------------------------------------------------
@@ -405,8 +412,9 @@ public class BzlmodBcrExtractor {
             recurseChildren(graph, directKey, dep, tree, moduleKeyToDep, recursed);
         }
 
-        logger.info("BZLMOD BCR graph built: {} direct dep(s), {} total module(s) resolved",
-            directCount, moduleKeyToDep.size());
+        logger.debug("BZLMOD BCR: dependency tree — {} direct, {} transitive Bazel module(s)",
+            directCount, moduleKeyToDep.size() - directCount);
+        logger.debug("BZLMOD BCR: structured direct/transitive classification complete.");
         return graph;
     }
 
@@ -429,13 +437,16 @@ public class BzlmodBcrExtractor {
      *   <li>{@code @@module++ext+subrepo//...} (module extension sub-repo) → skipped (empty Optional)</li>
      * </ul>
      *
-     * <p>The same query is run by the HTTP_ARCHIVE pipeline, so Bazel's analysis cache serves it
-     * without a full re-evaluation — effectively zero extra cost.
+     * <p>The same query (same args, including {@code detect.bazel.query.options}) is issued by
+     * {@code HttpFamilyProber} during probing; because {@link BazelCommandExecutor} memoizes
+     * read-only query results for the extraction, this call is served from that in-process cache
+     * rather than re-executing Bazel.
      */
     private Set<String> getTargetScopedModuleNames(BzlmodRepoMappingResolver resolver) {
-        logger.info("BZLMOD BCR: querying target-scoped repos via 'bazel query kind(.*library, deps({}))'", bazelTarget);
+        logger.debug("BZLMOD BCR: querying target-scoped repos via 'bazel query kind(.*library, deps({}))'", bazelTarget);
         List<String> queryArgs = BazelQueryBuilder.query()
             .kind(LIBRARY_RULE_PATTERN, BazelQueryBuilder.deps(bazelTarget))
+            .withOptions(queryOptions)
             .build();
 
         Optional<String> queryOutput;
@@ -454,7 +465,7 @@ public class BzlmodBcrExtractor {
         Set<String> moduleNames = new LinkedHashSet<>();
         for (String line : queryOutput.get().split("\\r?\\n")) {
             String label = line.trim();
-            if (!label.startsWith("@")) {
+            if (!BazelLabel.parse(label).isRepoLabel()) {
                 continue;
             }
             // Delegate all label-format complexity to the resolver:
@@ -466,7 +477,7 @@ public class BzlmodBcrExtractor {
             moduleNames.add(moduleName.get());
         }
 
-        logger.info("BZLMOD BCR: target-scoped filter set has {} candidate module name(s)", moduleNames.size());
+        logger.debug("BZLMOD BCR: target-scoped query found {} module name(s)", moduleNames.size());
         if (logger.isDebugEnabled()) {
             logger.debug("BZLMOD BCR: target-scoped module names: {}", moduleNames);
         }
@@ -475,15 +486,10 @@ public class BzlmodBcrExtractor {
 
     /**
      * Returns true if the repo/module name should be excluded from BCR scope checks.
-     * Mirrors the exclusion list in HttpFamilyProber and Pipelines.java.
+     * Delegates to the shared {@link BazelInfrastructureModules} source of truth.
      */
     private boolean isExcludedModuleName(String name) {
-        for (String prefix : EXCLUDED_REPO_PREFIXES) {
-            if (name.startsWith(prefix)) {
-                return true;
-            }
-        }
-        return false;
+        return BazelInfrastructureModules.isInfrastructure(name);
     }
 
     /**

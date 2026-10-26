@@ -1,9 +1,14 @@
 package com.blackduck.integration.detectable.detectables.uv.buildexe;
 
+import com.blackduck.integration.bdio.graph.BasicDependencyGraph;
+import com.blackduck.integration.bdio.graph.DependencyGraph;
+import com.blackduck.integration.bdio.model.Forge;
+import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.detectable.ExecutableTarget;
 import com.blackduck.integration.detectable.ExecutableUtils;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import com.blackduck.integration.detectable.detectable.executable.DetectableExecutableRunner;
+import com.blackduck.integration.detectable.detectables.uv.UVDependencyGroupFilter;
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
 import com.blackduck.integration.detectable.detectables.uv.parse.UVTomlParser;
 import com.blackduck.integration.detectable.detectables.uv.transform.UVTreeDependencyGraphTransformer;
@@ -18,8 +23,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.TreeSet;
 
 public class UVBuildExtractor {
 
@@ -42,9 +46,24 @@ public class UVBuildExtractor {
 
     public Extraction extract(ExecutableTarget uvExe, UVDetectorOptions uvDetectorOptions, UVTomlParser uvTomlParser) throws ExecutableRunnerException {
         try {
-            List<String> arguments = buildTreeCommandArguments(uvDetectorOptions);
+            UVDependencyGroupFilter groupFilter = new UVDependencyGroupFilter(uvDetectorOptions);
+            groupFilter.logGroupConflictWarnings(logger);
 
-            ExecutableOutput executableOutput = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(sourceDirectory, uvExe, arguments));
+            Optional<List<String>> arguments = buildTreeCommandArguments(groupFilter);
+
+            if (!arguments.isPresent()) {
+                DependencyGraph emptyGraph = new BasicDependencyGraph();
+                Optional<NameVersion> projectNameVersion = uvTomlParser.parseNameVersion();
+                CodeLocation emptyCodeLocation = projectNameVersion
+                        .map(nv -> new CodeLocation(emptyGraph, ExternalId.FACTORY.createNameVersionExternalId(Forge.PYPI, nv.getName(), nv.getVersion())))
+                        .orElse(new CodeLocation(emptyGraph));
+                return new Extraction.Builder()
+                        .success(emptyCodeLocation)
+                        .nameVersionIfPresent(projectNameVersion)
+                        .build();
+            }
+
+            ExecutableOutput executableOutput = executableRunner.executeSuccessfully(ExecutableUtils.createFromTarget(sourceDirectory, uvExe, arguments.get()));
             List<String> uvTreeOutput = executableOutput.getStandardOutputAsList();
 
             List<CodeLocation> codeLocations = uvTreeDependencyGraphTransformer.transform(uvTreeOutput, uvDetectorOptions);
@@ -60,52 +79,27 @@ public class UVBuildExtractor {
         }
     }
 
-    private List<String> buildTreeCommandArguments(UVDetectorOptions uvDetectorOptions) {
+    private Optional<List<String>> buildTreeCommandArguments(UVDependencyGroupFilter groupFilter) {
         List<String> arguments = new ArrayList<>();
         arguments.add(TREE_COMMAND);
         arguments.add(NO_DEDUPE_FLAG);
 
-        Set<String> onlyGroups = uvDetectorOptions.getOnlyDependencyGroups();
-        Set<String> excludedGroups = uvDetectorOptions.getExcludedDependencyGroups();
-
-        if (!onlyGroups.isEmpty()) {
-            addOnlyGroupArguments(arguments, onlyGroups, excludedGroups);
+        if (!groupFilter.getOnlyGroups().isEmpty()) {
+            if (!groupFilter.hasEffectiveGroups()) {
+                return Optional.empty();
+            }
+            for (String group : new TreeSet<>(groupFilter.getEffectiveOnlyGroups())) {
+                arguments.add(ONLY_GROUP_FLAG);
+                arguments.add(group);
+            }
         } else {
-            addDefaultGroupArguments(arguments, excludedGroups);
+            arguments.add(ALL_GROUPS_FLAG);
+            for (String group : new TreeSet<>(groupFilter.getExcludedGroups())) {
+                arguments.add(NO_GROUP_FLAG);
+                arguments.add(group);
+            }
         }
 
-        return arguments;
-    }
-
-    private void addOnlyGroupArguments(List<String> arguments, Set<String> onlyGroups, Set<String> excludedGroups) {
-        Set<String> conflictingGroups = onlyGroups.stream()
-                .filter(excludedGroups::contains)
-                .collect(Collectors.toSet());
-
-        if (!conflictingGroups.isEmpty()) {
-            logger.warn(
-                    "Dependency groups {} are present in both 'detect.uv.dependency.groups.only' and 'detect.uv.dependency.groups.excluded'. "
-                    + "The exclusion setting takes precedence; these groups will be excluded.",
-                    conflictingGroups
-            );
-        }
-
-        Set<String> effectiveOnlyGroups = onlyGroups.stream()
-                .filter(group -> !excludedGroups.contains(group))
-                .collect(Collectors.toSet());
-
-        for (String group : effectiveOnlyGroups) {
-            arguments.add(ONLY_GROUP_FLAG);
-            arguments.add(group);
-        }
-    }
-
-    private void addDefaultGroupArguments(List<String> arguments, Set<String> excludedGroups) {
-        arguments.add(ALL_GROUPS_FLAG);
-
-        for (String group : excludedGroups) {
-            arguments.add(NO_GROUP_FLAG);
-            arguments.add(group);
-        }
+        return Optional.of(arguments);
     }
 }

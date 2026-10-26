@@ -1,7 +1,6 @@
 package com.blackduck.integration.detectable.detectables.npm.lockfile.parse;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
@@ -24,10 +23,14 @@ public class NpmLockfileGraphTransformer {
     private final EnumListFilter<NpmDependencyType> npmDependencyTypeFilter;
 
     public NpmLockfileGraphTransformer(EnumListFilter<NpmDependencyType> npmDependencyTypeFilter) {
-        this.npmDependencyTypeFilter = npmDependencyTypeFilter;
+        // Treat null as "include all types" so callers that only care about workspace handling
+        // can pass null without risking NPEs when shouldInclude/shouldExclude are called.
+        this.npmDependencyTypeFilter = npmDependencyTypeFilter != null
+            ? npmDependencyTypeFilter
+            : EnumListFilter.excludeNone();
     }
 
-    public DependencyGraph transform(PackageLock packageLock, NpmProject project, List<NameVersion> externalDependencies, List<String> workspaces, Map<String, String> aliasMapping) {
+    public DependencyGraph transform(PackageLock packageLock, NpmProject project, List<NameVersion> externalDependencies, List<String> workspaces) {
         DependencyGraph dependencyGraph = new BasicDependencyGraph();
 
         logger.debug("Processing project.");
@@ -35,11 +38,11 @@ public class NpmLockfileGraphTransformer {
             logger.debug(String.format("Found %d packages in the lockfile.",
                     packageLock.packages != null ? packageLock.packages.size() : packageLock.dependencies.size()));
 
-            //First we will recreate the graph from the resolved npm dependencies
-            createGraphFromResolvedDependencies(project, externalDependencies, workspaces, dependencyGraph, aliasMapping);
+            // First we will recreate the graph from the resolved npm dependencies
+            createGraphFromResolvedDependencies(project, externalDependencies, workspaces, dependencyGraph);
 
-            //Then we will add relationships between the project (root) and the graph
-            addRootDependencies(project, dependencyGraph, externalDependencies, aliasMapping);
+            // Then we will add relationships between the project (root) and the graph
+            addRootDependencies(project, dependencyGraph, externalDependencies, workspaces);
 
             logger.debug(String.format("Found %d root dependencies.", dependencyGraph.getRootDependencies().size()));
         } else {
@@ -49,28 +52,48 @@ public class NpmLockfileGraphTransformer {
         return dependencyGraph;
     }
 
-    private void createGraphFromResolvedDependencies(NpmProject project, List<NameVersion> externalDependencies, List<String> workspaces, DependencyGraph dependencyGraph, Map<String, String> aliasMapping) {
+    private void createGraphFromResolvedDependencies(NpmProject project, List<NameVersion> externalDependencies, List<String> workspaces, DependencyGraph dependencyGraph) {
         for (NpmDependency resolved : project.getResolvedDependencies()) {
-            transformTreeToGraph(resolved, project, dependencyGraph, externalDependencies, workspaces, aliasMapping);
+            transformTreeToGraph(resolved, project, dependencyGraph, externalDependencies, workspaces);
         }
     }
 
-    private void addRootDependencies(NpmProject project, DependencyGraph dependencyGraph, List<NameVersion> externalDependencies, Map<String, String> aliasMapping) {
+    private void addRootDependencies(NpmProject project, DependencyGraph dependencyGraph, List<NameVersion> externalDependencies, List<String> workspaces) {
         boolean atLeastOneRequired = !project.getDeclaredDependencies().isEmpty()
             || !project.getDeclaredDevDependencies().isEmpty()
             || !project.getDeclaredPeerDependencies().isEmpty();
-        if (atLeastOneRequired) {
-            addRootDependencies(project.getResolvedDependencies(), project.getDeclaredDependencies(), dependencyGraph, externalDependencies, aliasMapping);
+
+        // Two cases must be distinguished here:
+        //
+        // Case 1 — No package.json was provided (workspaces == null):
+        //   We have only a lock file with no package.json to tell us which entries are "declared".
+        //   The previous fallback (add all resolved entries to root) is the correct behaviour here.
+        //
+        // Case 2 — A package.json WAS provided (workspaces != null), but the declared-dep lists
+        //   are all empty. This happens when the root package.json has no direct dependencies of
+        //   its own AND all workspace packages were excluded by detect.npm.excluded.workspaces.
+        //   Because the workspace-filter strips those packages from combinedPackageJson before
+        //   NpmProject is built, every declared-dep list ends up empty even though a valid
+        //   package.json existed. Falling through to the "add all" fallback in this case causes
+        //   every lock-file entry to be promoted to the root.
+        //
+        // The fix: use the explicit-declaration path whenever a package.json is present
+        // (workspaces != null), even if every declared list is empty. That correctly produces
+        // zero root dependencies when the root declares nothing and all workspaces are filtered.
+        // The "add all" fallback is preserved only for the true no-package.json case.
+        if (atLeastOneRequired || workspaces != null) {
+            addRootDependencies(project.getResolvedDependencies(), project.getDeclaredDependencies(), dependencyGraph, externalDependencies);
             if (npmDependencyTypeFilter.shouldInclude(NpmDependencyType.DEV)) {
-                addRootDependencies(project.getResolvedDependencies(), project.getDeclaredDevDependencies(), dependencyGraph, externalDependencies, aliasMapping);
+                addRootDependencies(project.getResolvedDependencies(), project.getDeclaredDevDependencies(), dependencyGraph, externalDependencies);
             }
             if (npmDependencyTypeFilter.shouldInclude(NpmDependencyType.PEER)) {
-                addRootDependencies(project.getResolvedDependencies(), project.getDeclaredPeerDependencies(), dependencyGraph, externalDependencies, aliasMapping);
+                addRootDependencies(project.getResolvedDependencies(), project.getDeclaredPeerDependencies(), dependencyGraph, externalDependencies);
             }
             if (npmDependencyTypeFilter.shouldInclude(NpmDependencyType.OPTIONAL)) {
-                addRootDependencies(project.getResolvedDependencies(), project.getDeclaredOptionalDependencies(), dependencyGraph, externalDependencies, aliasMapping);
+                addRootDependencies(project.getResolvedDependencies(), project.getDeclaredOptionalDependencies(), dependencyGraph, externalDependencies);
             }
         } else {
+            // No package.json provided — fall back to treating all resolved lock-file entries as root deps.
             project.getResolvedDependencies()
                 .stream()
                 .filter(this::shouldIncludeDependency)
@@ -82,13 +105,10 @@ public class NpmLockfileGraphTransformer {
         List<NpmDependency> resolvedDependencies,
         List<NpmRequires> requires,
         DependencyGraph dependencyGraph,
-        List<NameVersion> externalDependencies,
-        Map<String, String> aliasMapping
+        List<NameVersion> externalDependencies
     ) {
         for (NpmRequires dependency : requires) {
-            // Resolve alias name to actual package name if it's an alias
-            String packageName = aliasMapping.getOrDefault(dependency.getName(), dependency.getName());
-            Dependency resolved = lookupProjectOrExternal(packageName, resolvedDependencies, externalDependencies);
+            Dependency resolved = lookupProjectOrExternal(dependency.getName(), resolvedDependencies, externalDependencies);
             if (resolved != null) {
                 dependencyGraph.addChildToRoot(resolved);
             } else {
@@ -97,7 +117,7 @@ public class NpmLockfileGraphTransformer {
         }
     }
 
-    private void transformTreeToGraph(NpmDependency npmDependency, NpmProject npmProject, DependencyGraph dependencyGraph, List<NameVersion> externalDependencies, List<String> workspaces, Map<String, String> aliasMapping) {
+    private void transformTreeToGraph(NpmDependency npmDependency, NpmProject npmProject, DependencyGraph dependencyGraph, List<NameVersion> externalDependencies, List<String> workspaces) {
         if (!shouldIncludeDependency(npmDependency)) {
             return;
         }
@@ -106,15 +126,12 @@ public class NpmLockfileGraphTransformer {
         if (workspaces != null && !StringUtils.isBlank(npmDependency.getName()) &&
                 workspaces.stream().anyMatch(x -> x.equals(npmDependency.getName()))) {
             dependencyGraph.addDirectDependency(npmDependency);
-
             // add workspace requires
-            addWorkspaceRequires(npmDependency, npmProject, dependencyGraph, externalDependencies, aliasMapping);
+            addWorkspaceRequires(npmDependency, npmProject, dependencyGraph, externalDependencies);
         } else {
             npmDependency.getRequires().forEach(required -> {
                 logger.trace(String.format("Required package: %s of version: %s", required.getName(), required.getFuzzyVersion()));
-                // Resolve alias name to actual package name if it's an alias
-                String packageName = aliasMapping.getOrDefault(required.getName(), required.getName());
-                NpmDependency resolved = lookupDependency(packageName, npmDependency, npmProject, externalDependencies);
+                NpmDependency resolved = lookupDependency(required.getName(), npmDependency, npmProject, externalDependencies);
                 if (resolved == null) {
                     logger.debug("No resolved dependency found for required package: {}", required.getName());
                 } else {
@@ -126,7 +143,7 @@ public class NpmLockfileGraphTransformer {
             });
         }
 
-        npmDependency.getDependencies().forEach(child -> transformTreeToGraph(child, npmProject, dependencyGraph, externalDependencies, workspaces, aliasMapping));
+        npmDependency.getDependencies().forEach(child -> transformTreeToGraph(child, npmProject, dependencyGraph, externalDependencies, workspaces));
     }
 
     /**
@@ -134,11 +151,9 @@ public class NpmLockfileGraphTransformer {
      * at the workspace level. This makes all requires under that dependency direct dependencies in BlackDuck, which is what we want as they are specified
      * directly in the workspace's package.json.
      */
-    private void addWorkspaceRequires(NpmDependency npmDependency, NpmProject npmProject, DependencyGraph dependencyGraph, List<NameVersion> externalDependencies, Map<String, String> aliasMapping) {
+    private void addWorkspaceRequires(NpmDependency npmDependency, NpmProject npmProject, DependencyGraph dependencyGraph, List<NameVersion> externalDependencies) {
         for (NpmRequires required : npmDependency.getRequires()) {
-            // Resolve alias name to actual package name if it's an alias
-            String packageName = aliasMapping.getOrDefault(required.getName(), required.getName());
-            NpmDependency workspaceDependency = lookupDependency(packageName, npmDependency, npmProject, externalDependencies);
+            NpmDependency workspaceDependency = lookupDependency(required.getName(), npmDependency, npmProject, externalDependencies);
 
             if (workspaceDependency != null) {
                 if ((workspaceDependency.isDevDependency() && npmDependencyTypeFilter.shouldExclude(NpmDependencyType.DEV))

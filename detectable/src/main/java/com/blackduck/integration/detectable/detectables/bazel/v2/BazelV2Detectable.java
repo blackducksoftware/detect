@@ -19,8 +19,8 @@ import com.blackduck.integration.detectable.detectable.result.PropertyInsufficie
 import com.blackduck.integration.detectable.detectables.bazel.BazelDetectableOptions;
 import com.blackduck.integration.detectable.detectables.bazel.BazelProjectNameGenerator;
 import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
-import com.blackduck.integration.detectable.detectables.bazel.WorkspaceRule;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelCommandExecutor;
+import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelFatalWorkspaceException;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelVariableSubstitutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.HaskellCabalLibraryJsonProtoParser;
 import com.blackduck.integration.detectable.extraction.Extraction;
@@ -32,9 +32,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Optional;
 import java.util.Set;
 import java.io.File;
-import java.util.stream.Collectors;
-import java.util.Collections;
-import java.util.Objects;
 
 /**
  * Detectable implementation for Bazel projects using Bazel CLI V2.
@@ -55,8 +52,7 @@ public class BazelV2Detectable extends Detectable {
 
     // Factory interface to create BazelGraphProber instances; injectable for tests.
     public interface BazelGraphProberFactory {
-        BazelGraphProber create(BazelCommandExecutor bazelCmd, String target, BazelEnvironmentAnalyzer.Mode mode,
-                                java.util.List<String> cqueryOptions, java.util.List<String> queryOptions);
+        BazelGraphProber create(BazelCommandExecutor bazelCmd, String target, BazelExtractionOptions options);
     }
 
     private final BazelGraphProberFactory bazelGraphProberFactory;
@@ -83,7 +79,7 @@ public class BazelV2Detectable extends Detectable {
                               HaskellCabalLibraryJsonProtoParser haskellParser,
                               BazelProjectNameGenerator projectNameGenerator) {
         this(environment, fileFinder, executableRunner, externalIdFactory, bazelResolver, options, bazelVariableSubstitutor, haskellParser, projectNameGenerator,
-            (bazelCmd, target, mode, cqueryOpts, queryOpts) -> new BazelGraphProber(bazelCmd, target, mode, cqueryOpts, queryOpts)
+            (bazelCmd, target, extractionOptions) -> new BazelGraphProber(bazelCmd, target, extractionOptions)
         );
     }
 
@@ -148,37 +144,67 @@ public class BazelV2Detectable extends Detectable {
         // Set up Bazel command executor and determine environment mode
         BazelCommandExecutor bazelCmd = new BazelCommandExecutor(executableRunner, environment.getDirectory(), bazelExe);
 
-        // Determine mode (either via override or auto-detection)
-        BazelEnvironmentAnalyzer.Mode mode = determineMode(bazelCmd);
+        try {
+            // Determine mode (either via override or auto-detection)
+            BazelEnvironmentAnalyzer.Mode mode = determineMode(bazelCmd);
 
-        // Detect Bazel version only for BZLMOD — the version is used exclusively in BZLMOD-specific
-        // paths (mod graph fast path in HttpFamilyProber, batched show_repo in Pipelines).
-        // Skipping this call for WORKSPACE avoids an extra bazel invocation that is never needed there.
-        BazelVersion bazelVersion = null;
-        if (mode == BazelEnvironmentAnalyzer.Mode.BZLMOD) {
-            bazelVersion = new BazelVersionChecker(bazelCmd).detectVersion().orElse(null);
-            if (bazelVersion != null) {
-                logger.info("Bazel version detected: {}. Features requiring 7.1+ are {}.",
-                    bazelVersion, bazelVersion.isAtLeast(7, 1) ? "ENABLED" : "DISABLED");
-            } else {
-                logger.info("Bazel version could not be detected; 7.1+ optimizations will be disabled.");
+            // Detect Bazel version only for BZLMOD — the version is used exclusively in BZLMOD-specific
+            // paths (mod graph fast path in HttpFamilyProber, batched show_repo in Pipelines).
+            // Skipping this call for WORKSPACE avoids an extra bazel invocation that is never needed there.
+            BazelVersion bazelVersion = null;
+            if (mode == BazelEnvironmentAnalyzer.Mode.BZLMOD) {
+                bazelVersion = new BazelVersionChecker(bazelCmd).detectVersion().orElse(null);
+                if (bazelVersion != null) {
+                    logger.info("Bazel version detected: {}. Features requiring 7.1+ are {}.",
+                        bazelVersion, bazelVersion.isAtLeast(7, 1) ? "ENABLED" : "DISABLED");
+                } else {
+                    logger.info("Bazel version could not be detected; 7.1+ optimizations will be disabled.");
+                }
             }
+
+            // Determine pipelines (either from properties or by probing)
+            BazelExtractionOptions extractionOptions = BazelExtractionOptions.builder()
+                .mode(mode)
+                .bazelVersion(bazelVersion)
+                .cqueryOptions(options.getBazelCqueryAdditionalOptions())
+                .queryOptions(options.getBazelQueryAdditionalOptions())
+                .build();
+            Set<DependencySource> pipelines = resolvePipelines(bazelCmd, target, extractionOptions);
+
+            // Probing swallows per-probe failures, so a fatal signature seen there may not have
+            // propagated here as an exception. Check explicitly for a clearer error message.
+            if (bazelCmd.getFatalWorkspaceError().isPresent()) {
+                throw new BazelFatalWorkspaceException(bazelCmd.getFatalWorkspaceError().get());
+            }
+
+            // Fail if no supported pipelines are found
+            if (pipelines == null || pipelines.isEmpty()) {
+                throw new DetectableException("No supported Bazel dependency sources found for target '" + target + "'. To override, use detect.bazel.dependency.sources property.");
+            }
+
+            // Run the extraction using the determined pipelines
+            BazelV2Extractor extractor = new BazelV2Extractor(externalIdFactory, bazelVariableSubstitutor, haskellParser, projectNameGenerator);
+            Extraction extraction = extractor.run(bazelCmd, pipelines, target, extractionOptions);
+
+            // Extraction can also swallow the fatal signature per-call (e.g. in ShowRepoExecutor);
+            // re-check here so we never return a partial BOM for a misconfigured workspace.
+            if (bazelCmd.getFatalWorkspaceError().isPresent()) {
+                throw new BazelFatalWorkspaceException(bazelCmd.getFatalWorkspaceError().get());
+            }
+
+            logger.info("The Bazel tool actions finished.");
+            return extraction;
+        } catch (BazelFatalWorkspaceException e) {
+            // Bazel workspace is structurally broken (e.g. local_repository/git_repository pointing
+            // at an invalid location) — fail outright rather than report a misleading partial BOM.
+            throw new DetectableException(
+                "Bazel workspace is misconfigured and cannot be scanned reliably: " + e.getMessage()
+                + ". Fix the broken repository reference (e.g. local_repository/git_repository) and re-run.",
+                e
+            );
         }
-
-        // Determine pipelines (either from properties or by probing)
-        Set<DependencySource> pipelines = resolvePipelines(bazelCmd, target, mode, bazelVersion);
-
-        // Fail if no supported pipelines are found
-        if (pipelines == null || pipelines.isEmpty()) {
-            throw new DetectableException("No supported Bazel dependency sources found for target '" + target + "'. To override, use detect.bazel.dependency.sources property.");
-        }
-
-        // Run the extraction using the determined pipelines
-        BazelV2Extractor extractor = new BazelV2Extractor(externalIdFactory, bazelVariableSubstitutor, haskellParser, projectNameGenerator);
-        Extraction extraction = extractor.run(bazelCmd, pipelines, target, mode, bazelVersion);
-        logger.info("The Bazel tool actions finished.");
-        return extraction;
     }
+
 
     // Helper to determine Bazel mode; extracted to reduce cognitive complexity in extract().
     private BazelEnvironmentAnalyzer.Mode determineMode(BazelCommandExecutor bazelCmd) throws DetectableException {
@@ -212,52 +238,16 @@ public class BazelV2Detectable extends Detectable {
         return mode;
     }
 
-    // Helper to map legacy workspace rules to DependencySource
-    private Set<DependencySource> mapWorkspaceRulesToSources(Set<WorkspaceRule> workspaceRules) {
-        if (workspaceRules == null || workspaceRules.isEmpty()) {
-            return Collections.emptySet();
-        }
-        return workspaceRules.stream()
-            .map(this::mapWorkspaceRuleToSource)
-            .filter(Objects::nonNull)
-            .collect(Collectors.toSet());
-    }
-
-    // Extracted helper: map a single WorkspaceRule to its DependencySource (or null if unrecognized)
-    private DependencySource mapWorkspaceRuleToSource(WorkspaceRule rule) {
-        switch (rule) {
-            case MAVEN_JAR:
-                return DependencySource.MAVEN_JAR;
-            case MAVEN_INSTALL:
-                return DependencySource.MAVEN_INSTALL;
-            case HASKELL_CABAL_LIBRARY:
-                return DependencySource.HASKELL_CABAL_LIBRARY;
-            case HTTP_ARCHIVE:
-                return DependencySource.HTTP_ARCHIVE;
-            default:
-                logger.warn("Unrecognized workspace rule '{}' in detect.bazel.workspace.rules; skipping.", rule.getName());
-                return null;
-        }
-    }
-
     // Helper to resolve pipelines either from properties or by probing
-    private Set<DependencySource> resolvePipelines(BazelCommandExecutor bazelCmd, String target, BazelEnvironmentAnalyzer.Mode mode, BazelVersion bazelVersion) {
-        Set<WorkspaceRule> workspaceRulesFromProperty = options.getWorkspaceRulesFromProperty();
+    private Set<DependencySource> resolvePipelines(BazelCommandExecutor bazelCmd, String target, BazelExtractionOptions extractionOptions) {
         Set<DependencySource> sourcesFromProperty = options.getDependencySourcesFromProperty();
-
-        if (!workspaceRulesFromProperty.isEmpty() && (sourcesFromProperty == null || sourcesFromProperty.isEmpty())) {
-            logger.warn("Deprecated property `detect.bazel.workspace.rules` detected. Mapped to `detect.bazel.dependency.sources`. Please migrate to the new property. Alias will be removed in a future release.");
-            sourcesFromProperty = mapWorkspaceRulesToSources(workspaceRulesFromProperty);
-        }
 
         if (sourcesFromProperty != null && !sourcesFromProperty.isEmpty()) {
             logger.info("Using detect.bazel.dependency.sources override; skipping graph probing. Pipelines: {}", sourcesFromProperty);
             return sourcesFromProperty;
         }
 
-        BazelGraphProber prober = bazelGraphProberFactory.create(bazelCmd, target, mode,
-            options.getBazelCqueryAdditionalOptions(), options.getBazelQueryAdditionalOptions());
-        prober.setBazelVersion(bazelVersion);
+        BazelGraphProber prober = bazelGraphProberFactory.create(bazelCmd, target, extractionOptions);
         return prober.decidePipelines();
     }
 }

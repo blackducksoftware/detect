@@ -109,7 +109,49 @@ public class NpmWorkspaceFilterTest {
         assertFalse(lodashAtRoot, "lodash should NOT be a root dependency when all workspaces are ignored");
     }
 
+    // Lock file that pairs with NO_ROOT_DEPS_PACKAGE_JSON: same two workspace packages as the
+    // standard fixture, but the root declares zero direct dependencies.
+    private static final String NO_ROOT_DEPS_LOCKFILE =
+        FunctionalTestFiles.asString("/npm/workspace-filter-test/no-root-deps-package-lock.json");
+
+    // Root package.json that declares workspaces but no direct dependencies of its own.
+    private static final String NO_ROOT_DEPS_PACKAGE_JSON =
+        "{\n" +
+        "  \"name\": \"my-project\",\n" +
+        "  \"version\": \"1.0.0\",\n" +
+        "  \"workspaces\": [\"packages/*\"]\n" +
+        "}";
+
+    @Test
+    public void allWorkspacesExcludedWithNoRootDepsProducesEmptyGraph() throws IOException {
+        // Regression test for the case where:
+        //   1. The root package.json has no direct dependencies (only workspaces defined).
+        //   2. All workspaces are excluded via detect.npm.excluded.workspaces=packages/*.
+        //
+        // Before the fix, the lack of declared deps caused addRootDependencies() to fall through
+        // to its "no package.json" fallback, which promoted every lock-file entry (express, lodash,
+        // and even the workspace path entries) to root. The graph should be empty.
+        NpmLockfileOptions options = new NpmLockfileOptions(
+            EnumListFilter.excludeNone(),
+            Arrays.asList("packages/*"),
+            Collections.emptyList()
+        );
+        NpmPackagerResult result = buildResultWithPackageJsonAndLockfile(options, NO_ROOT_DEPS_PACKAGE_JSON, NO_ROOT_DEPS_LOCKFILE);
+        DependencyGraph graph = result.getCodeLocation().getDependencyGraph();
+
+        assertTrue(graph.getRootDependencies().isEmpty(),
+            "Graph should have no root dependencies when root declares none and all workspaces are excluded");
+    }
+
     private NpmPackagerResult buildResult(NpmLockfileOptions options) throws IOException {
+        return buildResultWithPackageJson(options, PACKAGE_JSON);
+    }
+
+    private NpmPackagerResult buildResultWithPackageJson(NpmLockfileOptions options, String packageJsonText) throws IOException {
+        return buildResultWithPackageJsonAndLockfile(options, packageJsonText, LOCKFILE);
+    }
+
+    private NpmPackagerResult buildResultWithPackageJsonAndLockfile(NpmLockfileOptions options, String packageJsonText, String lockfileText) throws IOException {
         String rootJsonPath = FunctionalTestFiles.resolvePath(FIXTURE_PATH);
         Gson gson = new Gson();
         ExternalIdFactory externalIdFactory = new ExternalIdFactory();
@@ -121,6 +163,6 @@ public class NpmWorkspaceFilterTest {
         NpmLockfilePackager packager =
             new NpmLockfilePackager(gson, externalIdFactory,
                 new NpmLockFileProjectIdTransformer(gson, externalIdFactory), transformer, workspaceFilter);
-        return packager.parseAndTransform(rootJsonPath, PACKAGE_JSON, LOCKFILE);
+        return packager.parseAndTransform(rootJsonPath, packageJsonText, lockfileText);
     }
 }

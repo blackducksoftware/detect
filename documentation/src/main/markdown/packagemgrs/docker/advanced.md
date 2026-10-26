@@ -11,7 +11,7 @@ The image inspector service works as follows:
 1. Reads the target image, and constructs the file system that the container would have at
 time zero if you were to run the image.
 2. Finds the linux package manager database in that file system.
-3. Runs its own linux package manager (invoking its "list" function: "dpkg -l", "rpm -qa --qf ...", or "apk info -v") on the package manager
+3. Runs its own linux package manager (invoking its "list" function: "dpkg -l", or "apk info -v") on the package manager
 database from the target image
 to generate the list of packages installed in the target image.
 If the package manager database type of the target image does not match
@@ -201,10 +201,7 @@ The following script illustrates how this is done in a Docker environment:
     curl -O [source_raw_content_url_base]/[source_repo_organization]/[project_name]/master/deployment/docker/batchedImageInspection.sh
 
 To keep the example simple, this script only starts the Alpine image inspector service.
-In general, you must start two more services: the Ubuntu image inspector service
-for inspecting images built from dpkg-based Linux distros, and the CentOS image inspector service (deprecated)
-for inspecting images built from rpm-based Linux distributions. It doesn't matter which service receives
-the request; any service redirects if necessary.
+In general, you must start the Ubuntu image inspector service for inspecting images built from dpkg-based Linux distros.
 
 ## Configuring [docker_inspector_name] for your Docker Engine and registry
 
