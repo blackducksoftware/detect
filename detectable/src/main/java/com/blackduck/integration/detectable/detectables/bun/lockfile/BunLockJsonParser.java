@@ -27,6 +27,7 @@ import com.google.gson.stream.JsonToken;
 public class BunLockJsonParser {
     private static final String PACKAGES_KEY = "packages";
     private static final String WORKSPACES_KEY = "workspaces";
+    private static final String NAME_KEY = "name";
     private static final String DEPENDENCIES_KEY = "dependencies";
     private static final String DEV_DEPENDENCIES_KEY = "devDependencies";
     private static final String PEER_DEPENDENCIES_KEY = "peerDependencies";
@@ -90,7 +91,15 @@ public class BunLockJsonParser {
             }
             // Always resolve from the packages section; it holds the pinned version regardless
             // of how the dep was referenced in the workspace (semver, catalog:, file:, etc.).
-            BunPackage pkg = packagesByKey.get(dep.getName());
+            // A workspace that needs a different version than the hoisted one gets a "<workspace-name>/<dep>"
+            // entry, which must win over the flat key.
+            BunPackage pkg = null;
+            if (dep.getWorkspaceName() != null && !dep.getWorkspaceName().isEmpty()) {
+                pkg = packagesByKey.get(dep.getWorkspaceName() + "/" + dep.getName());
+            }
+            if (pkg == null) {
+                pkg = packagesByKey.get(dep.getName());
+            }
             if (pkg != null) {
                 result.add(new DirectDependency(dep.getName(), pkg.getVersion(), dep.getType()));
             }
@@ -101,6 +110,8 @@ public class BunLockJsonParser {
     private void readWorkspaceDependencies(JsonReader reader, List<WorkspaceDependency> workspaceDependencies) throws Exception {
         reader.beginObject();
         while (reader.hasNext()) {
+            // The workspace path key (e.g. "packages/ui") is intentionally unused: Bun prefixes workspace-specific
+            // entries in "packages" with the workspace "name", which readWorkspaceEntry reads from the entry itself.
             reader.nextName();
             readWorkspaceEntry(reader, workspaceDependencies);
         }
@@ -108,20 +119,24 @@ public class BunLockJsonParser {
     }
 
     private void readWorkspaceEntry(JsonReader reader, List<WorkspaceDependency> workspaceDependencies) throws Exception {
+        List<WorkspaceDependency> entryDependencies = new ArrayList<>();
         List<WorkspaceDependency> peerDependencies = new ArrayList<>();
         Set<String> optionalPeers = new HashSet<>();
+        String workspaceName = null;
 
         reader.beginObject();
         while (reader.hasNext()) {
             String key = reader.nextName();
-            if (DEPENDENCIES_KEY.equals(key)) {
-                readWorkspaceDependencyMap(reader, workspaceDependencies, BunDependencyType.NORMAL);
+            if (NAME_KEY.equals(key) && reader.peek() == JsonToken.STRING) {
+                workspaceName = reader.nextString();
+            } else if (DEPENDENCIES_KEY.equals(key)) {
+                readWorkspaceDependencyMap(reader, entryDependencies, BunDependencyType.NORMAL);
             } else if (DEV_DEPENDENCIES_KEY.equals(key)) {
-                readWorkspaceDependencyMap(reader, workspaceDependencies, BunDependencyType.DEV);
+                readWorkspaceDependencyMap(reader, entryDependencies, BunDependencyType.DEV);
             } else if (PEER_DEPENDENCIES_KEY.equals(key)) {
                 readWorkspaceDependencyMap(reader, peerDependencies, BunDependencyType.PEER);
             } else if (OPTIONAL_DEPENDENCIES_KEY.equals(key)) {
-                readWorkspaceDependencyMap(reader, workspaceDependencies, BunDependencyType.OPTIONAL);
+                readWorkspaceDependencyMap(reader, entryDependencies, BunDependencyType.OPTIONAL);
             } else if (OPTIONAL_PEERS_KEY.equals(key)) {
                 readOptionalPeersList(reader, optionalPeers);
             } else {
@@ -130,10 +145,14 @@ public class BunLockJsonParser {
         }
         reader.endObject();
 
+        // "name" may appear after the dependency maps, so the workspace name is attached only once the entry is fully read.
+        for (WorkspaceDependency dependency : entryDependencies) {
+            workspaceDependencies.add(new WorkspaceDependency(dependency.getName(), dependency.getRange(), dependency.getType(), workspaceName));
+        }
         // optionalPeers lists which peerDependencies entries are optional; apply that flag now.
         for (WorkspaceDependency peer : peerDependencies) {
             BunDependencyType type = optionalPeers.contains(peer.getName()) ? BunDependencyType.OPTIONAL_PEER : BunDependencyType.PEER;
-            workspaceDependencies.add(new WorkspaceDependency(peer.getName(), peer.getRange(), type));
+            workspaceDependencies.add(new WorkspaceDependency(peer.getName(), peer.getRange(), type, workspaceName));
         }
     }
 
@@ -142,7 +161,7 @@ public class BunLockJsonParser {
         while (reader.hasNext()) {
             String name = reader.nextName();
             if (reader.peek() == JsonToken.STRING) {
-                list.add(new WorkspaceDependency(name, reader.nextString(), type));
+                list.add(new WorkspaceDependency(name, reader.nextString(), type, null));
             } else {
                 reader.skipValue();
             }
