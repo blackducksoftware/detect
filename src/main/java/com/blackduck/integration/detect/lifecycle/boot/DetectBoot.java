@@ -329,6 +329,7 @@ public class DetectBoot {
             logger.info("Discovery mode: output written to {}", outputFile.getAbsolutePath());
         } catch (IOException e) {
             logger.error("Discovery mode failed to write output: {}", e.getMessage());
+            return Optional.of(DetectBootResult.exception(e, propertyConfiguration, directoryManager, diagnosticSystem));
         }
 
         return Optional.of(DetectBootResult.exit(propertyConfiguration, directoryManager, diagnosticSystem));
