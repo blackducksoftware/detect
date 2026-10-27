@@ -1,6 +1,7 @@
 package com.blackduck.integration.detectable.detectables.uv.unit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
@@ -278,6 +279,62 @@ class UVTreeDependencyGraphTransformerTest {
         assertEquals(2, mainGraph.getRootDependencies().size());
         assertTrue(hasDependency(mainGraph.getRootDependencies(), "lib-a", "1.0.0"));
         assertTrue(hasDependency(mainGraph.getRootDependencies(), "requests", "2.31.0"));
+    }
+
+    @Test
+    void excludedWorkspaceMemberWithUnderscoreMatchesNormalizedTreeMemberName() {
+        List<String> treeOutput = Arrays.asList(
+            "lib-a v1.0.0",
+            "├── lib-b v2.0.0",
+            "│   └── nested-dep v1.0.0",
+            "├── requests v2.31.0"
+        );
+
+        UVTreeDependencyGraphTransformer transformer = new UVTreeDependencyGraphTransformer(externalIdFactory);
+        UVDetectorOptions options = new UVDetectorOptions(
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Arrays.asList("lib_b")
+        );
+
+        List<CodeLocation> codeLocations = transformer.transform(treeOutput, options);
+
+        assertEquals(1, codeLocations.size());
+        DependencyGraph graph = codeLocations.get(0).getDependencyGraph();
+        assertEquals(1, graph.getRootDependencies().size(), "Expected lib-b to be excluded by 'lib_b'");
+        assertTrue(hasDependency(graph.getRootDependencies(), "requests", "2.31.0"));
+        assertFalse(hasDependency(graph.getRootDependencies(), "lib-b", "2.0.0"), "Excluded member lib-b must not be in the graph");
+    }
+
+    @Test
+    void includedWorkspaceMembersWithMixedCaseAndSeparatorsMatchNormalizedTreeMemberNames() {
+        List<String> treeOutput = Arrays.asList(
+            "main-app v1.0.0",
+            "├── lib-a v1.0.0",
+            "├── lib-b v2.0.0",
+            "├── requests v2.31.0",
+            "lib-a v1.0.0",
+            "├── click v8.0.0",
+            "lib-b v2.0.0",
+            "├── flask v2.0.0"
+        );
+
+        UVTreeDependencyGraphTransformer transformer = new UVTreeDependencyGraphTransformer(externalIdFactory);
+        UVDetectorOptions options = new UVDetectorOptions(
+            Collections.emptyList(),
+            Arrays.asList("Main.App", "lib.-a"),  // normalize to main-app and lib-a
+            Collections.emptyList()
+        );
+
+        List<CodeLocation> codeLocations = transformer.transform(treeOutput, options);
+
+        assertEquals(3, codeLocations.size());
+
+        DependencyGraph mainGraph = codeLocations.get(0).getDependencyGraph();
+        assertEquals(2, mainGraph.getRootDependencies().size(), "Expected lib-b to be filtered out, main-app and lib-a to be matched");
+        assertTrue(hasDependency(mainGraph.getRootDependencies(), "lib-a", "1.0.0"));
+        assertTrue(hasDependency(mainGraph.getRootDependencies(), "requests", "2.31.0"));
+        assertFalse(hasDependency(mainGraph.getRootDependencies(), "lib-b", "2.0.0"), "lib-b is not included and must be filtered out");
     }
 
     @Test

@@ -8,6 +8,7 @@ import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
+import com.blackduck.integration.detectable.detectables.uv.UVPackageNameNormalizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +55,7 @@ public class UVTreeDependencyGraphTransformer {
 
             if(depth == 0) {
                 String[] parts = line.split(" ");
-                workSpaceMembers.add(parts[0]);
+                workSpaceMembers.add(UVPackageNameNormalizer.normalize(parts[0])); // only used for the include/exclude comparison, so it is kept normalized
             }
         }
     }
@@ -116,10 +117,12 @@ public class UVTreeDependencyGraphTransformer {
     }
 
     private boolean checkIfMemberExcluded(String memberName, UVDetectorOptions detectorOptions) {
-        if(!detectorOptions.getExcludedWorkspaceMembers().isEmpty() && detectorOptions.getExcludedWorkspaceMembers().contains(memberName)) { // checking if current member is excluded
+        // the configured include/exclude values are normalized by UVDetectorOptions, so the member name is normalized the same way
+        String normalizedMemberName = UVPackageNameNormalizer.normalize(memberName);
+        if(!detectorOptions.getExcludedWorkspaceMembers().isEmpty() && detectorOptions.getExcludedWorkspaceMembers().contains(normalizedMemberName)) { // checking if current member is excluded
             return true;
         } else if(!detectorOptions.getIncludedWorkspaceMembers().isEmpty()){
-            return !detectorOptions.getIncludedWorkspaceMembers().contains(memberName) && workSpaceMembers.contains(memberName); // checking if current member is not included, and checking if member is a workspace, an earlier bug was discarding components
+            return !detectorOptions.getIncludedWorkspaceMembers().contains(normalizedMemberName) && workSpaceMembers.contains(normalizedMemberName); // checking if current member is not included, and checking if member is a workspace, an earlier bug was discarding components
         } else {
             return false;
         }
