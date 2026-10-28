@@ -3,6 +3,8 @@ package com.blackduck.integration.detect.workflow.blackduck.project;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
+
+import com.blackduck.integration.blackduck.api.manual.view.ProjectView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,10 +21,11 @@ public class AddUserGroupsToProjectOperation {
     }
 
     public void addUserGroupsToProject(ProjectVersionWrapper projectVersionWrapper, List<String> groupsToAddToProject) throws IntegrationException {
+        ProjectView projectView = projectVersionWrapper.getProjectView();
         for (String userGroupName : groupsToAddToProject) {
             if (StringUtils.isNotBlank(userGroupName)) {
-                logger.debug(String.format("Adding user group %s to project %s", userGroupName, projectVersionWrapper.getProjectView().getName()));
-                projectUsersService.addGroupToProject(projectVersionWrapper.getProjectView(), userGroupName);
+                logger.debug("Adding user group {} to project {}", userGroupName, projectView.getName());
+                projectUsersService.addGroupToProject(projectView, userGroupName);
             }
         }
     }
