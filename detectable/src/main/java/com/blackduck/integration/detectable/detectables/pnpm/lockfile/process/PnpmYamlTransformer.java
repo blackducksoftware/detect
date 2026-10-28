@@ -2,10 +2,12 @@ package com.blackduck.integration.detectable.detectables.pnpm.lockfile.process;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -83,18 +85,21 @@ public class PnpmYamlTransformer {
                 reportingProjectPackagePath != null ? reportingProjectPackagePath : "root");
             return;
         }
+        Set<String> addedRootPackageIds = new HashSet<>();
         for (Map.Entry<String, PnpmPackageInfo> packageEntry : packageMap.entrySet()) {
             String packageId = packageEntry.getKey();
-            
+
             Optional<Dependency> pnpmPackage = buildDependencyFromPackageEntry(packageEntry);
             if (!pnpmPackage.isPresent()) {
                 logger.debug(String.format("Could not add package %s to the graph.", packageId));
                 continue;
             }
-            
+
             // Process direct dependencies
-            if (isRootPackage(packageId, rootPackageIds)) {
+            List<String> matchingRootPackageIds = findMatchingRootPackageIds(packageId, rootPackageIds);
+            if (!matchingRootPackageIds.isEmpty()) {
                 graphBuilder.addChildToRoot(pnpmPackage.get());
+                addedRootPackageIds.addAll(matchingRootPackageIds);
             }
 
             PnpmPackageInfo packageInfo = getDependencyInformation(packageEntry, snapshots);  
@@ -107,6 +112,21 @@ public class PnpmYamlTransformer {
             processTransitiveDependencies(graphBuilder, linkedPackageResolver, reportingProjectPackagePath, pnpmPackage,
                     packageInfo);
         }
+        logRootPackageIdsNotAddedToGraph(rootPackageIds, addedRootPackageIds, reportingProjectPackagePath);
+    }
+
+    private void logRootPackageIdsNotAddedToGraph(List<String> rootPackageIds, Set<String> addedRootPackageIds, @Nullable String reportingProjectPackagePath) {
+        if (!logger.isDebugEnabled()) {
+            return;
+        }
+        String workspace = reportingProjectPackagePath != null ? reportingProjectPackagePath : "root";
+        rootPackageIds.stream()
+            .filter(rootPackageId -> !addedRootPackageIds.contains(rootPackageId))
+            .forEach(rootPackageId -> logger.debug(
+                "Declared dependency '{}' of workspace '{}' was not added to the dependency graph: no matching entry found in the lockfile 'packages' section.",
+                rootPackageId,
+                workspace
+            ));
     }
 
     private PnpmPackageInfo getDependencyInformation(Entry<String, PnpmPackageInfo> packageEntry, Map<String, PnpmPackageInfo> snapshots) {
@@ -269,14 +289,14 @@ public class PnpmYamlTransformer {
             .map(nameVersion -> Dependency.FACTORY.createNameVersionDependency(Forge.NPMJS, nameVersion.getName(), nameVersion.getVersion()));
     }
 
-    private boolean isRootPackage(String id, List<String> rootIds) { 
-        return rootIds.contains(id) ||
-            rootIds.stream()
-                .map(this::parseNameVersionFromId)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .map(NameVersion::getVersion)
-                .anyMatch(id::equals); // for file dependencies, they are declared as <name> : <fileIdAsReportedInPackagesSection>
+    private List<String> findMatchingRootPackageIds(String id, List<String> rootIds) {
+        return rootIds.stream()
+            .filter(rootId -> rootId.equals(id) ||
+                parseNameVersionFromId(rootId)
+                    .map(NameVersion::getVersion)
+                    .filter(id::equals) // for file dependencies, they are declared as <name> : <fileIdAsReportedInPackagesSection>
+                    .isPresent())
+            .collect(Collectors.toList());
     }
  
     private String removeExtraVersionInformation(String version) {
