@@ -19,6 +19,8 @@ public class DetectArgumentStateParser {
 
         boolean isGenerateAirGapZip = parser.isArgumentPresent("-z", "--zip");
 
+        boolean isDiscoveryMode = parser.isArgumentPresent("--detect.discovery", "--discover");
+
         String parsedValue = null;
         if (isHelp) {
             parsedValue = parser.findValueForCommand("-h", "--help");
@@ -35,7 +37,8 @@ public class DetectArgumentStateParser {
             isDeprecatedHelp,
             parsedValue,
             isDiagnostic,
-            isGenerateAirGapZip
+            isGenerateAirGapZip,
+            isDiscoveryMode
         );
     }
 
