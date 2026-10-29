@@ -193,6 +193,21 @@
                         "headers": true,
                         "package_id_mode": null,
                         "visible": true
+                    },
+                    "8": {
+                        "ref": "gtest/1.14.0",
+                        "run": false,
+                        "libs": true,
+                        "skip": false,
+                        "test": true,
+                        "force": false,
+                        "direct": true,
+                        "build": false,
+                        "transitive_headers": null,
+                        "transitive_libs": null,
+                        "headers": true,
+                        "package_id_mode": null,
+                        "visible": true
                     }
                 },
                 "context": "host",
@@ -1771,6 +1786,112 @@
                 "dependencies": {},
                 "context": "host",
                 "test": false
+            },
+            "8": {
+                "ref": "gtest/1.14.0#3c2a6f1d9e8b7a5c4d3e2f1a0b9c8d7e",
+                "id": "8",
+                "recipe": "Cache",
+                "package_id": "9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a291807",
+                "prev": "7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d",
+                "rrev": "3c2a6f1d9e8b7a5c4d3e2f1a0b9c8d7e",
+                "rrev_timestamp": 1696000000.0,
+                "prev_timestamp": 1698876510.0,
+                "remote": null,
+                "binary_remote": null,
+                "build_id": null,
+                "binary": "Cache",
+                "invalid_build": false,
+                "info_invalid": null,
+                "name": "gtest",
+                "user": null,
+                "channel": null,
+                "url": "https://github.com/conan-io/conan-center-index",
+                "license": "BSD-3-Clause",
+                "author": null,
+                "description": "Google's C++ test framework",
+                "homepage": "https://github.com/google/googletest",
+                "build_policy": null,
+                "upload_policy": null,
+                "revision_mode": "hash",
+                "provides": null,
+                "deprecated": null,
+                "win_bash": null,
+                "win_bash_run": null,
+                "default_options": {
+                    "shared": false,
+                    "fPIC": true
+                },
+                "options_description": null,
+                "version": "1.14.0",
+                "topics": [
+                    "testing",
+                    "google-test",
+                    "unit-test"
+                ],
+                "package_type": "static-library",
+                "settings": {
+                    "os": "Macos",
+                    "arch": "armv8",
+                    "compiler": "apple-clang",
+                    "compiler.version": "14",
+                    "build_type": "Release"
+                },
+                "options": {
+                    "fPIC": "True",
+                    "shared": "False"
+                },
+                "options_definitions": {
+                    "shared": [
+                        "True",
+                        "False"
+                    ],
+                    "fPIC": [
+                        "True",
+                        "False"
+                    ]
+                },
+                "generators": [],
+                "python_requires": null,
+                "system_requires": {},
+                "recipe_folder": "/Users/andrians/.conan2/p/gtestb0c0d0e0f0a0b/e",
+                "source_folder": null,
+                "build_folder": null,
+                "generators_folder": null,
+                "package_folder": null,
+                "cpp_info": {
+                    "root": {
+                        "includedirs": [
+                            "include"
+                        ],
+                        "srcdirs": null,
+                        "libdirs": [
+                            "lib"
+                        ],
+                        "resdirs": null,
+                        "bindirs": [
+                            "bin"
+                        ],
+                        "builddirs": null,
+                        "frameworkdirs": null,
+                        "system_libs": null,
+                        "frameworks": null,
+                        "libs": null,
+                        "defines": null,
+                        "cflags": null,
+                        "cxxflags": null,
+                        "sharedlinkflags": null,
+                        "exelinkflags": null,
+                        "objects": null,
+                        "sysroot": null,
+                        "requires": null,
+                        "properties": null
+                    }
+                },
+                "conf_info": {},
+                "label": "gtest/1.14.0",
+                "dependencies": {},
+                "context": "host",
+                "test": true
             }
         },
         "root": {

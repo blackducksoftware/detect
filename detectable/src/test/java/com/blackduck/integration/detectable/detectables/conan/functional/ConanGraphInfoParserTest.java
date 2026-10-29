@@ -76,6 +76,23 @@ public class ConanGraphInfoParserTest {
     }
 
     @Test
+    public void testExtractExcludeTest() throws IOException, DetectableException {
+        File conanInfoOutputFile = FunctionalTestFiles.asFile("/conan/cli/conan2_graph_info.txt");
+        String conanGraphInfoOutput = FileUtils.readFileToString(conanInfoOutputFile, StandardCharsets.UTF_8);
+        EnumListFilter<ConanDependencyType> dependencyTypeFilter = EnumListFilter.fromExcluded(ConanDependencyType.TEST);
+        ConanCliOptions cliOptions = new ConanCliOptions(null, "", dependencyTypeFilter, false);
+        ConanGraphInfoParser parser = new ConanGraphInfoParser(new Gson(), cliOptions, new ExternalIdFactory());
+        Extraction extraction = parser.parse(conanGraphInfoOutput);
+
+        assertTrue(extraction.isSuccess());
+        assertEquals("project-name", extraction.getProjectName());
+        assertEquals("0.17", extraction.getProjectVersion());
+
+        DependencyGraph actualDependencyGraph = extraction.getCodeLocations().get(0).getDependencyGraph();
+        GraphCompare.assertEqualsResource("/conan/cli/conan2_graph_excludeTest_result.json", actualDependencyGraph);
+    }
+
+    @Test
     public void testExtractParseException() throws IOException, DetectableException {
         String conanGraphInfoOutput = "invalid JSON";
         EnumListFilter<ConanDependencyType> dependencyTypeFilter = EnumListFilter.fromExcluded(ConanDependencyType.BUILD);

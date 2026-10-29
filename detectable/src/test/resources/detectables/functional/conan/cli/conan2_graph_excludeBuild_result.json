@@ -1,6 +1,7 @@
 {
   "rootExternalDataIds": [
-    "http:conan/poco/1.9.4%40_%2F_%23f7cfa1f609e6ddef0166efae9d7a479f"
+    "http:conan/poco/1.9.4%40_%2F_%23f7cfa1f609e6ddef0166efae9d7a479f",
+    "http:conan/gtest/1.14.0%40_%2F_%233c2a6f1d9e8b7a5c4d3e2f1a0b9c8d7e"
   ],
   "externalDataIdRelationships": {
     "http:conan/pcre/8.45%40_%2F_%2364cdfd792761c32817cd31d7967c3709": [
@@ -38,6 +39,10 @@
     "http:conan/bzip2/1.0.8%40_%2F_%23411fc05e80d47a89045edc1ee6f23c1d": {
       "name": "bzip2",
       "version": "1.0.8"
+    },
+    "http:conan/gtest/1.14.0%40_%2F_%233c2a6f1d9e8b7a5c4d3e2f1a0b9c8d7e": {
+      "name": "gtest",
+      "version": "1.14.0"
     }
   }
 }
