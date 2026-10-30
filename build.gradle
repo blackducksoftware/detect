@@ -14,7 +14,7 @@ buildscript {
     ext['logback.version'] = '1.2.13'
     ext['json-path.version'] = '2.10.0'
     apply from: 'https://raw.githubusercontent.com/blackducksoftware/integration-resources/master/gradle_common/buildscript-repositories.gradle', to: buildscript
-
+    ext['kotlin.version'] = '1.9.25'
     dependencies {
         classpath "org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}"
     }
