@@ -22,7 +22,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '12.2.0-SIGQA12-SNAPSHOT'
+version = '12.2.0-SIGQA12-zahidblackduck.IDETECT-5326-conan-dependency-exclusion-triage'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
