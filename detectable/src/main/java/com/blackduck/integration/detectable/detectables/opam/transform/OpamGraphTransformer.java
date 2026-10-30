@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,8 +50,12 @@ public class OpamGraphTransformer {
         DependencyGraph dependencyGraph = new BasicDependencyGraph();
 
         if(opamExe != null) {
+            Set<String> skippedPackages = new LinkedHashSet<>();
             for(String dependency: opamParsedResult.getParsedDirectDependencies()) {
-                findTransitiveDependencies(dependency, opamExe, dependencyGraph, new OpamFileParser(), null); // recursively run opam show to get all dependencies
+                findTransitiveDependencies(dependency, opamExe, dependencyGraph, new OpamFileParser(), null, skippedPackages); // recursively run opam show to get all dependencies
+            }
+            if (!skippedPackages.isEmpty()) {
+                logger.info("Skipped {} opam package(s) that opam show could not resolve: {}. Run opam install . and try running the scan again to include them.", skippedPackages.size(), String.join(", ", skippedPackages));
             }
             // if version is empty, try to find version with opam exe and project name
             if(opamParsedResult.getProjectVersion().isEmpty() && !opamParsedResult.getProjectName().isEmpty()) {
@@ -114,7 +119,7 @@ public class OpamGraphTransformer {
         }
     }
 
-    private void findTransitiveDependencies(String dependency, ExecutableTarget opamExe, DependencyGraph dependencyGraph, OpamFileParser parser, Dependency parentDependency) throws ExecutableRunnerException {
+    private void findTransitiveDependencies(String dependency, ExecutableTarget opamExe, DependencyGraph dependencyGraph, OpamFileParser parser, Dependency parentDependency, Set<String> skippedPackages) throws ExecutableRunnerException {
         // check if the dependency is already been visited first
         Optional<Dependency> visitedDependencyOptional = visitedDependenciesGraph.keySet().stream().filter(dep -> dep.getName().equals(dependency)).findFirst();
 
@@ -127,13 +132,25 @@ public class OpamGraphTransformer {
             // add child dependencies for all the transitives already visited in the graph to skip running show
             addChildDependencies(dependencyGraph, visitedDependenciesGraph.get(visitedDependency));
         } else {
-            List<String> output = runOpamShow(opamExe, dependency);
+            if (skippedPackages.contains(dependency)) {
+                return; // opam show already failed for this package, don't run it again
+            }
 
-            if (output.isEmpty()) {
+            ExecutableOutput showOutput = runOpamShow(opamExe, dependency);
+
+            if (showOutput.getReturnCode() != 0) {
+                logger.debug("opam show failed for the {} package with return code {}, skipping it.", dependency, showOutput.getReturnCode());
+                skippedPackages.add(dependency);
                 return;
             }
 
-            Map<String, String> parsedOutput = parser.parseData(output); // parse opam show output
+            Map<String, String> parsedOutput = parser.parseData(showOutput.getStandardOutputAsList()); // parse opam show output
+
+            if (!parsedOutput.containsKey(VERSION)) {
+                logger.debug("opam show did not report a version for the {} package, skipping it.", dependency);
+                skippedPackages.add(dependency);
+                return;
+            }
 
             String version = parsedOutput.get(VERSION).trim().replace("\"","");
 
@@ -152,25 +169,19 @@ public class OpamGraphTransformer {
             if (parsedOutput.containsKey(DEPENDS)) {
                 String[] dependentPackages = parsedOutput.get(DEPENDS).split(", ");
                 for (String dependencyPackage : dependentPackages) {
-                    findTransitiveDependencies(dependencyPackage, opamExe, dependencyGraph, parser, createdDependency);
+                    findTransitiveDependencies(dependencyPackage, opamExe, dependencyGraph, parser, createdDependency, skippedPackages);
                 }
             }
         }
     }
 
-    private List<String> runOpamShow(ExecutableTarget opamExe, String dependency) throws ExecutableRunnerException {
+    private ExecutableOutput runOpamShow(ExecutableTarget opamExe, String dependency) throws ExecutableRunnerException {
         List<String> arguments = new ArrayList<>();
         arguments.add("show");
         arguments.add(dependency);
         arguments.add("--raw"); // adding this will show the output as file.
 
-        ExecutableOutput executableOutput = executableRunner.execute(ExecutableUtils.createFromTarget(sourceDirectory, opamExe, arguments));
-
-        if(executableOutput.getReturnCode() == 0) {
-            return executableOutput.getStandardOutputAsList();
-        } else {
-            throw new ExecutableRunnerException(new Exception("There was an error running opam show on the "+ dependency +" package. Please run opam install . and try running the scan again."));
-        }
+        return executableRunner.execute(ExecutableUtils.createFromTarget(sourceDirectory, opamExe, arguments));
     }
 
     private Dependency createExternalId (String name, String version) {
