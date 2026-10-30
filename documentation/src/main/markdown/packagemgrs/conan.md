@@ -96,16 +96,17 @@ Finally, if a conanfile.txt or conanfile.py is found and Conan 1.x is in use, a 
 
 ## Conan Dependency Type Exclusion
 
-[detect_product_short] supports excluding Conan dependencies by type. The *detect.conan.dependency.types.excluded* property controls which dependency types are left out of the results.
+[detect_product_short] supports excluding Conan dependencies from results based on dependency type. Use the `detect.conan.dependency.types.excluded` property to specify the dependency types to exclude.
 
 **Configuration Options:**
-* `detect.conan.dependency.types.excluded` - Specify which dependency types to exclude. Accepts:
-    * `BUILD` to exclude build dependencies
-    * `TEST` to exclude test dependencies
-    * A comma-separated list of both (e.g., `BUILD,TEST`)
-    * Unset (default) to exclude nothing
+* `detect.conan.dependency.types.excluded` Specifies the Conan dependency types to exclude. 
+Supported values are:
+    * `BUILD` - Excludes build dependencies.
+    * `TEST` - Excludes test dependencies.
+    * `BUILD,TEST` - Excludes both build and test dependencies.
+    * Unset (default) - Does not exclude any dependencies.
 
-<note type="note">TEST exclusion is only supported by the Conan 2 CLI Detector. The Conan 1 CLI Detector and the Conan Lockfile Detector do not support it and will log a warning if TEST is specified. BUILD exclusion is supported by all Conan detectors.</note>
+<note type="note">The `TEST` exclusion is supported only by the Conan 2 CLI Detector. The Conan 1 CLI Detector and Conan Lockfile Detector log a warning if `TEST` is specified. The `BUILD` exclusion is supported by all Conan detectors.</note>
 
 ## Customized user/channel values
 
