@@ -193,5 +193,6 @@ public class DetectExecutableOptions {
     public Path getCargoUserPath() { return cargoUserPath; }
 
     public Path getUVUserPath() { return uvUserPath; }
+
     public Path getCondaTreeUserPath() { return condaTreeUserPath; }
 }
