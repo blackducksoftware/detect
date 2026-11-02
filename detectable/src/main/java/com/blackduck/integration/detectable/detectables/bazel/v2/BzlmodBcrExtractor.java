@@ -74,8 +74,13 @@ public class BzlmodBcrExtractor {
     private final IntermediateStepParseShowRepoToUrlCandidates urlCandidateParser;
     // Shared show_repo execution mechanics (batching, block splitting, per-candidate fallback)
     private final ShowRepoExecutor showRepoExecutor;
-    // Populated during extractGraph(); used by callers to avoid re-adding BCR deps flat via other pipelines.
+    // All ExternalIds resolved via show_repo. Used by callers for HTTP_ARCHIVE dedup —
+    // includes orphaned modules (resolved but not placed in graph) so they are not re-added
+    // via HTTP_ARCHIVE when their MODULE.bazel parent was excluded.
     private final Set<ExternalId> resolvedExternalIds = new LinkedHashSet<>();
+    // ExternalIds that were actually placed in the dependency graph (subset of resolvedExternalIds).
+    // Used for accurate component counts in log messages.
+    private final Set<ExternalId> graphedExternalIds = new LinkedHashSet<>();
 
     /**
      * Production constructor. {@code options} carries the cross-cutting Bazel extraction
@@ -115,6 +120,11 @@ public class BzlmodBcrExtractor {
      */
     public Set<ExternalId> getResolvedExternalIds() {
         return Collections.unmodifiableSet(resolvedExternalIds);
+    }
+
+    /** Returns only the ExternalIds that were actually placed in the dependency graph. */
+    public Set<ExternalId> getGraphedExternalIds() {
+        return Collections.unmodifiableSet(graphedExternalIds);
     }
 
     /**
@@ -420,6 +430,7 @@ public class BzlmodBcrExtractor {
             }
             graph.addChildToRoot(dep);
             modulesInGraph.add(directKey);
+            graphedExternalIds.add(dep.getExternalId());
             directCount++;
             recurseChildren(graph, directKey, dep, tree, moduleKeyToDep, recursed, modulesInGraph);
         }
@@ -553,6 +564,7 @@ public class BzlmodBcrExtractor {
             // Always add the edge — diamonds have multiple parents and all parent→child edges matter
             graph.addChildWithParent(childDep, parentDep);
             modulesInGraph.add(childKey);
+            graphedExternalIds.add(childDep.getExternalId());
             // Recurse into this child's subtree only once; subsequent encounters are edges-only
             if (recursed.add(childKey)) {
                 recurseChildren(graph, childKey, childDep, tree, moduleKeyToDep, recursed, modulesInGraph);
