@@ -6,7 +6,7 @@
 
 * **Bun Lockfile Detector**
 
-## Bun Lockfile Detector
+## Bun Lock
 
 * Detector for Bun projects, extracts **direct and transitive dependencies** by parsing the [bun.lock](https://bun.sh/docs/install/lockfile) file.
 
