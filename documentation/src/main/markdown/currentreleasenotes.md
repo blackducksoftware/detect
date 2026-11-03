@@ -18,6 +18,12 @@
 * **Deprecation of support for Java versions earlier than 17** - Support for Java versions earlier than 17 has been deprecated in [detect_product_short] 12.0.0 and will be removed in 13.0.0 to align with EU Cyber Resilience Act (CRA) requirements and compliance timelines.
 * **Deprecation of Docker Inspector** - Docker Inspector has been deprecated and will be removed in 13.0.0 release.
 
+## Version 12.1.1
+
+### Dependency Updates
+* Upgraded and released Docker Inspector version 12.0.2. For more details, please see [Docker Inspector Release Notes](packagemgrs/docker/releasenotes.md).
+* Updated json-smart library to version 2.6.1.
+
 ## Version 12.1.0
 
 ### New features
@@ -52,6 +58,4 @@
 * Updated Jackson libraries to version 2.22.3.
 * Updated FreeMarker to version 2.3.35.
 * Upgraded and released Nuget Inspector version 2.6.1.
-* Update Component Locator Library to version 2.4.8.
-* Upgraded and released Docker Inspector version 12.0.2. For more details, please see [Docker Inspector Release Notes](packagemgrs/docker/releasenotes.md).
-* Updated json-smart library to version 2.6.1.
+* Updated Component Locator Library to version 2.4.8.
