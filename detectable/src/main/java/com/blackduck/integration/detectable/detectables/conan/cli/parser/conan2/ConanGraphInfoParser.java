@@ -80,7 +80,7 @@ public class ConanGraphInfoParser {
             boolean processChildren = !graph.hasDependency(dependency.getExternalId());
 
             if (parent == null) {
-                graph.addDirectDependency(nodeToDependency(node));
+                graph.addDirectDependency(dependency);
             } else {
                 graph.addChildWithParent(dependency, parent);
             }
