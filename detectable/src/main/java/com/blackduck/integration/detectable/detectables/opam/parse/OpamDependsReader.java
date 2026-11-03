@@ -235,6 +235,11 @@ final class OpamDependsReader {
 
     // Reads a quoted string whose opening quote was consumed. Returns null if it is never closed.
     private String readString() {
+        boolean tripleQuoted = peek() == '"' && peekNext() == '"';
+        if (tripleQuoted) {
+            advance();
+            advance();
+        }
         StringBuilder value = new StringBuilder();
         while (true) {
             int current = peek();
@@ -242,7 +247,11 @@ final class OpamDependsReader {
                 return null;
             }
             advance();
-            if (current == '"') {
+            if (current == '"' && (!tripleQuoted || (peek() == '"' && peekNext() == '"'))) {
+                if (tripleQuoted) {
+                    advance();
+                    advance();
+                }
                 return value.toString();
             }
             if (current == '\\') {
