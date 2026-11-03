@@ -24,7 +24,7 @@ import java.util.Set;
  * Text after "depends:" that cannot be such a value, for example "depends: nothing." in a description, is not read as
  * dependencies. Nothing is thrown: the caller just continues with the next line.
  */
-final class OpamDependsReader {
+final class OpamDependencyNameParser {
     private static final int END_OF_INPUT = -1;
     private static final int LINE_BREAK = '\n';
 
@@ -60,7 +60,7 @@ final class OpamDependsReader {
         }
     }
 
-    private OpamDependsReader(List<String> lines, int lineIndex, int column) {
+    private OpamDependencyNameParser(List<String> lines, int lineIndex, int column) {
         this.lines = lines;
         this.startLineIndex = lineIndex;
         this.lineIndex = lineIndex;
@@ -69,7 +69,7 @@ final class OpamDependsReader {
 
     // Reads the depends value that starts at the given line and column, right after "depends:".
     static Result read(List<String> lines, int lineIndex, int column) {
-        return new OpamDependsReader(lines, lineIndex, column).read();
+        return new OpamDependencyNameParser(lines, lineIndex, column).read();
     }
 
     private Result read() {

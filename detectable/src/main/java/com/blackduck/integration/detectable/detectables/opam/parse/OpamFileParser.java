@@ -88,7 +88,7 @@ public class OpamFileParser {
             if (line.startsWith(DEPENDS_FIELD)) {
                 // The value can span several lines; the reader skips the version constraints and filters in {...}.
                 String rawLine = lines.get(lineIndex);
-                OpamDependsReader.Result result = OpamDependsReader.read(lines, lineIndex, rawLine.indexOf(DEPENDS_FIELD) + DEPENDS_FIELD.length());
+                OpamDependencyNameParser.Result result = OpamDependencyNameParser.read(lines, lineIndex, rawLine.indexOf(DEPENDS_FIELD) + DEPENDS_FIELD.length());
                 if (result.isDependsValue()) {
                     dependsSection.addAll(result.getPackageNames());
                 } else {
