@@ -392,6 +392,58 @@ public class OpamFileParserTest {
     }
 
     @Test
+    void tripleQuotedPackageInList() {
+        Assertions.assertEquals(Arrays.asList("ocaml", "dune"),
+            dependencyList("depends: [ \"\"\"ocaml\"\"\" \"dune\" ]"));
+    }
+
+    @Test
+    void tripleQuotedSingletonPackage() {
+        Assertions.assertEquals(Collections.singletonList("ocaml"),
+            dependencyList("depends: \"\"\"ocaml\"\"\""));
+    }
+
+    @Test
+    void tripleQuotedFilterWithLoneQuoteAndBrace() {
+        Assertions.assertEquals(Arrays.asList("foo", "bar"),
+            dependencyList("depends: [ \"foo\" { os = \"\"\"a\"}b\"\"\" } \"bar\" ]"));
+    }
+
+    @Test
+    void tripleQuotedFilterWithEscapedQuote() {
+        Assertions.assertEquals(Arrays.asList("foo", "bar"),
+            dependencyList("depends: [ \"foo\" { os = \"\"\"a\\\"\"\"b\"\"\" } \"bar\" ]"));
+    }
+
+    @Test
+    void tripleQuotedFilterSpanningTwoLines() {
+        Assertions.assertEquals(Arrays.asList("foo", "bar"),
+            dependencyList("depends: [ \"foo\" { os = \"\"\"a\"}",
+                "b\"\"\" } \"bar\" ]"));
+    }
+
+    @Test
+    void tripleQuotedDoesNotTreatDoubleQuotesAsTripleQuotes() {
+        Assertions.assertEquals(Collections.emptyList(),
+            Assertions.assertDoesNotThrow(() -> dependencyList("depends: [ \"\"foo\"\" \"bar\" ]")));
+    }
+
+    @Test
+    void tripleQuotedPreservesEmptyStringBehavior() {
+        Assertions.assertEquals(Collections.emptyList(),
+            Assertions.assertDoesNotThrow(() -> dependencyList("depends: [ \"\" \"dune\" ]")));
+    }
+
+    @Test
+    void tripleQuotedUnclosedStringMatchesUnclosedNormalString() {
+        List<String> tripleQuoted = Assertions.assertDoesNotThrow(() -> dependencyList("depends: [ \"\"\"ocaml"));
+        List<String> normalQuoted = Assertions.assertDoesNotThrow(() -> dependencyList("depends: [ \"ocaml"));
+        Assertions.assertEquals(Collections.emptyList(), tripleQuoted);
+        Assertions.assertEquals(Collections.emptyList(), normalQuoted);
+        Assertions.assertEquals(normalQuoted, tripleQuoted);
+    }
+
+    @Test
     void escapedQuotesInsideFiltersDoNotEndTheString() {
         Assertions.assertEquals(Arrays.asList("a", "b"), dependencyList("depends: [ \"a\" {\"\\\"}\" = \"x\"} \"b\" ]"));
     }
