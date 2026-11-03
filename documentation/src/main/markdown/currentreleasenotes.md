@@ -53,3 +53,5 @@
 * Updated FreeMarker to version 2.3.35.
 * Upgraded and released Nuget Inspector version 2.6.1.
 * Update Component Locator Library to version 2.4.8.
+* Upgraded and released Docker Inspector version 12.0.2. For more details, please see [Docker Inspector Release Notes](packagemgrs/docker/releasenotes.md).
+* Updated json-smart to version 2.6.1 to resolve moderate severity [CVE-2026-113602](https://nvd.nist.gov/vuln/detail/CVE-2026-113602).

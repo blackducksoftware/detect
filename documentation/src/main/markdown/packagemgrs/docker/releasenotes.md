@@ -1,5 +1,12 @@
 # [docker_inspector_name] Release notes
 
+## Version 12.0.2
+
+### Resolved issues
+
+* Resolved vulnerabilities in the Docker images used by the image inspector containers by upgrading Tomcat to version 10.6.1.
+* Resolved a certificate issue affecting the image inspector containers related to the eMudhra certificate authority.
+
 ## Version 12.0.1
 
 ### Resolved issues
