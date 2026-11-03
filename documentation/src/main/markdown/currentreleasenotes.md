@@ -22,7 +22,7 @@
 
 ### New features
 
-* 
+* Introduced the property `detect.bazel.modules.excluded`. When configured, [detect_product_short] will exclude the specified Bazel BCR modules from the BOM. Accepts a comma-separated list of module names with optional glob-style wildcards (for example, `rules_*` excludes all modules whose names start with `rules_`). By default all BCR modules are included; a small set of auto-generated and synthetic repositories (such as `bazel_tools`, `local_config_*`, `maven`) are always excluded regardless of this setting.
 
 ### Changed features
 
