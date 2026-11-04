@@ -12,13 +12,14 @@ Enable this feature by adding [--detect.blackduck.scan.mode=STATELESS](../proper
 
 ### Signature Scan Requirements
  * Must be running [bd_product_short] using the hosted KB.
- 
+
 ### Limitations
  * A limited subset of Tools can be run.
-    * The currently supported tools are: DETECTOR, BAZEL, and SIGNATURE_SCAN. All other tools are disabled when running in Stateless Scan mode.
+    * The currently supported tools are: DETECTOR, BAZEL, SIGNATURE_SCAN, DOCKER, and BINARY_SCAN. All other tools are disabled when running in Stateless Scan mode.
  * Stateless Scan does not support ```detect.policy.check.fail.on.severities``` or ```detect.policy.check.fail.on.names```
  * Stateless Scan will not create a Project or Version on [bd_product_short].
  * Stateless Scan cannot create a Risk or Notices report.
+<note type="note">Stateless Docker scan support has been deprecated and will be removed in [detect_product_short] 13.0.0</note>
  
 ## Invocation
  * To invoke a stateless signature scan only:
@@ -28,13 +29,15 @@ Enable this feature by adding [--detect.blackduck.scan.mode=STATELESS](../proper
     * --detect.tools=DETECTOR --detect.blackduck.scan.mode=RAPID
     * --detect.tools=BAZEL --detect.blackduck.scan.mode=RAPID
     * --detect.tools=BAZEL --detect.blackduck.scan.mode=STATELESS
+    * --detect.tools=DOCKER --detect.blackduck.scan.mode=STATELESS
+    * --detect.tools=DOCKER --detect.blackduck.scan.mode=RAPID
     * --detect.target.type=IMAGE --detect.blackduck.scan.mode=RAPID
     * --detect.target.type=IMAGE --detect.blackduck.scan.mode=STATELESS
  * To invoke a combined a stateless scan (non-exhaustive list):
     * --detect.tools=DETECTOR,SIGNATURE_SCAN --detect.blackduck.scan.mode=STATELESS
-    * --detect.tools=DETECTOR,SIGNATURE_SCAN --detect.blackduck.scan.mode=STATELESS
+    * --detect.tools=DETECTOR,SIGNATURE_SCAN,DOCKER --detect.blackduck.scan.mode=STATELESS
     * --detect.tools=BAZEL,SIGNATURE_SCAN --detect.blackduck.scan.mode=STATELESS
-    * --detect.tools=DETECTOR --detect.blackduck.scan.mode=RAPID
+    * --detect.tools=DETECTOR,DOCKER --detect.blackduck.scan.mode=RAPID
 
 ## Results
 
