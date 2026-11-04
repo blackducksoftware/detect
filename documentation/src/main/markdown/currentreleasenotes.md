@@ -22,7 +22,7 @@
 
 ### New features
 
-* 
+* Added the Bun Lockfile Detector, which extracts direct and transitive dependencies from `bun.lock`. The detector runs when both `package.json` and `bun.lock` are present in the project and does not require the `bun` executable. For more information, see [Bun package manager support](packagemgrs/bun.md).
 
 ### Changed features
 
