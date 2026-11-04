@@ -17,6 +17,7 @@
 * **Removal of Java 8 support** - Support for Java 8 has been removed in compliance with EU Cyber Resilience Act (CRA) requirements.
 * **Deprecation of support for Java versions earlier than 17** - Support for Java versions earlier than 17 has been deprecated in [detect_product_short] 12.0.0 and will be removed in 13.0.0 to align with EU Cyber Resilience Act (CRA) requirements and compliance timelines.
 * **Deprecation of Docker Inspector** - Docker Inspector has been deprecated and will be removed in 13.0.0 release.
+* **Early access - Discovery mode** (`--detect.discovery`) - Runs detector applicability analysis without performing a scan and writes a structured JSON report. Designed for programmatic consumers and MCP-based integrations. Not intended for general use in this release.
 
 ## Version 12.2.0
 
