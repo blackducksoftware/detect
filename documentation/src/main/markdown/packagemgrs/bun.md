@@ -4,7 +4,7 @@
 
 [detect_product_short] includes one Bun detector:
 
-* **Bun Lockfile Detector**
+* Bun lock detector
 
 ## Bun Lock
 
