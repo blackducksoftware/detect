@@ -7,9 +7,12 @@ public class ConanGraphInfoDependency extends Stringable {
 
     boolean build;
 
-    public ConanGraphInfoDependency(boolean direct, boolean build) {
+    boolean test;
+
+    public ConanGraphInfoDependency(boolean direct, boolean build, boolean test) {
         this.direct = direct;
         this.build = build;
+        this.test = test;
     }
 
     public boolean isDirect() {
@@ -18,5 +21,9 @@ public class ConanGraphInfoDependency extends Stringable {
 
     public boolean isBuild() {
         return build;
+    }
+
+    public boolean isTest() {
+        return test;
     }
 }
