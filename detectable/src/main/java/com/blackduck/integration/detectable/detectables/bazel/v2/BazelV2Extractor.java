@@ -169,7 +169,11 @@ public class BazelV2Extractor {
         // classified — adding them to root again would promote transitive BCR deps to direct, erasing
         // the direct/transitive edges the BCR extractor carefully built.
         // Non-BCR custom repos (private http_archive rules absent from mod graph) are unaffected.
+        // resolvedExternalIds: all modules resolved via show_repo — used for HTTP_ARCHIVE dedup so that
+        // orphaned modules (resolved but not placed due to excluded parent) are not re-added by HTTP_ARCHIVE.
+        // graphedExternalIds: subset actually placed in the dependency graph — used for accurate counts.
         Set<ExternalId> bcrExternalIds = bcrExtractor.getResolvedExternalIds();
+        Set<ExternalId> bcrGraphedIds = bcrExtractor.getGraphedExternalIds();
 
         List<DependencySource> ordered = sources.stream()
             .sorted(Comparator.comparingInt(this::priority))
@@ -194,7 +198,7 @@ public class BazelV2Extractor {
                 .collect(Collectors.toList());
             int suppressed = deps.size() - nonBcrDeps.size();
             if (suppressed > 0) {
-                logger.debug("Source {}: {} component(s) already captured by module extraction — skipped to preserve dependency tree; {} additional component(s) added",
+                logger.debug("Source {}: {} component(s) already resolved by BCR pipeline — skipped to preserve dependency tree; {} additional component(s) added",
                     source, suppressed, nonBcrDeps.size());
             }
             if (!nonBcrDeps.isEmpty()) {
@@ -207,7 +211,7 @@ public class BazelV2Extractor {
 
         logger.info("Bazel extraction complete — module graph: {} component(s) with dependency edges; " +
                 "additional sources: {} found, {} already covered, {} unique component(s) added",
-            bcrExternalIds.size(), pipelineTotalDeps, pipelineSuppressed, pipelineAddedFlat);
+            bcrGraphedIds.size(), pipelineTotalDeps, pipelineSuppressed, pipelineAddedFlat);
 
         CodeLocation cl = new CodeLocation(graph);
         String projectName = projectNameGenerator.generateFromBazelTarget(bazelTarget);
