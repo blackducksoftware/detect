@@ -23,6 +23,7 @@
 ### New features
 
 * Added the `detect.bazel.modules.excluded` property to exclude specified Bazel BCR modules from the BOM. The property accepts a comma-separated list of module names and supports glob-style wildcards. For example, `rules_*` excludes all modules with names beginning with `rules_`. By default, all BCR modules are included. Auto-generated and synthetic repositories, such as `bazel_tools`, `local_config_*`, and `maven`, are always excluded regardless of this setting.
+* Added the Bun Lockfile Detector, which extracts direct and transitive dependencies from `bun.lock`. The detector runs when both `package.json` and `bun.lock` are present in the project and does not require the `bun` executable. For more information, see [Bun package manager support](packagemgrs/bun.md).
 
 ### Changed features
 
