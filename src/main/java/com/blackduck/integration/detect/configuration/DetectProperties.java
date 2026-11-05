@@ -193,6 +193,22 @@ public class DetectProperties {
                     .setCategory(DetectCategory.Advanced)
                     .build();
 
+    public static final BooleanProperty DETECT_DISCOVERY_INCLUDE_DOCS =
+            BooleanProperty.newBuilder("detect.discovery.include.docs", false)
+                    .setInfo("Discovery Include Docs", DetectPropertyFromVersion.VERSION_12_0_0)
+                    .setHelp("If true, discovery mode embeds detector documentation markdown in the output JSON under docContent.")
+                    .setGroups(DetectGroup.GLOBAL)
+                    .setCategory(DetectCategory.Advanced)
+                    .build();
+
+    public static final NullablePathProperty DETECT_DISCOVERY_OUTPUT_PATH =
+            NullablePathProperty.newBuilder("detect.discovery.output.path")
+                    .setInfo("Discovery Output Path", DetectPropertyFromVersion.VERSION_12_0_0)
+                    .setHelp("The directory where discovery mode writes detect-discovery-output.json.", "If not set, the file is written to the current run's home directory.")
+                    .setGroups(DetectGroup.PATHS, DetectGroup.GLOBAL)
+                    .setExample("/home/<username>/blackduck/discovery")
+                    .build();
+
     public static final IntegerProperty DETECT_PARALLEL_PROCESSORS =
         IntegerProperty.newBuilder("detect.parallel.processors", 1)
             .setInfo("Detect Parallel Processors", DetectPropertyFromVersion.VERSION_6_0_0)
@@ -263,6 +279,18 @@ public class DetectProperties {
                 "Auto-detection falls back to WORKSPACE mode if the project is on Bazel 5.x or earlier, or if bazel mod graph returns an empty graph (common in hybrid repos that declare MODULE.bazel for compatibility but manage dependencies via WORKSPACE)."
             )
             .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
+            .build();
+
+    public static final CaseSensitiveStringListProperty DETECT_BAZEL_MODULES_EXCLUDED =
+        CaseSensitiveStringListProperty.newBuilder("detect.bazel.modules.excluded")
+            .setInfo("Bazel Modules Excluded", DetectPropertyFromVersion.VERSION_12_0_0)
+            .setHelp(
+                "A comma-separated list of Bazel module or repository names to exclude from the BOM.",
+                "Supports glob-style wildcards (for example, rules_* excludes all modules whose names start with rules_). " +
+                "This property accepts filename globbing-style wildcards. For more information, refer to the <xref href=\"https://docs%2Eblackduck%2Ecom/r/detect/latest/black%2Dduck%2Ddetect/property%2Dwildcard%2Dsupport%2Ehtml\" scope=\"external\" outputclass=\"external\" format=\"html\" target=\"_blank\">Property wildcard support page.</xref>"
+            )
+            .setGroups(DetectGroup.BAZEL, DetectGroup.SOURCE_SCAN)
+            .setCategory(DetectCategory.Advanced)
             .build();
 
 
