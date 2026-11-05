@@ -13,7 +13,6 @@ buildscript {
     }
     ext['logback.version'] = '1.2.13'
     ext['json-path.version'] = '2.10.0'
-    ext['json-smart.version'] = '2.6.1'
     apply from: 'https://raw.githubusercontent.com/blackducksoftware/integration-resources/master/gradle_common/buildscript-repositories.gradle', to: buildscript
 
     dependencies {
@@ -148,7 +147,6 @@ allprojects {
         implementation('com.squareup.okio:okio:3.6.0') {
             because 'previous version has a vulnerability with no direct parent upgrade available'
         }
-        implementation('net.minidev:json-smart:2.6.1')
 
         testImplementation 'org.junit.jupiter:junit-jupiter-params:5.4.2'
         testImplementation 'org.mockito:mockito-core:2.+'
