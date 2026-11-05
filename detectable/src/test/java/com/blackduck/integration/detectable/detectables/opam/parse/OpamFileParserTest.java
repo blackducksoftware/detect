@@ -502,16 +502,12 @@ public class OpamFileParserTest {
         return Arguments.of(name, expected, Arrays.asList(descriptionLines));
     }
 
-    // The descriptions from the review comment, which made the previous version of this change throw. Text inside a
-    // description is not told apart from fields yet (as before this change): a quoted name after "depends:" in a
-    // description is still read, while other text is ignored.
     static Stream<Arguments> descriptionsContainingDepends() {
         List<String> realOnly = Collections.singletonList("realdep");
-        List<String> withFake = Arrays.asList("fake", "realdep");
         return Stream.of(
             description("depends: nothing.", realOnly, "description: \"\"\"", "depends: nothing.", "\"\"\""),
-            description("depends: [ \"fake\" ]", withFake, "description: \"\"\"", "depends: [ \"fake\" ]", "\"\"\""),
-            description("depends: \"fake\"", withFake, "description: \"\"\"", "depends: \"fake\"", "\"\"\""),
+            description("depends: [ \"fake\" ]", realOnly, "description: \"\"\"", "depends: [ \"fake\" ]", "\"\"\""),
+            description("depends: \"fake\"", realOnly, "description: \"\"\"", "depends: \"fake\"", "\"\"\""),
             description("depends: foo.", realOnly, "description: \"\"\"", "depends: foo.", "\"\"\""),
             description("depends: install PostgreSQL first.", realOnly, "description: \"\"\"", "depends: install PostgreSQL first.", "\"\"\""),
             description("one-line description", realOnly, "description: \"\"\"depends: nothing.\"\"\""),
@@ -525,5 +521,106 @@ public class OpamFileParserTest {
         List<String> lines = new ArrayList<>(descriptionLines);
         lines.add("depends: [ \"realdep\" ]");
         Assertions.assertEquals(expected, dependencyList(lines.toArray(new String[0])));
+    }
+
+    static Stream<Arguments> contentContainingFakeFields() {
+        return Stream.of(
+            Arguments.of("same-line description", Arrays.asList("description: \"\"\" depends: [ \"fake\" ] \"\"\"")),
+            Arguments.of("multiline description", Arrays.asList("description: \"\"\"", "depends: [ \"fake\" ]", "\"\"\"")),
+            Arguments.of("normal multiline string", Arrays.asList("description: \"text", "depends: [ \\\"fake\\\" ]", "\"")),
+            Arguments.of("escaped quote", Arrays.asList("description: \"\\\" depends: [ \\\"fake\\\" ]\"")),
+            Arguments.of("triple string with escaped delimiter", Arrays.asList(
+                "description: \"\"\"a\\\"\"\"b", "depends: [ \"fake\" ]", "\"\"\"")),
+            Arguments.of("line comment", Arrays.asList("# depends: [ \"fake\" ]")),
+            Arguments.of("block comment", Arrays.asList("(*", "depends: [ \"fake\" ]", "*)")),
+            Arguments.of("nested block comment", Arrays.asList(
+                "(* outer (* inner *)", "depends: [ \"fake\" ]", "*)")),
+            Arguments.of("section", Arrays.asList("url {", "depends: [ \"fake\" ]", "}")),
+            Arguments.of("nested named section", Arrays.asList(
+                "extra-source \"archive\" {", "inner {", "depends: [ \"fake\" ]", "}", "}")),
+            Arguments.of("section with quoted delimiters", Arrays.asList(
+                "extra-source \"}\" { description: \"\"\" } ] (* \"\"\"", "depends: [ \"fake\" ]", "}")),
+            Arguments.of("unrelated list", Arrays.asList("build: [", "depends: [ \"fake\" ]", "]")),
+            Arguments.of("unrelated group", Arrays.asList("x-extension: (", "depends: [ \"fake\" ]", ")")),
+            Arguments.of("unrelated option", Arrays.asList("x-extension: \"value\" {", "depends: [ \"fake\" ]", "}"))
+        );
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("contentContainingFakeFields")
+    void onlyTopLevelDependencyFieldsAreRead(String name, List<String> content) {
+        Assertions.assertEquals(Collections.emptyList(), dependencyList(content.toArray(new String[0])));
+
+        List<String> before = new ArrayList<>(content);
+        before.add("depends: [ \"realdep\" ]");
+        Assertions.assertEquals(Collections.singletonList("realdep"), dependencyList(before.toArray(new String[0])));
+
+        List<String> after = new ArrayList<>();
+        after.add("depends: [ \"realdep\" ]");
+        after.addAll(content);
+        Assertions.assertEquals(Collections.singletonList("realdep"), dependencyList(after.toArray(new String[0])));
+    }
+
+    @Test
+    void fieldTokensAllowWhitespaceAndComments() {
+        Assertions.assertEquals(Collections.singletonList("foo"), dependencyList(
+            "depends (* outer (* inner *) comment *)",
+            "# comment before the colon",
+            ": (* comment before value *) [ \"\"\"foo\"\"\" {>= \"1.0\"} ]"));
+        Assertions.assertEquals(Collections.singletonList("realdep"), dependencyList("depends : [ \"realdep\" ]"));
+    }
+
+    @Test
+    void adjacentFieldsAndSectionsDoNotRequireLineBreaks() {
+        Map<String, String> parsed = parser.parseData(Collections.singletonList(
+            "description: \"\"\"depends: [ \"fake\" ]\"\"\" url { src: \"}\" } "
+                + "depends: \"foo\" {>= \"1.0\"} & \"bar\" name : \"project\" version: \"1:2\""));
+        Assertions.assertEquals("foo, bar", parsed.get("depends"));
+        Assertions.assertEquals("project", parsed.get("name"));
+        Assertions.assertEquals("1:2", parsed.get("version"));
+        Assertions.assertEquals(Arrays.asList("foo", "bar"),
+            dependencyList("depends: [ \"foo\" ] depends: [ \"bar\" ]"));
+    }
+
+    @Test
+    void qualifiedVariablesAndExpressionsAreNotFieldBindings() {
+        Assertions.assertEquals(Collections.singletonList("realdep"), dependencyList(
+            "x-extension: foo:depends",
+            "available: os = \"linux\" & !foo:installed",
+            "depends: [ \"realdep\" ]"));
+    }
+
+    @Test
+    void commentsAndStringsInsideFiltersDoNotChangeNesting() {
+        Assertions.assertEquals(Arrays.asList("foo", "bar"), dependencyList(
+            "depends: [ \"foo\" {",
+            "  (* } (* nested *) \"fake\" *)",
+            "  os = \"\"\"} depends: [ \"fake\" ] (*\"\"\" # }",
+            "} \"bar\" ]"));
+    }
+
+    @Test
+    void unterminatedStringsAndCommentsDoNotExposeFields() {
+        for (String opening : Arrays.asList("description: \"", "description: \"\"\"", "(*", "(* (* nested *)")) {
+            Assertions.assertEquals(Collections.emptyList(), dependencyList(opening, "depends: [ \"fake\" ]"));
+        }
+    }
+
+    @Test
+    void rejectedDependencyListsCannotExposeNestedFields() {
+        Assertions.assertEquals(Collections.singletonList("realdep"), dependencyList(
+            "depends: [ invalid depends: [ \"fake\" ] ]",
+            "depends: [ \"realdep\" ]"));
+    }
+
+    @Test
+    void projectMetadataInsideDescriptionsAndSectionsIsIgnored() {
+        Map<String, String> parsed = parser.parseData(Arrays.asList(
+            "name: \"project\" version: \"1.0\"",
+            "description: \"\"\"", "name: \"fake\"", "version: \"9.9\"", "\"\"\"",
+            "url { name: \"nested\" version: \"8.8\" }"));
+        Assertions.assertEquals("project", parsed.get("name"));
+        Assertions.assertEquals("1.0", parsed.get("version"));
+        Assertions.assertFalse(parsed.containsKey("depends"));
     }
 }

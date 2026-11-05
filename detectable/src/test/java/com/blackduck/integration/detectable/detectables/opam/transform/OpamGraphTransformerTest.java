@@ -136,4 +136,31 @@ public class OpamGraphTransformerTest {
         Assertions.assertTrue(error.getMessage().contains("There was an error running opam show on the missing package"), error.getMessage());
         Assertions.assertEquals(Arrays.asList("parent", "missing"), showCalls);
     }
+
+    @Test
+    void descriptionAndCommentDependenciesAreNotLookedUp() throws ExecutableRunnerException {
+        addShowOutput("parent",
+            "version: \"1.0\"",
+            "description: \"\"\"", "depends: [ \"description-fake\" ]", "\"\"\"",
+            "(* outer (* inner *)", "depends: [ \"comment-fake\" ]", "*)",
+            "url {", "depends: [ \"section-fake\" ]", "}",
+            "depends (* comment *) : [ \"\"\"ocaml\"\"\" {>= \"5.5.0~\"} ]");
+        addShowOutput("ocaml", "version: \"5.2.1\"");
+
+        CodeLocation codeLocation = transform("parent");
+
+        Assertions.assertEquals(Arrays.asList("parent", "ocaml"), showCalls);
+        Assertions.assertEquals(Collections.singletonList("ocaml@5.2.1"), childNames(codeLocation, "parent"));
+    }
+
+    @Test
+    void descriptionWithoutDependencyFieldDoesNotTriggerLookups() throws ExecutableRunnerException {
+        addShowOutput("parent", "version: \"1.0\"", "description: \"\"\"", "depends: [ \"fake\" ]", "\"\"\"");
+
+        CodeLocation codeLocation = transform("parent");
+
+        Assertions.assertEquals(Collections.singletonList("parent"), showCalls);
+        Assertions.assertEquals(Collections.singletonList("parent@1.0"), rootNames(codeLocation));
+        Assertions.assertEquals(Collections.emptyList(), childNames(codeLocation, "parent"));
+    }
 }

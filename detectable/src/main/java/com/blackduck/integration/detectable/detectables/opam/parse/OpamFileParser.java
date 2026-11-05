@@ -13,8 +13,6 @@ import java.util.Set;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -26,7 +24,6 @@ public class OpamFileParser {
     private static final String VERSION = "version";
     private static final String DEPENDS = "depends";
     private static final String NAME = "name";
-    private static final String DEPENDS_FIELD = DEPENDS + ":";
 
     //have a separate parseData and parse method to use for parsing opam show command, as it gives output in file format
     public OpamParsedResult parse(File opamFile) {
@@ -63,41 +60,26 @@ public class OpamFileParser {
     public Map<String, String> parseData(List<String> lines) {
         Map<String, String> output = new HashMap<>();
         Set<String> dependsSection = new LinkedHashSet<>();
-        Pattern pattern = Pattern.compile("\"([^\"]+)\"");
-
-        int lineIndex = 0;
-        while (lineIndex < lines.size()) {
-            String line = lines.get(lineIndex).trim();
-            int nextLineIndex = lineIndex + 1;
-
-            if (line.isEmpty() || line.startsWith("#")) {
-                lineIndex = nextLineIndex;
-                continue;
-            }
-
-            if (line.startsWith("version:")) {
-                //parse version
-                addProjectNameAndVersion(line, output, pattern, VERSION);
-            }
-
-            if (line.startsWith("name:")) {
-                // parse project name
-                addProjectNameAndVersion(line, output, pattern, NAME);
-            }
-
-            if (line.startsWith(DEPENDS_FIELD)) {
-                // The value can span several lines; the reader skips the version constraints and filters in {...}.
-                String rawLine = lines.get(lineIndex);
-                OpamDependencyNameParser.Result result = OpamDependencyNameParser.read(lines, lineIndex, rawLine.indexOf(DEPENDS_FIELD) + DEPENDS_FIELD.length());
+        OpamLexicalScanner scanner = new OpamLexicalScanner(lines);
+        String field;
+        while ((field = scanner.nextField()) != null) {
+            scanner.skipSpacesAndComments();
+            if (DEPENDS.equals(field)) {
+                OpamDependencyNameParser.Result result = OpamDependencyNameParser.read(scanner);
                 if (result.isDependsValue()) {
                     dependsSection.addAll(result.getPackageNames());
                 } else {
-                    logger.debug("Ignoring the text after depends: on line {}, as it is not a list of opam packages.", lineIndex + 1);
+                    logger.debug("Ignoring a depends value that is not a list of opam packages.");
                 }
-                nextLineIndex = Math.max(result.getNextLineIndex(), lineIndex + 1);
+            } else if ((NAME.equals(field) || VERSION.equals(field)) && scanner.peek() == OpamSyntax.QUOTE) {
+                scanner.advance();
+                String value = scanner.readString();
+                if (value != null) {
+                    output.put(field, value);
+                }
+            } else {
+                scanner.skipValue();
             }
-
-            lineIndex = nextLineIndex;
         }
 
         if(!dependsSection.isEmpty()) {
@@ -106,14 +88,5 @@ public class OpamFileParser {
         }
 
         return output;
-    }
-
-    private void addProjectNameAndVersion(String line, Map<String, String> output, Pattern pattern, String parsingValue) {
-        String value = line.split(":")[1];
-        Matcher matcher = pattern.matcher(value);
-        if (matcher.find()) {
-            value = matcher.group(1);
-        }
-        output.put(parsingValue, value);
     }
 }
