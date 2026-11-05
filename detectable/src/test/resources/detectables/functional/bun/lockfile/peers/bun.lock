@@ -1,0 +1,21 @@
+{
+  "lockfileVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "peer-app",
+      "devDependencies": {
+        "testing-react": "^16.0.0",
+      },
+      "peerDependencies": {
+        "workspace-peer": "^1.0.0",
+      },
+    },
+  },
+  "packages": {
+    // testing-dom is only a PEER dependency of testing-react, but bun installs it
+    "testing-react": ["testing-react@16.3.3", "", { "peerDependencies": { "testing-dom": "^10.0.0", "optional-thing": "^1.0.0" }, "optionalPeers": ["optional-thing"] }, "sha512-testingreact"],
+    "testing-dom": ["testing-dom@10.4.2", "", { "dependencies": { "dequal": "^2.0.0" } }, "sha512-testingdom"],
+    "dequal": ["dequal@2.0.3", "", {}, "sha512-dequal"],
+    "workspace-peer": ["workspace-peer@1.2.0", "", {}, "sha512-workspacepeer"],
+  },
+}

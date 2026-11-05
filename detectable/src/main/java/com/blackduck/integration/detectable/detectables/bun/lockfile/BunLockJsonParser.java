@@ -208,6 +208,8 @@ public class BunLockJsonParser {
                 readPackageDependencyMap(reader, dependencies, BunDependencyType.NORMAL);
             } else if (OPTIONAL_DEPENDENCIES_KEY.equals(key)) {
                 readPackageDependencyMap(reader, dependencies, BunDependencyType.OPTIONAL);
+            } else if (PEER_DEPENDENCIES_KEY.equals(key)) {
+                readPackageDependencyMap(reader, dependencies, BunDependencyType.PEER);
             } else {
                 reader.skipValue();
             }

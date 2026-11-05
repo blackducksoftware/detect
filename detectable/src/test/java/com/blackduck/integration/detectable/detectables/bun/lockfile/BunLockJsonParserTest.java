@@ -134,6 +134,38 @@ class BunLockJsonParserTest {
         assertEquals("rollup", graph.getChildrenForParent(vite8).iterator().next().getExternalId().getName());
     }
 
+    @Test
+    void installedPeerDependencyIsFollowedAndItsOwnDependenciesAreReachable() throws Exception {
+        DependencyGraph graph = peersGraph();
+
+        Dependency react = DependencyCreator.nameVersion(Forge.NPMJS, "testing-react", "16.3.3");
+        Dependency dom = DependencyCreator.nameVersion(Forge.NPMJS, "testing-dom", "10.4.2");
+        Dependency dequal = DependencyCreator.nameVersion(Forge.NPMJS, "dequal", "2.0.3");
+
+        assertTrue(graph.getChildrenForParent(react).contains(dom), "testing-dom is only a peer of testing-react but Bun installs it");
+        assertTrue(graph.getChildrenForParent(dom).contains(dequal), "the peer's own dependencies must be reachable");
+    }
+
+    @Test
+    void uninstalledOptionalPeerIsSkipped() throws Exception {
+        DependencyGraph graph = peersGraph();
+
+        Dependency react = DependencyCreator.nameVersion(Forge.NPMJS, "testing-react", "16.3.3");
+        assertEquals(1, graph.getChildrenForParent(react).size(), "optional-thing has no entry in packages and must not appear");
+    }
+
+    @Test
+    void workspacePeerDependencyIsADirectDependency() throws Exception {
+        DependencyGraph graph = peersGraph();
+
+        assertTrue(graph.getRootDependencies().contains(DependencyCreator.nameVersion(Forge.NPMJS, "workspace-peer", "1.2.0")));
+    }
+
+    private DependencyGraph peersGraph() throws Exception {
+        BunLockfileData data = parser().parseBunLock(lockFile("/detectables/functional/bun/lockfile/peers/bun.lock"));
+        return new BunLockfileTransformer().generateCodeLocations(data).get(0).getDependencyGraph();
+    }
+
     private BunPackage findByKey(BunLockfileData data, String key) {
         return data.getPackages().stream()
             .filter(p -> key.equals(p.getKey()))
