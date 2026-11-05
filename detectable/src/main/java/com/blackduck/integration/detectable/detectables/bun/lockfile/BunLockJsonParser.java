@@ -208,6 +208,10 @@ public class BunLockJsonParser {
                 readPackageDependencyMap(reader, dependencies, BunDependencyType.NORMAL);
             } else if (OPTIONAL_DEPENDENCIES_KEY.equals(key)) {
                 readPackageDependencyMap(reader, dependencies, BunDependencyType.OPTIONAL);
+            } else if (PEER_DEPENDENCIES_KEY.equals(key)) {
+                // Bun installs peer dependencies, so they are real edges. Peers that were not installed (e.g. optionalPeers)
+                // have no entry in "packages" and are skipped by the transformer when they fail to resolve.
+                readPackageDependencyMap(reader, dependencies, BunDependencyType.PEER);
             } else {
                 reader.skipValue();
             }
