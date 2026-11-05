@@ -22,7 +22,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '12.2.0-SIGQA16-SNAPSHOT'
+version = '12.2.0-SIGQA16-IDETECT-5303'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
@@ -45,7 +45,7 @@ jar {
 // source of truth; any update there is automatically reflected in the JAR.
 processResources {
     from("${project(':documentation').projectDir}/src/main/markdown/packagemgrs") {
-        include '*.md'   // only flat .md files — excludes docker/ subdirectory
+        include '*.md'   // only flat .md files ? excludes docker/ subdirectory
         into 'discovery/docs'
     }
 }
