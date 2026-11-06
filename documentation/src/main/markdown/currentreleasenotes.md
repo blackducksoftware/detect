@@ -31,6 +31,8 @@
 
 ### Resolved issues
 
+* (IDETECT-5301) Fixed a crash (`StringIndexOutOfBoundsException`) in the Bazel tool when scanning bzlmod projects that include `git_repository` dependencies with bare `.git` clone URLs. The scan now completes successfully.
+
 * 
 
 ### Dependency Updates
