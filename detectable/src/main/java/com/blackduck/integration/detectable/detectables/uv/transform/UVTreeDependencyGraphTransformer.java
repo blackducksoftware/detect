@@ -8,6 +8,7 @@ import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import com.blackduck.integration.detectable.detectables.uv.UVDetectorOptions;
+import com.blackduck.integration.detectable.detectables.uv.UVPackageNameNormalizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,11 +51,18 @@ public class UVTreeDependencyGraphTransformer {
     // not possible to get this list using toml file as it maybe wildcard characters
     private void populateWorkSpaces(List<String> uvTreeOutput) {
         for(String line: uvTreeOutput) {
+            if(line == null || line.trim().isEmpty()) {
+                continue;
+            }
             findDepth(line);
 
             if(depth == 0) {
-                String[] parts = line.split(" ");
-                workSpaceMembers.add(parts[0]);
+                String[] parts = line.trim().split("\\s+");
+                if(parts.length < 2) {
+                    logger.warn("Unable to parse workspace member and version from workspace line: {}", line);
+                    continue;
+                }
+                workSpaceMembers.add(UVPackageNameNormalizer.normalize(parts[0])); // only used for the include/exclude comparison, so it is kept normalized
             }
         }
     }
@@ -81,10 +89,10 @@ public class UVTreeDependencyGraphTransformer {
             addDependencyToGraph(dependency, dependencyStack, previousDepth);
             dependencyStack.push(dependency);
         } else if (depth == 0) {
-            String[] parts = line.split(" "); // parse the project line
+            String[] parts = line.trim().split("\\s+"); // parse the project line
             if(parts.length < 2) {
                 logger.warn("Unable to parse workspace member and version from line: {}", line);
-                initializeProject(parts[0] != null ? parts[0] : "uvProject", "defaultVersion"); // if version doesn't exist, then create a code location with just project name and default version
+                initializeProject(parts.length > 0 && parts[0] != null ? parts[0] : "uvProject", "defaultVersion"); // if version doesn't exist, then create a code location with just project name and default version
                 return;
             }
             String memberName = parts[0];
@@ -116,10 +124,12 @@ public class UVTreeDependencyGraphTransformer {
     }
 
     private boolean checkIfMemberExcluded(String memberName, UVDetectorOptions detectorOptions) {
-        if(!detectorOptions.getExcludedWorkspaceMembers().isEmpty() && detectorOptions.getExcludedWorkspaceMembers().contains(memberName)) { // checking if current member is excluded
+        // the configured include/exclude values are normalized by UVDetectorOptions, so the member name is normalized the same way
+        String normalizedMemberName = UVPackageNameNormalizer.normalize(memberName);
+        if(!detectorOptions.getExcludedWorkspaceMembers().isEmpty() && detectorOptions.getExcludedWorkspaceMembers().contains(normalizedMemberName)) { // checking if current member is excluded
             return true;
         } else if(!detectorOptions.getIncludedWorkspaceMembers().isEmpty()){
-            return !detectorOptions.getIncludedWorkspaceMembers().contains(memberName) && workSpaceMembers.contains(memberName); // checking if current member is not included, and checking if member is a workspace, an earlier bug was discarding components
+            return !detectorOptions.getIncludedWorkspaceMembers().contains(normalizedMemberName) && workSpaceMembers.contains(normalizedMemberName); // checking if current member is not included, and checking if member is a workspace, an earlier bug was discarding components
         } else {
             return false;
         }
@@ -183,12 +193,8 @@ public class UVTreeDependencyGraphTransformer {
             return null;
         }
 
-        String normalizedDependencyName = normalizePackageName(dependencyName);
+        String normalizedDependencyName = UVPackageNameNormalizer.normalize(dependencyName);
         ExternalId externalId = externalIdFactory.createNameVersionExternalId(Forge.PYPI, normalizedDependencyName, dependencyVersion);
         return new Dependency(normalizedDependencyName, dependencyVersion, externalId);
-    }
-
-    private String normalizePackageName(String packageName) {
-        return packageName.replaceAll("[_.-]+", "-").toLowerCase();
     }
 }
