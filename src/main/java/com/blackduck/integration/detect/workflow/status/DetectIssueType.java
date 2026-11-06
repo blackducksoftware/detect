@@ -9,5 +9,6 @@ public enum DetectIssueType {
     IMPACT_ANALYSIS,
     DETECTABLE_TOOL,
     IAC_SCANNER,
-    PROPERTY_KEY
+    PROPERTY_KEY,
+    COMPATIBILITY
 }

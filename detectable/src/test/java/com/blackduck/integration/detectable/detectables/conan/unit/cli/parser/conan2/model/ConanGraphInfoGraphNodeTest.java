@@ -90,22 +90,43 @@ public class ConanGraphInfoGraphNodeTest {
     }
 
     @Test
-    public void testGetDirectDependencyIndecesIncludeBuild() {
+    public void testGetDirectDependencyIndicesIncludeBuild() {
         ConanGraphInfoGraphNode node = makeGraphNodeWithDependencies();
 
         Integer[] expected = {0, 1};
-        Integer[] actual = node.getDirectDependencyIndeces(true).stream().toArray(Integer[] ::new);
+        Integer[] actual = node.getDirectDependencyIndices(true, true).stream().toArray(Integer[]::new);
         Arrays.sort(actual);
 
         assertArrayEquals(expected, actual);
     }
 
     @Test
-    public void testGetDirectDependencyIndecesExcludeBuild() {
+    public void testGetDirectDependencyIndicesExcludeBuild() {
         ConanGraphInfoGraphNode node = makeGraphNodeWithDependencies();
 
         Integer[] expected = {1};
-        Integer[] actual = node.getDirectDependencyIndeces(false).stream().toArray(Integer[] ::new);
+        Integer[] actual = node.getDirectDependencyIndices(false, true).stream().toArray(Integer[]::new);
+
+        assertArrayEquals(expected, actual);
+    }
+
+    @Test
+    public void testGetDirectDependencyIndicesIncludeTest() {
+        ConanGraphInfoGraphNode node = makeGraphNodeWithTestDependency();
+
+        Integer[] expected = {0, 1};
+        Integer[] actual = node.getDirectDependencyIndices(true, true).stream().toArray(Integer[]::new);
+        Arrays.sort(actual);
+
+        assertArrayEquals(expected, actual);
+    }
+
+    @Test
+    public void testGetDirectDependencyIndicesExcludeTest() {
+        ConanGraphInfoGraphNode node = makeGraphNodeWithTestDependency();
+
+        Integer[] expected = {0};
+        Integer[] actual = node.getDirectDependencyIndices(true, false).stream().toArray(Integer[]::new);
 
         assertArrayEquals(expected, actual);
     }
@@ -113,10 +134,19 @@ public class ConanGraphInfoGraphNodeTest {
     private ConanGraphInfoGraphNode makeGraphNodeWithDependencies() {
         Map<Integer, ConanGraphInfoDependency> dependencies = new HashMap<>();
 
-        dependencies.put(0, new ConanGraphInfoDependency(true, true));
-        dependencies.put(1, new ConanGraphInfoDependency(true, false));
-        dependencies.put(2, new ConanGraphInfoDependency(false, true));
-        dependencies.put(3, new ConanGraphInfoDependency(false, false));
+        dependencies.put(0, new ConanGraphInfoDependency(true, true, false));
+        dependencies.put(1, new ConanGraphInfoDependency(true, false, false));
+        dependencies.put(2, new ConanGraphInfoDependency(false, true, false));
+        dependencies.put(3, new ConanGraphInfoDependency(false, false, false));
+
+        return new ConanGraphInfoGraphNode(null, null, null, null, null, null, null, dependencies);
+    }
+
+    private ConanGraphInfoGraphNode makeGraphNodeWithTestDependency() {
+        Map<Integer, ConanGraphInfoDependency> dependencies = new HashMap<>();
+
+        dependencies.put(0, new ConanGraphInfoDependency(true, false, false));
+        dependencies.put(1, new ConanGraphInfoDependency(true, false, true));
 
         return new ConanGraphInfoGraphNode(null, null, null, null, null, null, null, dependencies);
     }

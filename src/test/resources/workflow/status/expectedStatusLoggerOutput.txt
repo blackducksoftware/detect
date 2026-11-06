@@ -45,6 +45,15 @@ PROPERTY KEYS:
 		Junit Test Issue Set 2 primary message: PROPERTY_KEY
 		Junit Test Issue Set 2 secondary message: PROPERTY_KEY
 
+COMPATIBILITY:
+	Junit Test Issue Set 1 Detect Issue
+		Junit Test Issue Set 1 primary message: COMPATIBILITY
+		Junit Test Issue Set 1 secondary message: COMPATIBILITY
+
+	Junit Test Issue Set 2 Detect Issue
+		Junit Test Issue Set 2 primary message: COMPATIBILITY
+		Junit Test Issue Set 2 secondary message: COMPATIBILITY
+
 ======== Detect Result ========
 
 Black Duck SCA Project BOM: https://example.com/api/projects/project_1

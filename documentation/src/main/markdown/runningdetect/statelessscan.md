@@ -1,26 +1,25 @@
 # Stateless Scan
 
-Stateless Scan, or Stateless Scan Mode, is a way of running [detect_product_short] with [bd_product_short]. This mode is designed to be as fast as possible and does not persist any data on [bd_product_short]. Stateless Scan Mode has a unique set of restrictions, mode of configuration, and set of results.  It is similar to Rapid Scan Mode, however it differs in that it supports usage of the SIGNATURE_SCAN, BINARY_SCAN, and CONTAINER_SCAN tools.
+Stateless Scan, or Stateless Scan Mode, is a way of running [detect_product_short] with [bd_product_short]. This mode is designed to be as fast as possible and does not persist any data on [bd_product_short]. Stateless Scan Mode has a unique set of restrictions, mode of configuration, and set of results.  It is similar to Rapid Scan Mode, however it differs in that it supports SIGNATURE_SCAN, and CONTAINER_SCAN tools.
 
 Enable this feature by adding [--detect.blackduck.scan.mode=STATELESS](../properties/configuration/blackduck-server.md#detect-scan-mode-advanced) to a run of [detect_product_short].
 
 ## Requirements and Limitations
 
 ### General Requirements
- * Must have Match as a Service (MaaS) enabled within [bd_product_short], a feature available as of the [bd_product_short] 2022.10.0 release.
+ * Must have Match as a Service (MaaS) enabled within [bd_product_short].
  * Stateless Scan requires [bd_product_short] policies retrieved via communication with [bd_product_short]. 
 
 ### Signature Scan Requirements
- * Must be running [bd_product_short] 2022.10.0 or greater using the hosted KB.
+ * Must be running [bd_product_short] using the hosted KB.
  
  ### Container Scan Requirements
- * Must be running [bd_product_short] 2023.10.0 or greater to execute container scans that provide container layer findings.
  * It is necessary to have [detect_product_short] and [bd_product_short] running in the hosted environment to perform these scans. 
  * To run a Container Stateless Scan your [bd_product_short] server must have [bd_product_short] Secure Container (BDSC) licensed and enabled.
  
 ### Limitations
  * A limited subset of Tools can be run.
-    * The currently supported tools are: DETECTOR, BAZEL, SIGNATURE_SCAN, DOCKER, BINARY_SCAN, and CONTAINER_SCAN. All other tools are disabled when running in Stateless Scan mode.
+    * The currently supported tools are: DETECTOR, BAZEL, SIGNATURE_SCAN, DOCKER, and CONTAINER_SCAN. All other tools are disabled when running in Stateless Scan mode.
  * Stateless Scan does not support ```detect.policy.check.fail.on.severities``` or ```detect.policy.check.fail.on.names```
  * Stateless Scan will not create a Project or Version on [bd_product_short].
  * Stateless Scan cannot create a Risk or Notices report.
