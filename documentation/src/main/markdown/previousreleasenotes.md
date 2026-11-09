@@ -1,6 +1,11 @@
 <!-- Check the support matrix to determine supported, non-current major version releases -->
 # Release notes for previous [detect_product_short] versions
 
+## Version 12.1.1
+
+### Dependency Updates
+* Upgraded and released Docker Inspector version 12.0.2. For more details, please see [Docker Inspector Release Notes](packagemgrs/docker/releasenotes.md).
+
 ## Version 12.1.0
 
 ### New features
