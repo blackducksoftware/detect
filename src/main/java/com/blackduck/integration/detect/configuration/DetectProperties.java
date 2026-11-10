@@ -790,7 +790,7 @@ public class DetectProperties {
         StringProperty.newBuilder("detect.diagnostic.archive.path", "")
             .setInfo("Diagnostic Archive Output Path", DetectPropertyFromVersion.VERSION_12_0_0)
             .setHelp(
-                "Custom output path for diagnostic archive. A file named detect-run-<runId>.zip will be created under the specified path. An original copy of the diagnostics archive remains in the runs directory as a backup.",
+                "Custom output path for diagnostic archive. A file named detect-run-&amp;lt;runId&amp;gt;.zip will be created under the specified path. An original copy of the diagnostics archive remains in the runs directory as a backup.",
                 "See the following for more <xref href=\"https://docs.blackduck.com/r/detect/latest/black%2Dduck%2Ddetect/detect%2Ddiagnostic%2Dmode%2Ehtml%5C\" scope=\"external\" format=\"html\" target=\"_blank\">Diagnostic Mode information.</xref>")
             .setGroups(DetectGroup.DEBUG, DetectGroup.GLOBAL)
             .build();
