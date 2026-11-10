@@ -9,7 +9,7 @@ This page lists [detect_product_long] deprecated properties for software version
 | Property | Description |
 | --- | --- |
 <#list group.options as option>
-| [${option.propertyKey}](${option.location}) | <#if option.defaultValue?has_content><p>default: ${option.defaultValue}</p> </#if><#if option.hasAcceptableValues> <p>Acceptable Values: ${option.acceptableValues?join(", ")} </p></#if><p><#if option.propertyName?has_content>${option.propertyName}: </#if>${option.description} </p> <p>**DEPRECATED: ${option.deprecatedDescription} This property will be removed in ${option.deprecatedRemoveInVersion}.** </p> |
+| [${option.propertyKey}](${option.location}){.section .ft-secondary-toc} | <#if option.defaultValue?has_content><p>default: ${option.defaultValue}</p> </#if><#if option.hasAcceptableValues> <p>Acceptable Values: ${option.acceptableValues?join(", ")} </p></#if><p><#if option.propertyName?has_content>${option.propertyName}: </#if>${option.description} </p> <p>**DEPRECATED: ${option.deprecatedDescription} This property will be removed in ${option.deprecatedRemoveInVersion}.** </p> |
 </#list>
 
 </#list>
