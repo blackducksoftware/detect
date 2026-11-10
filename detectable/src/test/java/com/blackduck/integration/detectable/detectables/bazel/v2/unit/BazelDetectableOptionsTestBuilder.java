@@ -16,6 +16,7 @@ public final class BazelDetectableOptionsTestBuilder {
     private List<String> bazelCqueryAdditionalOptions = Collections.emptyList();
     private List<String> bazelQueryAdditionalOptions = Collections.emptyList();
     private String modeOverride = null;
+    private List<String> excludedModules = Collections.emptyList();
 
     private BazelDetectableOptionsTestBuilder() {
     }
@@ -49,13 +50,19 @@ public final class BazelDetectableOptionsTestBuilder {
         return this;
     }
 
+    public BazelDetectableOptionsTestBuilder excludedModules(List<String> excludedModules) {
+        this.excludedModules = excludedModules;
+        return this;
+    }
+
     public BazelDetectableOptions build() {
         return new BazelDetectableOptions(
             targetName,
             dependencySourcesFromProperty,
             bazelCqueryAdditionalOptions,
             bazelQueryAdditionalOptions,
-            modeOverride
+            modeOverride,
+            excludedModules
         );
     }
 

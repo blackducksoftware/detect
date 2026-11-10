@@ -1,0 +1,22 @@
+
+aaCompatClasspath
+\--- com.example:foo:{strictly 1.0} -> 1.0
+     \--- com.example:bar:1.0
+
+bbMainClasspath
+\--- com.example:foo:{strictly 2.0} -> 2.0
+     \--- com.example:bar:2.0
+
+DETECT META DATA START
+rootProjectDirectory:/test/bug-repro
+rootProjectGroup:com.example
+rootProjectPath::
+rootProjectName:bug-repro
+rootProjectVersion:unspecified
+projectDirectory:/test/bug-repro
+projectGroup:com.example
+projectName:bug-repro
+projectVersion:unspecified
+projectPath::
+projectParent:none
+DETECT META DATA END

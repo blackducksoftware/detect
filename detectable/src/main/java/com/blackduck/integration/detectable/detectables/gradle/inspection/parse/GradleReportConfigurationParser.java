@@ -13,13 +13,16 @@ public class GradleReportConfigurationParser {
     private static final String UNRESOLVED_SUFFIX = "(n)";
     private static final String GRADLE_CONSTRAINT_SUFFIX = "(c)";
 
-    private final GradleReportLineParser parser = new GradleReportLineParser();
-
     public GradleConfiguration parse(String header, List<String> dependencyLines, Map<String, String> metadata) {
         GradleConfiguration configuration = new GradleConfiguration();
 
         configuration.setName(parseConfigurationName(header));
         configuration.setUnresolved(parseUnresolved(header));
+        // Fresh parser per configuration so rich-version state from one configuration
+        // does not pollute version resolution in subsequent configurations.
+        // Cross-file parent→child inheritance relies on Gradle emitting "x -> y" in the
+        // dep graph when a strict constraint changes a version, which it always does.
+        GradleReportLineParser parser = new GradleReportLineParser();
         List<GradleTreeNode> children = new ArrayList<>();
         for (String line: dependencyLines) {
             if (!line.trim().endsWith(GRADLE_CONSTRAINT_SUFFIX)) {

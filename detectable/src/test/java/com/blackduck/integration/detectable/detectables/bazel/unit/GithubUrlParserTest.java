@@ -107,6 +107,21 @@ class GithubUrlParserTest {
     }
 
     @Test
+    void testBareGitCloneUrl() {
+        // Bare clone URLs like https://github.com/org/repo.git have no path segment after the repo
+        // name. parseRepo() must throw MalformedURLException (not StringIndexOutOfBoundsException)
+        // so FinalStepTransformGithubUrl can skip them gracefully.
+        // Regression test for: "Range [0, -1) out of bounds for length 9" crash on zenoh.git URLs.
+        String url = "https://github.com/eclipse-zenoh/zenoh.git";
+        try {
+            parser.parseRepo(url);
+            Assertions.fail("Expected MalformedURLException for bare .git clone URL");
+        } catch (MalformedURLException e) {
+            // expected — not a GitHub archive/release URL
+        }
+    }
+
+    @Test
     void testMissingArchive() {
         try {
             parser.parseVersion("https://github.com/google/glog");
