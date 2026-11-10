@@ -5,6 +5,7 @@
 
 ### Dependency Updates
 * Upgraded and released Docker Inspector version 12.0.2. For more details, please see [Docker Inspector Release Notes](packagemgrs/docker/releasenotes.md).
+*  Project Inspector version updated to 2026.9.1.
 
 ## Version 12.1.0
 
