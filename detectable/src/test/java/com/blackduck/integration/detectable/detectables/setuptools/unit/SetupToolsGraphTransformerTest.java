@@ -2,14 +2,20 @@ package com.blackduck.integration.detectable.detectables.setuptools.unit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.mockito.Mockito.when;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
 
 import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.Forge;
@@ -20,6 +26,7 @@ import com.blackduck.integration.detectable.detectables.setuptools.parse.SetupTo
 import com.blackduck.integration.detectable.detectables.setuptools.transform.SetupToolsGraphTransformer;
 import com.blackduck.integration.detectable.python.util.PythonDependency;
 import com.blackduck.integration.detectable.util.graph.NameVersionGraphAssert;
+import com.blackduck.integration.executable.Executable;
 import com.blackduck.integration.executable.ExecutableOutput;
 import com.blackduck.integration.executable.ExecutableRunnerException;
 
@@ -84,5 +91,120 @@ public class SetupToolsGraphTransformerTest {
         NameVersionGraphAssert graphAssert = new NameVersionGraphAssert(Forge.PYPI, dependencyGraph);
 
         graphAssert.hasRootDependency("certifi", "2022.6.15");
+    }
+
+    // Reproduces a diamond dependency pattern:
+    // panel -> mdit-py-plugins -> markdown-it-py
+    // panel -> markdown-it-py (encountered a second time via a different path)
+    @Test
+    public void testDiamondDependencyIsOnlyQueriedOnce() throws ExecutableRunnerException {
+        List<PythonDependency> dependencies = Arrays.asList(
+                new PythonDependency("panel", "1.9.4")
+        );
+
+        SetupToolsParsedResult parsedResult = new SetupToolsParsedResult("setuptools", "1.0.0", dependencies);
+
+        Map<String, List<String>> pipShowOutputByPackage = new HashMap<>();
+        pipShowOutputByPackage.put("panel", Arrays.asList(
+                "Name: panel",
+                "Version: 1.9.4",
+                "Requires: mdit-py-plugins, markdown-it-py"
+        ));
+        pipShowOutputByPackage.put("mdit-py-plugins", Arrays.asList(
+                "Name: mdit-py-plugins",
+                "Version: 0.4.2",
+                "Requires: markdown-it-py"
+        ));
+        pipShowOutputByPackage.put("markdown-it-py", Arrays.asList(
+                "Name: markdown-it-py",
+                "Version: 3.0.0",
+                "Requires: mdurl"
+        ));
+        pipShowOutputByPackage.put("mdurl", Arrays.asList(
+                "Name: mdurl",
+                "Version: 0.1.2",
+                "Requires: "
+        ));
+
+        AtomicInteger markdownItPyQueryCount = new AtomicInteger(0);
+
+        DetectableExecutableRunner executableRunner = Mockito.mock(DetectableExecutableRunner.class);
+        when(executableRunner.execute(Mockito.any())).thenAnswer((InvocationOnMock invocation) -> {
+            Executable executable = invocation.getArgument(0);
+            String packageName = lastArgument(executable);
+            if (!pipShowOutputByPackage.containsKey(packageName)) {
+                throw new AssertionError("Unexpected pip show invocation for package: " + packageName);
+            }
+
+            if (packageName.equals("markdown-it-py")) {
+                markdownItPyQueryCount.incrementAndGet();
+            }
+
+            ExecutableOutput executableOutput = Mockito.mock(ExecutableOutput.class);
+            when(executableOutput.getReturnCode()).thenReturn(0);
+            when(executableOutput.getStandardOutputAsList()).thenReturn(pipShowOutputByPackage.get(packageName));
+            return executableOutput;
+        });
+
+        SetupToolsGraphTransformer graphTransformer = new SetupToolsGraphTransformer(null, new ExternalIdFactory(), executableRunner);
+
+        DependencyGraph dependencyGraph = assertTimeoutPreemptively(Duration.ofSeconds(5), () -> graphTransformer.transform(ExecutableTarget.forCommand("pip"), parsedResult));
+
+        assertEquals(1, markdownItPyQueryCount.get(), "markdown-it-py should only be queried via pip show once, even though it is reached through two paths");
+
+        NameVersionGraphAssert graphAssert = new NameVersionGraphAssert(Forge.PYPI, dependencyGraph);
+        graphAssert.hasRootDependency("panel", "1.9.4");
+        graphAssert.hasDependency("mdit-py-plugins", "0.4.2");
+        graphAssert.hasDependency("markdown-it-py", "3.0.0");
+        graphAssert.hasDependency("mdurl", "0.1.2");
+
+        graphAssert.hasParentChildRelationship("panel", "1.9.4", "mdit-py-plugins", "0.4.2");
+        graphAssert.hasParentChildRelationship("panel", "1.9.4", "markdown-it-py", "3.0.0");
+        graphAssert.hasParentChildRelationship("mdit-py-plugins", "0.4.2", "markdown-it-py", "3.0.0");
+        graphAssert.hasParentChildRelationship("markdown-it-py", "3.0.0", "mdurl", "0.1.2");
+    }
+
+    // Reproduces a cycle in the "Requires" chain (e.g. a <-> b), which without cycle detection
+    // would recurse forever.
+    @Test
+    public void testCyclicalDependencyDoesNotInfinitelyRecurse() throws ExecutableRunnerException {
+        List<PythonDependency> dependencies = Arrays.asList(
+                new PythonDependency("a", "1.0.0")
+        );
+
+        SetupToolsParsedResult parsedResult = new SetupToolsParsedResult("setuptools", "1.0.0", dependencies);
+
+        Map<String, List<String>> pipShowOutputByPackage = new HashMap<>();
+        pipShowOutputByPackage.put("a", Arrays.asList("Name: a", "Version: 1.0.0", "Requires: b"));
+        pipShowOutputByPackage.put("b", Arrays.asList("Name: b", "Version: 2.0.0", "Requires: a"));
+
+        DetectableExecutableRunner executableRunner = Mockito.mock(DetectableExecutableRunner.class);
+        when(executableRunner.execute(Mockito.any())).thenAnswer((InvocationOnMock invocation) -> {
+            Executable executable = invocation.getArgument(0);
+            String packageName = lastArgument(executable);
+            if (!pipShowOutputByPackage.containsKey(packageName)) {
+                throw new AssertionError("Unexpected pip show invocation for package: " + packageName);
+            }
+
+            ExecutableOutput executableOutput = Mockito.mock(ExecutableOutput.class);
+            when(executableOutput.getReturnCode()).thenReturn(0);
+            when(executableOutput.getStandardOutputAsList()).thenReturn(pipShowOutputByPackage.get(packageName));
+            return executableOutput;
+        });
+
+        SetupToolsGraphTransformer graphTransformer = new SetupToolsGraphTransformer(null, new ExternalIdFactory(), executableRunner);
+
+        DependencyGraph dependencyGraph = assertTimeoutPreemptively(Duration.ofSeconds(5), () -> graphTransformer.transform(ExecutableTarget.forCommand("pip"), parsedResult));
+
+        NameVersionGraphAssert graphAssert = new NameVersionGraphAssert(Forge.PYPI, dependencyGraph);
+        graphAssert.hasRootDependency("a", "1.0.0");
+        graphAssert.hasDependency("b", "2.0.0");
+        graphAssert.hasParentChildRelationship("a", "1.0.0", "b", "2.0.0");
+        graphAssert.hasParentChildRelationship("b", "2.0.0", "a", "1.0.0");
+    }
+
+    private String lastArgument(Executable executable) {
+        List<String> commandWithArguments = executable.getCommandWithArguments();
+        return commandWithArguments.get(commandWithArguments.size() - 1);
     }
 }
