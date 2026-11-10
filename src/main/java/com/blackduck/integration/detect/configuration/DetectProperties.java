@@ -1748,7 +1748,7 @@ public class DetectProperties {
     public static final StringListProperty DETECT_PROJECT_USER_GROUPS =
         StringListProperty.newBuilder("detect.project.user.groups", emptyList())
             .setInfo("Project User Groups", DetectPropertyFromVersion.VERSION_5_4_0)
-            .setHelp("A comma-separated list of names of user groups to add to the project. Names must match exactly to existing user groups on Black Duck SCA.")
+            .setHelp("A comma-separated list of names of user groups to add to the project.")
             .setExample("ProjectManagers,TechLeads")
             .setGroups(DetectGroup.PROJECT, DetectGroup.PROJECT_SETTING)
             .setCategory(DetectCategory.Advanced)
