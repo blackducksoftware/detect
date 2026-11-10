@@ -126,8 +126,15 @@ public class SetupToolsGraphTransformerTest {
                 "Requires: "
         ));
 
+        // Counts calls to "pip show markdown-it-py" specifically, since that's the package
+        // reached via two paths (directly from panel, and via mdit-py-plugins). Before the fix
+        // this would be 2; the fix should bring it down to 1.
         AtomicInteger markdownItPyQueryCount = new AtomicInteger(0);
 
+        // The transformer invokes executableRunner.execute(Executable) once per "pip show <package>"
+        // call, so the mock routes each invocation to canned output by reading the package name
+        // back off the Executable's argument list (its last argument) rather than matching on
+        // toString(), which would be fragile for short/overlapping package names.
         DetectableExecutableRunner executableRunner = Mockito.mock(DetectableExecutableRunner.class);
         when(executableRunner.execute(Mockito.any())).thenAnswer((InvocationOnMock invocation) -> {
             Executable executable = invocation.getArgument(0);
@@ -194,6 +201,9 @@ public class SetupToolsGraphTransformerTest {
 
         SetupToolsGraphTransformer graphTransformer = new SetupToolsGraphTransformer(null, new ExternalIdFactory(), executableRunner);
 
+        // assertTimeoutPreemptively is the real safety net here: without the fix, "a" requiring
+        // "b" requiring "a" sends handleShowDependency into unbounded recursion, so the test would
+        // hang rather than fail fast on a bad assertion.
         DependencyGraph dependencyGraph = assertTimeoutPreemptively(Duration.ofSeconds(5), () -> graphTransformer.transform(ExecutableTarget.forCommand("pip"), parsedResult));
 
         NameVersionGraphAssert graphAssert = new NameVersionGraphAssert(Forge.PYPI, dependencyGraph);
@@ -203,6 +213,7 @@ public class SetupToolsGraphTransformerTest {
         graphAssert.hasParentChildRelationship("b", "2.0.0", "a", "1.0.0");
     }
 
+    // The package name is always the final argument of "pip show <package>".
     private String lastArgument(Executable executable) {
         List<String> commandWithArguments = executable.getCommandWithArguments();
         return commandWithArguments.get(commandWithArguments.size() - 1);
