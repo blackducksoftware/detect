@@ -171,15 +171,6 @@ public class BazelV2Detectable extends Detectable {
                 .excludedModules(options.getExcludedModules())
                 .build();
             Set<DependencySource> pipelines = resolvePipelines(bazelCmd, target, extractionOptions);
-            // Determine pipelines (either from properties or by probing)
-            BazelExtractionOptions extractionOptions = BazelExtractionOptions.builder()
-                .mode(mode)
-                .bazelVersion(bazelVersion)
-                .cqueryOptions(options.getBazelCqueryAdditionalOptions())
-                .queryOptions(options.getBazelQueryAdditionalOptions())
-                .excludedModules(options.getExcludedModules())
-                .build();
-            Set<DependencySource> pipelines = resolvePipelines(bazelCmd, target, extractionOptions);
 
             // Probing swallows per-probe failures, so a fatal signature seen there may not have
             // propagated here as an exception. Check explicitly for a clearer error message.
