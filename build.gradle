@@ -22,7 +22,7 @@ buildscript {
 
 group = 'com.blackduck.integration'
 
-version = '12.2.0-SIGQA16-SNAPSHOT'
+version = '12.2.0-SIGQA16-zahidblackduck.IDETECT-5295-bun-detector-bom-component-missing-bugfix'
 
 apply plugin: 'com.blackduck.integration.solution'
 apply plugin: 'org.springframework.boot'
