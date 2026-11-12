@@ -94,6 +94,20 @@ As a following attempt, if a Conan lockfile (conan.lock) is found or provided, t
 
 Finally, if a conanfile.txt or conanfile.py is found and Conan 1.x is in use, a Conan CLI detector will run.
 
+## Conan Dependency Type Exclusion
+
+[detect_product_short] supports excluding Conan dependencies from results based on dependency type. Use the `detect.conan.dependency.types.excluded` property to specify the dependency types to exclude.
+
+**Configuration Options:**
+* `detect.conan.dependency.types.excluded` Specifies the Conan dependency types to exclude. 
+Supported values are:
+    * `BUILD` - Excludes build dependencies.
+    * `TEST` - Excludes test dependencies.
+    * `BUILD,TEST` - Excludes both build and test dependencies.
+    * Unset (default) - Does not exclude any dependencies.
+
+<note type="note">The `TEST` exclusion is supported only by the Conan 2 CLI Detector. The Conan 1 CLI Detector and Conan Lockfile Detector log a warning if `TEST` is specified. The `BUILD` exclusion is supported by all Conan detectors.</note>
+
 ## Customized user/channel values
 
 Some Conan users use modified versions of Open Source packages with custom user/channel values. These modified components will not match components in the [blackduck_kb].

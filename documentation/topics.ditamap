@@ -101,6 +101,7 @@
 	<topicref href="packagemgrs/overview.md" format="markdown">
 		<topicref href="packagemgrs/bazel.md" format="markdown"/>
 		<topicref href="packagemgrs/bitbake.md" format="markdown"/>
+		<topicref href="packagemgrs/bun.md" format="markdown"/>
 		<topicref href="packagemgrs/cargo.md" format="markdown"/>
 		<topicref href="packagemgrs/carthage.md" format="markdown"/>
 		<topicref href="packagemgrs/clang.md" format="markdown"/>

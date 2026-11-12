@@ -66,13 +66,21 @@ public class BzlmodBcrExtractor {
     // query so it is consistent with the HTTP_ARCHIVE pipeline and HttpFamilyProber, which both honor
     // these options. Keeping the args identical also lets BazelCommandExecutor memoize/reuse the result.
     private final List<String> queryOptions;
+    // User-supplied exclusion patterns from detect.bazel.modules.excluded, appended on top of the
+    // hard-coded exclusion list in BazelInfrastructureModules.
+    private final List<String> excludedModules;
     // Stateless helpers — created by default constructors; can be injected for testing
     private final GithubUrlParser githubUrlParser;
     private final IntermediateStepParseShowRepoToUrlCandidates urlCandidateParser;
     // Shared show_repo execution mechanics (batching, block splitting, per-candidate fallback)
     private final ShowRepoExecutor showRepoExecutor;
-    // Populated during extractGraph(); used by callers to avoid re-adding BCR deps flat via other pipelines.
+    // All ExternalIds resolved via show_repo. Used by callers for HTTP_ARCHIVE dedup —
+    // includes orphaned modules (resolved but not placed in graph) so they are not re-added
+    // via HTTP_ARCHIVE when their MODULE.bazel parent was excluded.
     private final Set<ExternalId> resolvedExternalIds = new LinkedHashSet<>();
+    // ExternalIds that were actually placed in the dependency graph (subset of resolvedExternalIds).
+    // Used for accurate component counts in log messages.
+    private final Set<ExternalId> graphedExternalIds = new LinkedHashSet<>();
 
     /**
      * Production constructor. {@code options} carries the cross-cutting Bazel extraction
@@ -98,6 +106,7 @@ public class BzlmodBcrExtractor {
         this.bazelVersion = options.getBazelVersion();
         this.bazelTarget = bazelTarget;
         this.queryOptions = options.getQueryOptions() != null ? options.getQueryOptions() : Collections.emptyList();
+        this.excludedModules = options.getExcludedModules() != null ? options.getExcludedModules() : Collections.emptyList();
         this.githubUrlParser = githubUrlParser;
         this.urlCandidateParser = urlCandidateParser;
         this.showRepoExecutor = showRepoExecutor;
@@ -111,6 +120,11 @@ public class BzlmodBcrExtractor {
      */
     public Set<ExternalId> getResolvedExternalIds() {
         return Collections.unmodifiableSet(resolvedExternalIds);
+    }
+
+    /** Returns only the ExternalIds that were actually placed in the dependency graph. */
+    public Set<ExternalId> getGraphedExternalIds() {
+        return Collections.unmodifiableSet(graphedExternalIds);
     }
 
     /**
@@ -216,7 +230,11 @@ public class BzlmodBcrExtractor {
         for (String key : allKeys) {
             String name = BzlmodGraphJsonParser.extractName(key);
             if (isExcludedModuleName(name)) {
-                logger.debug("BZLMOD BCR: skipping '{}' — build infrastructure, not a software component", key);
+                if (BazelInfrastructureModules.isHardExcluded(name)) {
+                    logger.debug("BZLMOD BCR: skipping '{}' — hard-excluded (auto-generated or synthetic repo)", key);
+                } else {
+                    logger.debug("BZLMOD BCR: skipping '{}' — excluded by detect.bazel.modules.excluded", key);
+                }
             } else {
                 keysForResolution.add(key);
             }
@@ -399,6 +417,9 @@ public class BzlmodBcrExtractor {
         // appears as a transitive dep of another direct dep. The outer loop still processes
         // each direct dep explicitly (adding it to root and recursing into its subtree once).
         Set<String> recursed = new HashSet<>(tree.directModuleKeys);
+        // Tracks which module keys were actually written into the graph (as root children or
+        // child-with-parent edges). Used after traversal to detect orphaned-but-resolved modules.
+        Set<String> modulesInGraph = new LinkedHashSet<>();
         int directCount = 0;
 
         for (String directKey : tree.directModuleKeys) {
@@ -408,12 +429,36 @@ public class BzlmodBcrExtractor {
                 continue;
             }
             graph.addChildToRoot(dep);
+            modulesInGraph.add(directKey);
+            graphedExternalIds.add(dep.getExternalId());
             directCount++;
-            recurseChildren(graph, directKey, dep, tree, moduleKeyToDep, recursed);
+            recurseChildren(graph, directKey, dep, tree, moduleKeyToDep, recursed, modulesInGraph);
         }
 
-        logger.debug("BZLMOD BCR: dependency tree — {} direct, {} transitive Bazel module(s)",
-            directCount, moduleKeyToDep.size() - directCount);
+        // Detect modules that were resolved (in moduleKeyToDep) but never placed in the graph.
+        // This happens when a module appears in the build target's dep graph (so it passed the
+        // target-scope filter) but its only path through the MODULE.bazel graph goes through a
+        // parent that was pruned by that same filter. The BOM omission is correct — these are
+        // typically build-toolchain modules (e.g. zlib pulled in by rules_java's ijar tool) that
+        // don't ship with the application. The log here makes the absence traceable.
+        int orphanedCount = 0;
+        for (String key : moduleKeyToDep.keySet()) {
+            if (!modulesInGraph.contains(key)) {
+                orphanedCount++;
+                logger.debug("BZLMOD BCR: '{}' was resolved but has no reachable parent in the " +
+                    "target-scoped module graph — not added to BOM (its MODULE.bazel parent " +
+                    "was pruned by the target-scope filter)", key);
+            }
+        }
+
+        int transitiveCount = modulesInGraph.size() - directCount;
+        if (orphanedCount > 0) {
+            logger.debug("BZLMOD BCR: dependency tree — {} direct, {} transitive, {} orphaned (resolved but not placed — see above)",
+                directCount, transitiveCount, orphanedCount);
+        } else {
+            logger.debug("BZLMOD BCR: dependency tree — {} direct, {} transitive Bazel module(s)",
+                directCount, transitiveCount);
+        }
         logger.debug("BZLMOD BCR: structured direct/transitive classification complete.");
         return graph;
     }
@@ -471,7 +516,10 @@ public class BzlmodBcrExtractor {
             // Delegate all label-format complexity to the resolver:
             // suffix detection (+ vs ~), repo_name alias resolution, ++ sub-repo exclusion.
             Optional<String> moduleName = resolver.resolveLabel(label);
-            if (!moduleName.isPresent() || isExcludedModuleName(moduleName.get())) {
+            // Use only the hard-coded exclusion list here — user-configured exclusions (detect.bazel.modules.excluded)
+            // control BOM membership, not target scope. Applying them here would break the scope filter if the
+            // only in-scope module is one the user wants to exclude from the BOM (see Step 1d).
+            if (!moduleName.isPresent() || BazelInfrastructureModules.isHardExcluded(moduleName.get())) {
                 continue;
             }
             moduleNames.add(moduleName.get());
@@ -486,10 +534,11 @@ public class BzlmodBcrExtractor {
 
     /**
      * Returns true if the repo/module name should be excluded from BCR scope checks.
-     * Delegates to the shared {@link BazelInfrastructureModules} source of truth.
+     * Checks the hard-coded list first, then the user-configured patterns from
+     * {@code detect.bazel.modules.excluded}.
      */
     private boolean isExcludedModuleName(String name) {
-        return BazelInfrastructureModules.isInfrastructure(name);
+        return BazelInfrastructureModules.isExcluded(name, excludedModules);
     }
 
     /**
@@ -503,7 +552,8 @@ public class BzlmodBcrExtractor {
                                   Dependency parentDep,
                                   ModuleGraph tree,
                                   Map<String, Dependency> moduleKeyToDep,
-                                  Set<String> recursed) {
+                                  Set<String> recursed,
+                                  Set<String> modulesInGraph) {
         List<String> children = tree.childrenByModuleKey.getOrDefault(parentKey, Collections.<String>emptyList());
         for (String childKey : children) {
             Dependency childDep = moduleKeyToDep.get(childKey);
@@ -513,9 +563,11 @@ public class BzlmodBcrExtractor {
             }
             // Always add the edge — diamonds have multiple parents and all parent→child edges matter
             graph.addChildWithParent(childDep, parentDep);
+            modulesInGraph.add(childKey);
+            graphedExternalIds.add(childDep.getExternalId());
             // Recurse into this child's subtree only once; subsequent encounters are edges-only
             if (recursed.add(childKey)) {
-                recurseChildren(graph, childKey, childDep, tree, moduleKeyToDep, recursed);
+                recurseChildren(graph, childKey, childDep, tree, moduleKeyToDep, recursed, modulesInGraph);
             }
         }
     }

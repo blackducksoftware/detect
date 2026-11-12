@@ -59,6 +59,26 @@
 						</row>
 						<row>
 							<entry>
+								<b>BUN</b>
+							</entry>
+							<entry> </entry>
+							<entry> </entry>
+							<entry> </entry>
+							<entry> </entry>
+							<entry> </entry>
+						</row>
+						<row>
+							<entry> </entry>
+							<entry>Bun Lockfile</entry>
+							<entry>Node JS</entry>
+							<entry>npmjs</entry>
+							<entry>
+								<p>Files: package.json and bun.lock</p>
+							</entry>
+							<entry>HIGH</entry>
+						</row>
+						<row>
+							<entry>
 								<b>CARGO</b>
 							</entry>
 							<entry> </entry>

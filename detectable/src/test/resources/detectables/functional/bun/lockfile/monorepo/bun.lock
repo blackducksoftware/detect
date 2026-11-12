@@ -1,0 +1,40 @@
+{
+  "lockfileVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "root-app",
+      "dependencies": {
+        "vite": "^8.0.0",
+      },
+    },
+    "packages/ui": {
+      "name": "@acme/ui",
+      "dependencies": {
+        "vite": "^7.0.0",
+        "only-nested": "^1.0.0",
+      },
+    },
+    "packages/lib": {
+      // name deliberately declared after the dependency maps
+      "dependencies": {
+        "@acme/ui": "workspace:*",
+        "lodash": "^4.17.0",
+      },
+      "name": "@acme/lib",
+    },
+  },
+  "packages": {
+    "@acme/lib": ["@acme/lib@workspace:packages/lib"],
+    "@acme/ui": ["@acme/ui@workspace:packages/ui"],
+
+    // hoisted/flat versions
+    "vite": ["vite@8.2.2", "", { "dependencies": { "rollup": "^4.0.0" } }, "sha512-vite822"],
+    "rollup": ["rollup@4.0.0", "", {}, "sha512-rollup400"],
+    "lodash": ["lodash@4.17.21", "", {}, "sha512-lodash4"],
+
+    // workspace-specific entries are prefixed with the workspace NAME, not its path
+    "@acme/ui/vite": ["vite@7.3.6", "", { "dependencies": { "esbuild": "^0.21.0" } }, "sha512-vite736"],
+    "@acme/ui/only-nested": ["only-nested@1.0.0", "", {}, "sha512-onlynested100"],
+    "esbuild": ["esbuild@0.21.5", "", {}, "sha512-esbuild0215"],
+  },
+}

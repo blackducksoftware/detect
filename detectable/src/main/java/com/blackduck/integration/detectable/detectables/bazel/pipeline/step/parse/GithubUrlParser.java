@@ -27,6 +27,12 @@ public class GithubUrlParser {
         int indexRepo = calculateIndexRepo(url);
         String repoEtc = url.substring(indexRepo);
         int slashAfterRepo = repoEtc.indexOf('/');
+        if (slashAfterRepo < 0) {
+            // No path segment after the repo name — this is a bare clone URL (e.g. .../org/repo.git),
+            // not a GitHub archive/release URL. Throw MalformedURLException so callers can skip it
+            // gracefully rather than crashing with StringIndexOutOfBoundsException.
+            throw new MalformedURLException("Missing path segment after repository name — not a GitHub archive URL: " + url);
+        }
         return repoEtc.substring(0, slashAfterRepo);
     }
 

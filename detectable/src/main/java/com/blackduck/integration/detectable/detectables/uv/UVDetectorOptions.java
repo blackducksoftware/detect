@@ -38,11 +38,12 @@ public class UVDetectorOptions {
         return onlyDependencyGroups.stream().map(String::toLowerCase).collect(Collectors.toSet());
     }
 
+    // workspace members are compared by their normalized Python name, so "lib_a", "Lib.A" and "lib--a" all match "lib-a"
     public Set<String> getIncludedWorkspaceMembers() {
-        return includedWorkspaceMembers.stream().map(String::toLowerCase).collect(Collectors.toSet());
+        return includedWorkspaceMembers.stream().map(UVPackageNameNormalizer::normalize).collect(Collectors.toSet());
     }
 
     public Set<String> getExcludedWorkspaceMembers() {
-        return excludedWorkspaceMembers.stream().map(String::toLowerCase).collect(Collectors.toSet());
+        return excludedWorkspaceMembers.stream().map(UVPackageNameNormalizer::normalize).collect(Collectors.toSet());
     }
 }

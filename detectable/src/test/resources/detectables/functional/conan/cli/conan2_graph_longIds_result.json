@@ -1,6 +1,7 @@
 {
   "rootExternalDataIds": [
-    "http:conan/poco/1.9.4%40_%2F_%23f7cfa1f609e6ddef0166efae9d7a479f%3Af4f3123eb80280372fcceb42428acd7ec3cbdebf%23eeaf2ba5d2d2457a0ad75c745aa847db"
+    "http:conan/poco/1.9.4%40_%2F_%23f7cfa1f609e6ddef0166efae9d7a479f%3Af4f3123eb80280372fcceb42428acd7ec3cbdebf%23eeaf2ba5d2d2457a0ad75c745aa847db",
+    "http:conan/gtest/1.14.0%40_%2F_%233c2a6f1d9e8b7a5c4d3e2f1a0b9c8d7e%3A9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a291807%237a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d"
   ],
   "externalDataIdRelationships": {
     "http:conan/pcre/8.45%40_%2F_%2364cdfd792761c32817cd31d7967c3709%3Ad0b69e3560697da6b2fa1cddb773f70af354ccca%236b15e908057c2f771d37fe011a5b640d": [
@@ -43,6 +44,10 @@
     "http:conan/openssl/1.1.1t%40_%2F_%2355e398751ff5310a8525645c99c81495%3Ac7aae788dadfdbcd87aa5fe0742eab770c0811cd%23a63ef7c23626b03339b190cc370223d9": {
       "name": "openssl",
       "version": "1.1.1t"
+    },
+    "http:conan/gtest/1.14.0%40_%2F_%233c2a6f1d9e8b7a5c4d3e2f1a0b9c8d7e%3A9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a291807%237a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d": {
+      "name": "gtest",
+      "version": "1.14.0"
     }
   }
 }

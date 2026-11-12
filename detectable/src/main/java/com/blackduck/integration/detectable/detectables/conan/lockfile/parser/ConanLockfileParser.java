@@ -33,6 +33,10 @@ import com.blackduck.integration.detectable.detectables.conan.lockfile.parser.mo
 import com.blackduck.integration.detectable.detectables.conan.lockfile.parser.model.ConanLockfileNode;
 
 public class ConanLockfileParser {
+    private static final String TEST_EXCLUSION_NOT_SUPPORTED_WARNING =
+        "Excluding TEST dependencies is not supported by the Conan Lockfile Detector and will be ignored. " +
+            "TEST exclusion is supported only by the Conan 2 CLI Detector.";
+
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final Gson gson;
     private final ConanCodeLocationGenerator conanCodeLocationGenerator;
@@ -47,6 +51,10 @@ public class ConanLockfileParser {
 
     public ConanDetectableResult generateCodeLocationFromConanLockfileContents(String conanLockfileContents) throws DetectableException {
         logger.trace("Parsing conan lockfile contents:\n{}", conanLockfileContents);
+
+        if (conanCodeLocationGenerator.shouldExcludeTestDependencies()) {
+            logger.warn(TEST_EXCLUSION_NOT_SUPPORTED_WARNING);
+        }
 
         JsonElement jsonElement = gson.fromJson(conanLockfileContents, JsonElement.class);
         JsonObject jsonObject = jsonElement.getAsJsonObject();

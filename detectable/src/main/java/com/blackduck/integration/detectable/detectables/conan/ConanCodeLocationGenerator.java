@@ -82,6 +82,10 @@ public class ConanCodeLocationGenerator {
         return dependencyTypeFilter.shouldInclude(ConanDependencyType.BUILD);
     }
 
+    public boolean shouldExcludeTestDependencies() {
+        return dependencyTypeFilter.shouldExclude(ConanDependencyType.TEST);
+    }
+
     private void populateGraphUnderNode(ConanGraphNode curGraphNode, Map<String, ConanNode<String>> graphNodes) throws DetectableException {
         Set<String> dependencyRefs = new HashSet<>(curGraphNode.getConanNode().getRequiresRefs().orElse(new ArrayList<>(0)));
         dependencyTypeFilter.ifShouldInclude(ConanDependencyType.BUILD, curGraphNode.getConanNode().getBuildRequiresRefs(), dependencyRefs::addAll);

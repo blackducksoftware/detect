@@ -15,6 +15,10 @@ import com.blackduck.integration.detectable.detectables.conan.ConanDetectableRes
 import com.blackduck.integration.detectable.detectables.conan.graph.ConanNode;
 
 public class ConanInfoParser {
+    private static final String TEST_EXCLUSION_NOT_SUPPORTED_WARNING =
+        "Excluding TEST dependencies is not supported by the Conan 1 CLI Detector and will be ignored. " +
+            "TEST exclusion is supported only by the Conan 2 CLI Detector.";
+
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final ConanInfoNodeParser conanInfoNodeParser;
     private final ConanCodeLocationGenerator conanCodeLocationGenerator;
@@ -27,6 +31,9 @@ public class ConanInfoParser {
     }
 
     public ConanDetectableResult generateCodeLocationFromConanInfoOutput(String conanInfoOutput) throws DetectableException {
+        if (conanCodeLocationGenerator.shouldExcludeTestDependencies()) {
+            logger.warn(TEST_EXCLUSION_NOT_SUPPORTED_WARNING);
+        }
         Map<String, ConanNode<String>> nodeMap = generateNodeMap(conanInfoOutput);
         return conanCodeLocationGenerator.generateCodeLocationFromNodeMap(externalIdFactory, nodeMap);
     }

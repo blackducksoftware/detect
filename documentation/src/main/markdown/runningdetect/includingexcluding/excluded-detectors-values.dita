@@ -32,7 +32,8 @@
                         <entry><codeph>NPM Shrinkwrap</codeph>, <codeph>NPM Package Lock</codeph>,
                             <codeph>NPM CLI</codeph>, <codeph>NPM Package Json Parse</codeph>,
                             <codeph>Yarn Lock</codeph>, <codeph>Pnpm Lock</codeph>,
-                            <codeph>Lerna CLI</codeph>, <codeph>Rush Lock</codeph></entry>
+                            <codeph>Lerna CLI</codeph>, <codeph>Rush Lock</codeph>,
+                            <codeph>Bun Lockfile</codeph></entry>
                     </row>
                     <row>
                         <entry>Maven</entry>

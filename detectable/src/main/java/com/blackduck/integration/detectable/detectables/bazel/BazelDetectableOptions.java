@@ -1,5 +1,6 @@
 package com.blackduck.integration.detectable.detectables.bazel;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -15,19 +16,22 @@ public class BazelDetectableOptions {
     private final List<String> bazelCqueryAdditionalOptions;
     private final List<String> bazelQueryAdditionalOptions;
     private final String modeOverride;
+    private final List<String> excludedModules;
 
     public BazelDetectableOptions(
         String targetName,
         Set<DependencySource> dependencySourcesFromProperty,
         List<String> bazelCqueryAdditionalOptions,
         List<String> bazelQueryAdditionalOptions,
-        String modeOverride
+        String modeOverride,
+        List<String> excludedModules
     ) {
         this.targetName = targetName;
         this.dependencySourcesFromProperty = dependencySourcesFromProperty;
         this.bazelCqueryAdditionalOptions = bazelCqueryAdditionalOptions;
         this.bazelQueryAdditionalOptions = bazelQueryAdditionalOptions;
         this.modeOverride = modeOverride;
+        this.excludedModules = excludedModules != null ? excludedModules : Collections.emptyList();
     }
 
     public Optional<String> getTargetName() {
@@ -46,6 +50,10 @@ public class BazelDetectableOptions {
         return dependencySourcesFromProperty;
     }
 
+
+    public List<String> getExcludedModules() {
+        return excludedModules;
+    }
 
     public Optional<BazelEnvironmentAnalyzer.Mode> getModeOverride() {
         if (modeOverride == null || modeOverride.trim().isEmpty()) {

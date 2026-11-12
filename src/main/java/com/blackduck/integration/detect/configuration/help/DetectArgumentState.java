@@ -18,6 +18,8 @@ public class DetectArgumentState {
 
     private final boolean isGenerateAirGapZip;
 
+    private final boolean isDiscoveryMode;
+
     public DetectArgumentState(
         boolean isHelp,
         boolean isHelpJsonDocument,
@@ -29,6 +31,21 @@ public class DetectArgumentState {
         boolean isDiagnostic,
         boolean isGenerateAirGapZip
     ) {
+        this(isHelp, isHelpJsonDocument, isHelpYamlDocument, isInteractive, isVerboseHelp, isDeprecatedHelp, parsedValue, isDiagnostic, isGenerateAirGapZip, false);
+    }
+
+    public DetectArgumentState(
+        boolean isHelp,
+        boolean isHelpJsonDocument,
+        boolean isHelpYamlDocument,
+        boolean isInteractive,
+        boolean isVerboseHelp,
+        boolean isDeprecatedHelp,
+        @Nullable String parsedValue,
+        boolean isDiagnostic,
+        boolean isGenerateAirGapZip,
+        boolean isDiscoveryMode
+    ) {
         this.isHelp = isHelp;
         this.isHelpJsonDocument = isHelpJsonDocument;
         this.isHelpYamlDocument = isHelpYamlDocument;
@@ -38,6 +55,7 @@ public class DetectArgumentState {
         this.parsedValue = parsedValue;
         this.isDiagnostic = isDiagnostic;
         this.isGenerateAirGapZip = isGenerateAirGapZip;
+        this.isDiscoveryMode = isDiscoveryMode;
     }
 
     public boolean isHelp() {
@@ -75,5 +93,9 @@ public class DetectArgumentState {
 
     public boolean isGenerateAirGapZip() {
         return isGenerateAirGapZip;
+    }
+
+    public boolean isDiscoveryMode() {
+        return isDiscoveryMode;
     }
 }
