@@ -1,5 +1,6 @@
 package com.blackduck.integration.detectable.detectables.bazel.v2.unit;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -11,10 +12,22 @@ import org.junit.jupiter.api.Test;
 
 import com.blackduck.integration.detectable.detectables.bazel.v2.BazelInfrastructureModules;
 
+/**
+ * Tests for BazelInfrastructureModules — the two-tier Bazel module exclusion logic.
+ *
+ * Three code paths are exercised:
+ *   isHardExcluded  — hard-coded always-excluded patterns (no user override)
+ *   isExcluded      — combines hard list + user patterns; used by BCR extractor and HttpFamilyProber
+ *   buildCombinedExclusionRegex — same combined patterns as a regex; used by the HTTP_ARCHIVE pipeline line filter
+ *
+ * Both isExcluded and buildCombinedExclusionRegex call expandPattern internally, so alternation
+ * and canonical-suffix tests are duplicated across both paths intentionally — a break in one
+ * path would not be caught by tests for the other.
+ */
 class BazelInfrastructureModulesTest {
 
     // -------------------------------------------------------------------------
-    // isHardExcluded
+    // isHardExcluded — always-excluded set, cannot be overridden by user config
     // -------------------------------------------------------------------------
 
     @Test
@@ -55,7 +68,7 @@ class BazelInfrastructureModulesTest {
     }
 
     // -------------------------------------------------------------------------
-    // isExcluded with user patterns
+    // isExcluded — hard list + user patterns; uses FilenameUtils.wildcardMatch
     // -------------------------------------------------------------------------
 
     @Test
@@ -97,7 +110,8 @@ class BazelInfrastructureModulesTest {
     }
 
     // -------------------------------------------------------------------------
-    // buildCombinedExclusionRegex
+    // buildCombinedExclusionRegex — hard list + user patterns as a negative-lookahead regex;
+    // used by the HTTP_ARCHIVE bzlmod pipeline line filter (separate code path from isExcluded)
     // -------------------------------------------------------------------------
 
     @Test
@@ -147,6 +161,72 @@ class BazelInfrastructureModulesTest {
         assertTrue("protobuf".matches(regex));      // not matched by rules_*
     }
 
+    // -------------------------------------------------------------------------
+    // expandPattern — expands alternation groups before matching or regex generation
+    // -------------------------------------------------------------------------
+
+    @Test
+    void expandPattern_noGroup_returnsPatternUnchanged() {
+        List<String> result = BazelInfrastructureModules.expandPattern("rules_*");
+        assertEquals(1, result.size());
+        assertEquals("rules_*", result.get(0));
+    }
+
+    @Test
+    void expandPattern_singleGroup_expandsToMultiple() {
+        List<String> result = BazelInfrastructureModules.expandPattern("rules_(cc|shell|python)");
+        assertEquals(3, result.size());
+        assertTrue(result.contains("rules_cc"));
+        assertTrue(result.contains("rules_shell"));
+        assertTrue(result.contains("rules_python"));
+    }
+
+    @Test
+    void expandPattern_groupWithWildcard() {
+        List<String> result = BazelInfrastructureModules.expandPattern("rules_(cc|shell)_*");
+        assertEquals(2, result.size());
+        assertTrue(result.contains("rules_cc_*"));
+        assertTrue(result.contains("rules_shell_*"));
+    }
+
+    @Test
+    void expandPattern_multipleGroups() {
+        List<String> result = BazelInfrastructureModules.expandPattern("(a|b)_(x|y)");
+        assertEquals(4, result.size());
+        assertTrue(result.contains("a_x"));
+        assertTrue(result.contains("a_y"));
+        assertTrue(result.contains("b_x"));
+        assertTrue(result.contains("b_y"));
+    }
+
+    @Test
+    void expandPattern_nestedGroups_matchingCloseFoundCorrectly() {
+        // rules_((cc|shell)|python) → rules_cc, rules_shell, rules_python
+        List<String> result = BazelInfrastructureModules.expandPattern("rules_((cc|shell)|python)");
+        assertEquals(3, result.size());
+        assertTrue(result.contains("rules_cc"));
+        assertTrue(result.contains("rules_shell"));
+        assertTrue(result.contains("rules_python"));
+    }
+
+    @Test
+    void expandPattern_malformedUnmatchedParen_returnsAsIs() {
+        List<String> result = BazelInfrastructureModules.expandPattern("rules_(cc");
+        assertEquals(1, result.size());
+        assertEquals("rules_(cc", result.get(0));
+    }
+
+    // isExcluded path — exercises FilenameUtils.wildcardMatch after expansion
+    @Test
+    void isExcluded_alternationPatternExcludesMatchingModules() {
+        List<String> patterns = Collections.singletonList("rules_(cc|shell|python)");
+        assertTrue(BazelInfrastructureModules.isExcluded("rules_cc", patterns));
+        assertTrue(BazelInfrastructureModules.isExcluded("rules_shell", patterns));
+        assertTrue(BazelInfrastructureModules.isExcluded("rules_python", patterns));
+        assertFalse(BazelInfrastructureModules.isExcluded("rules_java", patterns));
+        assertFalse(BazelInfrastructureModules.isExcluded("protobuf", patterns));
+    }
+
     @Test
     void regex_userPatternsAppendedToHardList() {
         List<String> patterns = Collections.singletonList("protobuf");
@@ -154,5 +234,31 @@ class BazelInfrastructureModulesTest {
         assertFalse("bazel_tools".matches(regex));  // still hard-excluded
         assertFalse("protobuf".matches(regex));     // user-excluded
         assertTrue("abseil-cpp".matches(regex));    // neither
+    }
+
+    // regex path — exercises globToRegexAlternative after expansion (HTTP_ARCHIVE pipeline)
+    @Test
+    void regex_userAlternationPatternExcludesEachAlternative() {
+        List<String> patterns = Collections.singletonList("rules_(cc|shell|python)");
+        String regex = BazelInfrastructureModules.buildCombinedExclusionRegex(patterns);
+        assertFalse("rules_cc".matches(regex));
+        assertFalse("rules_shell".matches(regex));
+        assertFalse("rules_python".matches(regex));
+        assertTrue("rules_java".matches(regex));    // not in the group
+        assertTrue("protobuf".matches(regex));
+    }
+
+    @Test
+    void regex_userAlternationPatternAlsoMatchesCanonicalSuffix() {
+        // Each expanded alternative should match its canonical suffix form (protobuf+ / protobuf~)
+        List<String> patterns = Collections.singletonList("rules_(cc|shell)");
+        String regex = BazelInfrastructureModules.buildCombinedExclusionRegex(patterns);
+        assertFalse("rules_cc".matches(regex));
+        assertFalse("rules_cc+".matches(regex));    // canonical suffix
+        assertFalse("rules_cc~".matches(regex));    // canonical suffix
+        assertFalse("rules_shell".matches(regex));
+        assertFalse("rules_shell+".matches(regex)); // canonical suffix
+        assertFalse("rules_shell~".matches(regex)); // canonical suffix
+        assertTrue("rules_cc_extra".matches(regex)); // not excluded — exact match only
     }
 }
