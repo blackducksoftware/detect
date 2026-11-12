@@ -187,6 +187,16 @@ class BazelInfrastructureModulesTest {
     }
 
     @Test
+    void expandPattern_nestedGroups_matchingCloseFoundCorrectly() {
+        // rules_((cc|shell)|python) → rules_cc, rules_shell, rules_python
+        List<String> result = BazelInfrastructureModules.expandPattern("rules_((cc|shell)|python)");
+        assertEquals(3, result.size());
+        assertTrue(result.contains("rules_cc"));
+        assertTrue(result.contains("rules_shell"));
+        assertTrue(result.contains("rules_python"));
+    }
+
+    @Test
     void expandPattern_malformedUnmatchedParen_returnsAsIs() {
         List<String> result = BazelInfrastructureModules.expandPattern("rules_(cc");
         assertEquals(1, result.size());

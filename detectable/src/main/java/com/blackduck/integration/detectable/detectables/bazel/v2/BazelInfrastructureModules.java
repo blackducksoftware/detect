@@ -85,7 +85,7 @@ public final class BazelInfrastructureModules {
         if (open < 0) {
             return Collections.singletonList(pattern);
         }
-        int close = pattern.indexOf(')', open);
+        int close = findMatchingClose(pattern, open);
         if (close < 0) {
             logger.warn("detect.bazel.modules.excluded: pattern '{}' has an unmatched '(' — it will not match any module. " +
                 "Use glob wildcards (*) or alternation groups with matching parentheses, e.g. rules_(cc|shell).", pattern);
@@ -95,10 +95,43 @@ public final class BazelInfrastructureModules {
         String group  = pattern.substring(open + 1, close);
         String suffix = pattern.substring(close + 1);
         List<String> result = new ArrayList<>();
-        for (String alt : group.split("\\|", -1)) {
-            result.addAll(expandPattern(prefix + alt.trim() + suffix));
+        for (String alt : splitTopLevelAlternatives(group)) {
+            result.addAll(expandPattern(prefix + alt + suffix));
         }
         return result;
+    }
+
+    // Finds the ) that closes the ( at openPos, respecting nested groups.
+    private static int findMatchingClose(String pattern, int openPos) {
+        int depth = 0;
+        for (int i = openPos; i < pattern.length(); i++) {
+            char c = pattern.charAt(i);
+            if (c == '(') depth++;
+            else if (c == ')') {
+                depth--;
+                if (depth == 0) return i;
+            }
+        }
+        return -1;
+    }
+
+    // Splits on | only at the top level (depth 0), so (cc|shell)|python splits into
+    // ["(cc|shell)", "python"] rather than ["(cc", "shell)", "python"].
+    private static List<String> splitTopLevelAlternatives(String group) {
+        List<String> parts = new ArrayList<>();
+        int depth = 0;
+        int start = 0;
+        for (int i = 0; i < group.length(); i++) {
+            char c = group.charAt(i);
+            if (c == '(')      depth++;
+            else if (c == ')') depth--;
+            else if (c == '|' && depth == 0) {
+                parts.add(group.substring(start, i).trim());
+                start = i + 1;
+            }
+        }
+        parts.add(group.substring(start).trim());
+        return parts;
     }
 
     /**
