@@ -1,5 +1,6 @@
 package com.blackduck.integration.detectable.detectables.bazel.v2.unit;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -145,6 +146,61 @@ class BazelInfrastructureModulesTest {
         assertFalse("rules_cc+".matches(regex));    // canonical suffix variant
         assertFalse("rules_java".matches(regex));
         assertTrue("protobuf".matches(regex));      // not matched by rules_*
+    }
+
+    // -------------------------------------------------------------------------
+    // expandPattern
+    // -------------------------------------------------------------------------
+
+    @Test
+    void expandPattern_noGroup_returnsPatternUnchanged() {
+        List<String> result = BazelInfrastructureModules.expandPattern("rules_*");
+        assertEquals(1, result.size());
+        assertEquals("rules_*", result.get(0));
+    }
+
+    @Test
+    void expandPattern_singleGroup_expandsToMultiple() {
+        List<String> result = BazelInfrastructureModules.expandPattern("rules_(cc|shell|python)");
+        assertEquals(3, result.size());
+        assertTrue(result.contains("rules_cc"));
+        assertTrue(result.contains("rules_shell"));
+        assertTrue(result.contains("rules_python"));
+    }
+
+    @Test
+    void expandPattern_groupWithWildcard() {
+        List<String> result = BazelInfrastructureModules.expandPattern("rules_(cc|shell)_*");
+        assertEquals(2, result.size());
+        assertTrue(result.contains("rules_cc_*"));
+        assertTrue(result.contains("rules_shell_*"));
+    }
+
+    @Test
+    void expandPattern_multipleGroups() {
+        List<String> result = BazelInfrastructureModules.expandPattern("(a|b)_(x|y)");
+        assertEquals(4, result.size());
+        assertTrue(result.contains("a_x"));
+        assertTrue(result.contains("a_y"));
+        assertTrue(result.contains("b_x"));
+        assertTrue(result.contains("b_y"));
+    }
+
+    @Test
+    void expandPattern_malformedUnmatchedParen_returnsAsIs() {
+        List<String> result = BazelInfrastructureModules.expandPattern("rules_(cc");
+        assertEquals(1, result.size());
+        assertEquals("rules_(cc", result.get(0));
+    }
+
+    @Test
+    void isExcluded_alternationPatternExcludesMatchingModules() {
+        List<String> patterns = Collections.singletonList("rules_(cc|shell|python)");
+        assertTrue(BazelInfrastructureModules.isExcluded("rules_cc", patterns));
+        assertTrue(BazelInfrastructureModules.isExcluded("rules_shell", patterns));
+        assertTrue(BazelInfrastructureModules.isExcluded("rules_python", patterns));
+        assertFalse(BazelInfrastructureModules.isExcluded("rules_java", patterns));
+        assertFalse(BazelInfrastructureModules.isExcluded("protobuf", patterns));
     }
 
     @Test

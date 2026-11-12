@@ -1,10 +1,13 @@
 package com.blackduck.integration.detectable.detectables.bazel.v2;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.io.FilenameUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Two-tier Bazel module exclusion:
@@ -16,6 +19,8 @@ import org.apache.commons.io.FilenameUtils;
  * Exact patterns match only the full name ({@code maven} does not exclude {@code maven-utils}).
  */
 public final class BazelInfrastructureModules {
+
+    private static final Logger logger = LoggerFactory.getLogger(BazelInfrastructureModules.class);
 
     private BazelInfrastructureModules() {
         throw new IllegalStateException("Utility class - do not instantiate");
@@ -48,6 +53,7 @@ public final class BazelInfrastructureModules {
     /**
      * Returns {@code true} if {@code name} should be excluded — by the hard-coded list or
      * by a user pattern from {@code detect.bazel.modules.excluded}.
+     * Patterns support glob wildcards and alternation groups, e.g. {@code rules_(cc|shell|python)}.
      */
     public static boolean isExcluded(String name, List<String> userPatterns) {
         if (isHardExcluded(name)) {
@@ -57,11 +63,42 @@ public final class BazelInfrastructureModules {
             return false;
         }
         for (String pattern : userPatterns) {
-            if (pattern != null && !pattern.isEmpty() && FilenameUtils.wildcardMatch(name, pattern)) {
-                return true;
+            if (pattern == null || pattern.isEmpty()) {
+                continue;
+            }
+            for (String expanded : expandPattern(pattern)) {
+                if (FilenameUtils.wildcardMatch(name, expanded)) {
+                    return true;
+                }
             }
         }
         return false;
+    }
+
+    /**
+     * Expands alternation groups in a pattern so that {@code rules_(cc|shell|python)} becomes
+     * {@code ["rules_cc", "rules_shell", "rules_python"]}. Handles multiple and nested groups.
+     * A malformed pattern with an unmatched {@code (} is returned as-is with a WARN.
+     */
+    public static List<String> expandPattern(String pattern) {
+        int open = pattern.indexOf('(');
+        if (open < 0) {
+            return Collections.singletonList(pattern);
+        }
+        int close = pattern.indexOf(')', open);
+        if (close < 0) {
+            logger.warn("detect.bazel.modules.excluded: pattern '{}' has an unmatched '(' — it will not match any module. " +
+                "Use glob wildcards (*) or alternation groups with matching parentheses, e.g. rules_(cc|shell).", pattern);
+            return Collections.singletonList(pattern);
+        }
+        String prefix = pattern.substring(0, open);
+        String group  = pattern.substring(open + 1, close);
+        String suffix = pattern.substring(close + 1);
+        List<String> result = new ArrayList<>();
+        for (String alt : group.split("\\|", -1)) {
+            result.addAll(expandPattern(prefix + alt.trim() + suffix));
+        }
+        return result;
     }
 
     /**
@@ -76,7 +113,9 @@ public final class BazelInfrastructureModules {
         if (userPatterns != null) {
             for (String pattern : userPatterns) {
                 if (pattern != null && !pattern.trim().isEmpty()) {
-                    alternatives.add(globToRegexAlternative(pattern.trim()));
+                    for (String expanded : expandPattern(pattern.trim())) {
+                        alternatives.add(globToRegexAlternative(expanded));
+                    }
                 }
             }
         }
