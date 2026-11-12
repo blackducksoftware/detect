@@ -1,8 +1,10 @@
 package com.blackduck.integration.detectable.detectables.pnpm.lockfile.process;
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -32,6 +34,7 @@ import com.blackduck.integration.util.NameVersion;
 
 public class PnpmYamlTransformer {
     private static final String LINKED_PACKAGE_PREFIX = "link:";
+    private static final String ROOT_IMPORTER_KEY = ".";
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -46,7 +49,7 @@ public class PnpmYamlTransformer {
 
     public CodeLocation generateCodeLocation(File sourcePath, PnpmLockYaml pnpmLockYaml, @Nullable NameVersion projectNameVersion, PnpmLinkedPackageResolver linkedPackageResolver)
         throws IntegrationException {
-        return generateCodeLocation(sourcePath, convertPnpmLockYamlToPnpmProjectPackage(pnpmLockYaml), null, projectNameVersion, pnpmLockYaml.packages, linkedPackageResolver, pnpmLockYaml.snapshots);
+        return generateCodeLocation(sourcePath, convertPnpmLockYamlToPnpmProjectPackage(pnpmLockYaml), null, projectNameVersion, pnpmLockYaml.packages, linkedPackageResolver, pnpmLockYaml.snapshots, null);
     }
 
     public CodeLocation generateCodeLocation(
@@ -56,11 +59,20 @@ public class PnpmYamlTransformer {
         @Nullable NameVersion projectNameVersion,
         @Nullable Map<String, PnpmPackageInfo> packageMap,
         PnpmLinkedPackageResolver linkedPackageResolver, 
-        @Nullable Map<String, PnpmPackageInfo> snapshots
+        @Nullable Map<String, PnpmPackageInfo> snapshots,
+        @Nullable Map<String, PnpmProjectPackage> importers
     ) throws IntegrationException {
         DependencyGraph dependencyGraph = new BasicDependencyGraph();
         List<String> rootPackageIds = extractRootPackageIds(projectPackage, reportingProjectPackagePath, linkedPackageResolver);        
         buildGraph(dependencyGraph, rootPackageIds, packageMap, linkedPackageResolver, reportingProjectPackagePath, snapshots);
+
+        if (importers != null) {
+            // Workspace (link:) dependencies have no entry in the packages section, so buildGraph cannot add them.
+            // Add them from the importers section and connect each one to the linked module's own dependencies.
+            Set<String> visitedImporterKeys = new HashSet<>();
+            visitedImporterKeys.add(reportingProjectPackagePath != null ? reportingProjectPackagePath : ROOT_IMPORTER_KEY);
+            addWorkspaceDependencies(dependencyGraph, null, projectPackage, reportingProjectPackagePath, importers, linkedPackageResolver, visitedImporterKeys);
+        }
 
         if (projectNameVersion != null) {
             return new CodeLocation(
@@ -208,8 +220,82 @@ public class PnpmYamlTransformer {
         dependencyTypeFilter.ifShouldInclude(PnpmDependencyType.OPTIONAL, pnpmProjectPackage.optionalDependencies, rawPackageInfo::putAll);
 
         return rawPackageInfo.entrySet().stream()
+            .filter(entry -> !isLinkedPackage(entry.getValue().version)) // workspace links are added by addWorkspaceDependencies
             .map(entry -> convertRawEntryToPackageId(entry.getKey(), entry.getValue().version, linkedPackageResolver, reportingProjectPackagePath))
             .collect(Collectors.toList());
+    }
+
+    private void addWorkspaceDependencies(
+        DependencyGraph graphBuilder,
+        @Nullable Dependency parent,
+        PnpmProjectPackage importer,
+        @Nullable String importerPath,
+        Map<String, PnpmProjectPackage> importers,
+        PnpmLinkedPackageResolver linkedPackageResolver,
+        Set<String> visitedImporterKeys
+    ) {
+        for (Map.Entry<String, PnpmDependencyInfo> dependency : collectImporterDependencies(importer, parent == null).entrySet()) {
+            String name = StringUtils.strip(dependency.getKey(), "'");
+            String version = dependency.getValue().version;
+            if (version == null) {
+                continue;
+            }
+
+            if (!isLinkedPackage(version)) {
+                // A registry dependency of a linked module. Its own subtree is already in the graph from buildGraph.
+                if (parent != null) {
+                    buildDependencyFromPackageId(convertRawEntryToPackageId(name, version, linkedPackageResolver, importerPath))
+                        .ifPresent(child -> graphBuilder.addChildWithParent(child, parent));
+                }
+                continue;
+            }
+
+            String targetImporterKey = toImporterKey(importerPath, version.substring(LINKED_PACKAGE_PREFIX.length()));
+            Dependency workspaceDependency = createWorkspaceDependency(name, targetImporterKey, linkedPackageResolver);
+            if (parent == null) {
+                graphBuilder.addChildToRoot(workspaceDependency);
+            } else {
+                graphBuilder.addChildWithParent(workspaceDependency, parent);
+            }
+            logger.debug("Added workspace dependency '{}' ({}) to workspace '{}'.", name, targetImporterKey, importerPath != null ? importerPath : "root");
+
+            PnpmProjectPackage targetImporter = importers.get(targetImporterKey);
+            if (targetImporter != null && visitedImporterKeys.add(targetImporterKey)) {
+                // pnpm allows cycles between workspace modules, so each linked module is expanded only once
+                addWorkspaceDependencies(graphBuilder, workspaceDependency, targetImporter, targetImporterKey, importers, linkedPackageResolver, visitedImporterKeys);
+            }
+        }
+    }
+
+    private Map<String, PnpmDependencyInfo> collectImporterDependencies(PnpmProjectPackage importer, boolean isReportingModule) {
+        Map<String, PnpmDependencyInfo> dependencies = new LinkedHashMap<>();
+        if (importer.dependencies != null) {
+            dependencies.putAll(importer.dependencies);
+        }
+        // A linked module's devDependencies are not part of what it ships, so they are only followed for the module being reported.
+        if (isReportingModule) {
+            dependencyTypeFilter.ifShouldInclude(PnpmDependencyType.DEV, importer.devDependencies, dependencies::putAll);
+        }
+        dependencyTypeFilter.ifShouldInclude(PnpmDependencyType.OPTIONAL, importer.optionalDependencies, dependencies::putAll);
+        return dependencies;
+    }
+
+    private Dependency createWorkspaceDependency(String name, String targetImporterKey, PnpmLinkedPackageResolver linkedPackageResolver) {
+        // The importer key is relative to the lockfile directory, so resolve it from the root to avoid the
+        // relative-path handling for "../" links in PnpmLinkedPackageResolver.
+        String version = linkedPackageResolver.resolveVersionOfLinkedPackage(null, targetImporterKey);
+        return Dependency.FACTORY.createNameVersionDependency(Forge.NPMJS, name, version);
+    }
+
+    // Importer keys are paths relative to the lockfile directory, and link paths are relative to the declaring importer,
+    // e.g. "apps/web-app" + "../../packages/api" -> "packages/api"
+    private String toImporterKey(@Nullable String importerPath, String linkPath) {
+        String importerKey = Paths.get(importerPath != null ? importerPath : "").resolve(linkPath).normalize().toString().replace('\\', '/');
+        return importerKey.isEmpty() ? ROOT_IMPORTER_KEY : importerKey;
+    }
+
+    private boolean isLinkedPackage(@Nullable String version) {
+        return version != null && version.startsWith(LINKED_PACKAGE_PREFIX);
     }
 
     private String convertRawEntryToPackageId(String name, String version, PnpmLinkedPackageResolver linkedPackageResolver, @Nullable String reportingProjectPackagePath) {
