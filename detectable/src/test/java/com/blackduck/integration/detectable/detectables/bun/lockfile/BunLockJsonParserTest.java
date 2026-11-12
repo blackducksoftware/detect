@@ -166,6 +166,38 @@ class BunLockJsonParserTest {
         return new BunLockfileTransformer().generateCodeLocations(data).get(0).getDependencyGraph();
     }
 
+    @Test
+    void aliasedDirectDependenciesUseTheRealPackageName() throws Exception {
+        List<DirectDependency> directs = parser().parseBunLock(lockFile("/detectables/functional/bun/lockfile/aliases/bun.lock")).getDirectDependencies();
+
+        assertTrue(directs.stream().anyMatch(d -> "@kitlangton/knobs".equals(d.getName()) && "0.4.0-next.22".equals(d.getVersion())));
+        assertTrue(directs.stream().anyMatch(d -> "typescript".equals(d.getName()) && "7.1.0-beta".equals(d.getVersion())));
+        assertTrue(directs.stream().noneMatch(d -> "knobs".equals(d.getName()) || "@typescript/native".equals(d.getName())),
+            "the alias used in the workspace must not become a component name");
+    }
+
+    @Test
+    void directDependencyResolvingToAWorkspacePackageIsSkipped() throws Exception {
+        List<DirectDependency> directs = parser().parseBunLock(lockFile("/detectables/functional/bun/lockfile/aliases/bun.lock")).getDirectDependencies();
+
+        assertTrue(directs.stream().noneMatch(d -> "local-lib".equals(d.getName())));
+        assertEquals(2, directs.size());
+    }
+
+    @Test
+    void childrenOfAliasedDependenciesAreReachableInTheGraph() throws Exception {
+        BunLockfileData data = parser().parseBunLock(lockFile("/detectables/functional/bun/lockfile/aliases/bun.lock"));
+        DependencyGraph graph = new BunLockfileTransformer().generateCodeLocations(data).get(0).getDependencyGraph();
+
+        Dependency knobs = DependencyCreator.nameVersion(Forge.NPMJS, "@kitlangton/knobs", "0.4.0-next.22");
+        Dependency typescript = DependencyCreator.nameVersion(Forge.NPMJS, "typescript", "7.1.0-beta");
+
+        assertTrue(graph.getRootDependencies().contains(knobs));
+        assertTrue(graph.getChildrenForParent(knobs).contains(DependencyCreator.nameVersion(Forge.NPMJS, "@kitlangton/rolling-number", "0.4.1")));
+        assertTrue(graph.getChildrenForParent(typescript).contains(DependencyCreator.nameVersion(Forge.NPMJS, "@typescript/typescript-win32-x64", "7.1.0-beta")));
+        assertEquals(2, graph.getRootDependencies().size());
+    }
+
     private BunPackage findByKey(BunLockfileData data, String key) {
         return data.getPackages().stream()
             .filter(p -> key.equals(p.getKey()))

@@ -1,0 +1,29 @@
+{
+  "lockfileVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "alias-app",
+      "dependencies": {
+        "knobs": "npm:@kitlangton/knobs@0.4.0-next.22",
+        "local-lib": "^1.0.0",
+      },
+      "devDependencies": {
+        "@typescript/native": "npm:typescript@7.1.0-beta",
+      },
+    },
+    "packages/local-lib": {
+      "name": "local-lib",
+    },
+  },
+  "packages": {
+    // the key is the alias, the specifier is the real package
+    "knobs": ["@kitlangton/knobs@0.4.0-next.22", "", { "dependencies": { "@kitlangton/rolling-number": "^0.4.1" } }, "sha512-knobs"],
+    "@kitlangton/rolling-number": ["@kitlangton/rolling-number@0.4.1", "", {}, "sha512-rolling"],
+
+    "@typescript/native": ["typescript@7.1.0-beta", "", { "optionalDependencies": { "@typescript/typescript-win32-x64": "7.1.0-beta" } }, "sha512-ts"],
+    "@typescript/typescript-win32-x64": ["@typescript/typescript-win32-x64@7.1.0-beta", "", {}, "sha512-win"],
+
+    // semver range that resolves to a local workspace package
+    "local-lib": ["local-lib@workspace:packages/local-lib"],
+  },
+}
