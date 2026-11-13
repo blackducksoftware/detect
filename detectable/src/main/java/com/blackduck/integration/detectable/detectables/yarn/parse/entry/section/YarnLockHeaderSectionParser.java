@@ -37,7 +37,9 @@ public class YarnLockHeaderSectionParser implements YarnLockEntrySectionParser {
                 String rawEntryString = tokenizer.nextToken().trim();
                 String entryString = StringUtils.removeEnd(rawEntryString, ":").trim();
                 String unquotedEntryString = yarnLockLineAnalyzer.unquote(entryString);
-                YarnLockEntryId entry = parseSingleEntry(unquotedEntryString);
+                // Keep the descriptor as written (before the trailing ':' strip, which would turn "name@npm:" into "name@npm")
+                String rawDescriptor = yarnLockLineAnalyzer.unquote(rawEntryString);
+                YarnLockEntryId entry = parseSingleEntry(unquotedEntryString, rawDescriptor);
                 logger.trace("Entry header ID: name: {}, version: {}", entry.getName(), entry.getVersion());
                 entryBuilder.addId(entry);
             }
@@ -47,22 +49,22 @@ public class YarnLockHeaderSectionParser implements YarnLockEntrySectionParser {
 
     //Takes an entry of format "name@version" or "@name@version" where name has an @ symbol.
     //Notice, this removes the workspace, so "name@workspace:version" will become simply "name@version"
-    private YarnLockEntryId parseSingleEntry(String entry) {
-        YarnLockEntryId normalEntry = parseSingleEntryNormally(entry);
+    private YarnLockEntryId parseSingleEntry(String entry, String rawDescriptor) {
+        YarnLockEntryId normalEntry = parseSingleEntryNormally(entry, rawDescriptor);
         if (normalEntry.getVersion().startsWith("npm:")) {
-            return new YarnLockEntryId(normalEntry.getName(), StringUtils.substringAfter(normalEntry.getVersion(), ":"));
+            return new YarnLockEntryId(normalEntry.getName(), StringUtils.substringAfter(normalEntry.getVersion(), ":"), rawDescriptor);
         } else {
             return normalEntry;
         }
     }
 
-    private YarnLockEntryId parseSingleEntryNormally(String entry) {
+    private YarnLockEntryId parseSingleEntryNormally(String entry, String rawDescriptor) {
         if (StringUtils.countMatches(entry, "@") == 1 && entry.startsWith("@")) {
-            return new YarnLockEntryId(entry, "");
+            return new YarnLockEntryId(entry, "", rawDescriptor);
         } else {
             String name = StringUtils.substringBeforeLast(entry, "@");
             String version = StringUtils.substringAfterLast(entry, "@");
-            return new YarnLockEntryId(name, version);
+            return new YarnLockEntryId(name, version, rawDescriptor);
         }
     }
 }

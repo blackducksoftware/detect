@@ -47,6 +47,21 @@ public class YarnLockKeyValuePairSectionParserTest {
         doTest("  \"version\" \"0.2.1\"", "0.2.1");
     }
 
+    @Test
+    void testValueContainingColons() {
+        YarnLockKeyValuePairSectionParser resolutionParser = new YarnLockKeyValuePairSectionParser(
+            new YarnLockLineAnalyzer(), "resolution", YarnLockEntryBuilder::setResolution);
+        String line = "  resolution: \"patched-ms@patch:ms@npm%3A2.1.3#../../.yarn/patches/ms-npm-2.1.3.patch::version=2.1.3&hash=fixture\"";
+        Assertions.assertTrue(resolutionParser.applies(line));
+
+        YarnLockEntryBuilder builder = new YarnLockEntryBuilder();
+        builder.addId(new YarnLockEntryId("idname", "idversion"));
+        builder.setVersion("2.1.3");
+        resolutionParser.parseSection(builder, Arrays.asList(line), 0);
+
+        Assertions.assertEquals("patched-ms@patch:ms@npm%3A2.1.3#../../.yarn/patches/ms-npm-2.1.3.patch::version=2.1.3&hash=fixture", builder.build().getResolution());
+    }
+
     private void doTest(String line, String versionValue) {
         Assertions.assertTrue(yarnLockKeyValuePairElementParser.applies(line));
 
