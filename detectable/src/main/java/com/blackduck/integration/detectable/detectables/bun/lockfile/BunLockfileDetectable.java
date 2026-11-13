@@ -13,7 +13,7 @@ import com.blackduck.integration.detectable.detectable.result.PassedDetectableRe
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 
-@DetectableInfo(name = "Bun Lockfile", language = "Node JS", forge = "npmjs", accuracy = DetectableAccuracyType.HIGH,
+@DetectableInfo(name = "Bun Lock", language = "Node JS", forge = "npmjs", accuracy = DetectableAccuracyType.HIGH,
     requirementsMarkdown = "Files: package.json and bun.lock.")
 public class BunLockfileDetectable extends Detectable {
     public static final String PACKAGE_JSON_FILENAME = "package.json";

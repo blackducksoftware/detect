@@ -33,7 +33,7 @@
                             <codeph>NPM CLI</codeph>, <codeph>NPM Package Json Parse</codeph>,
                             <codeph>Yarn Lock</codeph>, <codeph>Pnpm Lock</codeph>,
                             <codeph>Lerna CLI</codeph>, <codeph>Rush Lock</codeph>,
-                            <codeph>Bun Lockfile</codeph></entry>
+                            <codeph>Bun Lock</codeph></entry>
                     </row>
                     <row>
                         <entry>Maven</entry>
