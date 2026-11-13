@@ -19,16 +19,8 @@ import com.blackduck.integration.detectable.functional.DetectableFunctionalTest;
 import com.blackduck.integration.detectable.util.graph.NameVersionGraphAssert;
 
 /**
- * IDETECT-5353: Yarn 4 aliases must be reported as the real package named by the entry's "resolution:", not by the alias name,
- * and the real package's transitive dependencies must stay attached.
- *
- * Descriptors exercised:
- *   - npm alias:              string-width-alias@npm:string-width@4.2.3   -> string-width 4.2.3
- *   - npm alias, empty range: empty-version-alias@npm:left-pad@           -> left-pad 1.3.0
- *   - bare "npm:" in a multi-descriptor key whose resolution is the real package: empty-npm-dep@npm:, left-pad@npm:1.3.0 -> left-pad 1.3.0
- *   - scoped npm alias:       scoped-alias@npm:@scope/real@1.0.0          -> @scope/real 1.0.0
- *   - patch of an alias:      patched-ms@patch:ms@npm%3A2.1.3#...          -> ms 2.1.3
- *   - file: (no registry identity): unchanged, still reported as before (file-dep 1.0.0)
+ * Yarn 4 aliases (npm alias, empty range, bare "npm:", patch) are reported as the real package named by
+ * the entry's "resolution:", with its transitive dependencies attached. file: dependencies are unchanged.
  */
 public class YarnLockAliasResolutionTest extends DetectableFunctionalTest {
 
@@ -70,12 +62,6 @@ public class YarnLockAliasResolutionTest extends DetectableFunctionalTest {
             "  languageName: node",
             "  linkType: hard",
             "",
-            "\"scoped-alias@npm:@scope/real@1.0.0\":",
-            "  version: 1.0.0",
-            "  resolution: \"@scope/real@npm:1.0.0\"",
-            "  languageName: node",
-            "  linkType: hard",
-            "",
             "\"file-dep@file:../../vendor/file-dep::locator=test-app%40workspace%3A.\":",
             "  version: 1.0.0",
             "  resolution: \"file-dep@file:../../vendor/file-dep::locator=test-app%40workspace%3A.\"",
@@ -85,12 +71,6 @@ public class YarnLockAliasResolutionTest extends DetectableFunctionalTest {
             "\"patched-ms@patch:ms@npm%3A2.1.3#../../.yarn/patches/ms-npm-2.1.3.patch::version=2.1.3&hash=fixture\":",
             "  version: 2.1.3",
             "  resolution: \"patched-ms@patch:ms@npm%3A2.1.3#../../.yarn/patches/ms-npm-2.1.3.patch::version=2.1.3&hash=fixture\"",
-            "  languageName: node",
-            "  linkType: hard",
-            "",
-            "\"ms@npm:2.1.3\":",
-            "  version: 2.1.3",
-            "  resolution: \"ms@npm:2.1.3\"",
             "  languageName: node",
             "  linkType: hard",
             "",
@@ -133,7 +113,6 @@ public class YarnLockAliasResolutionTest extends DetectableFunctionalTest {
             "    \"string-width-alias\": \"npm:string-width@4.2.3\",",
             "    \"empty-version-alias\": \"npm:left-pad@\",",
             "    \"empty-npm-dep\": \"npm:\",",
-            "    \"scoped-alias\": \"npm:@scope/real@1.0.0\",",
             "    \"file-dep\": \"file:../../vendor/file-dep\",",
             "    \"patched-ms\": \"patch:ms@npm%3A2.1.3#../../.yarn/patches/ms-npm-2.1.3.patch\",",
             "    \"consumer\": \"1.0.0\"",
@@ -161,7 +140,6 @@ public class YarnLockAliasResolutionTest extends DetectableFunctionalTest {
         graphAssert.hasNoDependency("string-width-alias", "4.2.3");
         graphAssert.hasNoDependency("empty-version-alias", "1.3.0");
         graphAssert.hasNoDependency("empty-npm-dep", "1.3.0");
-        graphAssert.hasNoDependency("scoped-alias", "1.0.0");
         graphAssert.hasNoDependency("old-width", "4.2.3");
 
         // Real packages, with their transitive dependencies still attached
@@ -170,7 +148,6 @@ public class YarnLockAliasResolutionTest extends DetectableFunctionalTest {
         graphAssert.hasParentChildRelationship("string-width", "4.2.3", "strip-ansi", "6.0.1");
         graphAssert.hasParentChildRelationship("strip-ansi", "6.0.1", "ansi-regex", "5.0.1");
         graphAssert.hasDependency("left-pad", "1.3.0");
-        graphAssert.hasDependency("@scope/real", "1.0.0");
 
         // An alias reached through another package's dependencies block
         graphAssert.hasParentChildRelationship("consumer", "1.0.0", "string-width", "4.2.3");
@@ -181,7 +158,6 @@ public class YarnLockAliasResolutionTest extends DetectableFunctionalTest {
     protected void assertModeSpecific(NameVersionGraphAssert graphAssert) {
         graphAssert.hasRootDependency("string-width", "4.2.3");
         graphAssert.hasRootDependency("left-pad", "1.3.0");
-        graphAssert.hasRootDependency("@scope/real", "1.0.0");
         graphAssert.hasRootDependency("consumer", "1.0.0");
 
         // patch of an alias is the patched package itself

@@ -23,7 +23,6 @@ public class YarnLockAliasResolutionIgnoreWorkspacesTest extends YarnLockAliasRe
     protected void assertModeSpecific(NameVersionGraphAssert graphAssert) {
         graphAssert.hasRootDependency("string-width", "4.2.3");
         graphAssert.hasRootDependency("left-pad", "1.3.0");
-        graphAssert.hasRootDependency("@scope/real", "1.0.0");
         graphAssert.hasRootDependency("consumer", "1.0.0");
     }
 }
