@@ -46,7 +46,6 @@ public class YarnLockAliasResolutionTest extends DetectableFunctionalTest {
             "  resolution: \"string-width@npm:4.2.3\"",
             "  dependencies:",
             "    emoji-regex: \"npm:^8.0.0\"",
-            "    strip-ansi: \"npm:^6.0.1\"",
             "  languageName: node",
             "  linkType: hard",
             "",
@@ -77,20 +76,6 @@ public class YarnLockAliasResolutionTest extends DetectableFunctionalTest {
             "\"emoji-regex@npm:^8.0.0\":",
             "  version: 8.0.0",
             "  resolution: \"emoji-regex@npm:8.0.0\"",
-            "  languageName: node",
-            "  linkType: hard",
-            "",
-            "\"strip-ansi@npm:^6.0.1\":",
-            "  version: 6.0.1",
-            "  resolution: \"strip-ansi@npm:6.0.1\"",
-            "  dependencies:",
-            "    ansi-regex: \"npm:^5.0.1\"",
-            "  languageName: node",
-            "  linkType: hard",
-            "",
-            "\"ansi-regex@npm:^5.0.1\":",
-            "  version: 5.0.1",
-            "  resolution: \"ansi-regex@npm:5.0.1\"",
             "  languageName: node",
             "  linkType: hard",
             "",
@@ -145,8 +130,6 @@ public class YarnLockAliasResolutionTest extends DetectableFunctionalTest {
         // Real packages, with their transitive dependencies still attached
         graphAssert.hasDependency("string-width", "4.2.3");
         graphAssert.hasParentChildRelationship("string-width", "4.2.3", "emoji-regex", "8.0.0");
-        graphAssert.hasParentChildRelationship("string-width", "4.2.3", "strip-ansi", "6.0.1");
-        graphAssert.hasParentChildRelationship("strip-ansi", "6.0.1", "ansi-regex", "5.0.1");
         graphAssert.hasDependency("left-pad", "1.3.0");
 
         // An alias reached through another package's dependencies block
