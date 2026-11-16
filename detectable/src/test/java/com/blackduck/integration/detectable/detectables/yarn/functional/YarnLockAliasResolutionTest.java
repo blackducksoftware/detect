@@ -28,10 +28,6 @@ public class YarnLockAliasResolutionTest extends DetectableFunctionalTest {
         super("yarn");
     }
 
-    protected boolean ignoreAllWorkspaces() {
-        return false;
-    }
-
     @Override
     protected void setup() throws IOException {
         addFile(
@@ -111,7 +107,7 @@ public class YarnLockAliasResolutionTest extends DetectableFunctionalTest {
     public Detectable create(@NotNull DetectableEnvironment detectableEnvironment) {
         return detectableFactory.createYarnLockDetectable(
             detectableEnvironment,
-            new YarnLockOptions(EnumListFilter.fromExcluded(YarnDependencyType.NON_PRODUCTION), new ArrayList<>(0), new ArrayList<>(0), ignoreAllWorkspaces())
+            new YarnLockOptions(EnumListFilter.fromExcluded(YarnDependencyType.NON_PRODUCTION), new ArrayList<>(0), new ArrayList<>(0), false)
         );
     }
 
@@ -135,10 +131,6 @@ public class YarnLockAliasResolutionTest extends DetectableFunctionalTest {
         // An alias reached through another package's dependencies block
         graphAssert.hasParentChildRelationship("consumer", "1.0.0", "string-width", "4.2.3");
 
-        assertModeSpecific(graphAssert);
-    }
-
-    protected void assertModeSpecific(NameVersionGraphAssert graphAssert) {
         graphAssert.hasRootDependency("string-width", "4.2.3");
         graphAssert.hasRootDependency("left-pad", "1.3.0");
         graphAssert.hasRootDependency("consumer", "1.0.0");
