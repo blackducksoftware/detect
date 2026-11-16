@@ -13,6 +13,7 @@ public class YarnLockEntryBuilder {
     private final List<YarnLockEntryId> ids = new LinkedList<>();
     private String version;
     private String resolution;
+    private String resolved;
     private final Map<String, YarnLockDependency> dependencies = new HashMap<>();
 
     public YarnLockEntryBuilder addId(YarnLockEntryId id) {
@@ -35,6 +36,11 @@ public class YarnLockEntryBuilder {
         return this;
     }
 
+    public YarnLockEntryBuilder setResolved(String resolved) {
+        this.resolved = resolved;
+        return this;
+    }
+
     public YarnLockEntryBuilder addDependency(YarnLockDependency dependency) {
         dependencies.put(dependency.getName(), dependency);
         return this;
@@ -52,13 +58,13 @@ public class YarnLockEntryBuilder {
         if (!valid()) {
             throw new UnsupportedOperationException("Attempted to build an incomplete yarn.lock entry");
         }
-        return new YarnLockEntry(metadataEntry, ids, version, new LinkedList<>(dependencies.values()), resolution);
+        return new YarnLockEntry(metadataEntry, ids, version, new LinkedList<>(dependencies.values()), resolution, resolved);
     }
 
     public Optional<YarnLockEntry> buildIfValid() {
         if (!valid()) {
             return Optional.empty();
         }
-        return Optional.of(new YarnLockEntry(metadataEntry, ids, version, new LinkedList<>(dependencies.values()), resolution));
+        return Optional.of(new YarnLockEntry(metadataEntry, ids, version, new LinkedList<>(dependencies.values()), resolution, resolved));
     }
 }

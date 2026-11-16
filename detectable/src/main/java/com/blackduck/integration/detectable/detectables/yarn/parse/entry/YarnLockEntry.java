@@ -10,18 +10,20 @@ public class YarnLockEntry extends Stringable {
     private final List<YarnLockEntryId> ids;
     private final String version;
     private final List<YarnLockDependency> dependencies;
-    private final String resolution;
+    private final String resolution; // Yarn 2+ "resolution:"
+    private final String resolved; // Yarn 1 "resolved" tarball URL
 
     public YarnLockEntry(boolean metadataEntry, List<YarnLockEntryId> ids, String version, List<YarnLockDependency> dependencies) {
-        this(metadataEntry, ids, version, dependencies, null);
+        this(metadataEntry, ids, version, dependencies, null, null);
     }
 
-    public YarnLockEntry(boolean metadataEntry, List<YarnLockEntryId> ids, String version, List<YarnLockDependency> dependencies, String resolution) {
+    public YarnLockEntry(boolean metadataEntry, List<YarnLockEntryId> ids, String version, List<YarnLockDependency> dependencies, String resolution, String resolved) {
         this.metadataEntry = metadataEntry;
         this.ids = ids;
         this.version = version;
         this.dependencies = dependencies;
         this.resolution = resolution;
+        this.resolved = resolved;
     }
 
     public boolean isMetadataEntry() {
@@ -42,5 +44,9 @@ public class YarnLockEntry extends Stringable {
 
     public String getResolution() {
         return resolution;
+    }
+
+    public String getResolved() {
+        return resolved;
     }
 }
