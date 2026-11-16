@@ -5,10 +5,10 @@ import com.blackduck.integration.util.Stringable;
 public class YarnLockEntryId extends Stringable {
     private final String name;
     private final String version;
-    private final String rawDescriptor; // as written in the entry header, e.g. "alias@npm:real@1.0.0"; null if unknown
+    private final String rawDescriptor; // as written in the entry header, e.g. "alias@npm:real@1.0.0"
 
     public YarnLockEntryId(String name, String version) {
-        this(name, version, null);
+        this(name, version, name + "@" + version);
     }
 
     public YarnLockEntryId(String name, String version, String rawDescriptor) {

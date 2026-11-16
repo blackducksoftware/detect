@@ -140,7 +140,7 @@ public class YarnTransformer {
         for (YarnLockDependency dependency : entry.getDependencies()) {
             if (!isWorkspace(yarnLockResult.getWorkspaceData(), dependency)) {
                 LazyId stringDependencyId = generateComponentDependencyId(dependency.getName(), dependency.getVersion());
-                setResolvedIdentity(yarnLockResult, graphBuilder, stringDependencyId, dependency.getName(), dependency.getVersion());
+                setResolvedIdentity(yarnLockResult, graphBuilder, dependency.getName(), dependency.getVersion());
                 if (yarnDependencyTypeFilter.shouldInclude(YarnDependencyType.NON_PRODUCTION) || !dependency.isOptional()) {
                     graphBuilder.addChildWithParent(stringDependencyId, id);
                 } else {
@@ -313,16 +313,16 @@ public class YarnTransformer {
     }
 
     private void setResolvedIdentitiesForRootDependencies(LazyExternalIdDependencyGraphBuilder graphBuilder, NullSafePackageJson rootPackageJson, YarnLockResult yarnLockResult) {
-        rootPackageJson.getDependencies().forEach((name, range) -> setResolvedIdentity(yarnLockResult, graphBuilder, generateComponentDependencyId(name, range), name, range));
+        rootPackageJson.getDependencies().forEach((name, range) -> setResolvedIdentity(yarnLockResult, graphBuilder, name, range));
         if (yarnDependencyTypeFilter.shouldInclude(YarnDependencyType.NON_PRODUCTION)) {
-            rootPackageJson.getDevDependencies().forEach((name, range) -> setResolvedIdentity(yarnLockResult, graphBuilder, generateComponentDependencyId(name, range), name, range));
+            rootPackageJson.getDevDependencies().forEach((name, range) -> setResolvedIdentity(yarnLockResult, graphBuilder, name, range));
         }
     }
 
     // An entry with a registry resolution is that real package, whatever name (alias) the dependency is declared under.
-    private void setResolvedIdentity(YarnLockResult yarnLockResult, LazyExternalIdDependencyGraphBuilder graphBuilder, LazyId id, String name, String range) {
+    private void setResolvedIdentity(YarnLockResult yarnLockResult, LazyExternalIdDependencyGraphBuilder graphBuilder, String name, String range) {
         yarnLockResult.getResolutionParser().forDependency(name, range).ifPresent(identity ->
-            graphBuilder.setDependencyInfo(id, identity.getName(), identity.getVersion(), generateComponentExternalId(identity.getName(), identity.getVersion())));
+            graphBuilder.setDependencyInfo(generateComponentDependencyId(name, range), identity.getName(), identity.getVersion(), generateComponentExternalId(identity.getName(), identity.getVersion())));
     }
 
     private void addRootDependenciesToGraph(LazyExternalIdDependencyGraphBuilder graphBuilder, Map<String, String> rootDependenciesToAdd, YarnWorkspaces workspaceData) {

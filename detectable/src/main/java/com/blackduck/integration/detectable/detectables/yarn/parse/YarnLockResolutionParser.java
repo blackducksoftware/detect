@@ -40,27 +40,27 @@ public class YarnLockResolutionParser {
     }
 
     private static void indexEntry(YarnLockEntry entry, Map<String, NameVersion> identityByDescriptor, Map<YarnLockEntry, NameVersion> identityByEntry) {
-        Optional<NameVersion> identity = parseRegistryIdentity(entry.getResolution(), entry.getVersion());
-        if (!identity.isPresent() && entry.getResolution() == null && isNpmAlias(entry)) {
-            identity = parseResolvedIdentity(entry.getResolved(), entry.getVersion());
-        }
-        identity.ifPresent(found -> {
-            identityByEntry.put(entry, found);
+        identityOf(entry).ifPresent(identity -> {
+            identityByEntry.put(entry, identity);
             for (YarnLockEntryId id : entry.getIds()) {
-                if (id.getRawDescriptor() != null) {
-                    identityByDescriptor.put(stripQualifiers(id.getRawDescriptor()), found);
-                }
+                identityByDescriptor.put(stripQualifiers(id.getRawDescriptor()), identity);
             }
         });
     }
 
+    // Yarn 2+ entries have a "resolution:"; Yarn 1 entries do not, so only its alias entries use the "resolved" tarball URL
+    private static Optional<NameVersion> identityOf(YarnLockEntry entry) {
+        if (entry.getResolution() != null) {
+            return parseRegistryIdentity(entry.getResolution(), entry.getVersion());
+        }
+        boolean alias = entry.getIds().stream().anyMatch(id -> isAliasDescriptor(id.getRawDescriptor()));
+        return alias ? parseResolvedIdentity(entry.getResolved(), entry.getVersion()) : Optional.empty();
+    }
+
     // "alias@npm:real@1.0.0" or "@scope/alias@npm:@scope/real@1.0.0", but not a plain "name@npm:^1.0.0"
-    private static boolean isNpmAlias(YarnLockEntry entry) {
-        return entry.getIds().stream().anyMatch(id -> {
-            String descriptor = id.getRawDescriptor();
-            int marker = descriptor == null ? -1 : descriptor.indexOf(NPM_ALIAS_MARKER, 1);
-            return marker > 0 && descriptor.indexOf('@', marker + NPM_ALIAS_MARKER.length() + 1) > 0;
-        });
+    private static boolean isAliasDescriptor(String descriptor) {
+        int marker = descriptor.indexOf(NPM_ALIAS_MARKER, 1);
+        return marker > 0 && descriptor.indexOf('@', marker + NPM_ALIAS_MARKER.length() + 1) > 0;
     }
 
     public Optional<NameVersion> forEntry(YarnLockEntry entry) {
