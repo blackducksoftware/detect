@@ -8,6 +8,7 @@ import com.blackduck.integration.bdio.graph.builder.MissingExternalIdException;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import com.blackduck.integration.detectable.detectables.yarn.packagejson.NullSafePackageJson;
 import com.blackduck.integration.detectable.detectables.yarn.parse.YarnLock;
+import com.blackduck.integration.detectable.detectables.yarn.parse.YarnLockResolutionParser;
 import com.blackduck.integration.detectable.detectables.yarn.parse.YarnLockResult;
 import com.blackduck.integration.detectable.detectables.yarn.workspace.YarnWorkspaces;
 import com.blackduck.integration.util.ExcludedIncludedWildcardFilter;
@@ -27,7 +28,7 @@ public class YarnPackager {
         List<NameVersion> externalDependencies,
         @Nullable ExcludedIncludedWildcardFilter workspaceFilter
     ) {
-        YarnLockResult yarnLockResult = new YarnLockResult(rootPackageJson, yarnWorkspaces, yarnLock);
+        YarnLockResult yarnLockResult = new YarnLockResult(rootPackageJson, yarnWorkspaces, yarnLock, YarnLockResolutionParser.from(yarnLock));
 
         try {
             List<CodeLocation> codeLocations = yarnTransformer.generateCodeLocations(yarnLockResult, externalDependencies, workspaceFilter);
@@ -42,7 +43,7 @@ public class YarnPackager {
         YarnLock yarnLock,
         List<NameVersion> externalDependencies
     ) {
-        YarnLockResult yarnLockResult = new YarnLockResult(rootPackageJson, yarnLock);
+        YarnLockResult yarnLockResult = new YarnLockResult(rootPackageJson, yarnLock, YarnLockResolutionParser.from(yarnLock));
 
         try {
             List<CodeLocation> codeLocations = yarnTransformer.generateCodeLocations(yarnLockResult, externalDependencies);

@@ -10,15 +10,15 @@ public class YarnLockResult {
     private final YarnLock yarnLock;
     private final YarnLockResolutionParser resolutionParser;
 
-    public YarnLockResult(NullSafePackageJson rootPackageJson, YarnWorkspaces workspaceData, YarnLock yarnLock) {
+    public YarnLockResult(NullSafePackageJson rootPackageJson, YarnWorkspaces workspaceData, YarnLock yarnLock, YarnLockResolutionParser resolutionParser) {
         this.rootPackageJson = rootPackageJson;
         this.workspaceData = workspaceData;
         this.yarnLock = yarnLock;
-        this.resolutionParser = new YarnLockResolutionParser(yarnLock);
+        this.resolutionParser = resolutionParser;
     }
 
-    public YarnLockResult(NullSafePackageJson rootPackageJson, YarnLock yarnLock) {
-        this(rootPackageJson, new YarnWorkspaces(Collections.EMPTY_SET), yarnLock);
+    public YarnLockResult(NullSafePackageJson rootPackageJson, YarnLock yarnLock, YarnLockResolutionParser resolutionParser) {
+        this(rootPackageJson, new YarnWorkspaces(Collections.EMPTY_SET), yarnLock, resolutionParser);
     }
 
     public YarnLockResolutionParser getResolutionParser() {

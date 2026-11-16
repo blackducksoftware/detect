@@ -20,20 +20,32 @@ public class YarnLockResolutionParser {
     private static final String NPM_PROTOCOL = "npm:";
     private static final String PATCH_PROTOCOL = "patch:";
 
-    private final Map<String, NameVersion> identityByDescriptor = new HashMap<>();
-    private final Map<YarnLockEntry, NameVersion> identityByEntry = new IdentityHashMap<>();
+    private final Map<String, NameVersion> identityByDescriptor;
+    private final Map<YarnLockEntry, NameVersion> identityByEntry;
 
-    public YarnLockResolutionParser(YarnLock yarnLock) {
+    private YarnLockResolutionParser(Map<String, NameVersion> identityByDescriptor, Map<YarnLockEntry, NameVersion> identityByEntry) {
+        this.identityByDescriptor = identityByDescriptor;
+        this.identityByEntry = identityByEntry;
+    }
+
+    public static YarnLockResolutionParser from(YarnLock yarnLock) {
+        Map<String, NameVersion> identityByDescriptor = new HashMap<>();
+        Map<YarnLockEntry, NameVersion> identityByEntry = new IdentityHashMap<>();
         for (YarnLockEntry entry : yarnLock.getEntries()) {
-            parseRegistryIdentity(entry.getResolution(), entry.getVersion()).ifPresent(identity -> {
-                identityByEntry.put(entry, identity);
-                for (YarnLockEntryId id : entry.getIds()) {
-                    if (id.getRawDescriptor() != null) {
-                        identityByDescriptor.put(stripQualifiers(id.getRawDescriptor()), identity);
-                    }
-                }
-            });
+            indexEntry(entry, identityByDescriptor, identityByEntry);
         }
+        return new YarnLockResolutionParser(identityByDescriptor, identityByEntry);
+    }
+
+    private static void indexEntry(YarnLockEntry entry, Map<String, NameVersion> identityByDescriptor, Map<YarnLockEntry, NameVersion> identityByEntry) {
+        parseRegistryIdentity(entry.getResolution(), entry.getVersion()).ifPresent(identity -> {
+            identityByEntry.put(entry, identity);
+            for (YarnLockEntryId id : entry.getIds()) {
+                if (id.getRawDescriptor() != null) {
+                    identityByDescriptor.put(stripQualifiers(id.getRawDescriptor()), identity);
+                }
+            }
+        });
     }
 
     public Optional<NameVersion> forEntry(YarnLockEntry entry) {
