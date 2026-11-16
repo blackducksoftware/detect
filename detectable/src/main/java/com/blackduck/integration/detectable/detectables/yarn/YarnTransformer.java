@@ -94,7 +94,7 @@ public class YarnTransformer {
             String entryName = entry.getIds().get(0).getName();
             if (shouldInclude(entryName, entry.getVersion())) {
                 // Yarn and patch libraries should not be included in the graph.
-                Optional<NameVersion> entryIdentity = yarnLockResult.getResolvedIdentities().forEntry(entry);
+                Optional<NameVersion> entryIdentity = yarnLockResult.getResolutionParser().forEntry(entry);
                 for (YarnLockEntryId entryId : entry.getIds()) {
                     LazyId id = generateComponentDependencyId(entryId.getName(), entryId.getVersion());
                     String name = entryIdentity.map(NameVersion::getName).orElse(entryId.getName());
@@ -160,7 +160,7 @@ public class YarnTransformer {
         for (YarnLockEntry entry : yarnLockResult.getYarnLock().getEntries()) {
             String entryName = entry.getIds().get(0).getName();
             if (shouldInclude(entryName, entry.getVersion())) {
-                String name = yarnLockResult.getResolvedIdentities().forEntry(entry).map(NameVersion::getName).orElse(entryName);
+                String name = yarnLockResult.getResolutionParser().forEntry(entry).map(NameVersion::getName).orElse(entryName);
                 LazyId id = generateComponentDependencyId(name, entry.getVersion());
                 graphBuilder.setDependencyInfo(id, name, entry.getVersion(), generateComponentExternalId(name, entry.getVersion()));
                 LazyExternalIdDependencyGraphBuilder.LazyDependencyInfo parentInfo = graphBuilder.checkAndHandleMissingExternalId(lazyBuilderHandler, id);
@@ -187,7 +187,7 @@ public class YarnTransformer {
             ) throws MissingExternalIdException {
         for (YarnLockDependency dependency : entry.getDependencies()) {
             if (!isWorkspace(yarnLockResult.getWorkspaceData(), dependency)) {
-                Optional<NameVersion> identity = yarnLockResult.getResolvedIdentities().forDependency(dependency.getName(), dependency.getVersion());
+                Optional<NameVersion> identity = yarnLockResult.getResolutionParser().forDependency(dependency.getName(), dependency.getVersion());
                 String dependencyName = identity.map(NameVersion::getName).orElse(dependency.getName());
                 String dependencyVersion = identity.map(NameVersion::getVersion).orElseGet(() -> getDependencyVersion(resolvedEntryIdVersionMap, dependency));
                 LazyId stringDependencyId = generateComponentDependencyId(dependencyName, dependencyVersion);
@@ -313,7 +313,7 @@ public class YarnTransformer {
 
     // An entry with a registry resolution is that real package, whatever name (alias) the dependency is declared under.
     private void setResolvedIdentity(YarnLockResult yarnLockResult, LazyExternalIdDependencyGraphBuilder graphBuilder, LazyId id, String name, String range) {
-        yarnLockResult.getResolvedIdentities().forDependency(name, range).ifPresent(identity ->
+        yarnLockResult.getResolutionParser().forDependency(name, range).ifPresent(identity ->
             graphBuilder.setDependencyInfo(id, identity.getName(), identity.getVersion(), generateComponentExternalId(identity.getName(), identity.getVersion())));
     }
 

@@ -16,14 +16,14 @@ import com.blackduck.integration.util.NameVersion;
  * The real npm package behind each yarn.lock entry and descriptor ("alias@npm:real@1.0.0"), taken from the entry's "resolution:".
  * Entries without a registry resolution (file:, workspace:, git, ... or Yarn 1) have no identity, so callers keep their existing behavior.
  */
-public class YarnResolvedIdentities {
+public class YarnLockResolutionParser {
     private static final String NPM_PROTOCOL = "npm:";
     private static final String PATCH_PROTOCOL = "patch:";
 
     private final Map<String, NameVersion> identityByDescriptor = new HashMap<>();
     private final Map<YarnLockEntry, NameVersion> identityByEntry = new IdentityHashMap<>();
 
-    public YarnResolvedIdentities(YarnLock yarnLock) {
+    public YarnLockResolutionParser(YarnLock yarnLock) {
         for (YarnLockEntry entry : yarnLock.getEntries()) {
             parseRegistryIdentity(entry.getResolution(), entry.getVersion()).ifPresent(identity -> {
                 identityByEntry.put(entry, identity);

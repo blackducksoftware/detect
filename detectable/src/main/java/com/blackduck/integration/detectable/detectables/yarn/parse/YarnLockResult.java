@@ -8,21 +8,21 @@ public class YarnLockResult {
     private final NullSafePackageJson rootPackageJson;
     private final YarnWorkspaces workspaceData;
     private final YarnLock yarnLock;
-    private final YarnResolvedIdentities resolvedIdentities;
+    private final YarnLockResolutionParser resolutionParser;
 
     public YarnLockResult(NullSafePackageJson rootPackageJson, YarnWorkspaces workspaceData, YarnLock yarnLock) {
         this.rootPackageJson = rootPackageJson;
         this.workspaceData = workspaceData;
         this.yarnLock = yarnLock;
-        this.resolvedIdentities = new YarnResolvedIdentities(yarnLock);
+        this.resolutionParser = new YarnLockResolutionParser(yarnLock);
     }
 
     public YarnLockResult(NullSafePackageJson rootPackageJson, YarnLock yarnLock) {
         this(rootPackageJson, new YarnWorkspaces(Collections.EMPTY_SET), yarnLock);
     }
 
-    public YarnResolvedIdentities getResolvedIdentities() {
-        return resolvedIdentities;
+    public YarnLockResolutionParser getResolutionParser() {
+        return resolutionParser;
     }
 
     public YarnLock getYarnLock() {
