@@ -3,9 +3,9 @@ package com.blackduck.integration.detectable.detectables.yarn.unit;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.blackduck.integration.detectable.detectables.yarn.parse.YarnResolvedIdentities;
+import com.blackduck.integration.detectable.detectables.yarn.parse.YarnLockResolutionParser;
 
-public class YarnResolvedIdentitiesTest {
+public class YarnLockResolutionParserTest {
 
     @Test
     void npmResolutionNamesTheRealPackage() {
@@ -28,7 +28,7 @@ public class YarnResolvedIdentitiesTest {
     }
 
     private void assertIdentity(String expectedNameSlashVersion, String resolution, String entryVersion) {
-        String actual = YarnResolvedIdentities.parseRegistryIdentity(resolution, entryVersion)
+        String actual = YarnLockResolutionParser.parseRegistryIdentity(resolution, entryVersion)
             .map(identity -> identity.getName() + "/" + identity.getVersion())
             .orElse(null);
         Assertions.assertEquals(expectedNameSlashVersion, actual);
