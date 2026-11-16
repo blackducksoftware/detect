@@ -14,11 +14,13 @@ import com.blackduck.integration.util.NameVersion;
 
 /**
  * The real npm package behind each yarn.lock entry and descriptor ("alias@npm:real@1.0.0"), taken from the entry's "resolution:".
- * Entries without a registry resolution (file:, workspace:, git, ... or Yarn 1) have no identity, so callers keep their existing behavior.
+ * Yarn 1 has no "resolution:", so its alias entries use the package name in the "resolved" tarball URL instead.
+ * Other entries (file:, workspace:, git, ...) have no identity, so callers keep their existing behavior.
  */
 public class YarnLockResolutionParser {
     private static final String NPM_PROTOCOL = "npm:";
     private static final String PATCH_PROTOCOL = "patch:";
+    private static final String NPM_ALIAS_MARKER = "@" + NPM_PROTOCOL;
 
     private final Map<String, NameVersion> identityByDescriptor;
     private final Map<YarnLockEntry, NameVersion> identityByEntry;
@@ -38,13 +40,26 @@ public class YarnLockResolutionParser {
     }
 
     private static void indexEntry(YarnLockEntry entry, Map<String, NameVersion> identityByDescriptor, Map<YarnLockEntry, NameVersion> identityByEntry) {
-        parseRegistryIdentity(entry.getResolution(), entry.getVersion()).ifPresent(identity -> {
-            identityByEntry.put(entry, identity);
+        Optional<NameVersion> identity = parseRegistryIdentity(entry.getResolution(), entry.getVersion());
+        if (!identity.isPresent() && entry.getResolution() == null && isNpmAlias(entry)) {
+            identity = parseResolvedIdentity(entry.getResolved(), entry.getVersion());
+        }
+        identity.ifPresent(found -> {
+            identityByEntry.put(entry, found);
             for (YarnLockEntryId id : entry.getIds()) {
                 if (id.getRawDescriptor() != null) {
-                    identityByDescriptor.put(stripQualifiers(id.getRawDescriptor()), identity);
+                    identityByDescriptor.put(stripQualifiers(id.getRawDescriptor()), found);
                 }
             }
+        });
+    }
+
+    // "alias@npm:real@1.0.0" or "@scope/alias@npm:@scope/real@1.0.0", but not a plain "name@npm:^1.0.0"
+    private static boolean isNpmAlias(YarnLockEntry entry) {
+        return entry.getIds().stream().anyMatch(id -> {
+            String descriptor = id.getRawDescriptor();
+            int marker = descriptor == null ? -1 : descriptor.indexOf(NPM_ALIAS_MARKER, 1);
+            return marker > 0 && descriptor.indexOf('@', marker + NPM_ALIAS_MARKER.length() + 1) > 0;
         });
     }
 
@@ -88,6 +103,26 @@ public class YarnLockResolutionParser {
             return parseRegistryIdentity(patched.replace("%3A", ":").replace("%40", "@").replace("%2F", "/"), entryVersion);
         }
         return Optional.empty();
+    }
+
+    /**
+     * Real npm package of a Yarn 1 "resolved" tarball URL: the path before "/-/", keeping a "@scope/", whatever the registry prefix.
+     * "https://registry.yarnpkg.com/@types/react-select/-/react-select-3.0.23.tgz#sha" is @types/react-select.
+     */
+    public static Optional<NameVersion> parseResolvedIdentity(@Nullable String resolved, @Nullable String entryVersion) {
+        int tarball = resolved == null ? -1 : resolved.indexOf("/-/");
+        if (tarball < 0 || StringUtils.isBlank(entryVersion)) {
+            return Optional.empty();
+        }
+        String[] path = StringUtils.substringAfter(StringUtils.substringBefore(resolved, "/-/"), "://").split("/");
+        if (path.length < 2) { // host only, no package name
+            return Optional.empty();
+        }
+        String name = path[path.length - 1];
+        if (path.length > 2 && path[path.length - 2].startsWith("@")) {
+            name = path[path.length - 2] + "/" + name;
+        }
+        return Optional.of(new NameVersion(name, entryVersion.trim()));
     }
 
     // yarn.lock keys for patch:/file: carry "::version=...&hash=..." / "::locator=..." qualifiers that dependencies do not
