@@ -27,6 +27,29 @@ public class YarnLockResolutionParserTest {
         assertIdentity(null, null, "1.0.0");
     }
 
+    @Test
+    void yarn1ResolvedUrlNamesTheRealPackage() {
+        assertResolved("left-pad/1.3.0", "https://registry.yarnpkg.com/left-pad/-/left-pad-1.3.0.tgz#5b8a3a77", "1.3.0");
+        assertResolved("@types/react-select/3.0.23", "https://registry.yarnpkg.com/@types/react-select/-/react-select-3.0.23.tgz#67fa25e3", "3.0.23");
+        // registries with a path prefix
+        assertResolved("@babylon/medkit-tokens/0.0.3", "https://artifactory.example.com/artifactory/api/npm/virtual-npm/@babylon/medkit-tokens/-/@babylon/medkit-tokens-0.0.3.tgz", "0.0.3");
+        assertResolved("@fortawesome/pro-solid-svg-icons/5.15.1", "https://npm.fontawesome.com/@fortawesome/pro-solid-svg-icons/-/5.15.1/pro-solid-svg-icons-5.15.1.tgz", "5.15.1");
+    }
+
+    @Test
+    void yarn1ResolvedWithoutATarballPathHasNoIdentity() {
+        assertResolved(null, "https://github.com/org/repo/archive/abc123.tar.gz", "1.0.0");
+        assertResolved(null, "https://registry.yarnpkg.com/-/pkg.tgz", "1.0.0");
+        assertResolved(null, null, "1.0.0");
+    }
+
+    private void assertResolved(String expectedNameSlashVersion, String resolved, String entryVersion) {
+        String actual = YarnLockResolutionParser.parseResolvedIdentity(resolved, entryVersion)
+            .map(identity -> identity.getName() + "/" + identity.getVersion())
+            .orElse(null);
+        Assertions.assertEquals(expectedNameSlashVersion, actual);
+    }
+
     private void assertIdentity(String expectedNameSlashVersion, String resolution, String entryVersion) {
         String actual = YarnLockResolutionParser.parseRegistryIdentity(resolution, entryVersion)
             .map(identity -> identity.getName() + "/" + identity.getVersion())
