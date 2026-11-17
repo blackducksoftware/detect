@@ -44,6 +44,7 @@ import com.blackduck.integration.detect.configuration.help.print.HelpPrinter;
 import com.blackduck.integration.detect.configuration.help.yaml.HelpYamlWriter;
 import com.blackduck.integration.detect.configuration.validation.DeprecationResult;
 import com.blackduck.integration.detect.configuration.validation.DetectConfigurationBootManager;
+import com.blackduck.integration.detect.configuration.validation.NugetSolutionFilterValidator;
 import com.blackduck.integration.detect.interactive.InteractiveManager;
 import com.blackduck.integration.detect.lifecycle.autonomous.AutonomousManager;
 import com.blackduck.integration.detect.lifecycle.boot.decision.BlackDuckDecision;
@@ -174,6 +175,15 @@ public class DetectBoot {
             if (quackPatchError.isPresent()) {
                 return Optional.of(DetectBootResult.exception(quackPatchError.get(), propertyConfiguration));
             }
+        }
+
+        Optional<DetectUserFriendlyException> nugetSolutionFilterError = new NugetSolutionFilterValidator().validate(
+            detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_SOLUTION_FILTER_PATH),
+            detectConfiguration.getValue(DetectProperties.DETECT_NUGET_INCLUDED_MODULES),
+            detectConfiguration.getValue(DetectProperties.DETECT_NUGET_EXCLUDED_MODULES)
+        );
+        if (nugetSolutionFilterError.isPresent()) {
+            return Optional.of(DetectBootResult.exception(nugetSolutionFilterError.get(), propertyConfiguration));
         }
 
         boolean autonomousScanEnabled = detectConfiguration.getValue(DetectProperties.DETECT_AUTONOMOUS_SCAN_ENABLED);

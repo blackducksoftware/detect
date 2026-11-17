@@ -1,6 +1,9 @@
 package com.blackduck.integration.detectable.detectables.nuget.unit;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.nio.file.Paths;
 
 import org.junit.jupiter.api.Test;
 
@@ -26,5 +29,19 @@ public class NugetProjectDetectableTest {
         NugetProjectDetectable detectable = new NugetProjectDetectable(environment, fileFinder, nugetInspectorOptions, nugetInspectorResolver, nugetInspectorExtractor);
 
         assertTrue(detectable.applicable().getPassed());
+    }
+
+    @Test
+    public void notApplicableWhenSolutionFilterProvided() {
+        NugetInspectorOptions nugetInspectorOptions = new NugetInspectorOptions.Builder()
+            .solutionFilterPath(Paths.get("filtered.slnf"))
+            .build();
+
+        DetectableEnvironment environment = MockDetectableEnvironment.empty();
+        FileFinder fileFinder = MockFileFinder.withFileNamed("example.csproj");
+
+        NugetProjectDetectable detectable = new NugetProjectDetectable(environment, fileFinder, nugetInspectorOptions, null, null);
+
+        assertFalse(detectable.applicable().getPassed());
     }
 }

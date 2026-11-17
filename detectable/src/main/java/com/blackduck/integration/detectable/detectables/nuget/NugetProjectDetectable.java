@@ -18,6 +18,7 @@ import com.blackduck.integration.detectable.detectable.inspector.nuget.NugetInsp
 import com.blackduck.integration.detectable.detectable.result.DetectableResult;
 import com.blackduck.integration.detectable.detectable.result.FilesNotFoundDetectableResult;
 import com.blackduck.integration.detectable.detectable.result.InspectorNotFoundDetectableResult;
+import com.blackduck.integration.detectable.detectable.result.NugetSolutionFilterDetectableResult;
 import com.blackduck.integration.detectable.detectable.result.PassedDetectableResult;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
@@ -98,6 +99,10 @@ public class NugetProjectDetectable extends Detectable {
 
     @Override
     public DetectableResult applicable() {
+        if (nugetInspectorOptions != null && nugetInspectorOptions.getSolutionFilterPath().isPresent()) {
+            return new NugetSolutionFilterDetectableResult("only the projects in the solution filter are inspected, by the NuGet Solution Native Inspector.");
+        }
+
         projectFiles = fileFinder.findFiles(environment.getDirectory(), SUPPORTED_PROJECT_PATTERNS);
 
         if (projectFiles != null && projectFiles.size() > 0) {

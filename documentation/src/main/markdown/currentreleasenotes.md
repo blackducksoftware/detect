@@ -18,6 +18,12 @@
 * **Deprecation of support for Java versions earlier than 17** - Support for Java versions earlier than 17 has been deprecated in [detect_product_short] 12.0.0 and will be removed in 13.0.0 to align with EU Cyber Resilience Act (CRA) requirements and compliance timelines.
 * **Deprecation of Docker Inspector** - Docker Inspector has been deprecated and will be removed in 13.0.0 release.
 
+## Version 12.3.0
+
+### New features
+
+* Added the `detect.nuget.solution.filter.path` property to scan a single NuGet solution filter (`.slnf`) file, so that the BOM covers only the projects listed in the filter. The property cannot be combined with `detect.nuget.included.modules` or `detect.nuget.excluded.modules`. It is recommended to restore using the `.slnf` file before scanning. For more information, see [NuGet support](packagemgrs/nuget.md#nuget-solution-filters).
+
 ## Version 12.2.0
 
 ### New features

@@ -372,6 +372,7 @@ public class DetectableOptionFactory {
             ? Paths.get(detectConfigurationFactory.getQuackPatchOutputDirectory(directoryManager), QUACKPATCH_SUBDIRECTORY_NAME, INVOKED_DETECTORS_AND_RELEVANT_FILES_JSON)
             : null;
         Path nugetInspectorPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_INSPECTOR_PATH);
+        Path solutionFilterPath = detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_SOLUTION_FILTER_PATH);
         File nugetInspectorPathFile = null;
         if (nugetInspectorPath != null) {
             nugetInspectorPathFile = nugetInspectorPath.toFile();
@@ -386,6 +387,8 @@ public class DetectableOptionFactory {
                 .nugetArtifactsPath(nugetArtifactsPath)
                 .inspectedFilesInfoPath(relevantDetectorsAndFilesInfoPath)
                 .nugetInspectorPath(nugetInspectorPathFile)
+                .solutionFilterPath(solutionFilterPath)
+                .sourceDirectory(directoryManager.getSourceDirectory())
                 .build();
     }
 

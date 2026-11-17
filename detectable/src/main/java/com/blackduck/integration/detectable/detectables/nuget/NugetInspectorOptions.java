@@ -18,6 +18,8 @@ public class NugetInspectorOptions {
     private final Path nugetArtifactsPath;
     private final Path inspectedFilesInfoPath;
     private final File nugetInspectorPath;
+    private final Path solutionFilterPath;
+    private final File sourceDirectory;
 
     private NugetInspectorOptions(Builder builder) {
         this.ignoreFailures = builder.ignoreFailures;
@@ -29,6 +31,8 @@ public class NugetInspectorOptions {
         this.nugetArtifactsPath = builder.nugetArtifactsPath;
         this.inspectedFilesInfoPath = builder.inspectedFilesInfoPath;
         this.nugetInspectorPath = builder.nugetInspectorPath;
+        this.solutionFilterPath = builder.solutionFilterPath;
+        this.sourceDirectory = builder.sourceDirectory;
     }
 
     public static class Builder {
@@ -41,6 +45,8 @@ public class NugetInspectorOptions {
         private Path nugetArtifactsPath;
         private Path inspectedFilesInfoPath;
         private File nugetInspectorPath;
+        private Path solutionFilterPath;
+        private File sourceDirectory;
 
         public Builder ignoreFailures(boolean ignoreFailures) {
             this.ignoreFailures = ignoreFailures;
@@ -78,6 +84,14 @@ public class NugetInspectorOptions {
             this.nugetInspectorPath = nugetInspectorPath;
             return this;
         }
+        public Builder solutionFilterPath(@Nullable Path solutionFilterPath) {
+            this.solutionFilterPath = solutionFilterPath;
+            return this;
+        }
+        public Builder sourceDirectory(@Nullable File sourceDirectory) {
+            this.sourceDirectory = sourceDirectory;
+            return this;
+        }
         public NugetInspectorOptions build() {
             return new NugetInspectorOptions(this);
         }
@@ -111,5 +125,13 @@ public class NugetInspectorOptions {
 
     public Optional<File> getNugetInspectorPath() {
         return Optional.ofNullable(nugetInspectorPath);
+    }
+
+    public Optional<Path> getSolutionFilterPath() {
+        return Optional.ofNullable(solutionFilterPath);
+    }
+
+    public Optional<File> getSourceDirectory() {
+        return Optional.ofNullable(sourceDirectory);
     }
 }

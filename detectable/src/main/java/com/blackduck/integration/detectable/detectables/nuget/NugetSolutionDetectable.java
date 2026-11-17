@@ -1,10 +1,15 @@
 package com.blackduck.integration.detectable.detectables.nuget;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.blackduck.integration.common.util.finder.FileFinder;
 import com.blackduck.integration.detectable.Detectable;
@@ -19,12 +24,14 @@ import com.blackduck.integration.detectable.detectable.inspector.nuget.NugetInsp
 import com.blackduck.integration.detectable.detectable.result.DetectableResult;
 import com.blackduck.integration.detectable.detectable.result.FilesNotFoundDetectableResult;
 import com.blackduck.integration.detectable.detectable.result.InspectorNotFoundDetectableResult;
+import com.blackduck.integration.detectable.detectable.result.NugetSolutionFilterDetectableResult;
 import com.blackduck.integration.detectable.detectable.result.PassedDetectableResult;
 import com.blackduck.integration.detectable.extraction.Extraction;
 import com.blackduck.integration.detectable.extraction.ExtractionEnvironment;
 
-@DetectableInfo(name = "NuGet Solution Native Inspector", language = "C#", forge = "NuGet.org", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: a solution file with a .sln or .slnx extension.")
+@DetectableInfo(name = "NuGet Solution Native Inspector", language = "C#", forge = "NuGet.org", accuracy = DetectableAccuracyType.HIGH, requirementsMarkdown = "File: a solution file with a .sln or .slnx extension, or a solution filter (.slnf) file provided via detect.nuget.solution.filter.path.")
 public class NugetSolutionDetectable extends Detectable {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private static final List<String> SUPPORTED_SOLUTION_PATTERNS = Collections.unmodifiableList(Arrays.asList("*.sln", "*.slnx"));
 
     private final FileFinder fileFinder;
@@ -51,6 +58,11 @@ public class NugetSolutionDetectable extends Detectable {
 
     @Override
     public DetectableResult applicable() {
+        Optional<Path> solutionFilterPath = nugetInspectorOptions == null ? Optional.empty() : nugetInspectorOptions.getSolutionFilterPath();
+        if (solutionFilterPath.isPresent()) {
+            return applicableForSolutionFilter(solutionFilterPath.get());
+        }
+
         solutionFiles = fileFinder.findFiles(environment.getDirectory(), SUPPORTED_SOLUTION_PATTERNS);
 
         if (solutionFiles != null && solutionFiles.size() > 0) {
@@ -60,6 +72,26 @@ public class NugetSolutionDetectable extends Detectable {
         } else {
             return new FilesNotFoundDetectableResult(SUPPORTED_SOLUTION_PATTERNS);
         }
+    }
+
+    // The solution filter is inspected exactly once, from the source directory, so that no .sln/.slnx is scanned as a full solution
+    // (including in nested directories when detect.detector.search.continue=true).
+    private DetectableResult applicableForSolutionFilter(Path solutionFilterPath) {
+        Optional<File> sourceDirectory = nugetInspectorOptions.getSourceDirectory();
+        if (sourceDirectory.isPresent() && !isSameDirectory(sourceDirectory.get(), environment.getDirectory())) {
+            return new NugetSolutionFilterDetectableResult("the solution filter is only inspected from the source directory " + sourceDirectory.get().getAbsolutePath() + ".");
+        }
+
+        File solutionFilterFile = solutionFilterPath.toFile();
+        logger.debug("NuGet solution filter provided; inspecting {} instead of discovering solution files.", solutionFilterFile.getAbsolutePath());
+        solutionFiles = Collections.singletonList(solutionFilterFile);
+        PassedResultBuilder passedResultBuilder = new PassedResultBuilder();
+        passedResultBuilder.foundFile(solutionFilterFile);
+        return passedResultBuilder.build();
+    }
+
+    private static boolean isSameDirectory(File first, File second) {
+        return first.toPath().toAbsolutePath().normalize().equals(second.toPath().toAbsolutePath().normalize());
     }
 
     @Override

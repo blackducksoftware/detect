@@ -62,7 +62,8 @@ public enum DetectPropertyFromVersion implements PropertyVersion {
     VERSION_11_3_0("11.3.0"),
     VERSION_11_4_0("11.4.0"),
     VERSION_12_0_0("12.0.0"),
-    VERSION_12_1_0("12.1.0");
+    VERSION_12_1_0("12.1.0"),
+    VERSION_12_3_0("12.3.0");
 
     private final String version;
 

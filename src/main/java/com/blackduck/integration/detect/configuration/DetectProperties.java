@@ -1443,6 +1443,18 @@ public class DetectProperties {
                     .setCategory(DetectCategory.Advanced)
                     .build();
 
+    public static final NullablePathProperty DETECT_NUGET_SOLUTION_FILTER_PATH =
+        NullablePathProperty.newBuilder("detect.nuget.solution.filter.path")
+            .setInfo("NuGet Solution Filter Path", DetectPropertyFromVersion.VERSION_12_3_0)
+            .setHelp(
+                "The path to a single solution filter (.slnf) file. When set, the NuGet Inspector inspects only the projects listed in the solution filter instead of discovering solution (.sln/.slnx) and project files, so the BOM covers only the filtered projects.",
+                "The file must exist and have a .slnf extension. This property cannot be combined with detect.nuget.included.modules or detect.nuget.excluded.modules. It is recommended to restore the solution filter (for example: 'dotnet restore MySolution.slnf') before running Detect."
+            )
+            .setExample("/path/to/MySolution.slnf")
+            .setGroups(DetectGroup.NUGET, DetectGroup.SOURCE_SCAN)
+            .setCategory(DetectCategory.Advanced)
+            .build();
+
     public static final NullablePathProperty DETECT_NUGET_CONFIG_PATH =
         NullablePathProperty.newBuilder("detect.nuget.config.path")
             .setInfo("Nuget Config File", DetectPropertyFromVersion.VERSION_4_0_0)
