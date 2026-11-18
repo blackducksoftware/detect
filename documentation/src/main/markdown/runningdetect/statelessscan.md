@@ -19,7 +19,7 @@ Enable this feature by adding [--detect.blackduck.scan.mode=STATELESS](../proper
  
 ### Limitations
  * A limited subset of Tools can be run.
-    * The currently supported tools are: DETECTOR, BAZEL, SIGNATURE_SCAN, DOCKER, and BINARY_SCAN. All other tools are disabled when running in Stateless Scan mode.
+    * The currently supported tools are: DETECTOR, BAZEL, SIGNATURE_SCAN, DOCKER, CONTAINER_SCAN, and BINARY_SCAN. All other tools are disabled when running in Stateless Scan mode.
  * Stateless Scan does not support ```detect.policy.check.fail.on.severities``` or ```detect.policy.check.fail.on.names```
  * Stateless Scan will not create a Project or Version on [bd_product_short].
  * Stateless Scan cannot create a Risk or Notices report.
