@@ -19,7 +19,7 @@ public class DetectArgumentStateParser {
 
         boolean isGenerateAirGapZip = parser.isArgumentPresent("-z", "--zip");
 
-        boolean isDiscoveryMode = parser.isArgumentPresent("--detect.discovery", "--discover");
+        boolean isDiscoveryMode = parser.isArgumentPresent("--discover", "--detect.discovery");
 
         String parsedValue = null;
         if (isHelp) {
