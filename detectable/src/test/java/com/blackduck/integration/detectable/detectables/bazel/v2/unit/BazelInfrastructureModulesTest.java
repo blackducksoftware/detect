@@ -174,7 +174,8 @@ class BazelInfrastructureModulesTest {
     // regex path — exercises globToRegexAlternative after expansion (HTTP_ARCHIVE pipeline)
     @Test
     void regex_userAlternationPatternExcludesEachAlternative() {
-        List<String> patterns = Collections.singletonList("rules_(cc|shell|python)");
+        List<String> patterns = BazelInfrastructureModules.expandUserPatterns(
+            Collections.singletonList("rules_(cc|shell|python)"));
         String regex = BazelInfrastructureModules.buildCombinedExclusionRegex(patterns);
         assertFalse("rules_cc".matches(regex));
         assertFalse("rules_shell".matches(regex));
@@ -186,7 +187,8 @@ class BazelInfrastructureModulesTest {
     @Test
     void regex_userAlternationPatternAlsoMatchesCanonicalSuffix() {
         // Each expanded alternative picks up canonical suffix handling via globToRegexAlternative
-        List<String> patterns = Collections.singletonList("rules_(cc|shell)");
+        List<String> patterns = BazelInfrastructureModules.expandUserPatterns(
+            Collections.singletonList("rules_(cc|shell)"));
         String regex = BazelInfrastructureModules.buildCombinedExclusionRegex(patterns);
         assertFalse("rules_cc".matches(regex));
         assertFalse("rules_cc+".matches(regex));    // canonical suffix
@@ -253,9 +255,11 @@ class BazelInfrastructureModulesTest {
     }
 
     // isExcluded path — exercises FilenameUtils.wildcardMatch after expansion
+    // Patterns are pre-expanded via expandUserPatterns, as callers do at init time
     @Test
     void isExcluded_alternationPatternExcludesMatchingModules() {
-        List<String> patterns = Collections.singletonList("rules_(cc|shell|python)");
+        List<String> patterns = BazelInfrastructureModules.expandUserPatterns(
+            Collections.singletonList("rules_(cc|shell|python)"));
         assertTrue(BazelInfrastructureModules.isExcluded("rules_cc", patterns));
         assertTrue(BazelInfrastructureModules.isExcluded("rules_shell", patterns));
         assertTrue(BazelInfrastructureModules.isExcluded("rules_python", patterns));

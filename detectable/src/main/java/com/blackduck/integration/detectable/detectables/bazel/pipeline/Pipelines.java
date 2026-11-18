@@ -78,7 +78,8 @@ public class Pipelines {
         HaskellCabalLibraryJsonProtoParser haskellCabalLibraryJsonProtoParser,
         BazelExtractionOptions options
     ) {
-        this.excludeBuiltinsRegex = BazelInfrastructureModules.buildCombinedExclusionRegex(options.getExcludedModules());
+        this.excludeBuiltinsRegex = BazelInfrastructureModules.buildCombinedExclusionRegex(
+            BazelInfrastructureModules.expandUserPatterns(options.getExcludedModules()));
         this.init(bazelCommandExecutor, bazelVariableSubstitutor, externalIdFactory, haskellCabalLibraryJsonProtoParser, options.getMode(), options.getBazelVersion());
     }
 

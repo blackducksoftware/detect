@@ -51,25 +51,38 @@ public final class BazelInfrastructureModules {
     }
 
     /**
-     * Returns {@code true} if {@code name} should be excluded — by the hard-coded list or
-     * by a user pattern from {@code detect.bazel.modules.excluded}.
-     * Patterns support glob wildcards and alternation groups, e.g. {@code rules_(cc|shell|python)}.
+     * Expands all user patterns from {@code detect.bazel.modules.excluded} once at
+     * initialization time. Call this in constructors and store the
+     * result. Logs a WARN once per malformed pattern (unmatched parenthesis).
      */
-    public static boolean isExcluded(String name, List<String> userPatterns) {
+    public static List<String> expandUserPatterns(List<String> rawPatterns) {
+        if (rawPatterns == null || rawPatterns.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<String> expanded = new ArrayList<>();
+        for (String pattern : rawPatterns) {
+            if (pattern != null && !pattern.trim().isEmpty()) {
+                expanded.addAll(expandPattern(pattern.trim()));
+            }
+        }
+        return Collections.unmodifiableList(expanded);
+    }
+
+    /**
+     * Returns {@code true} if {@code name} should be excluded — by the hard-coded list or
+     * by a pre-expanded user pattern. Call {@link #expandUserPatterns} once at init time
+     * and pass the result here; do not pass raw patterns containing alternation groups.
+     */
+    public static boolean isExcluded(String name, List<String> expandedUserPatterns) {
         if (isHardExcluded(name)) {
             return true;
         }
-        if (userPatterns == null || userPatterns.isEmpty()) {
+        if (expandedUserPatterns == null || expandedUserPatterns.isEmpty()) {
             return false;
         }
-        for (String pattern : userPatterns) {
-            if (pattern == null || pattern.isEmpty()) {
-                continue;
-            }
-            for (String expanded : expandPattern(pattern)) {
-                if (FilenameUtils.wildcardMatch(name, expanded)) {
-                    return true;
-                }
+        for (String pattern : expandedUserPatterns) {
+            if (pattern != null && !pattern.isEmpty() && FilenameUtils.wildcardMatch(name, pattern)) {
+                return true;
             }
         }
         return false;
@@ -135,20 +148,19 @@ public final class BazelInfrastructureModules {
     }
 
     /**
-     * Builds a negative-lookahead regex from the combined hard-coded + user patterns.
-     * Used by the HTTP_ARCHIVE bzlmod pipeline's line filter.
+     * Builds a negative-lookahead regex from the combined hard-coded + pre-expanded user patterns.
+     * Used by the HTTP_ARCHIVE bzlmod pipeline's line filter. Pass the result of
+     * {@link #expandUserPatterns} here — not raw patterns containing alternation groups.
      */
-    public static String buildCombinedExclusionRegex(List<String> userPatterns) {
-        List<String> alternatives = new java.util.ArrayList<>();
+    public static String buildCombinedExclusionRegex(List<String> expandedUserPatterns) {
+        List<String> alternatives = new ArrayList<>();
         for (String pattern : HARD_EXCLUDED_PATTERNS) {
             alternatives.add(globToRegexAlternative(pattern));
         }
-        if (userPatterns != null) {
-            for (String pattern : userPatterns) {
+        if (expandedUserPatterns != null) {
+            for (String pattern : expandedUserPatterns) {
                 if (pattern != null && !pattern.trim().isEmpty()) {
-                    for (String expanded : expandPattern(pattern.trim())) {
-                        alternatives.add(globToRegexAlternative(expanded));
-                    }
+                    alternatives.add(globToRegexAlternative(pattern.trim()));
                 }
             }
         }
