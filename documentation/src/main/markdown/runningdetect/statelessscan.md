@@ -13,6 +13,10 @@ Enable this feature by adding [--detect.blackduck.scan.mode=STATELESS](../proper
 ### Signature Scan Requirements
  * Must be running [bd_product_short] using the hosted KB.
 
+ ### Container Scan Requirements
+ * It is necessary to have [detect_product_short] and [bd_product_short] running in the hosted environment to perform these scans. 
+ * To run a Container Stateless Scan your [bd_product_short] server must have [bd_product_short] Secure Container (BDSC) licensed and enabled.
+ 
 ### Limitations
  * A limited subset of Tools can be run.
     * The currently supported tools are: DETECTOR, BAZEL, SIGNATURE_SCAN, DOCKER, and BINARY_SCAN. All other tools are disabled when running in Stateless Scan mode.
@@ -38,6 +42,8 @@ Enable this feature by adding [--detect.blackduck.scan.mode=STATELESS](../proper
     * --detect.tools=DETECTOR,SIGNATURE_SCAN,DOCKER --detect.blackduck.scan.mode=STATELESS
     * --detect.tools=BAZEL,SIGNATURE_SCAN --detect.blackduck.scan.mode=STATELESS
     * --detect.tools=DETECTOR,DOCKER --detect.blackduck.scan.mode=RAPID
+ * To invoke a stateless container scan that analyzes all container layers:
+	* --detect.tools=CONTAINER_SCAN --detect.blackduck.scan.mode=STATELESS --detect.container.scan.file.path=\<Path to local .tar file or HTTP/HTTPS URL for remote .tar file\>
 
 ## Results
 
@@ -104,6 +110,6 @@ For further remediation and transitive dependency upgrade guidance, please consu
 
 ## Stateless Scan Compare Mode
 
-You can configure Package Manager and Signature Scans to return only the difference in identified policy violations between the current scan and previous Persistent Scans, using the same scan configuration. To return only the difference in policy violations, configure `detect.blackduck.rapid.compare.mode` to `BOM_COMPARE` or `BOM_COMPARE_STRICT`.
+You can configure Package Manager, Signature, and Container Stateless Scans to return only the difference in identified policy violations between the current scan and previous Persistent Scans, using the same scan configuration. To return only the difference in policy violations, configure `detect.blackduck.rapid.compare.mode` to `BOM_COMPARE` or `BOM_COMPARE_STRICT`.
 
 BOM compare mode settings determine which policies are considered and how they behave when violations are present. See the [bd_product_short] documentation for futher details <a href="https://docs.blackduck.com/r/blackduck/latest/black-duck-documentation/rapid-scan-overview.html" target="_blank">on BOM comparison.</a>
