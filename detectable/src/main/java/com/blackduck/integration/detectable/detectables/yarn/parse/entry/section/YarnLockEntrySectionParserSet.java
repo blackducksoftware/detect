@@ -15,6 +15,8 @@ public class YarnLockEntrySectionParserSet {
         yarnLockEntrySectionParsers.add(new YarnLockDependencyListSectionParser(yarnLockLineAnalyzer, yarnLockDependencySpecParser, "optionalDependencies", true));
         yarnLockEntrySectionParsers.add(new YarnLockDependencyMetaListSectionParser(yarnLockLineAnalyzer));
         yarnLockEntrySectionParsers.add(new YarnLockKeyValuePairSectionParser(yarnLockLineAnalyzer, "version", YarnLockEntryBuilder::setVersion));
+        yarnLockEntrySectionParsers.add(new YarnLockKeyValuePairSectionParser(yarnLockLineAnalyzer, "resolution", YarnLockEntryBuilder::setResolution));
+        yarnLockEntrySectionParsers.add(new YarnLockKeyValuePairSectionParser(yarnLockLineAnalyzer, "resolved", YarnLockEntryBuilder::setResolved));
     }
 
     public int parseSection(YarnLockEntryBuilder entryBuilder, List<String> yarnLockLines, int lineIndexOfStartOfSection) {
