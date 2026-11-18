@@ -22,7 +22,7 @@
 
 ### New features
 
-* Added the `detect.nuget.solution.filter.path` property to scan a single NuGet solution filter (`.slnf`) file, so that the BOM covers only the projects listed in the filter. The property cannot be combined with `detect.nuget.included.modules` or `detect.nuget.excluded.modules`. It is recommended to restore using the `.slnf` file before scanning. For more information, see [NuGet support](packagemgrs/nuget.md#nuget-solution-filters).
+* Added the `detect.nuget.solution.filter.path` property to scan a single NuGet solution filter (`.slnf`) file with NuGet Inspector. The property cannot be combined with `detect.nuget.included.modules` or `detect.nuget.excluded.modules`. It is recommended to restore using the `.slnf` file before scanning. If Detect falls back to NuGet Project Inspector, NuGet-specific properties are ignored and projects outside the filter may be scanned. For more information, see [NuGet support](packagemgrs/nuget.md#nuget-solution-filters).
 
 ## Version 12.2.0
 

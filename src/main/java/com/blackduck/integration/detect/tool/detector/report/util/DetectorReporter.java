@@ -1,5 +1,6 @@
 package com.blackduck.integration.detect.tool.detector.report.util;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -7,21 +8,26 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.blackduck.integration.detect.configuration.DetectProperties;
 import com.blackduck.integration.detect.tool.detector.report.DetectorDirectoryReport;
 import com.blackduck.integration.detect.tool.detector.report.detectable.AttemptedDetectableReport;
 import com.blackduck.integration.detect.tool.detector.report.detectable.ExtractedDetectableReport;
 import com.blackduck.integration.detect.tool.detector.report.rule.EvaluatedDetectorRuleReport;
 import com.blackduck.integration.detect.tool.detector.report.rule.ExtractedDetectorRuleReport;
 import com.blackduck.integration.detect.tool.detector.report.rule.NotFoundDetectorRuleReport;
+import com.blackduck.integration.detectable.detectable.annotation.DetectableInfo;
+import com.blackduck.integration.detectable.detectables.nuget.NugetProjectInspectorDetectable;
 import com.blackduck.integration.detector.accuracy.detectable.DetectableEvaluationResult;
 import com.blackduck.integration.detector.accuracy.directory.DirectoryEvaluation;
 import com.blackduck.integration.detector.accuracy.entrypoint.DetectorRuleEvaluation;
 import com.blackduck.integration.detector.accuracy.entrypoint.EntryPointFoundResult;
 import com.blackduck.integration.detector.base.DetectorEvaluationUtil;
+import com.blackduck.integration.detector.base.DetectorType;
 import com.blackduck.integration.detector.rule.DetectableDefinition;
 
 public class DetectorReporter {
     private static final String DETECTOR_ERROR_MESSAGE = "Something has gone wrong in the detector system, please contact support.";
+    private static final String NUGET_PROJECT_INSPECTOR_NAME = NugetProjectInspectorDetectable.class.getAnnotation(DetectableInfo.class).name();
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     public List<DetectorDirectoryReport> generateReport(DirectoryEvaluation rootDirectoryEvaluation) {
@@ -38,6 +44,7 @@ public class DetectorReporter {
                     notFoundDetectors.add(generateNotFoundReport(detectorRuleEvaluation));
                 } else if (detectorRuleEvaluation.getFoundEntryPoint().isPresent()) { //just to check :)
                     addFoundReport(
+                        directoryEvaluation.getDirectory(),
                         directoryEvaluation.getDepth(),
                         detectorRuleEvaluation,
                         detectorRuleEvaluation.getFoundEntryPoint().get(),
@@ -61,6 +68,7 @@ public class DetectorReporter {
     }
 
     private void addFoundReport(
+        File directory,
         int depth,
         DetectorRuleEvaluation ruleEvaluation,
         EntryPointFoundResult foundEntryPoint,
@@ -93,6 +101,8 @@ public class DetectorReporter {
                 extracted = evaluated;
             }
         }
+        warnForNugetProjectInspectorFallback(directory, ruleEvaluation, foundEntryPoint, evaluatedDetectables, attemptedDetectables);
+
         if (extracted != null) {
             ExtractedDetectableReport extractedDetectableReport = ExtractedDetectableReport.extracted(
                 extracted.getDetectableDefinition(),
@@ -105,6 +115,42 @@ public class DetectorReporter {
         } else {
             notExtractedDetectors.add(EvaluatedDetectorRuleReport.notExtracted(ruleEvaluation.getRule(), depth, notFoundEntryPoints, attemptedDetectables));
         }
+    }
+
+    private void warnForNugetProjectInspectorFallback(
+        File directory,
+        DetectorRuleEvaluation ruleEvaluation,
+        EntryPointFoundResult foundEntryPoint,
+        List<DetectableEvaluationResult> evaluatedDetectables,
+        List<AttemptedDetectableReport> attemptedDetectables
+    ) {
+        if (ruleEvaluation.getRule().getDetectorType() != DetectorType.NUGET) {
+            return;
+        }
+
+        String primaryName = foundEntryPoint.getEntryPoint().getPrimary().getName();
+        boolean projectInspectorAttempted = evaluatedDetectables.stream()
+            .anyMatch(evaluated -> NUGET_PROJECT_INSPECTOR_NAME.equals(evaluated.getDetectableDefinition().getName()));
+        if (NUGET_PROJECT_INSPECTOR_NAME.equals(primaryName) || !projectInspectorAttempted) {
+            return;
+        }
+
+        Optional<AttemptedDetectableReport> primaryAttempt = attemptedDetectables.stream()
+            .filter(attempted -> primaryName.equals(attempted.getDetectable().getName()))
+            .findFirst();
+        if (primaryAttempt.isPresent()) {
+            logger.warn("{} failed in {}: {}. Detect attempted the NuGet Project Inspector fallback.",
+                primaryName, directory, primaryAttempt.get().getStatusReason());
+        } else {
+            logger.warn("{} was excluded in {}. Detect attempted the NuGet Project Inspector fallback.", primaryName, directory);
+        }
+        logger.warn(
+            "NuGet Project Inspector does not support NuGet-specific Detect properties (detect.nuget.*), including {}. "
+                + "If it runs, configured NuGet-specific properties are ignored and it scans the full directory, "
+                + "which may include projects outside a configured solution filter. Fix the NuGet Inspector failure or remove its detector exclusion "
+                + "to apply these properties.",
+            DetectProperties.DETECT_NUGET_SOLUTION_FILTER_PATH.getKey()
+        );
     }
 
     private NotFoundDetectorRuleReport generateNotFoundReport(DetectorRuleEvaluation detectorRuleEvaluation) {

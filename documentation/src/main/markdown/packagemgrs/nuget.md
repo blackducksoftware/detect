@@ -35,14 +35,16 @@ For packages.config file, [detect_product_short] will look for developmentDepend
 
 ## NuGet solution filters
 
-[detect_product_short] can scan a single solution filter (`.slnf`) file, so that the BOM covers only the projects listed in the filter. To do this, set [detect.nuget.solution.filter.path](../properties/detectors/nuget.md#nuget-solution-filter-path-advanced) to the path of the `.slnf` file.
+[detect_product_short] can scan a single solution filter (`.slnf`) file with NuGet Inspector, which analyzes only the projects listed in the filter. To do this, set [detect.nuget.solution.filter.path](../properties/detectors/nuget.md#nuget-solution-filter-path-advanced) to the path of the `.slnf` file.
 
 When this property is set:
  * The NuGet Solution Native Inspector passes the `.slnf` file to the NuGet Inspector as the target, instead of discovering `.sln` or `.slnx` files. The solution filter is inspected once, from the source directory.
- * The solution referenced by the filter is not also scanned as a full solution, including when [detect.detector.search.continue](../properties/configuration/paths.md#detector-search-continue-advanced) is set to `true`.
- * The NuGet Project Native Inspector does not run, so project files outside the filter are not scanned.
+ * NuGet Inspector does not also scan the referenced solution as a full solution, including when [detect.detector.search.continue](../properties/configuration/paths.md#detector-search-continue-advanced) is set to `true`.
+ * The NuGet Project Native Inspector does not run; see the Project Inspector fallback exception below.
 
 [detect_product_short] fails at startup if the property does not point to an existing file with a `.slnf` extension, or if it is combined with `detect.nuget.included.modules` or `detect.nuget.excluded.modules`. The solution filter already defines which projects are scanned.
+
+If NuGet Inspector fails or is excluded, [detect_product_short] can fall back to NuGet Project Inspector. A warning identifies the failed or excluded inspector and explains that Project Inspector ignores NuGet-specific properties, including the solution filter. Project Inspector scans the full directory and can include projects outside the filter.
 
 <note type="tip">Restore using the solution filter (for example, `dotnet restore MySolution.slnf`) before running [detect_product_short], so that the assets for the filtered projects are available to the NuGet Inspector.</note>
 
