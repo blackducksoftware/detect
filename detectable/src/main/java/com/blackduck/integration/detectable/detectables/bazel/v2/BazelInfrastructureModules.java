@@ -1,10 +1,13 @@
 package com.blackduck.integration.detectable.detectables.bazel.v2;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.io.FilenameUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Two-tier Bazel module exclusion:
@@ -16,6 +19,8 @@ import org.apache.commons.io.FilenameUtils;
  * Exact patterns match only the full name ({@code maven} does not exclude {@code maven-utils}).
  */
 public final class BazelInfrastructureModules {
+
+    private static final Logger logger = LoggerFactory.getLogger(BazelInfrastructureModules.class);
 
     private BazelInfrastructureModules() {
         throw new IllegalStateException("Utility class - do not instantiate");
@@ -46,17 +51,36 @@ public final class BazelInfrastructureModules {
     }
 
     /**
-     * Returns {@code true} if {@code name} should be excluded — by the hard-coded list or
-     * by a user pattern from {@code detect.bazel.modules.excluded}.
+     * Expands all user patterns from {@code detect.bazel.modules.excluded} once at
+     * initialization time. Call this in constructors and store the
+     * result. Logs a WARN once per malformed pattern (unmatched parenthesis).
      */
-    public static boolean isExcluded(String name, List<String> userPatterns) {
+    public static List<String> expandUserPatterns(List<String> rawPatterns) {
+        if (rawPatterns == null || rawPatterns.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<String> expanded = new ArrayList<>();
+        for (String pattern : rawPatterns) {
+            if (pattern != null && !pattern.trim().isEmpty()) {
+                expanded.addAll(expandPattern(pattern.trim()));
+            }
+        }
+        return Collections.unmodifiableList(expanded);
+    }
+
+    /**
+     * Returns {@code true} if {@code name} should be excluded — by the hard-coded list or
+     * by a pre-expanded user pattern. Call {@link #expandUserPatterns} once at init time
+     * and pass the result here; do not pass raw patterns containing alternation groups.
+     */
+    public static boolean isExcluded(String name, List<String> expandedUserPatterns) {
         if (isHardExcluded(name)) {
             return true;
         }
-        if (userPatterns == null || userPatterns.isEmpty()) {
+        if (expandedUserPatterns == null || expandedUserPatterns.isEmpty()) {
             return false;
         }
-        for (String pattern : userPatterns) {
+        for (String pattern : expandedUserPatterns) {
             if (pattern != null && !pattern.isEmpty() && FilenameUtils.wildcardMatch(name, pattern)) {
                 return true;
             }
@@ -65,16 +89,76 @@ public final class BazelInfrastructureModules {
     }
 
     /**
-     * Builds a negative-lookahead regex from the combined hard-coded + user patterns.
-     * Used by the HTTP_ARCHIVE bzlmod pipeline's line filter.
+     * Expands alternation groups in a pattern so that {@code rules_(cc|shell|python)} becomes
+     * {@code ["rules_cc", "rules_shell", "rules_python"]}. Handles multiple and nested groups.
+     * A malformed pattern with an unmatched {@code (} is returned as-is with a WARN.
      */
-    public static String buildCombinedExclusionRegex(List<String> userPatterns) {
-        List<String> alternatives = new java.util.ArrayList<>();
+    public static List<String> expandPattern(String pattern) {
+        int open = pattern.indexOf('(');
+        if (open < 0) {
+            return Collections.singletonList(pattern);
+        }
+        int close = findMatchingClose(pattern, open);
+        if (close < 0) {
+            logger.warn("detect.bazel.modules.excluded: pattern '{}' has an unmatched '(' — it will not match any module. " +
+                "Use glob wildcards (*) or alternation groups with matching parentheses, e.g. rules_(cc|shell).", pattern);
+            return Collections.singletonList(pattern);
+        }
+        String prefix = pattern.substring(0, open);
+        String group  = pattern.substring(open + 1, close);
+        String suffix = pattern.substring(close + 1);
+        List<String> result = new ArrayList<>();
+        for (String alt : splitTopLevelAlternatives(group)) {
+            result.addAll(expandPattern(prefix + alt + suffix));
+        }
+        return result;
+    }
+
+    // Finds the ) that closes the ( at openPos, respecting nested groups.
+    private static int findMatchingClose(String pattern, int openPos) {
+        int depth = 0;
+        for (int i = openPos; i < pattern.length(); i++) {
+            char c = pattern.charAt(i);
+            if (c == '(') depth++;
+            else if (c == ')') {
+                depth--;
+                if (depth == 0) return i;
+            }
+        }
+        return -1;
+    }
+
+    // Splits on | only at the top level (depth 0), so (cc|shell)|python splits into
+    // ["(cc|shell)", "python"] rather than ["(cc", "shell)", "python"].
+    private static List<String> splitTopLevelAlternatives(String group) {
+        List<String> parts = new ArrayList<>();
+        int depth = 0;
+        int start = 0;
+        for (int i = 0; i < group.length(); i++) {
+            char c = group.charAt(i);
+            if (c == '(')      depth++;
+            else if (c == ')') depth--;
+            else if (c == '|' && depth == 0) {
+                parts.add(group.substring(start, i).trim());
+                start = i + 1;
+            }
+        }
+        parts.add(group.substring(start).trim());
+        return parts;
+    }
+
+    /**
+     * Builds a negative-lookahead regex from the combined hard-coded + pre-expanded user patterns.
+     * Used by the HTTP_ARCHIVE bzlmod pipeline's line filter. Pass the result of
+     * {@link #expandUserPatterns} here — not raw patterns containing alternation groups.
+     */
+    public static String buildCombinedExclusionRegex(List<String> expandedUserPatterns) {
+        List<String> alternatives = new ArrayList<>();
         for (String pattern : HARD_EXCLUDED_PATTERNS) {
             alternatives.add(globToRegexAlternative(pattern));
         }
-        if (userPatterns != null) {
-            for (String pattern : userPatterns) {
+        if (expandedUserPatterns != null) {
+            for (String pattern : expandedUserPatterns) {
                 if (pattern != null && !pattern.trim().isEmpty()) {
                     alternatives.add(globToRegexAlternative(pattern.trim()));
                 }
