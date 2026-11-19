@@ -31,6 +31,7 @@
 ### Resolved issues
 
 * (IDETECT-5301) Fixed a crash (`StringIndexOutOfBoundsException`) in the Bazel tool when scanning bzlmod projects that include `git_repository` dependencies with bare `.git` clone URLs. The scan now completes successfully.
+* (IDETECT-5303) Fixed an issue that could result in malformed or missing dependencies in the BOM when the Opam detector incorrectly treated version constraints as package names.
 * (IDETECT-5306) Suppressed the ANTLR tool/runtime version mismatch warnings that were written to the console during detector evaluation. These warnings no longer appear in the scan output.
 * (IDETECT-5308) Fixed a Yarn Lock detector failure (`StringIndexOutOfBoundsException`) when parsing Yarn 4 `yarn.lock` files that contain `npm:` protocol specifiers with no version.
 * (IDETECT-5333) Fixed an issue where [detect_product_short] could assign incorrect versions to transitive dependencies when multiple Gradle configurations declared the same dependency with different `strictly` version constraints.
