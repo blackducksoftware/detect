@@ -41,4 +41,4 @@
 
 ### Dependency Updates
 
-* NuGet Inspector has been updated to use .NET 8.
+* Upgraded and released Nuget Inspector version 2.6.3.
