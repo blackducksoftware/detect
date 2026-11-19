@@ -33,10 +33,12 @@
 ### Resolved issues
 
 * (IDETECT-5301) Fixed a crash (`StringIndexOutOfBoundsException`) in the Bazel tool when scanning bzlmod projects that include `git_repository` dependencies with bare `.git` clone URLs. The scan now completes successfully.
+* (IDETECT-5303) Fixed an issue that could result in malformed or missing dependencies in the BOM when the Opam detector incorrectly treated version constraints as package names.
 * (IDETECT-5306) Suppressed the ANTLR tool/runtime version mismatch warnings that were written to the console during detector evaluation. These warnings no longer appear in the scan output.
 * (IDETECT-5308) Fixed a Yarn Lock detector failure (`StringIndexOutOfBoundsException`) when parsing Yarn 4 `yarn.lock` files that contain `npm:` protocol specifiers with no version.
+* (IDETECT-5309) Updated the UV Lock detector to report each resolved package version separately when `uv.lock` contains multiple versions of the same package, such as for different platforms or Python versions.
 * (IDETECT-5326) Added `TEST` as a supported value for the `detect.conan.dependency.types.excluded` property, which excludes dependencies declared with `test_requires()` from the BOM. This applies to the Conan 2 CLI detector only. By default, test dependencies are still included.
 
 ### Dependency Updates
 
-* 
+* Upgraded and released Nuget Inspector version 2.6.3.
