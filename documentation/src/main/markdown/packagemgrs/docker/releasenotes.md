@@ -1,5 +1,11 @@
 # [docker_inspector_name] Release notes
 
+## Version 12.0.3
+
+### Dependency update
+
+* Upgraded Bouncy Castle to version 1.87.
+
 ## Version 12.0.2
 
 ### Resolved issues
