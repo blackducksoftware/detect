@@ -35,6 +35,7 @@
 * (IDETECT-5306) Suppressed the ANTLR tool/runtime version mismatch warnings that were written to the console during detector evaluation. These warnings no longer appear in the scan output.
 * (IDETECT-5308) Fixed a Yarn Lock detector failure (`StringIndexOutOfBoundsException`) when parsing Yarn 4 `yarn.lock` files that contain `npm:` protocol specifiers with no version.
 * (IDETECT-5333) Fixed an issue where [detect_product_short] could assign incorrect versions to transitive dependencies when multiple Gradle configurations declared the same dependency with different `strictly` version constraints.
+* (IDETECT-5356) Fixed a regression that caused Quack Patch to fail after submitting a prompt.
 
 ### Dependency Updates
 
