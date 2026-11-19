@@ -39,4 +39,4 @@
 
 ### Dependency Updates
 
-* 
+* Upgraded and released Docker Inspector version 12.0.3. For more details, please see [Docker Inspector Release Notes](packagemgrs/docker/releasenotes.md). 
