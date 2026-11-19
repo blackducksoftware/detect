@@ -38,4 +38,5 @@
 
 ### Dependency Updates
 
-* 
+* Upgraded and released Nuget Inspector version 2.6.3.
+* Upgraded and released Docker Inspector
