@@ -46,9 +46,13 @@ public class SetupToolsGraphTransformer {
         DependencyGraph dependencyGraph = new BasicDependencyGraph();
         
         if (pipExe != null) {
-            // Get dependencies by running pip show on each direct dependency
+            // Get dependencies by running pip show on each direct dependency.
+            // Track packages already resolved so that diamond dependencies (a package reached
+            // through more than one path) are only queried once, and so that any cycle in the
+            // "Requires" chain can't recurse forever.
+            Map<String, Dependency> resolvedDependencies = new HashMap<>();
             for (PythonDependency directDependency : parsedResult.getDirectDependencies()) {
-                handleShowDependency(pipExe, dependencyGraph, directDependency.getName(), null, directDependency.isConditional());
+                handleShowDependency(pipExe, dependencyGraph, directDependency.getName(), null, directDependency.isConditional(), resolvedDependencies);
             }
         } else {
             // Unable to determine transitive dependencies, add parsed dependencies directly
@@ -76,31 +80,53 @@ public class SetupToolsGraphTransformer {
         }
     }
     
-    private void handleShowDependency(ExecutableTarget pipExe, DependencyGraph dependencyGraph, String dependencyToSearch, Dependency parentDependency, boolean isConditionalDependency) throws ExecutableRunnerException {
+    private void handleShowDependency(ExecutableTarget pipExe, DependencyGraph dependencyGraph, String dependencyToSearch, Dependency parentDependency, boolean isConditionalDependency, Map<String, Dependency> resolvedDependencies) throws ExecutableRunnerException {
+        String normalizedName = normalizePackageName(dependencyToSearch);
+        Dependency alreadyResolvedDependency = resolvedDependencies.get(normalizedName);
+
+        if (alreadyResolvedDependency != null) {
+            // Already queried and fully explored this package on another branch of the graph
+            // (e.g. a diamond dependency). Just wire up this parent/child edge and stop, rather
+            // than re-querying pip and re-exploring its requirements (which would also prevent
+            // termination if the "Requires" chain contains a cycle).
+            if (parentDependency != null) {
+                dependencyGraph.addChildWithParent(alreadyResolvedDependency, parentDependency);
+            }
+            return;
+        }
+
         List<String> rawShowOutput = runPipShow(pipExe, dependencyToSearch, isConditionalDependency);
-        
+
         if (rawShowOutput.isEmpty()) {
             return;
         }
-        
+
         Map<String, String> showOutput = parsePipShow(rawShowOutput);
-        
+
         Dependency currentDependency = entryToDependency(dependencyToSearch, showOutput.get("Version"));
-        
+        resolvedDependencies.put(normalizedName, currentDependency);
+
         if (parentDependency == null) {
             // No parent, add to root of graph
             dependencyGraph.addChildrenToRoot(currentDependency);
         } else {
             dependencyGraph.addChildWithParent(currentDependency, parentDependency);
         }
-        
+
         // See if we need to continue exploring this chain of dependencies
         if (showOutput.containsKey(REQUIRES)) {
             String[] requiredPackages = showOutput.get(REQUIRES).split(", ");
             for (String requiredPackage : requiredPackages) {
-                handleShowDependency(pipExe, dependencyGraph, requiredPackage, currentDependency, false);
+                handleShowDependency(pipExe, dependencyGraph, requiredPackage, currentDependency, false, resolvedDependencies);
             }
         }
+    }
+
+    private String normalizePackageName(String packageName) {
+        // PEP 503 normalization: lowercase, with runs of "-", "_", "." collapsed to a single "-".
+        // pip accepts any of these forms interchangeably, so the same package can appear under
+        // different spellings at different points in the dependency tree.
+        return packageName.replaceAll("[-_.]+", "-").toLowerCase();
     }
     
     public List<String> runPipShow(ExecutableTarget pipExe, String dependencyToSearch, boolean isConditionalDependency) throws ExecutableRunnerException {      

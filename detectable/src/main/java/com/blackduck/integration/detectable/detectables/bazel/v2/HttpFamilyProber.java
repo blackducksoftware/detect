@@ -71,7 +71,7 @@ public class HttpFamilyProber {
         this.mode = options.getMode();
         this.queryOptions = options.getQueryOptions();
         this.bazelVersion = options.getBazelVersion();
-        this.excludedModules = options.getExcludedModules() != null ? options.getExcludedModules() : Collections.emptyList();
+        this.excludedModules = BazelInfrastructureModules.expandUserPatterns(options.getExcludedModules());
     }
 
     /**

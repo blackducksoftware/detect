@@ -106,7 +106,7 @@ public class BzlmodBcrExtractor {
         this.bazelVersion = options.getBazelVersion();
         this.bazelTarget = bazelTarget;
         this.queryOptions = options.getQueryOptions() != null ? options.getQueryOptions() : Collections.emptyList();
-        this.excludedModules = options.getExcludedModules() != null ? options.getExcludedModules() : Collections.emptyList();
+        this.excludedModules = BazelInfrastructureModules.expandUserPatterns(options.getExcludedModules());
         this.githubUrlParser = githubUrlParser;
         this.urlCandidateParser = urlCandidateParser;
         this.showRepoExecutor = showRepoExecutor;
