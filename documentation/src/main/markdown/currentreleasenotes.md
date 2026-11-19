@@ -22,8 +22,7 @@
 
 ### New features
 
-**The Duck is back!** [detect_product_short] once again displays the iconic [var_company_short] splash in the console, bringing a familiar bit of [var_company_short] personality back to your scan logs while making [detect_product_short] output instantly recognizable.
-
+* **The Duck is back!** [detect_product_short] once again displays the iconic [var_company_short] splash in the console, bringing a familiar bit of [var_company_short] personality back to your scan logs while making [detect_product_short] output instantly recognizable.
 * Added the `detect.bazel.modules.excluded` property to exclude specified Bazel BCR modules from the BOM. The property accepts a comma-separated list of module names and supports glob-style wildcards. For example, `rules_*` excludes all modules with names beginning with `rules_`. By default, all BCR modules are included. Auto-generated and synthetic repositories, such as `bazel_tools`, `local_config_*`, and `maven`, are always excluded regardless of this setting.
 * Added `TEST` as a supported value for the `detect.conan.dependency.types.excluded` property, which excludes dependencies declared with `test_requires()` from the BOM. This applies to the Conan 2 CLI detector only. By default, test dependencies are still included.
 * Added the Bun Lock Detector, which extracts direct and transitive dependencies from `bun.lock`. The detector runs when both `package.json` and `bun.lock` are present in the project and does not require the `bun` executable. For more information, see [Bun package manager support](packagemgrs/bun.md).
