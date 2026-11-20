@@ -1,5 +1,11 @@
 # [docker_inspector_name] Release notes
 
+## Version 12.0.4
+
+### Resolved issues
+
+* Resolved the Java4Shell vulnerability (CVE-2026-114938) in the image inspector containers by rebuilding them on updated Chainguard base images that include a patched JRE.
+
 ## Version 12.0.3
 
 ### Dependency update
