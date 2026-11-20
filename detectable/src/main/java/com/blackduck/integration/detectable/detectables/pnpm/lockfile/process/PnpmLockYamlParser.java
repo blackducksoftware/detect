@@ -102,7 +102,7 @@ public class PnpmLockYamlParser {
             File generatedSourcePath = generateCodeLocationSourcePath(sourcePath, reportingProjectPackagePath);
 
             CodeLocation codeLocation = pnpmTransformer.generateCodeLocation(generatedSourcePath, projectPackage,
-                    reportingProjectPackagePath, extractedNameVersion, pnpmLockYaml.packages, linkedPackageResolver, pnpmLockYaml.snapshots);
+                    reportingProjectPackagePath, extractedNameVersion, pnpmLockYaml.packages, linkedPackageResolver, pnpmLockYaml.snapshots, pnpmLockYaml.importers);
             PnpmWorkspaceDependencySummary.logModuleSummary(logger, projectKey, codeLocation.getDependencyGraph());
             codeLocations.add(codeLocation);
         }
