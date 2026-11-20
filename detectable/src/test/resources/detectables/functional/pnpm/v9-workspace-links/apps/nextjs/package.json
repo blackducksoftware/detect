@@ -1,0 +1,15 @@
+{
+  "name": "@acme/nextjs",
+  "private": true,
+  "dependencies": {
+    "@acme/api": "workspace:*",
+    "@acme/validators": "workspace:*",
+    "@tanstack/react-query": "5.90.8",
+    "@trpc/client": "11.7.1",
+    "@trpc/server": "11.7.1",
+    "superjson": "2.2.3"
+  },
+  "devDependencies": {
+    "@acme/tsconfig": "workspace:*"
+  }
+}

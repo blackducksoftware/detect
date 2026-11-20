@@ -1,0 +1,10 @@
+{
+  "name": "@acme/validators",
+  "private": true,
+  "dependencies": {
+    "zod": "4.1.12"
+  },
+  "devDependencies": {
+    "@acme/tsconfig": "workspace:*"
+  }
+}
