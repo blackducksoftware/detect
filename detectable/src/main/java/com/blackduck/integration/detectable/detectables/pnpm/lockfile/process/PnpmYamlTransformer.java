@@ -97,7 +97,6 @@ public class PnpmYamlTransformer {
                 reportingProjectPackagePath != null ? reportingProjectPackagePath : "root");
             return;
         }
-        Set<String> addedRootPackageIds = new HashSet<>();
         for (Map.Entry<String, PnpmPackageInfo> packageEntry : packageMap.entrySet()) {
             String packageId = packageEntry.getKey();
 
@@ -108,13 +107,11 @@ public class PnpmYamlTransformer {
             }
 
             // Process direct dependencies
-            List<String> matchingRootPackageIds = findMatchingRootPackageIds(packageId, rootPackageIds);
-            if (!matchingRootPackageIds.isEmpty()) {
+            if (!findMatchingRootPackageIds(packageId, rootPackageIds).isEmpty()) {
                 graphBuilder.addChildToRoot(pnpmPackage.get());
-                addedRootPackageIds.addAll(matchingRootPackageIds);
             }
 
-            PnpmPackageInfo packageInfo = getDependencyInformation(packageEntry, snapshots);  
+            PnpmPackageInfo packageInfo = getDependencyInformation(packageEntry, snapshots);
             
             // Give up if we can't find any dependencies for this package and move onto processing others.
             if (packageInfo == null) {
@@ -124,21 +121,6 @@ public class PnpmYamlTransformer {
             processTransitiveDependencies(graphBuilder, linkedPackageResolver, reportingProjectPackagePath, pnpmPackage,
                     packageInfo);
         }
-        logRootPackageIdsNotAddedToGraph(rootPackageIds, addedRootPackageIds, reportingProjectPackagePath);
-    }
-
-    private void logRootPackageIdsNotAddedToGraph(List<String> rootPackageIds, Set<String> addedRootPackageIds, @Nullable String reportingProjectPackagePath) {
-        if (!logger.isDebugEnabled()) {
-            return;
-        }
-        String workspace = reportingProjectPackagePath != null ? reportingProjectPackagePath : "root";
-        rootPackageIds.stream()
-            .filter(rootPackageId -> !addedRootPackageIds.contains(rootPackageId))
-            .forEach(rootPackageId -> logger.debug(
-                "Declared dependency '{}' of workspace '{}' was not added to the dependency graph: no matching entry found in the lockfile 'packages' section.",
-                rootPackageId,
-                workspace
-            ));
     }
 
     private PnpmPackageInfo getDependencyInformation(Entry<String, PnpmPackageInfo> packageEntry, Map<String, PnpmPackageInfo> snapshots) {
@@ -257,7 +239,6 @@ public class PnpmYamlTransformer {
             } else {
                 graphBuilder.addChildWithParent(workspaceDependency, parent);
             }
-            logger.debug("Added workspace dependency '{}' ({}) to workspace '{}'.", name, targetImporterKey, importerPath != null ? importerPath : "root");
 
             PnpmProjectPackage targetImporter = importers.get(targetImporterKey);
             if (targetImporter != null && visitedImporterKeys.add(targetImporterKey)) {

@@ -2,11 +2,9 @@ package com.blackduck.integration.detectable.detectables.pnpm.lockfile.process;
 
 import java.io.File;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -78,7 +76,6 @@ public class PnpmYamlTransformerv5 {
                 reportingProjectPackagePath != null ? reportingProjectPackagePath : "root");
             return;
         }
-        Set<String> addedRootPackageIds = new HashSet<>();
         for (Map.Entry<String, PnpmPackageInfov5> packageEntry : packageMap.entrySet()) {
             String packageId = packageEntry.getKey();
             Optional<Dependency> pnpmPackage = buildDependencyFromPackageEntry(packageEntry);
@@ -87,10 +84,8 @@ public class PnpmYamlTransformerv5 {
                 continue;
             }
 
-            List<String> matchingRootPackageIds = findMatchingRootPackageIds(packageId, rootPackageIds);
-            if (!matchingRootPackageIds.isEmpty()) {
+            if (!findMatchingRootPackageIds(packageId, rootPackageIds).isEmpty()) {
                 graphBuilder.addChildToRoot(pnpmPackage.get());
-                addedRootPackageIds.addAll(matchingRootPackageIds);
             }
 
             PnpmPackageInfov5 packageInfo = packageEntry.getValue();
@@ -102,21 +97,6 @@ public class PnpmYamlTransformerv5 {
                 }
             }
         }
-        logRootPackageIdsNotAddedToGraph(rootPackageIds, addedRootPackageIds, reportingProjectPackagePath);
-    }
-
-    private void logRootPackageIdsNotAddedToGraph(List<String> rootPackageIds, Set<String> addedRootPackageIds, @Nullable String reportingProjectPackagePath) {
-        if (!logger.isDebugEnabled()) {
-            return;
-        }
-        String workspace = reportingProjectPackagePath != null ? reportingProjectPackagePath : "root";
-        rootPackageIds.stream()
-            .filter(rootPackageId -> !addedRootPackageIds.contains(rootPackageId))
-            .forEach(rootPackageId -> logger.debug(
-                "Declared dependency '{}' of workspace '{}' was not added to the dependency graph: no matching entry found in the lockfile 'packages' section.",
-                rootPackageId,
-                workspace
-            ));
     }
 
     private PnpmProjectPackagev5 convertPnpmLockYamlToPnpmProjectPackage(PnpmLockYamlv5 pnpmLockYaml) {
