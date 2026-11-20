@@ -58,9 +58,6 @@ public class PnpmLinkedPackageResolver {
     private String readPackageJson(File packageJsonFile) {
         try {
             NullSafePackageJson packageJson = packageJsonFiles.read(packageJsonFile);
-            if (packageJson.getVersion().isEmpty()) {
-                logger.debug("package.json has no 'version' field, so an empty version will be used: {}", packageJsonFile.toPath().toAbsolutePath().normalize());
-            }
             return packageJson.getVersionString();
         } catch (IOException e) {
             logger.debug(String.format("Unable to parse package.json: %s", packageJsonFile.getAbsolutePath()));
