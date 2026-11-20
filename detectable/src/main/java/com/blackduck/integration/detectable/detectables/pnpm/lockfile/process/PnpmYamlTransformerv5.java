@@ -84,7 +84,7 @@ public class PnpmYamlTransformerv5 {
                 continue;
             }
 
-            if (!findMatchingRootPackageIds(packageId, rootPackageIds).isEmpty()) {
+            if (isRootPackage(packageId, rootPackageIds)) {
                 graphBuilder.addChildToRoot(pnpmPackage.get());
             }
 
@@ -162,14 +162,14 @@ public class PnpmYamlTransformerv5 {
             .map(nameVersion -> Dependency.FACTORY.createNameVersionDependency(Forge.NPMJS, nameVersion.getName(), nameVersion.getVersion()));
     }
 
-    private List<String> findMatchingRootPackageIds(String id, List<String> rootIds) {
-        return rootIds.stream()
-            .filter(rootId -> rootId.equals(id) ||
-                parseNameVersionFromId(rootId)
-                    .map(NameVersion::getVersion)
-                    .filter(id::equals) // for file dependencies, they are declared as <name> : <fileIdAsReportedInPackagesSection>
-                    .isPresent())
-            .collect(Collectors.toList());
+    private boolean isRootPackage(String id, List<String> rootIds) {
+        return rootIds.contains(id) ||
+            rootIds.stream()
+                .map(this::parseNameVersionFromId)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .map(NameVersion::getVersion)
+                .anyMatch(id::equals); // for file dependencies, they are declared as <name> : <fileIdAsReportedInPackagesSection>
     }
 
 }

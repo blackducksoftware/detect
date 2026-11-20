@@ -2,7 +2,6 @@ package com.blackduck.integration.detectable.detectables.pnpm.lockfile.process;
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -99,19 +98,19 @@ public class PnpmYamlTransformer {
         }
         for (Map.Entry<String, PnpmPackageInfo> packageEntry : packageMap.entrySet()) {
             String packageId = packageEntry.getKey();
-
+            
             Optional<Dependency> pnpmPackage = buildDependencyFromPackageEntry(packageEntry);
             if (!pnpmPackage.isPresent()) {
                 logger.debug(String.format("Could not add package %s to the graph.", packageId));
                 continue;
             }
-
+            
             // Process direct dependencies
-            if (!findMatchingRootPackageIds(packageId, rootPackageIds).isEmpty()) {
+            if (isRootPackage(packageId, rootPackageIds)) {
                 graphBuilder.addChildToRoot(pnpmPackage.get());
             }
 
-            PnpmPackageInfo packageInfo = getDependencyInformation(packageEntry, snapshots);
+            PnpmPackageInfo packageInfo = getDependencyInformation(packageEntry, snapshots);  
             
             // Give up if we can't find any dependencies for this package and move onto processing others.
             if (packageInfo == null) {
@@ -194,14 +193,7 @@ public class PnpmYamlTransformer {
         @Nullable String reportingProjectPackagePath,
         PnpmLinkedPackageResolver linkedPackageResolver
     ) {
-        Map<String, PnpmDependencyInfo> rawPackageInfo = new HashMap<>();
-        if (pnpmProjectPackage.dependencies != null) {
-            rawPackageInfo.putAll(pnpmProjectPackage.dependencies);
-        }
-        dependencyTypeFilter.ifShouldInclude(PnpmDependencyType.DEV, pnpmProjectPackage.devDependencies, rawPackageInfo::putAll);
-        dependencyTypeFilter.ifShouldInclude(PnpmDependencyType.OPTIONAL, pnpmProjectPackage.optionalDependencies, rawPackageInfo::putAll);
-
-        return rawPackageInfo.entrySet().stream()
+        return collectImporterDependencies(pnpmProjectPackage, true).entrySet().stream()
             .filter(entry -> !isLinkedPackage(entry.getValue().version)) // workspace links are added by addWorkspaceDependencies
             .map(entry -> convertRawEntryToPackageId(entry.getKey(), entry.getValue().version, linkedPackageResolver, reportingProjectPackagePath))
             .collect(Collectors.toList());
@@ -282,7 +274,7 @@ public class PnpmYamlTransformer {
     private String convertRawEntryToPackageId(String name, String version, PnpmLinkedPackageResolver linkedPackageResolver, @Nullable String reportingProjectPackagePath) {
         name = StringUtils.strip(name, "'");
         
-        if (version.startsWith(LINKED_PACKAGE_PREFIX)) {
+        if (isLinkedPackage(version)) {
             // a linked project package's version will be referenced in the format: <linkPrefix><pathToLinkedPackageRelativeToReportingProjectPackage>
             version = linkedPackageResolver.resolveVersionOfLinkedPackage(reportingProjectPackagePath, version.replace(LINKED_PACKAGE_PREFIX, ""));
         }
@@ -356,14 +348,14 @@ public class PnpmYamlTransformer {
             .map(nameVersion -> Dependency.FACTORY.createNameVersionDependency(Forge.NPMJS, nameVersion.getName(), nameVersion.getVersion()));
     }
 
-    private List<String> findMatchingRootPackageIds(String id, List<String> rootIds) {
-        return rootIds.stream()
-            .filter(rootId -> rootId.equals(id) ||
-                parseNameVersionFromId(rootId)
-                    .map(NameVersion::getVersion)
-                    .filter(id::equals) // for file dependencies, they are declared as <name> : <fileIdAsReportedInPackagesSection>
-                    .isPresent())
-            .collect(Collectors.toList());
+    private boolean isRootPackage(String id, List<String> rootIds) { 
+        return rootIds.contains(id) ||
+            rootIds.stream()
+                .map(this::parseNameVersionFromId)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .map(NameVersion::getVersion)
+                .anyMatch(id::equals); // for file dependencies, they are declared as <name> : <fileIdAsReportedInPackagesSection>
     }
  
     private String removeExtraVersionInformation(String version) {

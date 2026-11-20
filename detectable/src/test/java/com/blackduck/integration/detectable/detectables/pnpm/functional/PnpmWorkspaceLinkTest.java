@@ -1,22 +1,17 @@
 package com.blackduck.integration.detectable.detectables.pnpm.functional;
 
 import java.io.File;
-import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.blackduck.integration.bdio.graph.DependencyGraph;
 import com.blackduck.integration.bdio.model.Forge;
-import com.blackduck.integration.bdio.model.dependency.Dependency;
 import com.blackduck.integration.bdio.model.externalid.ExternalId;
 import com.blackduck.integration.detectable.detectable.codelocation.CodeLocation;
 import com.blackduck.integration.detectable.detectable.util.EnumListFilter;
@@ -24,6 +19,7 @@ import com.blackduck.integration.detectable.detectables.pnpm.lockfile.PnpmLockOp
 import com.blackduck.integration.detectable.detectables.pnpm.lockfile.model.PnpmDependencyType;
 import com.blackduck.integration.detectable.detectables.pnpm.lockfile.process.PnpmLinkedPackageResolver;
 import com.blackduck.integration.detectable.detectables.pnpm.lockfile.process.PnpmLockYamlParserInitial;
+import com.blackduck.integration.detectable.detectables.pnpm.lockfile.process.PnpmWorkspaceDependencySummary;
 import com.blackduck.integration.detectable.detectables.yarn.packagejson.PackageJsonFiles;
 import com.blackduck.integration.detectable.detectables.yarn.packagejson.PackageJsonReader;
 import com.blackduck.integration.detectable.util.FunctionalTestFiles;
@@ -38,7 +34,7 @@ public class PnpmWorkspaceLinkTest {
 
     @Test
     public void linkedWorkspacesAreDirectDependenciesOfDeclaringModule() throws Exception {
-        NameVersionGraphAssert nextjs = graphFor(parse(EnumListFilter.excludeNone(), Collections.emptyList()), "apps/nextjs");
+        NameVersionGraphAssert nextjs = nextjsGraph(EnumListFilter.excludeNone());
 
         nextjs.hasRootDependency("@acme/api", NO_VERSION);
         nextjs.hasRootDependency("@acme/validators", NO_VERSION);
@@ -52,7 +48,7 @@ public class PnpmWorkspaceLinkTest {
 
     @Test
     public void crossModuleChainIsConnected() throws Exception {
-        NameVersionGraphAssert nextjs = graphFor(parse(EnumListFilter.excludeNone(), Collections.emptyList()), "apps/nextjs");
+        NameVersionGraphAssert nextjs = nextjsGraph(EnumListFilter.excludeNone());
 
         nextjs.hasParentChildRelationship("@acme/api", NO_VERSION, "zod", "4.1.12");
         // sibling links: link:../auth and link:../db from packages/api, link:../db from packages/auth
@@ -66,7 +62,7 @@ public class PnpmWorkspaceLinkTest {
 
     @Test
     public void workspaceReachedThroughTwoPathsIsExpandedOnce() throws Exception {
-        NameVersionGraphAssert nextjs = graphFor(parse(EnumListFilter.excludeNone(), Collections.emptyList()), "apps/nextjs");
+        NameVersionGraphAssert nextjs = nextjsGraph(EnumListFilter.excludeNone());
 
         // @acme/db is linked from both packages/api and packages/auth; it is one node with both parents
         nextjs.hasParentChildRelationship("@acme/api", NO_VERSION, "@acme/db", NO_VERSION);
@@ -76,7 +72,7 @@ public class PnpmWorkspaceLinkTest {
 
     @Test
     public void devDependenciesOfLinkedModuleAreNotFollowed() throws Exception {
-        NameVersionGraphAssert nextjs = graphFor(parse(EnumListFilter.excludeNone(), Collections.emptyList()), "apps/nextjs");
+        NameVersionGraphAssert nextjs = nextjsGraph(EnumListFilter.excludeNone());
 
         // packages/api has devDependencies on @acme/tsconfig and typescript, which are not part of what @acme/api ships:
         // its children are @acme/auth, @acme/db, @acme/validators, @trpc/server, superjson and zod
@@ -85,7 +81,7 @@ public class PnpmWorkspaceLinkTest {
 
     @Test
     public void devDependencyLinkOfReportingModuleRespectsDependencyTypeFilter() throws Exception {
-        NameVersionGraphAssert nextjs = graphFor(parse(EnumListFilter.fromExcluded(PnpmDependencyType.DEV), Collections.emptyList()), "apps/nextjs");
+        NameVersionGraphAssert nextjs = nextjsGraph(EnumListFilter.fromExcluded(PnpmDependencyType.DEV));
 
         nextjs.hasRootDependency("@acme/api", NO_VERSION);
         nextjs.hasNoDependency("@acme/tsconfig", "0.1.0");
@@ -106,7 +102,8 @@ public class PnpmWorkspaceLinkTest {
     public void includedPackagesAppsNextjsReportsDependenciesInheritedThroughLinkedWorkspaces() throws Exception {
         List<CodeLocation> codeLocations = parse(EnumListFilter.fromExcluded(PnpmDependencyType.DEV), Collections.singletonList("apps/nextjs"));
 
-        Assertions.assertEquals(expectedAppsNextjsProductionPackages(), reachableNameVersions(codeLocations.get(0)));
+        Set<String> reachable = new HashSet<>(PnpmWorkspaceDependencySummary.from(codeLocations.get(0).getDependencyGraph(), true).depNames);
+        Assertions.assertEquals(expectedAppsNextjsProductionPackages(), reachable);
     }
 
     // packages/api, auth, db and validators are excluded by the filter, but apps/nextjs ships their dependencies.
@@ -141,19 +138,8 @@ public class PnpmWorkspaceLinkTest {
         return new PnpmLockYamlParserInitial(options).parse(lockfile, new NameVersion("create-t3-turbo", "1.0.0"), resolver);
     }
 
-    private Set<String> reachableNameVersions(CodeLocation codeLocation) {
-        DependencyGraph graph = codeLocation.getDependencyGraph();
-        Set<Dependency> visited = new HashSet<>();
-        Deque<Dependency> queue = new ArrayDeque<>(graph.getRootDependencies());
-        while (!queue.isEmpty()) {
-            Dependency dependency = queue.poll();
-            if (visited.add(dependency)) {
-                queue.addAll(graph.getChildrenForParent(dependency));
-            }
-        }
-        return visited.stream()
-            .map(dependency -> dependency.getName() + "@" + (dependency.getVersion() != null ? dependency.getVersion() : ""))
-            .collect(Collectors.toSet());
+    private NameVersionGraphAssert nextjsGraph(EnumListFilter<PnpmDependencyType> dependencyTypeFilter) throws Exception {
+        return graphFor(parse(dependencyTypeFilter, Collections.emptyList()), "apps/nextjs");
     }
 
     private NameVersionGraphAssert graphFor(List<CodeLocation> codeLocations, String importerKey) {
