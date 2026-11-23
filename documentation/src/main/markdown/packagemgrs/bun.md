@@ -19,4 +19,4 @@
 * Constructs a hierarchical **dependency graph** of the project's direct and transitive dependencies.
 * Extracts the project's name and version from the `package.json` file. If it does not find a `package.json` file, it will defer to a project name derived by git, from the project's directory, or defaults.
 
-<note type="note">The Bun Lockfile Detector supports only the text-based `bun.lock` file. The binary `bun.lockb` file is not supported.</note>
+<note type="note">The Bun Lock Detector supports only the text-based `bun.lock` file. The binary `bun.lockb` file is not supported.</note>

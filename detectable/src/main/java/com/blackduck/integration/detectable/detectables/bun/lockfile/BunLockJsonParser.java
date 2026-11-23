@@ -100,8 +100,11 @@ public class BunLockJsonParser {
             if (pkg == null) {
                 pkg = packagesByKey.get(dep.getName());
             }
-            if (pkg != null) {
-                result.add(new DirectDependency(dep.getName(), pkg.getVersion(), dep.getType()));
+            // A semver range can still resolve to a local workspace package, which is not a registry component.
+            if (pkg != null && !pkg.getVersion().startsWith("workspace:")) {
+                // Use the resolved package name, not the workspace key: an alias such as "knobs": "npm:@kitlangton/knobs@..."
+                // resolves to a different package, and its dependencies are linked under the real name.
+                result.add(new DirectDependency(pkg.getName(), pkg.getVersion(), dep.getType()));
             }
         }
         return result;

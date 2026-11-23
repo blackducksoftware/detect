@@ -5,7 +5,7 @@ For advanced and deprecated properties, refer to [All Properties](all-properties
 
 <#list groups?sort_by("groupName") as group>
 
-## [${group.groupName}](${group.location}.md)
+## [${group.groupName}](${group.location}.md){.section .ft-secondary-toc}
 
 | Property | Description |
 | --- | --- |
