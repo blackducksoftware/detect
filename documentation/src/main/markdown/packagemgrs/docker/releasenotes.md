@@ -1,5 +1,11 @@
 # [docker_inspector_name] Release notes
 
+## Version 12.0.4
+
+### Dependency update
+
+* Upgraded Java version in base images to address Java4Shell vulnerability. 
+
 ## Version 12.0.3
 
 ### Dependency update

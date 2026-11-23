@@ -41,4 +41,4 @@
 ### Dependency Updates
 
 * Upgraded and released Nuget Inspector version 2.6.3.
-* Upgraded and released Docker Inspector version 12.0.3. For more information, see [Docker Inspector Release Notes](packagemgrs/docker/releasenotes.md). 
+* Upgraded and released Docker Inspector version 12.0.4. For more information, see [Docker Inspector Release Notes](packagemgrs/docker/releasenotes.md). 
