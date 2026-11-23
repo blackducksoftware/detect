@@ -196,7 +196,7 @@ public class DetectProperties {
     public static final BooleanProperty DETECT_DISCOVERY_INCLUDE_DOCS =
             BooleanProperty.newBuilder("detect.discovery.include.docs", false)
                     .setInfo("Discovery Include Docs", DetectPropertyFromVersion.VERSION_12_0_0)
-                    .setHelp("If true, discovery mode embeds detector documentation markdown in the output JSON under docContent.")
+                    .setHelp("Internal use only. If true, discovery mode embeds detector documentation markdown in the output JSON under docContent.")
                     .setGroups(DetectGroup.GLOBAL)
                     .setCategory(DetectCategory.Advanced)
                     .build();
@@ -204,7 +204,7 @@ public class DetectProperties {
     public static final NullablePathProperty DETECT_DISCOVERY_OUTPUT_PATH =
             NullablePathProperty.newBuilder("detect.discovery.output.path")
                     .setInfo("Discovery Output Path", DetectPropertyFromVersion.VERSION_12_0_0)
-                    .setHelp("The directory where discovery mode writes detect-discovery-output.json.", "If not set, the file is written to the current run's home directory.")
+                    .setHelp("Internal use only. The directory where discovery mode writes detect-discovery-output.json.", "If not set, the file is written to the current run's home directory.")
                     .setGroups(DetectGroup.PATHS, DetectGroup.GLOBAL)
                     .setExample("/home/<username>/blackduck/discovery")
                     .build();
