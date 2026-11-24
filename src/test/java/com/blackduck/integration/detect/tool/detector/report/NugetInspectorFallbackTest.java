@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.LoggerFactory;
 
@@ -231,6 +232,34 @@ class NugetInspectorFallbackTest {
         verify(projectResolver, never()).resolveProjectInspector();
     }
 
+    @ParameterizedTest
+    @CsvSource({ "true, true, 1", "true, false, 0", "false, true, 0" })
+    void logsOnceWhenSolutionFilterSkipsNestedNugetDirectories(boolean filterEnabled, boolean searchContinue, int expectedLines) throws Exception {
+        NugetInspectorOptions options = options(filterEnabled);
+        Path nestedSolution = Files.createDirectory(sourceDirectory.resolve("nested-solution"));
+        Files.createFile(nestedSolution.resolve("nested.sln"));
+        Path nestedProject = Files.createDirectory(sourceDirectory.resolve("nested-project"));
+        Files.createFile(nestedProject.resolve("nested.csproj"));
+        List<DirectoryEvaluation> nested = Stream.of(nestedSolution, nestedProject)
+            .map(directory -> new DirectoryEvaluation(
+                directory.toFile(), 1, Collections.singletonList(evaluate(options, Collections.emptyList(), directory, 1, searchContinue)), Collections.emptyList()
+            ))
+            .collect(Collectors.toList());
+        DirectoryEvaluation root = new DirectoryEvaluation(
+            sourceDirectory.toFile(), 0, Collections.singletonList(evaluate(options, Collections.emptyList(), sourceDirectory, 0, searchContinue)), nested
+        );
+
+        new DetectorReporter().generateReport(root);
+
+        List<String> skipLines = logAppender.list.stream()
+            .filter(event -> event.getLevel() == Level.INFO)
+            .map(ILoggingEvent::getFormattedMessage)
+            .filter(message -> message.equals(
+                "NuGet detection is limited to the solution filter configured in detect.nuget.solution.filter.path; other NuGet solutions and projects are skipped."))
+            .collect(Collectors.toList());
+        assertEquals(expectedLines, skipLines.size(), logAppender.list.toString());
+    }
+
     private NugetInspectorOptions options(boolean filterEnabled) {
         return new NugetInspectorOptions.Builder()
             .excludedModules(Collections.emptyList())
@@ -246,6 +275,13 @@ class NugetInspectorFallbackTest {
     }
 
     private DetectorDirectoryReport runDetectionAt(NugetInspectorOptions options, List<String> excludedDetectables, Path directory, int depth) {
+        DirectoryEvaluation directoryEvaluation = new DirectoryEvaluation(
+            directory.toFile(), depth, Collections.singletonList(evaluate(options, excludedDetectables, directory, depth, true)), Collections.emptyList()
+        );
+        return new DetectorReporter().generateReport(directoryEvaluation).get(0);
+    }
+
+    private DetectorRuleEvaluation evaluate(NugetInspectorOptions options, List<String> excludedDetectables, Path directory, int depth, boolean searchContinue) {
         DetectDetectableFactory factory = mock(DetectDetectableFactory.class);
         when(factory.createNugetSolutionDetectable(any(DetectableEnvironment.class)))
             .thenAnswer(invocation -> new NugetSolutionDetectable(invocation.getArgument(0), fileFinder, nugetResolver, nugetExtractor, options));
@@ -259,20 +295,16 @@ class NugetInspectorFallbackTest {
             .findFirst()
             .orElseThrow(AssertionError::new);
         DetectorRuleEvaluator evaluator = new DetectorRuleEvaluator(
-            new SearchEvaluator(new SearchOptions(type -> true, true)),
+            new SearchEvaluator(new SearchOptions(type -> true, searchContinue)),
             new DetectableEvaluator(),
             new DetectableExclusionEvaluator(excludedDetectables)
         );
-        DetectorRuleEvaluation evaluation = evaluator.evaluate(
+        return evaluator.evaluate(
             new DetectableEnvironment(directory.toFile()),
             new SearchEnvironment(depth, Collections.emptySet(), depth == 0 ? Collections.emptySet() : Collections.singleton(DetectorType.NUGET), Collections.emptySet()),
             nugetRule,
             () -> new ExtractionEnvironment(sourceDirectory.resolve("output").toFile())
         );
-        DirectoryEvaluation directoryEvaluation = new DirectoryEvaluation(
-            directory.toFile(), depth, Collections.singletonList(evaluation), Collections.emptyList()
-        );
-        return new DetectorReporter().generateReport(directoryEvaluation).get(0);
     }
 
     private void assertProjectInspectorExtracted(DetectorDirectoryReport report) {

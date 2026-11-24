@@ -16,6 +16,7 @@ import com.blackduck.integration.detect.tool.detector.report.rule.EvaluatedDetec
 import com.blackduck.integration.detect.tool.detector.report.rule.ExtractedDetectorRuleReport;
 import com.blackduck.integration.detect.tool.detector.report.rule.NotFoundDetectorRuleReport;
 import com.blackduck.integration.detectable.detectable.annotation.DetectableInfo;
+import com.blackduck.integration.detectable.detectable.result.NugetSolutionFilterDetectableResult;
 import com.blackduck.integration.detectable.detectables.nuget.NugetProjectInspectorDetectable;
 import com.blackduck.integration.detector.accuracy.detectable.DetectableEvaluationResult;
 import com.blackduck.integration.detector.accuracy.directory.DirectoryEvaluation;
@@ -64,7 +65,19 @@ public class DetectorReporter {
             ));
         });
 
+        if (directoryEvaluations.stream().anyMatch(this::isNugetSkippedForSolutionFilter)) {
+            logger.info("NuGet detection is limited to the solution filter configured in {}; other NuGet solutions and projects are skipped.",
+                DetectProperties.DETECT_NUGET_SOLUTION_FILTER_PATH.getKey());
+        }
+
         return reports;
+    }
+
+    private boolean isNugetSkippedForSolutionFilter(DirectoryEvaluation directoryEvaluation) {
+        return directoryEvaluation.getEvaluations().stream()
+            .filter(evaluation -> evaluation.getRule().getDetectorType() == DetectorType.NUGET && !evaluation.wasFound())
+            .flatMap(evaluation -> evaluation.getNotFoundEntryPoints().stream())
+            .anyMatch(notFound -> notFound.getApplicableResult().filter(NugetSolutionFilterDetectableResult.class::isInstance).isPresent());
     }
 
     private void addFoundReport(
