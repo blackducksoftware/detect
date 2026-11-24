@@ -22,13 +22,15 @@ public final class BazelExtractionOptions {
     private final List<String> queryOptions;
     private final BazelVersion bazelVersion;
     private final List<String> excludedModules;
+    private final boolean aspectsEnabled;
 
-    private BazelExtractionOptions(BazelEnvironmentAnalyzer.Mode mode, List<String> cqueryOptions, List<String> queryOptions, BazelVersion bazelVersion, List<String> excludedModules) {
+    private BazelExtractionOptions(BazelEnvironmentAnalyzer.Mode mode, List<String> cqueryOptions, List<String> queryOptions, BazelVersion bazelVersion, List<String> excludedModules, boolean aspectsEnabled) {
         this.mode = mode;
         this.cqueryOptions = Collections.unmodifiableList(new ArrayList<>(cqueryOptions));
         this.queryOptions = Collections.unmodifiableList(new ArrayList<>(queryOptions));
         this.bazelVersion = bazelVersion;
         this.excludedModules = Collections.unmodifiableList(new ArrayList<>(excludedModules));
+        this.aspectsEnabled = aspectsEnabled;
     }
 
     public BazelEnvironmentAnalyzer.Mode getMode() {
@@ -58,6 +60,10 @@ public final class BazelExtractionOptions {
         return excludedModules;
     }
 
+    public boolean isAspectsEnabled() {
+        return aspectsEnabled;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -68,6 +74,7 @@ public final class BazelExtractionOptions {
         private List<String> queryOptions = Collections.emptyList();
         private BazelVersion bazelVersion = null;
         private List<String> excludedModules = Collections.emptyList();
+        private boolean aspectsEnabled = false;
 
         public Builder mode(BazelEnvironmentAnalyzer.Mode mode) {
             this.mode = mode;
@@ -94,8 +101,13 @@ public final class BazelExtractionOptions {
             return this;
         }
 
+        public Builder aspectsEnabled(boolean aspectsEnabled) {
+            this.aspectsEnabled = aspectsEnabled;
+            return this;
+        }
+
         public BazelExtractionOptions build() {
-            return new BazelExtractionOptions(mode, cqueryOptions, queryOptions, bazelVersion, excludedModules);
+            return new BazelExtractionOptions(mode, cqueryOptions, queryOptions, bazelVersion, excludedModules, aspectsEnabled);
         }
     }
 }

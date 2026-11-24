@@ -8,6 +8,9 @@ import com.blackduck.integration.bdio.model.externalid.ExternalIdFactory;
 import com.blackduck.integration.detectable.detectable.exception.DetectableException;
 import com.blackduck.integration.detectable.detectable.executable.ExecutableFailedException;
 import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
+import com.blackduck.integration.detectable.detectables.bazel.aspect.AspectDependencyGraphBuilder;
+import com.blackduck.integration.detectable.detectables.bazel.aspect.AspectNodeMetadata;
+import com.blackduck.integration.detectable.detectables.bazel.aspect.BazelAspectExtractor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.Pipelines;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelCommandExecutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelVariableSubstitutor;
@@ -40,22 +43,26 @@ public class BazelV2Extractor {
     private final BazelVariableSubstitutor bazelVariableSubstitutor;
     private final HaskellCabalLibraryJsonProtoParser haskellParser;
     private final BazelProjectNameGenerator projectNameGenerator;
+    // null when aspects are disabled (default); set by BazelV2Detectable when detect.bazel.aspects.enabled=true
+    private final BazelAspectExtractor aspectExtractor;
 
-    /**
-     * Constructor for BazelV2Extractor
-     * @param externalIdFactory Factory for creating ExternalId objects
-     * @param bazelVariableSubstitutor Substitutes variables in Bazel commands
-     * @param haskellParser Parses Haskell cabal library JSON proto output
-     * @param projectNameGenerator Generates project names from Bazel targets
-     */
     public BazelV2Extractor(ExternalIdFactory externalIdFactory,
                             BazelVariableSubstitutor bazelVariableSubstitutor,
                             HaskellCabalLibraryJsonProtoParser haskellParser,
                             BazelProjectNameGenerator projectNameGenerator) {
+        this(externalIdFactory, bazelVariableSubstitutor, haskellParser, projectNameGenerator, null);
+    }
+
+    public BazelV2Extractor(ExternalIdFactory externalIdFactory,
+                            BazelVariableSubstitutor bazelVariableSubstitutor,
+                            HaskellCabalLibraryJsonProtoParser haskellParser,
+                            BazelProjectNameGenerator projectNameGenerator,
+                            BazelAspectExtractor aspectExtractor) {
         this.externalIdFactory = externalIdFactory;
         this.bazelVariableSubstitutor = bazelVariableSubstitutor;
         this.haskellParser = haskellParser;
         this.projectNameGenerator = projectNameGenerator;
+        this.aspectExtractor = aspectExtractor;
     }
 
     /**
@@ -175,7 +182,23 @@ public class BazelV2Extractor {
         Set<ExternalId> bcrExternalIds = bcrExtractor.getResolvedExternalIds();
         Set<ExternalId> bcrGraphedIds = bcrExtractor.getGraphedExternalIds();
 
-        List<DependencySource> ordered = sources.stream()
+        // Aspect path: when enabled, run the aspect and add Maven/Rust/Python nodes with proper
+        // direct/transitive edges. MAVEN_INSTALL and MAVEN_JAR pipelines are skipped — the aspect
+        // gives the same data with better graph structure, making the flat cquery pipelines redundant.
+        Set<DependencySource> effectiveSources = new HashSet<>(sources);
+        if (options.isAspectsEnabled() && aspectExtractor != null) {
+            try {
+                List<AspectNodeMetadata> aspectNodes = aspectExtractor.run(bazelTarget);
+                new AspectDependencyGraphBuilder(externalIdFactory).populateGraph(graph, aspectNodes, bazelTarget);
+                effectiveSources.remove(DependencySource.MAVEN_INSTALL);
+                effectiveSources.remove(DependencySource.MAVEN_JAR);
+                logger.info("Bazel aspect extraction complete — Maven/Rust/Python deps added with direct/transitive edges. MAVEN_INSTALL/MAVEN_JAR pipelines skipped.");
+            } catch (Exception e) {
+                logger.warn("Bazel aspect extraction failed ({}); falling back to standard MAVEN_INSTALL/MAVEN_JAR pipelines.", e.getMessage());
+            }
+        }
+
+        List<DependencySource> ordered = effectiveSources.stream()
             .sorted(Comparator.comparingInt(this::priority))
             .collect(Collectors.toList());
 

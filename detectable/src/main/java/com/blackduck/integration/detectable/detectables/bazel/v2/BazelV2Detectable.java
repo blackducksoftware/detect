@@ -19,6 +19,7 @@ import com.blackduck.integration.detectable.detectable.result.PropertyInsufficie
 import com.blackduck.integration.detectable.detectables.bazel.BazelDetectableOptions;
 import com.blackduck.integration.detectable.detectables.bazel.BazelProjectNameGenerator;
 import com.blackduck.integration.detectable.detectables.bazel.DependencySource;
+import com.blackduck.integration.detectable.detectables.bazel.aspect.BazelAspectExtractor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelCommandExecutor;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelFatalWorkspaceException;
 import com.blackduck.integration.detectable.detectables.bazel.pipeline.step.BazelVariableSubstitutor;
@@ -168,7 +169,7 @@ public class BazelV2Detectable extends Detectable {
                 .bazelVersion(bazelVersion)
                 .cqueryOptions(options.getBazelCqueryAdditionalOptions())
                 .queryOptions(options.getBazelQueryAdditionalOptions())
-                .excludedModules(options.getExcludedModules())
+                .excludedModules(options.getExcludedModules()).aspectsEnabled(true)
                 .build();
             Set<DependencySource> pipelines = resolvePipelines(bazelCmd, target, extractionOptions);
 
@@ -183,8 +184,16 @@ public class BazelV2Detectable extends Detectable {
                 throw new DetectableException("No supported Bazel dependency sources found for target '" + target + "'. To override, use detect.bazel.dependency.sources property.");
             }
 
+            // When aspects are enabled, construct BazelAspectExtractor for the extraction.
+            // It is null when aspects are disabled (default) so BazelV2Extractor uses the standard pipelines.
+            BazelAspectExtractor aspectExtractor = null;
+            if (extractionOptions.isAspectsEnabled()) {
+                aspectExtractor = new BazelAspectExtractor(executableRunner, environment.getDirectory(), bazelExe);
+                logger.info("Bazel aspects enabled — Maven/Rust/Python deps will be extracted via BUILD graph traversal.");
+            }
+
             // Run the extraction using the determined pipelines
-            BazelV2Extractor extractor = new BazelV2Extractor(externalIdFactory, bazelVariableSubstitutor, haskellParser, projectNameGenerator);
+            BazelV2Extractor extractor = new BazelV2Extractor(externalIdFactory, bazelVariableSubstitutor, haskellParser, projectNameGenerator, aspectExtractor);
             Extraction extraction = extractor.run(bazelCmd, pipelines, target, extractionOptions);
 
             // Extraction can also swallow the fatal signature per-call (e.g. in ShowRepoExecutor);
