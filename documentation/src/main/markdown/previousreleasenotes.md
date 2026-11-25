@@ -1,6 +1,31 @@
 <!-- Check the support matrix to determine supported, non-current major version releases -->
 # Release notes for previous [detect_product_short] versions
 
+## Version 12.2.0
+
+### New features
+
+* **The Duck is back!** [detect_product_short] once again displays the iconic [var_company_short] splash in the console, bringing a familiar bit of [var_company_short] personality back to your scan logs while making [detect_product_short] output instantly recognizable.
+* Added the `detect.bazel.modules.excluded` property to exclude specified Bazel BCR modules from the BOM. The property accepts a comma-separated list of module names and supports glob-style wildcards. For example, `rules_*` excludes all modules with names beginning with `rules_`. By default, all BCR modules are included. Auto-generated and synthetic repositories, such as `bazel_tools`, `local_config_*`, and `maven`, are always excluded regardless of this setting.
+* Added `TEST` as a supported value for the `detect.conan.dependency.types.excluded` property, which excludes dependencies declared with `test_requires()` from the BOM. This applies to the Conan 2 CLI detector only. By default, test dependencies are still included.
+* Added the Bun Lock Detector, which extracts direct and transitive dependencies from `bun.lock`. The detector runs when both `package.json` and `bun.lock` are present in the project and does not require the `bun` executable. For more information, see [Bun package manager support](packagemgrs/bun.md).
+* Added a compatibility check between [detect_product_short] and [bd_product_long]. After connecting to the server, [detect_product_short] compares its version against an embedded compatibility matrix and logs a warning, which is also reported as a `COMPATIBILITY` Detect issue, if the pair is not a supported combination. The check is advisory only and does not affect the scan result or exit code. It is skipped for offline scans.
+
+### Resolved issues
+
+* (IDETECT-5301) Fixed a crash (`StringIndexOutOfBoundsException`) in the Bazel tool when scanning bzlmod projects that include `git_repository` dependencies with bare `.git` clone URLs. The scan now completes successfully.
+* (IDETECT-5303) Fixed an issue that could result in malformed or missing dependencies in the BOM when the Opam detector incorrectly treated version constraints as package names.
+* (IDETECT-5306) Suppressed the ANTLR tool/runtime version mismatch warnings that were written to the console during detector evaluation. These warnings no longer appear in the scan output.
+* (IDETECT-5308) Fixed a Yarn Lock detector failure (`StringIndexOutOfBoundsException`) when parsing Yarn 4 `yarn.lock` files that contain `npm:` protocol specifiers with no version.
+* (IDETECT-5333) Fixed an issue where [detect_product_short] could assign incorrect versions to transitive dependencies when multiple Gradle configurations declared the same dependency with different `strictly` version constraints.
+* (IDETECT-5309) Updated the UV Lock detector to report each resolved package version separately when `uv.lock` contains multiple versions of the same package, such as for different platforms or Python versions.
+* (IDETECT-5356) Fixed a regression that caused Quack Patch to fail after submitting a prompt.
+
+### Dependency Updates
+
+* Upgraded and released Nuget Inspector version 2.6.3.
+* Upgraded and released Docker Inspector version 12.0.4. For more information, see [Docker Inspector Release Notes](packagemgrs/docker/releasenotes.md).
+
 ## Version 12.1.1
 
 ### Dependency Updates

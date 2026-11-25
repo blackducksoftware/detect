@@ -4,7 +4,7 @@ This page lists [detect_product_long] deprecated properties for software version
 
 <#list groups as group>
 
-## [${group.groupName}](${group.location}.md)
+## [${group.groupName}](${group.location}.md){.section .ft-secondary-toc}
 
 | Property | Description |
 | --- | --- |

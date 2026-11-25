@@ -7,7 +7,7 @@ For most use cases, refer to [basic properties](basic-properties.md).
 
 <#list groups?sort_by("groupName") as group>
 
-## [${group.groupName}](<#noautoesc>${group.location}.md</#noautoesc>)
+## [${group.groupName}](<#noautoesc>${group.location}.md</#noautoesc>){.section .ft-secondary-toc}
 
 | Property | Description |
 | --- | --- |
