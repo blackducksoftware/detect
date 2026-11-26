@@ -1,0 +1,16 @@
+{
+  "name": "@acme/api",
+  "private": true,
+  "dependencies": {
+    "@acme/auth": "workspace:*",
+    "@acme/db": "workspace:*",
+    "@acme/validators": "workspace:*",
+    "@trpc/server": "11.7.1",
+    "superjson": "2.2.3",
+    "zod": "4.1.12"
+  },
+  "devDependencies": {
+    "@acme/tsconfig": "workspace:*",
+    "typescript": "5.9.3"
+  }
+}

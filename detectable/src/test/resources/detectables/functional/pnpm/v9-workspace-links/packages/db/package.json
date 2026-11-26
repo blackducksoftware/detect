@@ -1,0 +1,12 @@
+{
+  "name": "@acme/db",
+  "private": true,
+  "dependencies": {
+    "drizzle-orm": "0.44.7",
+    "drizzle-zod": "0.8.3",
+    "zod": "4.1.12"
+  },
+  "devDependencies": {
+    "@acme/tsconfig": "workspace:*"
+  }
+}
