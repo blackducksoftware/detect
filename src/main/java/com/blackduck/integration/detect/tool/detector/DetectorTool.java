@@ -158,9 +158,10 @@ public class DetectorTool {
         DirectoryFindResult findResult = findResultOptional.get();
 
         DirectoryEvaluation evaluation = directoryEvaluator.evaluate(findResult, detectorRuleSet);
+        boolean solutionFilterConfigured = detectConfigurationFactory.isNugetSolutionFilterConfigured();
         logger.debug("Finished detectors.");
 
-        List<DetectorDirectoryReport> reports = new DetectorReporter().generateReport(evaluation);
+        List<DetectorDirectoryReport> reports = new DetectorReporter(solutionFilterConfigured).generateReport(evaluation);
         DetectorToolResult toolResult = publishAllResults(reports, directory, projectDetector, requiredDetectors, requiredAccuracyTypes);
 
         checkAndHandleOutOfMemoryIssue(reports);

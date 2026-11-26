@@ -103,6 +103,7 @@ import com.blackduck.integration.detect.tool.detector.DetectorIssuePublisher;
 import com.blackduck.integration.detect.tool.detector.DetectorRuleFactory;
 import com.blackduck.integration.detect.tool.detector.DetectorTool;
 import com.blackduck.integration.detect.tool.detector.DetectorToolResult;
+import com.blackduck.integration.detect.tool.detector.NugetSolutionFilterDirectoryEvaluator;
 import com.blackduck.integration.detect.tool.detector.executable.DetectExecutableRunner;
 import com.blackduck.integration.detect.tool.detector.extraction.ExtractionEnvironmentProvider;
 import com.blackduck.integration.detect.tool.detector.factory.DetectDetectableFactory;
@@ -366,16 +367,25 @@ public class OperationRunner {
             DetectorRuleFactory detectorRuleFactory = new DetectorRuleFactory();
             DetectorRuleSet detectRuleSet = detectorRuleFactory.createRules(detectDetectableFactory);
             List<String> excludedDetectors = detectConfigurationFactory.getExcludedDetectors();
-            DetectableExclusionEvaluator detectableExclusionEvaluator = new DetectableExclusionEvaluator(excludedDetectors);
-            DetectorRuleEvaluator detectorRuleEvaluator = new DetectorRuleEvaluator(
-                new SearchEvaluator(searchOptions),
-                new DetectableEvaluator(),
-                detectableExclusionEvaluator
-            );
-            DirectoryEvaluator directoryEvaluator = new DirectoryEvaluator(
-                detectorRuleEvaluator,
-                extractionEnvironmentProvider::createExtractionEnvironment
-            );
+            DirectoryEvaluator directoryEvaluator;
+            if (detectConfigurationFactory.isNugetSolutionFilterConfigured()) {
+                directoryEvaluator = new NugetSolutionFilterDirectoryEvaluator(
+                    searchOptions,
+                    excludedDetectors,
+                    extractionEnvironmentProvider::createExtractionEnvironment
+                );
+            } else {
+                DetectableExclusionEvaluator detectableExclusionEvaluator = new DetectableExclusionEvaluator(excludedDetectors);
+                DetectorRuleEvaluator detectorRuleEvaluator = new DetectorRuleEvaluator(
+                    new SearchEvaluator(searchOptions),
+                    new DetectableEvaluator(),
+                    detectableExclusionEvaluator
+                );
+                directoryEvaluator = new DirectoryEvaluator(
+                    detectorRuleEvaluator,
+                    extractionEnvironmentProvider::createExtractionEnvironment
+                );
+            }
 
             DetectorTool detectorTool = new DetectorTool(
                 new DirectoryFinder(),

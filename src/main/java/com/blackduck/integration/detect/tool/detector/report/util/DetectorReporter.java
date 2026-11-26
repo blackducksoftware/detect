@@ -30,21 +30,31 @@ public class DetectorReporter {
     private static final String DETECTOR_ERROR_MESSAGE = "Something has gone wrong in the detector system, please contact support.";
     private static final String NUGET_PROJECT_INSPECTOR_NAME = NugetProjectInspectorDetectable.class.getAnnotation(DetectableInfo.class).name();
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
+    private final boolean solutionFilterConfigured;
+
+    public DetectorReporter() {
+        this(false);
+    }
+
+    public DetectorReporter(boolean solutionFilterConfigured) {
+        this.solutionFilterConfigured = solutionFilterConfigured;
+    }
 
     public List<DetectorDirectoryReport> generateReport(DirectoryEvaluation rootDirectoryEvaluation) {
         List<DetectorDirectoryReport> reports = new ArrayList<>();
         List<DirectoryEvaluation> directoryEvaluations = DetectorEvaluationUtil.asFlatList(rootDirectoryEvaluation);
+        boolean projectInspectorFallbackAttempted = false;
 
-        directoryEvaluations.forEach(directoryEvaluation -> {
+        for (DirectoryEvaluation directoryEvaluation : directoryEvaluations) {
             List<NotFoundDetectorRuleReport> notFoundDetectors = new ArrayList<>();
             List<ExtractedDetectorRuleReport> extractedDetectors = new ArrayList<>();
             List<EvaluatedDetectorRuleReport> notExtractedDetectors = new ArrayList<>();
 
-            directoryEvaluation.getEvaluations().forEach(detectorRuleEvaluation -> {
+            for (DetectorRuleEvaluation detectorRuleEvaluation : directoryEvaluation.getEvaluations()) {
                 if (!detectorRuleEvaluation.wasFound()) {
                     notFoundDetectors.add(generateNotFoundReport(detectorRuleEvaluation));
                 } else if (detectorRuleEvaluation.getFoundEntryPoint().isPresent()) { //just to check :)
-                    addFoundReport(
+                    projectInspectorFallbackAttempted |= addFoundReport(
                         directoryEvaluation.getDirectory(),
                         directoryEvaluation.getDepth(),
                         detectorRuleEvaluation,
@@ -55,7 +65,7 @@ public class DetectorReporter {
                 } else {
                     logger.error(DETECTOR_ERROR_MESSAGE);
                 }
-            });
+            }
             reports.add(new DetectorDirectoryReport(
                 directoryEvaluation.getDirectory(),
                 directoryEvaluation.getDepth(),
@@ -63,7 +73,12 @@ public class DetectorReporter {
                 extractedDetectors,
                 notExtractedDetectors
             ));
-        });
+        }
+
+        if (solutionFilterConfigured && projectInspectorFallbackAttempted) {
+            logger.info("NuGet Project Inspector does not support solution filters ({}) or other NuGet-specific Detect properties (detect.nuget.*); they are ignored during fallback.",
+                DetectProperties.DETECT_NUGET_SOLUTION_FILTER_PATH.getKey());
+        }
 
         if (directoryEvaluations.stream().anyMatch(this::isNugetSkippedForSolutionFilter)) {
             logger.info("NuGet detection is limited to the solution filter configured in {}; other NuGet solutions and projects are skipped.",
@@ -80,7 +95,7 @@ public class DetectorReporter {
             .anyMatch(notFound -> notFound.getApplicableResult().filter(NugetSolutionFilterDetectableResult.class::isInstance).isPresent());
     }
 
-    private void addFoundReport(
+    private boolean addFoundReport(
         File directory,
         int depth,
         DetectorRuleEvaluation ruleEvaluation,
@@ -114,7 +129,8 @@ public class DetectorReporter {
                 extracted = evaluated;
             }
         }
-        warnForNugetProjectInspectorFallback(directory, ruleEvaluation, foundEntryPoint, evaluatedDetectables, attemptedDetectables);
+        boolean projectInspectorFallbackAttempted =
+            warnForNugetProjectInspectorFallback(directory, ruleEvaluation, foundEntryPoint, evaluatedDetectables, attemptedDetectables);
 
         if (extracted != null) {
             ExtractedDetectableReport extractedDetectableReport = ExtractedDetectableReport.extracted(
@@ -128,9 +144,10 @@ public class DetectorReporter {
         } else {
             notExtractedDetectors.add(EvaluatedDetectorRuleReport.notExtracted(ruleEvaluation.getRule(), depth, notFoundEntryPoints, attemptedDetectables));
         }
+        return projectInspectorFallbackAttempted;
     }
 
-    private void warnForNugetProjectInspectorFallback(
+    private boolean warnForNugetProjectInspectorFallback(
         File directory,
         DetectorRuleEvaluation ruleEvaluation,
         EntryPointFoundResult foundEntryPoint,
@@ -138,14 +155,17 @@ public class DetectorReporter {
         List<AttemptedDetectableReport> attemptedDetectables
     ) {
         if (ruleEvaluation.getRule().getDetectorType() != DetectorType.NUGET) {
-            return;
+            return false;
         }
 
         String primaryName = foundEntryPoint.getEntryPoint().getPrimary().getName();
         boolean projectInspectorAttempted = evaluatedDetectables.stream()
             .anyMatch(evaluated -> NUGET_PROJECT_INSPECTOR_NAME.equals(evaluated.getDetectableDefinition().getName()));
-        if (NUGET_PROJECT_INSPECTOR_NAME.equals(primaryName) || !projectInspectorAttempted) {
-            return;
+        if (!projectInspectorAttempted) {
+            return false;
+        }
+        if (NUGET_PROJECT_INSPECTOR_NAME.equals(primaryName)) {
+            return true;
         }
 
         Optional<AttemptedDetectableReport> primaryAttempt = attemptedDetectables.stream()
@@ -157,13 +177,7 @@ public class DetectorReporter {
         } else {
             logger.warn("{} was excluded in {}. Detect attempted the NuGet Project Inspector fallback.", primaryName, directory);
         }
-        logger.warn(
-            "NuGet Project Inspector does not support NuGet-specific Detect properties (detect.nuget.*), including {}. "
-                + "If it runs, configured NuGet-specific properties are ignored and it scans the full directory, "
-                + "which may include projects outside a configured solution filter. Fix the NuGet Inspector failure or remove its detector exclusion "
-                + "to apply these properties.",
-            DetectProperties.DETECT_NUGET_SOLUTION_FILTER_PATH.getKey()
-        );
+        return true;
     }
 
     private NotFoundDetectorRuleReport generateNotFoundReport(DetectorRuleEvaluation detectorRuleEvaluation) {

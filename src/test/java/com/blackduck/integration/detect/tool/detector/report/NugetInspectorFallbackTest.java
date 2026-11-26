@@ -79,6 +79,7 @@ class NugetInspectorFallbackTest {
     private Path solutionFilter;
     private Logger reporterLogger;
     private ListAppender<ILoggingEvent> logAppender;
+    private boolean solutionFilterUsed;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -199,6 +200,14 @@ class NugetInspectorFallbackTest {
     }
 
     @Test
+    void keepsTheExcludedWordingWithoutASolutionFilter() throws Exception {
+        DetectorDirectoryReport report = runDetection(options(false), Collections.singletonList("NuGet Project Native Inspector"));
+
+        assertProjectInspectorExtracted(report);
+        assertFallbackWarnings("NuGet Project Native Inspector was excluded", sourceDirectory.toString());
+    }
+
+    @Test
     void doesNotWarnOrRunFallbackWhenNugetInspectorSucceeds() throws Exception {
         NugetInspectorOptions options = options(true);
         when(nugetResolver.resolveNugetInspector(options)).thenReturn(nugetInspector);
@@ -278,7 +287,8 @@ class NugetInspectorFallbackTest {
         DirectoryEvaluation directoryEvaluation = new DirectoryEvaluation(
             directory.toFile(), depth, Collections.singletonList(evaluate(options, excludedDetectables, directory, depth, true)), Collections.emptyList()
         );
-        return new DetectorReporter().generateReport(directoryEvaluation).get(0);
+        solutionFilterUsed = options.getSolutionFilterPath().isPresent();
+        return new DetectorReporter(solutionFilterUsed).generateReport(directoryEvaluation).get(0);
     }
 
     private DetectorRuleEvaluation evaluate(NugetInspectorOptions options, List<String> excludedDetectables, Path directory, int depth, boolean searchContinue) {
@@ -314,16 +324,20 @@ class NugetInspectorFallbackTest {
 
     private void assertFallbackWarnings(String expectedStatus, String expectedReason) {
         List<String> warnings = warnings();
-        assertEquals(2, warnings.size(), warnings.toString());
+        assertEquals(1, warnings.size(), warnings.toString());
         assertTrue(warnings.get(0).contains(expectedStatus), warnings.toString());
         assertTrue(warnings.get(0).contains(expectedReason), warnings.toString());
         assertTrue(warnings.get(0).contains("NuGet Project Inspector fallback"), warnings.toString());
-        assertTrue(warnings.get(1).contains("detect.nuget.*"), warnings.toString());
-        assertTrue(warnings.get(1).contains("detect.nuget.solution.filter.path"), warnings.toString());
-        assertTrue(warnings.get(1).contains("ignored"), warnings.toString());
-        assertTrue(warnings.get(1).contains("full directory"), warnings.toString());
-        assertTrue(warnings.get(1).contains("outside a configured solution filter"), warnings.toString());
-        assertTrue(warnings.get(1).contains("Fix the NuGet Inspector failure or remove its detector exclusion"), warnings.toString());
+        assertEquals(solutionFilterUsed ? 1 : 0, projectInspectorNotices().size(), logAppender.list.toString());
+    }
+
+    private List<String> projectInspectorNotices() {
+        return logAppender.list.stream()
+            .filter(event -> event.getLevel() == Level.INFO)
+            .map(ILoggingEvent::getFormattedMessage)
+            .filter(message -> message.equals(
+                "NuGet Project Inspector does not support solution filters (detect.nuget.solution.filter.path) or other NuGet-specific Detect properties (detect.nuget.*); they are ignored during fallback."))
+            .collect(Collectors.toList());
     }
 
     private List<String> warnings() {

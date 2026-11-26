@@ -112,6 +112,10 @@ public class DetectConfigurationFactory {
         return Runtime.getRuntime().availableProcessors();
     }
 
+    public boolean isNugetSolutionFilterConfigured() {
+        return detectConfiguration.getPathOrNull(DetectProperties.DETECT_NUGET_SOLUTION_FILTER_PATH) != null;
+    }
+
     @Nullable
     public SnippetMatching findSnippetMatching() {
         ExtendedEnumValue<ExtendedSnippetMode, SnippetMatching> snippetMatching = detectConfiguration.getValue(DetectProperties.DETECT_BLACKDUCK_SIGNATURE_SCANNER_SNIPPET_MATCHING);
