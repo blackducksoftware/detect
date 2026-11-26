@@ -12,6 +12,8 @@ public class YarnLockEntryBuilder {
     private boolean metadataEntry = false;
     private final List<YarnLockEntryId> ids = new LinkedList<>();
     private String version;
+    private String resolution;
+    private String resolved;
     private final Map<String, YarnLockDependency> dependencies = new HashMap<>();
 
     public YarnLockEntryBuilder addId(YarnLockEntryId id) {
@@ -26,6 +28,16 @@ public class YarnLockEntryBuilder {
 
     public YarnLockEntryBuilder setVersion(String version) {
         this.version = version;
+        return this;
+    }
+
+    public YarnLockEntryBuilder setResolution(String resolution) {
+        this.resolution = resolution;
+        return this;
+    }
+
+    public YarnLockEntryBuilder setResolved(String resolved) {
+        this.resolved = resolved;
         return this;
     }
 
@@ -46,13 +58,13 @@ public class YarnLockEntryBuilder {
         if (!valid()) {
             throw new UnsupportedOperationException("Attempted to build an incomplete yarn.lock entry");
         }
-        return new YarnLockEntry(metadataEntry, ids, version, new LinkedList<>(dependencies.values()));
+        return new YarnLockEntry(metadataEntry, ids, version, new LinkedList<>(dependencies.values()), resolution, resolved);
     }
 
     public Optional<YarnLockEntry> buildIfValid() {
         if (!valid()) {
             return Optional.empty();
         }
-        return Optional.of(new YarnLockEntry(metadataEntry, ids, version, new LinkedList<>(dependencies.values())));
+        return Optional.of(new YarnLockEntry(metadataEntry, ids, version, new LinkedList<>(dependencies.values()), resolution, resolved));
     }
 }

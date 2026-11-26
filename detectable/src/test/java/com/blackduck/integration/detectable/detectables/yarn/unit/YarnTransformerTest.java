@@ -36,6 +36,7 @@ import com.blackduck.integration.detectable.detectables.yarn.packagejson.NullSaf
 import com.blackduck.integration.detectable.detectables.yarn.packagejson.WorkspacePackageJson;
 import com.blackduck.integration.detectable.detectables.yarn.parse.YarnLock;
 import com.blackduck.integration.detectable.detectables.yarn.parse.YarnLockDependency;
+import com.blackduck.integration.detectable.detectables.yarn.parse.YarnLockResolutionParser;
 import com.blackduck.integration.detectable.detectables.yarn.parse.YarnLockResult;
 import com.blackduck.integration.detectable.detectables.yarn.parse.entry.YarnLockEntry;
 import com.blackduck.integration.detectable.detectables.yarn.parse.entry.YarnLockEntryId;
@@ -132,7 +133,7 @@ class YarnTransformerTest {
         List<YarnLockDependency> validYarnLockDependencies = Collections.singletonList(new YarnLockDependency("yarn", "^1.22.4", false));
         List<YarnLockEntry> yarnLockEntries = Collections.singletonList(new YarnLockEntry(false, validYarnLockEntryIds, "1.0", validYarnLockDependencies));
         YarnLock yarnLock = new YarnLock(null, true, yarnLockEntries);
-        YarnLockResult yarnLockResult = new YarnLockResult(packageJson, YarnWorkspaces.EMPTY, yarnLock);
+        YarnLockResult yarnLockResult = new YarnLockResult(packageJson, YarnWorkspaces.EMPTY, yarnLock, YarnLockResolutionParser.from(yarnLock));
 
         // This should not throw an exception.
         List<CodeLocation> codeLocations = createTransformer().generateCodeLocations(yarnLockResult, new ArrayList<>(0), ExcludedIncludedWildcardFilter.EMPTY);
@@ -268,7 +269,7 @@ class YarnTransformerTest {
         }
         YarnLock yarnLock = new YarnLock(yarnLockVersion, yarn1Project, yarnLockEntries);
         YarnWorkspaces workspaceData = new YarnWorkspaces(workspacesByName);
-        return new YarnLockResult(packageJson, workspaceData, yarnLock);
+        return new YarnLockResult(packageJson, workspaceData, yarnLock, YarnLockResolutionParser.from(yarnLock));
     }
 
     private void addWorkspaceToYarnLockEntries(List<YarnLockEntry> yarnLockEntries, NameVersion workspace, String workspaceDepName) {

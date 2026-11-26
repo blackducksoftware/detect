@@ -41,7 +41,11 @@ public class YarnLockKeyValuePairSectionParser implements YarnLockEntrySectionPa
     public int parseSection(YarnLockEntryBuilder entryBuilder, List<String> yarnLockLines, int lineIndexOfStartOfSection) {
         StringTokenizer tokenizer = TokenizerFactory.createKeyValueTokenizer(yarnLockLines.get(lineIndexOfStartOfSection));
         tokenizer.nextToken(); // skip over key
-        String value = tokenizer.nextToken().trim();
+        // Take the remainder of the line so values that contain ':' (e.g. resolution: "name@npm:1.0.0") stay whole
+        String value = tokenizer.nextToken("").trim();
+        if (value.startsWith(":")) {
+            value = value.substring(1).trim();
+        }
         value = yarnLockLineAnalyzer.unquote(value);
         logger.trace("\t{}: {}", targetKey, value);
         valueConsumer.accept(entryBuilder, value);
