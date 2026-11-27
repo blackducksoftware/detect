@@ -62,7 +62,10 @@ public class DirectoryExecutableFinder {
         for (File location : locations) {
             for (String possibleExecutable : executables) {
                 File foundFile = fileFinder.findFile(location, possibleExecutable);
-                if (foundFile != null && foundFile.exists() && foundFile.canExecute()) {
+                // Directories are "executable" on POSIX (search permission), so require a regular file.
+                // Otherwise a directory with the executable's name on the PATH (e.g. a tool cache
+                // directory named "go") shadows the real executable further down the PATH.
+                if (foundFile != null && foundFile.isFile() && foundFile.canExecute()) {
                     return foundFile;
                 }
             }
